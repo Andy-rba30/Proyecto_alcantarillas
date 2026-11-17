@@ -554,11 +554,11 @@ def test_h5_el_caso_del_auditor_no_cae_fuera_de_ErrorProyecto(tmp_path):
     Rasante 38.40 / subrasante 38.25: la tipologia de la Lamina N 03 con poco
     relleno. La corrida termina, C-01 no dimensiona, y todo lo que lo detiene
     es del expediente: el primer escalon (1.20 x 0.90, clave exterior 38.00)
-    incumple V4 y V7 -- V7 lleva DC = 0, ver H6 --, y en el segundo (1.50 x
-    1.20, clave 38.30) la clave queda sobre la subrasante y el
-    `DatoInvalidoError` de `M5.altura_relleno_sobre_clave` detiene el
-    material. G1 no llega a evaluarse: el aviso de cobertura de H5 es
-    inalcanzable con esta geometria mientras V7 no pese el marco.
+    incumple V4 --y hasta VE-3.11 tambien V7, que llevaba DC = 0; desde
+    VE-3.11 (H4 de los ensayos de diseño del conducto) V7 pesa el marco y la
+    cumple--, y en el segundo (1.50 x 1.20, clave 38.30) la clave queda
+    sobre la subrasante y el `DatoInvalidoError` de
+    `M5.altura_relleno_sobre_clave` detiene el material.
     """
     informe = servicio.correr(
         _csv_c01(tmp_path, rasante=38.40, subrasante=38.25),
@@ -567,7 +567,7 @@ def test_h5_el_caso_del_auditor_no_cae_fuera_de_ErrorProyecto(tmp_path):
     assert not c01.dimensionado
     motivos = [it.motivo or "" for it in c01.traza]
     assert len(motivos) == 2, motivos
-    assert "incumple V4" in motivos[0] and "V7" in motivos[0]
+    assert "incumple V4" in motivos[0] and "V7" not in motivos[0]
     assert "subrasante" in motivos[1]
     for b in c01.bloqueos:
         assert b.tipo is not None

@@ -72,6 +72,15 @@ REGISTRO = RAIZ / "docs" / "decisiones_diferidas.md"
 REL_RECALCULADO = 1e-9
 MEDIA_CENTESIMA = 0.005
 
+
+def _dc_concreto_090() -> float:
+    """
+    VE-3.11 (H4): V7 suma el peso propio del tubo de concreto,
+    gamma_c * (A_exterior - A_interior), con D = 0.90 y t = 0.10 m.
+    """
+    return (ca.valor("peso_especifico_concreto_kn_m3")
+            * (math.pi / 4) * (1.10 ** 2 - 0.90 ** 2))
+
 CITA_NIVEL_MP = "MP.2.4.3.8.1#NIVEL_DE_DISENO"
 CITA_NIVEL_AASHTO = "AASHTO_LRFD_9.3.7.1#NIVEL_DE_DISENO"
 
@@ -162,10 +171,15 @@ def test_c1_m8_justifica_la_sumersion_completa_con_la_norma():
 
 
 def test_c1_m8_dice_que_dc_cero_esta_del_lado_seguro_frente_al_0_90():
+    # DESDE VE-3.11 (H4 de los ensayos de diseño del conducto) el concreto
+    # SUMA su peso propio en V7 y el apartado cambio de titulo; la omision
+    # sigue valiendo para el TMC y el HDPE, y su justificacion se conserva.
     apartado = _seccion_del_docstring(
-        M8.__doc__, "Por que el peso propio del conducto no entra en V7")
+        M8.__doc__, "El peso propio del conducto en V7 (DC): el del concreto "
+                    "entra, el de los demas no")
     for necesario in ("Tabla 2.4.5.3.1-2", "0.90", "2.4.5.3.1",
-                      "C12.6.2.3", "lado seguro"):
+                      "C12.6.2.3", "lado seguro", "VE-3.11",
+                      "peso_especifico_concreto_kn_m3"):
         assert necesario in apartado, necesario
 
 
@@ -343,8 +357,10 @@ def test_c2_con_el_valor_de_archivo_v7_no_lee_el_nf_y_registra_el_criterio():
     x = v[None]
     assert x.valor_admisible == pytest.approx(M8.empuje_flotacion_kn_m(
         seccion=SeccionCircular(D=0.90), espesor=0.10), rel=REL_TRANSPORTE)
-    assert x.valor_obtenido == pytest.approx(0.90 * GAMMA_R * BC * H_REL,
-                                             rel=REL_RECALCULADO)
+    # + 0.90·DC desde VE-3.11 (H4): el concreto suma su peso propio.
+    assert x.valor_obtenido == pytest.approx(
+        0.90 * GAMMA_R * BC * H_REL + 0.90 * _dc_concreto_090(),
+        rel=REL_RECALCULADO)
     assert CLAVE_NIVEL in ca.criterios_usados()
     assert CLAVE_MARGEN not in ca.criterios_usados()
     eleccion = [e for e in x.paso.elecciones if e.clave_criterio == CLAVE_NIVEL]
@@ -391,8 +407,10 @@ def test_c2_sumersion_parcial_empuja_solo_lo_que_queda_bajo_el_nivel():
     assert v.valor_admisible < 0.05 * M8.empuje_flotacion_kn_m(
         seccion=SeccionCircular(D=0.90), espesor=0.10)
     # El relleno queda entero en seco: no hace falta el saturado (sin valor).
-    assert v.valor_obtenido == pytest.approx(0.90 * GAMMA_R * BC * H_REL,
-                                             rel=REL_RECALCULADO)
+    # + 0.90·DC desde VE-3.11 (H4).
+    assert v.valor_obtenido == pytest.approx(
+        0.90 * GAMMA_R * BC * H_REL + 0.90 * _dc_concreto_090(),
+        rel=REL_RECALCULADO)
 
 
 def test_c2_con_el_nivel_sobre_la_clave_sin_saturado_es_criterio_pendiente():
@@ -410,7 +428,9 @@ def test_c2_el_relleno_bajo_el_nivel_pesa_sumergido():
         v = _v7(_punto(NF_profundidad_m=0.10))       # nivel 43.50
     h_sum = 43.50 - 43.10
     EV = BC * (GAMMA_R * (H_REL - h_sum) + (20.0 - GAMMA_AGUA_KN_M3) * h_sum)
-    assert v.valor_obtenido == pytest.approx(0.90 * EV, rel=REL_RECALCULADO)
+    # + 0.90·DC desde VE-3.11 (H4).
+    assert v.valor_obtenido == pytest.approx(0.90 * EV + 0.90 * _dc_concreto_090(),
+                                             rel=REL_RECALCULADO)
     assert v.valor_admisible == pytest.approx(M8.empuje_flotacion_kn_m(
         seccion=SeccionCircular(D=0.90), espesor=0.10), rel=REL_TRANSPORTE)
     assert CITA_SUMERGIDO in v.paso.citas_textuales
@@ -421,7 +441,9 @@ def test_c2_sobre_la_subrasante_todo_el_relleno_va_sumergido():
                      CLAVE_SATURADO: 20.0}):
         v = _v7(_punto(NF_profundidad_m=0.10))       # nivel 45.00 > 44.05
     EV = BC * (20.0 - GAMMA_AGUA_KN_M3) * H_REL
-    assert v.valor_obtenido == pytest.approx(0.90 * EV, rel=REL_RECALCULADO)
+    # + 0.90·DC desde VE-3.11 (H4).
+    assert v.valor_obtenido == pytest.approx(0.90 * EV + 0.90 * _dc_concreto_090(),
+                                             rel=REL_RECALCULADO)
 
 
 def test_c2_con_el_nivel_en_la_clave_las_dos_reglas_coinciden():

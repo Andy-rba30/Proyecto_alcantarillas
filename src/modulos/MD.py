@@ -203,7 +203,7 @@ from src.modelos import (CondicionRasante,
 from src.modulos.M2_material import (CRITERIO_CALIBRE_TMC,
                                  CRITERIO_D_MAX_CATALOGO,
                                  CRITERIO_D_MAX_NORMA,
-                                 CRITERIO_SECCIONES_CAJON,
+                                 CRITERIO_SECCIONES_CAJON, espesor_pared,
                                  materiales_candidatos, siguiente_seccion)
 from src.modulos.M3_hidraulica import resolver_manning
 from src.modulos.M4_control import caudal_por_celda, resolver_control
@@ -255,9 +255,23 @@ CAMPO_SUBRASANTE = "cota_subrasante"
 MARCA_ESCALON_SIN_CABIDA = "no cabe bajo la subrasante"
 MENSAJE_SIN_CABIDA = "material descartado por rasante"
 ROTULO_NO_FACTIBLE_POR_RASANTE = "NO FACTIBLE POR RASANTE"
+# --- VE-3.11 (H6 de los ensayos de diseño del conducto) --- LAS
+# VERIFICACIONES QUE NO MEJORAN AL CRECER EL DIAMETRO: V2 (la velocidad minima:
+# con el mismo Q y la misma S un barril mayor lleva el agua mas lenta), V2b
+# (el regimen del barril frente al del cauce) y V10 (la pendiente del conducto,
+# que no depende del diametro). Si una de ellas no cumple en NINGUN escalon que
+# se evaluo, la progresion no se detuvo por la rasante aunque su escalon
+# siguiente no quepa, y el titular del punto tiene que nombrarla: el alivio
+# E12 del revisor salia «NO FACTIBLE POR RASANTE» con V2 incumplida en todo
+# diametro, y el titular mandaba al revisor a subir la rasante.
+VERIFICACIONES_QUE_NO_MEJORAN_AL_CRECER = ("V2", "V2b", "V10")
 # El tamizado de Sec. 7.A es de M7, y M7 importa M5: se resuelve en el punto
 # de uso, como el verificador, para que importar MD no arrastre la Fase 5.
 MODULO_GEOMETRIA = "src.modulos.M7_geometria"
+# --- VE-3.11 (H3 de los ensayos de diseño del conducto) --- El modulo que pesa
+# el relleno de V7, para rotular el delta de 7.A de un escalon que no cabe
+# (`_relleno_que_pide_v7`). Se resuelve como los otros dos, por nombre.
+MODULO_ESTRUCTURAL = "src.modulos.M8_estructural"
 
 
 class Verificador(Protocol):
@@ -551,6 +565,14 @@ def _delta_de_7A(punto: PuntoCritico, material: Material, seccion: Seccion,
     # cobertura adoptada avisa y no bloquea).
     exigible = t.cota_rasante_min - t.cota_clave - t.espesor_paquete
     provisional = f". PROVISIONAL: {t.aviso}" if t.provisional else ""
+    # --- VE-3.11 (H3 b) --- EL DELTA DE 7.A NO CONTIENE V7, y ese escalon no
+    # la tiene evaluada (no cabia: no habia relleno que pesar). Si con la
+    # rasante que el delta propone V7 seguiria sin cumplir, se ROTULA, con el
+    # relleno que V7 pide y el delta que eso daria: el revisor de los ensayos
+    # de diseño midio un delta de 0.34 m para un TMC Ø 1.95 m que con esa
+    # rasante seguia flotando. El numero del delta no cambia (es el de la
+    # regla de T11-03); cambia lo que se dice de el.
+    provisional += _rotulo_v7_del_delta(punto, material, seccion, t)
     return t.delta_rasante_m, (
         f"Delta de rasante de 7.A para ese escalon: {t.delta_rasante_m:.3f} m "
         f"(clave {t.cota_clave:.3f} msnm + recubrimiento exigible "
@@ -562,6 +584,56 @@ def _delta_de_7A(punto: PuntoCritico, material: Material, seccion: Seccion,
         "porque a ese escalon le faltan las verificaciones que no llegaron a "
         "evaluarse, la longitud y el HW cambian y los escalones menores se "
         f"reevaluan con mas relleno{provisional}")
+
+
+def _relleno_que_pide_v7(material: Material, seccion: Seccion
+                         ) -> Tuple[Optional[float], str]:
+    """
+    --- VE-3.11 (H3 b) --- El relleno sobre la clave, m, que V7 pide para el
+    escalon con el nivel de agua de archivo («en_la_clave»), y "" -- o None y
+    el por que no se pudo pesar --. Despeja la fila V7 de la hoja de ruta,
+    γ_DC·DC + γ_EV·γ_r·Bc·h >= γ_WA·U, con las MISMAS funciones de M8 que
+    usa `M5.v7_flotacion` (U, DC, los γ y el peso del relleno): no hay una
+    segunda formula.
+    """
+    m8 = import_module(MODULO_ESTRUCTURAL)
+    try:
+        if m8.regla_nivel_agua_v7() != m8.NIVEL_V7_EN_LA_CLAVE:
+            return None, ("el nivel de agua de diseño de V7 no es el de "
+                          "archivo y depende del freatico del punto")
+        t = espesor_pared(material, seccion.altura)
+        U = m8.empuje_flotacion_kn_m(seccion=seccion, espesor=t)
+        DC, _ = m8.peso_propio_conducto_kn_m(material=material,
+                                             seccion=seccion, espesor=t)
+        g = m8.factores_carga_flotacion(material=material)
+        gamma_r = ca.valor(m8.CRITERIO_PESO_RELLENO)
+    except ErrorProyecto as exc:
+        return None, f"{type(exc).__name__}: {exc}"
+    h = (g.gamma_WA * U - g.gamma_DC * DC) / (
+        g.gamma_EV * gamma_r * seccion.ancho_exterior(t))
+    return max(h, 0.0), ""
+
+
+def _rotulo_v7_del_delta(punto: PuntoCritico, material: Material,
+                         seccion: Seccion, t) -> str:
+    """
+    --- VE-3.11 (H3 b) --- Lo que se agrega a la nota del delta de 7.A de un
+    escalon que no cabe: si con esa rasante V7 seguiria sin cumplir, cuanto
+    relleno pide y que delta daria; si no se pudo pesar, por que. Vacio si V7
+    queda satisfecha con el delta de 7.A.
+    """
+    h_v7, por_que = _relleno_que_pide_v7(material, seccion)
+    if h_v7 is None:
+        return (f". V7 no se pudo pesar para ese escalon ({por_que}): el "
+                "delta no la contiene")
+    delta_v7 = (t.cota_clave + h_v7 + t.espesor_paquete
+                - t.cota_rasante_actual)
+    if not delta_v7 > t.delta_rasante_m + TOL_UMBRAL_NORMATIVO:
+        return ""
+    return (f". CON ESA RASANTE ESE ESCALON SEGUIRIA SIN CUMPLIR V7: el "
+            f"equilibrio de flotacion pide {h_v7:.3f} m de relleno sobre la "
+            f"clave, un delta de {delta_v7:.3f} m (VE-3.11); el delta de 7.A "
+            "no contiene V7")
 
 
 def _escalon_sin_cabida(punto: PuntoCritico, material: Material,
@@ -992,7 +1064,7 @@ def disenar_punto(punto: PuntoCritico, *, L: float, TW: float,
     invalidos_del_punto: List[DatoInvalidoError] = []      # T11-03 (C)
     # T11-03 (A, B): el escalon que no cupo de cada material descartado por
     # rasante, con su material -- de ahi salen el rotulo y el delta del punto.
-    por_rasante: List[Tuple[Material, PasoDiseno]] = []
+    por_rasante: List[Tuple[Material, PasoDiseno, Tuple[PasoDiseno, ...]]] = []
 
     # Los escalones de CADA material, ademas de pasarlos al observador: es
     # lo que permite decir, cuando un material se detiene por un dato que
@@ -1085,7 +1157,7 @@ def disenar_punto(punto: PuntoCritico, *, L: float, TW: float,
 
         fallos.append(f"{material.nombre}: {motivo}")
         if escalones and escalones[-1].sin_cabida is not None:
-            por_rasante.append((material, escalones[-1]))
+            por_rasante.append((material, escalones[-1], tuple(escalones)))
 
     # Ningun candidato cerro. Antes de declarar el punto NO FACTIBLE hay que
     # poder afirmar que todos se evaluaron de verdad: ver las tres funciones.
@@ -1149,7 +1221,24 @@ def disenar_punto(punto: PuntoCritico, *, L: float, TW: float,
     )
 
 
-def _resumen_por_rasante(por_rasante: Sequence[Tuple[Material, PasoDiseno]],
+def _fallas_persistentes(escalones: Sequence[PasoDiseno]) -> Tuple[str, ...]:
+    """
+    --- VE-3.11 (H6) --- Los codigos de `VERIFICACIONES_QUE_NO_MEJORAN_AL_CRECER`
+    que no cumplen en TODOS los escalones evaluados del material (los que
+    llevan verificaciones y no son el que no cabe), en su orden. Vacio si no
+    hay escalon evaluado o si ninguna de esas falla en todos.
+    """
+    evaluados = [e for e in escalones
+                 if e.sin_cabida is None and e.verificaciones]
+    if not evaluados:
+        return ()
+    return tuple(c for c in VERIFICACIONES_QUE_NO_MEJORAN_AL_CRECER
+                 if all(any(v.codigo == c and not v.cumple
+                            for v in e.verificaciones) for e in evaluados))
+
+
+def _resumen_por_rasante(por_rasante: Sequence[Tuple[Material, PasoDiseno,
+                                                     Tuple[PasoDiseno, ...]]],
                          n_candidatos: int) -> Tuple[Optional[float], str]:
     """
     --- T11-03 --- El delta de rasante del PUNTO y la frase que lo encabeza,
@@ -1176,11 +1265,25 @@ def _resumen_por_rasante(por_rasante: Sequence[Tuple[Material, PasoDiseno]],
     """
     if not por_rasante:
         return None, ""
-    cabecera = (f"{ROTULO_NO_FACTIBLE_POR_RASANTE}: en {len(por_rasante)} de "
-                f"{n_candidatos} candidatos la progresion se detiene porque "
-                f"el escalon siguiente {MARCA_ESCALON_SIN_CABIDA}. ")
+    # --- VE-3.11 (H6) --- EL TITULAR NOMBRA LA CAUSA REAL: si en cada
+    # material que llego a la subrasante una verificacion que no mejora al
+    # crecer el diametro fallo en todos sus escalones, la rasante no es lo que
+    # detuvo el punto.
+    persistentes = [_fallas_persistentes(escalones)
+                    for _, _, escalones in por_rasante]
+    if all(persistentes):
+        codigos = ", ".join(dict.fromkeys(c for ps in persistentes for c in ps))
+        cabecera = (f"NO FACTIBLE POR {codigos}: no cumple en ningun escalon "
+                    f"evaluado de los {len(por_rasante)} candidatos que llegaron "
+                    "a la subrasante, y crecer el diametro no lo resuelve; la "
+                    "progresion termina ademas porque el escalon siguiente "
+                    f"{MARCA_ESCALON_SIN_CABIDA}. ")
+    else:
+        cabecera = (f"{ROTULO_NO_FACTIBLE_POR_RASANTE}: en {len(por_rasante)} "
+                    f"de {n_candidatos} candidatos la progresion se detiene "
+                    f"porque el escalon siguiente {MARCA_ESCALON_SIN_CABIDA}. ")
     con_delta = [(paso.sin_cabida.delta_rasante_m, material, paso)
-                 for material, paso in por_rasante
+                 for material, paso, _ in por_rasante
                  if paso.sin_cabida.delta_rasante_m is not None]
     if not con_delta:
         return None, (cabecera + "No se da delta de rasante: ningun escalon "

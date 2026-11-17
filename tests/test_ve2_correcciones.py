@@ -152,18 +152,20 @@ def test_con_el_evento_extremo_coherente_B01_espera_el_perfil_del_hdpe():
     """
     El caso 3 de la revision: declarado un caudal del evento extremo
     coherente con el calculado (1.99 m3/s, 1.11 veces 1.79), el escalon pasa
-    V8 y lo detiene la Fase 8 por el perfil del fabricante del HDPE (T-5).
-    Prueba que ese escalon cumple la tabla de la Fase 5.
+    V8. Hasta VE-3.11 lo detenia la Fase 8 por el perfil del fabricante del
+    HDPE (T-5). DESDE VE-3.11 (H4 de los ensayos de diseño del conducto) V7
+    suma el peso propio del concreto, y el concreto Ø 1.20 m, que solo fallaba
+    V7, cierra antes de llegar al HDPE: B-01 se DIMENSIONA. El nombre del
+    test se conserva por la traza de la revision.
     """
     cambios = [c for c in J.VARIANTES[V.VARIANTE_DE_REFERENCIA][1]
                if not (c[0] == "externo" and c[1] == "B-01"
                        and c[2] == "Q_evento_extremo_m3s")]
     cambios.append(("externo", "B-01", "Q_evento_extremo_m3s", 1.99))
     b01 = _b01(cambios)
-    assert not b01.dimensionado
-    b = next(b for b in b01.bloqueos
-             if b.tipo is TipoDeBloqueo.DATO_FALTANTE)
-    assert b.campo == "perfil_hdpe_fabricante"
+    assert b01.dimensionado
+    assert b01.resultado.material.tipo is TipoMaterial.CONCRETO_REFORZADO
+    assert b01.resultado.seccion.etiqueta() == "Ø 1.20 m"
 
 
 # ===========================================================================
@@ -202,14 +204,21 @@ def test_el_dato_de_catalogo_que_falta_en_la_fase_5_no_decide():
 def test_el_caso_real_de_la_pared_sigue_no_factible_por_rasante_con_su_delta():
     """
     El caso medido por la verificacion, por el servicio: A-01 del juego con
-    Q = 1.0 m3/s, S = 0.004 y un evento extremo de 3.0 m3/s. El HDPE Ø 1.35 m
-    cumple V1 a V6 y V7 pide su fila de pared, que el catalogo no trae; el
-    Ø 1.20 m incumple V7. Sale «no factible por rasante» con el delta de
-    7.A de `d9b59f9` (0.3198 m), no «falta la pared».
+    S = 0.004 y un evento extremo de 3 veces el caudal. El HDPE Ø 1.35 m
+    cumple V1 a V6 y V7 pide su fila de pared, que el catalogo no trae. Sale
+    «no factible por rasante» con el delta de 7.A de `d9b59f9` (0.3198 m),
+    no «falta la pared».
+
+    LA VERIFICACION LO MIDIO CON Q = 1.0 m3/s; DESDE VE-3.11 (H4 de los
+    ensayos de diseño del conducto) V7 suma el peso propio del concreto y con
+    ese caudal el concreto Ø 1.20 m, que solo fallaba V7, cumple: el punto se
+    dimensiona. El caso se lleva a Q = 1.4 m3/s (evento extremo 4.2), donde
+    el HDPE sigue detenido por su pared de 1.35 m y el punto sigue «no
+    factible por rasante» con el mismo delta (medido en VE-3.11).
     """
-    cambios = (("celda", "A-01", "Q_m3s", "1.0"),
+    cambios = (("celda", "A-01", "Q_m3s", "1.4"),
                ("celda", "A-01", "S_cauce", "0.004"),
-               ("externo", "A-01", "Q_evento_extremo_m3s", 3.0))
+               ("externo", "A-01", "Q_evento_extremo_m3s", 4.2))
     informe = V.correr_juego(V.aplicar(V.juego_completo(), cambios))
     a01 = next(p for p in informe.puntos if p.punto.id == "A-01")
     assert not a01.dimensionado
@@ -217,6 +226,7 @@ def test_el_caso_real_de_la_pared_sigue_no_factible_por_rasante_con_su_delta():
     assert TipoDeBloqueo.DATO_FALTANTE not in tipos
     b = next(b for b in a01.bloqueos
              if b.tipo is TipoDeBloqueo.DISENO_NO_FACTIBLE)
+    assert "espesor_pared_conducto[hdpe][1350]" in b.mensaje
     # El delta es el del TMC Ø 1.95 m de A-01, el dorado a mano de T11-03
     # (0.31981 m), con su tolerancia nombrada.
     assert b.delta_rasante_m == pytest.approx(DELTA_TMC_195, abs=ABS_MM)

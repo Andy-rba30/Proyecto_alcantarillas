@@ -928,6 +928,13 @@ def test_v7_lanza_pendiente_por_falta_de_peso_especifico_del_relleno(concreto):
 ELECCION_DEMO = {"concreto_reforzado": {"EV": "EV_muros_y_estribos_de_retencion"}}
 
 
+def _DC_090() -> float:
+    """VE-3.11 (H4): peso propio del tubo de concreto de prueba, D = 0.90 y
+    t = 0.10 m, gamma_c * (pi/4) * (1.10^2 - 0.90^2), recalculado a mano."""
+    return (ca.valor("peso_especifico_concreto_kn_m3")
+            * (math.pi / 4) * (1.10 ** 2 - 0.90 ** 2))
+
+
 def test_v7_calcula_completo_en_cuanto_declara_el_peso_del_relleno(
         concreto, monkeypatch):
     """
@@ -948,7 +955,9 @@ def test_v7_calcula_completo_en_cuanto_declara_el_peso_del_relleno(
                      resultado=_resultado())
     assert v.codigo == "V7"
     assert v.criterio_aplicado == "factores_carga_aashto"
-    assert v.valor_obtenido == pytest.approx(0.90 * 18.81, abs=1e-6)
+    # + 0.90·DC desde VE-3.11 (H4 de los ensayos de diseño del conducto).
+    assert v.valor_obtenido == pytest.approx(0.90 * 18.81 + 0.90 * _DC_090(),
+                                             abs=1e-6)
     assert v.valor_admisible == pytest.approx(
         1.00 * 9.81 * (math.pi / 4) * 1.10 ** 2, abs=1e-6)
     assert v.cumple
@@ -986,7 +995,10 @@ def test_v7_calcula_completo_con_los_dos_criterios_declarados(concreto,
                      resultado=_resultado())
     assert v.codigo == "V7"
     assert v.criterio_aplicado == "factores_carga_aashto"
-    assert v.valor_obtenido == pytest.approx(1.00 * 18.81, abs=1e-6)
+    # + 0.90·DC desde VE-3.11 (H4): la fila de DC sigue siendo la de
+    # «Componentes y Auxiliares», minimo 0.90, aunque EV cambie de fila.
+    assert v.valor_obtenido == pytest.approx(1.00 * 18.81 + 0.90 * _DC_090(),
+                                             abs=1e-6)
     assert v.valor_admisible == pytest.approx(
         1.00 * 9.81 * (math.pi / 4) * 1.10 ** 2, abs=1e-6)
     assert v.cumple
@@ -1017,7 +1029,9 @@ def test_v7_no_es_un_factor_de_seguridad_global(concreto, monkeypatch):
     v = v7_flotacion(punto=_punto(), material=concreto,
                      seccion=SeccionCircular(D=0.90),
                      resultado=_resultado())
-    assert v.valor_obtenido == pytest.approx(0.90 * 18.81, abs=1e-6)
+    # + 0.90·DC desde VE-3.11 (H4).
+    assert v.valor_obtenido == pytest.approx(0.90 * 18.81 + 0.90 * _DC_090(),
+                                             abs=1e-6)
     assert v.valor_admisible == pytest.approx(
         1.00 * 9.81 * (math.pi / 4) * 1.10 ** 2, abs=1e-6)
     # Y el punto del test: los dos lados llevan gamma DISTINTOS, de modo que

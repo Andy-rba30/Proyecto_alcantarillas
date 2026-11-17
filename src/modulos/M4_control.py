@@ -405,7 +405,8 @@ from src.modelos import (CriterioPendienteError, PisoDeCargaEntrada,
                      TiranteNormal, TransicionEntrada, Umbral, Veredicto,
                      eleccion, paso)
 from src.modulos.M2_material import CRITERIO_N_CELDAS_CAJON, numero_de_celdas
-from src.modulos.M3_hidraulica import geometria, resolver_manning
+from src.modulos.M3_hidraulica import (geometria, resolver_manning,
+                                       tirante_conjugado_barril)
 from src.tolerancias import (PASOS_PERFIL_LAMINA, TOL_ASINTOTA_PERFIL,
                              TOL_BRENT, TOL_UMBRAL_NORMATIVO)
 
@@ -3299,6 +3300,45 @@ def hidraulica_a_presion(seccion: Seccion, Q: float, S: float, L: float,
         avisos=tuple(avisos))
 
 
+def _receptor_en_el_barril(*, Q_celda: float, seccion: Seccion, TW: float,
+                           critico: TiranteCritico,
+                           normal: Union[TiranteNormal, SinTiranteNormal],
+                           control: ControlGobernante
+                           ) -> Tuple[Optional[float], bool, bool]:
+    """
+    --- VE-3.11 (H2) --- (y_conjugado, resalto_en_el_barril,
+    receptor_en_el_barril) bajo control de ENTRADA: si el TW del receptor
+    fija el tirante maximo DENTRO del barril.
+
+    HDS-5 num. 3.1.3, pag. impresa 3.2 (`HDS5_3ED.3.1.3#SUMERGENCIA`): bajo
+    control de entrada la sumergencia de la salida «does not assure outlet
+    control»; el tramo de aguas arriba es supercritico y «a hydraulic jump
+    forms in the culvert barrel». El resalto entra al barril cuando el TW
+    alcanza el CONJUGADO del tirante normal supercritico
+    (`M3.tirante_conjugado_barril`); con un TW menor el resalto sale y el
+    barril va a tirante normal. Con el barril SUBCRITICO bajo control de
+    entrada (y_n >= y_c) no hay resalto: el remanso M1 llega a la salida con
+    el tirante del TW en cuanto TW > y_n. En los dos casos el receptor fija
+    el tirante maximo del barril, y es lo que V1 necesita para no juzgar el
+    borde libre con el tirante normal donde la lamina esta al nivel del TW
+    (nota T-2 de la hoja de ruta: la lectura es una sola a lo largo del TW).
+
+    Bajo control de SALIDA, con barril horizontal o sin TW no aplica: V1 ya
+    lee el perfil de la lamina (`M5._regimen_de_v1_v2`).
+    """
+    if (control is not ControlGobernante.ENTRADA
+            or isinstance(normal, SinTiranteNormal) or TW is None):
+        return None, False, False
+    y_n = normal.geometria.y
+    if y_n < critico.y_c - TOL_UMBRAL_NORMATIVO:
+        y_conj = tirante_conjugado_barril(Q=Q_celda, seccion=seccion, y=y_n,
+                                          y_c=critico.y_c)
+        resalto = (y_conj is not None
+                   and not TW < y_conj - TOL_UMBRAL_NORMATIVO)
+        return y_conj, resalto, resalto
+    return None, False, TW > y_n + TOL_UMBRAL_NORMATIVO
+
+
 def resolver_control(seccion: Seccion, Q: float, S: float, L: float, TW: float,
                      material: Material,
                      normal: Union[TiranteNormal, SinTiranteNormal, None] = None
@@ -3392,6 +3432,9 @@ def resolver_control(seccion: Seccion, Q: float, S: float, L: float, TW: float,
                           else salida.HW)
 
     horizontal = isinstance(normal, SinTiranteNormal)
+    y_conjugado, resalto, receptor = _receptor_en_el_barril(
+        Q_celda=Q_celda, seccion=seccion, TW=TW, critico=critico,
+        normal=normal, control=control)
     return ResultadoHidraulico(
         # Sin tirante normal (barril horizontal) los tres van en None: no
         # existen, y no se les pone un sustituto (T-2).
@@ -3445,6 +3488,9 @@ def resolver_control(seccion: Seccion, Q: float, S: float, L: float, TW: float,
         # --- T-8 --- la velocidad critica del paso 4.2, para la proteccion
         # de la entrada (Fase 6): no se recalcula alli.
         V_critica_m_s=critico.V,
+        y_conjugado_m=y_conjugado,
+        resalto_en_el_barril=resalto,
+        receptor_en_el_barril=receptor,
         pasos=_pasos_hidraulicos(
             seccion=seccion, Q=Q, S=S, L=L, TW=TW, material=material, normal=normal,
             critico=critico, entrada=entrada, salida=salida, control=control,

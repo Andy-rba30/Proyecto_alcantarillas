@@ -302,6 +302,13 @@ def test_la_progresion_del_prompt_entra_por_la_puerta_y_deja_a_C01_sin_dimension
     octavo (1.00 x 2.00 m) deja la clave por encima de la subrasante y
     detiene el material. Se deja como alternativa declarable, y el valor de
     archivo sigue siendo el que no mueve nada.
+
+    DESDE VE-3.11 (H4 de los ensayos de diseño del conducto) V7 suma el peso
+    propio del marco de concreto, y el primer escalon de esa progresion
+    (1.00 x 1.00 m), que solo fallaba V7, la cumple: C-01 DIMENSIONA con el.
+    La conclusion de la parada (c) no cambia: la progresion del prompt sigue
+    siendo una alternativa declarable y el valor de archivo es el que no
+    mueve la linea base.
     """
     anchos = [1.00 + 0.50 * i for i in range(7)]
     alturas = [1.00 + 0.25 * i for i in range(9)]
@@ -312,15 +319,10 @@ def test_la_progresion_del_prompt_entra_por_la_puerta_y_deja_a_C01_sin_dimension
                                   _externos(tmp_path),
                                   alcance=servicio.ALCANCE_PERFIL)
     c01 = _c01(informe)
-    assert not c01.dimensionado
-    motivos = [it.motivo or "" for it in c01.traza]
-    assert len(motivos) == 8, motivos
-    # VE-3.10: con el desnivel del perfil del canal declarado (obligatorio
-    # desde entonces), VC3 va delante de V7 en la tabla y algunos escalones
-    # incumplen las dos; lo que este test fija sigue en pie: V7 incumple en
-    # los siete primeros (antes se leia «incumple V7» al principio del motivo).
-    assert sum("incumple" in m and "V7 (" in m for m in motivos[:7]) == 7
-    assert "subrasante" in motivos[7]
+    assert c01.dimensionado
+    seccion = c01.resultado.seccion
+    assert (seccion.B, seccion.H) == pytest.approx((1.00, 1.00), abs=ABS)
+    assert len(c01.traza) == 1
 
 
 # ===========================================================================

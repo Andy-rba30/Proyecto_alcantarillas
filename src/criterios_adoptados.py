@@ -6279,20 +6279,18 @@ CRITERIOS: Dict[str, Criterio] = {
                         "ser una adopcion y pasa a ser un resultado; a nivel "
                         "de perfil se adopta y se declara",
         sensibilidad=(
-            "EL SIGNO ES CONTRAINTUITIVO Y VA PRIMERO, porque quien declare "
-            "este criterio va a suponer lo contrario: ENGROSAR LA PARED "
-            "EMPEORA LA FLOTACION. Una pared mas gruesa parece mas estructura "
-            "y por tanto mas seguridad, y con `DC = 0` -- V7 omite el peso "
-            "propio a proposito, del lado conservador -- ese peso que "
-            "justificaria la intuicion NO ENTRA EN EL CALCULO. Lo que si "
-            "entra es la geometria exterior, por los DOS lados de la "
-            "desigualdad: la subpresion crece con (B+2t)(H+2t), en dos "
-            "dimensiones, y la columna de suelo que estabiliza solo con "
-            "(B+2t), en una. Medido sobre un marco de 2.00 x 1.50 m con 0.95 "
-            "m de relleno y gamma_r = 18 kN/m3: t = 0.15 da margen -5.21 "
-            "kN/m, t = 0.20 da -7.79 y t = 0.25 da -10.58. La derivada del "
-            "empuje es 2*gamma_w*(Bc + B'c) ~ 80 kN/m por metro de t, contra "
-            "~31 del termino estabilizante",
+            "EL SIGNO, Y QUE SE INVIRTIO EN VE-3.11: desde entonces V7 "
+            "suma el peso propio del concreto (H4 de los ensayos de diseño "
+            "del conducto), y ENGROSAR LA PARED MEJORA LA FLOTACION: el "
+            "anillo que se agrega pesa gamma_c = 23.56 kN/m3 y desplaza "
+            "agua de 9.81, de modo que por cada metro de t el lado "
+            "estabilizante crece 0.90*gamma_c*2*(Bc + B'c) y el empuje solo "
+            "gamma_w*2*(Bc + B'c). Medido sobre un marco de 2.00 x 1.50 m "
+            "con 0.95 m de relleno y gamma_r = 18 kN/m3: t = 0.15 da margen "
+            "+18.96 kN/m, t = 0.20 da +25.28 y t = 0.25 da +31.83. HASTA "
+            "VE-3.11, con DC = 0, era al reves -- engrosar la pared EMPEORABA "
+            "la flotacion: -5.22, -7.80 y -10.58 kN/m en el mismo marco --, "
+            "y este texto lo advertia porque la intuicion decia lo contrario",
             "HACIA ABAJO el limite no es la flotacion sino el propio calculo "
             "estructural, que este alcance difiere: una pared que flota mejor "
             "puede no resistir el empuje de tierras ni la carga viva. Por eso "
@@ -9343,17 +9341,17 @@ CRITERIOS: Dict[str, Criterio] = {
 
     "peso_especifico_concreto_kn_m3": Criterio(
         valor=23.56,                # kN/m3, concreto armado (0.150 kcf)
-        # NIVEL DECLARADO Y NO MEDIDO, y conviene decir por que: NINGUNA de
-        # las dos corridas de `tests/test_nivel_medido.py` llega a invocarlo
-        # --- la cadena de la Fase 9 se detiene antes, en un criterio
-        # pendiente ---, de modo que no hay medicion que citar. Lo sostiene el
-        # censo: `variables_entrada` no le encuentra mas consumidor que
-        # `M9_cabezal`, y `--alcance perfil` no ejecuta ese modulo. El test lo
-        # comprueba por esa via, que es la unica que queda.
-        nivel=NIVEL_EXPEDIENTE,
+        # NIVEL MEDIDO: PERFIL desde VE-3.11 (H4 de los ensayos de diseño del
+        # conducto). V7 suma el peso propio del conducto de concreto
+        # (`M8.peso_propio_conducto_kn_m`), V7 corre en la Fase 5 y la
+        # corrida `--alcance perfil` lo invoca sin diferir. Hasta VE-3.11 era
+        # de expediente: su unico consumidor era el cabezal (Fase 9).
+        nivel=NIVEL_PERFIL,
         etiqueta="C",
         forma=FORMA_FLOAT,
-        concepto="Peso especifico del concreto armado del cabezal, kN/m3",
+        concepto="Peso especifico del concreto armado del cabezal y del "
+                 "conducto de concreto (peso propio en V7, desde VE-3.11), "
+                 "kN/m3",
         justificacion="Es el peso propio (carga DC) que resiste el volteo y "
                       "el deslizamiento de Sec. 9.3: sin el no hay momento "
                       "estabilizante ni fuerza normal en la base. CERRADO "

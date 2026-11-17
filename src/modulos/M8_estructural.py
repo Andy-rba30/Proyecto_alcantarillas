@@ -117,14 +117,23 @@ el papel que hacia -- el margen entre estabilizante y desestabilizante -- lo
 hacen ahora los propios gamma, y dejarlo declarado invitaria a multiplicar dos
 veces el mismo margen.
 
-Por que el peso propio del conducto no entra en V7
-----------------------------------------------------
-DC = 0. El peso propio depende del espesor de pared Y de la densidad del
-material del tubo. Lo primero esta declarado y CON VALOR ('espesor_pared_conducto'
-trae hoy la serie de concreto reforzado, 0.100 a 0.250 m de 900 a 2700 mm; para
-los demas materiales no trae fila y `M2.espesor_pared` levanta DatoFaltanteError).
-Lo segundo NO lo declara nadie, de modo que sumar DC seguiria exigiendo inventar
-un dato -- la densidad --, y la conclusion no cambia.
+El peso propio del conducto en V7 (DC): el del concreto entra, el de los demas no
+-------------------------------------------------------------------------------
+--- VE-3.11 (H4 de los ensayos de diseño del conducto) --- DESDE VE-3.11 EL
+TUBO Y EL MARCO DE CONCRETO SUMAN SU PESO PROPIO, como escribe la fila V7 de la
+hoja de ruta: «γ_DC,min · DC + γ_EV,min · EV ≥ γ_WA · U … la forma 0.90·(DC +
+EV) ≥ 1.00·U». DC = γ_c · (area exterior − area interior), con γ_c el de
+'peso_especifico_concreto_kn_m3' ([C], AASHTO LRFD Tabla 3.5.1-1, el mismo que
+pesa el cabezal) y el espesor de 'espesor_pared_conducto'
+(`peso_propio_conducto_kn_m`). Hasta VE-3.11 DC era cero porque «la densidad no
+la declara nadie»; esa razon dejo de ser cierta cuando el cabezal declaro el
+peso del concreto, y el revisor de los ensayos midio la consecuencia: omitir DC
+penaliza al material PESADO (mas pared, mas U sin contar su peso) y empujaba al
+liviano, el que si puede flotar --MT08: el concreto Ø 2.10 m fallaba V7 por
+0.34 kN/m y el punto se iba a un TMC--. El TMC y el HDPE SIGUEN CON DC = 0: el
+peso del producto (calibre, perfil del fabricante) no es un dato declarado del
+proyecto, y omitirlo esta del lado seguro. Lo que sigue explica por que la
+omision era defendible, y vale hoy para esos dos.
 LO QUE LA NORMA ADMITIRIA, dicho para que DC = 0 se lea como lo que es (VE-2,
 c1): el num. 2.4.5.3.1 del Manual de Puentes (pag. impresa 142) manda
 investigar el factor MINIMO de la carga permanente que aumenta la estabilidad,
@@ -437,18 +446,56 @@ def peso_relleno_kn_m(*, seccion: Seccion, espesor: float,
     t = 0.15, Bc = 2.30 y B'c = 1.80, un 28 % de diferencia en EV.
 
     QUE U Y EV USEN LA MISMA SECCION NO ES UN DETALLE: V7 compara
-    gamma_EV*EV contra gamma_WA*U y los dos crecen con el tamano. Lo que NO
-    crecen es igual, y ahi esta la trampa del espesor: U crece con las DOS
-    dimensiones exteriores y EV solo con el ancho, de modo que engrosar la
-    pared EMPEORA la flotacion. Esta escrito en la sensibilidad de
-    'espesor_pared_cajon', porque quien lo declare va a suponer lo contrario.
+    gamma_EV*EV contra gamma_WA*U y los dos crecen con el tamano, U con las
+    DOS dimensiones exteriores y EV solo con el ancho. Hasta VE-3.11, sin el
+    peso propio, eso hacia que engrosar la pared EMPEORARA la flotacion;
+    desde VE-3.11 el concreto suma su peso (`peso_propio_conducto_kn_m`), que
+    crece con la misma area que U y con un peso especifico mayor que el del
+    agua, y engrosar la pared la MEJORA. Esta escrito en la sensibilidad de
+    'espesor_pared_cajon'.
 
-    NO suma el peso propio del conducto -- ver "Por que el peso propio del
-    conducto no entra en V7" en el docstring del modulo: omitirlo es
-    conservador, no una aproximacion optimista.
+    NO suma el peso propio del conducto: eso es DC, aparte
+    (`peso_propio_conducto_kn_m`, VE-3.11).
     """
     gamma_relleno = ca.valor(CRITERIO_PESO_RELLENO)   # CriterioPendienteError mientras falte
     return gamma_relleno * seccion.ancho_exterior(espesor) * altura_relleno
+
+
+# --- VE-3.11 (H4) --- El peso especifico del concreto, el MISMO criterio que
+# pesa el cabezal (`M9.CRITERIO_GAMMA_CONCRETO`): un solo concreto en la obra.
+CRITERIO_PESO_CONCRETO = "peso_especifico_concreto_kn_m3"
+
+
+def peso_propio_conducto_kn_m(*, material: Material, seccion: Seccion,
+                              espesor: float) -> Tuple[float, str]:
+    """
+    DC de V7, kN/m, y la procedencia que el paso imprime: el par (DC, texto).
+
+    Fila V7 de la Fase 5 de la hoja de ruta: «γ_DC,min · DC + γ_EV,min · EV
+    ≥ γ_WA · U». Para el CONCRETO (tubo o marco) DC = γ_c · (area exterior −
+    area interior llena), con γ_c de 'peso_especifico_concreto_kn_m3' [C]
+    (AASHTO LRFD Tabla 3.5.1-1) y el espesor con que V7 forma U y EV: el
+    anillo -- o el marco hueco -- que de verdad pesa, por metro lineal. Las
+    cartelas del marco no se cuentan, del lado seguro.
+
+    Para el TMC y el HDPE devuelve 0: el peso del producto no es un dato
+    declarado del proyecto, y omitirlo reduce el lado estabilizante (es la
+    omision conservadora que hasta VE-3.11 se aplicaba tambien al concreto;
+    ver el docstring del modulo).
+    """
+    if material.tipo is not TipoMaterial.CONCRETO_REFORZADO:
+        return 0.0, ("peso propio del conducto, OMITIDO: el peso del "
+                     "producto (calibre, perfil del fabricante) no es un dato "
+                     "declarado del proyecto, y omitirlo reduce el lado "
+                     "estabilizante, del lado conservador")
+    gamma_c = ca.valor(CRITERIO_PESO_CONCRETO)
+    area_pared = seccion.area_exterior(espesor) - seccion.area_llena
+    return gamma_c * area_pared, (
+        f"peso propio del conducto de concreto: gamma_c = {gamma_c:g} kN/m3 "
+        f"('{CRITERIO_PESO_CONCRETO}', AASHTO LRFD Tabla 3.5.1-1) por el "
+        f"area de la pared, A_exterior - A_interior = {area_pared:.4f} m2 "
+        "(sin cartelas, del lado seguro); la fila V7 de la hoja de ruta lo "
+        "suma con su gamma minimo")
 
 
 # ---------------------------------------------------------------------------

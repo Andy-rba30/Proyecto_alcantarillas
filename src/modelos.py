@@ -2827,6 +2827,17 @@ class ResultadoHidraulico:
     # tirante critico justo aguas abajo de la boca (HDS-5 num. 3.1.3). `None`
     # solo en los constructores de la suite que no pasan por M4.
     V_critica_m_s: Optional[float] = None
+    # --- VE-3.11 (H2) --- EL RESALTO DENTRO DEL BARRIL BAJO CONTROL DE
+    # ENTRADA (HDS-5 3.1.3, pag. impresa 3.2). `y_conjugado_m` es el
+    # conjugado del tirante normal supercritico (`M3.tirante_conjugado_barril`;
+    # None si no aplica o no cabe en la seccion) y `resalto_en_el_barril`
+    # dice si el TW lo alcanza. `receptor_en_el_barril` es lo que V1 lee: el
+    # receptor fija el tirante maximo DENTRO del barril bajo control de
+    # entrada --el resalto entra (barril supercritico) o el remanso M1 llega
+    # a la salida (barril subcritico, TW > y_n)--. Los tres los llena M4.
+    y_conjugado_m: Optional[float] = None
+    resalto_en_el_barril: bool = False
+    receptor_en_el_barril: bool = False
 
     def __post_init__(self) -> None:
         if self.Q_celda_m3s is None:
