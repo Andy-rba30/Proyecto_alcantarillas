@@ -2753,3 +2753,24 @@ Un incidente medido: con tres corridas de la suite y un agente a la vez en la m�
 `test_pc10_import_cli_cabe_en_el_presupuesto_sin_weasyprint` falló una vez (0.342 s contra
 0.3 s); `import cli` mide 0.26-0.27 s antes y después de las correcciones, y en las
 corridas finales, de dos en paralelo, pasó.
+
+## VE-3, punto de control de lo integrado (2026-11-17, ~23:00 UTC): VE-3.1 a VE-3.13 y VE-3.12, sin VE-3.14
+
+Integrado en `claude/youthful-shannon-rjzmuc` (`725948e`): V3 con la velocidad de salida, los
+[S] del suelo de fundación, M8 y M9 contra ejemplos publicados (con las correcciones de su
+revisión), el dimensionamiento del cabezal (ancho por estabilidad y peralte por armado, paso
+0.10 m y tope 1.5·H de archivo), la Familia C (VC3 con fuente USBR, remanso por paso directo, y
+sin F el punto se detiene), las correcciones de los ensayos del conducto (V7 con el peso propio
+del concreto, V1 con el resalto en el barril, titulares, delta de 7.A), las clases III–V del
+concreto [C] desde el USACE con tope por clase y el contraste ACPA que no gobierna, y la
+decisión 8 (el diámetro gobernado por el nivel del receptor se dice). 149 criterios. Mismo
+entorno que la fila anterior.
+
+| Suite y árbol | `NORMAS_DIR` | Ventana Tk | `passed` | `skipped` | `collected` |
+|---|---|---|---|---|---|
+| entregable, `725948e`, clon limpio (confirmación con los sellos puestos) | sí | sí | 7732 | 10 + 1 | 7743 |
+| entregable, `5ae8dd2` (antes de corregir dos tests de integración), exportación | sí | sí | 7723 (4 fallos: 2 sellos, 2 de integración corregidos en `89a18aa`) | 15 | 7742 |
+
+Los 11 saltos del clon: los diez estructurales de `test_familias_del_csv` y uno nuevo de la
+integración (medido; se revisa en la corrida final). La exportación se vuelve a medir con
+VE-3.14 integrado.

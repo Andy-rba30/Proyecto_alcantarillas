@@ -223,6 +223,12 @@ de 7.A rotulado con V7; ningún diámetro de la línea base cambia). En curso: V
 1, 3, 6, 7; respaldo `…-respaldo-clases-y-aviso-acpa`), la DECISIÓN 8 (VE-3.13; respaldo
 `…-respaldo-decision-8`) y los ensayos de diseño del cabezal (informe en `informes_en_curso/`).
 
+**Punto de control (2026-11-17, ~23:00 UTC):** integrados VE-3.12 (clases III–V con tope,
+contraste ACPA, O-2) y VE-3.13 (decisión 8); suite del entregable en clon limpio **7732 / 11 /
+7743, verde** (`725948e`, bitácora). Falta sólo VE-3.14 (defectos del cabezal; bloques 1 y 2
+hechos, 3 a 5 y las opciones en curso; respaldo `…-respaldo-cabezal-defectos`). Las
+decisiones 9–14 siguen pendientes del dueño (con la recomendación corregida arriba).
+
 ## Decisiones del dueño (2026-11-17)
 
 - VE2-04: sí, V3 con la mayor velocidad bajo control de salida (hecho, VE-3.1).
