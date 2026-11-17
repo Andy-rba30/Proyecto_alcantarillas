@@ -7,7 +7,7 @@
 > Si difieren, lo que hay que corregir es el cálculo o el registro, no
 > este archivo.
 >
-> **Sello.** Fecha de generación: 2026-11-17 · Commit del árbol de origen: `52fa20a+cambios-sin-commit` · Suite: PROVISIONAL (PyMuPDF sí · ventana Tk sí · repositorio de normas enlazado)
+> **Sello.** Fecha de generación: 2026-11-17 · Commit del árbol de origen: `61a4dcc+cambios-sin-commit` · Suite: PROVISIONAL (PyMuPDF sí · ventana Tk sí · repositorio de normas enlazado)
 >
 > **Qué es una fila.** Una fórmula distinta que la corrida evaluó:
 > fase, módulo emisor (derivado del AST de `src/modulos/`, no de una
@@ -83,7 +83,7 @@ es del proyecto.
   - B-01: Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5) → material y diametro (bucle de MD) (`TipoDeBloqueo.DATO_FALTANTE`).
   - C-01: Fase 5 - Verificaciones → VC1 - alcance del requisito de la Sec. 2.3 (borde libre verificado; rasante hidraulica, no) (`TipoDeBloqueo.DIFERIDO_POR_ALCANCE`).
 
-Pasos emitidos: **1105** · fórmulas distintas: **291** · fundamentos ejercitados: **104** de 129.
+Pasos emitidos: **1105** · fórmulas distintas: **291** · fundamentos ejercitados: **104** de 130.
 
 ## 2. Índice
 
@@ -419,6 +419,7 @@ fórmulas no están en el §2 y este cuadro es lo que impide leer el
 | `F5.V7_NIVEL` | Fase 5 - Verificaciones | Nivel de agua de diseño de la flotacion: lo especifica o aprueba el Propietario | sin `paso()`; entra por otra puerta desde `M5_verificaciones` |
 | `F6.FILTRO` | Fase 6 - Proteccion de entrada y salida | Filtro entre el enrocado y el suelo: requisitos del geotextil de control permanente de erosion | `M6_proteccion` |
 | `F6.SOCAVACION` | Fase 6 - Proteccion de entrada y salida | Hoya de socavacion local a la salida por HEC-14, Cap. 5: profundidad, ancho y longitud | `M6_proteccion` |
+| `F7.VC3` | Fase 7 - Compatibilidad geometrica | VC3: perdidas de la obra frente al desnivel que el perfil del canal provee en el cruce | `M5_verificaciones` |
 | `F8.HDPE_DEFLEXION` | Fase 8 - Verificacion estructural del conducto | Tuberia de polietileno corrugado: deflexion vertical de servicio | `M8_estructural` |
 | `F8.HDPE_EMPUJE` | Fase 8 - Verificacion estructural del conducto | Tuberia de polietileno corrugado: deformacion de compresion por el empuje frente a su limite | `M8_estructural` |
 | `F8.HDPE_FF` | Fase 8 - Verificacion estructural del conducto | Tuberia de polietileno corrugado: factor de flexibilidad para el manejo y la instalacion | `M8_estructural` |

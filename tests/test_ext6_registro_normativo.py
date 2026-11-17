@@ -422,9 +422,12 @@ def test_toda_fuente_presente_lleva_vigencia_como_campo_y_no_como_marca():
         assert f.vigencia is not None, f.id
         # T1 verifico todas menos tres: DG-2018 (EXT-6) y las dos que T-0 dio
         # de alta desde el repositorio de normas.
+        # Y VE-3.6 dio de alta el USBR «Design of Small Canal Structures»
+        # (la fuente [C] de VC3, Familia C), con su propia fecha.
         fecha = {"DG2018": fu.VIGENCIA_VERIFICADA_EL_EXT6,
                  "HEC14": fu.VIGENCIA_VERIFICADA_EL_T0,
-                 "WSDOT_HM": fu.VIGENCIA_VERIFICADA_EL_T0}.get(
+                 "WSDOT_HM": fu.VIGENCIA_VERIFICADA_EL_T0,
+                 "USBR_DSCS": fu.VIGENCIA_VERIFICADA_EL_VE3}.get(
                      f.id, fu.VIGENCIA_VERIFICADA_EL)
         assert f.vigencia.fecha == fecha, f.id
         assert "VIGENCIA CONFIRMADA" not in f.nota and "EDICION POSTERIOR DETECTADA" not in f.nota, f.id

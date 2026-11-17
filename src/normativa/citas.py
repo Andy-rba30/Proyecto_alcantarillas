@@ -138,6 +138,8 @@ _SHA = {
     # para que T-4 y T-8 firmen las suyas sin tocar esta tabla.
     "HEC14": "1bffcbe220cd67e4c0de8b87b46d1ece64ce7217",
     "WSDOT_HM": "b34bb7bd448c249301e2a1a82234be70e8b6d916",
+    # --- VE-3.6 --- La fuente [C] de VC3 (Familia C).
+    "USBR_DSCS": "75510d711ce1f6643333937a1ea38f3b469cc1f7",
 }
 
 _TODAS = []
@@ -14879,6 +14881,68 @@ AASHTO_M170M_T6 = _cita(
           "mal, y por que se leen como se leen, estan en "
           "DIS-M170M-T6-RECOMPOSICION; la tabla del registro "
           "(AASHTO_M170M.T6) transcribe de 300 a 2700 mm."),
+)
+
+
+
+# ===========================================================================
+# --- VE-3.6 --- USBR «Design of Small Canal Structures» (1978), num. 2-6:
+# el criterio con que se juzga la rasante hidraulica de un paso de canal
+# (VC3, Familia C). Leidas en la capa de texto del escaneo (PDF 46 y 47),
+# cuyas dos frases salen sin errores de OCR.
+# ===========================================================================
+FECHA_VE3_6 = "2026-11-17"
+POR_VE3_6 = "validacion/VE-3.6 · lectura directa de la pagina por la sesion"
+VE3_6 = (FECHA_VE3_6, POR_VE3_6)
+
+USBR_DSCS_2_6_F = _cita(
+    id="USBR_DSCS.2-6#F",
+    fuente_id="USBR_DSCS",
+    numeral="2-6",
+    titulo_numeral="2-6. Design Example",
+    jerarquia_numeral=("ROAD CROSSINGS",),
+    pagina_impresa="23",
+    pagina_pdf=46,
+    pagina_pdf_titulo=46,
+    texto_literal=Verbatim(
+        texto=("F (water surface differential) = Upstream canal NWS El. - "
+               "Downstream canal NWS El."),
+        pagina_pdf=46),
+    caracter=Caracter.DEFINICION,
+    sesion=VE3_6,
+    nota=("Dato (a)(10) del ejemplo resuelto de un cruce de camino sobre un "
+          "canal: F es el desnivel de la lamina NORMAL del canal (NWS) entre "
+          "la estacion aguas arriba y la aguas abajo del cruce, tomado del "
+          "perfil del canal («from a profile sheet»): 5408.10 - 5407.80 = "
+          "0.30 ft en el ejemplo. Es un dato del proyecto del CANAL, no de la "
+          "obra."),
+)
+
+USBR_DSCS_2_6_CHECK = _cita(
+    id="USBR_DSCS.2-6#CHECK",
+    fuente_id="USBR_DSCS",
+    numeral="2-6",
+    titulo_numeral="2-6. Design Example",
+    jerarquia_numeral=("ROAD CROSSINGS",),
+    pagina_impresa="24",
+    pagina_pdf=47,
+    pagina_pdf_titulo=46,
+    texto_literal=Verbatim(
+        texto="Compare computed losses with the loss provided on profile sheet.",
+        pagina_pdf=47),
+    caracter=Caracter.RECOMENDACION,
+    derivado_de="USBR_DSCS.2-6#F",
+    sesion=VE3_6,
+    nota=("Paso (c)(1) «Check of Design» del mismo ejemplo: perdidas "
+          "calculadas 0.27 ft contra F = 0.30 ft; «The excess head of 0.03 "
+          "foot (0.30 - 0.27) provided on the profile sheet is "
+          "inconsequential and the hydraulic design is considered adequate». "
+          "Es el paso de un procedimiento de diseño (por eso RECOMENDACION, "
+          "no EXIGENCIA): el diseño es adecuado si las perdidas de la obra no "
+          "superan el desnivel que el perfil provee. Las perdidas del "
+          "ejemplo son las de entrada y salida mas la friccion del tubo "
+          "(paso (b)(11)); el proyecto las mide como la diferencia de lamina "
+          "entre la entrada y la salida de la obra (ver VC3)."),
 )
 
 

@@ -3052,6 +3052,31 @@ REMANSO_CANAL = _fundamento(
 )
 
 
+# --- VE-3.6 --- VC3: la rasante hidraulica del canal en un paso de canal.
+VC3_RASANTE_CANAL = _fundamento(
+    id="F7.VC3",
+    fase=F7,
+    que_paso=("VC3: perdidas de la obra frente al desnivel que el perfil del "
+              "canal provee en el cruce"),
+    por_que=(
+        "La Sec. 2.3 de la hoja de ruta prohibe que un paso de canal altere "
+        "la rasante hidraulica del canal. El USBR, en el diseño de un cruce "
+        "de camino sobre un canal, da el criterio con que se juzga: el "
+        "perfil del canal provee entre aguas arriba y aguas abajo del cruce "
+        "un desnivel de su lamina normal, F, y el diseño es adecuado si las "
+        "perdidas calculadas de la obra no lo superan. Si las superan, la "
+        "lamina aguas arriba queda por encima de la normal del canal: la "
+        "obra altero la rasante. F es un dato del proyecto del canal."),
+    verbo=Verbo.RECOMIENDA,
+    citas=("USBR_DSCS.2-6#CHECK", "USBR_DSCS.2-6#F"),
+    que_pasa_si_no_se_hace=(
+        "La obra puede cumplir VC1 -- el nivel bajo la coronacion menos el "
+        "borde libre -- y aun asi levantar la lamina del canal por encima de "
+        "la que su proyecto preve, que es lo que la Sec. 2.3 prohibe: es la "
+        "mitad abierta de la ficha VC1-01."),
+)
+
+
 # ===========================================================================
 # --- T-9 --- Fase 10 - La longitud por capacidad de la cuneta y la
 # verificacion del espaciamiento por tramo (M10)

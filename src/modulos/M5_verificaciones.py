@@ -706,6 +706,8 @@ CITA_DEL_UMBRAL = {
     # la memoria imprimiera el 0.50 con caracter de exigencia sobre un canal,
     # cuando la fuente lo recomienda sobre un baden.
     "VC1": "MC_HHD.4.1.1.4.1e#RANGO",
+    # --- VE-3.6 --- VC3: la cita que lleva la COMPARACION; F es un dato.
+    "VC3": "USBR_DSCS.2-6#CHECK",
     "V7": "MP.T2.4.5.3.1-2",
     # --- T-2 --- V10: la cita que lleva el NUMERO de la banda (el 10 %). La
     # del Manual obliga a estudiar la pendiente y no dice cuanto.
@@ -3878,6 +3880,158 @@ def v10_pendiente_conducto(*, resultado: ResultadoHidraulico) -> Verificacion:
 # Agregado: la firma que llama MD.py
 # ---------------------------------------------------------------------------
 
+
+# --- VE-3.6 --- VC3: LA RASANTE HIDRAULICA DEL CANAL (Familia C). Lo que la
+# ficha VC1-01 dejaba abierto: VC1 mide el NIVEL contra la coronacion; VC3
+# mide si la obra levanta la lamina del canal por encima de la que su
+# proyecto preve, con el criterio del USBR «Design of Small Canal
+# Structures» (1978), num. 2-6: las perdidas calculadas de la obra contra el
+# desnivel F que el perfil del canal provee en el cruce.
+CLAVE_DESNIVEL_PERFIL_CANAL = "desnivel_perfil_canal_m"
+NUMERAL_VC3 = ("Sec. 2.3 (paso de canal: «No puede alterar la rasante "
+               "hidraulica»); criterio [C] del USBR, Design of Small Canal "
+               "Structures (1978), num. 2-6 (c)(1): perdidas de la obra <= "
+               "F, el desnivel de la lamina normal del canal en el cruce")
+AVISO_VC3_SIN_DESNIVEL = (
+    "VC3 (rasante hidraulica del canal) no se evaluo: falta el desnivel que "
+    "el perfil del canal provee en el cruce (`desnivel_perfil_canal_m` en "
+    "--datos-externos: F, la lamina normal aguas arriba menos la aguas "
+    "abajo, del proyecto del canal -- ANA / Junta de Usuarios --; 0 si el "
+    "perfil no provee ninguno). Sin el, el expediente no verifica que la "
+    "obra no altere la rasante hidraulica que la Sec. 2.3 protege")
+
+
+def vc3_rasante_canal(*, punto: PuntoCritico, cota_entrada_msnm: float,
+                      HW: float, TW: float,
+                      desnivel_perfil_m: Optional[float]
+                      ) -> Optional[Verificacion]:
+    """
+    VC3: las perdidas de un paso de canal frente al desnivel que el perfil
+    del canal provee en el cruce (Familia C). USBR, Design of Small Canal
+    Structures (1978), num. 2-6, pags. impresas 23-24 [C]:
+
+        perdida = (cota_entrada + HW) - (cota_fondo_receptor + TW)
+        perdida <= F
+
+    F («water surface differential»: la lamina NORMAL del canal aguas arriba
+    del cruce menos la aguas abajo, del perfil del canal) es un DATO del
+    proyecto del canal, `desnivel_perfil_canal_m` de --datos-externos; 0 si
+    el perfil no provee ninguno, y entonces VC3 exige no perder nada. Sin el
+    dato devuelve None: la corrida lo avisa (`AVISO_VC3_SIN_DESNIVEL`) y no
+    se inventa un F.
+
+    LECTURA DEL PROYECTO, declarada en el paso: el USBR suma las perdidas
+    de entrada y salida y la friccion del tubo; aqui se miden como la
+    diferencia entre la lamina a la entrada (cota de fondo de entrada + HW
+    de M4, la carga del control que gobierna) y la lamina aguas abajo
+    (fondo del canal aguas abajo + TW), que es la misma diferencia escrita
+    con lo que el programa ya calcula: con el TW igual al tirante normal del
+    canal aguas abajo, la lamina aguas arriba queda bajo la normal del canal
+    si y solo si la perdida no supera F. El HW no lleva la carga de
+    velocidad de aproximacion (HDS-5 la desprecia en el HW), como en
+    `remanso_canal`.
+
+    Un F negativo o no finito es `DatoInvalidoError`; la carga de la clave
+    externa ya lo rechaza, y esta es la segunda linea.
+    """
+    if desnivel_perfil_m is None:
+        return None
+    if not (desnivel_perfil_m >= 0 and math.isfinite(desnivel_perfil_m)):
+        raise DatoInvalidoError(
+            CLAVE_DESNIVEL_PERFIL_CANAL, valor=desnivel_perfil_m,
+            id_punto=punto.id,
+            motivo="el desnivel que el perfil del canal provee en el cruce "
+                   "es un numero finito no negativo (0 si no provee ninguno)")
+    fondo = punto.cota_fondo_receptor
+    lamina_arriba = cota_entrada_msnm + HW
+    lamina_abajo = fondo + TW
+    perdida = lamina_arriba - lamina_abajo
+    cumple = perdida <= desnivel_perfil_m + TOL_UMBRAL_NORMATIVO
+    cita = "USBR_DSCS.2-6#CHECK"
+    origen_F = ("--datos-externos, `desnivel_perfil_canal_m`: F del perfil "
+                "del canal (proyecto del canal, ANA / Junta)")
+    return Verificacion(
+        cumple=cumple,
+        numeral=NUMERAL_VC3,
+        valor_obtenido=perdida,
+        valor_admisible=desnivel_perfil_m,
+        criterio_aplicado=CLAVE_DESNIVEL_PERFIL_CANAL,
+        codigo="VC3",
+        paso=paso(
+            "F7.VC3",
+            codigo="VC3",
+            que="Paso de canal: perdidas de la obra frente al desnivel del "
+                "perfil del canal",
+            formula=("perdida = (cota_entrada + HW) - (cota_fondo_receptor + "
+                     "TW) <= F"),
+            formula_cita_id="",
+            citas_textuales=(cita, "USBR_DSCS.2-6#F"),
+            sustitucion=(
+                Magnitud("cota_entrada", cota_entrada_msnm, "msnm",
+                         "paso 7.B.1", cifras=CIFRAS_MAGNITUD),
+                Magnitud("HW", HW, "m", "M4, carga a la entrada del control "
+                         "que gobierna", cifras=CIFRAS_MAGNITUD),
+                Magnitud("cota_fondo_receptor", fondo, "msnm",
+                         "columna cota_fondo_receptor del CSV: en un paso de "
+                         "canal, el fondo del MISMO canal aguas abajo",
+                         cifras=CIFRAS_MAGNITUD),
+                Magnitud("TW", TW, "m", "tirante aguas abajo con que corrio "
+                         "la Fase 4 (Sec. 1.3)", cifras=CIFRAS_MAGNITUD),
+                Magnitud("F", desnivel_perfil_m, "m", origen_F,
+                         cifras=CIFRAS_MAGNITUD)),
+            resultado=Magnitud(
+                "perdida", perdida, "m",
+                f"lamina a la entrada {lamina_arriba:.3f} msnm menos lamina "
+                f"aguas abajo {lamina_abajo:.3f} msnm",
+                cifras=CIFRAS_MAGNITUD),
+            umbral=_umbral_de(
+                "VC3", valor=desnivel_perfil_m, unidad="m",
+                descripcion="desnivel de la lamina normal del canal que su "
+                            "perfil provee en el cruce (F)",
+                criterio=CLAVE_DESNIVEL_PERFIL_CANAL),
+            veredicto=Veredicto(
+                tipo=(TipoDeVeredicto.CUMPLE if cumple
+                      else TipoDeVeredicto.NO_CUMPLE),
+                margen=desnivel_perfil_m - perdida, unidad="m",
+                explicacion=(
+                    "las perdidas de la obra no superan el desnivel que el "
+                    "perfil del canal provee: la lamina aguas arriba no "
+                    "queda sobre la normal del canal" if cumple else
+                    f"las perdidas de la obra superan en "
+                    f"{perdida - desnivel_perfil_m:.3f} m el desnivel que "
+                    "el perfil del canal provee: la lamina aguas arriba "
+                    "queda sobre la normal del canal, y la obra altera la "
+                    "rasante hidraulica que la Sec. 2.3 protege")),
+            nota_del_proyecto=(
+                "Lectura del proyecto: el USBR suma perdidas de entrada, "
+                "salida y friccion; aqui se miden como la diferencia de "
+                "lamina entre la entrada (cota de fondo + HW de M4) y aguas "
+                "abajo (fondo del canal + TW), sin la carga de velocidad de "
+                "aproximacion."),
+        ),
+    )
+
+
+def pieza_vc3(*, punto: PuntoCritico, resultado: ResultadoHidraulico,
+              expediente: Optional[DatosDeExpediente]
+              ) -> Optional[Verificacion]:
+    """
+    --- VE-3.6 --- VC3 para la tabla de la Fase 5 (las dos puertas:
+    `verificar` y el verificador de perfil del servicio): la cota de entrada
+    de `cota_de_entrada` -- la misma que VC1 --, el HW y el TW de la Fase 4
+    y el desnivel F de `DatosDeExpediente`. None si no es un paso de canal o
+    si F no se declaro.
+    """
+    if punto.familia is not Familia.C or expediente is None:
+        return None
+    return vc3_rasante_canal(
+        punto=punto, cota_entrada_msnm=cota_de_entrada(punto).valor,
+        HW=resultado.HW,
+        TW=resultado.TW_m if resultado.TW_m is not None else 0.0,
+        desnivel_perfil_m=expediente.desnivel_perfil_canal_m)
+
+
+
 # ---------------------------------------------------------------------------
 # LA UNICA FILA DE LA FASE 5 QUE DEPENDE DE LA FAMILIA, y por que
 # ---------------------------------------------------------------------------
@@ -4087,6 +4241,18 @@ def verificar(*, punto: PuntoCritico, material: Material,
         # Familia C, detras de VC1 va la V5 que VC1 sustituye, con su motivo.
         if hechas[-1].codigo == "VC1":
             hechas.append(v5_no_aplica_en_canal(punto=punto))
+            # --- VE-3.6 --- VC3 detras de VC1: la rasante hidraulica del
+            # canal, con el desnivel F del perfil del canal. Sin F no hay
+            # fila (7.B lo avisa); con F decide como cualquier fila de la
+            # tabla, de modo que la progresion agranda la seccion.
+            try:
+                vc3 = pieza_vc3(punto=punto, resultado=resultado,
+                                expediente=expediente)
+            except ErrorProyecto as exc:
+                exc.verificaciones_completadas = tuple(hechas)
+                raise
+            if vc3 is not None:
+                hechas.append(vc3)
     # --- T-5 --- LA FASE 8 DEL CONDUCTO, detras de la tabla y SOLO si todo
     # lo anterior cumple: un escalon que ya incumple una V se rechaza igual,
     # y evaluarle la Fase 8 dejaria que un dato estructural que falta tapara

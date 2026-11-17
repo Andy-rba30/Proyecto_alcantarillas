@@ -313,6 +313,7 @@ from src.modelos import (CIFRAS_FINA, CIFRAS_MAGNITUD,
                      PuntoCritico, ResultadoHidraulico, TamizadoRasante,
                      TipoDeVeredicto, Umbral, Veredicto, Verificacion, paso)
 from src.modulos.M2_material import espesor_pared, numero_de_celdas
+from src.modulos.M5_verificaciones import AVISO_VC3_SIN_DESNIVEL
 from src.modulos.M5_verificaciones import (CRITERIO_PENDIENTE_MAXIMA,
                                        CRITERIO_PENDIENTE_MINIMA,
                                        CRITERIO_REGIMEN_V2B,
@@ -2865,7 +2866,8 @@ def compatibilidad_geometrica(*, punto: PuntoCritico, material: Material,
                               pendiente: Optional[PendienteAdoptada] = None,
                               bombeo: Optional[float] = None,
                               peralte: Optional[float] = None,
-                              seccion_canal: Optional[SeccionReceptor] = None
+                              seccion_canal: Optional[SeccionReceptor] = None,
+                              desnivel_perfil_canal_m: Optional[float] = None
                               ) -> CompatibilidadGeometrica:
     """
     Verificacion final de Sec. 7.B para un punto, con el diametro que la
@@ -2986,6 +2988,12 @@ def compatibilidad_geometrica(*, punto: PuntoCritico, material: Material,
                                 seccion_canal=seccion_canal, vc2=empalme[0])
         if remanso.paso is not None:
             pasos.append(remanso.paso)
+    # --- VE-3.6 --- VC3, la rasante hidraulica del canal (Familia C), se
+    # evalua en la tabla de la Fase 5, al lado de VC1, para que la
+    # progresion agrande la seccion hasta no alterar la rasante. Aqui solo
+    # el AVISO de que no se evaluo, cuando falta el desnivel del perfil.
+    aviso_vc3 = (AVISO_VC3_SIN_DESNIVEL
+                 if es_canal and desnivel_perfil_canal_m is None else None)
 
     verificaciones: Tuple[Verificacion, ...] = (
         g1_rasante_congelada(tamizado),
@@ -3004,7 +3012,8 @@ def compatibilidad_geometrica(*, punto: PuntoCritico, material: Material,
                   *longitud_calculada.avisos,
                   # --- T-3 --- el del remanso del canal (Familia C). VC2 no
                   # va aqui: es INDICADOR y sale por `con_aviso`, como G3.
-                  None if remanso is None else remanso.aviso):
+                  None if remanso is None else remanso.aviso,
+                  aviso_vc3):
         if aviso and aviso not in avisos:
             avisos.append(aviso)
 

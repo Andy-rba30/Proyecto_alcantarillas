@@ -885,3 +885,22 @@ cuatro memorias, y la etiqueta de esas dos filas ([A] → [S]) en las tablas de 
 `memoria_expediente.html`, `memoria_perfil.html` y `memoria_perfil_ancha.html`. Nada más.
 
 **Diámetros, secciones, materiales y HW movidos: ninguno.**
+
+## 21. VE-3.6 (Familia C): VC3, la rasante hidráulica del canal; ningún número se mueve (2026-11-17)
+
+Regenerada con `sh tests/linea_base_familia_c/regenerar.sh` (con el Python del proyecto
+primero en el `PATH`). VC3 compara las pérdidas de la obra con el desnivel F que el perfil
+del canal provee en el cruce (USBR, *Design of Small Canal Structures*, 1978, núm. 2-6), y
+F es un dato del proyecto del canal (`desnivel_perfil_canal_m`, --datos-externos) que las
+entradas de la línea base no traen. Por eso VC3 no tiene fila en ninguna corrida de la
+línea base, y lo que cambia es: en C-01 de la corrida de la Familia C (`cli_familia_c.txt`
+e `informe_familia_c.json`) el **aviso** de que VC3 no se evaluó, y en las tres memorias
+completas el bloque de umbrales de la Fase 5, que suma la ficha de VC3 (y una frase en la
+de VC1: «Esa otra mitad la cierra VC3 desde VE-3.6»). La huella de
+`criterios_adoptados.py` no cambia (VE-3.6 no toca criterios).
+
+**Diámetros, secciones, materiales y HW movidos: ninguno.** Con F declarado, VC3 decide
+como cualquier fila de la tabla y puede agrandar la sección: lo fija
+`tests/test_ve3_familia_c.py` (C-01 con el fondo en el canal y F = 0.30 m pasa de
+1.20 × 0.90 a 1.50 × 1.20 m), fuera de la línea base y fuera del juego de T-11, cuyas
+variantes no mueven secciones.

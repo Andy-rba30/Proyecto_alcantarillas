@@ -1347,7 +1347,28 @@ UMBRALES_DE_VERIFICACION = (
                    "que habla de la RASANTE HIDRAULICA no la cierra -- acota "
                    "el nivel alcanzado, no mide en cuanto la obra levanta el "
                    "pelo de agua del canal --, y esa distincion la imprime la "
-                   "memoria en el bloque de alcance."},
+                   "memoria en el bloque de alcance. Esa otra mitad la cierra "
+                   "VC3 desde VE-3.6."},
+    # --- VE-3.6 --- VC3, la mitad de la Sec. 2.3 que habla de la RASANTE.
+    {"codigo": "VC3",
+     "fundamento": "F7.VC3",
+     "que": "Cruce de canal -- rasante hidraulica: (cota_entrada + HW) - "
+            "(cota_fondo_receptor + TW) <= F (desnivel del perfil del canal)",
+     "citas": ("USBR_DSCS.2-6#CHECK", "USBR_DSCS.2-6#F"),
+     "literales_de_tabla": (),
+     "matiz": "EL UMBRAL NO ES UN NUMERO DE LA FUENTE: es F, un DATO del "
+              "proyecto del canal (el desnivel de su lamina normal entre "
+              "aguas arriba y aguas abajo del cruce, de su perfil). Lo que "
+              "la fuente da es la COMPARACION: el USBR, en el ejemplo "
+              "resuelto de un cruce de camino sobre un canal (num. 2-6), "
+              "compara las perdidas calculadas de la obra con el desnivel "
+              "que el perfil provee. Es [C]: fuente tecnica de EE.UU.",
+     "aplicacion": "Se aplica como umbral DURO en la tabla de la Fase 5, al "
+                   "lado de VC1: la progresion agranda la seccion hasta que "
+                   "las perdidas de la obra no superen F. Sin F declarado "
+                   "no hay fila y 7.B lo avisa; con F = 0 (perfil sin "
+                   "desnivel provisto) la obra no puede perder nada respecto "
+                   "del canal."},
     {"codigo": "V7",
      "fundamento": "F5.V7",
      "que": "Flotacion del conducto vacio: gamma_DC_min*DC + gamma_EV_min*EV "

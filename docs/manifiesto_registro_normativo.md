@@ -15,7 +15,7 @@
 
 ## 1. Fuentes
 
-Las 18 presentes, con el SHA-1 exacto contra el que se
+Las 19 presentes, con el SHA-1 exacto contra el que se
 verificó cada cita y la regla de paginación MEDIDA, no supuesta. **Desde
 T-12 su PDF vive SOLO en el repositorio de normas**, enlazado por
 `NORMAS_DIR` (`fuentes.directorios_de_normas`): los dieciséis que hasta
@@ -43,6 +43,7 @@ de la §1-bis, son los PDF de ese repositorio.
 | `MC_HHD` | Manual de Hidrologia, Hidraulica y Drenaje | Version Libro | corrida, +3 | 225 | `a31e853b8171b931863d7afa4379bbbc57cacb0d` | sí | confirmada 2026-09-14; aprobada por RD 20-2011-MTC/14 |
 | `MP` | Manual de Puentes | Version Libro | corrida, +1 | 673 | `67a7a9f1c61cad8f9ca179cd4ca777f96b49dc44` | sí | **posterior detectada** 2026-09-14: Manual de Puentes actualizado 2018 (630 paginas); aprobada por RD 041-2016-MTC/14; **derogada por RD 19-2018-MTC/14** |
 | `MS` | Manual de Carreteras: Suelos, Geologia, Geotecnia y Pavimentos — Seccion Suelos y Pavimentos | Version abril 2014 | corrida, +1 | 281 | `21d19a71090c1e586cd31596db8a4d007dc7b96f` | sí | confirmada 2026-09-14; aprobada por RD 10-2014-MTC/14 |
+| `USBR_DSCS` | Design of Small Canal Structures | 1978 (Aisenbrey, Hayes, Warren, Winsett y Young) | corrida, +23 | 458 | `75510d711ce1f6643333937a1ea38f3b469cc1f7` | sí | confirmada 2026-11-17 |
 | `WSDOT_HM` | WSDOT Hydraulics Manual (M 23-03) | M 23-03.12, April 2026 | por capítulo: 1=14, 10=265, 10A=289, 2=36, 2A=63, 3=65, 4=86, 5=100, 6=120, 7=130, 7A=210, 7B=211, 8=215, 9=264, G=298 | 325 | `b34bb7bd448c249301e2a1a82234be70e8b6d916` | sí | confirmada 2026-11-11 |
 
 ## 1-bis. PDF del repositorio de normas que NO son fuente del registro
@@ -57,7 +58,7 @@ el archivo cambia.
 | `MDCTA_2016` | Manual de Dispositivos de Control del Transito Automotor para Calles y Carreteras | 532 | `58b948b70ca1fd28e133559471b2a4dba28afb1c` | es la norma de señalizacion vial (señales, marcas, semaforos); ninguna fase de la v8 ni ninguna verificacion de M1 a M10 cita un numeral suyo. La demarcacion del derecho de via que el DG-2018 §304.07.03 remite a la RM 404-2011-MTC/02 tampoco pasa por este manual |
 | `MSV_2017` | Manual de Seguridad Vial (2017) | 461 | `cc47c736c38503005a85966002a3ed267524b240` | ninguna fase de la hoja de ruta v8 cita un numeral suyo: trata la seguridad vial de la plataforma (barreras, zonas despejadas, señalizacion), no el drenaje transversal. Lo unico que roza al proyecto es la zona despejada junto a cabezales y aletas, y la v8 no la evalua |
 
-**Estado final (T-12):** 18 fuentes presentes y 2 PDF censados, todos en el repositorio de normas y ninguno en este; 12 fuentes citadas sin PDF (§2).
+**Estado final (T-12):** 19 fuentes presentes y 2 PDF censados, todos en el repositorio de normas y ninguno en este; 12 fuentes citadas sin PDF (§2).
 
 ## 2. Fuentes que se citan y NO están en el repositorio de normas
 
@@ -1657,6 +1658,17 @@ línea que se pueda romper.
 
 > **`MS.9.1.3`** — El apartado 3) CRUZA EL SALTO DE PAGINA: arranca en la impresa 89 (PDF 90) y termina en la 90 (PDF 91), donde se imprimen el 1.00 m, el 1.20 m y la frase de los remedios («En caso necesario, se colocarán subdrenes o capas anticontaminantes y/o drenantes o se elevará la rasante hasta el nivel necesario»). El `texto_literal` es la mitad que cabe en la pagina que la cita declara, porque es la que T2 tiene que poder encontrar ahi. Segunda ocurrencia de la MISMA regla, con las mismas cuatro cifras, y con tres diferencias literales: dice «La superficie» donde el 4.5.4 dice «El nivel superior», dice «extraordinaria y muy buena» donde aquel dice «excelente - muy buena», y NO enuncia los intervalos numericos de CBR. Los intervalos solo estan en el 4.5.4, y por eso la cita del proyecto al 4.5.4 es la correcta.
 
+### Design of Small Canal Structures  (`USBR_DSCS`)
+
+| id de la cita | Numeral | Título literal del numeral | Página | Carácter | Verificada |
+|---|---|---|---|---|---|
+| `USBR_DSCS.2-6#CHECK` | 2-6 | ROAD CROSSINGS › «2-6. Design Example» | pág. impresa **24** · PDF 47 | recomendacion | 2026-11-17 · texto |
+| `USBR_DSCS.2-6#F` | 2-6 | ROAD CROSSINGS › «2-6. Design Example» | pág. impresa **23** · PDF 46 | definicion | 2026-11-17 · texto |
+
+> **`USBR_DSCS.2-6#CHECK`** — Paso (c)(1) «Check of Design» del mismo ejemplo: perdidas calculadas 0.27 ft contra F = 0.30 ft; «The excess head of 0.03 foot (0.30 - 0.27) provided on the profile sheet is inconsequential and the hydraulic design is considered adequate». Es el paso de un procedimiento de diseño (por eso RECOMENDACION, no EXIGENCIA): el diseño es adecuado si las perdidas de la obra no superan el desnivel que el perfil provee. Las perdidas del ejemplo son las de entrada y salida mas la friccion del tubo (paso (b)(11)); el proyecto las mide como la diferencia de lamina entre la entrada y la salida de la obra (ver VC3).
+
+> **`USBR_DSCS.2-6#F`** — Dato (a)(10) del ejemplo resuelto de un cruce de camino sobre un canal: F es el desnivel de la lamina NORMAL del canal (NWS) entre la estacion aguas arriba y la aguas abajo del cruce, tomado del perfil del canal («from a profile sheet»): 5408.10 - 5407.80 = 0.30 ft en el ejemplo. Es un dato del proyecto del CANAL, no de la obra.
+
 ### WSDOT Hydraulics Manual (M 23-03)  (`WSDOT_HM`)
 
 | id de la cita | Numeral | Título literal del numeral | Página | Carácter | Verificada |
@@ -3138,6 +3150,7 @@ recomienda.
 | `F7.PENDIENTE` | Fase 7 - Compatibilidad geometrica | Pendiente adoptada del conducto, con su origen | **obliga** | `MC_HHD.4.1.1.3.3`, `HDS5_3ED.5.3.3#ALINEADO` |
 | `F7.RELLENO` | Fase 7 - Compatibilidad geometrica | Altura minima de relleno sobre la clave del conducto | **obliga** | `AASHTO_LRFD_9.12.6.6.3#COBERTURA`, `EG2013.508.07#RELLENO_MIN` |
 | `F7.REMANSO_CANAL` | Fase 7 - Compatibilidad geometrica | Sobreelevacion de la lamina del canal en el cruce y longitud minima del remanso aguas arriba (aviso) | **define** | `MC_HHD.4.1.1.3.6` |
+| `F7.VC3` | Fase 7 - Compatibilidad geometrica | VC3: perdidas de la obra frente al desnivel que el perfil del canal provee en el cruce | **recomienda** | `USBR_DSCS.2-6#CHECK`, `USBR_DSCS.2-6#F` |
 | `F8.CARGA_TIERRA` | Fase 8 - Verificacion estructural del conducto | Carga de tierra sobre el conducto: prisma de relleno y paquete estructural, con la interaccion suelo-estructura de su tipo | **obliga** | `AASHTO_LRFD_9.12.10.2.1#VAF`, `AASHTO_LRFD_9.12.10.2.1#PESO_MIN`, `AASHTO_LRFD_9.12.10.2.2`, `AASHTO_LRFD_9.C12.7.2.2`, `AASHTO_LRFD_9.12.11.2.2.1`, `MP.2.4.2.1#PESOS` |
 | `F8.CARGA_VIVA` | Fase 8 - Verificacion estructural del conducto | Carga viva HL-93 a la profundidad de la clave: presion vertical por la rueda distribuida a traves del relleno | **obliga** | `AASHTO_LRFD_9.3.6.1.2.6a#RELLENO`, `AASHTO_LRFD_9.3.6.1.2.6a#EJES`, `AASHTO_LRFD_9.3.6.1.2.6a#UN_CARRIL`, `AASHTO_LRFD_9.3.6.1.2.6a#DESPRECIABLE`, `AASHTO_LRFD_9.3.6.1.2.6a#VARIOS_VANOS`, `AASHTO_LRFD_9.3.6.1.2.6a#CONCRETO_SOMERO`, `AASHTO_LRFD_9.T3.6.1.2.6a-1`, `AASHTO_LRFD_9.3.6.1.2.6b#PL`, `AASHTO_LRFD_9.C3.6.1.2.6b`, `MP.2.4.3.2.2.2`, `MP.2.4.3.2.2.3`, `MP.2.4.3.2.2.5`, `MP.2.4.3.2.2.6`, `MP.2.4.3.3.2`, `AASHTO_LRFD_9.12.11.2.1#LL` |
 | `F8.CLASE_CONCRETO` | Fase 8 - Verificacion estructural del conducto | Clase del tubo de concreto reforzado por el metodo indirecto: D-load requerida frente a la D-load de la clase | **obliga** | `AASHTO_LRFD_9.12.10.4.3.1`, `AASHTO_LRFD_9.12.10.4.3.1#TIPO1`, `AASHTO_LRFD_9.12.10.4.3.1#DLOAD`, `AASHTO_LRFD_9.12.10.4.3.2a`, `AASHTO_LRFD_9.12.10.4.3.2c`, `AASHTO_LRFD_9.12.10.2.3`, `AASHTO_M170M.T2#DLOAD`, `AASHTO_M170M.T1#DIAMETROS`, `AASHTO_LRFD_9.T12.10.2.1-1`, `AASHTO_LRFD_9.T12.10.2.1-1#PROCTOR`, `EG2013.506.02#CLASE`, `EG2013.506.07`, `EG2013.506.10`, `EG2013.T205-01`, `EG2013.205.12#COMPACTACION` |
@@ -3348,7 +3361,7 @@ vigila. Una cita con cualquier campo pendiente NO puede llevar firma de
 verificación.
 
 
-Citas sin firma de verificación: **6** de 527.
+Citas sin firma de verificación: **6** de 529.
 - `AASHTO_M294_TRAD.1.1.1`
 - `AASHTO_M294_TRAD.1.4`
 - `AASHTO_M294_TRAD.7.2.1`

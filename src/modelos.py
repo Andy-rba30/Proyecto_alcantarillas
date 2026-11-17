@@ -7249,6 +7249,9 @@ class DatosDeExpediente:
 
     derecho_de_via: Optional[DerechoDeViaDelPunto] = None
     evento_extremo: Optional[EventoExtremoDelPunto] = None
+    # --- VE-3.6 --- VC3 (Familia C): el desnivel F que el perfil del canal
+    # provee en el cruce (`desnivel_perfil_canal_m` de --datos-externos).
+    desnivel_perfil_canal_m: Optional[float] = None
 
 
 # ---------------------------------------------------------------------------
