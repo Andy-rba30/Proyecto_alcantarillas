@@ -9541,11 +9541,21 @@ CRITERIOS: Dict[str, Criterio] = {
     # la hoja de ruta no los trae; AASHTO 11.6.3 y el Manual de Puentes
     # verifican una geometria, no la dimensionan; y la practica que la regla
     # de T-7a ya cita (B = 0.4 a 0.7·H) no sirve de tope, porque la regla
-    # esta en 0.7 y es la que no cumple. Por CLAUDE.md, el vacio se declara
-    # y detiene el calculo -- solo el dimensionamiento: la geometria de la
-    # regla se sigue verificando como hasta VE-3.5 --.
+    # esta en 0.7 y es la que no cumple. Hasta VE-3.9 el vacio se declaraba
+    # y detenia el dimensionamiento (la geometria de la regla se seguia
+    # verificando).
+    #
+    # --- VE-3.9 --- VALOR DE ARCHIVO POR DECISION DEL DUEÑO (2026-11-17):
+    # paso 0.10 m (modulo de encofrado) y tope 1.5·H_c. Medido con los datos
+    # de prueba del juego de T-11 (A-01): la entrada cumple con 1.07·H_c y la
+    # salida con 0.84·H_c, de modo que 1.5·H_c deja margen sin llegar a un
+    # cimiento que ya pide un dentellon o una zapata declarada. Sigue siendo
+    # [A]: ninguna fuente fija los dos numeros, y la VENTANA de abajo es la
+    # del dueño, no de una fuente. El mismo paso hace crecer el PERALTE de la
+    # zapata por su armado (`M9.dimensionar_peralte_por_armado`), cuyo tope
+    # es el fisico (H_c), no un campo de este criterio.
     "dimensionamiento_zapata_cabezal": Criterio(
-        valor=None,                 # VACIO: detiene el dimensionamiento del cabezal
+        valor={"paso_m": 0.10, "fraccion_ancho_max": 1.5},
         # NIVEL: el de su etapa, la Fase 9, que solo corre a expediente.
         nivel=NIVEL_EXPEDIENTE,
         etiqueta="A",
@@ -9554,10 +9564,18 @@ CRITERIOS: Dict[str, Criterio] = {
         # linea (`M9._regla_de_dimensionamiento`), como las reglas de
         # 'predimensionamiento_cabezal'.
         forma=FORMA_DICT_CON_CAMPOS,
-        concepto="Dimensionamiento del ancho de la zapata del cabezal por "
-                 "estabilidad: el paso con que crece el ancho B en cada "
-                 "intento (m) y el tope del ancho como fraccion de la altura "
-                 "total del cabezal H_c (B_max = fraccion_ancho_max·H_c)",
+        # VENTANA POR CAMPO (VE-3.9), propuesta al dueño y no de una fuente:
+        # un paso de 0.05 a 0.20 m (de un modulo fino de encofrado a uno
+        # grueso) y un tope de 1.0 a 2.0·H_c (por debajo de 1.0 la entrada
+        # de A-01 ya no cumple; por encima de 2.0 la zapata deja de ser la
+        # solucion racional frente a un dentellon).
+        sensibilidad={"paso_m": (0.05, 0.20),
+                      "fraccion_ancho_max": (1.0, 2.0)},
+        concepto="Dimensionamiento de la zapata del cabezal: el paso con que "
+                 "crece el ancho B en cada intento de estabilidad, y el "
+                 "peralte en cada intento de armado (m), y el tope del ancho "
+                 "como fraccion de la altura total del cabezal H_c (B_max = "
+                 "fraccion_ancho_max·H_c)",
         justificacion="Decide cuanto crece la zapata de un cabezal cuya "
                       "geometria de regla no cumple la estabilidad LRFD "
                       "(E1 capacidad portante, E2 excentricidad, E3 "
@@ -9577,11 +9595,13 @@ CRITERIOS: Dict[str, Criterio] = {
                       "programa. Medido con los datos de PRUEBA del juego de "
                       "T-11 (A-01): la entrada cumple con B = 2.40 m "
                       "(1.07·H_c) y la salida con 3.20 m (0.84·H_c)",
-        fuente="PENDIENTE - ninguna fuente de normas/ fija el paso ni el "
-               "tope: AASHTO LRFD 11.6.3 (E1 a E3) y el Manual de Puentes "
-               "2.4 verifican una geometria; el predimensionamiento B = 0.4 "
-               "a 0.7·H de la regla de T-7a ('predimensionamiento_cabezal', "
-               "[A]) es el punto de partida, no el tope",
+        fuente="Decision del dueño del proyecto (2026-11-17): paso 0.10 m "
+               "(modulo de encofrado) y tope 1.5·H_c. Ninguna fuente de "
+               "normas/ fija el paso ni el tope: AASHTO LRFD 11.6.3 (E1 a "
+               "E3) y el Manual de Puentes 2.4 verifican una geometria; el "
+               "predimensionamiento B = 0.4 a 0.7·H de la regla de T-7a "
+               "('predimensionamiento_cabezal', [A]) es el punto de partida, "
+               "no el tope",
         reemplazado_por="Plano de encofrado del cabezal de cada punto, o el "
                         "ancho declarado en `cabezal_declarado`, que gana y "
                         "no se itera",

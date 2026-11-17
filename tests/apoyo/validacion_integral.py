@@ -54,6 +54,7 @@ lo repone al salir, como `indice_formulas.correr_referencia`.
 
 from __future__ import annotations
 
+import contextlib
 import copy
 import csv
 import io
@@ -70,6 +71,7 @@ from src import datos_sitio as ds
 from src import servicio
 from src.modelos import TipoDeBloqueo
 from src.modulos import M11_reporte as M11
+from tests.apoyo.criterios import sin_valor
 from tests.fixtures import juego_validacion_integral as J
 
 RAIZ = Path(__file__).resolve().parents[2]
@@ -207,6 +209,12 @@ class Juego:
     declaraciones: Dict[str, Any]
     hidrologia: bool = True
     caudal_vacio: Tuple[str, ...] = ()
+    # --- VE-3.9 --- Criterios que la corrida deja SIN VALOR, tambien el de
+    # archivo (`tests.apoyo.criterios.sin_valor`). «declarar None» solo
+    # retira la declaracion del juego: con un valor de archivo debajo, el
+    # criterio sigue teniendo valor. Es lo que mide la regla de T-7a sin el
+    # dimensionamiento de VE-3.5/VE-3.9.
+    sin_valor: Tuple[str, ...] = ()
 
     def copia(self) -> "Juego":
         return copy.deepcopy(self)
@@ -252,6 +260,9 @@ def aplicar(juego: Juego, cambios: Sequence[Tuple[Any, ...]]) -> Juego:
             j.hidrologia = bool(cambio[1])
         elif clase == "csv_caudal_vacio":
             j.caudal_vacio = tuple(cambio[1])
+        elif clase == "sin_valor":
+            j.declaraciones.pop(cambio[1], None)
+            j.sin_valor = tuple(dict.fromkeys(j.sin_valor + (cambio[1],)))
         else:
             raise ValueError(f"cambio desconocido: {cambio!r}")
     return j
@@ -269,6 +280,7 @@ class Entradas:
     cuencas: Optional[Path]
     estacion: Optional[Path]
     declaraciones: Dict[str, Any]
+    sin_valor: Tuple[str, ...] = ()
 
 
 def materializar(juego: Juego, destino: Path) -> Entradas:
@@ -299,7 +311,7 @@ def materializar(juego: Juego, destino: Path) -> Entradas:
     return Entradas(ruta_csv, ruta_ext, ruta_sitio,
                     J.CUENCAS if juego.hidrologia else None,
                     J.ESTACION if juego.hidrologia else None,
-                    dict(juego.declaraciones))
+                    dict(juego.declaraciones), tuple(juego.sin_valor))
 
 
 # --- La tercera corrida de referencia del indice de formulas (ficha T10-02)
@@ -376,10 +388,13 @@ def correr(e: Optional[Entradas], *, alcance: str = ALCANCE) -> Any:
     for clave in previas:
         ca.quitar_valor_dinamico(clave)
     ds.limpiar_datos_dinamicos()
+    vaciados = contextlib.ExitStack()
     try:
         if e is None:
             externos = servicio.cargar_datos_externos(None, {})
             return servicio.correr(CSV_FIXTURE, externos, alcance=alcance)
+        for clave in e.sin_valor:
+            vaciados.enter_context(sin_valor(clave))
         servicio.cargar_datos_sitio(e.sitio)
         for clave, valor in e.declaraciones.items():
             ca.establecer_valor_dinamico(clave, valor)
@@ -388,6 +403,7 @@ def correr(e: Optional[Entradas], *, alcance: str = ALCANCE) -> Any:
         return servicio.correr(e.csv, externos, alcance=alcance,
                                hidrologia=hidro)
     finally:
+        vaciados.close()
         for clave in ca.valores_dinamicos():
             ca.quitar_valor_dinamico(clave)
         for clave, valor in previas.items():

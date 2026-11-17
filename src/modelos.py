@@ -4935,9 +4935,14 @@ ORIGEN_DIMENSION_DERIVADA = "derivada de dimensiones declaradas"
 # estabilidad cumple (`M9.dimensionar_zapata_por_estabilidad`): el ancho de
 # la zapata y, con el, el talon. No la eligio la regla ni la declaro nadie.
 ORIGEN_DIMENSION_ESTABILIDAD = "dimensionada por estabilidad"
+# --- VE-3.9 --- El peralte de la zapata que el programa hizo CRECER hasta que
+# el armado de la zapata (punta y talon) cumple
+# (`M9.dimensionar_peralte_por_armado`). Tampoco lo eligio la regla.
+ORIGEN_DIMENSION_ARMADO = "dimensionada por armado"
 ORIGENES_DE_DIMENSION = (ORIGEN_DIMENSION_REGLA, ORIGEN_DIMENSION_DECLARADA,
                          ORIGEN_DIMENSION_DERIVADA,
-                         ORIGEN_DIMENSION_ESTABILIDAD)
+                         ORIGEN_DIMENSION_ESTABILIDAD,
+                         ORIGEN_DIMENSION_ARMADO)
 
 
 @dataclass(frozen=True)
@@ -5163,6 +5168,12 @@ class CabezalDelPunto:
     # y el ultimo el adoptado. Vacio = no se dimensiono (la regla cumplio,
     # el ancho se declaro o el criterio del paso y el tope esta sin valor).
     intentos_de_zapata: Tuple["IntentoDeZapata", ...] = ()
+    # --- VE-3.9 --- Los peraltes de zapata que el dimensionamiento por
+    # armado PROBO, en orden, por extremo: el primero es el de la regla (o el
+    # de su piso) y el ultimo el adoptado. Vacio = no se dimensiono (el
+    # armado de la zapata cumplio, el peralte se declaro, el cabezal es de
+    # gravedad o el armado no se pudo evaluar).
+    intentos_de_peralte: Tuple["IntentoDePeralte", ...] = ()
 
     @property
     def geometrias(self) -> Tuple[GeometriaCabezal, GeometriaCabezal]:
@@ -5193,6 +5204,29 @@ class IntentoDeZapata:
     @property
     def cumple(self) -> bool:
         return bool(self.condiciones) and not self.incumplidas
+
+
+@dataclass(frozen=True)
+class IntentoDePeralte:
+    """
+    --- VE-3.9 --- Un intento del dimensionamiento del PERALTE de la zapata
+    de UN cabezal (`M9.dimensionar_peralte_por_armado`): el peralte probado,
+    el ancho con que se armo (el de la estabilidad, que se re-verifica con
+    cada peralte y puede volver a crecer), las filas del armado de la zapata
+    que no cumplieron y si el ancho tuvo que crecer otra vez con este
+    peralte. Cumple cuando ninguna fila del armado de la zapata falla.
+    """
+
+    extremo: str
+    espesor_zapata: float                     # m
+    B: float                                  # m
+    incumplidas: Tuple[str, ...]
+    ancho_redimensionado: bool = False
+    al_tope: bool = False
+
+    @property
+    def cumple(self) -> bool:
+        return not self.incumplidas
 
 
 @dataclass(frozen=True)
