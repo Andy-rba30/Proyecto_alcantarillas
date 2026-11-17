@@ -107,9 +107,14 @@ def _declarados_en_lista():
 # La fila C-01 del fixture con la coronacion que la guia de perfil le pone, y
 # los datos del canal de la guia (caudal y pendiente del CANAL, Sec. 2.3).
 CORONACION_GUIA = 38.30
+# VE-3.10: el desnivel del perfil del canal (VC3) es obligatorio en un paso
+# de canal; es el de `docs/guia_perfil.md` (1.20 m, DATO DE PRUEBA que no
+# mueve el marco con la entrada en el terreno: con TW 0.30 m pierde 1.023 m).
+# Sin el, C-01 se detiene.
 EXTERNOS_GUIA = {"globales": {"TW_m": 0.3, "L_hidraulico_m": 120.0},
                  "puntos": {"C-01": {"Q_m3s": 0.85, "S_cauce": 0.006,
-                                     "S_conducto": 0.006}}}
+                                     "S_conducto": 0.006,
+                                     "desnivel_perfil_canal_m": 1.20}}}
 
 # La seccion MEDIDA del canal que este archivo declara para medir el remanso.
 # Es una sonda, no un levantamiento: canal revestido de 1.00 m de solera,
@@ -310,7 +315,11 @@ def test_la_progresion_del_prompt_entra_por_la_puerta_y_deja_a_C01_sin_dimension
     assert not c01.dimensionado
     motivos = [it.motivo or "" for it in c01.traza]
     assert len(motivos) == 8, motivos
-    assert sum("incumple V7" in m for m in motivos[:7]) == 7
+    # VE-3.10: con el desnivel del perfil del canal declarado (obligatorio
+    # desde entonces), VC3 va delante de V7 en la tabla y algunos escalones
+    # incumplen las dos; lo que este test fija sigue en pie: V7 incumple en
+    # los siete primeros (antes se leia «incumple V7» al principio del motivo).
+    assert sum("incumple" in m and "V7 (" in m for m in motivos[:7]) == 7
     assert "subrasante" in motivos[7]
 
 

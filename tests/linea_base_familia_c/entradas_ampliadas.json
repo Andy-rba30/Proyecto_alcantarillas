@@ -1,5 +1,5 @@
 {
- "_advertencia": "FIXTURE DE PRUEBA, NO ES UN RESULTADO DEL PROYECTO. Datos para ejercitar caminos de codigo de la linea base de la Familia C (TW, caudal y pendientes de C-01, TW de B-01): no son una medicion de campo ni un dato del estudio hidrologico. Ver tests/linea_base_familia_c/README.md.",
+ "_advertencia": "FIXTURE DE PRUEBA, NO ES UN RESULTADO DEL PROYECTO. Datos para ejercitar caminos de codigo de la linea base de la Familia C (TW, caudal, pendientes y desnivel del perfil del canal de C-01, TW de B-01; el desnivel, 1.20 m, es el que no mueve el marco de C-01 con la entrada en el terreno, donde pierde 1.023 m: VE-3.10): no son una medicion de campo ni un dato del estudio hidrologico. Ver tests/linea_base_familia_c/README.md.",
  "globales": {
   "TW_m": 0.3
  },
@@ -7,7 +7,8 @@
   "C-01": {
    "Q_m3s": 0.85,
    "S_conducto": 0.004,
-   "S_cauce": 0.006
+   "S_cauce": 0.006,
+   "desnivel_perfil_canal_m": 1.2
   },
   "B-01": {
    "TW_m": 1.0

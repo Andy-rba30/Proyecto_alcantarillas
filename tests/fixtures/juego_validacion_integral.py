@@ -206,6 +206,19 @@ EXTERNOS: Dict[str, Any] = {
             # (36.20) a coronacion (38.30).
             "seccion_receptor_medida": {"b_m": 1.0, "z_HV": 1.5, "S": 0.006,
                                         "n": 0.025, "altura_total_m": 2.1},
+            # --- VE-3.10 --- DATO DE PRUEBA, no del proyecto del canal: el
+            # desnivel F que el perfil del canal provee en el cruce (VC3,
+            # USBR). Sin el, C-01 se detiene desde VE-3.10 (variante
+            # `C01_sin_desnivel`). Con la regla de archivo la entrada queda en
+            # el terreno del cruce (36.90), 0.70 m sobre el fondo del canal,
+            # y el marco de 1.20 x 0.90 m pierde 0.913 m: un F del orden del
+            # de un canal real (0.30-0.40 m) dejaria C-01 NO FACTIBLE con
+            # esta geometria de prueba (con la entrada en el canal, variante
+            # `C01_fondo_en_el_canal`, 0.40 m bastan). 1.20 m es el valor que
+            # no mueve la seccion aqui ni en la linea base (con su TW de
+            # 0.30 m el marco pierde 1.023 m); lo que se juzga aqui es la
+            # cadena, no el canal.
+            "desnivel_perfil_canal_m": 1.20,
             # Canal en limo ('ML'): la fila de la Tabla N 11 mas cercana es
             # la arcilla limosa no coloidal. La socavacion la da un estudio
             # del canal (0.50 m); con el lecho cohesivo estimado la hoya
@@ -415,6 +428,10 @@ VARIANTES: Dict[str, Tuple[str, Tuple[Tuple[Any, ...], ...]]] = {
         (("externo", "C-01", "profundidad_socavacion_estimada_m", None),
          ("externo", "C-01", "material_lecho_salida",
           {"tipo": "cohesivo", "IP": 8, "Sv_Pa": 25000, "pasa_200_pct": 60}))),
+    "C01_sin_desnivel": (
+        "C-01 sin el desnivel del perfil del canal (F de VC3): desde VE-3.10 "
+        "el punto se detiene pidiendo el dato del proyecto del canal",
+        (("externo", "C-01", "desnivel_perfil_canal_m", None),)),
     "zapata_declarada_3m": (
         "A-01 con la zapata de sus dos cabezales declarada de 3.00 m de "
         "ancho (`cabezal_declarado`, la prueba de T-7b)",

@@ -66,6 +66,10 @@ VALOR_DE_PRUEBA = {
     # --- cierre de T-7b (H2) --- la cota de afectacion aguas arriba del
     # metodo de cota de V5 (Familias A y B, como el ancho).
     "cota_afectacion_aguas_arriba_msnm": 44.0,
+    # --- VE-3.6 / VE-3.10 --- el desnivel del perfil del canal de VC3
+    # (sólo Familia C). Faltaba desde VE-3.6, que lo sumo a
+    # `FAMILIAS_QUE_USAN` sin valor de prueba aqui (KeyError en A y B).
+    "desnivel_perfil_canal_m": 1.20,
 }
 
 

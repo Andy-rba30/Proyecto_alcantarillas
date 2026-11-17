@@ -738,14 +738,19 @@ VERIFICACION_QUE_EXIGE_LA_CLAVE: Dict[str, str] = {
 # provee en el cruce (USBR, Design of Small Canal Structures, num. 2-6). Es
 # dato del proyecto del CANAL, por punto, opcional y sin valor por defecto;
 # admite el cero (el perfil no provee ninguno: VC3 exige no perder nada).
-# Sin el, VC3 no se evalua y 7.B lo avisa: es una entrada con via alterna
-# para el pre-vuelo (no detiene nada), como la seccion medida del canal.
+# --- VE-3.10 (decision del dueño, 2026-11-17) --- Sin el, el punto se
+# DETIENE en el bucle de MD (`DatoFaltanteError` de VC3, en la posicion de
+# VC1 y obligatorio a los dos alcances): hasta VE-3.10 VC3 no se evaluaba y
+# 7.B lo avisaba, y la clave era una entrada con via alterna para el
+# pre-vuelo. Hoy el pre-vuelo la anuncia como falta que DETIENE, con la
+# etapa y el detalle del bloqueo (`DETALLE_FALTA_DESNIVEL_CANAL`, el texto de
+# M5: uno solo).
 CLAVE_DESNIVEL_PERFIL_CANAL = "desnivel_perfil_canal_m"
 CLAVES_EXTERNAS += (CLAVE_DESNIVEL_PERFIL_CANAL,)
 CLAVES_QUE_ADMITEN_CERO += (CLAVE_DESNIVEL_PERFIL_CANAL,)
 FAMILIAS_QUE_USAN[CLAVE_DESNIVEL_PERFIL_CANAL] = (Familia.C,)
-EXTERNOS_CON_VIA_ALTERNA += (CLAVE_DESNIVEL_PERFIL_CANAL,)
 ETAPA_BUCLE_DE_MD = "material y diametro (bucle de MD)"
+DETALLE_FALTA_DESNIVEL_CANAL = M5.DETALLE_FALTA_DESNIVEL_CANAL
 # --- T-7b --- EL SUELO DE FUNDACION DEL CABEZAL, POR PUNTO: los mismos
 # campos del criterio de corredor 'c_phi_fundacion' (cohesivo, c_kpa,
 # phi_grados, gamma_kn_m3, y los opcionales q_n_kpa y q_adm_kpa), para la
@@ -3273,14 +3278,10 @@ def _fase_7(informe: InformePunto,
     """
     resultado = informe.resultado
     seccion_canal = None
-    desnivel = None
     if externos is not None and informe.punto.familia is Familia.C:
         medida = externos.valor(informe.punto.id,
                                 CLAVE_SECCION_RECEPTOR_MEDIDA)
         seccion_canal = None if medida is None else SeccionReceptor(**medida)
-        # --- VE-3.6 --- el desnivel del perfil del canal, para VC3.
-        desnivel = externos.valor(informe.punto.id,
-                                  CLAVE_DESNIVEL_PERFIL_CANAL)
     # --- T-6 --- Si la longitud se CALCULO, viaja el objeto entero (metodo,
     # alturas por extremo, pasos); si se DECLARO, el escalar, y 7.B lo rotula
     # como declarado. En los dos casos es la misma L que uso la Fase 4.
@@ -3298,8 +3299,7 @@ def _fase_7(informe: InformePunto,
             # aplican); con la calculada ya van dentro de `calculada`.
             bombeo=informe.transversales[0],
             peralte=informe.transversales[1],
-            seccion_canal=seccion_canal,
-            desnivel_perfil_canal_m=desnivel))
+            seccion_canal=seccion_canal))
 
 
 def _fase_8_conducto(informe: InformePunto) -> None:

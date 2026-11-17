@@ -188,8 +188,16 @@ def _faltas_reales(externos, ruta=CSV_EJEMPLO):
 # cajon ya tienen valor de archivo y MD no se detiene en ellos: llega a VC1,
 # que exige cota_coronacion_canal, y esa falta la registra la corrida. El
 # pre-vuelo ya no estima nada de mas en esa configuracion.
-SOBRA_SIN_LUZ = {"C-01": {"Q_m3s", "S_cauce", "cota_coronacion_canal"}}
-SOBRA_CON_LUZ = {"C-01": {"Q_m3s", "cota_coronacion_canal"}}
+#
+# REMEDIDO EN VE-3.10: el desnivel del perfil del canal (VC3) detiene desde
+# VE-3.10 y el pre-vuelo lo anuncia en C-01; en las dos primeras
+# configuraciones la corrida se detiene antes (luz, S_cauce o Q_m3s) y no
+# llega a pedirlo: es una falta REAL mas que la corrida sentiria despues. Con
+# el JSON ampliado C-01 lo trae (dato de prueba de la linea base) y no sobra.
+SOBRA_SIN_LUZ = {"C-01": {"Q_m3s", "S_cauce", "cota_coronacion_canal",
+                          "desnivel_perfil_canal_m"}}
+SOBRA_CON_LUZ = {"C-01": {"Q_m3s", "cota_coronacion_canal",
+                          "desnivel_perfil_canal_m"}}
 SOBRA_CON_TODO = {}
 
 
@@ -279,6 +287,10 @@ def test_pf2_toda_clave_externa_sin_columna_tiene_regla_o_via_alterna_declarada(
     # solo si su verificacion no esta diferida por el alcance y el criterio
     # que la habilita esta declarado (`servicio.CLAVES_DE_V5_Y_V8`).
     con_regla |= set(servicio.CLAVES_DE_V5_Y_V8)
+    # --- VE-3.10 --- el desnivel del perfil del canal (VC3) dejo de ser una
+    # entrada con via alterna: en un paso de canal sin el, el punto se
+    # detiene, y el pre-vuelo tiene regla propia que lo dice.
+    con_regla |= {servicio.CLAVE_DESNIVEL_PERFIL_CANAL}
     assert sin_columna == con_regla | set(servicio.EXTERNOS_CON_VIA_ALTERNA)
     assert not con_regla & set(servicio.EXTERNOS_CON_VIA_ALTERNA)
     assert all(c not in antc.m0.COLUMNAS for c in servicio.EXTERNOS_CON_VIA_ALTERNA)

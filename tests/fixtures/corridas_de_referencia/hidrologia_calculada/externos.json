@@ -63,6 +63,7 @@
     "n": 0.025,
     "altura_total_m": 2.1
    },
+   "desnivel_perfil_canal_m": 1.2,
    "tipo_terreno_receptor": "arcilla_limosa_no_coloidal",
    "tipo_terreno_entrada": "arcilla_limosa_no_coloidal",
    "profundidad_socavacion_estimada_m": 0.5

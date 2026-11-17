@@ -1257,10 +1257,15 @@ def test_verificar_en_familia_C_corre_VC1_en_vez_de_V5(concreto):
     # Se detiene mas ADELANTE que antes, y eso es parte del hallazgo: con V5
     # fuera, la primera pendiente que queda en el orden de la tabla es la de
     # V8 ('TR_evento_extremo'). Lo verificado hasta ahi viaja en la excepcion.
+    # VE-3.10: VC3 va detras de VC1 y, sin el desnivel del perfil del canal,
+    # detiene el punto antes de V8; se le da F para que el freno siga siendo
+    # el de V8, que es de lo que este test habla.
+    from src.modelos import DatosDeExpediente
     with pytest.raises(CriterioPendienteError) as excinfo:
         verificar(punto=punto, material=concreto,
                   seccion=SeccionCircular(D=0.90),
-                  resultado=_resultado(y_normal=0.60, V=1.5))
+                  resultado=_resultado(y_normal=0.60, V=1.5),
+                  expediente=DatosDeExpediente(desnivel_perfil_canal_m=1.0))
     assert excinfo.value.clave == "TR_evento_extremo"
     hechas = excinfo.value.verificaciones_completadas
     codigos = [v.codigo for v in hechas]
@@ -1279,7 +1284,11 @@ def test_verificar_en_familia_C_corre_VC1_en_vez_de_V5(concreto):
     assert codigos.index("V10") == codigos.index("V4b") + 1
     assert codigos.index("VC1") == codigos.index("V10") + 1
     assert codigos.index("V5") == codigos.index("VC1") + 1
-    assert codigos.index("V5") == codigos.index("V6") - 1
+    # VE-3.6 / VE-3.10: detras de la fila «no aplica» de V5 va VC3 (la
+    # rasante del canal), que desde VE-3.10 exige el desnivel del perfil del
+    # canal: con el dato declarado arriba, V6 sigue a VC3.
+    assert codigos.index("VC3") == codigos.index("V5") + 1
+    assert codigos.index("VC3") == codigos.index("V6") - 1
 
 
 def test_verificar_en_familia_A_sigue_deteniendose_en_V5_y_no_corre_VC1(concreto):

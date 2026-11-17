@@ -1679,7 +1679,13 @@ def test_el_marco_llega_a_V7_y_su_detencion_no_tira_lo_ya_verificado():
         y_normal=0.60, y_critico=0.40, V_erosion=1.50, V_sedimentacion=1.20,
         Q=0.85, S=0.004, HW_entrada=0.50, HW_salida=0.20,
         control_gobernante=ControlGobernante.ENTRADA)
-    verificar = cli._verificador_perfil(InformePunto(punto=punto))
+    # VE-3.10: VC3 va detras de VC1 y, sin el desnivel del perfil del canal,
+    # detiene el marco antes de V6 y V7; se le da F para que el freno siga
+    # siendo V7, que es de lo que este test habla.
+    from src.modelos import DatosDeExpediente
+    verificar = cli._verificador_perfil(
+        InformePunto(punto=punto),
+        DatosDeExpediente(desnivel_perfil_canal_m=1.0))
 
     # --- T-3 --- 'espesor_pared_cajon' tiene valor de archivo desde T-3: el
     # marco «al que solo le falta el espesor» se recrea vaciandolo aqui.
@@ -1697,8 +1703,10 @@ def test_el_marco_llega_a_V7_y_su_detencion_no_tira_lo_ya_verificado():
     filas = exc.value.verificaciones_completadas
     # V5 va detras de VC1 como fila «no aplica» (C10, PC-27).
     # Y V10 (T-2) detras de V4b, antes del hueco de V5.
+    # VE-3.6 / VE-3.10: VC3 va detras de V5 (con el desnivel declarado).
     assert [v.codigo for v in filas] == ["V1", "V2", "V2b", "V3", "V4",
-                                         "V4b", "V10", "VC1", "V5", "V6"]
+                                         "V4b", "V10", "VC1", "V5", "VC3",
+                                         "V6"]
     con_nota = [v.codigo for v in filas
                 if v.paso is not None and v.paso.nota_del_proyecto]
     assert con_nota, ("ninguna de las verificaciones que sobrevivieron lleva "
@@ -1747,7 +1755,11 @@ def test_a_alcance_perfil_la_familia_C_corre_VC1_y_no_difiere_V5():
         Q=0.85, S=0.004, HW_entrada=0.50, HW_salida=0.20,
         control_gobernante=ControlGobernante.ENTRADA)
     informe = InformePunto(punto=punto)
-    verificar = cli._verificador_perfil(informe)
+    # VE-3.10: sin el desnivel del perfil del canal VC3 detiene el marco; se
+    # le da F para que lo medido siga siendo VC1 frente a V5.
+    from src.modelos import DatosDeExpediente
+    verificar = cli._verificador_perfil(
+        informe, DatosDeExpediente(desnivel_perfil_canal_m=1.0))
 
     with declarados(declaraciones):
         marco = catalogo(TipoMaterial.CONCRETO_REFORZADO,

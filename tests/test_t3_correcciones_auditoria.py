@@ -81,9 +81,14 @@ TOL_LONGITUD_SUAVE = TOL_BISECCION / S_CANAL_SUAVE
 
 # Lo que la guia de perfil pone a C-01 (coronacion y datos del canal).
 CORONACION_GUIA = 38.30
+# VE-3.10: el desnivel del perfil del canal (VC3) es obligatorio en un paso
+# de canal; es el de `docs/guia_perfil.md` (1.20 m, DATO DE PRUEBA que no
+# mueve el marco con la entrada en el terreno: con TW 0.30 m pierde 1.023 m).
+# Sin el, C-01 se detiene.
 EXTERNOS_GUIA = {"globales": {"TW_m": 0.3, "L_hidraulico_m": 120.0},
                  "puntos": {"C-01": {"Q_m3s": 0.85, "S_cauce": 0.006,
-                                     "S_conducto": 0.006}}}
+                                     "S_conducto": 0.006,
+                                     "desnivel_perfil_canal_m": 1.20}}}
 # Longitud de C-01 por la formula de T-6, a mano (la misma que
 # test_t3_familia_c): ancho 9.60, H = 2.20 en los dos extremos, talud 2.0,
 # esviaje 30 grados, S = 0.006.

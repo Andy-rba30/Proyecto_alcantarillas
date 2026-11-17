@@ -647,6 +647,14 @@ def datos_faltantes_por_punto(ruta_csv: Any, externos: Any,
                        f"y {verificacion} lo necesita: sin el dato se "
                        "detiene con DatoFaltanteError",
                        servicio.ETAPA_BUCLE_DE_MD, True)
+            elif clave == servicio.CLAVE_DESNIVEL_PERFIL_CANAL:
+                # --- VE-3.10 --- El desnivel del perfil del canal (VC3): en
+                # un paso de canal DETIENE el bucle de MD a los dos alcances,
+                # como VC1 sin la coronacion (`_aplica` ya lo limita a la
+                # Familia C). Mismo detalle que el `Bloqueo`.
+                anadir(clave, EXTERNO,
+                       f"{concepto}. {servicio.DETALLE_FALTA_DESNIVEL_CANAL}",
+                       servicio.ETAPA_BUCLE_DE_MD, True)
             elif clave in servicio.EXTERNOS_CON_VIA_ALTERNA:
                 # 7.B, la fila fija o el criterio de la Tabla N 02, y S_cauce:
                 # no son faltas. S_conducto se nombra en la entrada de S_cauce
