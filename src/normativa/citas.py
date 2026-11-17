@@ -9145,6 +9145,45 @@ HEC14_3_1_3_BORDE = _cita(
           "borde y no estan digitalizadas."),
 )
 
+# ---- VE-2 (decision (b) de VE1-02): la velocidad a TIRANTE NORMAL ---------
+# Mismo regimen que T-0 y T-8: la propia sesion abrio la pagina por su capa
+# de texto (`python3 -m src.normativa.extraccion texto hec14 38 2`) y leyo
+# tambien el ejemplo de la pagina siguiente. La firma lo dice. Nombre propio
+# y no `VE2`: la cadena VE-2 corre en cuatro bloques en paralelo.
+FECHA_VE2_B = "2026-11-17"
+POR_VE2_B = "validacion/VE-2 bloque 1 · lectura directa de la pagina por la sesion"
+VE2_B = (FECHA_VE2_B, POR_VE2_B)
+
+HEC14_3_2_2_V_SALIDA_NORMAL = _cita(
+    id="HEC14.3.2.2#V_SALIDA_NORMAL",
+    fuente_id="HEC14",
+    numeral="3.2.2",
+    titulo_numeral="3.2.2 Unsubmerged Outlets (Normal Depth)",
+    pagina_impresa="3-7",
+    pagina_pdf=38,
+    texto_literal=Verbatim(
+        texto=("For culvert flow types shown in Figure 3.5A and C, normal "
+               "flow is assumed at the culvert outlet and the outlet "
+               "velocity is computed using Manning's Equation."),
+        pagina_pdf=38),
+    # APROXIMACION, como la del HDS-5 3.3.2 que dice lo mismo: «is assumed».
+    caracter=Caracter.APROXIMACION,
+    sesion=VE2_B,
+    nota=("Es la seccion 3.2 «Culverts on Steep Slopes», «culverts flowing "
+          "with inlet control» (misma pagina). El ejemplo que sigue, «Design "
+          "Example: Increasing Roughness to Reduce Velocity (SI)» (pag. "
+          "impresa 3-8, PDF 39), resuelve UN tirante por cada n: con n = "
+          "0.012 «y = 0.41(1.524) = 0.625 m», «A = 0.3032(1.524)2 = 0.704 "
+          "m2» y «Vo, = Q/A = 2.832/0.704 = 4.02 m/s»; con n = 0.024 «y = "
+          "0.62(1.524) = 0.945 m», «A = 0.5115(1.524)2 = 1.19 m2» y «Vo, = "
+          "Q/A = 2.832/1.19 = 2.38 m/s»; y concluye del primero "
+          "«Since yc > y, the flow is supercritical and exit depth is normal "
+          "depth». Es lo que sostiene que la velocidad de n_min se mida con "
+          "el tirante normal de n_min y no con el de n_max (VE-2, ficha "
+          "VE2-B): ninguna fuente toma el tirante de un n y la velocidad de "
+          "otro."),
+)
+
 EG2013_T511_06_NOTA_5A = _cita(
     id="EG2013.511.08#NOTA_5A",
     fuente_id="EG2013",

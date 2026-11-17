@@ -1540,10 +1540,15 @@ def velocidad_de_salida(*, Q_celda: float, seccion: Seccion, TW: float,
     Control de ENTRADA (pag. impresa 3.24, «The velocity at normal depth is
     assumed to be the outlet velocity»): la del tirante normal. De sus dos
     ramas se toma la de n MINIMO, `V_erosion`, la estimacion ALTA: d50 crece
-    con V^2 y el techo es el lado conservador de una proteccion. Es lo que M6
-    recibia siempre hasta EXT-3, tambien bajo control de salida, donde en
-    pendiente suave con salida libre la velocidad a y_c es MAYOR (1.508 vs
-    1.184 m/s en el caso del dictamen) y la piedra salia chica.
+    con V^2 y el techo es el lado conservador de una proteccion. Desde VE-2
+    es la velocidad del tirante normal RESUELTO con n_min, Q_celda/A(y_n), y
+    no la de n_min sobre el tirante de n_max (HEC-14 num. 3.2.2, pag.
+    impresa 3-7, y su ejemplo de la 3-8, un tirante por cada n). El tirante
+    que se devuelve es el de registro, el de n_max: ver `ResultadoHidraulico.
+    y_salida_m`. Es lo que M6 recibia siempre hasta EXT-3, tambien bajo
+    control de salida, donde en pendiente suave con salida libre la velocidad
+    a y_c es MAYOR (1.508 vs 1.184 m/s en el caso del dictamen, medido con la
+    formula anterior a VE-2) y la piedra salia chica.
 
     BARRIL HORIZONTAL (T-2, INF-5.1.6): con S = 0 no hay tirante normal
     (`normal` es un `SinTiranteNormal`), y la regla de la pag. 3.24 no se
@@ -1562,13 +1567,22 @@ def velocidad_de_salida(*, Q_celda: float, seccion: Seccion, TW: float,
                         "conserva la del tirante normal como techo declarado, "
                         "porque el 3.1.6 no da la regla para ese caso y d50 "
                         "crece con V^2")
+        # --- VE-2 (decision (b)) --- LA VELOCIDAD ES LA DEL TIRANTE NORMAL
+        # DE n_min, CON SU PROPIO TIRANTE: V_erosion = Q_celda / A(y_n con
+        # n_min), y la procedencia lo nombra. El tirante que se devuelve como
+        # `y_salida` sigue siendo el normal de REGISTRO, el de n_max: la
+        # regla de doble n da el tirante con n maximo y la velocidad con n
+        # minimo (ficha VE2-B, que dice quien lee ese tirante).
         return Magnitud(
             "V_salida", normal.V_erosion, "m/s",
             "HDS-5 num. 3.3.2 (pag. impresa 3.24) y 3.1.6: bajo control de "
-            "ENTRADA la velocidad a la salida es la del tirante normal. De las "
-            "dos ramas de n (Sec. 4.1) se toma la de n MINIMO, V_erosion, la "
-            "estimacion ALTA: es el techo conservador para un d50 que crece "
-            "con el cuadrado de V" + salida_llena,
+            "ENTRADA la velocidad a la salida es la del tirante normal; HEC-14 "
+            "num. 3.2.2 (pag. impresa 3-7) la calcula con Manning a tirante "
+            "normal. De las dos ramas de n (Sec. 4.1) se toma la de n MINIMO, "
+            "V_erosion, la estimacion ALTA, resuelta con su propio tirante "
+            f"normal (y_n = {normal.geometria_erosion.y:.3f} m con n_min, "
+            "V = Q_celda / A(y_n)): es el techo conservador para un d50 que "
+            "crece con el cuadrado de V" + salida_llena,
             cifras=CIFRAS_MAGNITUD), normal.geometria.y
     D = seccion.altura
     y_salida = min(D, max(TW, critico.y_c))
@@ -2247,9 +2261,14 @@ def _pasos_hidraulicos(*, seccion, Q, S, L, TW, material, normal, critico, entra
         que="Tirante normal y velocidades en el conducto",
         formula="Q = (k_n/n) * A * R^(2/3) * S^(1/2), con k_n = K_MANNING_SI "
                 "el coeficiente de unidades del SI, resuelta con Brent "
-                "sobre el parametro de llenado de la seccion; A, P y R son "
-                "los del paso anterior",
+                "sobre el parametro de llenado de la seccion UNA VEZ POR "
+                "CADA n del rango (n_max y n_min); A, P y R son los del paso "
+                "anterior; en cada rama V = Q / A(y_n de ese n)",
         formula_cita_id="MC_HHD.4.1.1.3.6",
+        # --- VE-2 (decision (b)) --- La «velocidad a tirante normal» de las
+        # dos fuentes que la definen asi: cada rama con su propio tirante.
+        citas_textuales=("HDS5_3ED.3.3.2#V_SALIDA_ENTRADA",
+                         "HEC14.3.2.2#V_SALIDA_NORMAL"),
         sustitucion=(
             # EL COEFICIENTE DE UNIDADES VA EN LA SUSTITUCION, y hasta PD no
             # iba: la formula no es homogenea, y el 1.0 que la cierra en SI
@@ -2294,13 +2313,27 @@ def _pasos_hidraulicos(*, seccion, Q, S, L, TW, material, normal, critico, entra
                             explicacion="paso de calculo: no contrasta contra "
                                         "ningun umbral"),
         nota_del_proyecto=(
+            # --- VE-2 (decision (b)) --- DOS RESOLUCIONES, DOS TIRANTES. La
+            # nota decia «se resuelve DOS veces» sobre un codigo que resolvia
+            # una y recalculaba la otra velocidad sobre la misma geometria;
+            # hoy es literal, y la nota imprime el tirante de cada rama.
             f"La seccion se resuelve DOS veces, una por extremo del rango de "
-            f"n: V_erosion = {normal.V_erosion:.3f} m/s con n_min (estimacion "
-            f"ALTA, para los techos: V3 y el d50 de la Fase 6) y "
-            f"V_sedimentacion = {normal.V_sedimentacion:.3f} m/s con n_max "
-            f"(estimacion BAJA, para el piso de V2). No hay una «la» "
+            f"n, cada una con SU tirante normal. Con n_max: y_n = "
+            f"{normal.geometria.y:.3f} m (el resultado de arriba: el tirante "
+            f"de capacidad, que juzga V1) y V_sedimentacion = "
+            f"{normal.V_sedimentacion:.3f} m/s (estimacion BAJA, para el piso "
+            f"de V2). Con n_min: y_n = {normal.geometria_erosion.y:.3f} m y "
+            f"V_erosion = Q / A(y_n) = {Q_celda:.{CIFRAS_MAGNITUD}f} / "
+            f"{normal.geometria_erosion.A:.{CIFRAS_MAGNITUD}f} = "
+            f"{normal.V_erosion:.3f} m/s (estimacion ALTA, para los techos: "
+            f"V3 y el d50 de la Fase 6). Cada velocidad es la de su propio "
+            f"tirante y cumple Q = V*A con su area: la velocidad a tirante "
+            f"normal del HDS-5 (num. 3.3.2) y de HEC-14 (num. 3.2.2, cuyo "
+            f"ejemplo resuelve un tirante por cada n). No hay una «la» "
             f"velocidad: un piso y un techo tienen extremos conservadores "
-            f"opuestos."),
+            f"opuestos. Usar los DOS extremos de la Tabla Nº 09, y cual para "
+            f"que, es adopcion del proyecto: la tabla da minimo, normal y "
+            f"maximo sin regla de columna (ficha VE1-01)."),
     )
 
     # SU FUNDAMENTO YA NO ES `F4.CONTROL`, Y NO ES UN CAMBIO COSMETICO. Ese
@@ -2733,8 +2766,10 @@ def _pasos_hidraulicos(*, seccion, Q, S, L, TW, material, normal, critico, entra
         que="Regimen del barril y velocidad a la salida (HDS-5 3.1.6)",
         formula="regimen = LLENO si TW >= D, PARCIALMENTE LLENO si no; "
                 "V_salida = Q_celda / A(y_salida), con y_salida = "
-                "min(D, max(TW, y_c)) bajo control de salida y y_salida = y_n "
-                "bajo control de entrada",
+                "min(D, max(TW, y_c)) bajo control de salida; bajo control "
+                "de entrada V_salida = Q_celda / A(y_n_min), la velocidad del "
+                "tirante normal resuelto con n_min, y y_salida = y_n, el "
+                "tirante normal de registro (n_max)",
         formula_cita_id="HDS5_3ED.3.1.6#V_SALIDA",
         citas_textuales=("HDS5_3ED.3.1.6#V_SALIDA", "HDS5_3ED.3.1.6#V_SALIDA_TW",
                          "HDS5_3ED.3.3.2#V_SALIDA_ENTRADA",
@@ -2756,6 +2791,17 @@ def _pasos_hidraulicos(*, seccion, Q, S, L, TW, material, normal, critico, entra
              Magnitud("y_n", normal.geometria.y, "m",
                       "tirante normal del paso 4.1, con n_max",
                       cifras=CIFRAS_MAGNITUD)),
+            # --- VE-2 (decision (b)) --- Bajo control de ENTRADA la
+            # velocidad de salida es la del tirante normal de n_min, y ese
+            # tirante se imprime: sin el, la formula de arriba no se puede
+            # rehacer con los numeros del paso.
+            *(() if horizontal or control is not ControlGobernante.ENTRADA
+              else (Magnitud("y_n_min", normal.geometria_erosion.y, "m",
+                             "tirante normal del paso 4.1 resuelto con n_min: "
+                             "el de la velocidad de salida bajo control de "
+                             "entrada (HDS-5 3.3.2; HEC-14 3.2.2), con area "
+                             f"A = {normal.geometria_erosion.A:.{CIFRAS_MAGNITUD}f} "
+                             "m2", cifras=CIFRAS_MAGNITUD),)),
             Magnitud("Q_celda", Q_celda, "m3/s",
                      "caudal de UNA celda, el mismo con que se resolvieron "
                      "los pasos 4.1 a 4.3", cifras=CIFRAS_MAGNITUD),
@@ -2776,9 +2822,11 @@ def _pasos_hidraulicos(*, seccion, Q, S, L, TW, material, normal, critico, entra
                      "que V2 compara cuando el barril va lleno",
                      cifras=CIFRAS_MAGNITUD),
             Magnitud("y_salida", regimen.y_salida, "m",
-                     "tirante con que se mide la velocidad a la salida: "
-                     "min(D, max(TW, y_c)) bajo control de salida, y_n bajo "
-                     "control de entrada", cifras=CIFRAS_MAGNITUD),
+                     "tirante a la salida: min(D, max(TW, y_c)) bajo control "
+                     "de salida, el mismo con que se mide la velocidad; bajo "
+                     "control de entrada y_n, el tirante normal de registro "
+                     "(n_max), y la velocidad se mide con y_n_min",
+                     cifras=CIFRAS_MAGNITUD),
             Magnitud("control", control.value, "",
                      "el control que gobierna, del paso 4.4", cifras=None)),
         resultado=regimen.V_salida,

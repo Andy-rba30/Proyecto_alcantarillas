@@ -458,11 +458,19 @@ def test_hec14_la_cita_T8_y_wsdot_las_tiene_desde_t4():
     T-8 cita HEC-14 (apron, hoya de socavacion, velocidad de salida,
     Apendice D), y TODAS sus citas las firma la sesion de T-8: ninguna entra
     sin verificar contra el ejemplar.
+
+    VE-2 (bloque 1, decision (b) de VE1-02) suma UNA, el num. 3.2.2 (la
+    velocidad de salida a tirante normal, pag. impresa 3-7), firmada por su
+    propia sesion; se amplia el assert declarando la causa: ninguna cita de
+    HEC-14 entra sin firma, y las firmas son las de T-8 o la de VE-2.
     """
     reg = _registro.construir()
     hec14 = reg.citas_de("HEC14")
     assert hec14
-    assert all(c.verificado and "T-8" in c.verificado.por for c in hec14)
+    assert all(c.verificado for c in hec14)
+    de_ve2 = {c.id for c in hec14 if "VE-2" in c.verificado.por}
+    assert de_ve2 == {"HEC14.3.2.2#V_SALIDA_NORMAL"}
+    assert all("T-8" in c.verificado.por for c in hec14 if c.id not in de_ve2)
     assert {"WSDOT_HM.2-6.3#TC_MINIMO", "WSDOT_HM.2-6.2#T2-2",
             "WSDOT_HM.2-6.2#FRECUENCIA"} <= {c.id for c in reg.citas_de("WSDOT_HM")}
 

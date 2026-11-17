@@ -275,13 +275,22 @@ def test_el_caudal_de_manning_es_monotono_creciente_en_el_marco():
 
 
 def test_resolver_manning_da_las_dos_velocidades_sobre_el_marco():
-    """La regla de doble n no cambia con la forma: misma R, dos n."""
+    """
+    La regla de doble n no cambia con la forma: dos n, cada uno con SU
+    tirante. Decia «misma R, dos n», que era la formula anterior a VE-2 (la
+    velocidad de n_min sobre el tirante de n_max); desde la decision (b) de
+    VE1-02 la rama de n_min resuelve su tirante (CP-2R, `y_n_min_esperado`).
+    """
     m = _marco()
     material = _material(n_min=CP2R["n_min"], n_max=CP2R["n_max"])
     resuelto = resolver_manning(seccion=m, Q=CP2R["Q_con_n_max_esperado"],
                                 S=CP2R["S"], material=material)
     assert resuelto is not None
     assert resuelto.V_erosion > resuelto.V_sedimentacion
+    assert resuelto.geometria_erosion.y == pytest.approx(
+        CP2R["y_n_min_esperado"], abs=CP2R["tolerancia_brent"])
+    assert resuelto.V_erosion == pytest.approx(
+        CP2R["V_erosion_esperado"], abs=CP2R["tolerancia_brent"])
     assert resuelto.V_sedimentacion == pytest.approx(
         CP2R["V_con_n_max_esperado"], abs=CP2R["tolerancia_brent"])
 

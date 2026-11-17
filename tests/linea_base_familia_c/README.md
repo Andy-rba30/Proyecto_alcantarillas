@@ -1638,3 +1638,18 @@ medido con `git diff -U0`). El rótulo de la sección (H1) da los mismos «Ø 0.
 «marco 1.20 × 0.90 m».
 
 **Diámetros, secciones, materiales y HW movidos: ninguno.**
+
+## Regenerada en VE-2, bloque 1 (2026-11-17, sobre `72a8d01`): la velocidad de erosión con su propio tirante; SÍ se mueven números
+
+La decisión (b) de VE1-02 (ficha VE2-B) cambia el MÉTODO de la velocidad alta de la
+regla de doble n: `V_erosion = Q / A(y_n con n_mín)` en vez de la de n mínimo sobre el
+tirante de n máximo. Diez archivos cambian (108 líneas por 108): `cli_perfil_ancho.txt`,
+`informe_perfil_ancho.json`, `resumen_perfil_ancho.csv`, `memoria_perfil_ancha.html`,
+`cli_familia_c.txt`, `informe_familia_c.json`, `memoria_punto_cajon.html` (el número y la
+traza) y, sólo en texto (el paso 4.1 y el fundamento del anexo), `memoria_perfil.html`,
+`memoria_expediente.html` y `memoria_resumida_expediente.html`. Los números, punto por
+punto, en `docs/linea_base.md` §11: A-01 3.206 → 3.040 m/s y d50 0.338 → 0.304 m; A-02
+2.883 → 2.681 m/s, d50 0.274 → 0.237 m, clase 4 → 3, espesor y longitud que rigen 0.770 /
+5.40 → 0.600 / 5.00 m; C-01 2.084 → 1.955 m/s; el cajón 2.694463 → 2.496046 m/s.
+
+**Diámetros, secciones, materiales y HW movidos: ninguno; ningún diámetro sube.**

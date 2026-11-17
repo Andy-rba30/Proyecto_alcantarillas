@@ -416,10 +416,26 @@ VARIANTES: Dict[str, Tuple[str, Tuple[Tuple[Any, ...], ...]]] = {
     "drenaje_de_archivo": (
         "Trasdos sin drenaje (el valor de archivo de `drenaje_trasdos`)",
         (("declarar", "drenaje_trasdos", None),)),
+    # --- VE-2 (bloque 1, decision (b) de VE1-02) --- LA VARIANTE VACIA
+    # TAMBIEN EL CAUDAL DEL EVENTO EXTREMO de los tres puntos. El del juego
+    # es el de su Q DECLARADO (1.11 veces el de diseño, de T-7b), y con el
+    # caudal calculado deja de ser coherente: B-01 calcula 1.791 m3/s y su
+    # evento extremo es 0.106. Hasta VE-2 no se veia porque V3 rechazaba
+    # todos los escalones de B-01 antes de V8 (la velocidad de erosion era la
+    # de n_min sobre el tirante de n_max); con la velocidad de su propio
+    # tirante un escalon llega a V8, que rechaza el dato
+    # (`DatoInvalidoError`, «el caudal del evento extremo (0.106 m3/s) es
+    # menor que el de diseño (1.791 m3/s)») y la validacion lo tomaba por un
+    # hallazgo. La hidrologia no calcula el del evento extremo (ficha T1-03):
+    # es una entrada del proyecto, y la variante no la inventa; la deja
+    # vacia. Con eso los tres puntos quedan como estaban (NO FACTIBLE).
     "caudal_calculado": (
         "A-01, A-02 y B-01 con `Q_m3s` vacio: el caudal lo calcula la Fase "
-        "1-bis con las cuencas y la serie sinteticas de T-1",
-        (("csv_caudal_vacio", ("A-01", "A-02", "B-01")),)),
+        "1-bis con las cuencas y la serie sinteticas de T-1, y sin el caudal "
+        "del evento extremo del juego, que es el de su Q declarado",
+        (("csv_caudal_vacio", ("A-01", "A-02", "B-01")),
+         *(("externo", i, "Q_evento_extremo_m3s", None)
+           for i in ("A-01", "A-02", "B-01")))),
     # La condicional que el juego completo no dispara (contrato §7): el
     # tratamiento FEN solo lo lee el caudal CALCULADO.
     # El fondo de entrada de C-01 en el canal (correcciones de T-11, H7):
@@ -453,5 +469,7 @@ VARIANTES: Dict[str, Tuple[str, Tuple[Tuple[Any, ...], ...]]] = {
         "La variante `caudal_calculado` sin declarar `homogeneidad_serie_fen`"
         " (el tratamiento de los años FEN que solo el caudal calculado lee)",
         (("csv_caudal_vacio", ("A-01", "A-02", "B-01")),
+         *(("externo", i, "Q_evento_extremo_m3s", None)
+           for i in ("A-01", "A-02", "B-01")),
          ("declarar", "homogeneidad_serie_fen", None))),
 }

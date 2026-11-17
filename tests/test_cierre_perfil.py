@@ -304,21 +304,36 @@ def test_el_TW_de_A01_reproduce_el_paso_2_de_la_seccion_1_3(informe_perfil):
 
 def test_la_hidraulica_de_A01_reproduce_el_calculo_a_mano(informe_perfil):
     """
-    Sec. 4.1 y 4.2.1 a mano, con la regla de doble n:
+    Sec. 4.1 y 4.2.1 a mano, con la regla de doble n, cada n con SU tirante:
 
+        con n_max = 0.013:
         theta = 3.950696 rad   A = 0.473279 m2   R = 0.266214 m
         y_n   = 0.627123 m     y/D = 0.696803
-        V con n_max = 0.013 -> 2.465774 m/s   (V2, el piso)
-        V con n_min = 0.010 -> 3.205506 m/s   (V3 y Laushey, el techo)
+        V = Q/A = 2.465774 m/s   (V2, el piso)
+        con n_min = 0.010:
+        theta = 3.469359 rad   A = 0.383868 m2   R = 0.245878 m
+        y_n   = 0.523418 m
+        V = Q/A = 3.040108 m/s   (V3 y Laushey, el techo)
         y_c   = 0.639970 m
+
+    CAMBIADO EN VE-2 DECLARANDO LA CAUSA (decision (b) de VE1-02). La
+    velocidad de n_min se calculaba aqui como la de la rama n_max, sobre la
+    MISMA R (3.205506 m/s): la velocidad de una rugosidad sobre el tirante de
+    otra, V*A = 1.3*Q. Hoy la rama de n_min resuelve su tirante (HDS-5 num.
+    3.3.2; HEC-14 num. 3.2.2 y su ejemplo de la pag. 3-8, un tirante por
+    cada n), y la cuenta a mano lo hace igual.
     """
     d = A01
     _th, _A, R, y_n = _manning_circular(Q=d["Q"], S=d["S"], D=d["D"],
                                         n=d["n_max"])
     V_sed = (1 / d["n_max"]) * R ** (2 / 3) * d["S"] ** 0.5
-    V_ero = (1 / d["n_min"]) * R ** (2 / 3) * d["S"] ** 0.5
-    assert (y_n, V_sed, V_ero) == pytest.approx(
-        (0.627123, 2.465774, 3.205506), abs=TOL_FINA)
+    _th_min, A_min, R_min, y_n_min = _manning_circular(
+        Q=d["Q"], S=d["S"], D=d["D"], n=d["n_min"])
+    V_ero = d["Q"] / A_min
+    assert V_ero == pytest.approx(
+        (1 / d["n_min"]) * R_min ** (2 / 3) * d["S"] ** 0.5, abs=TOL_FINA)
+    assert (y_n, V_sed, y_n_min, V_ero) == pytest.approx(
+        (0.627123, 2.465774, 0.523418, 3.040108), abs=TOL_FINA)
 
     def froude(th):
         A = (d["D"] ** 2 / 8) * (th - math.sin(th))
@@ -388,7 +403,7 @@ def test_los_numeros_del_caso_a_mano_estan_en_la_memoria(memoria):
                    "0.627",      # y_n
                    "0.640",      # y_c
                    "2.466",      # V_sedimentacion (V2)
-                   "3.206",      # V_erosion (V3, Laushey)
+                   "3.040",      # V_erosion (V3, Laushey); 3.206 hasta VE-2
                    "43.142"):    # V4: cota de entrada + HW
         assert numero in a01, f"la memoria de A-01 no imprime {numero}"
 

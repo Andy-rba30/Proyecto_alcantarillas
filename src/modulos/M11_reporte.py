@@ -1195,8 +1195,9 @@ def _filas_combinacion_adoptada(informe: Any) -> Tuple[str, ...]:
                        f"{_num(hidraulica.y_normal)} m &middot; y<sub>c</sub> = "
                        f"{_num(hidraulica.y_critico)} m &middot; "
                        f"V<sub>erosion</sub> = "
-                       f"{_num(hidraulica.V_erosion, FMT_2)} m/s (con n minimo, "
-                       f"contra el techo de V3) &middot; "
+                       f"{_num(hidraulica.V_erosion, FMT_2)} m/s (con n minimo "
+                       f"y su propio tirante normal, contra el techo de V3) "
+                       f"&middot; "
                        f"V<sub>sedimentacion</sub> = "
                        f"{_num(hidraulica.V_sedimentacion, FMT_2)} m/s (con n "
                        f"maximo, contra el piso de V2)"))]),

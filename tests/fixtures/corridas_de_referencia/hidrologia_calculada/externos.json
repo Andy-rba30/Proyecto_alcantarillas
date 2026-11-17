@@ -16,7 +16,6 @@
  "puntos": {
   "A-01": {
    "cota_afectacion_aguas_arriba_msnm": 44.0,
-   "Q_evento_extremo_m3s": 1.3,
    "TW_evento_extremo_m": 0.5,
    "tipo_terreno_receptor": "graduado_grava_gruesa",
    "tipo_terreno_entrada": "graduado_grava_gruesa",
@@ -30,7 +29,6 @@
   },
   "A-02": {
    "cota_afectacion_aguas_arriba_msnm": 41.75,
-   "Q_evento_extremo_m3s": 0.53,
    "TW_evento_extremo_m": 0.5,
    "tipo_terreno_receptor": "graduado_grava_a_piedras_mayor_20cm",
    "tipo_terreno_entrada": "graduado_grava_a_piedras_mayor_20cm",
@@ -38,7 +36,6 @@
   },
   "B-01": {
    "cota_afectacion_aguas_arriba_msnm": 40.3,
-   "Q_evento_extremo_m3s": 0.106,
    "TW_evento_extremo_m": 0.5,
    "S_cuneta": 0.01,
    "ancho_tributario_m": 7.0,

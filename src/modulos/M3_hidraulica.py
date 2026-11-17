@@ -39,7 +39,8 @@ Regla de doble n (Sec. 4.1)
 -----------------------------
 n MAXIMO para capacidad y tirante (V1, borde libre): conservador del lado de
 la inundacion. n MINIMO para velocidad MAXIMA y socavacion (V3, Laushey):
-conservador del lado de la erosion.
+conservador del lado de la erosion. Cada extremo con SU tirante normal (VE-2,
+ver abajo).
 
 DISCREPANCIA CON LA HOJA DE RUTA (VE-1, ficha VE1-01). Su Sec. 4.1 rotula
 esta regla «Regla [N]», y la fuente primaria no la sostiene: el Manual de
@@ -51,15 +52,26 @@ ADOPCION del proyecto, la que la hoja de ruta escribe y este modulo aplica.
 La hoja de ruta sigue mal mientras el dueño no la corrija, y si la
 eleccion pasa a ser un criterio declarable es la decision VE1-02 (a).
 
-La UNICA resolucion de Brent usa n_max: es el n que, para el mismo Q y D,
-exige mas area y por lo tanto fija el theta real de diseño (mas resistencia
--> mas tirante para el mismo caudal). Las velocidades NO salen de una segunda
-resolucion de Brent con un theta distinto: salen de recalcular Manning SOBRE
-ESA MISMA geometria (mismo theta, mismo R) con cada uno de los dos n -- el
-mismo canal visto con la rugosidad mas baja y con la mas alta. Asi lo fija el
-fixture CP-2 (tests/fixtures/casos_patron.py: D, y/D, S fijos, y las dos
-velocidades V_con_n_max y V_con_n_min salen de la MISMA R con dos n
-distintos).
+CADA EXTREMO RESUELVE SU PROPIO TIRANTE (VE-2, decision (b) de VE1-02)
+-------------------------------------------------------------------------
+Dos resoluciones de Brent sobre la misma ecuacion, una por extremo del
+rango: con n_max el tirante de CAPACIDAD (el theta de diseño, el que juzga
+V1), y con n_min el tirante de EROSION, mas bajo. Cada velocidad es la de su
+propio tirante, y por eso cada una cumple la continuidad Q = V*A con SU area.
+
+Hasta VE-2 habia UNA sola resolucion, con n_max, y la velocidad alta se
+recalculaba con n_min SOBRE ESA MISMA geometria (mismo theta, mismo R): la
+velocidad de una rugosidad sobre el tirante de otra, con V*A = Q*n_max/n_min
+(1.3*Q en el concreto). Lo fijaba el fixture CP-2 y lo documentaba
+`modelos.TiranteNormal` como «V_erosion*A != Q, por diseño». La revision de
+la ficha VE1-02 contra los PDF no encontro ninguna fuente que tome el tirante
+de un n y la velocidad de otro: el HDS-5 (hif12026, num. 3.3.2, pag. impresa
+3.24, `HDS5_3ED.3.3.2#V_SALIDA_ENTRADA`) dice «determine the normal depth and
+velocity in the culvert barrel.  The velocity at normal depth is assumed to
+be the outlet velocity», y HEC-14 (num. 3.2.2, pag. impresa 3-7,
+`HEC14.3.2.2#V_SALIDA_NORMAL`) calcula la velocidad de salida con Manning a
+tirante normal; su ejemplo de la pag. 3-8 resuelve un tirante por cada n y
+toma Vo = Q/A de cada uno. El dueño aprobo la correccion el 2026-11-17.
 
 DOS VELOCIDADES, NO UNA (MAT-D1)
 ---------------------------------
@@ -71,23 +83,22 @@ suponer la mas BAJA, que sale de n_max.
 
 `resolver_manning()` devuelve las dos:
 
-    V_erosion       = (1/n_min)*R^(2/3)*S^0.5    estimacion ALTA  -> V3, d50
-    V_sedimentacion = (1/n_max)*R^(2/3)*S^0.5    estimacion BAJA  -> V2
+    V_erosion       = Q / A(y_n con n_min)                estimacion ALTA  -> V3, d50
+    V_sedimentacion = (1/n_max)*R(n_max)^(2/3)*S^0.5      estimacion BAJA  -> V2
 
-Hasta esta correccion devolvia solo la primera, bajo el nombre `V`, y V2 la
+(la segunda es Q / A(y_n con n_max), la misma cuenta escrita como Manning).
+Hasta MAT-D1 devolvia solo la primera, bajo el nombre `V`, y V2 la
 consumia: un piso verificado con la estimacion alta. La Sec. 4.1 de la hoja
 de ruta asigna n minimo a "velocidad maxima y socavacion" -- V2 no esta en
 esa lista -- y el fixture CP-3 modela el umbral de V2 con n = 0.013, que es
 n_max: el repositorio se contradecia a si mismo.
 
 `V_sedimentacion` es ademas el minimo REAL de la velocidad sobre todo el rango
-de n de la Tabla N 09, no solo el minimo sobre esta geometria: con un n menor
-el tirante normal baja, el area baja y la velocidad media Q/A sube -- mientras
-theta este en la rama creciente de la curva de capacidad, que es donde V1
-mantiene el diseño (y/D <= 0.75); ver `modelos.TiranteNormal`, que enuncia la
-condicion. Y cumple `V_sedimentacion * A = Q` exactamente, porque es la
-velocidad media del mismo n con que se resolvio el tirante. Ver la advertencia
-ya documentada en `modelos.TiranteNormal` (V_erosion*A != Q, por diseño).
+de n de la Tabla N 09: con un n menor el tirante normal baja, el area baja y
+la velocidad media Q/A sube -- mientras theta este en la rama creciente de
+la curva de capacidad, que es donde V1 mantiene el diseño (y/D <= 0.75); ver
+`modelos.TiranteNormal`, que enuncia la condicion. Y `V_erosion`, por la
+misma cadena, es el maximo real: la de n_min con su tirante.
 
 `tirante_normal()`, la pieza mas chica, resuelve Manning para un solo n. Queda
 publica porque M4 la reutiliza para lo que si necesita geometria de un n
@@ -383,27 +394,38 @@ def tirante_normal(seccion: Seccion, Q: float, S: float, n: float) -> Optional[G
 def resolver_manning(seccion: Seccion, Q: float, S: float, material: Material
                      ) -> Union[TiranteNormal, SinTiranteNormal, None]:
     """
-    Resuelve el tirante normal (Sec. 4.1) aplicando la regla de doble n:
+    Resuelve el tirante normal (Sec. 4.1) con los DOS extremos del rango de n
+    de la Tabla N 09, cada uno con SU tirante (VE-2, decision (b)):
 
-    1. Una unica resolucion de Brent con `material.n_para_capacidad` (n_max):
-       fija el theta real de diseño -- el mas conservador del lado de la
-       inundacion, el que alimenta V1 (borde libre).
-    2. Sobre esa MISMA geometria (mismo R), las DOS velocidades del rango de
-       n de la Tabla N 09:
-         - con `material.n_para_velocidad_maxima` (n_min), la estimacion ALTA,
-           conservadora contra los TECHOS (V3, Laushey);
-         - con `material.n_para_velocidad_minima` (n_max), la estimacion BAJA,
-           conservadora contra el PISO (V2, autolimpieza).
+    1. Brent con `material.n_para_capacidad` (n_max): el tirante de
+       CAPACIDAD, el mas conservador del lado de la inundacion, el que
+       alimenta V1 (borde libre). Sobre el, con el mismo n,
+       `V_sedimentacion` = (K_MANNING_SI/n_max)*R^(2/3)*S^0.5 (ec. (47) del
+       num. 4.1.1.3.6), la estimacion BAJA, conservadora contra el PISO (V2,
+       autolimpieza); cumple V*A = Q porque es la velocidad media del mismo
+       n con que se resolvio el tirante.
+    2. Brent con `material.n_para_velocidad_maxima` (n_min), SOBRE LA MISMA
+       ECUACION: el tirante normal de esa rugosidad, mas bajo, y
+       `V_erosion` = Q / A(y_n con n_min), la estimacion ALTA, conservadora
+       contra los TECHOS (V3, Laushey). Es tambien la ec. (47) evaluada sobre
+       su propio tirante: Q/A y Manning coinciden alli hasta la convergencia
+       de Brent (`tolerancias.TOL_REL_CONTINUIDAD_MANNING`).
 
-    Las dos salen de la misma expresion de Manning -- V =
-    (K_MANNING_SI/n)*R^(2/3)*S^0.5, ec. (47) del num. 4.1.1.3.6 -- con la
-    misma R y distinto n. Ninguna se
-    obtiene dividiendo Q entre A: hacerlo devolveria siempre la segunda, y con
-    ella un techo verificado del lado inseguro.
+    POR QUE DOS RESOLUCIONES Y NO UNA (VE-2). Hasta VE-2 habia una sola, con
+    n_max, y la velocidad alta se calculaba con n_min SOBRE ESA geometria: la
+    velocidad de una rugosidad sobre el tirante de otra, con V*A = Q*n_max/
+    n_min (1.3*Q en el concreto), un caudal que no pasa por el conducto.
+    Ninguna fuente lo hace asi: el HDS-5 (num. 3.3.2, pag. impresa 3.24)
+    manda «determine the normal depth and velocity in the culvert barrel», y
+    HEC-14 (num. 3.2.2, pag. impresa 3-7) calcula la velocidad de salida con
+    Manning a tirante normal, y su ejemplo de la pag. 3-8 resuelve un tirante
+    por cada n. En UPAO ALC46 (Q = 0.317 m3/s, S = 0.10) la formula vieja daba
+    6.28 m/s a Ø 0.90 m, sobre el techo de 6.0 del concreto, y esta da 5.81.
 
     Devuelve None si la resolucion de Brent con n_max no converge: el
     material no alcanza a transportar Q en flujo libre a esta D y S, y no
-    hay geometria sobre la que evaluar las velocidades.
+    hay geometria sobre la que evaluar las velocidades. La de n_min recibe el
+    MISMO trato: None, nunca un sustituto.
 
     Y `SinTiranteNormal` SI EL BARRIL ES HORIZONTAL, S = 0 (T-2, INF-5.1.6):
     no hay tirante normal para ningun caudal ni seccion, y eso no es «este
@@ -439,12 +461,25 @@ def resolver_manning(seccion: Seccion, Q: float, S: float, material: Material
         return SinTiranteNormal(S=S)
     if geom is None:
         return None
+    # --- VE-2 (decision (b) de VE1-02) --- LA RAMA ALTA RESUELVE SU PROPIO
+    # TIRANTE: la misma ecuacion, la misma seccion y el mismo Q, con n_min.
+    # Hasta VE-2 la velocidad alta era la de n_min SOBRE LA GEOMETRIA DE
+    # n_max, V(n_max)*n_max/n_min, y su V*A no era Q sino Q*n_max/n_min (1.3*Q
+    # en el concreto). Si esta segunda resolucion no converge, el trato es el
+    # de la primera: None, sin sustituto. Con n_min <= n_max no ocurre --el
+    # caudal a seccion llena crece al bajar n--, y no se le pone un default
+    # para el dia en que un material traiga el par al reves.
+    geom_erosion = tirante_normal(seccion, Q, S,
+                                  material.n_para_velocidad_maxima)
+    if geom_erosion is None:
+        return None
 
     factor_geometrico = K_MANNING_SI * geom.R ** (2 / 3) * S ** (1 / 2)  # literal-ok: exponentes de Manning, ec. (47) del num. 4.1.1.3.6 / Sec. 4.1
     return TiranteNormal(
         geometria=geom,
-        V_erosion=factor_geometrico / material.n_para_velocidad_maxima,
+        V_erosion=Q / geom_erosion.A,
         V_sedimentacion=factor_geometrico / material.n_para_velocidad_minima,
+        geometria_erosion=geom_erosion,
     )
 
 

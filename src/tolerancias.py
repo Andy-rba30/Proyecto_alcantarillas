@@ -62,6 +62,23 @@ TOL_THETA_BORDE = 1e-9
 # milimetro. Se suma al lado admisible de la comparacion, nunca al obtenido.
 TOL_UMBRAL_NORMATIVO = 1e-9
 
+# --- VE-2 (decision (b) de VE1-02) --- Continuidad de una rama de Manning:
+# cuanto puede diferir, en RELATIVO, el producto V*A del caudal Q con que se
+# resolvio el tirante normal de esa rama. Las dos ramas resuelven su propio
+# tirante con Brent (`M3.resolver_manning`), y el llenado resuelto reproduce
+# Q hasta `TOL_BRENT` en el parametro de llenado, amplificado por dQ/dllenado.
+# MEDIDO al cerrar VE-2 sobre la malla de `tests/test_ve2_velocidad_erosion.py`
+# (seis secciones circulares x tres materiales y cuatro marcos x cuatro
+# pendientes x seis fracciones de Q_lleno, las dos ramas): la peor desviacion
+# entre la velocidad de Manning sobre la geometria resuelta y Q/A es 8.1e-11
+# en la rama de n_min y 3.6e-11 en la de n_max (la misma que midio EXT-11).
+# Se fija doce veces por encima de lo medido y muy por debajo de cualquier
+# diferencia de rama: la velocidad de n_min sobre el tirante de n_max --la
+# formula anterior a VE-2-- se aparta de la continuidad un 4.8 % como minimo
+# en la misma malla. Cambiarla no mueve ninguna magnitud: solo la lee la
+# comprobacion de continuidad de la suite.
+TOL_REL_CONTINUIDAD_MANNING = 1e-9
+
 # ---------------------------------------------------------------------------
 # COS_ESVIAJE_MIN: donde 1/cos(esviaje) deja de estar determinado (PC-32)
 # ---------------------------------------------------------------------------

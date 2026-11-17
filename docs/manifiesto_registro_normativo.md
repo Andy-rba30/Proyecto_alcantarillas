@@ -1173,6 +1173,7 @@ línea que se pueda romper.
 | `HEC14.10.2#TW_ALTO` | 10.2 | «10.2 RIPRAP APRON» | pág. impresa **10-18** · PDF 219 | aproximacion | 2026-11-12 · texto |
 | `HEC14.3#CONTINUIDAD` | 3 | «CHAPTER 3: CULVERT OUTLET VELOCITY AND VELOCITY MODIFICATION» | pág. impresa **3-1** · PDF 32 | definicion | 2026-11-12 · texto |
 | `HEC14.3.1.3#BORDE` | 3.1.3 | «3.1.3 Unsubmerged Outlets (Brink Depth)» | pág. impresa **3-3** · PDF 34 | definicion | 2026-11-12 · texto |
+| `HEC14.3.2.2#V_SALIDA_NORMAL` | 3.2.2 | «3.2.2 Unsubmerged Outlets (Normal Depth)» | pág. impresa **3-7** · PDF 38 | aproximacion | 2026-11-17 · texto |
 | `HEC14.5#PEOR_CASO` | 5 | «CHAPTER 5: ESTIMATING SCOUR AT CULVERT OUTLETS» | pág. impresa **5-1** · PDF 54 | definicion | 2026-11-12 · texto |
 | `HEC14.5.1#EC_5_1` | 5.1, Ec. (5.1) | «COHESIONLESS SOILS» | pág. impresa **5-1** · PDF 54 | aproximacion | 2026-11-12 · ambos |
 | `HEC14.5.1.1#T5_1` | 5.1.1, Table 5.1 | «5.1.1 Scour Hole Geometry» | pág. impresa **5-2** · PDF 55 | definicion | 2026-11-12 · texto |
@@ -1214,6 +1215,8 @@ línea que se pueda romper.
 > **`HEC14.3#CONTINUIDAD`** — Sigue: «The flow area, A, for determining outlet velocity is calculated using the culvert outlet depth that is consistent with the culvert flow type», y el num. 3.1.2 (pag. impresa 3-2, PDF 33) da la regla de HDS-5 que M4 aplica: «the higher of the tailwater or critical depth», o la seccion llena con la salida sumergida (3.1.1). Es la relacion con que M6 asigna a la velocidad de salida su area, A = Q/V, para el tirante equivalente del Froude; los procedimientos de HEC-14 hacen lo mismo («A = Q/Vo», pag. impresa 9-40, PDF 197).
 
 > **`HEC14.3.1.3#BORDE`** — Con el TW bajo el tirante critico, el tirante en el borde de la salida (brink depth) es MENOR que el critico: la velocidad real a la salida es MAYOR que Q/A(yc), que es la que M4 toma por HDS-5 3.1.6. El mismo numeral lo dice al aproximar el borde con las curvas criticas: «Since critical depth is larger than brink depth, determining brink depth in this manner is not conservative, but is acceptable». Las Figuras 3.3 y 3.4 dan el borde y no estan digitalizadas.
+
+> **`HEC14.3.2.2#V_SALIDA_NORMAL`** — Es la seccion 3.2 «Culverts on Steep Slopes», «culverts flowing with inlet control» (misma pagina). El ejemplo que sigue, «Design Example: Increasing Roughness to Reduce Velocity (SI)» (pag. impresa 3-8, PDF 39), resuelve UN tirante por cada n: con n = 0.012 «y = 0.41(1.524) = 0.625 m», «A = 0.3032(1.524)2 = 0.704 m2» y «Vo, = Q/A = 2.832/0.704 = 4.02 m/s»; con n = 0.024 «y = 0.62(1.524) = 0.945 m», «A = 0.5115(1.524)2 = 1.19 m2» y «Vo, = Q/A = 2.832/1.19 = 2.38 m/s»; y concluye del primero «Since yc > y, the flow is supercritical and exit depth is normal depth». Es lo que sostiene que la velocidad de n_min se mida con el tirante normal de n_min y no con el de n_max (VE-2, ficha VE2-B): ninguna fuente toma el tirante de un n y la velocidad de otro.
 
 > **`HEC14.5#PEOR_CASO`** — Dos limites en el mismo parrafo: las ecuaciones dan la hoya MAXIMA de los ensayos («worst-case») y «do not include long-term channel degradation of the downstream channel». El capitulo abre diciendo de que depende el metodo: caudal, forma del conducto, tipo de suelo, duracion del flujo, pendiente, altura del conducto sobre el lecho y tirante de aguas abajo; el tirante de aguas abajo NO entra en la Ec. (5.1).
 
@@ -2995,7 +2998,7 @@ recomienda.
 | `F4.FORMA_HDS5` | Fase 4 - Dimensionamiento hidraulico | Forma de la ecuacion de control de entrada del HDS-5 que aplica a esta seccion, y por que | **define** | `HDS5_3ED.A.2`, `HDS5_3ED.TA.1`, `HDS5_3ED.A.3#FORMAS` |
 | `F4.HO` | Fase 4 - Dimensionamiento hidraulico | Altura de la linea de energia a la salida, h_o = max(TW, (d_c + D)/2) | **define** | `HDS5_3ED.3.3.3#HO`, `HDS5_3ED.3.3.3#HO_SUMERGIDA`, `HDS5_3ED.3.3.3#HO_1_2D`, `HDS5_3ED.3.1.4#0_75D` |
 | `F4.HORIZONTAL` | Fase 4 - Dimensionamiento hidraulico | Barril horizontal (S = 0): no hay tirante normal, y el regimen del conducto lo fija el extremo de aguas abajo | **permite** | `HDS5_3ED.3.3.4#HORIZONTAL`, `HDS5_3ED.3.3.4#KS`, `HDS5_3ED.3.3.4#H_SIN_AJUSTE`, `HDS5_3ED.3.5.1#H2` |
-| `F4.MANNING` | Fase 4 - Dimensionamiento hidraulico | Tirante normal y velocidad en el conducto, por Manning: UNA geometria (el tirante, con n_max) y DOS velocidades, una por cada extremo del rango de la Tabla N 09 | **define** | `MC_HHD.4.1.1.3.6`, `MC_HHD.4.1.1.3.6#T09` |
+| `F4.MANNING` | Fase 4 - Dimensionamiento hidraulico | Tirante normal y velocidad en el conducto, por Manning: DOS tirantes normales, uno con cada extremo del rango de la Tabla N 09 (n_max y n_min), y la velocidad de cada uno con su propio tirante | **define** | `MC_HHD.4.1.1.3.6`, `MC_HHD.4.1.1.3.6#T09`, `HDS5_3ED.3.3.2#V_SALIDA_ENTRADA`, `HEC14.3.2.2#V_SALIDA_NORMAL` |
 | `F4.N_CAJON` | Fase 4 - Dimensionamiento hidraulico | Coeficiente de rugosidad de Manning del cajon de concreto, por analogia declarada dentro del grupo A de la Tabla N 09 | **define** | `MC_HHD.4.1.1.3.6`, `MC_HHD.4.1.1.3.6#T09` |
 | `F4.N_CAJON_TB1` | Fase 4 - Dimensionamiento hidraulico | Coeficiente de rugosidad de Manning del cajon de concreto, por la fila del cajon de la Tabla B.1 del HDS-5 | **define** | `HDS5_3ED.TB.1`, `HDS5_3ED.B.3#CAJON_IN_SITU` |
 | `F4.PERFIL` | Fase 4 - Dimensionamiento hidraulico | Perfil de la lamina de agua por paso directo desde la salida hacia la entrada: longitud a seccion llena y carga a la entrada por remanso (HDS-5 pag. 3.12 y Section 3.5) | **define** | `HDS5_3ED.3.1.4#REMANSO`, `HDS5_3ED.3.1.4#EMPALME`, `HDS5_3ED.3.1.4#HW_REMANSO`, `HDS5_3ED.3.1.4#0_75D`, `HDS5_3ED.3.5#PERFIL`, `HDS5_3ED.3.5.1#S1`, `HDS5_3ED.3.5.1#TIPO7`, `HDS5_3ED.3.3.3#HO` |
@@ -3240,7 +3243,7 @@ vigila. Una cita con cualquier campo pendiente NO puede llevar firma de
 verificación.
 
 
-Citas sin firma de verificación: **6** de 507.
+Citas sin firma de verificación: **6** de 508.
 - `AASHTO_M294_TRAD.1.1.1`
 - `AASHTO_M294_TRAD.1.4`
 - `AASHTO_M294_TRAD.7.2.1`

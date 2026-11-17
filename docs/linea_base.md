@@ -692,3 +692,68 @@ H2 le añadió a su guardia la de los campos de la progresión
 encabezado en las cuatro memorias de la CLI, ocho líneas en ocho archivos. El rótulo
 nuevo de la sección (H1, `modelos.texto_de_dimension`) escribe los mismos «Ø 0.90 m» y
 «marco 1.20 × 0.90 m» de siempre: ningún otro byte cambió.
+
+---
+
+## 11. VE-2, bloque 1: la velocidad de erosión resuelve su propio tirante, y la línea base SÍ se mueve (2026-11-17)
+
+VE-2 corrige un defecto de MÉTODO aprobado por el dueño (ficha VE2-B; decisión (b) de
+VE1-02): la velocidad alta de la regla de doble n era la de n mínimo sobre el tirante de
+n máximo, V(n_máx)·n_máx/n_mín, con V·A = 1.3·Q en el concreto, y hoy es la del tirante
+normal resuelto con n mínimo, `V_erosion = Q / A(y_n con n_mín)` (`M3.resolver_manning`;
+HDS-5 núm. 3.3.2, pág. impresa 3.24; HEC-14 núm. 3.2.2, pág. impresa 3-7). Es el ÚNICO
+bloque de VE-2 que mueve números. Regenerada con `sh tests/linea_base_familia_c/regenerar.sh`
+sobre `72a8d01`, diez de los dieciséis archivos cambian (108 líneas por 108); los
+`informe_expediente.json`, `informe_rama_error.json`, `cli_expediente.txt`,
+`cli_perfil.txt`, `cli_rama_error.txt` y `resumen_expediente.csv` quedan idénticos.
+
+**Lo que se movió, punto por punto** (corrida ancha de perfil y corrida de la Familia C
+dimensionada; las dos dan los mismos números en A-01 y A-02):
+
+| Punto | Magnitud | Antes | Ahora |
+|---|---|---|---|
+| A-01 (Ø 0.90, control de entrada) | `V_erosion` = `V_salida` = V3 (m/s) | 3.206 | 3.040 |
+| A-01 | d50 de Laushey (m) | 0.338 | 0.304 |
+| A-01 | espesor adoptado 1.75·d50 (m) | 0.592 | 0.532 |
+| A-01 | lo que rige con la envolvente | 0.770 m · 5.40 m, clase 4 | sin cambio |
+| A-01 | Froude de HEC-14 Fr_e (ye, m) | 1.567 (0.427) | 1.466 (0.438) |
+| A-02 (Ø 0.90, control de entrada) | `V_erosion` = `V_salida` = V3 (m/s) | 2.883 | 2.681 |
+| A-02 | d50 de Laushey (m) | 0.274 | 0.237 |
+| A-02 | clase de la piedra (Tabla 10.1) | 4 (0.35 m) | 3 (0.25 m) |
+| A-02 | espesor y longitud que rigen (m) | 0.770 · 5.40 | 0.600 · 5.00 |
+| A-02 | espesor adoptado (m) | 0.479 | 0.414 |
+| A-02 | Froude Fr_e (ye, m) | 1.714 (0.289) | 1.565 (0.299) |
+| C-01 (marco 1.20 × 0.90, control de salida) | `V_erosion` = V3 (m/s) | 2.084 | 1.955 |
+| C-01 | aviso de la banda de régimen: V y d50 con n mínimo | 2.084 m/s · 0.143 m | 1.955 m/s · 0.126 m |
+| Punto de cajón (driver) | `V_erosion` (m/s) | 2.694463 | 2.496046 |
+
+C-01 conserva su `V_salida` (1.908 m/s, la crítica: control de salida, HDS-5 3.1.6) y su
+d50. En la corrida de expediente ningún punto dimensiona y sólo cambian las trazas de
+los escalones intentados en la memoria (las velocidades y los márgenes de V3 de los
+escalones que no cierran). Las memorias cambian además en el texto del paso 4.1 (los
+dos tirantes, V = Q/A de cada rama, las dos citas), del 4.3b (`y_n_min` bajo control de
+entrada) y del fundamento `F4.MANNING` en el anexo.
+
+**Diámetros, secciones, materiales y HW movidos: ninguno, y ningún diámetro sube.** Los
+dos tubos ya estaban en Ø 0.90 m, el mínimo de la progresión, y el marco no se mueve.
+Bajar la velocidad de erosión sólo puede aliviar V3: un diámetro puede bajar, no subir
+(el caso UPAO ALC46 de la validación externa pasa de Ø 1.35 a Ø 0.90 m;
+`tests/test_ve2_velocidad_erosion.py`).
+
+**Fuera de la línea base, lo que también se movió y se declaró en su test** (cada uno
+cambiado con la causa escrita junto al assert): los dorados de CP-2 y CP-2R ganan la
+rama de n mínimo con su tirante (`V_erosion_esperado` 2.8315 y 3.6620 m/s;
+`V_con_n_min_esperado` queda como el contraste de la fórmula sobre una geometría dada);
+el caso subcrítico del dictamen (`test_ext3_regimen_barril`) pasa de 1.184 a 1.107 m/s;
+A-01 a mano (`test_cierre_perfil`) de 3.206 a 3.040 m/s con y_n = 0.523 m; los números
+de A-01 y A-02 en `test_t8_correcciones` y `test_t8_proteccion`; el caso G2 de
+`test_t4_materiales_durabilidad` sube su pendiente de 0.012 a 0.015 para que el concreto
+siga incumpliendo V3 en toda su progresión (con 0.012 el Ø 1.65 m ya cumple, 5.95 m/s) y
+llega a los mismos escalones del TMC; el techo de la memoria por punto
+(`test_ext8_rendimiento_gui.KB_POR_PUNTO_MAX`) sube de 107.5 a 109.0 KB, medidos 108.50
+contra 107.04; y la variante `caudal_calculado` del juego de T-11 vacía el caudal del
+evento extremo, que era el de su Q declarado (ficha VE2-B). Los documentos generados
+(`indice_formulas.md`, `validacion_integral.md`, `validacion_hy8.md`, `manifiesto_citas.md`,
+`manifiesto_registro_normativo.md` y `trazabilidad.csv`, con la cita nueva de HEC-14) se
+regeneraron con sus comandos; `validacion_hds5.md` y `validacion_sensibilidad.md` salen
+idénticos.

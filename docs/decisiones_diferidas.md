@@ -7599,6 +7599,7 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   se detiene desde 10 km², y Tinas (55.9 km²) y cinco cuencas de TU-107 no se calculan.
   (g) En D1, resolución de centímetro: rechazar en la puerta la serie de 6 in, que
   redondeada se leía 1.07 por 1.0668 (+0.3 % de diámetro, +0.6 % de área).
+- **Cerrado (VE-2):** (b), la velocidad de erosión resuelve su propio tirante normal con n mínimo y UPAO ALC46 dimensiona Ø 0.90 m (ficha VE2-B).
 - **Por qué no se toman aquí:** cambian fichas, etiquetas o diseños —(b) y (c)— o lo que
   el programa calcula; el permiso de VE-1 no las alcanza.
 - **Qué haría falta:** la decisión del dueño y, por cada una adoptada, un prompt con sus
@@ -7607,3 +7608,35 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
 - **Dónde vive:** `src/modulos/M3_hidraulica.py::resolver_manning` (a) y (b);
   `M8_estructural.empuje_flotacion_kn_m` (c); `MH_hidrologia.precipitacion_de_diseno`
   (d) y (e); `MH_hidrologia.caudal_de_diseno` (f); `criterios_adoptados._verificar_criterio` (g).
+
+## VE2-B · La velocidad de erosión resuelve su propio tirante con n mínimo
+
+- **Cerrado (VE-2, bloque 1; decisión (b) de VE1-02, 2026-11-17):** la velocidad alta
+  era la de n mínimo sobre el tirante de n máximo (V·A = 1.3·Q en el concreto); hoy
+  una segunda resolución de Brent da su tirante (`TiranteNormal.geometria_erosion`) y
+  `V_erosion = Q/A` de él, con el trato de la primera si no converge. No cambian
+  `V_sedimentacion`, el tirante de capacidad ni la velocidad de salida bajo control de
+  salida. Citas: HDS-5 núm. 3.3.2, pág. impresa 3.24 (ya registrada) y HEC-14 núm.
+  3.2.2, pág. impresa 3-7 (`HEC14.3.2.2#V_SALIDA_NORMAL`, nueva, con el ejemplo de la
+  pág. 3-8). `F4.MANNING` dice que la doble n es adopción y que la hoja de ruta la
+  rotula «Regla [N]».
+- **Por qué así:** consumidores, con la tabla de cada uno verificada en el Manual
+  (págs. impresas 76-77): V3 juzga la velocidad del conducto contra la Tabla Nº 10;
+  M4 la toma como `V_salida` bajo control de entrada; M6 la usa en Laushey, el Froude
+  y el contraste con la Tabla Nº 11 (velocidad de salida), y en el aviso de la banda
+  de régimen; M11, la CLI y la ventana la imprimen. El tirante de salida que M4
+  publica bajo control de entrada sigue siendo el de n máximo, porque lo leen como
+  NIVEL la Ec. (10.5) de HEC-14 y el cabezal (M9). La variante `caudal_calculado` de
+  T-11 vacía el caudal del evento extremo, que era el del Q declarado (V8 lo
+  rechazaba en B-01). Los números movidos, punto por punto, en `docs/linea_base.md`
+  §11: A-01 3.206 → 3.040 m/s y d50 0.338 → 0.304 m; A-02 2.883 → 2.681 m/s, d50
+  0.274 → 0.237 m y la piedra baja a la clase 3; C-01 2.084 → 1.955 m/s. **Ningún
+  diámetro, sección ni material se mueve; ninguno sube.** UPAO ALC46 dimensiona
+  Ø 0.90 m con 5.81 m/s. Los tests que cambiaron, con su causa, en el mismo §11.
+- **Qué haría falta (lo diferido):** (i) si el tirante de salida bajo control de
+  entrada pasa al de n mínimo en la Ec. (10.5) de HEC-14 (sube el D50) sin bajar el
+  nivel del cabezal: decisión del dueño, separando los dos tirantes en
+  `ResultadoHidraulico`; (ii) el 1.184 m/s del dictamen (hoy 1.107) sigue como
+  histórico en `src/servicio.py` y `src/constantes_normativas.py`, fuera del permiso;
+  (iii) la hoja de ruta §4.1 sigue mal (VE1-01, VE2-01).
+- **Dónde vive:** `src/modulos/M3_hidraulica.py::resolver_manning`

@@ -227,7 +227,7 @@ def _resultado_hidraulico(control: ControlGobernante) -> ResultadoHidraulico:
     return ResultadoHidraulico(
         y_normal=c["y_sobre_D"] * c["D"],
         y_critico=c["y_sobre_D"] * c["D"] / 2,     # valor de forma, no de calculo
-        V_erosion=c["V_con_n_min_esperado"],
+        V_erosion=c["V_erosion_esperado"],
         V_sedimentacion=c["V_con_n_max_esperado"],
         Q=c["Q_con_n_max_esperado"],
         S=c["S"],
@@ -244,19 +244,23 @@ def test_HW_selecciona_el_control_que_gobierna():
     assert salida.HW == pytest.approx(salida.HW_salida)
 
 
-def test_la_velocidad_no_es_el_caudal_dividido_entre_el_area():
+def test_cada_velocidad_es_el_caudal_entre_el_area_de_su_tirante():
     """
-    Regla de doble n: `V_erosion` sale de n_min y Q de n_max, asi que
-    V_erosion*A != Q. Si algun dia coinciden, alguien se ahorro el calculo
-    doble de Sec. 4.1.
+    Regla de doble n: `V_erosion` sale de n_min y `V_sedimentacion` de
+    n_max, y cada una es Q entre el area de SU tirante normal (ver
+    `modelos.TiranteNormal`).
 
-    `V_sedimentacion` SI cumple V*A = Q, y eso no es la regla ahorrada sino su
-    consecuencia: es la velocidad media del mismo n con que se resolvio el
-    tirante (ver `modelos.TiranteNormal`).
+    CAMBIADO EN VE-2 DECLARANDO LA CAUSA. Se llamaba
+    `test_la_velocidad_no_es_el_caudal_dividido_entre_el_area` y fijaba
+    «V_erosion*A != Q» sobre el area de n_max como si fuera la regla: era la
+    formula que la decision (b) de VE1-02 retiro (la velocidad de n_min sobre
+    el tirante de n_max, V*A = 1.3*Q). Sobre el area de n_max `V_erosion*A`
+    sigue siendo distinto de Q --y mayor--; sobre la de n_min es Q.
     """
     c = CP2_GEOMETRIA_MANNING
     r = _resultado_hidraulico(ControlGobernante.ENTRADA)
-    assert r.V_erosion * c["A_esperado"] != pytest.approx(
+    assert r.V_erosion * c["A_esperado"] > r.Q * (1 + c["tolerancia_hidraulica"])
+    assert r.V_erosion * c["A_n_min_esperado"] == pytest.approx(
         r.Q, rel=c["tolerancia_hidraulica"])
     assert r.V_sedimentacion * c["A_esperado"] == pytest.approx(
         r.Q, rel=c["tolerancia_hidraulica"])

@@ -1081,7 +1081,8 @@ def test_el_apron_fuera_de_la_tabla_compara_con_la_clase_mayor():
 def test_el_contraste_avisa_la_piedra_mayor_solo_cuando_hec14_la_pide(
         corrida_base):
     a01 = _punto(corrida_base, "A-01")
-    # Laushey 0.338 m contra HEC-14 0.252 m: no hay aviso de piedra mayor.
+    # Laushey 0.304 m (0.338 hasta VE-2) contra HEC-14 0.252 m: no hay aviso
+    # de piedra mayor.
     assert not any("pide una piedra mayor" in x for x in a01.avisos())
     a = M6.apron_hec14(Q_celda=2.33, seccion=SeccionCircular(1.5), TW=0.5,
                        y_salida=None, y_critico=0.8)
@@ -1298,27 +1299,35 @@ def test_aud5_el_espesor_bajo_2_d50_se_avisa_siempre(corrida_manual,
 def test_aud5_la_clase_de_la_piedra_adoptada_se_contrasta(corrida_manual):
     """
     Hallazgo 5 (ii), A-02 con la regla «manual»: la Ec. (10.4) pide la clase
-    1, y la piedra que el proyecto pone (d50 = 0.274 m) es de la clase 4: L =
-    6·0.9 = 5.4 m y profundidad 2.2·0.35 = 0.77 m, mas que lo adoptado (5.0 m
-    y 0.479 m).
+    1, y la piedra que el proyecto pone (d50 = 0.237 m) es de la clase 3: L =
+    5·0.9 = 4.5 m y profundidad 2.4·0.25 = 0.60 m; lo adoptado (5.0 m y
+    0.414 m) queda corto en el espesor y no en la longitud.
+
+    CAMBIADO EN VE-2 DECLARANDO LA CAUSA. Con T-8 la piedra era de 0.274 m,
+    clase 4 (L = 5.4 m, profundidad 0.77 m), y lo adoptado (0.479 m) quedaba
+    corto en las dos: la velocidad de salida de A-02 bajo control de entrada
+    era la de n_min sobre el tirante de n_max (2.883 m/s). Con su propio
+    tirante es 2.681 m/s (decision (b) de VE1-02) y la piedra baja de clase.
+    El contraste sigue siendo el mismo; cambia la clase que lo dispara.
     """
     a02 = _punto(corrida_manual, "A-02")
     p = a02.proteccion
     assert p.apron.clase == 1
     c = p.clase_de_la_piedra
-    assert c.clase == 4
-    assert c.longitud == pytest.approx(6 * 0.9, rel=REL_FORMULA)
-    assert c.espesor == pytest.approx(2.2 * 0.35, rel=REL_FORMULA)
+    assert c.clase == 3
+    assert c.longitud == pytest.approx(5 * 0.9, rel=REL_FORMULA)
+    assert c.espesor == pytest.approx(2.4 * 0.25, rel=REL_FORMULA)
     assert any("piedra que el proyecto pone" in x for x in a02.avisos())
-    assert any("queda corto en la longitud (5.00 m contra 5.40 m) y en el "
-               "espesor (0.479 m contra 0.770 m)" in x for x in a02.avisos())
+    assert any("queda corto en el espesor (0.414 m contra 0.600 m)" in x
+               for x in a02.avisos())
+    assert not any("queda corto en la longitud" in x for x in a02.avisos())
     assert M6._avisos_de_la_piedra(c, espesor=0.8, longitud=6.0) == ()
     solo_espesor = M6._avisos_de_la_piedra(c, espesor=0.5, longitud=6.0)
     assert len(solo_espesor) == 1 and "la longitud" not in solo_espesor[0]
     assert "6.6b" in [x.codigo for x in p.pasos]
     directa = M6.clase_hec14_de_la_piedra(d50=p.d50, D=0.9)
-    assert directa.clase == 4 and directa.ancho_final == pytest.approx(
-        3 * 0.9 + 2 / 3 * 5.4, rel=REL_FORMULA)
+    assert directa.clase == 3 and directa.ancho_final == pytest.approx(
+        3 * 0.9 + 2 / 3 * 4.5, rel=REL_FORMULA)
     sin_clase = M6.clase_hec14_de_la_piedra(d50=0.6, D=0.9)
     assert sin_clase.clase is None
     # La sustitucion del paso nombra la clase MAYOR de la tabla y su D50.
@@ -1338,9 +1347,16 @@ def test_aud5_la_regla_envolvente_toma_el_mayor_y_manual_reproduce_lo_de_antes(
     """
     Hallazgo 5 (iv), y la decision del dueño del 2026-11-12: la envolvente
     es el valor de archivo y «manual» la alternativa barrible que deja lo
-    adoptado, como antes. A-02: Laushey 0.274 m (clase 4), la Ec. (10.4) pide
-    menos piedra (clase 1); rige Laushey, con 2.2·0.35 = 0.770 m y 6·0.9 =
-    5.40 m de la clase 4.
+    adoptado, como antes. A-02: Laushey 0.237 m (clase 3), la Ec. (10.4) pide
+    menos piedra (clase 1); rige Laushey, con 2.4·0.25 = 0.600 m de la clase
+    3 y la longitud adoptada, 5.00 m, que supera los 5·0.9 = 4.50 m de la
+    clase: la envolvente toma el MAYOR en cada dimension, y aqui cada una
+    sale de un lado distinto.
+
+    CAMBIADO EN VE-2 DECLARANDO LA CAUSA: con T-8 la piedra era de 0.274 m,
+    clase 4, y la envolvente daba 0.770 m y 5.40 m; la velocidad de salida
+    de A-02 baja de 2.883 a 2.681 m/s con la rama de n_min sobre su propio
+    tirante (decision (b) de VE1-02).
     """
     a02 = _punto(corrida_base, "A-02")
     r, seccion = a02.resultado.resultado_hidraulico, a02.resultado.seccion
@@ -1355,8 +1371,8 @@ def test_aud5_la_regla_envolvente_toma_el_mayor_y_manual_reproduce_lo_de_antes(
     env = M6.proteccion_salida(V=r.V_salida, resultado=r, seccion=seccion)
     assert env.d50 == pytest.approx(manual.d50, rel=REL_TRANSPORTE)
     assert env.d50_laushey == pytest.approx(manual.d50, rel=REL_TRANSPORTE)
-    assert env.espesor == pytest.approx(2.2 * 0.35, rel=REL_FORMULA)
-    assert env.longitud == pytest.approx(6 * 0.9, rel=REL_FORMULA)
+    assert env.espesor == pytest.approx(2.4 * 0.25, rel=REL_FORMULA)
+    assert env.longitud == pytest.approx(5.0, rel=REL_TRANSPORTE)
     assert env.espesor_adoptado == pytest.approx(manual.espesor,
                                                  rel=REL_FORMULA)
     assert "6.6c" in [x.codigo for x in env.pasos]

@@ -535,14 +535,24 @@ def test_la_pagina_de_la_cuneta_que_imprime_la_memoria_es_la_del_registro():
     assert "178" not in ca.CRITERIOS["long_max_cuneta"].fuente
 
 
-def test_manning_dice_una_geometria_y_dos_velocidades():
+def test_manning_dice_dos_tirantes_y_cada_velocidad_con_el_suyo():
     """
-    «Escenarios independientes» contradecia MAT-D1/CP-2: M3 resuelve UNA
-    geometria (tirante con n_max) y DOS velocidades. M3 no cambia.
+    «Escenarios independientes» contradecia MAT-D1/CP-2, y este test fijaba
+    entonces que el fundamento dijera «UNA geometria (tirante con n_max) y
+    DOS velocidades», que era lo que M3 hacia.
+
+    CAMBIADO EN VE-2 DECLARANDO LA CAUSA (decision (b) de VE1-02): M3 SI
+    cambio. Cada extremo del rango resuelve su propio tirante normal y su
+    velocidad es la de ese tirante (HDS-5 num. 3.3.2; HEC-14 num. 3.2.2), de
+    modo que el fundamento dice DOS tirantes. Lo que EXT-6 corrigio sigue
+    corregido: no son «escenarios independientes» --una seccion, un Q y dos
+    rugosidades-- y el texto no lo dice.
     """
-    assert "una geometr" in F.MANNING.que_paso.lower()
-    assert "dos velocidades" in F.MANNING.que_paso.lower()
-    assert "n_max" in F.MANNING.que_paso
+    que = F.MANNING.que_paso.lower()
+    assert "dos tirantes" in que and "propio tirante" in que
+    assert "una geometr" not in que
+    assert "n_max" in F.MANNING.que_paso and "n_min" in F.MANNING.que_paso
+    assert "escenarios independientes" not in F.MANNING.por_que.lower()
     assert "dos veces" not in F.MANNING.por_que
 
 

@@ -1271,7 +1271,17 @@ def test_los_numeros_de_T4_estan_en_la_pagina_que_se_cita(
 # Auditoria adversarial de T-4: H1 (verificador real), H7 y H11
 # ===========================================================================
 
-CASO_G2 = ("X-6,0+380,A,6,850,0.012,42.10,52.20,52.05,8.5,15,9.60,41.30,,,"
+# --- VE-2 (decision (b) de VE1-02) --- LA PENDIENTE DEL CASO PASO DE 0.012 A
+# 0.015, Y SE DECLARA. El caso existe para que el concreto incumpla V3 en
+# TODA su progresion y se evalue ENTERO antes de que otro material se adopte.
+# Con la velocidad de erosion de cada rama sobre su propio tirante (VE-2), a
+# S = 0.012 el concreto ya no la incumple entera: Ø 1.65 m cumple V3 con
+# 5.95 m/s y el punto se detiene en la clase D-load que la Fase 8 pide
+# (`clases_producto_por_relleno`), que es otro caso. Con 0.015 el concreto
+# vuelve a incumplir V3 de Ø 1.50 a Ø 2.70 m (6.47 a 6.22 m/s, contra 6.0) y
+# el TMC llega a los MISMOS escalones de antes: Ø 1.95 y 2.10 m, que la
+# costura remachada simple descarta con los mismos 320.7 y 340.2 kN/m.
+CASO_G2 = ("X-6,0+380,A,6,850,0.015,42.10,52.20,52.05,8.5,15,9.60,41.30,,,"
            "SM,,,")
 
 
@@ -1311,7 +1321,8 @@ def _correr_csv(tmp_path, fila):
 def test_h1_el_caso_del_auditor_ya_no_adopta_tmc_con_la_costura_de_archivo(
         del_expediente, tmp_path):
     """
-    Rasante alta, Q = 6 m3/s, S = 0.012, TW = 0.3: el concreto incumple V3 en
+    Rasante alta, Q = 6 m3/s, S = 0.015 (0.012 hasta VE-2: ver el bloque de
+    `CASO_G2`), TW = 0.3: el concreto incumple V3 en
     TODA su progresion y se evalua ENTERO (tope en el ultimo diseño estandar,
     2.70 m, H2 de T-4). Hasta T-5 el TMC de 1.95 m se adoptaba; desde T-5 la
     Fase 8 lo descarta por la costura remachada simple (ver el bloque de

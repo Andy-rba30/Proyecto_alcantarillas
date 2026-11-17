@@ -14,7 +14,11 @@ aprobo (ningun diametro ni material: eso no):
     longitud = los mayores de lo adoptado y de la Tabla 10.1. En A-01 y A-02
     el d50 no se mueve (rige Laushey: 0.338 y 0.274 m), el espesor pasa de
     0.592 y 0.479 m a 0.770 m, y la longitud de 5.00 a 5.40 m. «manual» da
-    exactamente los numeros de antes, y un test lo fija.
+    exactamente los numeros de antes, y un test lo fija. (Esos son los
+    numeros de T-8. VE-2, decision (b) de VE1-02, bajo la velocidad de
+    salida de los dos puntos y con ella el d50: hoy 0.304 y 0.237 m; A-01
+    sigue en 0.770 / 5.40 m y A-02 baja a la clase 3, 0.600 / 5.00 m. Ver
+    `LINEA_BASE_ANTERIOR` y `LINEA_BASE_NUEVA`.)
   * D3 · la duracion por criterio pasa de 30 min [C] a 360 min [A].
   * D6 · «sin enrocado» deja de existir: el d50 lleva siempre numero.
 
@@ -71,8 +75,8 @@ EXTERNOS_ANCHOS = RAIZ / "tests" / "linea_base_familia_c" / "entradas_ampliadas.
 REL_EJEMPLO_IMPRESO = 1e-2   # la fuente imprime 2-3 cifras
 REL_FORMULA = 1e-9           # una formula recomputada en el test
 REL_ARITMETICA = 1e-3        # la aritmetica escrita con cuatro cifras
-# La linea base imprime el d50 con tres decimales (0.338 / 0.274 m): media
-# unidad del ultimo digito impreso.
+# La linea base imprime el d50 con tres decimales (0.304 / 0.237 m desde
+# VE-2; 0.338 / 0.274 m con T-8): media unidad del ultimo digito impreso.
 ABS_IMPRESO_3_DECIMALES = 5e-4
 
 M_POR_FT = 0.3048            # exacto por definicion
@@ -229,9 +233,15 @@ def test_h1_con_manual_la_piedra_que_hec14_pide_de_mas_se_avisa(
 def test_h1_cuando_laushey_pide_mas_rige_laushey_con_la_clase_de_su_piedra(
         corrida_base):
     """
-    A-01 de la linea base: Laushey 3.206²/30.38 = 0.3383 m; la Ec. (10.4)
+    A-01 de la linea base: Laushey 3.040²/30.38 = 0.3042 m; la Ec. (10.4)
     pide 0.2516 m. Rige Laushey, que es de la clase 4 (0.35 m) de la Tabla
     10.1: espesor 2.2·0.35 = 0.770 m y longitud 6·0.9 = 5.40 m.
+
+    VE-2 (decision (b) de VE1-02) MOVIO LA VELOCIDAD, y este docstring y el
+    aviso de abajo se cambiaron declarando la causa: decian 3.206 m/s y
+    0.3383 m, la velocidad de n_min sobre el tirante de n_max. Con su propio
+    tirante es 3.040 m/s, y el espesor adoptado 1.75·0.3042 = 0.532 m (era
+    0.592). La clase, el espesor y la longitud que rigen no cambian.
     """
     p = _punto(corrida_base, "A-01").proteccion
     assert p.rige_la_envolvente
@@ -241,7 +251,7 @@ def test_h1_cuando_laushey_pide_mas_rige_laushey_con_la_clase_de_su_piedra(
     assert p.espesor == pytest.approx(2.2 * 0.35, rel=REL_FORMULA)
     assert p.longitud == pytest.approx(6 * 0.9, rel=REL_FORMULA)
     aviso = next(x for x in p.avisos if "rige la envolvente" in x)
-    assert "rige Laushey" in aviso and "0.592 -> 0.770" in aviso
+    assert "rige Laushey" in aviso and "0.532 -> 0.770" in aviso
     assert "5.00 -> 5.40" in aviso
 
 
@@ -321,11 +331,18 @@ def test_h1_donde_hec14_no_es_evaluable_rige_laushey_y_se_avisa(
 
 
 def test_h1_la_linea_de_la_cli_bajo_manual_es_la_de_antes(corrida_manual):
-    """La regla «manual» reproduce la linea de la linea base anterior."""
+    """
+    La regla «manual» reproduce la linea de la linea base anterior, con la
+    forma de antes de T-8. Los NUMEROS los movio VE-2 (decision (b)), que se
+    declara: A-01 0.338 / 0.592 -> 0.304 / 0.532 y A-02 0.274 / 0.479 ->
+    0.237 / 0.414, porque la velocidad de salida bajo control de entrada es
+    la del tirante normal de n_min con SU tirante (3.206 -> 3.040 y 2.883 ->
+    2.681 m/s).
+    """
     texto = cli.volcar(corrida_manual)
-    assert ("Fase 6  d50 = 0.338 m, espesor 0.592 m, longitud 5.000 m "
+    assert ("Fase 6  d50 = 0.304 m, espesor 0.532 m, longitud 5.000 m "
             "(num. 4.1.1.3.7 c))") in texto
-    assert ("Fase 6  d50 = 0.274 m, espesor 0.479 m, longitud 5.000 m "
+    assert ("Fase 6  d50 = 0.237 m, espesor 0.414 m, longitud 5.000 m "
             "(num. 4.1.1.3.7 c))") in texto
 
 
@@ -336,8 +353,10 @@ def test_h1_la_linea_de_la_cli_bajo_envolvente_separa_los_origenes(
     salen de la Tabla 10.1 de HEC-14 y no del num. 4.1.1.3.7 c) del Manual:
     la linea atribuye el numeral al d50 de Laushey y HEC-14 a lo que rige.
     """
+    # 0.304 m desde VE-2 (era 0.338: la velocidad de n_min sobre el tirante
+    # de n_max).
     linea = next(x for x in cli.volcar(corrida_base).splitlines()
-                 if "Fase 6  d50 = 0.338 m" in x)
+                 if "Fase 6  d50 = 0.304 m" in x)
     antes, _, despues = linea.partition("(num. 4.1.1.3.7 c))")
     assert "espesor" not in antes and "longitud" not in antes
     assert "espesor 0.770 m" in despues and "longitud 5.400 m" in despues
@@ -1154,21 +1173,31 @@ def test_h14_en_la_banda_de_regimen_la_fase_6_avisa_la_velocidad_alta(
 # Lo que se mueve y lo que no: los numeros de la linea base
 # ===========================================================================
 
-LINEA_BASE_ANTERIOR = {     # id: (d50, espesor, longitud), en m: T-8, `df1b23c`
-    "A-01": (0.338, 0.592, 5.00),
-    "A-02": (0.274, 0.479, 5.00),
+# id: (d50, espesor, longitud), en m. Eran los de T-8 (`df1b23c`): A-01
+# (0.338, 0.592, 5.00) y A-02 (0.274, 0.479, 5.00) con la regla «manual», y
+# (0.338, 0.770, 5.40) y (0.274, 0.770, 5.40) con la envolvente, clase 4 los
+# dos. VE-2 (decision (b) de VE1-02) los movio, y se cambian declarando la
+# causa: la velocidad de salida bajo control de entrada es la del tirante
+# normal de n_min con SU tirante, 3.040 y 2.681 m/s (eran 3.206 y 2.883, la
+# de n_min sobre el tirante de n_max). Con la envolvente A-01 sigue en la
+# clase 4 y A-02 baja a la clase 3 (D50 0.25 m): espesor 2.4·0.25 = 0.600 m y
+# longitud max(5.00, 5·0.9 = 4.50) = 5.00 m.
+LINEA_BASE_ANTERIOR = {     # regla «manual»: Laushey y lo adoptado
+    "A-01": (0.304, 0.532, 5.00),
+    "A-02": (0.237, 0.414, 5.00),
 }
-LINEA_BASE_NUEVA = {        # con la envolvente: rige Laushey, clase 4
-    "A-01": (0.338, 0.770, 5.40),
-    "A-02": (0.274, 0.770, 5.40),
+LINEA_BASE_NUEVA = {        # con la envolvente: rige Laushey, clase 4 y 3
+    "A-01": (0.304, 0.770, 5.40),
+    "A-02": (0.237, 0.600, 5.00),
 }
 
 
 def test_manual_sigue_dando_exactamente_los_numeros_de_antes(corrida_manual):
     """
     La regla «manual» es la conducta de T-8, numero por numero. A-01: V =
-    3.206 m/s -> 3.206²/(3.1·9.8) = 10.278/30.38 = 0.3383 m; espesor
-    1.75·0.3383 = 0.592 m. A-02: 0.2736 m y 0.479 m. Longitud 5.00 m.
+    3.040 m/s -> 3.040²/(3.1·9.8) = 9.242/30.38 = 0.3042 m; espesor
+    1.75·0.3042 = 0.532 m. A-02: 0.2365 m y 0.414 m. Longitud 5.00 m. (Desde
+    VE-2; con T-8 eran 3.206 m/s, 0.3383 y 0.592 m, y 0.2736 y 0.479 m.)
     """
     for id_punto, (d50, espesor, longitud) in LINEA_BASE_ANTERIOR.items():
         p = _punto(corrida_manual, id_punto).proteccion
@@ -1184,10 +1213,12 @@ def test_con_la_envolvente_se_mueven_espesor_y_longitud_y_no_el_d50(
         corrida_base):
     """
     LO QUE EL DUEÑO APROBO MOVER (2026-11-12), punto por punto. En los dos
-    la piedra de Laushey es mayor que la que pide la Ec. (10.4) (A-01: 0.338
-    contra 0.252 m; A-02: 0.274 contra la clase 1) y cae en la clase 4 (0.35
-    m) de la Tabla 10.1: espesor 2.2·0.35 = 0.770 m y longitud 6·0.90 = 5.40
-    m. El d50 NO se mueve.
+    la piedra de Laushey es mayor que la que pide la Ec. (10.4) (A-01: 0.304
+    contra 0.252 m; A-02: 0.237 contra la clase 1). A-01 cae en la clase 4
+    (0.35 m) de la Tabla 10.1: espesor 2.2·0.35 = 0.770 m y longitud 6·0.90 =
+    5.40 m. A-02, desde VE-2, en la clase 3 (0.25 m): espesor 2.4·0.25 =
+    0.600 m, y la longitud adoptada (5.00 m) supera la de la clase (4.50 m)
+    y se queda. El d50 NO se mueve con la regla.
     """
     for id_punto, (d50, espesor, longitud) in LINEA_BASE_NUEVA.items():
         p = _punto(corrida_base, id_punto).proteccion

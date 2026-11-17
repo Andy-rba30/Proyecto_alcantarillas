@@ -106,15 +106,32 @@ CP2_GEOMETRIA_MANNING = {
     "V_con_n_max_esperado": 2.2807,   # m/s  (n=0.013, rama de capacidad/tirante)
     "Q_con_n_max_esperado": 1.1673,   # m3/s = V_con_n_max * A
 
-    "V_con_n_min_esperado": 2.9650,   # m/s  (n=0.010, rama de velocidad)
+    # V con n_min SOBRE ESTA MISMA GEOMETRIA (la de y/D = 0.75): es la
+    # formula de Manning bien evaluada, pero NO es la velocidad de erosion
+    # del diseño. Hasta VE-2 lo era, y la velocidad de n_min sobre el tirante
+    # de n_max daba V*A = 1.3*Q (ver abajo). Se conserva como lo que es: el
+    # contraste de la formula con otro n sobre una geometria dada.
+    "V_con_n_min_esperado": 2.9650,   # m/s  (n=0.010 sobre la geometria de n=0.013)
+
+    # --- VE-2 (decision (b) de VE1-02) --- LA RAMA DE n_min CON SU PROPIO
+    # TIRANTE: el mismo Q de arriba, 1.1673 m3/s, resuelto con n = 0.010.
+    # Recalculado con brentq en el bloque __main__ de este archivo; la
+    # velocidad es Q / A y es tambien (1/n_min) R^(2/3) S^(1/2) sobre ESE
+    # tirante. HDS-5 num. 3.3.2 (pag. impresa 3.24) y HEC-14 num. 3.2.2 (pag.
+    # impresa 3-7), cuyo ejemplo resuelve un tirante por cada n.
+    "theta_n_min_esperado": 3.61538,   # rad
+    "y_n_min_esperado": 0.55561,       # m   (y/D = 0.6173)
+    "A_n_min_esperado": 0.41225,       # m2
+    "V_erosion_esperado": 2.8315,      # m/s = Q / A_n_min
 
     "tolerancia_geometria": 1e-5,
     "tolerancia_hidraulica": 1e-3,
 }
 
-# Assert de diseno del test: V_con_n_min > V_con_n_max siempre que n_min <
-# n_max (a igual S, R). Si un modulo devuelve el mismo numero para ambas
-# ramas, esta ahorrando el calculo doble que exige la regla de Sec. 4.1.
+# Assert de diseno del test: V_erosion > V_con_n_max siempre que n_min <
+# n_max (a igual Q y S: con un n menor el tirante normal baja y la velocidad
+# media sube). Si un modulo devuelve el mismo numero para ambas ramas, esta
+# ahorrando el calculo doble que exige la regla de Sec. 4.1.
 
 
 # ---------------------------------------------------------------------------
@@ -877,8 +894,15 @@ CP2R_GEOMETRIA_MANNING_RECTANGULAR = {
     # V = (1/n) * R^(2/3) * S^(1/2); Q = V*A. Igual que en CP-2: NO dividir Q
     # entre A para obtener V.
     "V_con_n_max_esperado": 3.0691367451089424,
+    # n_min sobre la geometria de y = 0.90 (contraste de la formula, no la
+    # velocidad de erosion del diseño: ver CP-2).
     "V_con_n_min_esperado": 3.906174039229563,
     "Q_con_n_max_esperado": 5.524446141196097,
+    # --- VE-2 --- El mismo Q con n_min y SU tirante: B*(1/n) y_n
+    # (B y_n/(B+2 y_n))^(2/3) S^(1/2) = Q, resuelto con brentq en el bloque
+    # __main__, y V = Q / (B y_n).
+    "y_n_min_esperado": 0.754294328900221,
+    "V_erosion_esperado": 3.6619963385187253,
 
     # El radio hidraulico de LAMINA LIBRE en y = H, para poder contrastarlo
     # con `R_lleno_esperado` y ver que no coinciden: 3.0/5.0 = 0.60 m frente a
@@ -1373,6 +1397,34 @@ if __name__ == "__main__":
         assert abs(theta - CP2_GEOMETRIA_MANNING["theta_esperado"]) < 1e-4
         assert abs(V_max - CP2_GEOMETRIA_MANNING["V_con_n_max_esperado"]) < 1e-3
         assert abs(Q - CP2_GEOMETRIA_MANNING["Q_con_n_max_esperado"]) < 1e-3
+        # --- VE-2 --- La rama de n_min con su propio tirante, para el Q
+        # del fixture.
+        _c2 = CP2_GEOMETRIA_MANNING
+        _Q2, _n2 = _c2["Q_con_n_max_esperado"], _c2["n_min"]
+
+        def _manning_n_min(th):
+            _A = (D**2 / 8) * (th - math.sin(th))
+            return (1 / _n2) * _A * (_A / (D * th / 2)) ** (2 / 3) * S ** 0.5 - _Q2
+        _th2 = brentq(_manning_n_min, 1e-6, 2 * math.pi - 1e-6, xtol=1e-14)
+        _A2 = (D**2 / 8) * (_th2 - math.sin(_th2))
+        _y2 = (D / 2) * (1 - math.cos(_th2 / 2))
+        assert abs(_th2 - _c2["theta_n_min_esperado"]) < 1e-4
+        assert abs(_y2 - _c2["y_n_min_esperado"]) < 1e-5
+        assert abs(_A2 - _c2["A_n_min_esperado"]) < 1e-5
+        assert abs(_Q2 / _A2 - _c2["V_erosion_esperado"]) < 1e-3
+        print(f"Recalculo CP-2 (n_min, su tirante): theta={_th2:.5f} "
+              f"y={_y2:.5f} A={_A2:.5f} V=Q/A={_Q2 / _A2:.4f}")
+        _r = CP2R_GEOMETRIA_MANNING_RECTANGULAR
+        _Br = _r["B"]
+
+        def _manning_rect(yy):
+            return ((1 / _r["n_min"]) * _Br * yy
+                    * (_Br * yy / (_Br + 2 * yy)) ** (2 / 3) * _r["S"] ** 0.5
+                    - _r["Q_con_n_max_esperado"])
+        _yr = brentq(_manning_rect, 1e-9, _r["H"], xtol=1e-15)
+        assert abs(_yr - _r["y_n_min_esperado"]) < 1e-9
+        assert abs(_r["Q_con_n_max_esperado"] / (_Br * _yr)
+                   - _r["V_erosion_esperado"]) < 1e-9
         print("CP-2 verificado contra los valores del fixture.")
 
         # CP-8: verificacion cruzada de la constante SI vs imperial

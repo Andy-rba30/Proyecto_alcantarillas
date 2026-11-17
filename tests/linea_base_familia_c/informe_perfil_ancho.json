@@ -239,7 +239,7 @@
         "fondo de entrada adoptado igual al terreno de plataforma: medir en el cauce",
         "plataforma tomada horizontal: no se declaro `bombeo` ni `peralte`. Declarar el bombeo de la seccion tipica: cada 1 % acorta la longitud 20.1 cm en este punto",
         "Proteccion de salida: no se comparo la velocidad con la maxima admisible del terreno (Tabla Nº 11 del Manual) porque falta 'tipo_terreno_receptor' y 'regimen_flujo_descarga' en los datos externos del punto; el enrocado se dimensiona igual, sin saber si el terreno lo necesita",
-        "Proteccion de salida: rige la envolvente con HEC-14 ('regla_espesor_longitud_proteccion_salida'): piedra d50 = 0.338 m (rige Laushey; la Ec. (10.4) de HEC-14 pide 0.252 m), espesor 0.592 -> 0.770 m, longitud 5.00 -> 5.40 m (clase 4 de la Tabla 10.1)",
+        "Proteccion de salida: rige la envolvente con HEC-14 ('regla_espesor_longitud_proteccion_salida'): piedra d50 = 0.304 m (rige Laushey; la Ec. (10.4) de HEC-14 pide 0.252 m), espesor 0.532 -> 0.770 m, longitud 5.00 -> 5.40 m (clase 4 de la Tabla 10.1)",
         "Proteccion de entrada: no se comparo la velocidad con la maxima admisible del terreno (Tabla Nº 11 del Manual) porque falta 'tipo_terreno_entrada' y 'regimen_flujo_descarga' en los datos externos del punto; no se sabe si la entrada necesita revestimiento",
         "Socavacion a la salida: NO se estimo -- falta el suelo del lecho (`material_lecho_salida`, dato del EMS: tipo, y D84 y D16 si no es cohesivo o indice de plasticidad y resistencia al corte saturada si lo es). El desplante del cabezal de salida queda sin profundidad de socavacion; tambien se puede declarar (`profundidad_socavacion_estimada_m`)"
       ],
@@ -306,7 +306,7 @@
         "control_gobernante": "entrada",
         "Q_m3s": 1.167,
         "S_m_m": 0.006,
-        "V_erosion_m_s": 3.205506157842659,
+        "V_erosion_m_s": 3.0401079766508343,
         "V_sedimentacion_m_s": 2.4657739675712764,
         "y_normal_m": 0.6271229622477936,
         "y_critico_m": 0.6399701975127118,
@@ -317,8 +317,8 @@
         "numero_celdas": 1,
         "regimen_barril": "parcialmente lleno",
         "V_llena_m_s": 1.8344080848221418,
-        "V_salida_m_s": 3.205506157842659,
-        "V_salida_procedencia": "HDS-5 num. 3.3.2 (pag. impresa 3.24) y 3.1.6: bajo control de ENTRADA la velocidad a la salida es la del tirante normal. De las dos ramas de n (Sec. 4.1) se toma la de n MINIMO, V_erosion, la estimacion ALTA: es el techo conservador para un d50 que crece con el cuadrado de V",
+        "V_salida_m_s": 3.0401079766508343,
+        "V_salida_procedencia": "HDS-5 num. 3.3.2 (pag. impresa 3.24) y 3.1.6: bajo control de ENTRADA la velocidad a la salida es la del tirante normal; HEC-14 num. 3.2.2 (pag. impresa 3-7) la calcula con Manning a tirante normal. De las dos ramas de n (Sec. 4.1) se toma la de n MINIMO, V_erosion, la estimacion ALTA, resuelta con su propio tirante normal (y_n = 0.523 m con n_min, V = Q_celda / A(y_n)): es el techo conservador para un d50 que crece con el cuadrado de V",
         "y_salida_m": 0.6271229622477936,
         "h_o_m": 0.7699850987563559,
         "TW_m": 0.3,
@@ -344,8 +344,8 @@
       },
       "proteccion_salida": {
         "numeral": "4.1.1.3.7 c)",
-        "V_salida_m_s": 3.205506157842659,
-        "d50_m": 0.3382248100055038,
+        "V_salida_m_s": 3.0401079766508343,
+        "d50_m": 0.3042217415963143,
         "espesor_m": 0.77,
         "longitud_m": 5.4,
         "criterio_espesor": "espesor_proteccion_salida",
@@ -355,13 +355,13 @@
           "El filtro no se dimensiona: se declara como requisito. Sin filtro el enrocado se socava por debajo y falla (Sec. 6 de la hoja de ruta; Lámina Nº 05 del Manual; HEC-14 Sec. 10.2; EG-2013 num. 511.08)",
           "Alcance: rige la ENVOLVENTE de las dos fuentes. El Manual MTC (num. 4.1.1.3.7 c)) da el d50 de Laushey, funcion solo de V; HDS-5 3a ed. (FHWA-HIF-12-026), Sec. 5.3.2 'Scour at Outlets', pag. 5.11, remite el apron de enrocado a HEC-14 Sec. 10.2, que lo dimensiona en funcion de Q, D y TW. La piedra es la mayor de las dos, y el espesor y la longitud los mayores de lo adoptado y de la Tabla 10.1 de HEC-14. La geometria de la proteccion se cierra en el expediente tecnico"
         ],
-        "d50_laushey_m": 0.3382248100055038,
+        "d50_laushey_m": 0.3042217415963143,
         "rige_la_envolvente": true,
         "requerida": null,
         "froude_salida": {
-          "Fr": 1.5668450524931907,
-          "y_equivalente_m": 0.4266503659114436,
-          "area_m2": 0.3640610694647375,
+          "Fr": 1.4664475770346816,
+          "y_equivalente_m": 0.43810269599827006,
+          "area_m2": 0.3838679444819053,
           "supercritico": true,
           "seccion_llena": false
         },
@@ -381,7 +381,7 @@
           "ancho_final_m": 6.300000000000001
         },
         "clase_hec14_de_la_piedra": {
-          "d50_m": 0.3382248100055038,
+          "d50_m": 0.3042217415963143,
           "clase": 4,
           "D50_clase_m": 0.35,
           "longitud_m": 5.4,
@@ -389,7 +389,7 @@
           "ancho_final_m": 6.300000000000001
         },
         "regla_espesor_longitud": "envolvente_hec14",
-        "espesor_adoptado_m": 0.5918934175096316,
+        "espesor_adoptado_m": 0.5323880477935501,
         "longitud_adoptada_m": 5.0,
         "filtro": {
           "requisito": "El enrocado lleva FILTRO entre la piedra y el suelo (Lámina Nº 05 del Manual; HEC-14 Sec. 10.2). Si es geotextil: Clase 1 de la Tabla 511-01 (Clase 2 para geotextiles tejidos de monofilamento), con la permitividad y la abertura aparente de la Tabla 511-06 de EG-2013 (num. 511.08). NO SE DIMENSIONA: la tabla entra por el pasante del tamiz N.º 200 del suelo, que es dato del EMS (`material_lecho_salida.pasa_200_pct`)",
@@ -630,7 +630,7 @@
           "estado": "cumple",
           "cumple": true,
           "veredicto": "cumple",
-          "valor_obtenido": 3.205506157842659,
+          "valor_obtenido": 3.0401079766508343,
           "valor_admisible": 6.0,
           "criterio_aplicado": null
         },
@@ -825,7 +825,7 @@
         "fondo de entrada adoptado igual al terreno de plataforma: medir en el cauce",
         "plataforma tomada horizontal: no se declaro `bombeo` ni `peralte`. Declarar el bombeo de la seccion tipica: cada 1 % acorta la longitud 19.6 cm en este punto",
         "Proteccion de salida: no se comparo la velocidad con la maxima admisible del terreno (Tabla Nº 11 del Manual) porque falta 'tipo_terreno_receptor' y 'regimen_flujo_descarga' en los datos externos del punto; el enrocado se dimensiona igual, sin saber si el terreno lo necesita",
-        "Proteccion de salida: rige la envolvente con HEC-14 ('regla_espesor_longitud_proteccion_salida'): piedra d50 = 0.274 m (rige Laushey; la Ec. (10.4) de HEC-14 pide 0.104 m), espesor 0.479 -> 0.770 m, longitud 5.00 -> 5.40 m (clase 4 de la Tabla 10.1)",
+        "Proteccion de salida: rige la envolvente con HEC-14 ('regla_espesor_longitud_proteccion_salida'): piedra d50 = 0.237 m (rige Laushey; la Ec. (10.4) de HEC-14 pide 0.104 m), espesor 0.414 -> 0.600 m, longitud 5.00 -> 5.00 m (clase 3 de la Tabla 10.1)",
         "Proteccion de entrada: no se comparo la velocidad con la maxima admisible del terreno (Tabla Nº 11 del Manual) porque falta 'tipo_terreno_entrada' y 'regimen_flujo_descarga' en los datos externos del punto; no se sabe si la entrada necesita revestimiento",
         "Socavacion a la salida: NO se estimo -- falta el suelo del lecho (`material_lecho_salida`, dato del EMS: tipo, y D84 y D16 si no es cohesivo o indice de plasticidad y resistencia al corte saturada si lo es). El desplante del cabezal de salida queda sin profundidad de socavacion; tambien se puede declarar (`profundidad_socavacion_estimada_m`)"
       ],
@@ -892,7 +892,7 @@
         "control_gobernante": "entrada",
         "Q_m3s": 0.48,
         "S_m_m": 0.008,
-        "V_erosion_m_s": 2.882885082216342,
+        "V_erosion_m_s": 2.680653470975586,
         "V_sedimentacion_m_s": 2.2176039093971864,
         "y_normal_m": 0.3358338199114026,
         "y_critico_m": 0.4031436347123781,
@@ -903,8 +903,8 @@
         "numero_celdas": 1,
         "regimen_barril": "parcialmente lleno",
         "V_llena_m_s": 0.7545123228060222,
-        "V_salida_m_s": 2.882885082216342,
-        "V_salida_procedencia": "HDS-5 num. 3.3.2 (pag. impresa 3.24) y 3.1.6: bajo control de ENTRADA la velocidad a la salida es la del tirante normal. De las dos ramas de n (Sec. 4.1) se toma la de n MINIMO, V_erosion, la estimacion ALTA: es el techo conservador para un d50 que crece con el cuadrado de V",
+        "V_salida_m_s": 2.680653470975586,
+        "V_salida_procedencia": "HDS-5 num. 3.3.2 (pag. impresa 3.24) y 3.1.6: bajo control de ENTRADA la velocidad a la salida es la del tirante normal; HEC-14 num. 3.2.2 (pag. impresa 3-7) la calcula con Manning a tirante normal. De las dos ramas de n (Sec. 4.1) se toma la de n MINIMO, V_erosion, la estimacion ALTA, resuelta con su propio tirante normal (y_n = 0.292 m con n_min, V = Q_celda / A(y_n)): es el techo conservador para un d50 que crece con el cuadrado de V",
         "y_salida_m": 0.3358338199114026,
         "h_o_m": 0.6515718173561891,
         "TW_m": 0.3,
@@ -930,10 +930,10 @@
       },
       "proteccion_salida": {
         "numeral": "4.1.1.3.7 c)",
-        "V_salida_m_s": 2.882885082216342,
-        "d50_m": 0.27356900583494154,
-        "espesor_m": 0.77,
-        "longitud_m": 5.4,
+        "V_salida_m_s": 2.680653470975586,
+        "d50_m": 0.23653400366864571,
+        "espesor_m": 0.6,
+        "longitud_m": 5.0,
         "criterio_espesor": "espesor_proteccion_salida",
         "criterio_longitud": "longitud_proteccion_salida",
         "advertencias": [
@@ -941,13 +941,13 @@
           "El filtro no se dimensiona: se declara como requisito. Sin filtro el enrocado se socava por debajo y falla (Sec. 6 de la hoja de ruta; Lámina Nº 05 del Manual; HEC-14 Sec. 10.2; EG-2013 num. 511.08)",
           "Alcance: rige la ENVOLVENTE de las dos fuentes. El Manual MTC (num. 4.1.1.3.7 c)) da el d50 de Laushey, funcion solo de V; HDS-5 3a ed. (FHWA-HIF-12-026), Sec. 5.3.2 'Scour at Outlets', pag. 5.11, remite el apron de enrocado a HEC-14 Sec. 10.2, que lo dimensiona en funcion de Q, D y TW. La piedra es la mayor de las dos, y el espesor y la longitud los mayores de lo adoptado y de la Tabla 10.1 de HEC-14. La geometria de la proteccion se cierra en el expediente tecnico"
         ],
-        "d50_laushey_m": 0.27356900583494154,
+        "d50_laushey_m": 0.23653400366864571,
         "rige_la_envolvente": true,
         "requerida": null,
         "froude_salida": {
-          "Fr": 1.7135502688430395,
-          "y_equivalente_m": 0.28853065086596974,
-          "area_m2": 0.16649987297828026,
+          "Fr": 1.5646367660600722,
+          "y_equivalente_m": 0.2992163237305469,
+          "area_m2": 0.17906081677364688,
           "supercritico": true,
           "seccion_llena": false
         },
@@ -967,15 +967,15 @@
           "ancho_final_m": 5.1
         },
         "clase_hec14_de_la_piedra": {
-          "d50_m": 0.27356900583494154,
-          "clase": 4,
-          "D50_clase_m": 0.35,
-          "longitud_m": 5.4,
-          "espesor_m": 0.77,
-          "ancho_final_m": 6.300000000000001
+          "d50_m": 0.23653400366864571,
+          "clase": 3,
+          "D50_clase_m": 0.25,
+          "longitud_m": 4.5,
+          "espesor_m": 0.6,
+          "ancho_final_m": 5.7
         },
         "regla_espesor_longitud": "envolvente_hec14",
-        "espesor_adoptado_m": 0.4787457602111477,
+        "espesor_adoptado_m": 0.41393450642013,
         "longitud_adoptada_m": 5.0,
         "filtro": {
           "requisito": "El enrocado lleva FILTRO entre la piedra y el suelo (Lámina Nº 05 del Manual; HEC-14 Sec. 10.2). Si es geotextil: Clase 1 de la Tabla 511-01 (Clase 2 para geotextiles tejidos de monofilamento), con la permitividad y la abertura aparente de la Tabla 511-06 de EG-2013 (num. 511.08). NO SE DIMENSIONA: la tabla entra por el pasante del tamiz N.º 200 del suelo, que es dato del EMS (`material_lecho_salida.pasa_200_pct`)",
@@ -1216,7 +1216,7 @@
           "estado": "cumple",
           "cumple": true,
           "veredicto": "cumple",
-          "valor_obtenido": 2.882885082216342,
+          "valor_obtenido": 2.680653470975586,
           "valor_admisible": 6.0,
           "criterio_aplicado": null
         },

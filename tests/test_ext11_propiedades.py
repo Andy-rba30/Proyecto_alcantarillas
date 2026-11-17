@@ -32,13 +32,17 @@ Las siete, con la fuente de cada una:
   P1  Q = V_sedimentacion * A, en circular y en rectangular. `V_sedimentacion`
       sale de la MISMA expresion de Manning y del MISMO n (n_max) con que
       Brent resolvio el tirante (Sec. 4.1, num. 4.1.1.3.6 ec. 47), de modo
-      que V*A tiene que devolver el Q de entrada. `V_erosion` (n_min) NO:
-      `test_M3_hidraulica` ya fija esa asimetria en un solo punto.
+      que V*A tiene que devolver el Q de entrada. `V_erosion` (n_min) TAMBIEN,
+      pero con el area de SU tirante, y lo fija `tests/test_ve2_velocidad_
+      erosion.py` sobre una malla como esta: hasta VE-2 era la velocidad de
+      n_min sobre la geometria de n_max y no la cumplia (decision (b) de
+      VE1-02).
   P2  Q_total = N * Q_celda A TRAVES de MD -> M4 (regla vinculante #3,
       HDS-5 num. 5.4.3): lo que llega al `ResultadoHidraulico` desde el
       bucle de diseño reparte igual que `M4.caudal_por_celda`.
-  P3  V_erosion >= V_sedimentacion, estricta cuando n_min < n_max: misma R,
-      n menor, velocidad mayor.
+  P3  V_erosion >= V_sedimentacion, estricta cuando n_min < n_max: n menor,
+      tirante menor, velocidad mayor (decia «misma R», que era la formula
+      anterior a VE-2).
   P4  Continuidad de HW en q* = 3.5 y 4.0 y LINEALIDAD de la recta de
       transicion (EXT-M-04), en las dos formas de la ec. no sumergida y en
       las dos geometrias; y la recta es exactamente
@@ -178,7 +182,8 @@ def test_P1_P3_circular_Q_es_V_sedimentacion_por_A_y_V_erosion_no_es_menor(
     # P1: la rama n_max reproduce el caudal que Brent resolvio.
     assert r.V_sedimentacion * r.geometria.A == pytest.approx(
         Q, rel=REL_IDENTIDAD_MANNING)
-    # P3: misma R, n menor, velocidad mayor (o igual si el rango es un punto).
+    # P3: n menor, tirante menor, velocidad mayor (o igual si el rango es un
+    # punto).
     assert r.V_erosion >= r.V_sedimentacion
     if material.n_min < material.n_max:
         assert r.V_erosion > r.V_sedimentacion
@@ -204,14 +209,22 @@ def test_P3_la_desigualdad_es_la_de_los_n_y_no_un_orden_de_campos():
     """
     Un mutante que intercambiara los dos n en `resolver_manning` invertiria
     la desigualdad en TODA la malla, pero un material con n_min == n_max la
-    dejaria pasar: se comprueba que la desigualdad vale exactamente n_max/n_min.
+    dejaria pasar: se comprueba que el cociente es el que fijan los dos n.
+
+    CAMBIADO EN VE-2 DECLARANDO LA CAUSA. Comprobaba que el cociente valia
+    exactamente n_max/n_min, que era la consecuencia de calcular las dos
+    velocidades sobre la MISMA R (la formula que la decision (b) de VE1-02
+    retiro). Con cada rama sobre su tirante el cociente es el inverso del de
+    las areas, A(n_max)/A(n_min), y queda por debajo de n_max/n_min porque
+    con n_min el tirante, y con el R, bajan.
     """
     c = catalogo(TipoMaterial.CONCRETO_REFORZADO)
     sec = SeccionCircular(DIAMETROS_M[0])
     S = PENDIENTES[1]
     r = resolver_manning(sec, 0.5 * _Q_lleno(sec, c.n_max, S), S, c)
     assert r.V_erosion / r.V_sedimentacion == pytest.approx(
-        c.n_max / c.n_min, rel=REL_TRANSPORTE)
+        r.geometria.A / r.geometria_erosion.A, rel=REL_IDENTIDAD_MANNING)
+    assert 1 < r.V_erosion / r.V_sedimentacion < c.n_max / c.n_min
 
 
 # ===========================================================================

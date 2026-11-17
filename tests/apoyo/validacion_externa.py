@@ -610,11 +610,16 @@ def velocidad_hy8(d: Dict[str, Any]) -> Tuple[str, str]:
     programa no la saca del mismo modo que HY-8).
     """
     if d["control_gobernante"] == "entrada":
-        return ("control de entrada: V_erosión = (1/n_mín)·R^(2/3)·S^(1/2) "
-                "sobre el tirante normal de n_máx (regla de doble n de la v8 "
-                "§4.1, `M3.resolver_manning`; V·A ≠ Q por diseño), la "
-                "estimación alta para V3 y el d50. No es la velocidad de un "
-                "perfil: HY-8 la saca del perfil supercrítico del barril",
+        # --- VE-2 (decision (b) de VE1-02) --- La rama de n_min resuelve
+        # SU tirante normal: el texto decia «(1/n_mín)·R^(2/3)·S^(1/2) sobre
+        # el tirante normal de n_máx ... V·A ≠ Q por diseño», que era la
+        # formula anterior.
+        return ("control de entrada: V_erosión = Q/A(y_n), con el tirante "
+                "normal resuelto con n_mín (HDS-5 3.3.2 y HEC-14 3.2.2: la "
+                "velocidad a tirante normal; `M3.resolver_manning`, desde "
+                "VE-2), la estimación alta para V3 y el d50 de la regla de "
+                "doble n. No es la velocidad de un perfil: HY-8 la saca del "
+                "perfil supercrítico del barril",
                 "no")
     return ("control de salida: Q/A en la sección de salida con el tirante "
             "y_salida = " + f"{d['y_salida_m']:.3f}" + " m (HDS-5 3.1.6; el "

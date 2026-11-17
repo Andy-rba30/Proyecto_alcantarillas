@@ -99,9 +99,11 @@ def test_el_froude_vale_uno_en_el_tirante_critico(Q):
 
 def test_la_velocidad_critica_es_Q_sobre_area():
     """
-    Excepcion declarada a la guardia de M3 (V*A != Q): en el tirante critico
-    la velocidad SI es Q/A, porque la ecuacion que lo define no contiene n y
-    no hay dos ramas de rugosidad entre las que elegir.
+    En el tirante critico la velocidad es Q/A, porque la ecuacion que lo
+    define no contiene n y no hay dos ramas de rugosidad entre las que
+    elegir. (Decia «Excepcion declarada a la guardia de M3 (V*A != Q)»: desde
+    VE-2 las dos ramas de M3 tambien cumplen V*A = Q, cada una con el area de
+    su tirante, y la excepcion dejo de serlo.)
     """
     c = CP6_TIRANTE_CRITICO
     Q = c["Q_casos"][0]
@@ -649,7 +651,10 @@ def test_resolver_control_conserva_el_reparto_de_rugosidades(concreto):
                                  material=concreto)
 
     assert resultado.y_normal == pytest.approx(c["y_sobre_D"] * c["D"], abs=1e-3)
-    assert resultado.V_erosion == pytest.approx(c["V_con_n_min_esperado"],
+    # VE-2 (b): la rama de n_min con SU tirante (CP-2, `V_erosion_esperado`);
+    # comparaba con `V_con_n_min_esperado`, la de n_min sobre el tirante de
+    # n_max, que era la formula vieja.
+    assert resultado.V_erosion == pytest.approx(c["V_erosion_esperado"],
                                                 abs=c["tolerancia_hidraulica"])
     assert resultado.V_sedimentacion == pytest.approx(
         c["V_con_n_max_esperado"], abs=c["tolerancia_hidraulica"])

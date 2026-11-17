@@ -126,10 +126,12 @@ QUE VELOCIDAD ENTRA (regla de doble n, Sec. 4.1)
 -------------------------------------------------
 La de SALIDA de HDS-5 3.1.6 que M4 emite (`ResultadoHidraulico.V_salida`),
 con su procedencia. Bajo control de entrada es `V_erosion`, la rama de n
-MINIMO -- la estimacion ALTA --; bajo control de salida y con el barril
-horizontal (S = 0, donde no hay tirante normal) es Q entre el area al tirante
-de salida. El Froude se forma con ESA velocidad y con el area que la
-continuidad le asigna, Q_celda / V, no con el tirante normal.
+MINIMO -- la estimacion ALTA --, que desde VE-2 es la velocidad del tirante
+normal RESUELTO con n_min (Q_celda / A(y_n de n_min); HEC-14 num. 3.2.2);
+bajo control de salida y con el barril horizontal (S = 0, donde no hay
+tirante normal) es Q entre el area al tirante de salida. El Froude se forma
+con ESA velocidad y con el area que la continuidad le asigna, Q_celda / V,
+que bajo control de entrada es justamente el area del tirante de n_min.
 
 DOS CASOS EN QUE ESA VELOCIDAD QUEDA CORTA, y se AVISAN sin tocar el numero,
 que es de M4: (1) control de salida con el TW bajo el critico: el tirante
@@ -511,10 +513,13 @@ def froude_salida(*, V: Magnitud, Q_celda: float, seccion: Seccion,
 
     `V` es la velocidad de SALIDA de HDS-5 3.1.6 y `A` el area que la
     continuidad le asigna, A = Q_celda / V (HEC-14 Cap. 3). NO se usa el
-    tirante normal: bajo control de entrada `V` es la rama de n minimo sobre
-    la geometria de n maximo y V·A(y_n) != Q; con el area de continuidad el
-    numero es el de la velocidad que de verdad entra a la proteccion, del
-    lado ALTO. `y_salida` (el tirante con que M4 midio esa velocidad) y
+    tirante de `y_salida`: bajo control de entrada `V` es la rama de n minimo
+    y, desde VE-2, la de SU tirante normal, de modo que A = Q_celda / V es el
+    area de ese tirante (hasta VE-2 era la rama de n minimo sobre la geometria
+    de n maximo, y la continuidad era la unica forma de darle un area); con
+    el area de continuidad el numero es el de la velocidad que de verdad
+    entra a la proteccion, del lado ALTO. `y_salida` (el tirante a la salida
+    que M4 publica: bajo control de entrada, el normal de REGISTRO, n_max) y
     `y_critico` sirven para el regimen y para decir si la salida va a
     seccion llena; no entran en la formula.
     """
@@ -768,12 +773,15 @@ def apron_hec14(*, Q_celda: float, seccion: Seccion, TW: float,
     fase lo avise; antes se resolvia en silencio como «no supercritico».
 
     EL yn ES EL DE REGISTRO, Y NO ES EL LADO ALTO DEL D50, dicho para que no
-    se lea de mas: la regla de doble n (Sec. 4.1) resuelve los TIRANTES con
-    n_max, y este es el que M3 publica. Con n_min el tirante supercritico
-    seria menor, D' tambien, y como D50 va con D'^(-4/3) la piedra saldria
-    algo mayor. El paso lo declara en la procedencia de D'. Si este D50
-    rige o es solo contraste lo decide la regla
-    'regla_espesor_longitud_proteccion_salida' en `proteccion_salida`.
+    se lea de mas: la regla de doble n (Sec. 4.1) da los TIRANTES con n_max,
+    y este es el que M4 publica como tirante de salida. Con n_min el tirante
+    supercritico es menor --desde VE-2 M3 lo resuelve, para la velocidad
+    (`TiranteNormal.geometria_erosion`), y no viaja aqui--, D' tambien, y
+    como D50 va con D'^(-4/3) la piedra saldria algo mayor. El paso lo
+    declara en la procedencia de D'; pasar a ese tirante es una decision
+    diferida en la ficha VE2-B. Si este D50 rige o es solo contraste lo
+    decide la regla 'regla_espesor_longitud_proteccion_salida' en
+    `proteccion_salida`.
     """
     _exigir_positivo("Q_celda", Q_celda, "caudal de un barril, m3/s")
     _exigir_no_negativo("TW", TW, "tirante del receptor, m")
@@ -1411,7 +1419,15 @@ def _aviso_banda_de_regimen(resultado: ResultadoHidraulico
     velocidad de salida seria `V_erosion`, la que entra bajo control de
     entrada. El auditor midio el salto en A-01: con S = 0.0058 (control de
     entrada) 3.160 m/s y d50 = 0.329 m; con S = 0.0056 (control de salida)
-    2.412 m/s y d50 = 0.191 m.
+    2.412 m/s y d50 = 0.191 m (con la formula anterior a VE-2).
+
+    DESDE VE-2 LA IMPLICACION ES EXACTA. `V_erosion` es la velocidad del
+    tirante normal RESUELTO con n_min, Q_celda / A(y_n), y con el mismo Q y
+    la misma seccion V_erosion > V_c equivale a y_n(n_min) < y_c: el aviso
+    afirma lo que la comparacion prueba. Hasta VE-2 `V_erosion` era la de
+    n_min sobre la geometria de n_max, mayor que la de su propio tirante, y
+    el aviso podia saltar sin que el tirante normal de n_min fuera
+    supercritico.
     """
     if not _con_la_velocidad_al_critico(resultado) \
             or resultado.sin_tirante_normal or resultado.V_erosion is None \

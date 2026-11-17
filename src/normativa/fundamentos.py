@@ -212,33 +212,59 @@ D_MIN = _fundamento(
 # Fase 4 - Dimensionamiento hidraulico
 # ===========================================================================
 
+# --- VE-2 (decision (b) de VE1-02) --- Hasta VE-2 este fundamento decia que
+# el calculo fija UNA geometria y evalua sobre ella DOS velocidades, «una
+# seccion y dos rugosidades sobre la misma seccion», y lo apoyaba solo en el
+# Manual: leida en la memoria, la doble n parecia una regla del Manual, que
+# es lo que la hoja de ruta escribe («Regla [N]», Sec. 4.1) y la fuente no
+# sostiene (ficha VE1-01, D3). Hoy dice las dos cosas por separado: la
+# eleccion de los dos extremos es ADOPCION del proyecto, y la velocidad de
+# cada extremo es la de su propio tirante normal, que es lo que el HDS-5 y
+# HEC-14 si dicen (APROXIMACION: «is assumed»; DEFINE es compatible).
 MANNING = _fundamento(
     id="F4.MANNING",
     fase=F4,
-    que_paso=("Tirante normal y velocidad en el conducto, por Manning: UNA "
-              "geometria (el tirante, con n_max) y DOS velocidades, una por "
-              "cada extremo del rango de la Tabla N 09"),
+    que_paso=("Tirante normal y velocidad en el conducto, por Manning: DOS "
+              "tirantes normales, uno con cada extremo del rango de la Tabla "
+              "N 09 (n_max y n_min), y la velocidad de cada uno con su propio "
+              "tirante"),
     por_que=(
-        "La rugosidad de un conducto no es un numero: la Tabla N 09 da un "
-        "rango por material, y el rango no es incertidumbre de medicion sino "
-        "el estado real de la superficie a lo largo de la vida de la obra. "
-        "Resolver con un solo n obliga a elegir cual, y esa eleccion cambia de "
-        "signo segun que se verifique: contra un TECHO de velocidad el extremo "
-        "conservador es el n minimo --la estimacion alta-- y contra un PISO es "
-        "el n maximo --la baja--. Por eso el calculo fija UNA geometria --el "
-        "tirante normal con n_max, que es el que mas llena el conducto-- y "
-        "sobre ella evalua DOS velocidades, una por cada n, y cada "
-        "verificacion consume la que la deja del lado seguro. No son dos "
-        "escenarios independientes: es una seccion y dos rugosidades sobre "
-        "la misma seccion."),
+        "La rugosidad de un conducto no es un numero: la Tabla N 09 da, por "
+        "material, un minimo, un normal y un maximo, y el rango no es "
+        "incertidumbre de medicion sino el estado real de la superficie a lo "
+        "largo de la vida de la obra. Resolver con un solo n obliga a elegir "
+        "cual, y esa eleccion cambia de signo segun que se verifique: contra "
+        "un TECHO de velocidad el extremo conservador es el n minimo --la "
+        "estimacion alta-- y contra un PISO de velocidad o un nivel de agua "
+        "es el n maximo. La tabla no dice que columna se usa: tomar los DOS "
+        "extremos, y cual para que, es adopcion del proyecto. La hoja de ruta "
+        "la escribe como «Regla [N]» (Sec. 4.1) sin un numeral que la "
+        "sostenga, y sigue asi mientras no se corrija (ficha VE1-01). Lo que "
+        "las fuentes si dicen es COMO se obtiene la velocidad de cada "
+        "extremo: a tirante normal. El HDS-5 toma la velocidad del tirante "
+        "normal como la de salida bajo control de entrada, y HEC-14 la "
+        "calcula con Manning a tirante normal y en su ejemplo resuelve un "
+        "tirante por cada n. Por eso el calculo resuelve DOS tirantes "
+        "normales, uno con cada n, y cada velocidad es la de su propio "
+        "tirante, con Q = V*A: con n_max el tirante de capacidad, el que mas "
+        "llena el conducto, y la velocidad baja; con n_min un tirante menor y "
+        "la velocidad alta. Cada verificacion consume la que la deja del "
+        "lado seguro."),
     verbo=Verbo.DEFINE,
-    citas=("MC_HHD.4.1.1.3.6", "MC_HHD.4.1.1.3.6#T09"),
+    citas=("MC_HHD.4.1.1.3.6", "MC_HHD.4.1.1.3.6#T09",
+           "HDS5_3ED.3.3.2#V_SALIDA_ENTRADA",     # APROXIMACION
+           "HEC14.3.2.2#V_SALIDA_NORMAL"),       # APROXIMACION
     que_pasa_si_no_se_hace=(
         "Con una sola rama, la mitad de las verificaciones corre por el lado "
         "inseguro sin que nada lo diga. Es exactamente el defecto que V2 tuvo "
         "hasta que se corrigio (MAT-D1): evaluaba el piso de velocidad con la "
         "estimacion alta, o sea declaraba «cumple» justo en el caso en que el "
-        "conducto sedimenta."),
+        "conducto sedimenta. Y con las dos ramas sobre UN tirante --la "
+        "velocidad de n_min sobre la geometria de n_max, como se calculaba "
+        "hasta VE-2--, la velocidad alta no cumple la continuidad (V*A = 1.3*Q "
+        "en el concreto) y el techo rechaza diametros que lo cumplen: en el "
+        "caso UPAO ALC46 de la validacion externa, 6.28 m/s por 5.81 a "
+        "Ø 0.90 m, y el punto subia a Ø 1.35 m."),
 )
 
 CONTROL = _fundamento(

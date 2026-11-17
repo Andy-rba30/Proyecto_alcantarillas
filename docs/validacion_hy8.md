@@ -29,9 +29,9 @@ Las cargas son alturas sobre el fondo de la entrada (HW), en metros. En HY-8, «
 
 | Punto | Altura D (m) | HW control de entrada (m) · HW/D | HW control de salida (m) · HW/D | HW que gobierna (m) · HW/D | Control | Tirante normal, n máx. (m) | Tirante crítico (m) | Velocidad a la salida (m/s) | Cómo sale la velocidad | ¿Lleva veredicto? | Régimen del barril |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| A-01 | 0.900 | 1.042 · 1.158 | 0.993 · 1.104 | 1.042 · 1.158 | entrada | 0.627 | 0.640 | 3.206 | control de entrada: V_erosión = (1/n_mín)·R^(2/3)·S^(1/2) sobre el tirante normal de n_máx (regla de doble n de la v8 §4.1, `M3.resolver_manning`; V·A ≠ Q por diseño), la estimación alta para V3 y el d50. No es la velocidad de un perfil: HY-8 la saca del perfil supercrítico del barril | no | parcialmente lleno |
-| A-02 | 0.900 | 0.572 · 0.636 | no se forma: el perfil S1 no alcanza la entrada (la aproximación descartada da 0.562) | 0.572 · 0.636 | entrada | 0.336 | 0.403 | 2.883 | control de entrada: V_erosión = (1/n_mín)·R^(2/3)·S^(1/2) sobre el tirante normal de n_máx (regla de doble n de la v8 §4.1, `M3.resolver_manning`; V·A ≠ Q por diseño), la estimación alta para V3 y el d50. No es la velocidad de un perfil: HY-8 la saca del perfil supercrítico del barril | no | parcialmente lleno |
-| B-01 | 0.900 | 0.232 · 0.258 | no se forma: el perfil S1 no alcanza la entrada (la aproximación descartada da 0.356) | 0.232 · 0.258 | entrada | 0.140 | 0.175 | 1.956 | control de entrada: V_erosión = (1/n_mín)·R^(2/3)·S^(1/2) sobre el tirante normal de n_máx (regla de doble n de la v8 §4.1, `M3.resolver_manning`; V·A ≠ Q por diseño), la estimación alta para V3 y el d50. No es la velocidad de un perfil: HY-8 la saca del perfil supercrítico del barril | no | parcialmente lleno |
+| A-01 | 0.900 | 1.042 · 1.158 | 0.993 · 1.104 | 1.042 · 1.158 | entrada | 0.627 | 0.640 | 3.040 | control de entrada: V_erosión = Q/A(y_n), con el tirante normal resuelto con n_mín (HDS-5 3.3.2 y HEC-14 3.2.2: la velocidad a tirante normal; `M3.resolver_manning`, desde VE-2), la estimación alta para V3 y el d50 de la regla de doble n. No es la velocidad de un perfil: HY-8 la saca del perfil supercrítico del barril | no | parcialmente lleno |
+| A-02 | 0.900 | 0.572 · 0.636 | no se forma: el perfil S1 no alcanza la entrada (la aproximación descartada da 0.562) | 0.572 · 0.636 | entrada | 0.336 | 0.403 | 2.681 | control de entrada: V_erosión = Q/A(y_n), con el tirante normal resuelto con n_mín (HDS-5 3.3.2 y HEC-14 3.2.2: la velocidad a tirante normal; `M3.resolver_manning`, desde VE-2), la estimación alta para V3 y el d50 de la regla de doble n. No es la velocidad de un perfil: HY-8 la saca del perfil supercrítico del barril | no | parcialmente lleno |
+| B-01 | 0.900 | 0.232 · 0.258 | no se forma: el perfil S1 no alcanza la entrada (la aproximación descartada da 0.356) | 0.232 · 0.258 | entrada | 0.140 | 0.175 | 1.809 | control de entrada: V_erosión = Q/A(y_n), con el tirante normal resuelto con n_mín (HDS-5 3.3.2 y HEC-14 3.2.2: la velocidad a tirante normal; `M3.resolver_manning`, desde VE-2), la estimación alta para V3 y el d50 de la regla de doble n. No es la velocidad de un perfil: HY-8 la saca del perfil supercrítico del barril | no | parcialmente lleno |
 | C-01 | 0.900 | 0.590 · 0.656 | 0.623 (remanso, perfil M2) · 0.692 | 0.623 · 0.692 | salida | 0.425 | 0.371 | 1.728 | control de salida: Q/A en la sección de salida con el tirante y_salida = 0.410 m (HDS-5 3.1.6; el perfil de la lámina arranca ahí), sin n: la misma magnitud que HY-8 da en la salida | sí | parcialmente lleno |
 
 ## 5. Tolerancia de la comparación: criterio del proyecto, NO normativo (aceptado por el dueño el 2026-11-13)
@@ -57,7 +57,7 @@ Una tabla por punto, con este encabezado y estas filas; las columnas de HY-8, la
 | Control | entrada | | | |
 | HW control de entrada (m) | 1.042 | | | |
 | HW control de salida (m) | 0.993 | | | |
-| Velocidad a la salida (m/s) — sin veredicto | 3.206 | | | |
+| Velocidad a la salida (m/s) — sin veredicto | 3.040 | | | |
 
 ### A-02 — versión de HY-8: ______ · fecha de la corrida: ______ (obligatorios)
 
@@ -68,7 +68,7 @@ Una tabla por punto, con este encabezado y estas filas; las columnas de HY-8, la
 | Control | entrada | | | |
 | HW control de entrada (m) | 0.572 | | | |
 | HW control de salida (m) | no se forma | | | |
-| Velocidad a la salida (m/s) — sin veredicto | 2.883 | | | |
+| Velocidad a la salida (m/s) — sin veredicto | 2.681 | | | |
 
 ### B-01 — versión de HY-8: ______ · fecha de la corrida: ______ (obligatorios)
 
@@ -79,7 +79,7 @@ Una tabla por punto, con este encabezado y estas filas; las columnas de HY-8, la
 | Control | entrada | | | |
 | HW control de entrada (m) | 0.232 | | | |
 | HW control de salida (m) | no se forma | | | |
-| Velocidad a la salida (m/s) — sin veredicto | 1.956 | | | |
+| Velocidad a la salida (m/s) — sin veredicto | 1.809 | | | |
 
 ### C-01 — versión de HY-8: ______ · fecha de la corrida: ______ (obligatorios)
 

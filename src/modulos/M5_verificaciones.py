@@ -1598,7 +1598,12 @@ def _velocidad_de_v3(resultado: ResultadoHidraulico) -> Magnitud:
     La velocidad que V3 compara contra el techo, con su procedencia.
 
     En flujo uniforme es `V_erosion`, la rama de n MINIMO (la estimacion
-    ALTA: el extremo conservador contra un techo). --- T-2 --- EN UN BARRIL
+    ALTA: el extremo conservador contra un techo), que desde VE-2 es la
+    velocidad del tirante normal RESUELTO con n_min, Q / A(y_n), y no la de
+    n_min sobre el tirante de n_max: la velocidad media del conducto que la
+    Tabla N 10 limita es la de un tirante que transporta Q. Con la formula
+    anterior el caso UPAO ALC46 de la validacion externa daba 6.28 m/s a
+    Ø 0.90 m por 5.81 y V3 lo rechazaba. --- T-2 --- EN UN BARRIL
     HORIZONTAL (S = 0, INF-5.1.6) no hay velocidad uniforme: la mayor del
     barril es la de la seccion de SALIDA, porque sobre un fondo horizontal
     la lamina es subcritica y baja hacia la salida (perfil H2), donde pasa
@@ -1611,8 +1616,9 @@ def _velocidad_de_v3(resultado: ResultadoHidraulico) -> Magnitud:
             "V_erosion", resultado.V_erosion, "m/s",
             "M3, velocidad de la rama de n MINIMO -- la estimacion "
             "ALTA de velocidad, que es el extremo conservador contra "
-            "un TECHO. No es la de V2, que verifica un piso y usa la "
-            "rama opuesta", cifras=CIFRAS_MAGNITUD)
+            "un TECHO --, con su propio tirante normal: Q / A(y_n con "
+            "n_min), paso 4.1. No es la de V2, que verifica un piso y "
+            "usa la rama opuesta", cifras=CIFRAS_MAGNITUD)
     if resultado.V_salida is None:
         raise MetodoNoEvaluableError(
             que="V3",

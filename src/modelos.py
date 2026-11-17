@@ -1933,20 +1933,20 @@ class Geometria:
 class TiranteNormal:
     """
     Salida de M3 (Sec. 4.1): tirante normal resuelto por Manning + Brent con
-    la regla de doble n.
+    la regla de doble n, UN TIRANTE POR CADA EXTREMO del rango de n (VE-2).
 
-    `geometria` es la UNICA solucion de Brent, con n_max (rama de capacidad y
+    `geometria` es la solucion de Brent con n_max (rama de capacidad y
     tirante: V1 borde libre) -- el n mas conservador del lado de la
-    inundacion fija el theta real de diseño. Sobre esa MISMA geometria (mismo
-    theta, mismo R) se calculan las DOS velocidades de la regla de doble n,
-    porque un umbral de velocidad no tiene un extremo conservador sino dos, y
-    son opuestos:
+    inundacion fija el theta real de diseño --, y `geometria_erosion` la de
+    n_min, sobre la misma ecuacion, la misma seccion y el mismo Q: un tirante
+    MENOR. Cada velocidad es la de SU tirante, porque un umbral de velocidad
+    no tiene un extremo conservador sino dos, y son opuestos:
 
-        `V_erosion`        con n_min: la estimacion ALTA. Es la que hay que
-                           usar contra un TECHO -- V3 (velocidad maxima
-                           admisible) y el d50 de Laushey (Fase 6) --, porque
-                           el riesgo esta en que la velocidad real sea mayor
-                           que la calculada.
+        `V_erosion`        con n_min: Q / geometria_erosion.A, la estimacion
+                           ALTA. Es la que hay que usar contra un TECHO -- V3
+                           (velocidad maxima admisible) y el d50 de Laushey
+                           (Fase 6) --, porque el riesgo esta en que la
+                           velocidad real sea mayor que la calculada.
         `V_sedimentacion`  con n_max: la estimacion BAJA. Es la que hay que
                            usar contra un PISO -- V2 (velocidad minima de
                            autolimpieza) --, porque ahi el riesgo es el
@@ -1961,31 +1961,44 @@ class TiranteNormal:
     n = 0.013, que es n_max. El repositorio se contradecia a si mismo, y la
     ventana permisiva era real: con D = 0.90 m, y/D = 0.75 y S = 5e-5, la
     velocidad de la rama n_max es 0.228 m/s -- por debajo del piso de
-    0.25 m/s -- mientras que la de la rama n_min da 0.297 m/s y el punto salia
-    "cumple".
+    0.25 m/s -- mientras que la de la rama n_min daba 0.297 m/s y el punto
+    salia "cumple".
 
-    `V_erosion * geometria.A != Q` en general: Q es el caudal de diseño que
-    define el theta (con n_max), mientras que esa velocidad asume una
-    rugosidad menor sobre la misma seccion (ver el fixture CP-2,
-    tests/fixtures/casos_patron.py, y `modulos.M3_hidraulica.resolver_manning`).
-    `V_sedimentacion`, en cambio, SI cumple `V * A = Q`, y no por casualidad:
-    es la velocidad media del mismo n con que se resolvio la geometria.
+    LAS DOS CUMPLEN LA CONTINUIDAD, CADA UNA CON SU AREA (VE-2, decision (b)
+    de la ficha VE1-02, aprobada el 2026-11-17):
+    `V_erosion * geometria_erosion.A = Q` y `V_sedimentacion * geometria.A =
+    Q`, hasta `tolerancias.TOL_REL_CONTINUIDAD_MANNING`. HASTA VE-2 ESTE
+    DOCSTRING DECIA LO CONTRARIO, «V_erosion * geometria.A != Q en general»,
+    y era cierto: `V_erosion` era la velocidad de n_min SOBRE LA GEOMETRIA DE
+    n_max, V*A = Q*n_max/n_min (1.3*Q en el concreto), un caudal que no pasa
+    por el conducto. Se corrigio porque ninguna fuente toma el tirante de un
+    n y la velocidad de otro: HDS-5 num. 3.3.2 (pag. impresa 3.24) «The
+    velocity at normal depth is assumed to be the outlet velocity» y HEC-14
+    num. 3.2.2 (pag. impresa 3-7), cuyo ejemplo de la pag. 3-8 resuelve un
+    tirante por cada n. Sobre la geometria de n_max, `V_erosion * A` sigue
+    siendo mayor que Q (A(n_max) > A(n_min)), y eso es lo que se espera.
 
-    Eso la convierte ademas en el minimo REAL de la velocidad sobre todo el
-    rango de n de la Tabla N 09, no solo en "la de la geometria de diseño":
-    resolviendo Manning con un n menor, el tirante normal baja, el area baja y
-    la velocidad media Q/A sube. La cadena vale mientras theta este en la RAMA
-    CRECIENTE de la curva de capacidad de la seccion circular -- Q(theta) no
-    es monotona: alcanza su maximo cerca de y/D = 0.94 y decae hasta la
-    seccion llena --, y ahi esta siempre el diseño de este proyecto, porque V1
-    lo acota en y/D <= 0.75 (num. 4.1.1.3.7 b). Se dice y no se da por
-    supuesto: por encima de ese maximo la relacion theta(n) deja de ser
-    creciente y el argumento no aplicaria.
+    Eso convierte a cada una en el extremo REAL de la velocidad sobre el
+    rango de n de la Tabla N 09, no solo en "la de una geometria": con un n
+    menor el tirante normal baja, el area baja y la velocidad media Q/A sube.
+    La cadena vale mientras theta este en la RAMA CRECIENTE de la curva de
+    capacidad de la seccion circular -- Q(theta) no es monotona: alcanza su
+    maximo cerca de y/D = 0.94 y decae hasta la seccion llena --, y ahi esta
+    siempre el diseño de este proyecto, porque V1 lo acota en y/D <= 0.75
+    (num. 4.1.1.3.7 b). Se dice y no se da por supuesto: por encima de ese
+    maximo la relacion theta(n) deja de ser creciente y el argumento no
+    aplicaria.
+
+    `geometria_erosion` viaja para que la memoria imprima el tirante con que
+    se midio `V_erosion` (pasos 4.1 y 4.3b de M4). No es el tirante de
+    registro: el que se publica como `y_normal`, el que V1 juzga y el que
+    M4 da como tirante de salida bajo control de entrada es el de n_max.
     """
 
-    geometria: Geometria      # con n_max
-    V_erosion: float          # m/s, con n_min  - estimacion ALTA (techos)
-    V_sedimentacion: float    # m/s, con n_max  - estimacion BAJA (pisos)
+    geometria: Geometria          # con n_max  - tirante de capacidad (V1)
+    V_erosion: float              # m/s, Q / geometria_erosion.A - ALTA (techos)
+    V_sedimentacion: float        # m/s, con n_max  - estimacion BAJA (pisos)
+    geometria_erosion: Geometria  # con n_min  - el tirante de V_erosion (VE-2)
 
 
 @dataclass(frozen=True)
@@ -2036,11 +2049,13 @@ class TiranteCritico:
     `V` = Q/A_c es la velocidad critica, y `H_c` = y_c + V^2/(2g) la energia
     especifica critica que exige la Forma 1 del control de entrada.
 
-    A diferencia de `TiranteNormal`, aqui V SI es Q/A: el tirante critico no
-    depende de la rugosidad -- no interviene n en Q^2*T/(g*A^3) = 1 -- y por
-    lo tanto la regla de doble n (Sec. 4.1) no le aplica. Es la unica
-    velocidad del proyecto que se obtiene dividiendo Q entre A, y lo es porque
-    la ecuacion que la define no tiene rama de capacidad ni rama de erosion.
+    Aqui V es Q/A y hay UNA sola: el tirante critico no depende de la
+    rugosidad -- no interviene n en Q^2*T/(g*A^3) = 1 -- y por lo tanto la
+    regla de doble n (Sec. 4.1) no le aplica: la ecuacion que la define no
+    tiene rama de capacidad ni rama de erosion. (Decia que era «la unica
+    velocidad del proyecto que se obtiene dividiendo Q entre A»; desde VE-2
+    las dos de `TiranteNormal` tambien lo son, cada una con el area de su
+    tirante, y desde EXT-3 lo eran las de salida y de barril lleno de M4.)
     """
 
     geometria: Geometria      # seccion en estado critico
@@ -2619,10 +2634,12 @@ class ResultadoHidraulico:
     n_max, y la velocidad viaja en DOS campos porque un umbral de velocidad
     tiene dos extremos conservadores opuestos (ver `TiranteNormal`):
 
-        `V_erosion`        con n_min, estimacion ALTA. Contra los TECHOS: V3
-                           y el d50 de la Fase 6. En general
-                           `V_erosion * A != Q`, y esa discrepancia es
-                           intencional.
+        `V_erosion`        con n_min y SU tirante normal, estimacion ALTA.
+                           Contra los TECHOS: V3 y el d50 de la Fase 6.
+                           Cumple Q = V*A con el area de ESE tirante, no con
+                           la de `y_normal` (VE-2; hasta VE-2 era la de n_min
+                           sobre la geometria de n_max y V*A = 1.3*Q en el
+                           concreto: ver `TiranteNormal`).
         `V_sedimentacion`  con n_max, estimacion BAJA. Contra el PISO: V2.
 
     NO HAY UN CAMPO `V` A SECAS, Y ES DELIBERADO. Lo habia, valia `V_erosion`
@@ -2695,12 +2712,26 @@ class ResultadoHidraulico:
                            n. Bajo control de ENTRADA es la del tirante
                            normal (pag. 3.24: «The velocity at normal depth
                            is assumed to be the outlet velocity»), y de sus
-                           dos ramas la de n_min (`V_erosion`): el techo
-                           conservador para un d50 que crece con V^2. En
-                           pendiente suave con salida libre la de salida a
-                           y_c SUPERA a V_erosion (1.508 vs 1.184 m/s en el
-                           caso del dictamen): M6 recibia una piedra chica.
-        `y_salida_m`       el tirante con que se midio `V_salida`.
+                           dos ramas la de n_min (`V_erosion`, con su propio
+                           tirante desde VE-2): el techo conservador para un
+                           d50 que crece con V^2. En pendiente suave con
+                           salida libre la de salida a y_c SUPERA a la
+                           normal (1.508 vs 1.184 m/s en el caso del
+                           dictamen, medida con la formula anterior a VE-2;
+                           hoy la normal es aun menor): M6 recibia una piedra
+                           chica.
+        `y_salida_m`       el TIRANTE a la salida. Bajo control de SALIDA y
+                           con el barril horizontal, el mismo con que se
+                           midio `V_salida`, min(D, max(TW, y_c)). Bajo
+                           control de ENTRADA, el tirante normal de REGISTRO,
+                           el de n_max (`y_normal`): la regla de doble n da
+                           el tirante con n MAXIMO y la velocidad con n
+                           MINIMO, y desde VE-2 esa velocidad se mide con su
+                           propio tirante, mas bajo, que el paso 4.3b imprime
+                           al lado (`y_n_min`). Lo leen como TIRANTE el
+                           rotulo del regimen del Froude y la Ec. (10.5) de
+                           HEC-14 (M6) y el nivel de agua contra el cabezal
+                           de salida (M9); ver la ficha VE2-B.
         `h_o_m`, `TW_m`, `ahogado_por_TW`   el bloque h_o entero, que hasta
                            EXT-3 no salia del `ControlSalida` (SIS-B-18): el
                            JSON y `cli.volcar` lo imprimen junto a las dos
@@ -2779,7 +2810,7 @@ class ResultadoHidraulico:
     regimen_barril: RegimenBarril = RegimenBarril.PARCIALMENTE_LLENO
     V_llena_m_s: Optional[float] = None   # m/s - Q_celda / A_llena (regimen LLENO)
     V_salida: Optional["Magnitud"] = None # m/s - HDS-5 3.1.6, con procedencia
-    y_salida_m: Optional[float] = None    # m  - tirante con que se midio V_salida
+    y_salida_m: Optional[float] = None    # m  - tirante a la salida (ver arriba: bajo control de entrada, el de registro)
     h_o_m: Optional[float] = None         # m  - max(TW, (y_c + D)/2), Sec. 4.3
     TW_m: Optional[float] = None          # m  - tirante en el receptor
     ahogado_por_TW: bool = False          # manda TW en h_o, no la geometria

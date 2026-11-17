@@ -190,7 +190,15 @@ CORRIDAS_IMPORTTIME = 3
 # 104 a 119 y el coste MARGINAL baja. El objetivo del dictamen (< 15 KB y
 # < 10 paginas) sigue sin alcanzarse y la ficha T10-01 dice por que. Los
 # techos quedan PEGADOS a la medida nueva, como desde T-6.
-KB_POR_PUNTO_MAX = 107.5
+# --- VE-2 (bloque 1, decision (b) de VE1-02) --- 108.50 KB por punto,
+# medidos con este mismo metodo sobre el arbol de VE-2 contra 107.04 en
+# `72a8d01`: +1.46 KB porque la memoria imprime lo que la correccion obliga a
+# poder rehacer --- el paso 4.1 los DOS tirantes normales y V = Q/A de cada
+# rama, el 4.3b el tirante de n minimo bajo control de entrada, la
+# procedencia de V3 y de la velocidad de salida, y las dos citas de la
+# velocidad a tirante normal (HDS-5 3.3.2, HEC-14 3.2.2) ---. El techo sube a
+# la medida nueva, pegado como los anteriores.
+KB_POR_PUNTO_MAX = 109.0
 # Paginas por punto: 14.0 medidas en EXT-8; 16.0 en E-A con los dos pasos
 # del perfil por escalon; 18.7 sobre `5bca7c6` y 20.7 con T-6, 31.7 con
 # T-3, 32.3 con T-9 y 31.0 con T-10 (ver arriba).

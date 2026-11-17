@@ -21,7 +21,8 @@ la v8 enmendada en EXT-0 y el dictamen del 2026-09-19 fijan:
       subir D solo baja HW/D.
   (c) subcritico con salida libre: Q = 0.3, S = 0.001. La velocidad que recibe
       M6 es la de SALIDA por HDS-5 3.1.6 (area a y_c: 1.508 m/s), no
-      V_erosion (1.184 m/s, regimen uniforme).
+      V_erosion (1.184 m/s, regimen uniforme, en el dictamen; 1.107 m/s desde
+      VE-2, con la rama de n_min sobre su propio tirante).
   (d) el bloque h_o entero viaja al JSON y a `cli.volcar`.
 
 Los numeros de contraste (0.0786, 0.589, 1.508, 1.184) son los del dictamen y
@@ -361,7 +362,13 @@ def test_c_la_fuente_reproduce_el_caso_subcritico_tal_como_esta_hoy():
     r = _resuelto(Q=0.3, S=0.001, TW=0.0)
     assert r.control_gobernante is ControlGobernante.SALIDA
     assert r.y_normal > r.y_critico
-    assert r.V_erosion == pytest.approx(1.184, rel=REL_DICTAMEN)
+    # CAMBIADO EN VE-2 DECLARANDO LA CAUSA: el dictamen imprime 1.184 m/s,
+    # la velocidad de n_min sobre el tirante de n_max (la formula anterior a
+    # la decision (b) de VE1-02). Con su propio tirante (y_n = 0.398 m con
+    # n = 0.010) es 0.3 / 0.271021 = 1.107 m/s. La conclusion del caso no
+    # cambia: la de salida a y_c (1.508) supera a la uniforme, y por mas.
+    assert r.V_erosion == pytest.approx(1.107, rel=REL_DICTAMEN)
+    assert r.V_erosion < 1.184
     y_sal = min(D_CASO, max(0.0, r.y_critico))
     assert r.Q / SeccionCircular(D_CASO).area(y_sal) == pytest.approx(
         1.508, rel=REL_DICTAMEN)

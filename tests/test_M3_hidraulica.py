@@ -9,7 +9,10 @@ Los tests que mas importan son cuatro:
     - la geometria (A, P, R) reproduce el caso patron CP-2 dentro de su
       tolerancia;
     - la regla de doble n da dos thetas distintos para el mismo Q/D/S (n_max
-      frente a n_min) y V sale del theta de n_min, NO de Q/A(theta n_max);
+      frente a n_min) y V sale del theta de n_min, NO de Q/A(theta n_max).
+      Esta linea lo prometia desde el principio y el codigo no lo hacia: hasta
+      VE-2 habia un solo theta y la velocidad de n_min se calculaba sobre la
+      geometria de n_max. Desde VE-2 los tests de abajo lo comprueban;
     - un Q que ningun theta en (0, 2*pi) puede transportar devuelve None, sin
       lanzar una excepcion generica;
     - HDPE hereda el rango de Manning por analogia (Sec. 4.1.1) y por eso
@@ -24,6 +27,7 @@ from src.modelos import (DatoInvalidoError, Geometria, SeccionCircular, TiranteN
                      TipoMaterial)
 from src.modulos.M2_material import catalogo
 from src.modulos.M3_hidraulica import area, geometria, perimetro, resolver_manning, tirante_normal
+from src.tolerancias import TOL_REL_CONTINUIDAD_MANNING
 from tests.fixtures.casos_patron import CP2_GEOMETRIA_MANNING, CP3_VELOCIDAD_MINIMA
 
 
@@ -93,17 +97,33 @@ def test_resolver_manning_aplica_doble_n(concreto):
 
     assert isinstance(resolucion, TiranteNormal)
     assert resolucion.geometria.llenado == pytest.approx(c["theta_esperado"], rel=1e-4)
+    # --- VE-2 (decision (b)) --- CAMBIADO DECLARANDO LA CAUSA: comparaba con
+    # `V_con_n_min_esperado` (2.9650 m/s), la velocidad de n_min SOBRE LA
+    # GEOMETRIA DE n_max, que era la formula vieja (V*A = 1.3*Q). Hoy la
+    # rama de n_min resuelve su propio tirante y la velocidad es Q / A de ese
+    # tirante: 2.8315 m/s (CP-2, recalculado con brentq en el fixture).
     assert resolucion.V_erosion == pytest.approx(
-        c["V_con_n_min_esperado"], abs=c["tolerancia_hidraulica"])
+        c["V_erosion_esperado"], abs=c["tolerancia_hidraulica"])
+    assert resolucion.geometria_erosion.llenado == pytest.approx(
+        c["theta_n_min_esperado"], abs=c["tolerancia_geometria"])
+    assert resolucion.geometria_erosion.A == pytest.approx(
+        c["A_n_min_esperado"], abs=c["tolerancia_geometria"])
     assert resolucion.V_sedimentacion == pytest.approx(
         c["V_con_n_max_esperado"], abs=c["tolerancia_hidraulica"])
 
 
 def test_v_con_n_min_no_es_Q_sobre_area(concreto):
     """
-    Guarda de diseno explicita: V*A != Q en general. Si un modulo calculara V
-    como Q / geometria.A estaria ignorando la regla de doble n (Sec. 4.1) y
-    devolviendo la velocidad de la rama de n_max en vez de la de n_min.
+    Guarda de diseno explicita: la velocidad de n_min no es Q / A del tirante
+    de n_max. Si un modulo calculara V como Q / geometria.A estaria ignorando
+    la regla de doble n (Sec. 4.1) y devolviendo la velocidad de la rama de
+    n_max en vez de la de n_min.
+
+    LO QUE CAMBIO EN VE-2, declarado: este docstring decia «V*A != Q en
+    general», y eso describia la formula vieja (n_min sobre la geometria de
+    n_max, V*A = 1.3*Q). Desde VE-2 `V_erosion` SI es Q / A, pero del area de
+    SU tirante (`geometria_erosion`), y los asserts de abajo siguen valiendo
+    porque ese area es menor que la de n_max.
     """
     c = CP2_GEOMETRIA_MANNING
     Q = c["Q_con_n_max_esperado"]
@@ -111,28 +131,38 @@ def test_v_con_n_min_no_es_Q_sobre_area(concreto):
 
     V_incorrecta = Q / resolucion.geometria.A
     assert resolucion.V_erosion != pytest.approx(V_incorrecta, rel=1e-3)
-    assert resolucion.V_erosion > V_incorrecta   # n_min < n_max -> misma R, mas velocidad
+    assert resolucion.V_erosion > V_incorrecta   # n_min < n_max -> menos tirante, mas velocidad
+    assert resolucion.V_erosion == pytest.approx(
+        Q / resolucion.geometria_erosion.A, rel=TOL_REL_CONTINUIDAD_MANNING)
     # La otra rama SI vale Q/A, y por construccion: es la velocidad media del
     # mismo n con que se resolvio el tirante. Es lo que la hace el minimo real
     # de la velocidad sobre el rango de n, o sea el extremo conservador de V2.
     assert resolucion.V_sedimentacion == pytest.approx(V_incorrecta, rel=1e-9)
 
 
-def test_las_dos_ramas_comparten_la_misma_geometria(concreto):
+def test_cada_rama_resuelve_su_propio_tirante(concreto):
     """
-    La regla de doble n NO resuelve Brent dos veces: la velocidad de n_min se
-    calcula sobre el mismo theta/R que fijo la rama de n_max (ver CP-2).
+    CAMBIADO EN VE-2 DECLARANDO LA CAUSA. Se llamaba
+    `test_las_dos_ramas_comparten_la_misma_geometria` y fijaba lo contrario:
+    «La regla de doble n NO resuelve Brent dos veces: la velocidad de n_min se
+    calcula sobre el mismo theta/R que fijo la rama de n_max». Era la formula
+    que la decision (b) de VE1-02 retiro: la velocidad de una rugosidad sobre
+    el tirante de otra, con V*A = 1.3*Q. Hoy cada rama resuelve su tirante
+    (HDS-5 num. 3.3.2; HEC-14 num. 3.2.2 y su ejemplo de la pag. 3-8) y la
+    velocidad de cada una es Manning sobre su propia R.
     """
     c = CP2_GEOMETRIA_MANNING
     Q = c["Q_con_n_max_esperado"]
 
     resolucion = resolver_manning(seccion=SeccionCircular(c["D"]), Q=Q, S=c["S"], material=concreto)
-    factor = resolucion.geometria.R ** (2 / 3) * c["S"] ** (1 / 2)
+    factor_max = resolucion.geometria.R ** (2 / 3) * c["S"] ** (1 / 2)
+    factor_min = resolucion.geometria_erosion.R ** (2 / 3) * c["S"] ** (1 / 2)
 
+    assert resolucion.geometria_erosion.llenado < resolucion.geometria.llenado
     assert resolucion.V_erosion == pytest.approx(
-        factor / concreto.n_para_velocidad_maxima, rel=1e-9)
+        factor_min / concreto.n_para_velocidad_maxima, rel=1e-9)
     assert resolucion.V_sedimentacion == pytest.approx(
-        factor / concreto.n_para_velocidad_minima, rel=1e-9)
+        factor_max / concreto.n_para_velocidad_minima, rel=1e-9)
 
 
 def test_hdpe_tambien_aplica_doble_n_por_el_rango_de_criterios_adoptados(hdpe):
