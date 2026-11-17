@@ -152,6 +152,24 @@ diseño del CABEZAL (Opus, esfuerzo máximo; informe en `informes_en_curso/`). L
 >   línea base. Ficha nueva en `docs/decisiones_diferidas.md` si algo queda fuera.
 > - Prioridad: después de VE-3.11 y VE-3.12; antes de integrar en `main`.
 
+> **CUARTA INSTRUCCIÓN DEL DUEÑO (2026-11-17, ~21:15 UTC) — la cuota y el PASE.** Vigila tu
+> cuota semanal de tokens (el aviso de uso de la sesión, `/usage` o los avisos de límite que
+> recibas; si no puedes leerla, tómala como 97 % al primer aviso de límite). **Al llegar al
+> 97 %, o antes si ves que se agota, PASA el trabajo a la otra sesión del dueño**, que
+> vigila esta rama cada 5 minutos:
+>
+> 1. Detén los agentes en curso en un punto limpio; respalda en sus ramas `…-respaldo-*`
+>    TODO lo que tengan (código, tests, generados e informes de `informes_en_curso/`).
+> 2. Pon al día este LEEME (qué está integrado, qué está a medias y en qué rama de respaldo,
+>    qué falta, decisiones del dueño pendientes de aplicar) y `PROMPT_CONTINUAR.md`, de modo
+>    que una sesión nueva pueda retomar sin leer el chat.
+> 3. Escribe `proceso/planes_mejora/ve3_estado/PASE.md` con: hora UTC, % de cuota, el
+>    último commit integrado, la lista de ramas de respaldo con su estado (terminado / a
+>    medias / sin empezar) y lo PRIMERO que tiene que hacer quien retome.
+> 4. Commit con mensaje que empiece por **«PASE:»** y push a esta rama. Desde ese momento
+>    no empujes nada más a `claude/youthful-shannon-rjzmuc` ni a sus respaldos: la otra
+>    sesión toma la rama.
+
 ## Decisiones del dueño (2026-11-17)
 
 - VE2-04: sí, V3 con la mayor velocidad bajo control de salida (hecho, VE-3.1).
