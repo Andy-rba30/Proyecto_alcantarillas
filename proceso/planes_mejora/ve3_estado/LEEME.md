@@ -20,6 +20,36 @@ cada vez que se integra algo. Fecha de esta versión: 2026-11-17.
 >    sesión retome VE-3 desde las ramas si esta se corta (como se hizo con VE-2).
 > 4. No integres en `main`: eso sigue esperando la autorización del dueño.
 
+## Decisiones pendientes del dueño (con la recomendación de la sesión)
+
+La sesión sigue con lo que no depende de ellas. Responder aquí (o en el chat) basta.
+
+1. **Clases III a V del tubo de concreto (ensayos del conducto, H1, alta).** Sólo la Clase II
+   de M 170M está transcrita, y con más de ≈ 2.4 m de tierra sobre la clave ningún tubo de
+   concreto cierra (13 de 57 corridas sin diseño; en 11 la app ya tenía un TMC que cumple).
+   El PDF de AASHTO M 170M del repositorio no deja leer esas filas, pero el USACE EM
+   1110-2-2902 (en `Normas/ejemplos_resueltos/conducto/`, pág. PDF 71) imprime la tabla de
+   ASTM C76: Clase I 40, II 50, III 65, IV 100, V 140 N/m/mm (D0.01). **Recomendación:
+   transcribir III a V como [C] desde el USACE, con su cita verificada**; con ellas, 16 de 17
+   corridas coinciden con el diseño a mano.
+2. **`borde_libre_bajo_tw_ahogante` = `no_cumple` (H5, criterio [A]).** Sobredimensiona hasta
+   cuatro escalones cuando el TW ahoga la salida (E07 1.35 → 0.90 con `aviso`). **Recomendación:
+   mantener `no_cumple`** (es el lado seguro y fue una decisión anterior del dueño), salvo
+   que el dueño prefiera la lectura `aviso`; la sensibilidad ya lo muestra.
+3. **O-2 del cabezal (VE3-03):** ancho del acero de temperatura de M9 (el real) frente a la
+   franja de 12 in de CDOT; en los casos de CDOT manda el piso. **Recomendación: dejar el
+   ancho real** (es el de la ec. 5.10.6-1 aplicada a la sección) y cerrar O-2.
+4. **Carga viva de M8 con poco relleno (VE3-04):** lectura literal de la 9.ª ed., del lado
+   seguro (+65 % frente a ACPA 2009). **Recomendación: que la revise un ingeniero** antes de
+   la sustentación; no hay cambio de código pendiente.
+5. **Integrar en `main`** cuando la suite esté verde y los ensayos del cabezal hechos.
+
+Lo que la sesión corrige SIN esperar decisión (defectos frente a la hoja de ruta): H2 (V1 con
+control de entrada y TW entre 0.75 D y D usa el tirante normal, contra la nota T-2 de la hoja
+de ruta), H4 (V7 omite el peso propio del tubo, contra la fórmula 0.90·(DC + EV) ≥ U, y el
+proyecto ya declara el peso del concreto), H3 (el delta de rasante que falta o que ignora V7)
+y los titulares engañosos de los «no factible».
+
 ## Dónde está cada cosa
 
 - `main` = `3a65e30`: VE-2 integrado con sus correcciones y dos verificaciones Fable.

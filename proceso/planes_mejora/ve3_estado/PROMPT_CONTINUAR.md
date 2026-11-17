@@ -1,0 +1,18 @@
+# Prompt para retomar VE-3 desde otra sesión
+
+Se mantiene al día con cada integración. Copia el bloque `text` en una sesión nueva de Claude
+Code sobre `Andy-rba30/Proyecto_alcantarillas`.
+
+```text
+Retoma VE-3 del repositorio Andy-rba30/Proyecto_alcantarillas. Lee enteros CLAUDE.md, proceso/reglas_de_correccion_de_auditorias.md y proceso/planes_mejora/ve3_estado/LEEME.md (estado, decisiones del dueño, decisiones pendientes con su recomendación, ramas de respaldo). Trabaja en la rama claude/youthful-shannon-rjzmuc (git fetch origin claude/youthful-shannon-rjzmuc). main NO se toca sin autorización del dueño. El dueño no lee el chat: las preguntas van al LEEME («Decisiones pendientes del dueño») con tu recomendación, y todo informe se copia al repo.
+
+Entorno: python 3.12 con tkinter (si el del sistema no lo trae, `uv python install 3.12` y un venv), `pip install -r requirements.txt PyMuPDF "pillow<13"` (openpyxl sólo para leer las hojas de CDOT), xvfb; clona Andy-rba30/Normas y export NORMAS_DIR=<clon> (trae normas/ y ejemplos_resueltos/). Suite: `xvfb-run -a python -m pytest -q -p no:cacheprovider --no-header` en un clon LIMPIO fuera del repositorio (los worktrees bajo .claude/ hacen fallar test_sin_literales) y en una exportación (git archive HEAD). Para regenerar la línea base pon el python del venv primero en el PATH (sh tests/linea_base_familia_c/regenerar.sh).
+
+Qué falta, en orden:
+1. VE-3.9 (cabezal: paso 0.10 m y tope 1.5·H_c de archivo en dimensionamiento_zapata_cabezal; el PERALTE de la zapata también se dimensiona hasta cumplir el armado A1/A2 y el cortante, re-verificando la estabilidad). Si no está integrado en la rama, búscalo en las ramas de respaldo claude/youthful-shannon-rjzmuc-respaldo-cabezal-espesor-2 (más reciente) o -cabezal-espesor (3c15302, el primer intento detenido): trátalo como BORRADOR, termínalo con tests en rojo y mutantes, y rehaz la historia en commits limpios.
+2. Correcciones de los ensayos de diseño del conducto (proceso/planes_mejora/ve3_estado/ENSAYOS_DISENO_CONDUCTO.md) que no esperan decisión: H2 (V1 con control de entrada y TW entre 0.75 D y D: no usar el tirante normal; nota T-2 de la hoja de ruta), H4 (V7 con el peso propio del tubo, 0.90·(DC + EV) ≥ U, con peso_especifico_concreto_kn_m3), H3 (el delta de rasante que falta o que ignora V7) y los titulares de los «no factible». Tests en rojo; línea base regenerada con la lista de números movidos.
+3. Las decisiones pendientes del LEEME que el dueño haya respondido (p. ej. clases III-V del concreto como [C] desde el USACE EM 1110-2-2902, pág. PDF 71).
+4. Regenerar todo (línea base, python -m tests.apoyo.validacion_integral|sensibilidad|validacion_externa|validacion_cabezal|validacion_conducto --escribir, manifiesto y trazabilidad con python -m src.normativa.manifiesto --escribir --suite ..., índice con python -m src.indice_formulas --escribir --suite ...), suite completa en clon limpio y exportación, sellar con el par medido, fila en proceso/bitacora_conteos_y_entorno.md.
+5. Ensayos de diseño del CABEZAL con un revisor independiente (Opus a esfuerzo máximo; no hay cuota de Fable): matriz de escenarios, diseño a mano ANTES de ver la app, comparación cumple / mínimo / monótono / coincide; informe a proceso/planes_mejora/ve3_estado/.
+6. Fichas en docs/decisiones_diferidas.md (VE3-xx), LEEME y este prompt al día; commit y push a la rama tras cada paso.
+```
