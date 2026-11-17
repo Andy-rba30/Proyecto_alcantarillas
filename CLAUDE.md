@@ -769,7 +769,14 @@ ErrorProyecto.
   `validacion_hy8.md` y `validacion_sensibilidad.md`), cada uno con su test
   de sincronía y sin sello: los escribe `python -m
   tests.apoyo.validacion_integral --escribir`,
-  `tests.apoyo.validacion_externa` y `tests.apoyo.sensibilidad`. El sello (fecha, commit
+  `tests.apoyo.validacion_externa` y `tests.apoyo.sensibilidad`. Y desde VE-3 dos
+  más, también sin sello, los de la validación estructural contra ejemplos
+  publicados: `docs/validacion_cabezal.md` (M9 contra Caltrans BDP 11.2.2 y
+  CDOT Ex. 11) y `docs/validacion_conducto.md` (M8 contra ACPA y el USACE),
+  que escriben `python -m tests.apoyo.validacion_cabezal --escribir` y
+  `python -m tests.apoyo.validacion_conducto --escribir`; los PDF de esos
+  ejemplos están en el repositorio de normas, `ejemplos_resueltos/`, aparte
+  de `normas/`. El sello (fecha, commit
   de origen, alcance, par de la suite con su entorno) lo pone quien regenera
   y el test lo LEE del documento para comparar el cuerpo y no la fecha.
 

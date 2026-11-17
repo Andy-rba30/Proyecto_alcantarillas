@@ -7900,9 +7900,7 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   y la corrección cambiaría diseños (puntos de pendiente suave con TW bajo el crítico
   podrían perder escalones por V3) y movería la línea base: es decisión del dueño, no una
   corrección. Con los techos de 3 a 6 m/s del concreto rara vez decide.
-- **Qué haría falta:** que el dueño decida si V3 juzga max(`V_erosion`, `V_salida`) bajo
-  control de salida; si sí, tests en rojo con el caso de arriba, corrección en
-  `_velocidad_de_v3` y línea base regenerada con su lista de números movidos.
+- **Qué haría falta:** nada: el dueño decidió que sí y se cerró en VE-3.1 (ficha VE3-01).
 - **Dónde vive:** `src/modulos/M5_verificaciones.py::_velocidad_de_v3`
 
 ## VE2-05 · Lo que la verificación de las correcciones de VE-2 encontró (N1 a N7)
@@ -7931,6 +7929,68 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   frontera es por NOMBRE (un dato de catálogo futuro de la Fase 5 cuyo campo no sea un
   criterio decidiría como del punto); por la CLI un dato de ensayo se sigue declarando sin
   nota, como antes de VE-2; y `c_phi_fundacion`, `capacidad_portante_adm` y
-  `Mw_licuefaccion` siguen [A] con `DeEnsayo` (si la razón de N2 vale para ellos lo decide el
-  dueño).
+  `Mw_licuefaccion` seguían [A] con `DeEnsayo` (cerrado en VE-3.2, ficha VE3-02: los dos
+  primeros son [S], el tercero sigue [A]).
 - **Dónde vive:** `src/modulos/MD.py::_falta_un_dato_de_catalogo`
+
+## VE3-01 · Bajo control de salida V3 juzga la mayor de `V_erosion` y `V_salida` (cierre de VE2-04)
+
+- **Cerrado (VE-3.1, decisión del dueño del 2026-11-17):** con S > 0 y control de SALIDA, V3
+  compara contra la Tabla Nº 10 la mayor de `V_erosion` y `V_salida`. La tabla limita «la
+  velocidad» del flujo en el conducto sin restringirla al tirante normal (Manual de
+  Hidrología, núm. 4.1.1.3.6, pág. impresa 76, `tablas.T10.texto_previo`), y bajo control de
+  salida la sección de salida la definen y_c, TW o D (HDS-5, núm. 3.1.6, pág. impresa 3.18).
+  Bajo control de entrada y con S = 0 no cambia; sin `V_salida` bajo control de salida sale
+  `MetodoNoEvaluableError`. El caso de VE2-04 compara 1.5076 m/s.
+- **Por qué así:** medir en la sección más rápida del conducto es la lectura conservadora, y
+  es LECTURA del proyecto, declarada en el docstring. La línea base no mueve ningún número
+  (en sus corridas la salida es más lenta): sólo crece la procedencia (docs/linea_base.md
+  §18); ningún diámetro, sección ni material cambia.
+- **Qué haría falta:** nada.
+- **Dónde vive:** `src/modulos/M5_verificaciones.py::_velocidad_de_v3`
+
+## VE3-02 · Los parámetros del suelo de fundación son [S] pendientes de ensayo (cierre de lo que VE2-05 dejó al dueño)
+
+- **Cerrado (VE-3.2, decisión del dueño del 2026-11-17):** `c_phi_fundacion` y
+  `capacidad_portante_adm` son [S] con su `trazabilidad`: salen del estudio de mecánica de
+  suelos de este sitio y no hay rango que elegir, la misma razón que N2 aplicó al peso
+  saturado. La capacidad portante lleva `positivo`; `c_phi_fundacion` no (es un dict: sus
+  campos los valida `M9.validar_suelo_fundacion`). `Mw_licuefaccion` sigue [A]: elegir el
+  escenario sísmico es decisión del proyectista. Ningún valor cambia.
+- **Por qué así:** la taxonomía de CLAUDE.md: un [S] se defiende con trazabilidad, no con
+  sensibilidad; el anexo A.4 de la memoria (sólo [A]) deja de listarlos, que es lo coherente.
+  Línea base: la huella y la etiqueta de las dos filas (docs/linea_base.md §19).
+- **Qué haría falta:** nada para estos; por la CLI un dato de ensayo se sigue declarando sin
+  nota, como antes de VE-2.
+- **Dónde vive:** `src/modulos/M9_cabezal.py::validar_suelo_fundacion`
+
+## VE3-03 · M9 contra ejemplos publicados (Caltrans BDP 11.2.2, CDOT Ex. 11)
+
+- **Cerrado:** 61 contrastes de las funciones de M9 (empujes, excentricidad y presión de
+  contacto uniforme y lineal, e admisible sísmica, flexión, Mcr, fisuración, dv y Vc con el β
+  de la fuente, decisión del cortante simplificado, acero de temperatura) contra lo
+  recalculado con la fórmula de cada fuente: 53 coinciden al 1 %, 5 son erratas de la fuente
+  (el motor coincide con lo recalculado), 3 difieren por el módulo Ec (método declarado),
+  0 defectos. Los ejemplos están en el repositorio de normas, `ejemplos_resueltos/`.
+- **Abierto:** (O-1) si M9 debe usar la ec. 5.4.2.4-1 con el peso unitario del concreto del
+  proyecto en vez de la de C5.4.2.4-1; (O-2) el ancho del acero de temperatura (M9 el real,
+  CDOT una franja de 12 in). La estabilidad integrada (`ensamble_estabilidad`, cuña de
+  tanteo, Mononobe-Okabe con relleno inclinado) sigue sin ejemplo externo.
+- **Qué haría falta:** decisión del dueño sobre O-1 y O-2; un ejemplo con la geometría
+  completa del relleno para la cuña y el sismo.
+- **Dónde vive:** `tests/apoyo/validacion_cabezal.py::contrastes`
+
+## VE3-04 · M8 contra ejemplos publicados (ACPA, USACE, PPI)
+
+- **Cerrado:** `docs/validacion_conducto.md` contrasta M8 con ACPA DD 1, DD 22 y CPDM
+  cap. 4 y con USACE EM 1110-2-2902 ap. B: 42 contrastes, 32 coinciden, 10 difieren por
+  edición o método con su causa escrita, 0 defectos; dos erratas de las fuentes registradas
+  (el intermedio del CPDM 4-7 y el «4267» de DD 22).
+- **Abierto:** con poco relleno la carga viva de M8 sobre tubos de concreto pequeños sale muy
+  por encima de ACPA 2000/2009 (+65 % de carga, +104 % de D-load), por la edición (HL-93 con
+  m = 1.20 y 0.06·D_i) y por la lectura W_L = P_L·min(l_w, B_c) sin longitud efectiva: del lado
+  seguro, pero sin ejemplo resuelto con la edición 2013 o posterior. No se contrastaron el
+  HDPE del PPI (vehículo de obra, no HL-93) ni la costura y el FF ASD del TMC.
+- **Qué haría falta:** un ejemplo resuelto con AASHTO LRFD 2013 o posterior para juzgar la
+  lectura de W_L, y que un ingeniero la revise; un ejemplo de HDPE con HL-93.
+- **Dónde vive:** `tests/apoyo/validacion_conducto.py::contrastes`
