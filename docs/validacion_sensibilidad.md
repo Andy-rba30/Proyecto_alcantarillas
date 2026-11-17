@@ -35,8 +35,8 @@
 | cabezal | `factor_muro_eleccion` | [A] | sin_reduccion / reduccion_por_desplazamiento | 'reduccion_por_desplazamiento', 'sin_reduccion' | juego | MUEVE VEREDICTOS | veredictos que cambian: A-01 con 'sin_reduccion': 9; A-02 con 'sin_reduccion': 6; B-01 con 'sin_reduccion': 6; C-01 con 'sin_reduccion': 8 |
 | cabezal | `gamma_EQ` | [A] | 0.0–1.0 | 0.5, 0.0, 1.0 | juego | MUEVE VEREDICTOS | veredictos que cambian: A-01 con 0.0: 1; A-02 con 1.0: 1 |
 | cabezal | `fraccion_delta_sobre_phi_trasdos` | [C] | 0.33–0.67 | 0.67, 0.33 | juego | MUEVE VEREDICTOS | veredictos que cambian: A-01 con 0.33: 1; C-01 con 0.33: 2 |
-| cabezal | `fila_phi_estabilidad_cabezal` | [A] | zapatas_seccion_10 / muros_tabla_11_5_7 | 'zapatas_seccion_10', 'muros_tabla_11_5_7' | juego_cabezal_de_la_regla | MUEVE VEREDICTOS | veredictos que cambian: A-01 con 'muros_tabla_11_5_7': 1; A-02 con 'muros_tabla_11_5_7': 1; B-01 con 'muros_tabla_11_5_7': 1; C-01 con 'muros_tabla_11_5_7': 1 |
-| cabezal | `factores_inclinacion_carga_portante` | [A] | aplicar / omitir | 'aplicar', 'omitir' | juego_cabezal_de_la_regla | MUEVE VEREDICTOS | veredictos que cambian: A-01 con 'omitir': 2; A-02 con 'omitir': 1; B-01 con 'omitir': 1; C-01 con 'omitir': 1 |
+| cabezal | `fila_phi_estabilidad_cabezal` | [A] | zapatas_seccion_10 / muros_tabla_11_5_7 | 'zapatas_seccion_10', 'muros_tabla_11_5_7' | juego_cabezal_de_la_regla | MUEVE VEREDICTOS | veredictos que cambian: A-01 con 'muros_tabla_11_5_7': 1; A-02 con 'muros_tabla_11_5_7': 1; C-01 con 'muros_tabla_11_5_7': 1 |
+| cabezal | `factores_inclinacion_carga_portante` | [A] | aplicar / omitir | 'aplicar', 'omitir' | juego_cabezal_de_la_regla | MUEVE VEREDICTOS | veredictos que cambian: A-01 con 'omitir': 4; A-02 con 'omitir': 4; B-01 con 'omitir': 4; C-01 con 'omitir': 4 |
 | cabezal | `regla_pendiente_relleno_trasdos` | [A] | cuna_de_tanteo / talud_quebrado_2h / talud_del_terraplen | 'cuna_de_tanteo', 'talud_quebrado_2h', 'talud_del_terraplen' | juego | MUEVE VEREDICTOS | veredictos que cambian: A-01 con 'talud_quebrado_2h': 9; A-02 con 'talud_quebrado_2h': 1; B-01 con 'talud_quebrado_2h': 1; C-01 con 'talud_quebrado_2h': 7; A-01 con 'talud_del_terraplen': 14; A-02 con 'talud_del_terraplen': 14; B-01 con 'talud_del_terraplen': 14; C-01 con 'talud_del_terraplen': 16 |
 | cabezal | `regimen_resistencia_elementos_cabezal` | [A] | no_cedente_k0 / cedente | 'no_cedente_k0', 'cedente' | juego | MUEVE VEREDICTOS | veredictos que cambian: A-01 con 'cedente': 6; A-02 con 'cedente': 4; B-01 con 'cedente': 2; C-01 con 'cedente': 4 |
 | cabezal | `eta_ductilidad_cabezal` | [A] | 0.95–1.05 | 1.0, 0.95, 1.05 | juego | MUEVE VEREDICTOS | veredictos que cambian: A-01 con 0.95: 1; A-02 con 0.95: 1; B-01 con 0.95: 1; C-01 con 0.95: 1; A-01 con 1.05: 1; A-02 con 1.05: 2; B-01 con 1.05: 2; C-01 con 1.05: 4 |
@@ -114,10 +114,10 @@ Con la zapata que propone la regla de T-7a, SIN dimensionar (base `juego_cabezal
 
 | Criterio | Valor | `E1-LRFD.sis.e` | `E1-LRFD.sis.s` | `E3-LRFD.est.e` | `E3-LRFD.est.s` |
 |---|---|---|---|---|---|
-| `fila_phi_estabilidad_cabezal` | 'zapatas_seccion_10' | pasa en A-01, A-02, B-01, C-01 | pasa en A-01, A-02, B-01, C-01 | pasa en A-01, A-02, B-01, C-01 | pasa en A-01, A-02, B-01, C-01 |
-| `fila_phi_estabilidad_cabezal` | 'muros_tabla_11_5_7' | pasa en A-01, A-02, B-01, C-01 | pasa en A-01, A-02, B-01, C-01 | pasa en A-01, A-02, B-01, C-01 | pasa en A-01, A-02, B-01, C-01 |
-| `factores_inclinacion_carga_portante` | 'aplicar' | pasa en A-01, A-02, B-01, C-01 | pasa en A-01, A-02, B-01, C-01 | pasa en A-01, A-02, B-01, C-01 | pasa en A-01, A-02, B-01, C-01 |
-| `factores_inclinacion_carga_portante` | 'omitir' | pasa en A-01, A-02, B-01, C-01 | pasa en A-01, A-02, B-01, C-01 | pasa en A-01, A-02, B-01, C-01 | pasa en A-01, A-02, B-01, C-01 |
+| `fila_phi_estabilidad_cabezal` | 'zapatas_seccion_10' | no pasa en ninguno | no pasa en ninguno | no pasa en ninguno | no pasa en ninguno |
+| `fila_phi_estabilidad_cabezal` | 'muros_tabla_11_5_7' | no pasa en ninguno | no pasa en ninguno | no pasa en ninguno | pasa en A-01, A-02, C-01 |
+| `factores_inclinacion_carga_portante` | 'aplicar' | no pasa en ninguno | no pasa en ninguno | no pasa en ninguno | no pasa en ninguno |
+| `factores_inclinacion_carga_portante` | 'omitir' | pasa en A-01, A-02, B-01, C-01 | pasa en A-01, A-02, B-01, C-01 | no pasa en ninguno | no pasa en ninguno |
 
 Ninguno de los dos hace pasar E3 estática a la ENTRADA: ahí el deslizamiento lo resuelve la zapata más ancha —la que el dimensionamiento de VE-3.5 adopta, o la declarada de la variante `zapata_declarada_3m` de `docs/validacion_integral.md` §5—, no la lectura de un [A].
 
@@ -510,10 +510,10 @@ fila de φ de la estabilidad LRFD (PRECISIONES). Base: el juego sin `dimensionam
 | 'zapatas_seccion_10' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
 | 'zapatas_seccion_10' | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
 | 'zapatas_seccion_10' | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
-| 'muros_tabla_11_5_7' | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | E1-ASD.sis.e | — | sí |
-| 'muros_tabla_11_5_7' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | E1-ASD.sis.e | — | sí |
-| 'muros_tabla_11_5_7' | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | E1-ASD.sis.e | — | sí |
-| 'muros_tabla_11_5_7' | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | E1-ASD.sis.e | — | sí |
+| 'muros_tabla_11_5_7' | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | E3-LRFD.est.s | — | sí |
+| 'muros_tabla_11_5_7' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | E3-LRFD.est.s | — | sí |
+| 'muros_tabla_11_5_7' | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
+| 'muros_tabla_11_5_7' | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | E3-LRFD.est.s | — | sí |
 
 ### `factores_inclinacion_carga_portante` — base `juego_cabezal_de_la_regla`
 
@@ -525,10 +525,10 @@ factores de inclinación de la capacidad portante (PRECISIONES). Base: el juego 
 | 'aplicar' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
 | 'aplicar' | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
 | 'aplicar' | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
-| 'omitir' | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | E1-ASD.sis.s, E3-ASD.sis.s | — | sí |
-| 'omitir' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | E1-ASD.sis.s | — | sí |
-| 'omitir' | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | E1-ASD.sis.s | — | sí |
-| 'omitir' | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | E1-ASD.sis.s | — | sí |
+| 'omitir' | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | E1-ASD.sis.e, E1-ASD.sis.s, E1-LRFD.sis.e, E1-LRFD.sis.s | — | sí |
+| 'omitir' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | E1-ASD.sis.e, E1-ASD.sis.s, E1-LRFD.sis.e, E1-LRFD.sis.s | — | sí |
+| 'omitir' | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | E1-ASD.sis.e, E1-ASD.sis.s, E1-LRFD.sis.e, E1-LRFD.sis.s | — | sí |
+| 'omitir' | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | E1-ASD.sis.e, E1-ASD.sis.s, E1-LRFD.sis.e, E1-LRFD.sis.s | — | sí |
 
 ### `regla_pendiente_relleno_trasdos`
 

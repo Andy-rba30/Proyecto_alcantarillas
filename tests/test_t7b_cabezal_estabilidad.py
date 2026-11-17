@@ -2827,8 +2827,15 @@ def _correr_de_prueba(tmp_path, *, metodo_v5="cota_de_afectacion",
                              **(declaraciones or {})).items():
         ca.establecer_valor_dinamico(clave, valor)
     _declarar_sitio()
-    informe = servicio.correr(_csv_con_freatico(tmp_path, NF), externos,
-                              alcance=alcance)
+    # --- VE-3.9 --- La corrida mide la GEOMETRIA DE LA REGLA de T-7a, con
+    # dorados a mano sobre ella: desde VE-3.9 'dimensionamiento_zapata_cabezal'
+    # tiene valor de archivo y la zapata se dimensionaria (ancho y peralte),
+    # moviendo esos dorados. Se corre con el criterio VACIO, que es como
+    # corrian hasta VE-3.9: el dimensionamiento lo fijan
+    # tests/test_ve3_dimensionamiento_cabezal.py y test_ve3_peralte_cabezal.py.
+    with sin_valor("dimensionamiento_zapata_cabezal"):
+        informe = servicio.correr(_csv_con_freatico(tmp_path, NF), externos,
+                                  alcance=alcance)
     return informe, next(p for p in informe.puntos if p.punto.id == "A-01")
 
 

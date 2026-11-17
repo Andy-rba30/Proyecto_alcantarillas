@@ -59,6 +59,7 @@ vacio de declaraciones y lo repone al salir.
 
 from __future__ import annotations
 
+import contextlib
 import sys
 import tempfile
 from dataclasses import dataclass
@@ -71,6 +72,7 @@ from src import criterios_adoptados as ca
 from src import datos_sitio as ds
 from src import servicio
 from tests.apoyo import validacion_integral as V
+from tests.apoyo.criterios import sin_valor
 from tests.fixtures import juego_validacion_integral as J
 
 RAIZ = Path(__file__).resolve().parents[2]
@@ -586,9 +588,16 @@ def medir(b: Barrido) -> Medida:
     for clave in previas:
         ca.quitar_valor_dinamico(clave)
     ds.limpiar_datos_dinamicos()
+    vaciados = contextlib.ExitStack()
     try:
         with tempfile.TemporaryDirectory(prefix="t11_sens_") as tmp:
             e = V.materializar(juego, Path(tmp))
+            # --- VE-3.9 --- Las claves que la base deja SIN VALOR (archivo
+            # incluido): `V.correr` las vacia, y el barrido tiene que hacer
+            # lo mismo o la base no es la que dice (la de
+            # `juego_cabezal_de_la_regla` dimensionaba la zapata).
+            for clave in e.sin_valor:
+                vaciados.enter_context(sin_valor(clave))
             servicio.cargar_datos_sitio(e.sitio)
             externos = servicio.cargar_datos_externos(e.externos, {})
             hidro = servicio.cargar_hidrologia(e.cuencas, e.estacion)
@@ -598,6 +607,7 @@ def medir(b: Barrido) -> Medida:
                 declaraciones_base=base, hidrologia=hidro,
                 volcar=cli.informe_json)
     finally:
+        vaciados.close()
         for clave in ca.valores_dinamicos():
             ca.quitar_valor_dinamico(clave)
         for clave, valor in previas.items():

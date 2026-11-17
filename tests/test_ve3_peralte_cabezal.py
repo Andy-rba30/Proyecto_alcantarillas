@@ -234,8 +234,12 @@ def test_incumplidas_del_armado_de_la_zapata_por_peralte(juego, monkeypatch):
     monkeypatch.setattr(M9, "incumplidas_del_armado_de_la_zapata", espia)
     _correr()
     leidos = dict(vistos)
-    assert {"A1.talon.s", "A2.talon.s"} <= set(leidos[0.404])
-    assert leidos[0.604] == (M9.CORTANTE_NO_VERIFICABLE,)
+
+    def leido(e_z):
+        return next(r for k, r in leidos.items()
+                    if k == pytest.approx(e_z, abs=ABS_MM))
+    assert {"A1.talon.s", "A2.talon.s"} <= set(leido(0.404))
+    assert leido(0.604) == (M9.CORTANTE_NO_VERIFICABLE,)
     assert leidos[round(_punto(juego).cabezal.salida.espesor_zapata, 3)] == ()
 
     def pendiente(*_a, **_k):
