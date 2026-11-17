@@ -28,12 +28,20 @@ Cada CONTRASTE lleva cuatro cifras, todas en la UNIDAD DE LA FUENTE:
 
 y se clasifica asi, en este orden:
 
-  DEFECTO   el motor no reproduce su propio metodo (motor frente a
-            referencia, fuera de `TOL_REL_MOTOR`). Seria un defecto de M8;
-  COINCIDE  el metodo de M8 da lo mismo que el ejemplo (referencia frente a
-            recalculado, dentro de `TOL_REL_CIFRA_IMPRESA`);
-  METODO    el ejemplo usa otra edicion u otro metodo: la diferencia se
-            explica, partida por causa, en el contraste.
+  DEFECTO     el motor no reproduce su propio metodo (motor frente a
+              referencia, fuera de `TOL_REL_MOTOR`). Seria un defecto de M8;
+  SIN FUENTE  no hay cifra publicada: el caso existe para ejercitar una rama
+              del motor que ningun ejemplo alcanza (hoy, l_w < B_c);
+  COINCIDE    el metodo de M8 da lo mismo que el ejemplo (referencia frente
+              a recalculado, dentro de `TOL_REL_CIFRA_IMPRESA`);
+  METODO      el ejemplo usa otra edicion u otro metodo: la diferencia se
+              explica, partida por causa, en el contraste.
+
+DOS CATEGORIAS, y no se suman (correcciones de la revision Fable, A-1): solo
+COINCIDE es «CONTRASTADO CON LA FUENTE». METODO y SIN FUENTE dicen que el
+motor «REPRODUCE SU PROPIO METODO» (la lectura de la edicion vigente que el
+arnes escribe a mano): prueban que M8 esta bien programado segun esa
+lectura, no que la lectura este validada por un tercero.
 
 Ademas, una ERRATA DE LA FUENTE (publicado frente a recalculado, fuera de
 `TOL_REL_CIFRA_IMPRESA`) se registra aparte, sin cambiar la clase.
@@ -86,7 +94,11 @@ TOL_REL_CIFRA_IMPRESA = 5e-3
 
 COINCIDE = "COINCIDE"
 METODO = "METODO"
+SIN_FUENTE = "SIN FUENTE"
 DEFECTO = "DEFECTO"
+# Las dos categorias del resumen (A-1 de la revision Fable).
+CONTRASTADO_CON_LA_FUENTE = (COINCIDE,)
+REPRODUCE_SU_METODO = (METODO, SIN_FUENTE)
 
 # ---------------------------------------------------------------------------
 # Unidades de las fuentes (EE. UU.), con los factores exactos del motor
@@ -101,6 +113,21 @@ AGUA_PCF_MOTOR = GAMMA_AGUA_KN_M3 / PCF_EN_KN_M3                # 62.45 pcf
 
 def _cerca(a: float, b: float, rel: float) -> bool:
     return abs(a - b) <= rel * max(abs(a), abs(b))
+
+
+def _interpolar_a_mano(x: float, xs: Sequence[float],
+                       ys: Sequence[float]) -> float:
+    """
+    Interpolacion lineal con los extremos de la tabla como tope, escrita
+    AQUI (correcciones de la revision Fable, A-2: la referencia usaba
+    `M8._interpolar`, la funcion del motor, y dejaba de ser independiente).
+    """
+    if x <= xs[0]:
+        return ys[0]
+    for (x0, y0), (x1, y1) in zip(zip(xs, ys), zip(xs[1:], ys[1:])):
+        if x <= x1:
+            return y0 + (y1 - y0) * (x - x0) / (x1 - x0)
+    return ys[-1]
 
 
 # ===========================================================================
@@ -149,6 +176,8 @@ class Contraste:
     def clase(self) -> str:
         if not _cerca(self.motor, self.referencia, TOL_REL_MOTOR):
             return DEFECTO
+        if self.publicado is None:
+            return SIN_FUENTE
         if _cerca(self.referencia, self.recalculado, TOL_REL_CIFRA_IMPRESA):
             return COINCIDE
         return METODO
@@ -185,11 +214,22 @@ def _hl93_a_mano(H_ft: float, D_i_ft: float, B_c_ft: float,
     25 kip, m = 1.20), escrito en kip y pies SIN llamar a M8. Devuelve
     (W_L, IM %, vehiculo).
     """
+    d = hl93_detalle(H_ft, D_i_ft, B_c_ft, D_E_ft)
+    return d["W_L"], d["IM"], d["vehiculo"]
+
+
+def hl93_detalle(H_ft: float, D_i_ft: float, B_c_ft: float,
+                 D_E_ft: Optional[float] = None) -> Dict[str, object]:
+    """
+    Lo mismo que `_hl93_a_mano`, con el detalle del vehiculo que gobierna:
+    W_L (lb/ft), P_L (lb/ft2), l_w (ft), IM (%) y el vehiculo. Lo leen la
+    descomposicion del §8 y el test de la rama l_w < B_c.
+    """
     D_E_ft = H_ft if D_E_ft is None else D_E_ft
     LLDF = _lldf_9a(D_i_ft, concreto=True)
     IM = max(0.0, 33.0 * (1.0 - 0.125 * D_E_ft))     # literal-ok: 2.4.3.3.2
     wt, lt, sw = 20 / 12, 10 / 12, 6.0                 # literal-ok: neumatico 20 x 10 in, ruedas a 6 ft
-    mejor = (-1.0, IM, "")
+    mejor: Dict[str, object] = {"W_L": -1.0}
     for nombre, eje, sa in (("camion", 32.0, 14.0), ("tandem", 25.0, 4.0)):  # literal-ok: HL-93
         luz = 0.06 * D_i_ft                            # literal-ok: Eq. 3.6.1.2.6b-1
         if H_ft < (sw - wt - luz) / LLDF:
@@ -202,8 +242,9 @@ def _hl93_a_mano(H_ft: float, D_i_ft: float, B_c_ft: float,
             lw, P = lt + sa + LLDF * H_ft, 2 * P
         PL_ksf = P * (1 + IM / 100) * 1.20 / (lw * ww)  # literal-ok: m = 1.20, Eq. 3.6.1.2.6b-7
         WL = PL_ksf * min(lw, B_c_ft) * 1000.0         # literal-ok: lb por kip
-        if WL > mejor[0]:
-            mejor = (WL, IM, nombre)
+        if WL > mejor["W_L"]:
+            mejor = {"W_L": WL, "IM": IM, "vehiculo": nombre,
+                     "P_L_psf": PL_ksf * 1000.0, "l_w": lw}  # literal-ok: lb por kip
     return mejor
 
 
@@ -256,11 +297,13 @@ def _contrastes_dd1() -> List[Contraste]:
         recalc = _dd1_a_mano(P_lb=P, a_ft=a, b_ft=b, H_ft=H_ft, Do_ft=Do_ft,
                              Ro_ft=3.08, perpendicular=perp, A_impresa=A_imp)  # literal-ok: R_o que imprime DD 1
         ref, IM, vehiculo = _hl93_a_mano(H_ft, Di_ft, Do_ft)
-        cv = M8.carga_viva_enterrada(
-            H=H_ft * PIE_EN_METROS, D_i=D_i, conducto=M8.CONDUCTO_TUBO_CONCRETO,
-            efecto=lambda P_L, l_w: P_L * min(l_w, Do),
-            efecto_descripcion="W_L = P_L min(l_w, B_c)")
-        motor = cv.efecto / PLF_EN_KN_M
+        # LA RUTA REAL (correcciones de la revision Fable, A-2): el W_L que
+        # `M8.verificar_concreto` sustituye en la D-load, y no el de
+        # `M8.carga_viva_enterrada` con una formula de W_L que le pasaba el
+        # arnes: asi la linea W_L = P_L min(l_w, B_c) del motor se contrasta.
+        _D, sust = _verificar_concreto_del_motor(
+            D_in=30.0, pared_in=3.5, H_ft=H_ft, tipo="tipo_2")  # literal-ok: Ø 30 in pared B de DD 1
+        motor = sust["W_L"]
         out.append(Contraste(
             id=id_, fuente="DD1", pagina=pag,
             que=(f"Carga viva por pie de tubo, Ø 30 in pared B, {H_ft:g} ft "
@@ -271,13 +314,35 @@ def _contrastes_dd1() -> List[Contraste]:
                 f"DD 1 (2009) aplica la distribucion ANTERIOR a 2013 ({carga}, "
                 "sin presencia multiple), LLDF 1.15 fijo, sin "
                 "el termino 0.06 D_i, y reparte la carga a lo largo del tubo "
-                "con la longitud efectiva L_e = L + 1.75 (3/4 R_o). M8 aplica "
+                "con la longitud efectiva L_e = L + 1.75 (3/4 R_o), donde R_o "
+                "es la ALTURA exterior del tubo (= D_o en un circular; la "
+                "Fig. 7 de DD 1 escribe 3/4 B_c), no el radio. M8 aplica "
                 "AASHTO LRFD 9.a ed. 3.6.1.2.6b: HL-93 (gobierna el "
                 f"{vehiculo}), m = 1.20, LLDF {_lldf_9a(Di_ft, True):.3f} "
                 "interpolado por diametro (Tabla 3.6.1.2.6a-1), 0.06 D_i en el "
                 "ancho y W_L = P_L min(l_w, B_c), sin L_e. El IM es el mismo "
-                f"({IM:.2f} %, contraste DD1-IM). No es un defecto: son dos "
-                "ediciones del metodo.")))
+                f"({IM:.2f} %, contraste DD1-IM). No es un defecto, y casi "
+                "toda la diferencia es la L_e (ver la descomposicion del "
+                "§8). El W_L del motor es el que `M8.verificar_concreto` "
+                "sustituye en la D-load.")))
+    # --- La rama l_w < B_c, que ningun ejemplo alcanza (A-2) --------------
+    # Ø 72 in pared B (7 in; B_c = 86 in = 7.17 ft, el tubo de DD 22) con 2 ft:
+    # el ancho cargado l_w (~3.2 ft) es MENOR que B_c y gobierna el min.
+    # SIN cifra publicada: prueba que el motor sigue su metodo en esa rama.
+    det = hl93_detalle(2.0, 6.0, 86.0 / 12)            # literal-ok: Ø 72 in pared B, 2 ft
+    _D, sust = _verificar_concreto_del_motor(
+        D_in=72.0, pared_in=7.0, H_ft=2.0, tipo="tipo_2")  # literal-ok: Ø 72 in pared B, 2 ft
+    out.append(Contraste(
+        id="M8-LW-72", fuente="M8", pagina="—",
+        que=("Carga viva por pie de tubo, Ø 72 in pared B, 2 ft de relleno: "
+             "la rama l_w < B_c de W_L = P_L min(l_w, B_c)"),
+        unidad="lb/ft", publicado=None, recalculado=det["W_L"],
+        referencia=det["W_L"], motor=sust["W_L"],
+        explicacion=(
+            f"Sin ejemplo publicado: l_w = {det['l_w']:.2f} ft < B_c = "
+            f"{86.0 / 12:.2f} ft, la rama que ningun ejemplo de esta "
+            "validacion alcanza (en DD 1 y en el CPDM l_w >= B_c). Solo prueba "
+            "que la linea del motor sigue el metodo escrito a mano.")))
     return out
 
 
@@ -317,9 +382,23 @@ def _contrastes_tablas() -> List[Contraste]:
                 motor=motor,
                 explicacion=("Tabla 12.10.4.3.2a-1 de AASHTO LRFD 9.a ed.: "
                              "la misma.")))
+    # B_fe de 48 in, Tipo 1, que el CPDM PUBLICA en el Ej. 4-2 (interpolado
+    # entre 36 y 72 in de su Ilustracion 4.19): el unico B_fe fuera de los
+    # nodos de la tabla (A-2 de la revision Fable).
+    xs = tuple(float(x) for x in sorted(CPDM_BFE))
+    ref_48 = _interpolar_a_mano(48.0, xs, tuple(CPDM_BFE[int(x)][0] for x in xs))  # literal-ok: Ø 48 in del Ej. 4-2
+    out.append(Contraste(
+        id="CPDM-BFE-48-1", fuente="CPDM", pagina="60-62",
+        que="B_FE, Ø 48 in, Tipo 1 (interpolado; publicado en el Ej. 4-2)",
+        unidad="", publicado=3.93, recalculado=ref_48, referencia=ref_48,  # literal-ok: B_fe del Ej. 4-2
+        motor=M8._interpolar(48.0, CN.BFE_DIAMETROS_PULG,           # literal-ok: Ø 48 in del Ej. 4-2
+                             CN.BFE_POR_TIPO["tipo_1"]),
+        explicacion=("Tabla 12.10.4.3.2a-1 de AASHTO LRFD 9.a ed. (la misma "
+                     "que la Ilustracion 4.19 del CPDM) interpolada a 48 in, "
+                     "como hace el Ej. 4-2.")))
     for D_pulg, publicado in CPDM_BFLL_2FT.items():
-        ref = M8._interpolar(D_pulg, (12.0, 18.0, 24.0, 30.0),       # literal-ok: Tabla 12.10.4.3.2c-1
-                             (2.4, 2.4, 2.4, 2.2))                   # literal-ok: Tabla 12.10.4.3.2c-1
+        ref = _interpolar_a_mano(D_pulg, (12.0, 18.0, 24.0, 30.0),   # literal-ok: Tabla 12.10.4.3.2c-1
+                                 (2.4, 2.4, 2.4, 2.2))               # literal-ok: Tabla 12.10.4.3.2c-1
         motor = M8._interpolar(D_pulg, CN.BFLL_DIAMETROS_PULG,
                                CN.BFLL_RELLENO_DESDE_2_PIES)
         if _cerca(ref, publicado, TOL_REL_CIFRA_IMPRESA):
@@ -400,16 +479,20 @@ def _dload_aashto_a_mano(e: EjemploDload, W_L_plf: float) -> Tuple[float, Dict[s
     La D-load por AASHTO LRFD 9.a ed. 12.10.4.3.1 escrita A MANO en lb y
     pies, con los datos del ejemplo: W_E = VAF w B_c H (Ec. 12.10.2.1-1, sin
     termino de riñones), W_F = gamma_w pi D^2/4 (12.10.2.2, con el agua del
-    motor), D = [(W_E + W_F)/B_FE + W_L/B_FLL]/S_i x 1.10 en el Tipo 1. Las
-    tablas son las de la 9.a ed., transcritas aqui a mano.
+    motor), D = [(W_E + W_F)/B_FE + W_L/B_FLL]/S_i x 1.10 en el Tipo 1. El
+    VAF y el B_FE son los del CPDM transcritos aqui (Ec. 4 e Ilustracion
+    4.19), que son los de las Tablas 12.10.2.1-3 y 12.10.4.3.2a-1 de la 9.a
+    ed. (lo comprobo la revision Fable); el B_FLL, el de la Tabla
+    12.10.4.3.2c-1. Interpolados A MANO (`_interpolar_a_mano`), sin la
+    funcion del motor.
     """
     VAF = dict(zip(TIPOS, CPDM_VAF))[e.tipo]
     i = TIPOS.index(e.tipo)
     xs = sorted(CPDM_BFE)
-    B_FE = M8._interpolar(e.D_in, tuple(float(x) for x in xs),
-                          tuple(CPDM_BFE[x][i] for x in xs))
-    B_FLL = M8._interpolar(e.D_in, (12.0, 18.0, 24.0, 30.0),       # literal-ok: Tabla 12.10.4.3.2c-1
-                           (2.4, 2.4, 2.4, 2.2))                   # literal-ok: Tabla 12.10.4.3.2c-1
+    B_FE = _interpolar_a_mano(e.D_in, tuple(float(x) for x in xs),
+                              tuple(CPDM_BFE[x][i] for x in xs))
+    B_FLL = _interpolar_a_mano(e.D_in, (12.0, 18.0, 24.0, 30.0),   # literal-ok: Tabla 12.10.4.3.2c-1
+                               (2.4, 2.4, 2.4, 2.2))               # literal-ok: Tabla 12.10.4.3.2c-1
     B_c = (e.D_in + 2 * e.pared_in) / 12
     D_ft = e.D_in / 12
     W_E = VAF * 120.0 * B_c * e.H_ft                               # literal-ok: 120 pcf del ejemplo
@@ -434,16 +517,26 @@ def dload_del_motor(e: EjemploDload) -> Tuple[float, Dict[str, float]]:
     diametro y la pared B de ASTM C76 del ejemplo. Devuelve (D en lb/ft/ft,
     los terminos de la sustitucion en lb/ft).
     """
+    return _verificar_concreto_del_motor(
+        D_in=e.D_in, pared_in=e.pared_in, H_ft=e.H_ft, tipo=e.tipo,
+        conservar_carga_viva=bool(e.W_L_cpdm))
+
+
+def _verificar_concreto_del_motor(*, D_in: float, pared_in: float,
+                                  H_ft: float, tipo: str,
+                                  conservar_carga_viva: bool = True
+                                  ) -> Tuple[float, Dict[str, float]]:
+    """La ruta real de M8 (`verificar_concreto`) para un tubo de concreto."""
     from tests.fixtures.casos_patron import CP_FASE_8_ESTRUCTURAL as CP
-    D = e.D_in * PULG
-    t = e.pared_in * PULG
+    D = D_in * PULG
+    t = pared_in * PULG
     punto = CP["punto_A01"]()
     punto = replace(punto, cota_rasante=punto.cota_subrasante)
     material = replace(catalogo(TipoMaterial.CONCRETO_REFORZADO),
                        espesor_pared={round(D * 1000.0): t})       # literal-ok: mm por m
-    carga_viva = ("despreciar_3_6_1_2_6a" if e.W_L_cpdm == 0.0
-                  else "conservar")
-    with declarados({"instalacion_estandar_concreto": e.tipo,
+    carga_viva = ("conservar" if conservar_carga_viva
+                  else "despreciar_3_6_1_2_6a")
+    with declarados({"instalacion_estandar_concreto": tipo,
                      "carga_viva_bajo_relleno_alto": carga_viva}), \
             con_valor("clases_producto_por_relleno", CLASES_DEL_ARNES,
                       motivo="arnes de la validacion externa de M8: ofrece "
@@ -451,7 +544,7 @@ def dload_del_motor(e: EjemploDload) -> Tuple[float, Dict[str, float]]:
                              "D-load requerida quede a la vista"):
         r = M8.verificar_concreto(punto=punto, material=material,
                                   seccion=SeccionCircular(D),
-                                  altura_relleno=e.H_ft * PIE_EN_METROS)
+                                  altura_relleno=H_ft * PIE_EN_METROS)
     (v,) = r.verificaciones
     sust = {m.simbolo: m.valor for m in v.paso.sustitucion}
     return (v.valor_obtenido / DLOAD_EN_N_M_MM,
@@ -672,10 +765,46 @@ def contrastes() -> List[Contraste]:
             + _contrastes_dd22() + _contrastes_usace() + _contrastes_clases())
 
 
+# Los datos de DD 1 que la descomposicion usa (Ejs. 1 y 4, pags. 7 a 9): el
+# area de reparto que el ejemplo imprime, la carga, la cubierta, el lado L
+# (spread a, transito perpendicular) y R_o = D_o, la altura exterior.
+DD1_DESCOMPOSICION = (
+    # (id, H ft, P lb, A impresa ft2, L ft)
+    ("DD1-EJ1", 2.0, 32000.0, 24.9, 1.67 + 4 + 1.15 * 2),      # literal-ok: Ej. 1 de DD 1
+    ("DD1-EJ4", 6.0, 50000.0, 147.45, 1.67 + 4 + 1.15 * 6),    # literal-ok: Ej. 4 de DD 1
+)
+DD1_RO_FT = 3.08                                               # literal-ok: R_o que imprime DD 1
+
+
+def descomposicion_dd1(cs: Sequence[Contraste]) -> List[Dict[str, float]]:
+    """
+    Cuanto del exceso de M8 sobre DD 1 es la PRESION en la clave (la edicion:
+    HL-93, m = 1.20, LLDF por diametro, 0.06 D_i) y cuanto la LONGITUD
+    EFECTIVA (DD 1 divide W_T entre L_e = L + 1.75 (3/4 R_o); M8 no reparte).
+    Con S_L = B_c en los dos (en los dos ejemplos l_w >= B_c), el cociente
+    motor/recalculado es exactamente (P_L / w) x (L_e / L): el test lo
+    comprueba. Correcciones de la revision Fable (M-3: el §8 no lo
+    cuantificaba).
+    """
+    por_id = {c.id: c for c in cs}
+    out = []
+    for id_, H_ft, P_lb, A, L in DD1_DESCOMPOSICION:
+        c = por_id[id_]
+        det = hl93_detalle(H_ft, 30 / 12, 37 / 12)            # literal-ok: Ø 30 in pared B de DD 1
+        w = P_lb * (1 + 33 * (1.0 - 0.125 * H_ft) / 100) / A  # literal-ok: Eqs. 1 y 3 de DD 1
+        L_e = L + 1.75 * (0.75 * DD1_RO_FT)                    # literal-ok: Eq. 2 de DD 1
+        out.append({"id": id_, "H_ft": H_ft, "P_L": det["P_L_psf"], "w": w,
+                    "presion": det["P_L_psf"] / w, "L": L, "L_e": L_e,
+                    "longitud": L_e / L, "total": c.motor / c.recalculado,
+                    "l_w": det["l_w"]})
+    return out
+
+
 def observacion_carga_viva(cs: Sequence[Contraste]) -> str:
     """La observacion del §8, con las cifras LEIDAS de los contrastes."""
     por_id = {c.id: c for c in cs}
     ej1, cp47 = por_id["DD1-EJ1"], por_id["CPDM-4-7"]
+    d1, d4 = descomposicion_dd1(cs)
     return (
     "No es un defecto —el motor reproduce su metodo en todos los "
     "contrastes—, pero es la diferencia mayor de este documento y conviene "
@@ -683,15 +812,24 @@ def observacion_carga_viva(cs: Sequence[Contraste]) -> str:
     "un tubo de concreto pequeño sale bastante por encima de la de ACPA "
     f"(2000 y 2009): {ej1.diferencia_pct:+.0f} % en DD1-EJ1 (30 in, 2 ft) y "
     f"la D-load {cp47.diferencia_pct:+.0f} % en CPDM-4-7 (24 in, 2 ft), casi "
-    "toda por la carga viva. Las causas son de "
-    "edicion (HL-93 con m = 1.20 y el termino 0.06 D_i desde 2013, frente al "
-    "HS 20 sin presencia multiple) y de LECTURA: M8 toma W_L = P_L min(l_w, "
-    "B_c) sin repartir la carga a lo largo del tubo, porque la 9.a ed. no da "
-    "una longitud efectiva y C12.10.4.3.2c dice que el B_FLL ya esta "
-    "ajustado por esa distribucion; ACPA (DD 1) la reparte con L_e = L + 1.75 "
-    "(3/4 R_o). La lectura esta declarada en M8 (paso F8.CLASE_CONCRETO) y va "
-    "del lado seguro, pero ninguna de estas fuentes resuelve un ejemplo con "
-    "la edicion 2013 o posterior: hace falta uno para cerrarlo.")
+    "toda por la carga viva. CASI TODO ES LA LONGITUD EFECTIVA, no la "
+    f"edicion (tabla de abajo): en DD1-EJ1 la presion en la clave pesa "
+    f"{d1['presion'] - 1:+.1%} y no repartir con L_e {d1['longitud'] - 1:+.1%}; "
+    f"en DD1-EJ4 la presion {d4['presion'] - 1:+.1%} (la edicion es ahi "
+    f"FAVORABLE) y la L_e {d4['longitud'] - 1:+.1%}. Y no repartir con L_e NO "
+    "es una lectura libre de M8: es lo que la 9.a ed. escribe. 12.10.2.3 "
+    "(pag. 12-54, PDF 1692): «Live loads shall be as specified in Article "
+    "3.6 and shall be distributed through the earth cover as specified in "
+    "Article 3.6.1.2.6. For standard installations, the live load on the "
+    "pipe shall be assumed to have a uniform vertical distribution across "
+    "the top of the pipe», sin longitud efectiva; y C12.10.4.3.2c (pag. "
+    "12-66, PDF 1704): «The bedding factor has been adjusted in Table "
+    "12.10.4.3.2c-1 to account for this higher distribution length», de "
+    "modo que sumar ademas la L_e de ACPA contaria dos veces el reparto "
+    "longitudinal. La revision Fable lo dictamino como la lectura literal de "
+    "la 9.a ed. y no un defecto, con una reserva que sigue en pie: ninguna "
+    "de estas fuentes resuelve un ejemplo con la edicion 2013 o posterior, y "
+    "solo uno asi cerraria W_L con un numero de terceros.")
 
 
 NO_CONTRASTADO = (
@@ -738,7 +876,8 @@ def _cifra(x: Optional[float], unidad: str) -> str:
 
 def generar() -> str:
     cs = contrastes()
-    n = {c: sum(1 for x in cs if x.clase == c) for c in (COINCIDE, METODO, DEFECTO)}
+    n = {c: sum(1 for x in cs if x.clase == c)
+         for c in (COINCIDE, METODO, SIN_FUENTE, DEFECTO)}
     erratas = [x for x in cs if x.errata_de_la_fuente]
     lineas: List[str] = [
         "# Validación externa de M8: el conducto contra ejemplos publicados",
@@ -764,6 +903,15 @@ def generar() -> str:
         f"`TOL_REL_CIFRA_IMPRESA` = {TOL_REL_CIFRA_IMPRESA:g}).",
         "- **METODO**: el ejemplo usa otra edición u otro método; la "
         "diferencia se explica por causa.",
+        "- **SIN FUENTE**: no hay cifra publicada; el caso ejercita una rama "
+        "del motor que ningún ejemplo alcanza.",
+        "",
+        "**Dos categorías que no se suman** (corrección de la revisión Fable, "
+        "A-1): sólo **COINCIDE** es *contrastado con la fuente*. **METODO** y "
+        "**SIN FUENTE** dicen que el motor *reproduce su propio método* —la "
+        "lectura de la edición vigente que el arnés escribe a mano—: prueban "
+        "que M8 está bien programado según esa lectura, no que un tercero la "
+        "valide.",
         "",
         "Una **errata de la fuente** (publicado frente a recalculado) se "
         "anota aparte: lo que rige es lo recalculado.",
@@ -783,9 +931,13 @@ def generar() -> str:
         "",
         "## 3. Resultado",
         "",
-        f"**{len(cs)} contrastes: {n[COINCIDE]} coinciden, {n[METODO]} "
-        f"difieren por método o edición, {n[DEFECTO]} defectos del motor.** "
-        f"{len(erratas)} con errata de la fuente.",
+        f"**{len(cs)} contrastes. Contrastados con la fuente: {n[COINCIDE]} "
+        f"(coinciden). El motor reproduce su propio método: "
+        f"{n[METODO] + n[SIN_FUENTE]} ({n[METODO]} difieren de la fuente por "
+        f"edición o método, {n[SIN_FUENTE]} sin cifra publicada). Defectos "
+        f"del motor: {n[DEFECTO]}.** {len(erratas)} con errata de la fuente. "
+        "Ninguna cifra de W_L ni de D-load de M8 está contrastada con una "
+        "fuente: todas son de la segunda categoría.",
         "",
         "| Id | Fuente, pág. | Qué | Unidad | Publicado | Recalculado | "
         "Referencia (método de M8) | Motor | Motor − recalculado | Clase |",
@@ -798,10 +950,11 @@ def generar() -> str:
             f"| {_cifra(c.referencia, c.unidad)} | {_cifra(c.motor, c.unidad)} | "
             f"{c.diferencia_pct:+.2f} % | {c.clase}"
             f"{' (errata de la fuente)' if c.errata_de_la_fuente else ''} |")
-    lineas += ["", "## 4. Por qué difiere cada contraste de método", ""]
+    lineas += ["", "## 4. Por qué difiere cada contraste de método, y los "
+               "casos sin fuente", ""]
     vistos = set()
     for c in cs:
-        if c.clase != METODO or c.explicacion in vistos:
+        if c.clase not in REPRODUCE_SU_METODO or c.explicacion in vistos:
             continue
         vistos.add(c.explicacion)
         lineas.append(f"- **{c.id}** — {c.explicacion}")
@@ -827,10 +980,28 @@ def generar() -> str:
         "",
         observacion_carga_viva(cs),
         "",
+        "| Contraste | Relleno | P_L de M8 (lb/ft²) | w de DD 1 (lb/ft²) | "
+        "Presión: P_L / w | L (ft) | L_e (ft) | Longitud: L_e / L | Total: "
+        "motor / recalculado |",
+        "|---|---|---|---|---|---|---|---|---|",
+    ]
+    for d in descomposicion_dd1(cs):
+        lineas.append(
+            f"| {d['id']} | {d['H_ft']:g} ft | {d['P_L']:,.0f} | "
+            f"{d['w']:,.0f} | {d['presion'] - 1:+.1%} | {d['L']:.2f} | "
+            f"{d['L_e']:.2f} | {d['longitud'] - 1:+.1%} | "
+            f"{d['total'] - 1:+.1%} |")
+    lineas += [
+        "",
+        "El total es el producto de los dos factores porque en los dos "
+        "ejemplos l_w ≥ B_c (M8 toma W_L = P_L·B_c) y DD 1 toma S_L = B_c.",
+        "",
         "## 9. Defectos del motor",
         "",
         ("Ninguno: en todos los contrastes el motor reproduce su propio "
-         "método, y donde el ejemplo usa la misma edición, el mismo número."
+         "método, y donde el ejemplo usa la misma edición, el mismo número. "
+         "Eso no valida la lectura de la carga viva ni la D-load (ver §3 y "
+         "§8)."
          if n[DEFECTO] == 0 else
          "Ver la tabla del §3: las filas DEFECTO."),
         "",

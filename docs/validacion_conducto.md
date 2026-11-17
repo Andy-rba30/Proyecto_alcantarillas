@@ -9,6 +9,9 @@ Cada contraste lleva cuatro cifras en la unidad de la fuente: lo **publicado** (
 - **DEFECTO**: el motor no reproduce su propio método (motor frente a referencia, fuera de `TOL_REL_MOTOR` = 1e-09).
 - **COINCIDE**: el método de M8 da lo mismo que el ejemplo (referencia frente a recalculado, dentro de `TOL_REL_CIFRA_IMPRESA` = 0.005).
 - **METODO**: el ejemplo usa otra edición u otro método; la diferencia se explica por causa.
+- **SIN FUENTE**: no hay cifra publicada; el caso ejercita una rama del motor que ningún ejemplo alcanza.
+
+**Dos categorías que no se suman** (corrección de la revisión Fable, A-1): sólo **COINCIDE** es *contrastado con la fuente*. **METODO** y **SIN FUENTE** dicen que el motor *reproduce su propio método* —la lectura de la edición vigente que el arnés escribe a mano—: prueban que M8 está bien programado según esa lectura, no que un tercero la valide.
 
 Una **errata de la fuente** (publicado frente a recalculado) se anota aparte: lo que rige es lo recalculado.
 
@@ -26,7 +29,7 @@ Los PDF no se versionan (copyright; CLAUDE.md). Las cifras se transcribieron ley
 
 ## 3. Resultado
 
-**42 contrastes: 32 coinciden, 10 difieren por método o edición, 0 defectos del motor.** 2 con errata de la fuente.
+**44 contrastes. Contrastados con la fuente: 33 (coinciden). El motor reproduce su propio método: 11 (10 difieren de la fuente por edición o método, 1 sin cifra publicada). Defectos del motor: 0.** 2 con errata de la fuente. Ninguna cifra de W_L ni de D-load de M8 está contrastada con una fuente: todas son de la segunda categoría.
 
 | Id | Fuente, pág. | Qué | Unidad | Publicado | Recalculado | Referencia (método de M8) | Motor | Motor − recalculado | Clase |
 |---|---|---|---|---|---|---|---|---|---|
@@ -34,6 +37,7 @@ Los PDF no se versionan (copyright; CLAUDE.md). Las cifras se transcribieron ley
 | DD1-IM-6ft | DD1, 9 | IM de componentes enterrados con 6 ft de cubierta | % | 8.25 | 8.25 | 8.25 | 8.25 | +0.00 % | COINCIDE |
 | DD1-EJ1 | DD1, 7 | Carga viva por pie de tubo, Ø 30 in pared B, 2 ft de relleno, trafico perpendicular al tubo | lb/ft | 3 272 | 3 280 | 5 417 | 5 417 | +65.16 % | METODO |
 | DD1-EJ4 | DD1, 8-9 | Carga viva por pie de tubo, Ø 30 in pared B, 6 ft de relleno, trafico perpendicular al tubo | lb/ft | 855 | 856.4 | 1 108 | 1 108 | +29.41 % | METODO |
+| M8-LW-72 | M8, — | Carga viva por pie de tubo, Ø 72 in pared B, 2 ft de relleno: la rama l_w < B_c de W_L = P_L min(l_w, B_c) | lb/ft | — | 4 672 | 4 672 | 4 672 | +0.00 % | SIN FUENTE |
 | CPDM-VAF-1 | CPDM, 38 | VAF de la instalacion estandar Tipo 1 |  | 1.35 | 1.35 | 1.35 | 1.35 | +0.00 % | COINCIDE |
 | CPDM-VAF-2 | CPDM, 38 | VAF de la instalacion estandar Tipo 2 |  | 1.4 | 1.4 | 1.4 | 1.4 | +0.00 % | COINCIDE |
 | CPDM-VAF-3 | CPDM, 38 | VAF de la instalacion estandar Tipo 3 |  | 1.4 | 1.4 | 1.4 | 1.4 | +0.00 % | COINCIDE |
@@ -58,6 +62,7 @@ Los PDF no se versionan (copyright; CLAUDE.md). Las cifras se transcribieron ley
 | CPDM-BFE-144-2 | CPDM, 52 | B_FE, Ø 144 in, Tipo 2 |  | 2.8 | 2.8 | 2.8 | 2.8 | +0.00 % | COINCIDE |
 | CPDM-BFE-144-3 | CPDM, 52 | B_FE, Ø 144 in, Tipo 3 |  | 2.2 | 2.2 | 2.2 | 2.2 | +0.00 % | COINCIDE |
 | CPDM-BFE-144-4 | CPDM, 52 | B_FE, Ø 144 in, Tipo 4 |  | 1.7 | 1.7 | 1.7 | 1.7 | +0.00 % | COINCIDE |
+| CPDM-BFE-48-1 | CPDM, 60-62 | B_FE, Ø 48 in, Tipo 1 (interpolado; publicado en el Ej. 4-2) |  | 3.93 | 3.933 | 3.933 | 3.933 | +0.00 % | COINCIDE |
 | CPDM-BFLL-12 | CPDM, 55 | B_FLL, Ø 12 in, 2.0 ft de relleno |  | 2.2 | 2.2 | 2.4 | 2.4 | +9.09 % | METODO |
 | CPDM-BFLL-24 | CPDM, 55 | B_FLL, Ø 24 in, 2.0 ft de relleno |  | 2.2 | 2.2 | 2.4 | 2.4 | +9.09 % | METODO |
 | CPDM-BFLL-36 | CPDM, 55 | B_FLL, Ø 36 in, 2.0 ft de relleno |  | 2.2 | 2.2 | 2.2 | 2.2 | +0.00 % | COINCIDE |
@@ -73,10 +78,11 @@ Los PDF no se versionan (copyright; CLAUDE.md). Las cifras se transcribieron ley
 | USACE-FC | USACE, B-10 | Tension critica de pandeo f_c, s = 1220 mm | MPa | 272 | 272.3 | 272.3 | 272.3 | +0.00 % | COINCIDE |
 | USACE-CLASE-II | USACE, B-7 | D-load a 0.01 in de la Clase II de ASTM C76M | N/m/mm | 50 | 50 | 50 | 50 | +0.00 % | COINCIDE |
 
-## 4. Por qué difiere cada contraste de método
+## 4. Por qué difiere cada contraste de método, y los casos sin fuente
 
-- **DD1-EJ1** — DD 1 (2009) aplica la distribucion ANTERIOR a 2013 (dos ruedas duales HS 20 en paso, 32 000 lb, sin presencia multiple), LLDF 1.15 fijo, sin el termino 0.06 D_i, y reparte la carga a lo largo del tubo con la longitud efectiva L_e = L + 1.75 (3/4 R_o). M8 aplica AASHTO LRFD 9.a ed. 3.6.1.2.6b: HL-93 (gobierna el camion), m = 1.20, LLDF 1.200 interpolado por diametro (Tabla 3.6.1.2.6a-1), 0.06 D_i en el ancho y W_L = P_L min(l_w, B_c), sin L_e. El IM es el mismo (24.75 %, contraste DD1-IM). No es un defecto: son dos ediciones del metodo.
-- **DD1-EJ4** — DD 1 (2009) aplica la distribucion ANTERIOR a 2013 (dos ruedas de dos cargas alternativas (Alternate Load) en paso, 50 000 lb, sin presencia multiple), LLDF 1.15 fijo, sin el termino 0.06 D_i, y reparte la carga a lo largo del tubo con la longitud efectiva L_e = L + 1.75 (3/4 R_o). M8 aplica AASHTO LRFD 9.a ed. 3.6.1.2.6b: HL-93 (gobierna el tandem), m = 1.20, LLDF 1.200 interpolado por diametro (Tabla 3.6.1.2.6a-1), 0.06 D_i en el ancho y W_L = P_L min(l_w, B_c), sin L_e. El IM es el mismo (8.25 %, contraste DD1-IM). No es un defecto: son dos ediciones del metodo.
+- **DD1-EJ1** — DD 1 (2009) aplica la distribucion ANTERIOR a 2013 (dos ruedas duales HS 20 en paso, 32 000 lb, sin presencia multiple), LLDF 1.15 fijo, sin el termino 0.06 D_i, y reparte la carga a lo largo del tubo con la longitud efectiva L_e = L + 1.75 (3/4 R_o), donde R_o es la ALTURA exterior del tubo (= D_o en un circular; la Fig. 7 de DD 1 escribe 3/4 B_c), no el radio. M8 aplica AASHTO LRFD 9.a ed. 3.6.1.2.6b: HL-93 (gobierna el camion), m = 1.20, LLDF 1.200 interpolado por diametro (Tabla 3.6.1.2.6a-1), 0.06 D_i en el ancho y W_L = P_L min(l_w, B_c), sin L_e. El IM es el mismo (24.75 %, contraste DD1-IM). No es un defecto, y casi toda la diferencia es la L_e (ver la descomposicion del §8). El W_L del motor es el que `M8.verificar_concreto` sustituye en la D-load.
+- **DD1-EJ4** — DD 1 (2009) aplica la distribucion ANTERIOR a 2013 (dos ruedas de dos cargas alternativas (Alternate Load) en paso, 50 000 lb, sin presencia multiple), LLDF 1.15 fijo, sin el termino 0.06 D_i, y reparte la carga a lo largo del tubo con la longitud efectiva L_e = L + 1.75 (3/4 R_o), donde R_o es la ALTURA exterior del tubo (= D_o en un circular; la Fig. 7 de DD 1 escribe 3/4 B_c), no el radio. M8 aplica AASHTO LRFD 9.a ed. 3.6.1.2.6b: HL-93 (gobierna el tandem), m = 1.20, LLDF 1.200 interpolado por diametro (Tabla 3.6.1.2.6a-1), 0.06 D_i en el ancho y W_L = P_L min(l_w, B_c), sin L_e. El IM es el mismo (8.25 %, contraste DD1-IM). No es un defecto, y casi toda la diferencia es la L_e (ver la descomposicion del §8). El W_L del motor es el que `M8.verificar_concreto` sustituye en la D-load.
+- **M8-LW-72** — Sin ejemplo publicado: l_w = 3.93 ft < B_c = 7.17 ft, la rama que ningun ejemplo de esta validacion alcanza (en DD 1 y en el CPDM l_w >= B_c). Solo prueba que la linea del motor sigue el metodo escrito a mano.
 - **CPDM-BFLL-12** — El CPDM (2000) tabula B_fLL para el HS 20 por diametro y por relleno de 0.5 a 6.5 ft; AASHTO LRFD 9.a ed. (Tabla 12.10.4.3.2c-1, pag. 12-66) la reduce a dos columnas (< 2.0 y >= 2.0 ft) y la ajusta por la distribucion longitudinal de la carga en los tubos pequeños (C12.10.4.3.2c). El CPDM manda ademas usar B_fe si es menor que B_fLL; la 9.a ed. no lo dice. M8 sigue la 9.a ed.
 - **CPDM-4-2** — El ejemplo (CPDM 2000) y M8 (AASHTO LRFD 9.a ed.) difieren en: W_E sin el termino de los riñones de la Ec. 4 del CPDM (AASHTO 9.a ed. Ec. 12.10.2.1-1: W_E = F_e w B_c H): 27,405 lb/ft contra 27,791; el agua del tubo W_F = 785 lb/ft, que AASHTO 12.10.4.3.1 suma a la tierra y el CPDM no; el factor 1.10 del Tipo 1 (12.10.4.3.1), que el CPDM (2000) no aplica. Lo comun —la Ec. 28 del CPDM y la 12.10.4.3.1-1, el VAF y el B_FE— coincide (contrastes CPDM-VAF y CPDM-BFE). El termino de los riñones vale 301 lb/ft.
 - **CPDM-4-5** — El ejemplo (CPDM 2000) y M8 (AASHTO LRFD 9.a ed.) difieren en: W_E sin el termino de los riñones de la Ec. 4 del CPDM (AASHTO 9.a ed. Ec. 12.10.2.1-1: W_E = F_e w B_c H): 4,350 lb/ft contra 4,466; el agua del tubo W_F = 196 lb/ft, que AASHTO 12.10.4.3.1 suma a la tierra y el CPDM no. Lo comun —la Ec. 28 del CPDM y la 12.10.4.3.1-1, el VAF y el B_FE— coincide (contrastes CPDM-VAF y CPDM-BFE). El termino de los riñones vale 80 lb/ft.
@@ -89,6 +95,7 @@ Los PDF no se versionan (copyright; CLAUDE.md). Las cifras se transcribieron ley
 - **DD1-IM-2ft** — La misma ecuacion: DD 1 Eq. 1 y Manual de Puentes 2.4.3.3.2 (`M8.incremento_dinamico_enterrado`).
 - **CPDM-VAF-1** — Tabla 12.10.2.1-3 de AASHTO LRFD 9.a ed.: la misma.
 - **CPDM-BFE-12-1** — Tabla 12.10.4.3.2a-1 de AASHTO LRFD 9.a ed.: la misma.
+- **CPDM-BFE-48-1** — Tabla 12.10.4.3.2a-1 de AASHTO LRFD 9.a ed. (la misma que la Ilustracion 4.19 del CPDM) interpolada a 48 in, como hace el Ej. 4-2.
 - **CPDM-BFLL-36** — Ø 36 in con 2.0 ft: 2.2 en las dos ediciones (Tabla 12.10.4.3.2c-1, «30 and larger»).
 - **DD22-U** — La misma ecuacion (gamma_w pi B_c^2/4, `M8.empuje_flotacion_kn_m`); el ejemplo lee 2519 de su Tabla 4 y la Ec. 2 da 2517 con 62.4 pcf, el motor 2519 con 9.81 kN/m3.
 - **USACE-T** — ASTM A796 ec. 3, `M8.area_requerida_asd_a796`. La pag. B-9 tiene dos inconsistencias propias que no tocan esta cuenta: escribe EL = 56 550 N/m2 «(1,220 psf)» por 1 200 (10 ft x 120 pcf), y LL = 38 200 N/m2 cuando la suma P = 94 850 usa 38 300, el valor de su tabla para 0.6 m (2 ft) de cubierta, aunque el ejemplo tiene 3 m (10 ft). El contraste parte de P = 94 850 N/m2, como el ejemplo.
@@ -109,8 +116,15 @@ Los PDF no se versionan (copyright; CLAUDE.md). Las cifras se transcribieron ley
 
 ## 8. Observación para el dueño: la carga viva sobre tubos pequeños
 
-No es un defecto —el motor reproduce su metodo en todos los contrastes—, pero es la diferencia mayor de este documento y conviene que la juzgue un ingeniero: con poco relleno, la carga viva de M8 sobre un tubo de concreto pequeño sale bastante por encima de la de ACPA (2000 y 2009): +65 % en DD1-EJ1 (30 in, 2 ft) y la D-load +104 % en CPDM-4-7 (24 in, 2 ft), casi toda por la carga viva. Las causas son de edicion (HL-93 con m = 1.20 y el termino 0.06 D_i desde 2013, frente al HS 20 sin presencia multiple) y de LECTURA: M8 toma W_L = P_L min(l_w, B_c) sin repartir la carga a lo largo del tubo, porque la 9.a ed. no da una longitud efectiva y C12.10.4.3.2c dice que el B_FLL ya esta ajustado por esa distribucion; ACPA (DD 1) la reparte con L_e = L + 1.75 (3/4 R_o). La lectura esta declarada en M8 (paso F8.CLASE_CONCRETO) y va del lado seguro, pero ninguna de estas fuentes resuelve un ejemplo con la edicion 2013 o posterior: hace falta uno para cerrarlo.
+No es un defecto —el motor reproduce su metodo en todos los contrastes—, pero es la diferencia mayor de este documento y conviene que la juzgue un ingeniero: con poco relleno, la carga viva de M8 sobre un tubo de concreto pequeño sale bastante por encima de la de ACPA (2000 y 2009): +65 % en DD1-EJ1 (30 in, 2 ft) y la D-load +104 % en CPDM-4-7 (24 in, 2 ft), casi toda por la carga viva. CASI TODO ES LA LONGITUD EFECTIVA, no la edicion (tabla de abajo): en DD1-EJ1 la presion en la clave pesa +9.6% y no repartir con L_e +50.7%; en DD1-EJ4 la presion -2.1% (la edicion es ahi FAVORABLE) y la L_e +32.2%. Y no repartir con L_e NO es una lectura libre de M8: es lo que la 9.a ed. escribe. 12.10.2.3 (pag. 12-54, PDF 1692): «Live loads shall be as specified in Article 3.6 and shall be distributed through the earth cover as specified in Article 3.6.1.2.6. For standard installations, the live load on the pipe shall be assumed to have a uniform vertical distribution across the top of the pipe», sin longitud efectiva; y C12.10.4.3.2c (pag. 12-66, PDF 1704): «The bedding factor has been adjusted in Table 12.10.4.3.2c-1 to account for this higher distribution length», de modo que sumar ademas la L_e de ACPA contaria dos veces el reparto longitudinal. La revision Fable lo dictamino como la lectura literal de la 9.a ed. y no un defecto, con una reserva que sigue en pie: ninguna de estas fuentes resuelve un ejemplo con la edicion 2013 o posterior, y solo uno asi cerraria W_L con un numero de terceros.
+
+| Contraste | Relleno | P_L de M8 (lb/ft²) | w de DD 1 (lb/ft²) | Presión: P_L / w | L (ft) | L_e (ft) | Longitud: L_e / L | Total: motor / recalculado |
+|---|---|---|---|---|---|---|---|---|
+| DD1-EJ1 | 2 ft | 1,757 | 1,603 | +9.6% | 7.97 | 12.01 | +50.7% | +65.2% |
+| DD1-EJ4 | 6 ft | 359 | 367 | -2.1% | 12.57 | 16.61 | +32.2% | +29.4% |
+
+El total es el producto de los dos factores porque en los dos ejemplos l_w ≥ B_c (M8 toma W_L = P_L·B_c) y DD 1 toma S_L = B_c.
 
 ## 9. Defectos del motor
 
-Ninguno: en todos los contrastes el motor reproduce su propio método, y donde el ejemplo usa la misma edición, el mismo número.
+Ninguno: en todos los contrastes el motor reproduce su propio método, y donde el ejemplo usa la misma edición, el mismo número. Eso no valida la lectura de la carga viva ni la D-load (ver §3 y §8).
