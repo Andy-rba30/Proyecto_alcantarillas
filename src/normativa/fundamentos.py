@@ -3039,11 +3039,16 @@ REMANSO_CANAL = _fundamento(
         "el Manual da para canales abiertos y tuberias --. Desde el cruce, el "
         "embalse se extiende aguas arriba: la lamina horizontal del embalse "
         "corta la lamina normal a sobreelevacion / S, y el perfil real llega "
-        "mas lejos, de modo que esa distancia es una cota inferior. No hay "
+        "mas lejos, de modo que esa distancia es una cota inferior. El "
+        "perfil se calcula por paso directo, el metodo con que el HDS-5 "
+        "calcula la lamina en el barril, aplicado al canal: en un canal de "
+        "pendiente fuerte la S1 llega hasta el resalto, donde el tirante baja "
+        "al conjugado del normal; en uno suave la M1 es asintotica al normal "
+        "y su longitud se da hasta donde el proyectista declare. No hay "
         "umbral en ninguna fuente: el numero se publica para que el "
         "proyecto lo contraste con la coronacion del canal aguas arriba."),
     verbo=Verbo.DEFINE,
-    citas=("MC_HHD.4.1.1.3.6",),
+    citas=("MC_HHD.4.1.1.3.6", "HDS5_3ED.3.5#PERFIL"),
     que_pasa_si_no_se_hace=(
         "Un cruce que cumple VC1 con holgura puede haber levantado la lamina "
         "del canal varios decimetros y embalsado decenas de metros aguas "

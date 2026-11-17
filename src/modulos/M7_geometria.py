@@ -2686,6 +2686,10 @@ MOTIVO_REMANSO_VC2 = (
     "salida -- en caida --, que el canal no tiene, y compararla con el tirante normal "
     "del canal no dice cuanto levanta la obra la lamina. Cerrado el empalme, "
     "el remanso se vuelve a evaluar")
+# --- VE-3.7 --- donde termina el perfil M1 de un canal suave (opcional).
+CRITERIO_FIN_REMANSO = "fraccion_fin_remanso_canal"
+# --- VE-3.7 --- YA NO SE USA para «no concluir»: el canal fuerte concluye
+# con la S1 hasta el resalto. Se conserva el texto por los volcados viejos.
 MOTIVO_REMANSO_PENDIENTE_FUERTE = (
     "el canal es de pendiente FUERTE con la seccion medida (el tirante normal "
     "no supera al critico): la lamina remansada es una S1 que termina en "
@@ -2756,6 +2760,12 @@ def remanso_canal(*, punto: PuntoCritico, cota_entrada_msnm: float,
     y_n = tirante_normal_trapecial(Q=Q, seccion=seccion_canal)
     y_c = tirante_critico_trapecial(Q=Q, seccion=seccion_canal)
     dh = HW - y_n
+    # --- VE-3.7 --- el perfil por paso directo (`M3`): en un canal fuerte,
+    # la S1 hasta el resalto; en uno suave, la M1 si se declaro donde
+    # termina ('fraccion_fin_remanso_canal', opcional).
+    from src.modulos.M3_hidraulica import (perfil_remanso_trapecial,
+                                           tirante_conjugado_trapecial)
+    L_rem, metodo, y_conj = None, "", None
     lamina = cota_entrada_msnm + HW
     empalme_abierto = (vc2 is not None
                        and vc2.estado is EstadoDeVerificacion.INDICADOR)
@@ -2774,24 +2784,56 @@ def remanso_canal(*, punto: PuntoCritico, cota_entrada_msnm: float,
                  f"(y_n = {y_n:.3f} m con la seccion medida): la obra no "
                  f"levanta la lamina del canal en el cruce")
     elif not suave:
-        concluye, motivo = False, MOTIVO_REMANSO_PENDIENTE_FUERTE
+        # --- VE-3.7 --- CONCLUYE: la S1 termina en el resalto, donde el
+        # tirante baja al CONJUGADO del normal; aguas arriba el canal corre
+        # supercritico a su tirante normal. Con el HW bajo el conjugado el
+        # resalto queda en la boca y el remanso no sube por el canal.
+        concluye, motivo = True, ""
         sobreelevacion, L_min = dh, None
-        aviso = (f"Remanso aguas arriba del canal: no concluye -- {motivo} "
+        y_conj = tirante_conjugado_trapecial(Q=Q, seccion=seccion_canal,
+                                             y=y_n)
+        metodo = ("perfil S1 por paso directo hasta el resalto (el tirante "
+                  "conjugado del normal)")
+        L_rem = (0.0 if not HW > y_conj + TOL_UMBRAL_NORMATIVO else
+                 perfil_remanso_trapecial(Q=Q, seccion=seccion_canal,
+                                          y_inicio=HW, y_fin=y_conj)[0])
+        aviso = (f"Remanso aguas arriba del canal: canal de pendiente FUERTE "
                  f"(y_n = {y_n:.3f} m, y_c = {y_c:.3f} m). La obra levanta "
-                 f"la lamina en el cruce {dh:.3f} m sobre el tirante "
-                 f"normal; contrastar con la coronacion del canal aguas "
-                 f"arriba")
+                 f"la lamina en el cruce {dh:.3f} m sobre el tirante normal "
+                 f"y la S1 llega {L_rem:.1f} m aguas arriba, hasta el "
+                 f"resalto (conjugado {y_conj:.3f} m; {metodo}). Contrastar "
+                 f"con la coronacion del canal en ese tramo; VC1 solo la "
+                 f"mide en el cruce")
     else:
         concluye, motivo = True, ""
         sobreelevacion, L_min = dh, dh / S
+        fraccion = ca.valor_si_declarado(CRITERIO_FIN_REMANSO)
+        if fraccion is not None:
+            y_fin = y_n * (1 + fraccion)
+            metodo = (f"perfil M1 por paso directo hasta (1 + {fraccion:g}) "
+                      f"y_n (criterio '{CRITERIO_FIN_REMANSO}')")
+            L_rem = (0.0 if not HW > y_fin else
+                     perfil_remanso_trapecial(Q=Q, seccion=seccion_canal,
+                                              y_inicio=HW, y_fin=y_fin)[0])
+            extension = (f"el perfil M1 llega {L_rem:.1f} m aguas arriba "
+                         f"({metodo}; la horizontal del embalse da {L_min:.1f}"
+                         f" m, cota inferior)")
+        else:
+            extension = (f"el embalse se extiende AL MENOS {L_min:.1f} m "
+                         f"aguas arriba (dh/S, cota inferior: el perfil real "
+                         f"llega mas lejos; declarar '{CRITERIO_FIN_REMANSO}'"
+                         f" da la longitud del perfil M1 por paso directo)")
         aviso = (f"Remanso aguas arriba del canal: la obra levanta la lamina "
                  f"del canal {dh:.3f} m sobre su tirante normal (y_n = "
                  f"{y_n:.3f} m con la seccion medida; canal suave, y_c = "
-                 f"{y_c:.3f} m) y el embalse se extiende AL MENOS "
-                 f"{L_min:.1f} m aguas arriba (dh/S, cota inferior: el perfil "
-                 f"real llega mas lejos). Contrastar con la coronacion del "
-                 f"canal en ese tramo; VC1 solo la mide en el cruce")
-    if concluye:
+                 f"{y_c:.3f} m) y {extension}. Contrastar con la coronacion "
+                 f"del canal en ese tramo; VC1 solo la mide en el cruce")
+    if concluye and L_rem is not None:
+        resultado = Magnitud(
+            "L_remanso", L_rem, "m",
+            f"sobreelevacion en el cruce dh = {dh:.3f} m; {metodo}",
+            cifras=CIFRAS_MAGNITUD)
+    elif concluye:
         resultado = Magnitud(
             "L_min", L_min, "m",
             f"sobreelevacion en el cruce dh = {dh:.3f} m; en un canal suave "
@@ -2805,13 +2847,17 @@ def remanso_canal(*, punto: PuntoCritico, cota_entrada_msnm: float,
         codigo="7.B.R",
         que="Remanso aguas arriba del canal (aviso)",
         formula=("y_c: Q^2 T = g A^3 ; dh = HW - y_n ; L_min = dh / S_canal "
-                 "(solo si y_n > y_c y el empalme de VC2 cierra)"),
+                 "(solo si y_n > y_c y el empalme de VC2 cierra) ; perfil "
+                 "por paso directo dx = (E_abajo - E_arriba) / (S - Sf_medio)"
+                 " hasta el conjugado del normal (S1) o hasta (1 + f) y_n "
+                 "(M1)"),
         # SIN CITA DE LA FORMULA (auditoria de T-3, H7): el num. 4.1.1.3.6
         # da Manning, que es con lo que se obtiene y_n, y no contiene dh ni
         # L_min; la condicion critica es del HDS-5 (A.3.1). Las dos van a
         # `citas_textuales`; la desigualdad y su lectura son del proyecto.
         formula_cita_id="",
-        citas_textuales=("MC_HHD.4.1.1.3.6", "HDS5_3ED.A.3.1#CRITICO"),
+        citas_textuales=("MC_HHD.4.1.1.3.6", "HDS5_3ED.A.3.1#CRITICO",
+                         "HDS5_3ED.3.5#PERFIL", "HDS5_3ED.3.5.1#S1"),
         sustitucion=(
             Magnitud("HW", HW, "m", "M4, carga a la entrada del control que "
                      "gobierna", cifras=CIFRAS_MAGNITUD),
@@ -2851,7 +2897,9 @@ def remanso_canal(*, punto: PuntoCritico, cota_entrada_msnm: float,
         S_canal=S, y_normal_canal_m=y_n, HW_m=HW,
         cota_lamina_entrada_msnm=lamina, sobreelevacion_m=sobreelevacion,
         longitud_minima_m=L_min, paso=paso_rem, concluye=concluye,
-        y_critico_canal_m=y_c, motivo_no_concluye=motivo)
+        y_critico_canal_m=y_c, motivo_no_concluye=motivo,
+        longitud_remanso_m=L_rem, metodo_longitud=metodo,
+        y_conjugado_canal_m=y_conj)
 
 
 # ---------------------------------------------------------------------------

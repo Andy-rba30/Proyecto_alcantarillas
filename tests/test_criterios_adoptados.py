@@ -863,7 +863,12 @@ def test_los_opcionales_declarados_hoy():
                           # relleno de la geometria de cada cabezal;
                           # declarados, ganan.
                           "friccion_muro_suelo_delta",
-                          "pendiente_relleno_trasdos_i"}
+                          "pendiente_relleno_trasdos_i",
+                          # Y desde VE-3.7 donde termina el perfil M1 del
+                          # remanso del canal (Familia C): sin declarar, la
+                          # cota inferior dh / S; declarado, la longitud del
+                          # perfil por paso directo.
+                          "fraccion_fin_remanso_canal"}
 
 
 def test_un_opcional_no_figura_entre_los_vacios_que_bloquean():

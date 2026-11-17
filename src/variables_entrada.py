@@ -1577,6 +1577,8 @@ _META_CRITERIOS: Dict[str, _Meta] = {
     "factor_muro_eleccion": _Meta(unidad="-"),
     "factor_recubrimiento_banda_intermedia_ac": _Meta(unidad="-"),
     "factores_carga_aashto": _Meta(unidad="-"),
+    # --- VE-3.7 --- donde termina el perfil M1 del remanso del canal.
+    "fraccion_fin_remanso_canal": _Meta(unidad="-"),
     "friccion_muro_suelo_delta": _Meta(unidad="grados"),
     "gamma_EQ": _Meta(unidad="-"),
     "geometria_control_salida": _Meta(unidad="-"),

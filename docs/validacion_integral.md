@@ -245,6 +245,7 @@ Ningún criterio se rellenó en `criterios_adoptados.py`: los que el juego neces
 |---|---|---|---|---|---|---|---|
 | `clase_sitio` | [S] | expediente | — | ensayo | no (censado) | no | AASHTO LRFD Bridge Design Specifications, 9a ed. |
 | `pendiente_relleno_trasdos_i` | [A] | expediente | opcional | decision | sí | no | Seccion transversal del cruce del expediente vial (dato de geometria), o analisis de cuña del relleno quebrado (AASHTO 3.11.5.8.1). |
+| `fraccion_fin_remanso_canal` | [A] | perfil | opcional | decision | sí | no | Adopcion del proyectista: la fuente del metodo (el paso directo, HDS-5 num. |
 | `friccion_muro_suelo_delta` | [A] | expediente | opcional | decision | sí | no | Ensayo de interfase o adopcion declarada con su fuente. |
 | `homogeneidad_serie_fen` | [A] | perfil | — | decision | sí | sí | Manual de Hidrologia, Hidraulica y Drenaje (MTC), num. |
 | `riesgo_admisible_propietario` | [A] | perfil | opcional | decision | sí | no | Manual de Hidrologia, Hidraulica y Drenaje (MTC, RD 20-2011-MTC/14), Tabla N 02 'VALORES MAXIMOS RECOMENDADOS DE RIESGO ADMISIBLE DE OBRAS DE DRENAJE', num. |

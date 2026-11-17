@@ -1016,7 +1016,7 @@ CENSO_DE_MARCAS = {
     # `modelos.SeccionCircular` con el resto de la geometria del barril. Los
     # cuatro que quedan son los exponentes de Manning (dos veces), el tope de
     # duplicaciones del corchete y el 2/3 de la rama de velocidades.
-    "src/modulos/M3_hidraulica.py": 5,   # EXT-2 (PC-06): Q_lleno con los exponentes de Manning
+    "src/modulos/M3_hidraulica.py": 8,   # EXT-2 (PC-06): Q_lleno con los exponentes de Manning; VE-3.7: centroide del trapecio, Manning y Sf medio del paso directo
     # 5 -> 3 en C1, por la misma mudanza: el 4 del area llena pi*D^2/4 y el
     # 4 del radio hidraulico lleno D/4 se fueron a
     # `modelos.SeccionCircular`. `area_llena` y `radio_hidraulico_lleno`

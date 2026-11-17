@@ -148,6 +148,26 @@ COS_ESVIAJE_MIN = (_math.pi / 2) * _sys.float_info.epsilon / TOL_UMBRAL_NORMATIV
 # imponga su paso al tirante de la entrada.
 PASOS_PERFIL_LAMINA = 2000
 
+# --- VE-3.7 --- La escalera del paso directo del REMANSO EN EL CANAL
+# (`M3.perfil_remanso_trapecial`, Familia C). Los escalones van en progresion
+# GEOMETRICA de (y - y_n) -- no equiespaciados en y --, porque el perfil M1 es
+# asintotico al normal y una escalera uniforme converge mal cerca de la
+# asintota (medido en el canal de C-01, b 1.0, z 1.5, n 0.025, S 0.006,
+# Q 0.85, de y = 0.80 m a y = 1.001 y_n: -0.16 % con 4000 escalones
+# uniformes). Cuantos escalones es precision numerica, como en
+# PASOS_PERFIL_LAMINA: el test de VE-3.7 contrasta la longitud con una
+# integracion independiente de la ecuacion del flujo gradualmente variado
+# (scipy, `solve_ivp` con rtol 1e-11) y la diferencia medida con 2000
+# escalones esta en `TOL_REL_PASO_DIRECTO_REMANSO`.
+PASOS_PERFIL_REMANSO = 2000
+# Lo que el paso directo del remanso puede diferir, en RELATIVO, de la
+# integracion independiente de la ecuacion del flujo gradualmente variado.
+# MEDIDO con 2000 escalones geometricos sobre seis casos (M1 del canal de
+# C-01 hasta 1.05, 1.01 y 1.001 y_n; S1 hasta el conjugado en tres canales
+# fuertes, rectangular y trapeciales): peor 6.5e-8. Se fija quince veces por
+# encima. Solo la lee el test de VE-3.7: no mueve ninguna magnitud.
+TOL_REL_PASO_DIRECTO_REMANSO = 1e-6
+
 # Donde la escalera se detiene porque llego a la ASINTOTA: en un perfil M1 o
 # M2 la lamina tiende a y_n sin alcanzarlo, y ahi S - Sf tiende a cero por
 # los dos lados. Cuando |S - Sf_medio| queda por debajo de esta fraccion de
