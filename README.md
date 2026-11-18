@@ -256,10 +256,11 @@ la imprimen la memoria, la CLI y el JSON, `modelos.ALCANCE_DECLARADO`):
   la declara el proyectista, y la estabilidad la juzga como llega (ficha T7B-09).
 - **V7 del marco no pesa el concreto del marco** (del lado seguro), hasta tener la sección
   real del canal (ficha T3-08).
-- **Las Figuras 3.3 y 3.4 de HEC-14 no están digitalizadas**: el contraste de la
-  velocidad de salida con la Tabla N.º 11 es un indicador que no concluye (ficha T8-08).
-- **En la banda de régimen de M4** la velocidad que llega a la Fase 6 es la crítica y no
-  `max(V_c, V_erosion)`; la Fase 6 lo avisa con las dos velocidades (ficha T8-09).
+- **Donde las Figuras 3.3 y 3.4 de HEC-14 no dan el tirante de borde** (una forma que no
+  es circular ni rectangular, un caudal o un TW fuera de su familia de curvas, o una
+  lectura que no queda bajo el crítico), la velocidad de salida con el TW bajo el crítico
+  se toma al tirante crítico: es una cota inferior y su contraste con la Tabla N.º 11 es
+  un indicador que no concluye (ficha T8-08).
 - **El escalón de la regla de control de salida del HDS-5 en HW/D = 1.2** no se suaviza:
   es el umbral que la fuente escribe (ficha T7V-01).
 
@@ -319,10 +320,6 @@ ventana»)— y, sin Tk, se saltan diciéndolo.
 
 Aprobado por el autor y **no lanzado** todavía:
 
-- Digitalizar las **Figuras 3.3 y 3.4 de HEC-14** (tirante de borde a la salida), para
-  que el contraste de la velocidad de salida concluya (ficha T8-08).
-- **`max(V_c, V_erosion)` en la banda de régimen de M4**, junto con lo anterior (ficha
-  T8-09).
 - Un **juego de cuencas de prueba coherente** para validar de punta a punta la cadena
   «caudal calculado → diseño», que hoy no está validada con datos coherentes
   (`docs/validacion_integral.md`); para la tesis, lo que importa es contrastar los caudales
@@ -337,6 +334,11 @@ Aprobado por el autor y **no lanzado** todavía:
   punta a punta, cómo añadir un criterio o un dato de sitio y cómo regenerar los documentos
   generados y la línea base. `CLAUDE.md` tiene las reglas, pero no está escrito para una
   persona que llega nueva (decidido por el autor el 2026-11-17).
+
+**Ya hecho** de esta lista (2026-11-18): las **Figuras 3.3 y 3.4 de HEC-14** están
+digitalizadas y la velocidad de salida con el TW bajo el crítico se mide en el tirante de
+borde (ficha T8-08), y en la banda de régimen de M4 rige la mayor de esa velocidad y la de
+erosión (ficha T8-09).
 
 **Pendiente del autor** (no lo resuelve el programa):
 

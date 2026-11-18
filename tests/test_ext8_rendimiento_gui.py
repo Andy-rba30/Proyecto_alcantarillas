@@ -198,7 +198,14 @@ CORRIDAS_IMPORTTIME = 3
 # procedencia de V3 y de la velocidad de salida, y las dos citas de la
 # velocidad a tirante normal (HDS-5 3.3.2, HEC-14 3.2.2) ---. El techo sube a
 # la medida nueva, pegado como los anteriores.
-KB_POR_PUNTO_MAX = 109.0
+# --- T8-08 / T8-09 (2026-11-18) --- 109.48 KB por punto, medidos con este
+# mismo metodo sobre el arbol del cierre de las dos fichas: +0.48 KB porque
+# el paso 4.3b de C-01 (control de salida con el TW bajo el critico) imprime
+# lo que hace falta para rehacer la velocidad de borde --- el grupo
+# KuQ/(B·D^1.5), TW/D, el tirante de borde y V_erosion, la procedencia con
+# la figura y las cuatro citas de HEC-14 num. 3.1.3 ---. El techo sube a la
+# medida nueva, pegado como los anteriores.
+KB_POR_PUNTO_MAX = 109.5
 # Paginas por punto: 14.0 medidas en EXT-8; 16.0 en E-A con los dos pasos
 # del perfil por escalon; 18.7 sobre `5bca7c6` y 20.7 con T-6, 31.7 con
 # T-3, 32.3 con T-9 y 31.0 con T-10 (ver arriba).

@@ -309,7 +309,11 @@ hacian siempre con el flujo uniforme de M3 (EXT-M-01, PC-04):
 
     V_salida            control de SALIDA: Q_celda / A(min(D, max(TW, y_c)))
                         -- tirante critico, TW o seccion entera, segun el TW
-                        (pag. impresa 3.18) --, sin n.
+                        (pag. impresa 3.18) --, sin n. Con el TW bajo el
+                        critico, el tirante de BORDE de HEC-14 (Figuras 3.3
+                        y 3.4) en lugar del critico, y la mayor con V_erosion
+                        si con n_min el flujo seria supercritico (T8-08,
+                        T8-09; `tirante_de_borde`).
                         control de ENTRADA: la del tirante normal (pag. 3.24),
                         rama n_min: techo conservador para el d50 de M6.
 
@@ -372,7 +376,7 @@ from __future__ import annotations
 
 import math
 import numbers
-from typing import NamedTuple, Optional, Tuple, Union
+from typing import List, NamedTuple, Optional, Tuple, Union
 
 # EL RESOLUTOR SE IMPORTA EN EL PUNTO DE USO (EXT-8, PC-10): `scipy.optimize`
 # costaba 230-310 ms en CADA `import cli`, tambien en una corrida que no
@@ -384,6 +388,12 @@ from typing import NamedTuple, Optional, Tuple, Union
 from src import criterios_adoptados as ca
 from src.constantes_fisicas import G
 from src.constantes_normativas import (FORMA_1, FORMA_2, K_MANNING_SI,
+                                   HEC14_BORDE_CIRCULAR,
+                                   HEC14_BORDE_EXPONENTE_CIRCULAR,
+                                   HEC14_BORDE_EXPONENTE_RECTANGULAR,
+                                   HEC14_BORDE_RECTANGULAR,
+                                   HEC14_BORDE_TW_SOBRE_D,
+                                   HEC14_KU_BORDE_SI,
                                    H_O_HW_SOBRE_D_CAUTELA,
                                    H_O_HW_SOBRE_D_MIN, KE_CAJON_C2,
                                    KE_HDS5_C2, KU_SI,
@@ -399,8 +409,9 @@ from src.modelos import (CriterioPendienteError, PisoDeCargaEntrada,
                      MetodoNoEvaluableError,
                      MOTIVO_METODO_NO_EVALUABLE, PerfilLamina, RegimenBarril,
                      RegimenEntrada,
-                     ResultadoHidraulico, SinTiranteNormal, TiranteCritico,
-                     TipoDePerfil,
+                     ResultadoHidraulico, SeccionCircular,
+                     SeccionRectangular, SinTiranteNormal, TiranteCritico,
+                     TiranteDeBorde, TipoDePerfil,
                      TipoDeVeredicto,
                      TiranteNormal, TransicionEntrada, Umbral, Veredicto,
                      eleccion, paso)
@@ -1492,8 +1503,159 @@ class _RegimenYSalida(NamedTuple):
     """Lo que la pieza 5 entrega a `ResultadoHidraulico` y al paso F4.REGIMEN."""
     regimen: RegimenBarril
     V_llena: float          # m/s - Q_celda / A_llena
-    y_salida: float         # m   - tirante con que se midio V_salida
+    y_salida: float         # m   - tirante de registro a la salida
     V_salida: Magnitud      # m/s - con su procedencia
+    borde: Optional[TiranteDeBorde] = None   # T8-08: la lectura de HEC-14
+    cota_inferior: bool = False              # V_salida quedo en la critica
+
+
+class VelocidadDeSalida(NamedTuple):
+    """
+    Lo que devuelve `velocidad_de_salida`. Hasta el cierre de T8-08 era el
+    par (V_salida, y_salida); `borde` y `cota_inferior` son los dos datos que
+    la primera viñeta de HDS-5 3.1.6 sumo al leer el tirante de borde.
+    """
+    V_salida: Magnitud      # m/s - con su procedencia
+    y_salida: float         # m   - tirante de REGISTRO a la salida
+    borde: Optional[TiranteDeBorde] = None
+    cota_inferior: bool = False
+
+
+# ---------------------------------------------------------------------------
+# --- T8-08 --- El tirante de borde de HEC-14 (num. 3.1.3, Figuras 3.3 y 3.4)
+# ---------------------------------------------------------------------------
+
+def _en_la_columna(curvas: dict, columna: int, q: float) -> Optional[float]:
+    """
+    yo/D en UNA abscisa de la reticula para el valor `q` de la familia:
+    lineal entre las dos curvas DIBUJADAS en esa abscisa que lo rodean, o la
+    propia curva si `q` es una. Si una curva no esta dibujada en la columna
+    (celda `None`) se interpola entre sus vecinas que si lo estan --lo que
+    la figura dibuja, sin la curva que falta--; si no hay curva dibujada a
+    los dos lados, no hay lectura (`None`): no se extrapola.
+    """
+    dibujadas = [(valor, celdas[columna]) for valor, celdas in curvas.items()
+                 if celdas[columna] is not None]
+    for valor, celda in dibujadas:
+        if abs(valor - q) < TOL_UMBRAL_NORMATIVO:
+            return celda
+    debajo = [par for par in dibujadas if par[0] < q]
+    encima = [par for par in dibujadas if par[0] > q]
+    if not debajo or not encima:
+        return None
+    (q0, y0), (q1, y1) = debajo[-1], encima[0]
+    return y0 + (y1 - y0) * (q - q0) / (q1 - q0)
+
+
+def _leer_figura(curvas: dict, q: float, TW_sobre_D: float, figura: str,
+                 grupo: str) -> Tuple[Optional[float], str]:
+    """
+    (yo/D, motivo) leido de la familia de curvas: lineal en `q` dentro de
+    cada una de las dos abscisas de la reticula que rodean a TW/D, y lineal
+    en TW/D entre ellas. Es la lectura del PROYECTO de una figura: la fuente
+    no dice como se interpola entre curvas, y lo lineal entre dos lineas de
+    0.1 en TW/D y 0.5 en el grupo es lo que un lector hace a ojo. Fuera de la
+    figura no se extrapola: (None, por que).
+    """
+    abscisas = HEC14_BORDE_TW_SOBRE_D
+    valores = tuple(curvas)
+    if not (abscisas[0] - TOL_UMBRAL_NORMATIVO <= TW_sobre_D
+            <= abscisas[-1] + TOL_UMBRAL_NORMATIVO):
+        return None, (f"TW/D = {TW_sobre_D:.3f} cae fuera del eje de la "
+                      f"Figura {figura} de HEC-14 ({abscisas[0]:g} a "
+                      f"{abscisas[-1]:g})")
+    if not (valores[0] - TOL_UMBRAL_NORMATIVO <= q
+            <= valores[-1] + TOL_UMBRAL_NORMATIVO):
+        return None, (f"{grupo} = {q:.3f} cae fuera de la familia de curvas "
+                      f"de la Figura {figura} de HEC-14 ({valores[0]:g} a "
+                      f"{valores[-1]:g}): la figura no lo cubre y no se "
+                      "extrapola")
+    j = max(i for i, x in enumerate(abscisas)
+            if x <= TW_sobre_D + TOL_UMBRAL_NORMATIVO)
+    if j == len(abscisas) - 1 \
+            or abs(TW_sobre_D - abscisas[j]) < TOL_UMBRAL_NORMATIVO:
+        columnas = ((j, 1.0),)
+    else:
+        t = (TW_sobre_D - abscisas[j]) / (abscisas[j + 1] - abscisas[j])
+        columnas = ((j, 1 - t), (j + 1, t))
+    total = 0.0
+    for columna, peso in columnas:
+        celda = _en_la_columna(curvas, columna, q)
+        if celda is None:
+            return None, (f"en TW/D = {abscisas[columna]:g} la Figura "
+                          f"{figura} de HEC-14 no dibuja curva a los dos "
+                          f"lados de {grupo} = {q:.3f}: no hay lectura y no "
+                          "se extrapola")
+        total += peso * celda
+    return total, ""
+
+
+def tirante_de_borde(*, Q_celda: float, seccion: Seccion, TW: float,
+                     y_c: float) -> TiranteDeBorde:
+    """
+    El tirante de BORDE a la salida (brink depth), HEC-14 num. 3.1.3 (pag.
+    impresa 3-3, PDF 34), Figura 3.3 (marco, pag. impresa 3-5, PDF 36) y
+    Figura 3.4 (tubo, pag. impresa 3-6, PDF 37):
+
+        yo/D = f(TW/D, KuQ/D^2.5)        tubo,   Ku = 1.811 (SI)
+        yo/D = f(TW/D, KuQ/(B·D^1.5))    marco,  B y D de UNA celda
+
+    «The flow goes through critical depth upstream of the outlet when the
+    tailwater elevation is below the critical depth elevation in the
+    culvert. Figures 3.3 and 3.4 may be used to determine outlet brink
+    depths for rectangular and circular sections» (citas HEC14.3.1.3#BORDE y
+    #FIGURAS). Las dos familias de curvas estan LEIDAS POR IMAGEN y
+    transcritas en el registro (tablas HEC14.F3_3 y HEC14.F3_4, tolerancia
+    de lectura `tolerancias.TOL_LECTURA_FIGURA_HEC14`); aqui se interpolan
+    (`_leer_figura`).
+
+    SIN LECTURA (`y_o` None, con `motivo`), y no se extrapola:
+      * la forma no es circular ni rectangular: la fuente acepta entonces el
+        critico («not conservative, but is acceptable», cita
+        HEC14.3.1.3#OTRAS_FORMAS);
+      * TW/D o el grupo de caudal fuera de la figura, o sin curva dibujada a
+        los dos lados;
+      * la lectura no queda bajo `y_c`: la fuente dice «critical depth is
+        larger than brink depth», y las curvas de trazo discontinuo de la
+        Figura 3.4 lo contradicen arriba (la de 6.0 da 0.973 D en descarga
+        libre, sobre un critico de 0.955 D). Esa lectura no se usa.
+
+    Quien llama decide cuando aplica (control de salida con el TW bajo el
+    critico, pendiente suave u horizontal: `velocidad_de_salida`).
+    """
+    D = seccion.altura
+    TW_sobre_D = TW / D
+    if isinstance(seccion, SeccionCircular):
+        figura, curvas, grupo = "3.4", HEC14_BORDE_CIRCULAR, "KuQ/D^2.5"
+        q = HEC14_KU_BORDE_SI * Q_celda / D ** HEC14_BORDE_EXPONENTE_CIRCULAR
+    elif isinstance(seccion, SeccionRectangular):
+        figura, curvas, grupo = "3.3", HEC14_BORDE_RECTANGULAR, "KuQ/(B·D^1.5)"
+        q = HEC14_KU_BORDE_SI * Q_celda / (
+            seccion.B * D ** HEC14_BORDE_EXPONENTE_RECTANGULAR)
+    else:
+        return TiranteDeBorde(
+            figura=None, caudal_adimensional=None, TW_sobre_D=TW_sobre_D,
+            y_o=None,
+            motivo="HEC-14 da el tirante de borde solo para las secciones "
+                   "rectangular y circular (Figuras 3.3 y 3.4); para las "
+                   "demas lo aproxima con el critico, «not conservative, but "
+                   "is acceptable» (num. 3.1.3)")
+    yo_sobre_D, motivo = _leer_figura(curvas, q, TW_sobre_D, figura, grupo)
+    if yo_sobre_D is None:
+        return TiranteDeBorde(figura=figura, caudal_adimensional=q,
+                              TW_sobre_D=TW_sobre_D, y_o=None, motivo=motivo)
+    y_o = yo_sobre_D * D
+    if not y_o < y_c - TOL_UMBRAL_NORMATIVO:
+        return TiranteDeBorde(
+            figura=figura, caudal_adimensional=q, TW_sobre_D=TW_sobre_D,
+            y_o=None,
+            motivo=f"la Figura {figura} de HEC-14 da un borde de {y_o:.3f} m "
+                   f"que no queda bajo el tirante critico ({y_c:.3f} m), "
+                   "contra la frase de la fuente «critical depth is larger "
+                   "than brink depth» (zona de curvas de trazo discontinuo): "
+                   "esa lectura no se usa")
+    return TiranteDeBorde(figura=figura, caudal_adimensional=q,
+                          TW_sobre_D=TW_sobre_D, y_o=y_o)
 
 
 def regimen_del_barril(TW: float, seccion: Seccion) -> RegimenBarril:
@@ -1528,10 +1690,11 @@ def regimen_del_barril(TW: float, seccion: Seccion) -> RegimenBarril:
 def velocidad_de_salida(*, Q_celda: float, seccion: Seccion, TW: float,
                         critico: TiranteCritico,
                         normal: Union[TiranteNormal, SinTiranteNormal],
-                        control: ControlGobernante) -> Tuple[Magnitud, float]:
+                        control: ControlGobernante) -> VelocidadDeSalida:
     """
-    (V_salida, y_salida) por HDS-5 3.1.6: la velocidad a la SALIDA del
-    conducto, que es la que dimensiona la proteccion de la Fase 6 (PC-04).
+    (V_salida, y_salida, borde, cota_inferior) por HDS-5 3.1.6: la velocidad
+    a la SALIDA del conducto, que es la que dimensiona la proteccion de la
+    Fase 6 (PC-04).
 
     Control de SALIDA (pag. impresa 3.18): el area es la de la seccion al
     tirante que fija el TW -- el critico si TW < y_c, el TW si y_c <= TW < D,
@@ -1558,6 +1721,29 @@ def velocidad_de_salida(*, Q_celda: float, seccion: Seccion, TW: float,
     que describe el flujo: sobre un fondo horizontal la lamina es subcritica
     y baja hacia la salida, donde pasa por el tirante critico o por el TW.
     El paso lo dice en su procedencia.
+
+    --- T8-08 --- PRIMERA VIÑETA: EL BORDE Y NO EL CRITICO. Con el TW bajo
+    el critico, HEC-14 num. 3.1.3 dice que el flujo pasa por el critico
+    AGUAS ARRIBA de la salida, y en el borde el tirante es menor y la
+    velocidad mayor. El area es la del tirante de BORDE de las Figuras 3.3
+    (marco) y 3.4 (tubo), «on Horizontal and Mild Slopes» (`tirante_de_borde`),
+    y se lee si el barril es horizontal o si con n MAXIMO el tirante normal
+    no queda bajo el critico (pendiente suave). Donde no hay lectura --otra
+    forma, fuera de la figura, una lectura que no queda bajo el critico-- el
+    area sigue siendo la critica, con el permiso de la fuente («not
+    conservative, but is acceptable», pag. 3-3), y la velocidad es una COTA
+    INFERIOR: `cota_inferior` True, que la Fase 6 lee para no concluir el
+    contraste con la Tabla Nº 11. El tirante que se devuelve sigue siendo el
+    critico, el de REGISTRO del barril (`ResultadoHidraulico.y_salida_m`).
+
+    --- T8-09 --- Y LA MAYOR CON `V_erosion` (decision del dueño, la regla
+    del maximo). El control se decide con las cargas de la rama de n MAXIMO;
+    si con n MINIMO el tirante normal es supercritico, la estimacion ALTA de
+    la velocidad de salida es la del tirante normal de n minimo, que es la
+    que entra bajo control de entrada. En la primera viñeta, entonces,
+    V_salida = max(V_borde o V_critica, V_erosion). Fuera de la banda
+    --n minimo tambien subcritico-- V_erosion es menor que la critica y el
+    maximo no cambia nada. El HDS-5 no lo trata porque no usa doble n.
     """
     horizontal = isinstance(normal, SinTiranteNormal)
     if control is ControlGobernante.ENTRADA and not horizontal:
@@ -1574,7 +1760,7 @@ def velocidad_de_salida(*, Q_celda: float, seccion: Seccion, TW: float,
         # `y_salida` sigue siendo el normal de REGISTRO, el de n_max: la
         # regla de doble n da el tirante con n maximo y la velocidad con n
         # minimo (ficha VE2-B, que dice quien lee ese tirante).
-        return Magnitud(
+        return VelocidadDeSalida(Magnitud(
             "V_salida", normal.V_erosion, "m/s",
             "HDS-5 num. 3.3.2 (pag. impresa 3.24) y 3.1.6: bajo control de "
             "ENTRADA la velocidad a la salida es la del tirante normal; HEC-14 "
@@ -1584,7 +1770,7 @@ def velocidad_de_salida(*, Q_celda: float, seccion: Seccion, TW: float,
             f"normal (y_n = {normal.geometria_erosion.y:.3f} m con n_min, "
             "V = Q_celda / A(y_n)): es el techo conservador para un d50 que "
             "crece con el cuadrado de V" + salida_llena,
-            cifras=CIFRAS_MAGNITUD), normal.geometria.y
+            cifras=CIFRAS_MAGNITUD), normal.geometria.y)
     D = seccion.altura
     y_salida = min(D, max(TW, critico.y_c))
     # LAS TRES AREAS, Y DE DONDE SALE CADA UNA (regla vinculante #12 de
@@ -1595,6 +1781,7 @@ def velocidad_de_salida(*, Q_celda: float, seccion: Seccion, TW: float,
     # salida de un solver--, y ese es el unico caso en que se lee `area(TW)`
     # por la via por tirante. Esta censado en
     # `tests/test_seccion_rectangular.py::CENSO_VIA_POR_TIRANTE`.
+    primera_vineta = False
     if not y_salida < D - TOL_UMBRAL_NORMATIVO:
         y_salida = D
         A = seccion.area_llena
@@ -1612,6 +1799,7 @@ def velocidad_de_salida(*, Q_celda: float, seccion: Seccion, TW: float,
                 "por y_c a la salida (primera vineta de la pag. 3.18): V = "
                 "Q_celda / A(y_c), con el area critica que el paso 4.2 ya "
                 "resolvio")
+        primera_vineta = True
     if not A > 0:
         # Forma MAT-D13: umbral en positivo y negado; el par culpable.
         raise LimiteNumericoError(
@@ -1627,13 +1815,137 @@ def velocidad_de_salida(*, Q_celda: float, seccion: Seccion, TW: float,
         "(HDS-5 num. 3.3.4, pag. impresa 3.25); sobre un fondo horizontal la "
         "lamina es subcritica y baja hacia la salida, que es donde la "
         "velocidad del barril es MAXIMA")
-    return Magnitud(
-        "V_salida", Q_celda / A, "m/s",
-        f"HDS-5 num. 3.1.6 (pag. impresa 3.18): bajo control de SALIDA el "
-        f"area de la velocidad de salida la fija el TW; aqui {caso}. No lleva "
-        f"n de Manning: es un caudal entre un area, y por eso no entra en la "
-        f"regla de doble n.{por_horizontal}",
-        cifras=CIFRAS_MAGNITUD), y_salida
+    texto = (f"HDS-5 num. 3.1.6 (pag. impresa 3.18): bajo control de SALIDA "
+             f"el area de la velocidad de salida la fija el TW; aqui {caso}. "
+             f"No lleva n de Manning: es un caudal entre un area, y por eso no "
+             f"entra en la regla de doble n.{por_horizontal}")
+    if not primera_vineta:
+        return VelocidadDeSalida(Magnitud("V_salida", Q_celda / A, "m/s", texto,
+                                          cifras=CIFRAS_MAGNITUD), y_salida)
+    return _velocidad_en_la_primera_vineta(
+        Q_celda=Q_celda, seccion=seccion, TW=TW, critico=critico,
+        normal=normal, horizontal=horizontal, texto_critico=texto,
+        por_horizontal=por_horizontal, y_salida=y_salida)
+
+
+def _velocidad_en_la_primera_vineta(*, Q_celda: float, seccion: Seccion,
+                                    TW: float, critico: TiranteCritico,
+                                    normal: Union[TiranteNormal,
+                                                  SinTiranteNormal],
+                                    horizontal: bool, texto_critico: str,
+                                    por_horizontal: str,
+                                    y_salida: float) -> VelocidadDeSalida:
+    """
+    La primera viñeta de HDS-5 3.1.6 (TW bajo el critico) con el tirante de
+    BORDE de HEC-14 num. 3.1.3, Figuras 3.3 y 3.4 (T8-08), y la regla del
+    maximo con `V_erosion` (T8-09). Ver `velocidad_de_salida`.
+    """
+    suave = horizontal or not normal.geometria.y < critico.y_c - TOL_UMBRAL_NORMATIVO
+    if suave:
+        borde = tirante_de_borde(Q_celda=Q_celda, seccion=seccion, TW=TW,
+                                 y_c=critico.y_c)
+    else:
+        borde = TiranteDeBorde(
+            figura=None, caudal_adimensional=None,
+            TW_sobre_D=TW / seccion.altura, y_o=None,
+            motivo=f"con n maximo el tirante normal ({normal.geometria.y:.3f} "
+                   f"m) queda bajo el critico ({critico.y_c:.3f} m): la "
+                   "pendiente no es suave, y las Figuras 3.3 y 3.4 de HEC-14 "
+                   "son «for the Outlets of [...] Culverts on Horizontal and "
+                   "Mild Slopes»")
+    if borde.y_o is not None:
+        A_o = seccion.geometria_en(_llenado_de_tirante(seccion, borde.y_o)).A
+        V_base = Q_celda / A_o
+        pagina = "3-6" if borde.figura == "3.4" else "3-5"
+        grupo = "KuQ/D^2.5" if borde.figura == "3.4" else "KuQ/(B·D^1.5)"
+        texto = (f"HEC-14 num. 3.1.3 (pag. impresa 3-3) y Figura "
+                 f"{borde.figura} (pag. impresa {pagina}): con el TW bajo el "
+                 f"tirante critico (primera vineta de HDS-5 3.1.6, pag. "
+                 f"impresa 3.18) el flujo pasa por y_c AGUAS ARRIBA de la "
+                 f"salida y en el borde el tirante es menor. Tirante de borde "
+                 f"leido de la figura (lectura por imagen, interpolada entre "
+                 f"curvas y entre lineas de la reticula): y_o = "
+                 f"{borde.y_o:.3f} m con TW/D = {borde.TW_sobre_D:.3f} y "
+                 f"{grupo} = {borde.caudal_adimensional:.3f}; V = Q_celda / "
+                 f"A(y_o) = Q_celda / {A_o:.{CIFRAS_MAGNITUD}f} m2. No lleva "
+                 f"n de Manning.{por_horizontal}")
+        cota_inferior = False
+    else:
+        V_base = Q_celda / critico.geometria.A
+        texto = (texto_critico + " SIN TIRANTE DE BORDE: " + borde.motivo
+                 + ". Se toma el critico, que la fuente acepta para las "
+                 "formas sin figura, «not conservative, but is acceptable» "
+                 "(HEC-14 num. 3.1.3): la velocidad es una COTA INFERIOR de "
+                 "la de borde")
+        cota_inferior = True
+    if horizontal or not normal.V_erosion > V_base + TOL_UMBRAL_NORMATIVO:
+        return VelocidadDeSalida(
+            Magnitud("V_salida", V_base, "m/s", texto, cifras=CIFRAS_MAGNITUD),
+            y_salida, borde, cota_inferior)
+    # T8-09: con n minimo el tirante normal es supercritico y su velocidad
+    # supera a la de la salida; rige la MAYOR, que ya no es cota inferior.
+    return VelocidadDeSalida(
+        Magnitud(
+            "V_salida", normal.V_erosion, "m/s",
+            f"la MAYOR de dos (regla del maximo, decision del dueño, ficha "
+            f"T8-09): (a) {texto}, que da {V_base:.3f} m/s; y (b) V_erosion "
+            f"= {normal.V_erosion:.3f} m/s, la del tirante normal resuelto "
+            f"con n MINIMO (y_n = {normal.geometria_erosion.y:.3f} m, bajo el "
+            f"critico y_c = {critico.y_c:.3f} m: con n minimo el flujo seria "
+            "supercritico). El control se decidio con las cargas de n "
+            "maximo; con n minimo la velocidad a la salida seria la del "
+            "tirante normal (HDS-5 num. 3.3.2, pag. impresa 3.24), y un d50 "
+            "que crece con V^2 se dimensiona con la estimacion alta",
+            cifras=CIFRAS_MAGNITUD),
+        y_salida, borde, False)
+
+
+def _citas_del_borde(borde: Optional[TiranteDeBorde]) -> Tuple[str, ...]:
+    """Las citas de HEC-14 que el paso 4.3b suma cuando se busco el borde."""
+    if borde is None:
+        return ()
+    figura = () if borde.figura is None else (f"HEC14.F{borde.figura}",)
+    otras = () if borde.y_o is not None else ("HEC14.3.1.3#OTRAS_FORMAS",)
+    return ("HEC14.3.1.3#BORDE", "HEC14.3.1.3#FIGURAS", *figura, *otras)
+
+
+def _magnitudes_del_borde(borde: Optional[TiranteDeBorde],
+                          normal: Union[TiranteNormal, SinTiranteNormal]
+                          ) -> Tuple[Magnitud, ...]:
+    """
+    Lo que el paso 4.3b imprime de la primera viñeta (T8-08, T8-09): el
+    grupo de caudal y el TW/D con que se leyo la figura, el tirante de borde
+    (o por que no lo hubo) y, si el barril tiene tirante normal, V_erosion,
+    que entra en el maximo.
+    """
+    if borde is None:
+        return ()
+    salida: List[Magnitud] = []
+    if borde.figura is not None:
+        grupo = "KuQ/D^2.5" if borde.figura == "3.4" else "KuQ/(B·D^1.5)"
+        salida += [
+            Magnitud(grupo, borde.caudal_adimensional, "",
+                     f"grupo de caudal de la Figura {borde.figura} de HEC-14, "
+                     "con Ku = 1.811 (SI, impreso en la figura) y el caudal "
+                     "de UNA celda", cifras=CIFRAS_MAGNITUD),
+            Magnitud("TW/D", borde.TW_sobre_D, "",
+                     f"abscisa de la Figura {borde.figura}",
+                     cifras=CIFRAS_MAGNITUD)]
+    salida.append(
+        Magnitud("y_o", borde.y_o, "m",
+                 "tirante de BORDE leido de la figura (por imagen, "
+                 "interpolado entre curvas y entre lineas de la reticula)",
+                 cifras=CIFRAS_MAGNITUD)
+        if borde.y_o is not None else
+        Magnitud("y_o", "sin lectura", "", borde.motivo, cifras=None))
+    if not isinstance(normal, SinTiranteNormal):
+        salida.append(Magnitud(
+            "V_erosion", normal.V_erosion, "m/s",
+            "velocidad del tirante normal resuelto con n_min (paso 4.1): "
+            "entra en el maximo de la primera vineta si con n_min el "
+            "tirante normal es supercritico (regla del maximo, T8-09)",
+            cifras=CIFRAS_MAGNITUD))
+    return tuple(salida)
 
 
 def _regimen_y_salida(*, Q_celda: float, seccion: Seccion, TW: float,
@@ -1641,12 +1953,14 @@ def _regimen_y_salida(*, Q_celda: float, seccion: Seccion, TW: float,
                       normal: Union[TiranteNormal, SinTiranteNormal],
                       control: ControlGobernante) -> _RegimenYSalida:
     """La pieza 5 entera, resuelta UNA vez: el resultado y el paso la comparten."""
-    V_salida, y_salida = velocidad_de_salida(
+    salida = velocidad_de_salida(
         Q_celda=Q_celda, seccion=seccion, TW=TW, critico=critico,
         normal=normal, control=control)
     return _RegimenYSalida(regimen=regimen_del_barril(TW, seccion),
                            V_llena=Q_celda / seccion.area_llena,
-                           y_salida=y_salida, V_salida=V_salida)
+                           y_salida=salida.y_salida, V_salida=salida.V_salida,
+                           borde=salida.borde,
+                           cota_inferior=salida.cota_inferior)
 
 
 # ---------------------------------------------------------------------------
@@ -2767,14 +3081,19 @@ def _pasos_hidraulicos(*, seccion, Q, S, L, TW, material, normal, critico, entra
         que="Regimen del barril y velocidad a la salida (HDS-5 3.1.6)",
         formula="regimen = LLENO si TW >= D, PARCIALMENTE LLENO si no; "
                 "V_salida = Q_celda / A(y_salida), con y_salida = "
-                "min(D, max(TW, y_c)) bajo control de salida; bajo control "
+                "min(D, max(TW, y_c)) bajo control de salida, salvo con "
+                "TW < y_c, donde V_salida = max(Q_celda / A(y_o), V_erosion) "
+                "con y_o el tirante de borde de HEC-14 (Figuras 3.3 y 3.4; "
+                "y_c donde la figura no da lectura) y V_erosion solo si con "
+                "n_min el tirante normal es supercritico; bajo control "
                 "de entrada V_salida = Q_celda / A(y_n_min), la velocidad del "
                 "tirante normal resuelto con n_min, y y_salida = y_n, el "
                 "tirante normal de registro (n_max)",
         formula_cita_id="HDS5_3ED.3.1.6#V_SALIDA",
         citas_textuales=("HDS5_3ED.3.1.6#V_SALIDA", "HDS5_3ED.3.1.6#V_SALIDA_TW",
                          "HDS5_3ED.3.3.2#V_SALIDA_ENTRADA",
-                         "HDS5_3ED.3.1.3#SUMERGENCIA"),
+                         "HDS5_3ED.3.1.3#SUMERGENCIA",
+                         *_citas_del_borde(regimen.borde)),
         sustitucion=(
             Magnitud("TW", TW, "m",
                      "tirante en el receptor sobre el fondo de la SALIDA, el "
@@ -2824,10 +3143,13 @@ def _pasos_hidraulicos(*, seccion, Q, S, L, TW, material, normal, critico, entra
                      cifras=CIFRAS_MAGNITUD),
             Magnitud("y_salida", regimen.y_salida, "m",
                      "tirante a la salida: min(D, max(TW, y_c)) bajo control "
-                     "de salida, el mismo con que se mide la velocidad; bajo "
+                     "de salida, el mismo con que se mide la velocidad salvo "
+                     "con TW < y_c, donde la velocidad se mide en el BORDE "
+                     "(y_o) y este es el tirante de registro del barril; bajo "
                      "control de entrada y_n, el tirante normal de registro "
                      "(n_max), y la velocidad se mide con y_n_min",
                      cifras=CIFRAS_MAGNITUD),
+            *_magnitudes_del_borde(regimen.borde, normal),
             Magnitud("control", control.value, "",
                      "el control que gobierna, del paso 4.4", cifras=None)),
         resultado=regimen.V_salida,
@@ -3481,6 +3803,10 @@ def resolver_control(seccion: Seccion, Q: float, S: float, L: float, TW: float,
         V_llena_m_s=regimen.V_llena,
         V_salida=regimen.V_salida,
         y_salida_m=regimen.y_salida,
+        # --- T8-08 / T8-09 --- la lectura del borde y si la velocidad quedo
+        # en la critica (cota inferior): los lee la Fase 6.
+        borde=regimen.borde,
+        V_salida_cota_inferior=regimen.cota_inferior,
         h_o_m=salida.h_o,
         TW_m=salida.TW,
         ahogado_por_TW=salida.ahogado_por_TW,

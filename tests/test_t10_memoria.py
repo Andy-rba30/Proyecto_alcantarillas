@@ -434,11 +434,15 @@ def test_cada_alcance_declarado_nombra_una_ficha_que_existe():
     # la ficha, pero su TEXTO ya no dice «no se itera» (se itera desde
     # VE-3.5): dice lo que sigue fuera -- la zapata no corrida -- y su
     # simbolo es ahora `dimensionar_zapata_por_estabilidad`.
+    # CIERRE DE T8-08 Y T8-09 (trabajo posterior a la cadena, 2026-11-18):
+    # 'velocidad_salida_banda_de_regimen' SALE --M4 aplica la regla del
+    # maximo-- y 'tirante_de_borde_hec14' conserva la clave y la ficha, con
+    # el TEXTO de lo que las Figuras 3.3 y 3.4 no cubren y el simbolo
+    # `M4_control.tirante_de_borde`.
     assert {a.clave for a in ALCANCE_DECLARADO} == {
         "armado_seccion_marco", "cabezal_paralelo_a_la_via",
         "iteracion_ancho_zapata_cabezal", "flotacion_marco_sin_peso_propio",
-        "tirante_de_borde_hec14", "velocidad_salida_banda_de_regimen",
-        "escalon_regla_salida_hw_1_2_d"}
+        "tirante_de_borde_hec14", "escalon_regla_salida_hw_1_2_d"}
     for a in ALCANCE_DECLARADO:
         assert f"## {a.ficha} · " in texto, a.ficha
         modulo, simbolo = a.simbolo.split(".")

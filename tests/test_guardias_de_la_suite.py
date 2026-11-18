@@ -1221,7 +1221,6 @@ PUBLICAS_SIN_REFERENCIA_EN_TESTS = {
     "M3_hidraulica.area_trapecial": "la llama `caudal_manning_trapecial` (Sec. 1.3); la ejercita test_ext1 por el TW",
     "M3_hidraulica.perimetro_trapecial": "la llama `caudal_manning_trapecial` (Sec. 1.3); la ejercita test_ext1 por el TW",
     "M4_control.regimen_del_barril": "la llama `_regimen_y_salida` (EXT-3); la ejercita test_ext3 por resolver_control",
-    "M4_control.velocidad_de_salida": "la llama `_regimen_y_salida` (EXT-3); la ejercita test_ext3 por resolver_control",
     "M5_verificaciones.pieza_del_hueco_de_V5": "la llama `_verificador_perfil` (servicio) y `verificar` (M5); la ejercita test_cierre_perfil",
     "M8_estructural.filas_ev_de_la_tabla": "la llama `v7_flotacion` (M5); la ejercita test_M5 por V7",
     "M9_cabezal.peso_suelo_sobre_talon": "SIN consumidor de produccion; censada con su razon en M9_cabezal.FUNCIONES_SIN_CONSUMIDOR",
