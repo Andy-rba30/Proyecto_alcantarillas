@@ -6,6 +6,5 @@
   "c_phi_fundacion": {"cohesivo": false, "c_kpa": 0.0, "phi_grados": 32.0,
                       "gamma_kn_m3": 18.0},
   "drenaje_trasdos": "drenado",
-  "factor_muro_eleccion": "reduccion_por_desplazamiento",
-  "regimen_resistencia_elementos_cabezal": "cedente"
+  "factor_muro_eleccion": "sin_reduccion"
 }

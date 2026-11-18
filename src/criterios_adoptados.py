@@ -10872,7 +10872,13 @@ CRITERIOS: Dict[str, Criterio] = {
         fuente="AASHTO LRFD 9a ed., Tabla 10.5.5.2.2-1, pag. impresa 10-42 "
                "(PDF 1331; cita AASHTO_LRFD_9.10.5.5.2.2#T1) y 11.5.7 con su "
                "Tabla 11.5.7-1, pags. impresas 11-15 y 11-17 (PDF 1484 y "
-               "1486; cita AASHTO_LRFD_9.11.5.7#MUROS). Los numeros, en "
+               "1486; cita AASHTO_LRFD_9.11.5.7#MUROS) y su comentario "
+               "C11.5.7, pag. impresa 11-16 (factores menores si la "
+               "variabilidad es inusualmente alta). Contraste: Manual de "
+               "Puentes 2.8.1.1.12.6, pags. impresas 250-251 (deslizamiento "
+               "con la tabla de zapatas); Caltrans Bridge Design Practice "
+               "11.2, pags. 11.2-24 y 11.2-26 (fuente sin registrar, en "
+               "ejemplos_resueltos/cabezal_muros). Los numeros, en "
                "constantes_normativas.PHI_ZAPATAS_T10_5_5_2_2_1 y "
                "PHI_MUROS_T11_5_7_1",
         resolucion=Libre(
@@ -12304,46 +12310,50 @@ CRITERIOS: Dict[str, Criterio] = {
     ),
 
     "distribucion_incremento_sismico": Criterio(
-        valor="fraccion_de_h",
+        valor="segun_regimen",      # decision 13 del dueño (VE-3.15)
         nivel=NIVEL_EXPEDIENTE,
         etiqueta="A",
         forma=FORMA_CATEGORIA,
-        #   fraccion_de_h          el incremento a la fraccion de h de
-        #       'punto_aplicacion_incremento_sismico' (0.6 de archivo).
-        #   distribucion_estatica  AASHTO 11.6.5.3: el empuje total con la
-        #       distribucion del estatico, «but no less than H/3»: el
-        #       incremento en el mayor del centroide estatico y h/3. SOLO
-        #       con el muro que cede ('factor_muro_eleccion' con la
-        #       reduccion): con el que no cede C11.6.5.4 pide h/2.
-        sensibilidad=("fraccion_de_h", "distribucion_estatica"),
-        concepto="Donde se aplica el incremento sismico del empuje: a una "
-                 "fraccion fija de h o con la distribucion del empuje "
-                 "estatico, no por debajo de h/3",
+        #   segun_regimen          el del regimen: con el muro que cede
+        #       ('factor_muro_eleccion' con la reduccion), el mayor del
+        #       centroide estatico y h/3 (11.6.5.3); con el que no cede, el
+        #       incremento sube lo necesario para que la resultante del
+        #       estatico mas el sismico no quede bajo h/2 (C11.6.5.4), y si
+        #       la fraccion de 'punto_aplicacion_incremento_sismico' ya la
+        #       deja mas alta, se conserva.
+        #   fraccion_de_h          el incremento a esa fraccion fija de h
+        #       (0.6 de archivo), en los dos regimenes.
+        #   distribucion_estatica  la regla del muro que cede, solo con el;
+        #       con el que no cede se rechaza.
+        sensibilidad=("segun_regimen", "fraccion_de_h",
+                      "distribucion_estatica"),
+        concepto="Donde se aplica el incremento sismico del empuje: segun "
+                 "el regimen del muro, a una fraccion fija de h o con la "
+                 "distribucion del empuje estatico",
         justificacion="Decide el brazo del incremento sismico y con el la "
                       "excentricidad, el volteo y la portante sismicos. "
                       "AASHTO 11.6.5.3 (cita "
                       "AASHTO_LRFD_9.11.6.5.3#DISTRIBUCION) distribuye el "
-                      "empuje total como el estatico, no por debajo de H/3 "
-                      "(«should»: un piso recomendado); el Manual de Puentes "
-                      "2.8.1.1.14.3 lo traduce y su Apendice A.11.3.1 lo "
-                      "da por suficiente para muros de rutina. El valor de "
-                      "archivo es el de hoy (la fraccion fija, 0.6 sobre el "
-                      "incremento); la alternativa toma el mayor del "
-                      "centroide estatico y h/3, y solo con el muro que cede: "
-                      "para el que no cede C11.6.5.4 pide la resultante a "
-                      "h/2, y la eleccion se rechaza. Es la decision 13 del "
-                      "dueño: la distribucion estatica es la del muro que "
-                      "cede y se declara junto con la reduccion de k_h "
-                      "('factor_muro_eleccion') y el armado que cede; el "
-                      "archivo, con el muro que no cede, conserva la "
-                      "fraccion fija",
+                      "empuje total del muro que cede como el estatico, no "
+                      "por debajo de H/3 («should»: un piso recomendado); el "
+                      "Manual de Puentes 2.8.1.1.14.3 lo traduce y su "
+                      "Apendice A.11.3.1 lo da por suficiente para muros de "
+                      "rutina. Para el muro que no cede, C11.6.5.4 (cita "
+                      "AASHTO_LRFD_9.C11.6.5.4#H_MEDIOS) pide considerar la "
+                      "resultante del estatico mas el sismico en h/2, y el "
+                      "proyecto lo lee como piso. El valor de archivo deriva "
+                      "el brazo del regimen, decision 13 del dueño con la "
+                      "verificacion independiente de VE-3; la fraccion fija "
+                      "de antes (0.6 sobre el incremento) queda en la "
+                      "ventana, y con ella la resultante del muro que no "
+                      "cede quedaba entre 0.41·h y 0.52·h segun k_h",
         fuente="AASHTO LRFD 9a ed., 11.6.5.3 y C11.6.5.3, pag. impresa "
                "11-30 (PDF 1499); C11.6.5.4, pag. impresa 11-32 (PDF 1501); "
                "Manual de Puentes 2.8.1.1.14.3 y A.11.3.1",
         reemplazado_por="Decision del proyectista",
         resolucion=Libre(
             que_lo_fija="el proyectista",
-            dominio="una de las dos opciones de la ventana",
+            dominio="una de las tres opciones de la ventana",
         ),
     ),
 

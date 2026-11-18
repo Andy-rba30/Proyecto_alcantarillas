@@ -274,6 +274,10 @@ def test_los_factores_de_resistencia_salen_de_la_fila_declarada():
     11.5.8, 0.8 en el portante -- NO «phi = 1.0» a secas -- y 1.0 en el
     deslizamiento, sin eleccion.
     """
+    # Declarada, para no depender del valor de archivo (que desde VE-3.15 es
+    # la fila de muros y fija tests/test_ve3_15_decisiones_cabezal.py).
+    ca.establecer_valor_dinamico("fila_phi_estabilidad_cabezal",
+                                 "zapatas_seccion_10")
     f = M9.factores_de_resistencia(EST, cohesivo=False)
     assert (f["portante"], f["deslizamiento"]) == (0.45, 0.80)  # float-exacto: transcrito o declarado, no calculado
     f = M9.factores_de_resistencia(EST, cohesivo=True)
@@ -331,6 +335,9 @@ def test_lo_que_el_programa_no_puede_elegir_sigue_sin_valor_de_archivo(clave):
 @pytest.mark.parametrize("clave, valor, ventana", [
     ("marco_estabilidad_cabezal", MARCO_RIGE_LRFD,
      (MARCO_RIGE_LRFD, MARCO_RIGE_ASD, MARCO_ENVOLVENTE)),
+    # El valor es el que el fixture `_valores_previos_ve3_15` de este archivo
+    # pone; el de archivo (desde VE-3.15, la fila de muros) lo fija
+    # tests/test_ve3_15_decisiones_cabezal.py.
     ("fila_phi_estabilidad_cabezal", "zapatas_seccion_10",
      ("zapatas_seccion_10", "muros_tabla_11_5_7")),
     ("drenaje_trasdos", "sin_drenaje", ("sin_drenaje", "drenado")),
@@ -2286,6 +2293,30 @@ def test_los_valores_de_frontera_del_ensamble_si_entran(tanteo, monkeypatch):
     with con_valor("regla_pendiente_relleno_trasdos", "talud_quebrado_2h",
                    motivo="la formula cerrada en su limite"):
         assert M9.ensamble_estabilidad(tanteo, SIS).K_AE > 0.9
+
+
+def test_ve3_15_h5_la_cuna_de_la_pantalla_sin_maximo_no_detiene_la_estabilidad(
+        tanteo, monkeypatch):
+    """
+    Correcciones de la revision de VE-3.15 (H5): con la cuña sobre la
+    pantalla (opcion 10, valor de archivo desde VE-3.15) y el limite de
+    Mononobe-Okabe, la cuña de la PANTALLA no tiene maximo interior; la
+    estabilidad externa se evalua igual (sus filas no dependen de ella) y
+    solo faltan las solicitaciones informativas de la pantalla y el alero,
+    que el armado levanta como el bloqueo de ese elemento.
+    """
+    monkeypatch.setattr(M9, "cadena_sismica", lambda: SimpleNamespace(
+        k_h=math.tan(math.radians(30.0)), k_v=0.0))
+    ca.establecer_valor_dinamico("carga_pantalla_cabezal",
+                                 "cuna_sobre_la_pantalla")
+    with con_valor("regla_pendiente_relleno_trasdos", "talud_quebrado_2h",
+                   motivo="la formula cerrada en su limite"):
+        e = M9.ensamble_estabilidad(tanteo, SIS)
+    assert e.K_AE > 0.9
+    assert len(e.verificaciones) == 6
+    elementos = {s.elemento for s in e.solicitaciones}
+    assert ELEMENTO_ZAPATA in elementos
+    assert not elementos & {ELEMENTO_PANTALLA, ELEMENTO_ALEROS}
 
 
 def test_bajo_sismo_cada_fila_imprime_su_peor_combinacion(tanteo):

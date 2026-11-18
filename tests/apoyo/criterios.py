@@ -146,6 +146,7 @@ VALORES_PREVIOS_VE3_15 = {
     "carga_pantalla_cabezal": "plano_virtual_del_talon",
     "fila_phi_estabilidad_cabezal": "zapatas_seccion_10",
     "margen_zapata_bajo_socavacion_m": 0.6096,
+    "distribucion_incremento_sismico": "fraccion_de_h",
 }
 
 

@@ -3321,16 +3321,19 @@ DESPLANTE_CABEZAL = _fundamento(
         "socava. E.050 fija, para las cimentaciones de las edificaciones, una "
         "profundidad minima medida desde la superficie del terreno, y el "
         "proyecto la aplica al cabezal por analogia con el muro de "
-        "contencion que esa norma remite a su Capitulo IV; AASHTO exige, "
-        "para las estructuras enterradas, que sus zapatas queden bajo la "
-        "socavacion maxima prevista con un margen, y el proyecto lee que la "
-        "del cabezal es una de ellas; HEC-14 recomienda que el cabezal baje "
-        "hasta esa profundidad. El desplante es el mas profundo de los dos "
+        "contencion que esa norma remite a su Capitulo IV; AASHTO exige que "
+        "las zapatas superficiales se apoyen bajo la socavacion maxima "
+        "prevista, y HEC-14 recomienda que el cabezal baje hasta esa "
+        "profundidad: el proyecto lo aplica al cabezal de salida sin margen "
+        "adicional, porque la hoya es la de la salida sin proteger y el "
+        "delantal de enrocado se diseña aparte; el margen que AASHTO da a las "
+        "zapatas de las estructuras enterradas queda como el extremo alto de "
+        "la ventana del criterio. El desplante es el mas profundo de los dos "
         "limites, y el de la socavacion solo existe donde la Fase 6 entrega "
         "una profundidad."),
     verbo=Verbo.OBLIGA,
-    citas=("E050.26.2#PROFUNDIDAD", "AASHTO_LRFD_9.12.6.5#ZAPATAS",
-           "AASHTO_LRFD_9.10.6.1.2#DESPLANTE", "HEC14.5.1.3#CABEZAL"),
+    citas=("E050.26.2#PROFUNDIDAD", "AASHTO_LRFD_9.10.6.1.2#DESPLANTE",
+           "HEC14.5.1.3#CABEZAL", "AASHTO_LRFD_9.12.6.5#ZAPATAS"),
     que_pasa_si_no_se_hace=(
         "La socavacion a la salida descalzaria el cabezal, y con el el "
         "extremo del conducto, en la primera avenida de diseño."),

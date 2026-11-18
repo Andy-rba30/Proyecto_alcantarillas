@@ -8237,38 +8237,22 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   y sobre 14.
 - **Dónde vive:** `src/modulos/M9_cabezal.py::CRITERIO_MOMENTO_TALON` (con sus hermanas `CRITERIO_CARGA_PANTALLA` y `CRITERIO_DISTRIBUCION_INCREMENTO`)
 
-## VE3-18 · Decisiones 9 a 14 del dueño sobre el cabezal: valores de archivo y un solo régimen (VE-3.15)
+## VE3-18 · Decisiones 9 a 14 del dueño sobre el cabezal: valores de archivo y un solo régimen de k_h (VE-3.15)
 
-- **Qué se decidió:** el dueño aceptó los dictámenes de la verificación independiente
-  (`proceso/planes_mejora/ve3_estado/verificaciones_del_dueno/cabezal_decisiones_9_14.md`):
-  - **9 · `momento_talon_cabezal` = `exacto`:** el talón descuenta la reacción lineal de 10.6.5
-    combinación por combinación (Resistencia I con γ máximos y mínimos, los dos casos del Evento
-    Extremo I), sin tracción; el peso entero queda impreso como contraste.
-  - **10 · `carga_pantalla_cabezal` = `cuna_sobre_la_pantalla`:** la cuña llega a la superficie
-    real (talud sobre la corona y sobrecarga) y bajo sismo suma la inercia de la pantalla.
-  - **11 · `fila_phi_estabilidad_cabezal` = `muros_tabla_11_5_7`** (0.55 / 1.0), por la letra de
-    AASHTO 11.5.7. Se declara la tensión con el Manual de Puentes 2.8.1.1.12.6 (deslizamiento con
-    la tabla de zapatas) y la salvedad de C11.5.7 para el EMS real.
-  - **12 · un solo régimen:** `regimen_resistencia_elementos_cabezal` sigue en `no_cedente_k0` y
-    `factor_muro_eleccion` en `sin_reduccion`; la reducción de k_h sólo se acepta declarada con el
-    armado «cedente» (`M9.factor_muro` la rechaza con `DatoInvalidoError` en otro caso). Los juegos
-    de prueba que ejercitan la rama reducida declaran ahora también el armado «cedente».
-  - **13 · `distribucion_incremento_sismico`** sigue en `fraccion_de_h` en el archivo (muro que no
-    cede); la distribución estática es la del muro que cede y se declara junto con la reducción.
-  - **14 · `margen_zapata_bajo_socavacion_m` = 0.0:** desplante a la profundidad de la hoya de la
-    salida SIN proteger (HEC-14 5.1.3, AASHTO 10.6.1.2), con el delantal de enrocado diseñado
-    aparte. No se implementa una «hoya protegida»: ninguna fuente da su profundidad. AASHTO
-    12.6.5 (2.0 ft) queda como el extremo alto de la ventana.
-- **Lo que sigue mal en la hoja de ruta (no se edita; regla de la fuente primaria de
-  `CLAUDE.md`):** la §9.4, en su bloque «Corregido» de T-7c, punto (5), dice que el talón se arma
-  «con el peso entero» (11.6.1.2), y el punto (9) que el armado va con k_h = 1.0·k_h0 «aunque la
-  estabilidad lo reduzca». Desde VE-3.15 el talón va por el método exacto y la reducción de la
-  estabilidad sólo existe con el armado que cede. Quien diseñe leyendo sólo la hoja de ruta
-  armará el talón con más momento del que el programa usa. Hasta que se corrija, rige el código
-  y esta ficha.
-- **Por qué:** son elecciones [A] y [C] dentro de sus ventanas; las fijó el dueño con la
-  verificación de cada cita contra el PDF.
-- **Qué haría falta:** corregir la §9.4 de la hoja de ruta; con el EMS real, revisar el φ de la
-  decisión 11 (C11.5.7) y la profundidad de socavación de la Fase 6.
-- **Dónde vive:** `src/modulos/M9_cabezal.py::factor_muro` (la guardia de la decisión 12) y los
-  cinco criterios en `src/criterios_adoptados.py`
+- **Cerrado (VE-3.15, con las correcciones de su revisión):** talón por el método exacto (9),
+  cuña sobre la pantalla (10; una cuña sin máximo ya no detiene la estabilidad externa, sólo
+  el armado de la pantalla), fila de muros de 11.5.7 (11), un solo régimen de k_h con la
+  guardia de `M9.factor_muro` (12; la estabilidad externa sigue con el activo), el brazo del
+  incremento derivado del régimen (13: resultante no bajo h/2 con el muro que no cede, el
+  mayor del centroide estático y H/3 con el que cede) y margen cero bajo la hoya sin proteger
+  (14; el desplante cita AASHTO 10.6.1.2 y HEC-14 5.1.3, y 12.6.5 es el techo de la ventana).
+- **Abierto:** (1) la §9.4 de la hoja de ruta, puntos (5) y (9), describe el peso entero y la
+  reducción de k_h sólo en la estabilidad (la corrige el dueño); (2) con el PGA del sitio
+  (0.50 g) y los valores de archivo ningún cabezal del juego cierra el sismo: el dentellón de
+  corte lo trata VE-3.16; (3) el ancho final puede superar el tope cuando la pantalla crece
+  después (A-01 salida, 4.852 frente a 4.825 m); (4) el φ de la decisión 11 se revisa con el
+  EMS real (C11.5.7).
+- **Por qué:** son elecciones [A] y [C] dentro de sus ventanas, verificadas cita por cita
+  (`proceso/planes_mejora/ve3_estado/verificaciones_del_dueno/`).
+- **Qué haría falta:** corregir la §9.4; VE-3.16; acotar el ancho final al tope; el EMS.
+- **Dónde vive:** `src/modulos/M9_cabezal.py::factor_muro`

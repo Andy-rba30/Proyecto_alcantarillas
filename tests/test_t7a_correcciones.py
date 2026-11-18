@@ -679,7 +679,10 @@ def test_h5_la_regla_del_desplante_dice_de_donde_salio():
                    cota_fondo_hoya=98.20, origen_socavacion="declarada")
     g = M9.predimensionar_cabezal(extremo=ext, embocadura=_embocadura(),
                                   talud=2.0)
-    assert "AASHTO 12.6.5" in _dim(g, "profundidad de desplante (D_f)").regla
+    # Desde VE-3.15 (decision 14) la regla nombra el criterio del margen,
+    # que ya no es el de AASHTO 12.6.5 de archivo.
+    assert "margen_zapata_bajo_socavacion_m" in _dim(
+        g, "profundidad de desplante (D_f)").regla
     g0 = M9.predimensionar_cabezal(extremo=_extremo(),
                                    embocadura=_embocadura(), talud=2.0)
     assert "sin socavacion" in _dim(g0, "profundidad de desplante (D_f)").regla

@@ -489,7 +489,10 @@ def test_con_la_zapata_de_3m_el_cabezal_de_entrada_de_A01_pasa_entero(variantes)
     # 0.504 m; con el ANCHO DECLARADO (3.0 m, que no se itera) la zapata mas
     # liviana ya no pasa E1-LRFD sismica, y la app lo dice en vez de
     # cubrirlo con un peralte inflado. La entrada sigue pasando entera.
-    assert v["E1-LRFD.sis.s"] == "no cumple"
+    # CAMBIADO DECLARANDOLO (VE-3.15, decisiones 11 y 14): con los factores
+    # de la tabla de muros y el desplante sin margen bajo la hoya, la salida
+    # con el ancho declarado vuelve a pasar E1-LRFD sismica.
+    assert v["E1-LRFD.sis.s"] == "cumple"
     assert v["E3-LRFD.est.s"] == "cumple"
     salida = _punto(informe, "A-01").cabezal.salida
     assert salida.B == pytest.approx(3.0, abs=ABS_CERO)
@@ -525,13 +528,17 @@ def test_la_corrida_titular_es_la_de_las_decisiones_de_archivo(titular):
     sismica es «metodo no evaluable» (T7B-05) en los ocho.
     """
     pisadas = {k for k in J.DECLARACIONES if ca.CRITERIOS[k].valor is not None}
+    # VE-3.15 (decision 12): el muro que cede del juego es UNA decision de
+    # dos criterios (la reduccion de k_h y el armado «cedente»).
     assert pisadas == set(J.PISA_EL_ARCHIVO_PORQUE) == {
-        "drenaje_trasdos", "factor_muro_eleccion"}
+        "drenaje_trasdos", "factor_muro_eleccion",
+        "regimen_resistencia_elementos_cabezal"}
     assert [c for c, *_ in V.pisa_el_archivo()] == sorted(
         pisadas, key=list(J.DECLARACIONES).index)
     cambios = dict(((c[1], c[2]) for c in J.VARIANTES[V.VARIANTE_TITULAR][1]))
     assert cambios["drenaje_trasdos"] is None
     assert cambios["factor_muro_eleccion"] is None
+    assert cambios["regimen_resistencia_elementos_cabezal"] is None
     # El γ saturado de prueba, declarado por la puerta de los ensayos.
     assert cambios["peso_especifico_saturado_relleno_kn_m3"] == \
         pytest.approx(20.0, rel=REL_TRANSPORTE)

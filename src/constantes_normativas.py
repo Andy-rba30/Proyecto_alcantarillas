@@ -5628,3 +5628,12 @@ EC_COEFICIENTE_AASHTO_SI = 2500.0 * KSI_EN_MPA ** (1 - EC_EXPONENTE_AASHTO)   # 
 # fila C6 del cabezal ciclopeo.
 EXCENTRICIDAD_MIN_MURO_CONCRETO_SIMPLE_E060 = 0.10
 
+
+# ---- [C] Altura con la que el muro en voladizo moviliza el activo -----------
+# AASHTO LRFD 9a ed., C3.11.5.2, pag. impresa 3-120 (PDF 174; cita
+# AASHTO_LRFD_9.C3.11.5.2#ACTIVO): en los muros en voladizo tipicos de mas de
+# 5.0 ft el movimiento de la corona basta para desarrollar el empuje activo.
+# Lo usa el aviso de VE-3.15 (decision 12) cuando el armado se declara del muro
+# que CEDE con una pantalla mas baja. Se convierte con el factor exacto.
+ALTURA_VOLADIZO_ACTIVO_PIE = 5.0
+ALTURA_VOLADIZO_ACTIVO_M = ALTURA_VOLADIZO_ACTIVO_PIE * PIE_EN_METROS

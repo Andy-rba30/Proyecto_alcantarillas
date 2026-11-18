@@ -257,10 +257,15 @@ el 0.5 es [N] y cuál de las dos declaraciones aplica a esta obra es [A].
   el más exigente de los dos. Con el muro que no cede
   (`regimen_resistencia_elementos_cabezal` = `no_cedente_k0`) los elementos
   se arman con el empuje en reposo y el Evento Extremo I con k_h = 1.0·k_h0;
-  y desde VE-3.15 hay **un solo régimen**: la reducción de k_h de
-  `factor_muro_eleccion` (muro que cede) sólo se acepta con el armado
-  «cedente», y `M9.factor_muro` la rechaza con `DatoInvalidoError` en otro
-  caso (decisión 12 del dueño, ficha VE3-18);
+  la estabilidad externa sigue con el empuje ACTIVO del muro que cede
+  (`regimen_cabezal` = `cedente`: el vuelco y el deslizamiento del conjunto
+  lo movilizan por el mecanismo), y desde VE-3.15 hay **un solo régimen de
+  k_h**: la reducción de `factor_muro_eleccion` (muro que cede) sólo se
+  acepta con el armado «cedente», y `M9.factor_muro` la rechaza con
+  `DatoInvalidoError` en otro caso (decisión 12 del dueño, ficha VE3-18); el
+  brazo del incremento sísmico se deriva del régimen (decisión 13:
+  resultante no bajo h/2 con el muro que no cede, el mayor del centroide
+  estático y H/3 con el que cede);
   la pantalla y el alero integran cada diagrama de empuje por encima del
   arranque (`M9.empujes_sobre_el_arranque`). El cabezal de gravedad no se
   arma: se verifica como concreto ciclópeo (C1 a C6). Fichas T7C-01 a

@@ -220,10 +220,15 @@ def test_predimensionamiento_cabezal_deja_de_ser_un_vacio():
     assert "angulo_aletas" not in ca.criterios_sin_valor()
 
 
-def test_el_margen_bajo_la_socavacion_son_dos_pies_exactos():
+def test_el_margen_de_aashto_12_6_5_son_dos_pies_exactos():
+    """
+    Los 2.0 ft de AASHTO 12.6.5 son el extremo ALTO de la ventana; el valor
+    de archivo es cero desde VE-3.15 (decision 14 del dueño) y lo fija
+    tests/test_ve3_15_decisiones_cabezal.py, no este archivo.
+    """
     c = ca.CRITERIOS["margen_zapata_bajo_socavacion_m"]
     assert c.etiqueta == "C" and c.nivel == ca.NIVEL_EXPEDIENTE
-    assert c.valor == pytest.approx(2.0 * PIE_EN_METROS, rel=REL)
+    assert max(c.sensibilidad) == pytest.approx(2.0 * PIE_EN_METROS, rel=REL)
     assert "12.6.5" in c.fuente
 
 

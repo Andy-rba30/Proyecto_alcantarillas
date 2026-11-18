@@ -4270,6 +4270,33 @@ def _margen_socavacion() -> float:
     return float(margen)
 
 
+def _lectura_del_margen(margen: float) -> Tuple[str, str, str, Tuple[str, ...]]:
+    """
+    --- VE-3.15, decision 14 --- La cita, el texto y la aplicacion del umbral
+    del desplante bajo la hoya segun el margen DECLARADO: sin margen (el de
+    archivo) rige la regla general de las zapatas (AASHTO 10.6.1.2) con la
+    recomendacion de HEC-14 5.1.3, y AASHTO 12.6.5 queda de contraste; con un
+    margen, la lectura de 12.6.5 que lo da como extremo alto de la ventana.
+    """
+    if margen > TOL_UMBRAL_NORMATIVO:
+        return ("AASHTO_LRFD_9.12.6.5#ZAPATAS",
+                "fondo de la hoya menos el margen declarado",
+                "EXIGENCIA de AASHTO para las zapatas de las estructuras "
+                "enterradas (2.0 ft), con el margen que el proyecto declara "
+                "dentro de esa ventana, leida como aplicable a la del cabezal "
+                "de salida ([C]; la lectura y lo que juega en contra, en la "
+                "`Interpretacion` de la cita)",
+                ("HEC14.5.1.3#CABEZAL", "AASHTO_LRFD_9.10.6.1.2#DESPLANTE"))
+    return ("AASHTO_LRFD_9.10.6.1.2#DESPLANTE",
+            "fondo de la hoya de la salida sin proteger, sin margen",
+            "EXIGENCIA de AASHTO para las zapatas superficiales y "
+            "RECOMENDACION de HEC-14 para el cabezal, aplicadas al cabezal de "
+            "salida ([C], decision 14 del dueño): bajo la hoya SIN proteger, "
+            "con el delantal de enrocado diseñado aparte. AASHTO 12.6.5 pide "
+            "2.0 ft a las zapatas de las estructuras enterradas: contraste",
+            ("HEC14.5.1.3#CABEZAL", "AASHTO_LRFD_9.12.6.5#ZAPATAS"))
+
+
 def peralte_minimo_zapata(tipo: str) -> Tuple[float, str, str]:
     """
     El espesor MINIMO de la zapata del cabezal segun su tipo, m, con el
@@ -4633,7 +4660,7 @@ def predimensionar_cabezal(*, extremo: ExtremoDelConducto,
     dims.append(_dim(
         "profundidad de desplante (D_f)", D_f,
         (f"max({df_min:.2f} m de E.050 Art. 26.2 por analogia, pie - (fondo "
-         "de la hoya - margen) de AASHTO 12.6.5)"
+         f"de la hoya - margen de '{CRITERIO_MARGEN_SOCAVACION}'))"
          if df_por_socavacion is not None else
          f"{df_min:.2f} m de E.050 Art. 26.2 por analogia (sin socavacion "
          "entregada por la Fase 6)"),
@@ -4886,7 +4913,8 @@ def predimensionar_cabezal(*, extremo: ExtremoDelConducto,
         prof_dent = max(prof_min,
                         terreno - (extremo.cota_fondo_hoya - margen))
         texto_dent = (f"base en min(pie - {prof_min:.2f} m de la Lamina Nº 04 "
-                      "[N→], fondo de la hoya - margen de AASHTO 12.6.5 [C])")
+                      "[N→], fondo de la hoya - margen de "
+                      f"'{CRITERIO_MARGEN_SOCAVACION}' [C])")
     else:
         prof_dent = prof_min
         texto_dent = (f"{prof_min:.2f} m de la Lamina Nº 04 [N→] bajo el "
@@ -5102,6 +5130,7 @@ def verificar_compatibilidad_cabezal(*, geometria: GeometriaCabezal,
     margen = None
     if extremo.cota_fondo_hoya is not None:
         margen = _margen_socavacion()
+        lectura_margen = _lectura_del_margen(margen)
         kp, kv = _verificacion_cb(
             codigo="CB5", extremo=ext,
             que="Desplante frente al fondo de la hoya de socavacion",
@@ -5119,15 +5148,11 @@ def verificar_compatibilidad_cabezal(*, geometria: GeometriaCabezal,
             resultado=Magnitud("cota_desplante", geometria.cota_desplante,
                                "msnm", "base de la zapata del cabezal",
                                cifras=CIFRAS_MAGNITUD),
-            descripcion_umbral="fondo de la hoya menos el margen de AASHTO",
-            cita="AASHTO_LRFD_9.12.6.5#ZAPATAS",
-            aplicacion="EXIGENCIA de AASHTO para las zapatas de las "
-                       "estructuras enterradas, leida por el proyecto como "
-                       "aplicable a la del cabezal de salida ([C]; la "
-                       "lectura y lo que juega en contra, en la "
-                       "`Interpretacion` de la cita)",
+            descripcion_umbral=lectura_margen[1],
+            cita=lectura_margen[0],
+            aplicacion=lectura_margen[2],
             criterio=CRITERIO_MARGEN_SOCAVACION,
-            citas=("HEC14.5.1.3#CABEZAL",))
+            citas=lectura_margen[3])
         v.append(Verificacion(**kv, paso=paso("F9.DESPLANTE", **kp)))
     # CB6: el espesor de la zapata contra el minimo de su tipo
     minimo_ez, texto_minimo, cita_minimo = peralte_minimo_zapata(geometria.tipo)
@@ -5204,9 +5229,11 @@ def verificar_compatibilidad_cabezal(*, geometria: GeometriaCabezal,
                 "ANALOGIA [N→] con la cota «0.80 min.» del dentellon del "
                 "aliviadero de la Lamina Nº 04, medida desde el terreno"
                 if cita_dent == "MC_HHD.LAMINA_04#DENTELLON" else
-                "EXIGENCIA de AASHTO 12.6.5 («extending below the maximum "
-                "anticipated depth of scour») con el margen de 2.0 ft que el "
-                "articulo da a las zapatas: lectura del proyecto, [C]"),
+                "EXIGENCIA de AASHTO 12.6.5 para la pantalla del dentellon "
+                "(que baje bajo la socavacion maxima prevista, sin "
+                "cuantificar cuanto), con el margen de "
+                f"'{CRITERIO_MARGEN_SOCAVACION}' ({margen:.3f} m): lectura "
+                "del proyecto, [C]"),
             criterio=(CRITERIO_DENTELLON
                       if cita_dent == "MC_HHD.LAMINA_04#DENTELLON"
                       else CRITERIO_MARGEN_SOCAVACION),
@@ -5359,7 +5386,7 @@ def _pasos_del_extremo(*, geometria: GeometriaCabezal,
     elif ext == EXTREMO_SALIDA:
         nota_d = ("SIN SOCAVACION ENTREGADA por la Fase 6 (el motivo va en los "
                   "avisos del punto). El desplante de salida queda con el "
-                  "minimo de E.050, que no es el que AASHTO 12.6.5 pide en un "
+                  "minimo de E.050, que no es el que AASHTO 10.6.1.2 pide en un "
                   "cauce que socava.")
     else:
         nota_d = ("En la entrada no se estima socavacion (HEC-14 Cap. 5 es "
@@ -5370,7 +5397,7 @@ def _pasos_del_extremo(*, geometria: GeometriaCabezal,
         formula=(f"D_f = max({df_min:.2f} m, pie - (fondo de la hoya - "
                  "margen));  desplante = pie - D_f"),
         formula_cita_id=CITA_PROFUNDIDAD_CIMENTACION,
-        citas_textuales=("AASHTO_LRFD_9.12.6.5#ZAPATAS",),
+        citas_textuales=(_lectura_del_margen(_margen_socavacion())[0],),
         sustitucion=tuple(sust_d),
         resultado=Magnitud(
             "D_f", geometria.D_f, "m",
@@ -5643,7 +5670,7 @@ def cabezal_del_punto(*, punto, resultado, geometria, embocadura,
             + _motivo_sin_socavacion(socavacion, motivo_sin_socavacion)
             + "); rige solo el minimo de "
             f"{_desplante_minimo():.2f} m de E.050 Art. 26.2 (por "
-            "analogia), no el de AASHTO 12.6.5")
+            "analogia), no el de AASHTO 10.6.1.2 bajo la socavacion")
     theta = embocadura.esviaje_grados
     if theta > TOL_UMBRAL_NORMATIVO:
         seno = math.sin(math.radians(theta))
@@ -5897,6 +5924,7 @@ PANTALLA_CUNA = "cuna_sobre_la_pantalla"
 CRITERIO_DISTRIBUCION_INCREMENTO = "distribucion_incremento_sismico"
 INCREMENTO_FRACCION = "fraccion_de_h"
 INCREMENTO_DISTRIBUCION_ESTATICA = "distribucion_estatica"
+INCREMENTO_SEGUN_REGIMEN = "segun_regimen"
 
 
 def _eleccion(clave: str, opciones: Tuple[str, ...]) -> str:
@@ -6908,8 +6936,11 @@ def cargas_del_cabezal(entorno: EntornoDelCabezal,
                 remedio=("Lo que lo destraba es una decision del Propietario "
                          "-- admitir el desplazamiento del muro, "
                          f"'{CRITERIO_FACTOR_MURO}', que reduce k_h a la "
-                         "mitad (11.6.5.2.2) --, un relleno de mayor "
-                         "friccion o un analisis externo"))
+                         "mitad (11.6.5.2.2) y exige declarar tambien el "
+                         "armado del muro que cede "
+                         f"('{CRITERIO_REGIMEN_RESISTENCIA}' = 'cedente') --, "
+                         "un relleno de mayor friccion o un analisis "
+                         "externo"))
             K_AE = 2 * P_unitario_E / (h ** 2 * (1.0 - k_v))
         elif not dominio_MO:
             raise _no_evaluable(
@@ -6923,7 +6954,8 @@ def cargas_del_cabezal(entorno: EntornoDelCabezal,
                 "pide otro metodo y desaconseja forzar la ecuacion; el "
                 "programa no lo tiene. Lo que lo destraba es una decision "
                 "del Propietario -- admitir el desplazamiento del muro, "
-                "'factor_muro_eleccion', que reduce k_h a la mitad --, un "
+                "'factor_muro_eleccion', que reduce k_h a la mitad y exige "
+                "el armado del muro que cede --, un "
                 "relleno de mayor friccion, la cuña de tanteo ('"
                 f"{CRITERIO_REGLA_PENDIENTE}' = '{REGLA_CUNA_DE_TANTEO}') o "
                 "un analisis externo", idp)
@@ -6947,31 +6979,45 @@ def cargas_del_cabezal(entorno: EntornoDelCabezal,
                                     motivo="fraccion de h entre 0 y 1")
         z_dP = fraccion * h
         distribucion = _eleccion(CRITERIO_DISTRIBUCION_INCREMENTO,
-                                 (INCREMENTO_FRACCION,
+                                 (INCREMENTO_SEGUN_REGIMEN,
+                                  INCREMENTO_FRACCION,
                                   INCREMENTO_DISTRIBUCION_ESTATICA))
-        if distribucion == INCREMENTO_DISTRIBUCION_ESTATICA:
-            # --- VE-3.14, opcion 13 --- AASHTO 11.6.5.3: el empuje total
-            # con la distribucion del estatico, «but no less than H/3»: el
-            # incremento en el mayor del centroide estatico y h/3. Solo con
-            # el muro que cede: para el que no cede C11.6.5.4 pide h/2.
-            if ca.valor(CRITERIO_FACTOR_MURO) != FACTOR_MURO_CON_REDUCCION:
-                raise DatoInvalidoError(
-                    CRITERIO_DISTRIBUCION_INCREMENTO, valor=distribucion,
-                    id_punto=idp,
-                    motivo=("la distribucion estatica del incremento (11.6.5.3) "
-                            "es del muro que CEDE, y "
-                            f"'{CRITERIO_FACTOR_MURO}' no declara la "
-                            "reduccion por desplazamiento: para el muro que "
-                            "no cede C11.6.5.4 pide la resultante a h/2"))
-            # El centroide del diagrama ESTATICO con que se diseña el muro:
-            # el suelo (EH, a z_A) y la sobrecarga (LS, uniforme, a h/2),
-            # en componente horizontal; con la sobrecarga queda sobre h/3.
+        cede = ca.valor(CRITERIO_FACTOR_MURO) == FACTOR_MURO_CON_REDUCCION
+        if distribucion == INCREMENTO_DISTRIBUCION_ESTATICA and not cede:
+            raise DatoInvalidoError(
+                CRITERIO_DISTRIBUCION_INCREMENTO, valor=distribucion,
+                id_punto=idp,
+                motivo=("la distribucion estatica del incremento (11.6.5.3) "
+                        "es del muro que CEDE, y "
+                        f"'{CRITERIO_FACTOR_MURO}' no declara la "
+                        "reduccion por desplazamiento: para el muro que "
+                        "no cede C11.6.5.4 pide la resultante a h/2"))
+        if (distribucion == INCREMENTO_DISTRIBUCION_ESTATICA
+                or (distribucion == INCREMENTO_SEGUN_REGIMEN and cede)):
+            # --- VE-3.14, opcion 13; VE-3.15, derivada del regimen ---
+            # AASHTO 11.6.5.3: el empuje total con la distribucion del
+            # estatico, «but no less than H/3»: el incremento en el mayor
+            # del centroide estatico y h/3 (muro que cede). El centroide del
+            # diagrama ESTATICO con que se diseña el muro: el suelo (EH, a
+            # z_A) y la sobrecarga (LS, uniforme, a h/2), en componente
+            # horizontal; con la sobrecarga queda sobre h/3.
             H_EH = P_A * math.cos(inclinacion)
             H_LS = K_A * gamma * h_eq * h
             z_estatico = ((H_EH * z_A + H_LS * h / 2) / (H_EH + H_LS)
                           if H_EH + H_LS > 0 else z_A)
             z_dP = max(z_estatico, h / LADOS_DEL_TRIANGULO)
             fraccion = z_dP / h
+        elif distribucion == INCREMENTO_SEGUN_REGIMEN and dP > 0:
+            # --- VE-3.15, decision 13 --- Muro que NO cede: C11.6.5.4 pide
+            # considerar la resultante del empuje estatico mas el sismico
+            # en h/2 («a higher resultant location ... of h/2»), y se lee
+            # como piso: el incremento sube lo necesario para que la
+            # resultante no quede bajo h/2, y si la fraccion de archivo ya
+            # la deja mas alta, se conserva.
+            z_h_medios = (P_AE * h / 2 - P_A * z_A) / dP
+            if z_h_medios > z_dP:
+                z_dP = z_h_medios
+                fraccion = z_dP / h
         cargas.append(CargaDeCabezal(
             C_EQ_H, CARGA_EQ, "incremento sismico del empuje, horizontal",
             H=dP * math.cos(inclinacion), z=z_dP, sobre=ELEMENTO_PANTALLA,
@@ -8052,10 +8098,22 @@ def solicitaciones_por_elemento(entorno: EntornoDelCabezal, cargas: tuple,
                  coeficiente_de_empuje="K_AE" if sismica else "K_A",
                  K_empuje=datos["K_AE"] if sismica else datos["K_A"],
                  K0=datos["K0"], K0_sobre_K_A=datos["K0"] / datos["K_A"])
-    arranque = empujes_sobre_el_arranque(cargas, datos, e_z,
-                                         id_punto=entorno.id_punto)
+    try:
+        arranque = empujes_sobre_el_arranque(cargas, datos, e_z,
+                                             id_punto=entorno.id_punto)
+    except MetodoNoEvaluableError:
+        # --- VE-3.15 (H5 de su revision) --- Con la cuña sobre la pantalla
+        # (opcion 10) una cuña sin maximo no detiene la ESTABILIDAD: estas
+        # filas son informativas, y el armado de la pantalla, que las
+        # recalcula, la levanta como el `Bloqueo` de ese elemento.
+        arranque = None
     for combo in (c for c in combos if c.marco == marco):
         f = dict(combo.factores)
+        if arranque is None:
+            salida.extend(_solicitaciones_de_la_zapata(
+                marca, combo, f, datos, por_codigo, e_z, punta, talon,
+                x_trasdos))
+            continue
         V_p = sum(f[k] * H for k, (H, _) in arranque.items())
         M_p = sum(f[k] * M for k, (_, M) in arranque.items())
         salida.append(SolicitacionDeElemento(**marca,
@@ -8069,44 +8127,53 @@ def solicitaciones_por_elemento(entorno: EntornoDelCabezal, cargas: tuple,
             combinacion=combo.nombre, V_u=V_p, M_u=M_p,
             nota="la de la pantalla en su arranque: el alero empieza a la "
                  "altura del cabezal y baja con el talud"))
-        if not combo.N > 0:
-            continue
-        e = abs(combo.excentricidad)
-        B_ef = combo.B - 2 * e
-        if not B_ef > 0:
-            continue
-        sigma = combo.N / B_ef
-        f_dc = f.get(C_DC_ZAPATA, 0.0)
-        w_zap = f_dc * datos["gamma_c"] * e_z
-        a = min(punta, B_ef)
-        salida.append(SolicitacionDeElemento(**marca, 
-            elemento=ELEMENTO_ZAPATA, seccion="punta, cara de la pantalla",
-            combinacion=combo.nombre,
-            V_u=sigma * a - w_zap * punta,
-            M_u=sigma * a * (punta - a / 2) - w_zap * punta ** 2 / 2,
-            nota="presion uniforme sobre B - 2e desde la punta, menos el "
-                 "peso propio; positivo = tracciona la cara inferior"))
-        sobre_talon = max(B_ef - x_trasdos, 0.0)
-        abajo = sum(f.get(k, 0.0) * por_codigo[k].V
-                    for k in (C_EV_TALON, C_LS_V, C_EH_V, C_EQ_V)
-                    if k in por_codigo)
-        m_abajo = sum(f.get(k, 0.0) * por_codigo[k].V
-                      * (por_codigo[k].x - x_trasdos)
-                      for k in (C_EV_TALON, C_LS_V, C_EH_V, C_EQ_V)
-                      if k in por_codigo)
-        u = por_codigo.get(C_WA_U)
-        sub = -f.get(C_WA_U, 0.0) * u.V * talon / combo.B if u else 0.0
-        salida.append(SolicitacionDeElemento(**marca, 
-            elemento=ELEMENTO_ZAPATA, seccion="talon, cara de la pantalla",
-            combinacion=combo.nombre,
-            V_u=abajo + w_zap * talon - sigma * sobre_talon - sub,
-            M_u=(m_abajo + w_zap * talon ** 2 / 2
-                 - sigma * sobre_talon ** 2 / 2 - sub * talon / 2),
-            nota="relleno, sobrecarga, componente vertical del empuje y "
-                 "peso propio, menos la presion de contacto que alcanza al "
-                 "talon y la subpresion (repartida uniforme); positivo = "
-                 "tracciona la cara superior"))
+        salida.extend(_solicitaciones_de_la_zapata(
+            marca, combo, f, datos, por_codigo, e_z, punta, talon, x_trasdos))
     return tuple(salida)
+
+
+def _solicitaciones_de_la_zapata(marca, combo, f, datos, por_codigo, e_z,
+                                 punta, talon, x_trasdos) -> list:
+    """La punta y el talon de la zapata en la cara de la pantalla."""
+    salida = []
+    if not combo.N > 0:
+        return salida
+    e = abs(combo.excentricidad)
+    B_ef = combo.B - 2 * e
+    if not B_ef > 0:
+        return salida
+    sigma = combo.N / B_ef
+    f_dc = f.get(C_DC_ZAPATA, 0.0)
+    w_zap = f_dc * datos["gamma_c"] * e_z
+    a = min(punta, B_ef)
+    salida.append(SolicitacionDeElemento(**marca, 
+        elemento=ELEMENTO_ZAPATA, seccion="punta, cara de la pantalla",
+        combinacion=combo.nombre,
+        V_u=sigma * a - w_zap * punta,
+        M_u=sigma * a * (punta - a / 2) - w_zap * punta ** 2 / 2,
+        nota="presion uniforme sobre B - 2e desde la punta, menos el "
+             "peso propio; positivo = tracciona la cara inferior"))
+    sobre_talon = max(B_ef - x_trasdos, 0.0)
+    abajo = sum(f.get(k, 0.0) * por_codigo[k].V
+                for k in (C_EV_TALON, C_LS_V, C_EH_V, C_EQ_V)
+                if k in por_codigo)
+    m_abajo = sum(f.get(k, 0.0) * por_codigo[k].V
+                  * (por_codigo[k].x - x_trasdos)
+                  for k in (C_EV_TALON, C_LS_V, C_EH_V, C_EQ_V)
+                  if k in por_codigo)
+    u = por_codigo.get(C_WA_U)
+    sub = -f.get(C_WA_U, 0.0) * u.V * talon / combo.B if u else 0.0
+    salida.append(SolicitacionDeElemento(**marca, 
+        elemento=ELEMENTO_ZAPATA, seccion="talon, cara de la pantalla",
+        combinacion=combo.nombre,
+        V_u=abajo + w_zap * talon - sigma * sobre_talon - sub,
+        M_u=(m_abajo + w_zap * talon ** 2 / 2
+             - sigma * sobre_talon ** 2 / 2 - sub * talon / 2),
+        nota="relleno, sobrecarga, componente vertical del empuje y "
+             "peso propio, menos la presion de contacto que alcanza al "
+             "talon y la subpresion (repartida uniforme); positivo = "
+             "tracciona la cara superior"))
+    return salida
 
 
 # ---------------------------------------------------------------------------
@@ -9852,6 +9919,7 @@ def incorporar_pantalla(cabezal: CabezalDelPunto,
 from dataclasses import replace as _reemplazar  # noqa: E402
 
 from src.constantes_fisicas import KPA_POR_MPA, N_POR_KN, PULGADA_EN_MM  # noqa: E402
+from src.constantes_normativas import ALTURA_VOLADIZO_ACTIVO_M  # noqa: E402
 from src.constantes_normativas import (  # noqa: E402
     ALFA_1_BLOQUE_AASHTO, ALFA_BLOQUE_E060, BETA_1_BLOQUE_AASHTO,
     BETA_1_E060, BETA_1_E060_MINIMO, BETA_1_MINIMO,
@@ -11042,6 +11110,20 @@ def solicitaciones_de_resistencia(entorno: EntornoDelCabezal) -> dict:
     est, sis = CondicionAnalisis.ESTATICO, CondicionAnalisis.SISMICO
     quien = _aviso_cabezal(entorno)
     avisos: List[str] = []
+    alto_pantalla = g.H - g.espesor_zapata
+    if (regimen == REGIMEN_RESISTENCIA_CEDENTE
+            and alto_pantalla < ALTURA_VOLADIZO_ACTIVO_M):
+        # --- VE-3.15 (H6 de su revision) --- «cede» se declara con
+        # justificacion; por debajo de la altura de C3.11.5.2 la fuente no
+        # da por movilizado el activo, y la corrida lo dice.
+        avisos.append(
+            f"{quien}: el armado se declara del muro que CEDE "
+            f"('{CRITERIO_REGIMEN_RESISTENCIA}' = '{regimen}') y la pantalla "
+            f"mide {alto_pantalla:.2f} m: AASHTO C3.11.5.2 da por movilizado "
+            "el empuje activo de un muro en voladizo de mas de "
+            f"{ALTURA_VOLADIZO_ACTIVO_M:.3f} m (5.0 ft). Por debajo, la "
+            "declaracion necesita la justificacion que pide la ficha del "
+            "criterio")
 
     cargas, datos = cargas_del_cabezal(entorno, est)
     combos = combinaciones_de_estabilidad(cargas, datos, est, g.B)
@@ -12437,7 +12519,8 @@ def ensamblar_armado(entorno: EntornoDelCabezal,
                 "solicitaciones y no la de reposo a secas; la sensibilidad "
                 "a un K0 con talud se imprime arriba y no se adopta. Bajo "
                 "sismo, con el muro que no cede, el armado va con k_h = "
-                "1.0·k_h0 (11.6.5.4) aunque la estabilidad lo reduzca. Es "
+                "1.0·k_h0 (11.6.5.4), y la estabilidad tambien: un solo "
+                "regimen, la reduccion de k_h solo con el armado que cede. Es "
                 "una eleccion del proyecto "
                 f"('{CRITERIO_REGIMEN_RESISTENCIA}' [A]).")))
     for p in piezas:
