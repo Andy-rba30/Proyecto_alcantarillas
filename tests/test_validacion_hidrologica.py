@@ -38,6 +38,12 @@ from src import criterios_adoptados as ca
 from src.modelos import DatoFaltanteError, DatoInvalidoError
 from src.modulos import MH_hidrologia as MH
 from tests.apoyo import validacion_hidrologica as VH
+from tests.apoyo.aproximacion import ABS_CERO
+
+# La cifra congelada del caso explicado (Témez, Tumbes C-13) se reproduce a
+# nueve cifras: es el valor que el programa dio al congelar el dossier, no un
+# número publicado (la desviación frente a lo publicado se acota aparte).
+REL_CIFRA_CONGELADA = 1e-9
 
 
 def test_el_documento_esta_sincronizado():
@@ -67,10 +73,13 @@ def test_cada_pieza_coincide_con_lo_publicado(c):
     """El numero publicado por el tercero, contra el programa, con la
     tolerancia nombrada del dossier (o el medio ultimo digito impreso)."""
     t = c.tolerancia
+    tolerancia = t.valor
     if t.relativa:
-        assert c.programa == pytest.approx(c.publicado, rel=t.valor, abs=0)
+        assert c.programa == pytest.approx(c.publicado, rel=tolerancia,
+                                           abs=ABS_CERO)
     else:
-        assert c.programa == pytest.approx(c.publicado, abs=t.valor, rel=0)
+        assert c.programa == pytest.approx(c.publicado, abs=tolerancia,
+                                           rel=ABS_CERO)
 
 
 def _clave(c):
@@ -113,7 +122,8 @@ def test_la_unica_fila_fuera_de_tolerancia_explicada():
     assert [_clave(c) for c in fuera] == [(VH.TUMBES, "Témez, ec. (30)",
                                           "C-13")]
     (c,) = fuera
-    assert c.programa == pytest.approx(4.652699142205859, rel=1e-9)
+    assert c.programa == pytest.approx(4.652699142205859,
+                                       rel=REL_CIFRA_CONGELADA)
     assert abs(c.programa - c.publicado) < 0.0075
 
 
@@ -195,8 +205,8 @@ def test_cada_detencion_es_la_esperada(d):
                          ids=lambda q: f"{q.caso} {q.cuenca} TR {q.TR} "
                                        f"{q.magnitud}")
 def test_cada_caudal_coincide_con_el_calculo_a_mano(q):
-    assert q.programa == pytest.approx(
-        q.a_mano, rel=VH.TOLERANCIAS["TOL_REL_A_MANO"].valor)
+    tol_rel_a_mano = VH.TOLERANCIAS["TOL_REL_A_MANO"].valor
+    assert q.programa == pytest.approx(q.a_mano, rel=tol_rel_a_mano)
 
 
 def test_ningun_caudal_se_juzga_contra_el_documento():

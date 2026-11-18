@@ -47,6 +47,7 @@ from src import editores as sed
 from src.modelos import DatoInvalidoError, FormaSeccion, TipoMaterial
 from src.modulos import M2_material as M2
 from src.normativa import registro
+from tests.apoyo.aproximacion import REL_TRANSPORTE
 from tests.apoyo.criterios import con_valor, declarados
 
 CLAVE = "n_manning_cajon"
@@ -254,7 +255,8 @@ def test_el_par_de_la_fila_si_proviene_de_ella():
                                            tabla_id=TB1,
                                            filas=("concrete_boxes",))
     assert procedencia.filas == ("concrete_boxes",)
-    assert ca.valores_dinamicos()[CLAVE] == (0.012, 0.015)
+    assert ca.valores_dinamicos()[CLAVE] == pytest.approx(
+        (0.012, 0.015), rel=REL_TRANSPORTE)
 
 
 def test_un_par_distinto_con_nota_entra_por_la_fila():

@@ -30,6 +30,7 @@ import pytest
 
 from src.modelos import TipoDeVeredicto
 from src.modulos import MH_hidrologia as MH
+from tests.apoyo.aproximacion import REL_TRANSPORTE
 from tests.apoyo.criterios import declarados
 
 CASOS = Path(__file__).resolve().parent / "fixtures" / "hidrologia_casos_reales"
@@ -53,8 +54,9 @@ def _consistencia(pasos):
 def test_tumbes_los_dos_valores_copiados_con_sus_años():
     """Tabla 24, p. 61: 129.00 en 1989 y 2002; 63.00 en 1996 y 2001."""
     repetidos = MH.maximos_anuales_repetidos(_tumbes())
-    assert [(round(v, 6), anios) for v, anios in repetidos] == [
-        (129.0, (1989, 2002)), (63.0, (1996, 2001))]
+    assert [anios for _v, anios in repetidos] == [(1989, 2002), (1996, 2001)]
+    assert [v for v, _anios in repetidos] == pytest.approx(
+        [129.0, 63.0], rel=REL_TRANSPORTE)
 
 
 def test_tumbes_el_aviso_lo_dice_sin_juzgar_ni_detener_ni_quitar():

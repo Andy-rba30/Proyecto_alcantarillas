@@ -49,6 +49,7 @@ from src.modelos import (DatoInvalidoError, DisenoNoFactibleError,
                          TipoDeBloqueo, TipoMaterial)
 from src.modulos import MD
 from src.modulos import M2_material as M2
+from tests.apoyo.aproximacion import REL_TRANSPORTE
 from tests.apoyo.criterios import declarados
 from tests.test_MD import L_CONDUCTO, TW_LIBRE, _punto, _verificacion
 
@@ -203,7 +204,8 @@ def test_4_el_arranque_negativo_por_la_fase_5_real():
         with pytest.raises(DatoInvalidoError) as exc:
             MD.disenar_punto(_punto(), L=L_CONDUCTO, TW=TW_LIBRE)
     assert exc.value.campo == "D"
-    assert exc.value.valor == pytest.approx(ARRANQUE_NEGATIVO["inicio"])
+    assert exc.value.valor == pytest.approx(ARRANQUE_NEGATIVO["inicio"],
+                                            rel=REL_TRANSPORTE)
 
 
 def test_4_la_rama_de_error_por_el_servicio_es_un_dato_invalido():

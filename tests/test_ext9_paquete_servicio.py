@@ -79,10 +79,24 @@ NOMBRES_PLANOS = sorted(
        and ruta.name != "__pycache__"})
 
 
+# Evidencia CONGELADA por sha1 antes de correr el programa (VE-3, validacion
+# hidrologica con casos reales: `SHA1SUMS_congelado.txt` de esa carpeta). Son
+# scripts de PROCESO --el calculo a mano que el verificador independiente
+# hizo sin el programa--, no se importan desde el repositorio y no viajan en
+# la exportacion (`proceso/` lo excluye `.gitattributes`). Editarlos para
+# quitar su `sys.path.insert` invalidaria el sello que los hace evidencia.
+CONGELADOS_FUERA_DEL_BARRIDO = (
+    "proceso/planes_mejora/ve3_estado/verificaciones_del_dueno/hidrologia/"
+    "casos/_calculo/",
+)
+
+
 def _archivos_python():
     return sorted(
         ruta for ruta in RAIZ.rglob("*.py")
-        if not any(parte in FUERA_DEL_BARRIDO for parte in ruta.parts))
+        if not any(parte in FUERA_DEL_BARRIDO for parte in ruta.parts)
+        and not ruta.relative_to(RAIZ).as_posix().startswith(
+            CONGELADOS_FUERA_DEL_BARRIDO))
 
 
 def _arbol(ruta: Path) -> ast.AST:
