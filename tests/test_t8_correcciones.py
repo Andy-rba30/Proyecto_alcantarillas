@@ -60,7 +60,8 @@ from src.constantes_normativas import (
     HEC14_SOCAVACION_CS, HEC14_SOCAVACION_NO_COHESIVO, V_MAX_NO_REVESTIDOS)
 from src.modelos import (
     ControlGobernante, DatoInvalidoError, LimiteNumericoError, Magnitud,
-    MaterialLecho, MetodoNoEvaluableError, SeccionCircular, TipoDeVeredicto)
+    MaterialLecho, MetodoNoEvaluableError, SeccionCircular, TiranteDeBorde,
+    TipoDeVeredicto)
 from src.modulos import M11_reporte as M11
 from src.modulos import M6_proteccion as M6
 from src.normativa import fuentes as _fuentes
@@ -152,11 +153,21 @@ def _tubo_lleno(resultado_a01, *, D, Q, TW, V=None):
 
 
 def _por_la_salida_al_critico(resultado_a01, V):
-    """Control de SALIDA con el TW bajo el critico: y_salida = y_c."""
+    """
+    Control de SALIDA con el TW bajo el critico: y_salida = y_c, y la
+    velocidad al critico. DESDE EL CIERRE DE T8-08 eso solo pasa donde las
+    Figuras 3.3 y 3.4 de HEC-14 no dan el tirante de borde, y M4 lo dice con
+    `V_salida_cota_inferior` y el motivo en `borde`: el helper lo declara.
+    """
     return replace(resultado_a01, control_gobernante=ControlGobernante.SALIDA,
                    y_salida_m=resultado_a01.y_critico, TW_m=0.10,
                    V_salida=Magnitud("V_salida", V, "m/s",
-                                     "Q / A(y_c) (dato del test)"))
+                                     "Q / A(y_c) (dato del test)"),
+                   V_salida_cota_inferior=True,
+                   borde=TiranteDeBorde(
+                       figura="3.4", caudal_adimensional=6.5,
+                       TW_sobre_D=0.11, y_o=None,
+                       motivo="fuera de la familia de curvas (dato del test)"))
 
 
 # ===========================================================================
@@ -434,34 +445,38 @@ def test_d6_sin_el_terreno_declarado_la_conducta_no_cambia():
     assert "el enrocado se dimensiona igual" in aviso
 
 
-def test_h2_el_aviso_de_borde_da_la_magnitud_y_nombra_el_d50(resultado_a01):
+def test_h2_el_aviso_de_borde_da_el_motivo_y_nombra_el_d50(resultado_a01):
     """
-    El aviso da la cota, leida por imagen de la Figura 3.4 de HEC-14 (pag.
-    impresa 3-6, PDF 37) para descarga libre (TW/D -> 0). Curvas KuQ/D^2.5 =
-    1.0, 2.0 y 3.0: yo/D = 0.323, 0.467 y 0.572. El tirante critico de esas
-    tres descargas (Q²·T/(g·A³) = 1 con Q/(g^0.5·D^2.5) = Ku·…/1.811/g^0.5):
-    yc/D = 0.420, 0.604 y 0.743. Razon de areas A(yc)/A(yo) = V_borde/V_c:
-    1.43, 1.38 y 1.35, y al cuadrado (d50 de Laushey): 2.03, 1.90 y 1.81.
-    Y el ejemplo IMPRESO de la pag. 3-4 (TW/D de 0.41 a 0.58): A/D² al borde
-    0.5308 … 0.3130 contra 0.5829 … 0.3395 al critico, de +8 % a +13 %.
+    REESCRITO EN EL CIERRE DE T8-08 (2026-11-18), declarandolo. El aviso
+    daba la magnitud leida a mano de la Figura 3.4 (de 1.35 a 1.43 veces la
+    critica en descarga libre) porque la figura no estaba digitalizada. Hoy
+    lo esta y M4 mide la velocidad al borde (`tests/test_t8_tirante_de_
+    borde.py` contrasta esos anclajes con la transcripcion); el aviso queda
+    para donde la figura no da lectura, y dice POR QUE con el motivo que M4
+    escribio, y con la frase de la fuente que permite quedarse en el
+    critico.
     """
     r = _por_la_salida_al_critico(resultado_a01, 3.0)
     p = M6.proteccion_salida(V=r.V_salida, resultado=r,
                              seccion=SeccionCircular(0.9))
     aviso = next(x for x in p.avisos if "tirante critico" in x)
-    assert "cota inferior" in aviso and "Figura 3.4" in aviso
-    assert "1.35 a 1.43" in aviso          # V_borde / V_c en descarga libre
-    assert "1.8 a 2.0" in aviso            # el d50 de Laushey, con V²
+    assert "cota inferior" in aviso and "Figuras 3.3 y 3.4" in aviso
+    assert "fuera de la familia de curvas (dato del test)" in aviso
+    assert "not conservative, but is acceptable" in aviso
     assert "d50" in aviso
 
 
 def test_h2_por_el_pipeline_el_punto_conserva_la_proteccion(tmp_path):
     """
     El caso del auditor: A-02 con el barril horizontal (S = 0), sobre
-    «Material graduado: grava» con flujo permanente (1.80 m/s). M4 toma la
-    velocidad al critico, 1.739 m/s < 1.80: el programa decia «sin enrocado».
-    Con la Figura 3.4 (KuQ/D^2.5 = 1.13, TW/D = 0.33 -> yo/D ≈ 0.38) la
-    velocidad de borde es ≈ 2.13 m/s > 1.80.
+    «Material graduado: grava» con flujo permanente (1.80 m/s). Hasta el
+    cierre de T8-08 M4 tomaba la velocidad al critico, 1.739 m/s < 1.80, y
+    el contraste NO concluia (antes de H2 el programa decia «sin enrocado»).
+    REESCRITO EN ESE CIERRE (2026-11-18), declarandolo: con la Figura 3.4
+    digitalizada (KuQ/D^2.5 = 1.13, TW/D = 0.33 -> yo/D = 0.391) la
+    velocidad de borde es 2.08 m/s > 1.80: el contraste CONCLUYE, el
+    terreno necesita la proteccion, y sigue sin decirse «sin enrocado». La
+    aritmetica, en `tests/test_t8_tirante_de_borde.py`.
     """
     informe = _correr_ancho(tmp_path, {"A-02": {
         "S_conducto": 0, "tipo_terreno_receptor": "graduado_grava",
@@ -470,21 +485,20 @@ def test_h2_por_el_pipeline_el_punto_conserva_la_proteccion(tmp_path):
     p = a02.proteccion
     assert p.velocidad_admisible.V_admisible == pytest.approx(
         1.80, rel=REL_TRANSPORTE)
-    assert p.V < 1.80
-    assert p.requerida is None and p.d50 is not None
+    assert p.V > 1.80
+    assert p.requerida is True and p.d50 is not None
     assert p.d50_laushey == pytest.approx(p.V ** 2 / (3.1 * 9.8),
                                           rel=REL_FORMULA)
     avisos = a02.avisos()
-    assert any("no concluye" in x for x in avisos)
+    assert not any("no concluye" in x for x in avisos)
     texto = cli.volcar(informe)
     assert "sin enrocado" not in texto
     volcado = {x["id"]: x for x in cli.informe_json(informe)["puntos"]}["A-02"]
-    assert volcado["proteccion_salida"]["requerida"] is None
+    assert volcado["proteccion_salida"]["requerida"] is True
     assert volcado["proteccion_salida"]["d50_m"] is not None
     admisible = volcado["proteccion_salida"]["velocidad_admisible"]
-    assert admisible["supera"] is False and admisible["concluyente"] is False
-    assert any("no concluye" in x for x in volcado["avisos"])
-    assert "no concluye" in M11.memoria_de_punto(a02)
+    assert admisible["supera"] is True and admisible["concluyente"] is True
+    assert "no concluye" not in M11.memoria_de_punto(a02)
     # El indicador cuenta en el RESUMEN con las verificaciones con aviso.
     assert any(x.codigo == "6.4" for x in a02.indicadores_de_proteccion())
 
@@ -1145,28 +1159,24 @@ def test_h15_un_resultado_sin_tw_o_sin_critico_no_deja_al_punto_sin_d50(
 # H14 (M4, fuera del diff) · la banda y_n(n_max) > y_c > y_n(n_min): se avisa
 # ===========================================================================
 
-def test_h14_en_la_banda_de_regimen_la_fase_6_avisa_la_velocidad_alta(
+def test_h14_en_la_banda_de_regimen_la_fase_6_ya_no_avisa_lo_resuelve_m4(
         resultado_a01):
     """
-    Control de SALIDA con la velocidad al critico, y la rama de n MINIMO
-    (V_erosion) por encima de ella: con n minimo el tirante normal seria
-    supercritico y la estimacion ALTA de la velocidad es V_erosion, no la
-    critica. M6 no cambia el numero (es de M4): lo avisa con el d50 que daria.
-    V_salida = 2.412, V_erosion = 3.160 -> d50 0.1915 m contra 0.3287 m:
-        2.412²/30.38 = 5.8177/30.38 = 0.19150;  3.160²/30.38 = 0.32869
+    REESCRITO EN EL CIERRE DE T8-09 (2026-11-18), declarandolo. Hasta
+    entonces M6 AVISABA que la rama de n minimo daba una velocidad mayor que
+    la critica y no cambiaba el numero (era de M4). Hoy M4 aplica la regla
+    del maximo (decision del dueño) y la Fase 6 recibe ya la mayor: el aviso
+    se retiro y la Fase 6 no rehace la comparacion. El caso de la banda,
+    con numeros, esta en `tests/test_t8_tirante_de_borde.py`.
+    V_salida = 2.412 -> d50 = 2.412²/30.38 = 5.8177/30.38 = 0.19150.
     """
     r = replace(_por_la_salida_al_critico(resultado_a01, 2.412),
                 V_erosion=3.160)
     p = M6.proteccion_salida(V=r.V_salida, resultado=r,
                              seccion=SeccionCircular(0.9))
     assert p.d50 == pytest.approx(0.19150, rel=REL_ARITMETICA)
-    aviso = next(x for x in p.avisos if "n minimo" in x)
-    assert "3.16" in aviso and "0.329" in aviso
-    # Fuera de la banda (V_erosion por debajo de la critica) no se avisa.
-    fuera = replace(r, V_erosion=1.2)
-    q = M6.proteccion_salida(V=fuera.V_salida, resultado=fuera,
-                             seccion=SeccionCircular(0.9))
-    assert not any("n minimo" in x for x in q.avisos)
+    assert not any("n minimo" in x for x in p.avisos)
+    assert not hasattr(M6, "_aviso_banda_de_regimen")
 
 
 # ===========================================================================

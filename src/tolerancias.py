@@ -262,3 +262,21 @@ TRAMOS_BUSQUEDA_RELLENO_MAXIMO = 400
 # 450, 1800 y 7200 tramos dan el mismo empuje a 1e-9 kN/m.
 TRAMOS_CUNA_DE_TANTEO = 1800
 TOL_ANGULO_CUNA = 1e-10
+
+
+# ---------------------------------------------------------------------------
+# --- T8-08 --- La lectura por imagen de las Figuras 3.3 y 3.4 de HEC-14
+# ---------------------------------------------------------------------------
+# Cuanto puede diferir una celda de las tablas `HEC14.F3_3` y `HEC14.F3_4`
+# (yo/D, adimensional) de la curva que la figura dibuja. Las figuras son
+# imagenes de 403 x 659 y 454 x 668 px incrustadas en el PDF: una division de
+# 0.05 en yo/D mide unos 30 px, y el trazo, 2 o 3. Las celdas se leyeron
+# sobre la imagen NATIVA (sin reescalar) promediando las dos columnas de
+# pixeles a cada lado de cada linea vertical de la reticula, y se
+# contrastaron con los tres anclajes de descarga libre de la ficha T8-08
+# (diferencias de 0.001 y 0.002) y con el ejemplo resuelto de la pag.
+# impresa 3-4 (diferencias de 0.003 a 0.006 sobre un impreso de dos cifras).
+# NO ENTRA EN NINGUNA FORMULA: la usan los tests que contrastan la lectura y
+# la nota de las dos citas, que la declaran. Cambiarla no mueve ningun
+# resultado; si una celda queda fuera de ella, lo que esta mal es la celda.
+TOL_LECTURA_FIGURA_HEC14 = 0.01

@@ -1726,8 +1726,9 @@ def _velocidad_de_v3(resultado: ResultadoHidraulico) -> Magnitud:
         if v_salida > resultado.V_erosion:
             return Magnitud(
                 "V_salida", v_salida, "m/s",
-                "M4 (paso 4.3b): Q_celda / A(min(D, max(TW, y_c))), la "
-                "velocidad de la seccion de SALIDA (HDS-5 num. 3.1.6). Bajo "
+                "M4 (paso 4.3b): la velocidad de la seccion de SALIDA (HDS-5 "
+                "num. 3.1.6; con el TW bajo el critico, la del tirante de "
+                "borde de HEC-14, o la mayor de esa y V_erosion). Bajo "
                 "control de SALIDA V3 juzga la MAYOR de esta y la del "
                 f"tirante normal de n minimo (V_erosion = "
                 f"{resultado.V_erosion:.3f} m/s): la lamina baja hacia la "
@@ -1751,8 +1752,9 @@ def _velocidad_de_v3(resultado: ResultadoHidraulico) -> Magnitud:
                    "la seccion de salida")
     return Magnitud(
         "V_salida", resultado.V_salida.valor, "m/s",
-        "M4 (paso 4.3b): Q_celda / A(min(D, max(TW, y_c))), la velocidad de "
-        "la seccion de SALIDA (HDS-5 num. 3.1.6). El barril es HORIZONTAL "
+        "M4 (paso 4.3b): la velocidad de la seccion de SALIDA (HDS-5 num. "
+        "3.1.6; con el TW bajo el critico, la del tirante de borde de "
+        "HEC-14). El barril es HORIZONTAL "
         "(S = 0): no hay velocidad uniforme, la lamina baja hacia la salida "
         "y esa es la velocidad MAXIMA del conducto. No lleva n de Manning",
         cifras=CIFRAS_MAGNITUD)

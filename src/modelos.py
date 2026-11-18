@@ -2543,30 +2543,24 @@ ALCANCE_DECLARADO: Tuple[AlcanceDeclarado, ...] = (
                "seguro): se revisara cuando llegue la seccion real del canal "
                "de la ANA o de la Junta de usuarios"),
         ficha="T3-08", simbolo="M5_verificaciones.v7_flotacion"),
+    # --- T8-08 (cerrada) --- Las Figuras 3.3 y 3.4 de HEC-14 estan
+    # digitalizadas desde el cierre de la ficha; lo que queda declarado es
+    # lo que las figuras no cubren. La entrada de T8-09 (la regla del maximo
+    # en la banda de regimen de M4) salio con su cierre: M4 la aplica.
     AlcanceDeclarado(
         clave="tirante_de_borde_hec14",
-        texto=("Las Figuras 3.3 y 3.4 de HEC-14 (tirante de borde a la "
-               "salida) no estan digitalizadas: con la velocidad tomada al "
-               "tirante critico el contraste con la Tabla N 11 es un "
-               "INDICADOR que no concluye; se digitalizaran en un trabajo "
-               "posterior a la cadena"),
-        ficha="T8-08", simbolo="M6_proteccion.proteccion_salida"),
-    # --- T-11 --- Las dos que faltaban de lo que el dueño dejo fuera
-    # (PRECISIONES_T-11, punto 4 (ii)): la regla de la velocidad de salida en
-    # la banda de regimen de M4 (decision del 2026-11-13: trabajo posterior a
-    # la cadena, junto con las Figuras 3.3 y 3.4) y el escalon de la regla de
-    # E-A en HW/D = 1.2 (medido por la verificacion de T-7, no corregido).
-    AlcanceDeclarado(
-        clave="velocidad_salida_banda_de_regimen",
-        texto=("Cuando las dos ramas de n no coinciden en el regimen (con n "
-               "maximo gobierna la salida con el TW bajo el critico; con n "
-               "minimo el tirante normal seria supercritico), la velocidad "
-               "de salida que llega a la Fase 6 es la critica y no la mayor "
-               "de la critica y la de erosion: la Fase 6 lo avisa con las "
-               "dos velocidades y el d50 que daria la alta; la regla de M4 "
-               "queda para un trabajo posterior a la cadena, junto con las "
-               "Figuras 3.3 y 3.4 de HEC-14"),
-        ficha="T8-09", simbolo="M6_proteccion._aviso_banda_de_regimen"),
+        texto=("Donde las Figuras 3.3 y 3.4 de HEC-14 no dan el tirante de "
+               "borde a la salida (una forma que no es circular ni "
+               "rectangular, un caudal o un TW fuera de su familia de "
+               "curvas, o una lectura que no queda bajo el tirante "
+               "critico), la velocidad de salida bajo control de salida con "
+               "el TW bajo el critico se toma al tirante critico: es una "
+               "cota inferior y el contraste con la Tabla N 11 es un "
+               "INDICADOR que no concluye"),
+        ficha="T8-08", simbolo="M4_control.tirante_de_borde"),
+    # --- T-11 --- El escalon de la regla de E-A en HW/D = 1.2 (medido por
+    # la verificacion de T-7, no corregido), que el dueño dejo fuera
+    # (PRECISIONES_T-11, punto 4 (ii)).
     AlcanceDeclarado(
         clave="escalon_regla_salida_hw_1_2_d",
         texto=("La regla de la carga de control de salida del HDS-5 num. "
@@ -2634,6 +2628,35 @@ class TWDeterminado:
     seccion: Optional["SeccionReceptor"] = None
     origen_seccion: str = ""                       # uno de ORIGENES_SECCION_RECEPTOR, o ""
     avisos: Tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class TiranteDeBorde:
+    """
+    --- T8-08 --- El tirante de BORDE a la salida (brink depth) que M4 lee de
+    las Figuras 3.3 (marco) y 3.4 (tubo) de HEC-14, num. 3.1.3, bajo control
+    de salida con el TW bajo el tirante critico, o por que no lo leyo.
+
+        `figura`               "3.3", "3.4", o None si la forma no tiene
+                               figura (la fuente acepta entonces el critico:
+                               «not conservative, but is acceptable»).
+        `caudal_adimensional`  KuQ/D^2.5 (tubo) o KuQ/(B·D^1.5) (marco), con
+                               el caudal de UNA celda; None sin figura.
+        `TW_sobre_D`           la abscisa de la figura.
+        `y_o`                  m; None = no hay lectura, y `motivo` dice por
+                               que (fuera de la familia de curvas, una curva
+                               no dibujada, un borde leido que no queda bajo
+                               el critico, la pendiente que no es suave u
+                               horizontal con n maximo).
+
+    Lo emite `M4.tirante_de_borde` y viaja en `ResultadoHidraulico.borde`;
+    la memoria lo imprime en el paso 4.3b.
+    """
+    figura: Optional[str]
+    caudal_adimensional: Optional[float]
+    TW_sobre_D: Optional[float]
+    y_o: Optional[float]
+    motivo: str = ""
 
 
 # ===========================================================================
@@ -2724,7 +2747,11 @@ class ResultadoHidraulico:
                            SALIDA es Q_celda entre el area de la seccion al
                            tirante min(D, max(TW, y_c)) --tirante critico,
                            TW o seccion entera, segun el TW--: no depende de
-                           n. Bajo control de ENTRADA es la del tirante
+                           n. Desde el cierre de T8-08 y T8-09, con el TW
+                           bajo el critico el area es la del tirante de
+                           BORDE de HEC-14 (Figuras 3.3 y 3.4) y la
+                           velocidad la mayor de esa y `V_erosion` (ver
+                           `borde`). Bajo control de ENTRADA es la del tirante
                            normal (pag. 3.24: «The velocity at normal depth
                            is assumed to be the outlet velocity»), y de sus
                            dos ramas la de n_min (`V_erosion`, con su propio
@@ -2736,8 +2763,11 @@ class ResultadoHidraulico:
                            hoy la normal es aun menor): M6 recibia una piedra
                            chica.
         `y_salida_m`       el TIRANTE a la salida. Bajo control de SALIDA y
-                           con el barril horizontal, el mismo con que se
-                           midio `V_salida`, min(D, max(TW, y_c)). Bajo
+                           con el barril horizontal, min(D, max(TW, y_c)):
+                           el mismo con que se midio `V_salida` salvo con el
+                           TW bajo el critico, donde la velocidad se mide al
+                           borde (`borde`, T8-08) y este sigue siendo el
+                           critico, el de registro del barril. Bajo
                            control de ENTRADA, el tirante normal de REGISTRO,
                            el de n_max (`y_normal`): la regla de doble n da
                            el tirante con n MAXIMO y la velocidad con n
@@ -2850,6 +2880,21 @@ class ResultadoHidraulico:
     y_conjugado_m: Optional[float] = None
     resalto_en_el_barril: bool = False
     receptor_en_el_barril: bool = False
+    # --- T8-08 / T8-09 --- LA VELOCIDAD DE SALIDA BAJO CONTROL DE SALIDA
+    # CON EL TW BAJO EL CRITICO (primera viñeta de HDS-5 3.1.6). Desde el
+    # cierre de T8-08 no se mide al tirante critico sino al de BORDE de las
+    # Figuras 3.3 y 3.4 de HEC-14 (num. 3.1.3: «The flow goes through
+    # critical depth upstream of the outlet»), y desde el de T8-09 es la
+    # MAYOR de esa y `V_erosion` cuando con n minimo el tirante normal es
+    # supercritico. `borde` es la lectura (o por que no la hubo), None fuera
+    # de esa viñeta. `V_salida_cota_inferior` es True SOLO donde la figura
+    # no dio lectura y la velocidad se quedo en la critica, que la fuente
+    # dice mayor que el borde: es lo que la Fase 6 lee para no concluir el
+    # contraste con la Tabla Nº 11. `y_salida_m` no cambia: sigue siendo el
+    # critico, el tirante de REGISTRO del barril (subcritico) que el Froude,
+    # la Ec. (10.5) de HEC-14 y el nivel del cabezal leen.
+    borde: Optional[TiranteDeBorde] = None
+    V_salida_cota_inferior: bool = False
 
     def __post_init__(self) -> None:
         if self.Q_celda_m3s is None:

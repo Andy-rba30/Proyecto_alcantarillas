@@ -357,10 +357,23 @@ REGIMEN = _fundamento(
         "proyecto no inventa un criterio de llenado: hasta E-A lo declaraba "
         "pendiente, y desde E-A lo resuelve el perfil por paso directo del "
         "paso 4.3c, del que V1 y V2 toman el tirante maximo y la velocidad "
-        "minima del barril."),
+        "minima del barril. Con salida libre el critico no esta EN la "
+        "salida: HEC-14 dice que el flujo pasa por el aguas arriba y que en "
+        "el borde el tirante es menor, y da ese tirante de borde en dos "
+        "figuras, una para el marco y otra para el tubo, para pendientes "
+        "suaves u horizontales. Medir la velocidad al critico daba una "
+        "velocidad menor que la real y una piedra mas chica; con el borde de "
+        "la figura la velocidad es la de la salida, y solo donde la figura no "
+        "da lectura se queda en el critico, que la fuente acepta como "
+        "aproximacion no conservadora. Y como la regla de doble n decide el "
+        "control con el n maximo, si con el n minimo el flujo seria "
+        "supercritico la velocidad de salida alta es la de ese tirante "
+        "normal: se toma la mayor de las dos."),
     verbo=Verbo.DEFINE,
     citas=("HDS5_3ED.3.1.6#V_SALIDA", "HDS5_3ED.3.1.6#V_SALIDA_TW",
-           "HDS5_3ED.3.3.2#V_SALIDA_ENTRADA", "HDS5_3ED.3.1.3#SUMERGENCIA"),
+           "HDS5_3ED.3.3.2#V_SALIDA_ENTRADA", "HDS5_3ED.3.1.3#SUMERGENCIA",
+           "HEC14.3.1.3#BORDE", "HEC14.3.1.3#FIGURAS",
+           "HEC14.3.1.3#OTRAS_FORMAS"),
     que_pasa_si_no_se_hace=(
         "Lo que pasaba hasta EXT-3 (EXT-M-01, PC-04): con TW = 1.2 m sobre "
         "un tubo de 0.90 m la memoria decia «manda TW: la salida esta "

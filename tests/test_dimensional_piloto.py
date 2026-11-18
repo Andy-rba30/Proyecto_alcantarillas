@@ -466,6 +466,22 @@ CONSTANTES_SI: Dict[str, ConstanteSI] = {
              "este chequeo, que multiplica por 0.3048^L, no la puede cerrar. "
              "La nombra el paso 6.10 de M6 (fuera del piloto M3-M5, que es lo "
              "que este censo barre)."),
+    # --- T8-08 --- El Ku de las Figuras 3.3 y 3.4 de HEC-14 (tirante de
+    # borde): el mismo 1.811 que KU_SI y por la misma conversion, nombrado
+    # aparte porque lo imprime otra fuente para otro grupo (KuQ/D^2.5).
+    "HEC14_KU_BORDE_SI": ConstanteSI(
+        dimension=T / L ** F(1, 2),
+        formula="c * v['Q'] / v['D'] ** F(5, 2)",
+        simbolos={"Q": L ** 3 / T, "D": L},
+        cierra_a=ADIM,
+        imperial_en_comentario=r"Imperial:\s*([0-9.]+)",
+        huella_en_los_pasos=r"HEC14_KU_BORDE_SI|Ku = 1\.811 \(SI, impreso en la figura",
+        cierra_desde_el_comentario=True,
+        la_nombra_algun_paso=True,
+        nota="KuQ/D^2.5 es adimensional solo si Ku lleva s/m^0.5: 1.0 "
+             "s/ft^0.5 = 1.8112 s/m^0.5. La nombra el paso 4.3b cuando el TW "
+             "queda bajo el critico bajo control de salida (el borde de "
+             "HEC-14)."),
 }
 
 

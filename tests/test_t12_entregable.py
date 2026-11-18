@@ -622,10 +622,11 @@ def test_el_readme_de_usuario_dice_instalacion_entradas_corrida_y_salidas():
     # El alcance declarado: cada entrada de `modelos.ALCANCE_DECLARADO` por su ficha.
     for alcance in ALCANCE_DECLARADO:
         assert f"ficha {alcance.ficha}" in readme, alcance.ficha
-    # Lo que queda para despues de la cadena, aprobado por el dueño.
-    # T11-03 y T11-10 se cerraron despues de la cadena (ficha de cada una).
-    for posterior in ("Figuras 3.3 y 3.4 de HEC-14", "max(V_c, V_erosion)",
-                      "cuencas de prueba coherente"):
+    # Lo que queda para despues de la cadena, aprobado por el dueño. Las
+    # Figuras 3.3 y 3.4 de HEC-14 y la regla del maximo en la banda de
+    # regimen de M4 (T8-08, T8-09), T11-03 y T11-10 se cerraron despues de
+    # la cadena (2026-11-18); el README da las dos primeras por hechas.
+    for posterior in ("cuencas de prueba coherente",):
         assert posterior in readme, posterior
 
 

@@ -376,11 +376,19 @@ def test_c_la_fuente_reproduce_el_caso_subcritico_tal_como_esta_hoy():
 
 def test_c_M4_emite_la_velocidad_de_salida_a_y_c_bajo_control_de_salida():
     r = _resuelto(Q=0.3, S=0.001, TW=0.0)
-    assert r.V_salida.valor == pytest.approx(1.508, rel=REL_DICTAMEN)
+    # CAMBIADO EN EL CIERRE DE T8-08 (2026-11-18), declarando la causa:
+    # con el TW bajo el critico la velocidad se mide en el tirante de BORDE
+    # de la Figura 3.4 de HEC-14 y no en y_c. A mano: KuQ/D^2.5 = 1.811·0.3/
+    # 0.9^2.5 = 0.7070; TW/D = 0 -> yo/D = 0.224 + 0.414·(0.322 - 0.224) =
+    # 0.2646; θ = 2·acos(1 - 2·0.2646) = 2.1610, A = (θ - sen θ)/8·0.81 =
+    # 0.13469 m2, V = 0.3/0.13469 = 2.227 m/s. La del critico (1.508) queda
+    # como cota inferior, y el tirante de registro sigue siendo y_c.
+    assert r.V_salida.valor == pytest.approx(2.227, rel=REL_DICTAMEN)
+    assert r.V_salida.valor > 1.508
     assert r.y_salida_m == pytest.approx(r.y_critico, rel=REL_TRANSPORTE)
     assert "3.1.6" in r.V_salida.procedencia
     regimen = next(p for p in r.pasos if p.fundamento_id == "F4.REGIMEN")
-    assert regimen.resultado.valor == pytest.approx(1.508, rel=REL_DICTAMEN)
+    assert regimen.resultado.valor == pytest.approx(2.227, rel=REL_DICTAMEN)
 
 
 def test_c_bajo_control_de_entrada_la_velocidad_de_salida_es_la_normal():
@@ -397,7 +405,14 @@ def test_c_M6_recibe_la_velocidad_de_salida_y_no_V_erosion(tmp_path):
                       alcance=cli.ALCANCE_PERFIL)
     b01 = _b01(informe)
     assert b01.dimensionado and b01.proteccion is not None
-    assert b01.proteccion.V == pytest.approx(1.508, rel=REL_DICTAMEN)
+    # CAMBIADO EN EL CIERRE DE T8-08 (2026-11-18), declarando la causa:
+    # con el TW bajo el critico la velocidad se mide en el tirante de BORDE
+    # de la Figura 3.4 de HEC-14 y no en y_c. A mano: KuQ/D^2.5 = 1.811·0.3/
+    # 0.9^2.5 = 0.7070; TW/D = 0 -> yo/D = 0.224 + 0.414·(0.322 - 0.224) =
+    # 0.2646; θ = 2·acos(1 - 2·0.2646) = 2.1610, A = (θ - sen θ)/8·0.81 =
+    # 0.13469 m2, V = 0.3/0.13469 = 2.227 m/s. La del critico (1.508) queda
+    # como cota inferior, y el tirante de registro sigue siendo y_c.
+    assert b01.proteccion.V == pytest.approx(2.227, rel=REL_DICTAMEN)
     assert b01.proteccion.V != pytest.approx(1.184, rel=REL_DICTAMEN)
     # d50 crece con V^2: la piedra que sale es la de la velocidad real.
     assert b01.proteccion.d50 == pytest.approx(

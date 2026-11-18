@@ -102,6 +102,9 @@ EXTERNOS_ANCHOS = RAIZ / "tests" / "linea_base_familia_c" / "entradas_ampliadas.
 REL_FORMULA = 1e-9        # una formula cerrada recomputada en el test
 REL_PERFIL = 1e-6         # el balance de energia entre dos estaciones del perfil
 ABS_BRENT = 1e-7          # una raiz de Brent contra su identidad (xtol 1e-10)
+# T8-08: un yo/D interpolado a mano con la tabla de la Figura 3.4 a tres
+# cifras: media unidad de la tercera, y algo mas por el redondeo intermedio.
+ABS_YO_A_MANO = 1e-3
 
 
 # LOS MUTANTES QUE QUEDAN VIVOS, UNO A UNO (ficha T2-07). Medidos con el arnes
@@ -361,8 +364,12 @@ def test_el_perfil_de_un_barril_horizontal_es_un_H2_que_cierra_la_energia(concre
 def test_el_resultado_de_un_barril_horizontal_no_inventa_el_tirante_normal(concreto):
     """
     Lo que no existe va en None, no en un sustituto; y la velocidad de salida
-    es la de HDS-5 3.1.6 (Q / A(y_c) con salida libre) cualquiera que sea el
-    control.
+    es la de HDS-5 3.1.6 con salida libre cualquiera que sea el control.
+    REESCRITO EN EL CIERRE DE T8-08 (2026-11-18), declarandolo: con el TW
+    bajo el critico el area ya no es la critica sino la del tirante de BORDE
+    de la Figura 3.4 de HEC-14 («on Horizontal and Mild Slopes»); el
+    tirante de registro sigue siendo y_c. A mano: KuQ/D^2.5 = 1.811·0.6/
+    0.76843 = 1.414 y TW/D = 0 -> yo/D = 0.322 + 0.828·0.078 = 0.387.
     """
     sec, Q = SeccionCircular(0.90), 0.6
     r = M4.resolver_control(sec, Q=Q, S=0.0, L=20.0, TW=0.0, material=concreto)
@@ -371,8 +378,11 @@ def test_el_resultado_de_un_barril_horizontal_no_inventa_el_tirante_normal(concr
     assert r.V_sedimentacion is None
     assert r.perfil.tipo is TipoDePerfil.H2
     critico = M4.tirante_critico(Q, sec)
-    assert r.V_salida.valor == pytest.approx(Q / critico.geometria.A,
-                                             rel=REL_FORMULA)
+    assert r.borde is not None and r.borde.figura == "3.4"
+    assert r.borde.y_o / sec.altura == pytest.approx(0.387, abs=ABS_YO_A_MANO)
+    assert r.V_salida.valor == pytest.approx(Q / sec.area(r.borde.y_o),
+                                             rel=REL_PERFIL)
+    assert r.V_salida.valor > Q / critico.geometria.A
     assert r.y_salida_m == pytest.approx(critico.y_c, rel=REL_FORMULA)
     # El paso 4.1 es el del barril horizontal y cita el num. 3.3.4.
     paso_41 = next(p for p in r.pasos if p.fundamento_id == "F4.HORIZONTAL")
@@ -496,11 +506,15 @@ def test_un_barril_horizontal_gobernado_por_la_entrada(concreto):
     assert r.HW_entrada > r.HW_salida
     assert r.HW == pytest.approx(r.HW_entrada, rel=REL_TRANSPORTE)
     assert r.perfil is not None and r.perfil.tipo is TipoDePerfil.H2
-    # La velocidad de salida es la del tirante critico, y M4 lo calcula con
-    # el area critica que el paso 4.2 ya resolvio.
+    # La velocidad de salida es la del tirante de BORDE de la Figura 3.4 de
+    # HEC-14 desde el cierre de T8-08 (hasta entonces, la del critico):
+    # KuQ/D^2.5 = 1.811·1.5/0.76843 = 3.535, TW/D = 0 -> yo/D = 0.612 +
+    # 0.07·0.038 = 0.6147, bajo el critico (0.80 D).
     critico = M4.tirante_critico(Q, sec)
-    assert r.V_salida.valor == pytest.approx(Q / critico.geometria.A,
-                                             rel=REL_FORMULA)
+    assert r.borde.y_o / sec.altura == pytest.approx(0.6147, abs=ABS_YO_A_MANO)
+    assert r.V_salida.valor == pytest.approx(Q / sec.area(r.borde.y_o),
+                                             rel=REL_PERFIL)
+    assert r.V_salida.valor > Q / critico.geometria.A
     assert "HORIZONTAL" in r.V_salida.procedencia
     # V1 y V2 sobre el perfil.
     v1 = M5.v1_borde_libre(D=sec.altura, material=concreto, punto=_punto(),

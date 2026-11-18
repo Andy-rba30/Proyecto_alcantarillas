@@ -330,12 +330,15 @@ def test_guardia_bajo_control_de_salida_la_velocidad_de_salida_no_cambia():
     GUARDIA (vale antes y despues). El caso subcritico del dictamen
     (`tests/test_ext3_regimen_barril.py`): gobierna la salida con el TW bajo
     el critico, y la velocidad de salida es Q / A(y_c) = 1.508 m/s, sin n.
-    La decision (b) no la mueve.
+    La decision (b) no la mueve. LA MOVIO el cierre de T8-08 (2026-11-18),
+    y se declara: desde entonces se mide en el tirante de BORDE de la
+    Figura 3.4 de HEC-14, 2.227 m/s (aritmetica en
+    `tests/test_ext3_regimen_barril.py`). Sigue sin llevar n.
     """
     r = M4.resolver_control(seccion=SeccionCircular(0.90), Q=0.3, S=0.001,
                             L=20.0, TW=0.0, material=catalogo(CONCRETO))
     assert r.control_gobernante is ControlGobernante.SALIDA
-    assert r.V_salida.valor == pytest.approx(1.508, abs=ABS_IMPRESO_3_DECIMALES)
+    assert r.V_salida.valor == pytest.approx(2.227, abs=ABS_IMPRESO_3_DECIMALES)
     assert r.y_salida_m == pytest.approx(r.y_critico, rel=REL_TRANSPORTE)
 
 
