@@ -12,6 +12,7 @@
  "peso_especifico_saturado_relleno_kn_m3": 20.0,
  "drenaje_trasdos": "drenado",
  "factor_muro_eleccion": "reduccion_por_desplazamiento",
+ "regimen_resistencia_elementos_cabezal": "cedente",
  "categoria_refuerzo_aashto": "A",
  "clase_exposicion_fisuracion_cabezal": "clase_2",
  "exposicion_quimica_ems": {

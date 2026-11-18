@@ -286,6 +286,9 @@ DECLARACIONES: Dict[str, Any] = {
     # admite el desplazamiento bajo sismo.
     "drenaje_trasdos": "drenado",
     "factor_muro_eleccion": "reduccion_por_desplazamiento",
+    # Un solo regimen (VE-3.15, decision 12): el muro que cede se arma
+    # tambien como muro que cede.
+    "regimen_resistencia_elementos_cabezal": "cedente",
     # Armado del cabezal: acero sin recubrir (la columna que mas
     # recubrimiento pide, la del conftest) y la Clase 2 de exposicion de
     # 5.6.7 (subestructura en el cauce: la que T-7c recomendo).
@@ -329,6 +332,10 @@ PISA_EL_ARCHIVO_PORQUE: Dict[str, str] = {
         "'reduccion_por_desplazamiento' (k_h = 0.5·k_h0) es la otra rama de "
         "la eleccion del Propietario: con el relleno drenado ejercita el "
         "empuje sismico reducido"),
+    "regimen_resistencia_elementos_cabezal": (
+        "'cedente' acompaña a la reduccion de k_h: desde VE-3.15 (decision "
+        "12 del dueño) la reduccion solo se acepta con el armado del muro "
+        "que cede, un solo regimen"),
 }
 
 # ---------------------------------------------------------------------------

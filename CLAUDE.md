@@ -256,12 +256,19 @@ el 0.5 es [N] y cuál de las dos declaraciones aplica a esta obra es [A].
   de un marco con φ del otro es un defecto. En los mínimos constructivos rige
   el más exigente de los dos. Con el muro que no cede
   (`regimen_resistencia_elementos_cabezal` = `no_cedente_k0`) los elementos
-  se arman con el empuje en reposo y el Evento Extremo I con k_h = 1.0·k_h0,
-  aunque la estabilidad externa —que sigue con el muro que cede— lo reduzca;
+  se arman con el empuje en reposo y el Evento Extremo I con k_h = 1.0·k_h0;
+  y desde VE-3.15 hay **un solo régimen**: la reducción de k_h de
+  `factor_muro_eleccion` (muro que cede) sólo se acepta con el armado
+  «cedente», y `M9.factor_muro` la rechaza con `DatoInvalidoError` en otro
+  caso (decisión 12 del dueño, ficha VE3-18);
   la pantalla y el alero integran cada diagrama de empuje por encima del
   arranque (`M9.empujes_sobre_el_arranque`). El cabezal de gravedad no se
   arma: se verifica como concreto ciclópeo (C1 a C6). Fichas T7C-01 a
-  T7C-13.
+  T7C-13. Desde VE-3.15 los valores de archivo del cabezal son los que el
+  dueño eligió con la verificación de cada cita (decisiones 9 a 14, ficha
+  VE3-18): talón por el método exacto, pantalla con la cuña sobre su cara,
+  factores φ de la tabla de muros (AASHTO 11.5.7) y margen cero bajo la hoya
+  de socavación sin proteger.
 - Los tipos que fluyen entre módulos están en modelos.py. Ningún módulo define
   sus propios dicts ad-hoc para lo que ya existe ahí.
 - criterios_adoptados.valor(clave) y datos_sitio.valor(clave) con valor None

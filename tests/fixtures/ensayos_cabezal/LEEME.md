@@ -24,3 +24,9 @@ fuera del repositorio.
 
 El comando con que se corre está en el test; las declaraciones en caliente
 del revisor están en `declaraciones.json`.
+
+**Único cambio respecto de la copia del revisor (VE-3.15):** las tres
+`declaraciones.json` llevan además `"regimen_resistencia_elementos_cabezal":
+"cedente"`. Desde la decisión 12 del dueño la reducción de k_h por
+desplazamiento sólo se acepta con el armado del muro que cede (un solo
+régimen), y sin esa línea los tres escenarios se detendrían por la guardia.

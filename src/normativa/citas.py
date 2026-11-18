@@ -11933,36 +11933,42 @@ AASHTO_12_6_5_ZAPATAS = _cita(
     nota=("Articulo de la Seccion 12 (estructuras enterradas: las "
           "alcantarillas). Abre con «Buried structures shall be designed so "
           "that no movement of any part of the structure will occur as a "
-          "result of scour». El proyecto LEE que el cabezal de salida es parte "
-          "de la estructura y que su zapata es una de esas «footings»: es una "
-          "lectura, y por eso la regla es [C] y no [N] (la hoja de ruta pone "
-          "la Seccion 12 de AASHTO como [C], tabla de la §0.1). 2.0 ft = "
-          "0.6096 m exactos (1 ft = 0.3048 m)."),
+          "result of scour». Si la zapata del cabezal de salida es una de "
+          "esas «footings» no lo dice: es una lectura, y por eso la regla es "
+          "[C] y no [N] (la hoja de ruta pone la Seccion 12 de AASHTO como "
+          "[C], tabla de la §0.1). Desde VE-3.15 (decision 14 del dueño) el "
+          "proyecto NO aplica este margen al cabezal: es el extremo alto de "
+          "la ventana de 'margen_zapata_bajo_socavacion_m'. 2.0 ft = 0.6096 m "
+          "exactos (1 ft = 0.3048 m)."),
     interpretacion=Interpretacion(
-        texto=("La frase habla de las zapatas de la estructura enterrada. El "
-               "proyecto LEE incluida la zapata del cabezal de salida, que es "
-               "la que la socavacion alcanza primero, y le aplica el margen "
-               "de 2.0 ft: es la lectura del lado seguro. El mismo margen se "
-               "aplica a la base del dentellon de la losa de salida, porque "
-               "la frase del «cut-off wall» pide que baje «below» la "
-               "socavacion maxima prevista sin cuantificar cuanto, y la unica "
-               "cifra del articulo es esta."),
+        texto=("La frase habla de las zapatas de la estructura enterrada, "
+               "que en la Seccion 12 es el conducto. El proyecto NO lee "
+               "incluida la zapata del cabezal de salida (decision 14 del "
+               "dueño): la desplanta a la profundidad de la hoya de la "
+               "salida SIN proteger, como HEC-14 5.1.3 y la regla general de "
+               "las zapatas (10.6.1.2), y diseña ademas el delantal de "
+               "enrocado de la Fase 6. El mismo criterio vale para la base "
+               "del dentellon de la losa de salida, cuya frase del «cut-off "
+               "wall» pide que baje «below» la socavacion maxima prevista "
+               "sin cuantificar cuanto."),
         en_contra=(
-            "el sujeto es «The footings of structures», y en la Seccion 12 "
-            "la estructura es el conducto enterrado: el cabezal no se nombra",
-            "la regla general de las zapatas (10.6.1.2, «bear below») y "
-            "HEC-14 5.1.3 («should extend to a depth equal to the maximum "
-            "depth of scour») no ponen margen: son el extremo bajo de la "
-            "ventana del criterio",
-            "el 2.0 ft es de las zapatas, no de la pantalla «cut-off wall», "
-            "cuya frase solo dice «extending below»"),
-        a_favor=(
             "el articulo abre con «Buried structures shall be designed so "
             "that no movement of any part of the structure will occur as a "
             "result of scour»: el cabezal remata la estructura y su "
             "descalce la mueve",
             "la socavacion la entrega la Fase 6 en la salida, que es donde "
-            "esta el cabezal, no bajo el conducto")),
+            "esta el cabezal, no bajo el conducto",
+            "la unica cifra del articulo es el 2.0 ft, y leerla incluida es "
+            "el lado seguro: es el extremo alto de la ventana del criterio"),
+        a_favor=(
+            "el sujeto es «The footings of structures», y en la Seccion 12 "
+            "la estructura es el conducto enterrado: el cabezal no se nombra",
+            "la regla general de las zapatas (10.6.1.2, «bear below») y "
+            "HEC-14 5.1.3 («should extend to a depth equal to the maximum "
+            "depth of scour») no ponen margen",
+            "la hoya es la de la salida sin proteger y el delantal de "
+            "enrocado se diseña aparte: sumar el margen protege dos veces "
+            "contra la misma hoya")),
 )
 
 AASHTO_12_6_5_DENTELLON = _cita(
@@ -12026,9 +12032,10 @@ AASHTO_10_6_1_2_DESPLANTE = _cita(
     caracter=Caracter.EXIGENCIA,
     sesion=TESIS_T7A,
     nota=("La regla general de las zapatas superficiales de la Seccion 10: "
-          "bajo la socavacion, sin margen. La de las estructuras enterradas "
-          "(12.6.5) le añade 2.0 ft, y es la que el proyecto aplica al "
-          "cabezal de salida."),
+          "bajo la socavacion, sin margen. Es la que el proyecto aplica al "
+          "cabezal de salida desde VE-3.15 (decision 14 del dueño); la de "
+          "las estructuras enterradas (12.6.5) le añade 2.0 ft y queda como "
+          "el extremo alto de la ventana."),
 )
 
 E060_22_7_4_ZAPATA = _cita(

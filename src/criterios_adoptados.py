@@ -1607,7 +1607,16 @@ CRITERIOS: Dict[str, Criterio] = {
                       "una reduccion, y el 1.0 no es un valor tabulado sino "
                       "la ausencia de reduccion, que es la definicion misma "
                       "de k_h0. Las dos declaraciones posibles estan en el "
-                      "campo `sensibilidad`",
+                      "campo `sensibilidad`. Un solo regimen (decision 12 "
+                      "del dueño): la reduccion supone un muro que cede, y "
+                      "solo se acepta declarada junto con "
+                      "'regimen_resistencia_elementos_cabezal' = «cedente»; "
+                      "con el armado en reposo la corrida la rechaza. "
+                      "Declararla pide justificar que los aleros llevan "
+                      "junta, que el Propietario acepta el desplazamiento y "
+                      "que la pantalla supera la altura con que C3.11.5.2 da "
+                      "por movilizado el empuje activo de un muro en "
+                      "voladizo",
         fuente="Manual de Puentes (MTC) num. 2.8.1.1.14.2.2 'Estimacion de la "
                "Aceleracion que Actua Sobre la Masa del Muro' (11.6.5.2.2 "
                "AASHTO), pag. impresa 255 (PDF 256). Texto literal y las tres "
@@ -10404,51 +10413,57 @@ CRITERIOS: Dict[str, Criterio] = {
     # --- T-7a --- (cadena T) · el cabezal por punto: dos criterios con fuente
     # =======================================================================
     "margen_zapata_bajo_socavacion_m": Criterio(
-        valor=0.6096,               # 2.0 ft exactos (1 ft = 0.3048 m)
+        valor=0.0,                  # decision 14 del dueño (VE-3.15)
         nivel=NIVEL_EXPEDIENTE,
         etiqueta="C",
         forma=FORMA_FLOAT,
         # 0 es la lectura de AASHTO 10.6.1.2 («bear below the maximum
         # anticipated depth of scour») y la de HEC-14 5.1.3 («extend to a
-        # depth equal to the maximum depth of scour»); 0.6096 m es la de
-        # 12.6.5 para las estructuras enterradas. El valor es el techo.
+        # depth equal to the maximum depth of scour»); 0.6096 m (2.0 ft) es
+        # la de 12.6.5 para las estructuras enterradas, el techo.
         sensibilidad=(0.0, 0.6096),
         concepto="Distancia minima de la base de la zapata del cabezal de "
                  "salida, y de la base del dentellon de su losa, por debajo "
                  "del fondo de la hoya de socavacion",
         justificacion="Decide cuanto por debajo de la socavacion se "
-                      "desplanta el cabezal de salida. La fuente (AASHTO LRFD "
-                      "12.6.5, Seccion 12, estructuras enterradas; cita "
+                      "desplanta el cabezal de salida. El proyecto adopta "
+                      "margen cero, decision 14 del dueño con la "
+                      "verificacion independiente de VE-3: HEC-14 lleva el "
+                      "cabezal a la profundidad de la socavacion maxima "
+                      "(cita HEC14.5.1.3#CABEZAL, recomendacion) y la regla "
+                      "general de las zapatas lo pone bajo esa profundidad "
+                      "sin margen (cita AASHTO_LRFD_9.10.6.1.2#DESPLANTE). "
+                      "La hoya es la de la salida SIN proteger, y el "
+                      "delantal de enrocado de la Fase 6 se diseña ademas: "
+                      "por eso el margen extra no se suma. No se adopta una "
+                      "hoya protegida, menos profunda, porque ninguna fuente "
+                      "del repositorio da su profundidad y habria que "
+                      "inventarla. Lo que juega en contra, y queda como el "
+                      "otro extremo de la ventana: AASHTO LRFD 12.6.5 "
+                      "(Seccion 12, estructuras enterradas; cita "
                       "AASHTO_LRFD_9.12.6.5#ZAPATAS) exige que las zapatas "
                       "de la estructura queden no menos de 2.0 ft bajo la "
-                      "socavacion maxima prevista. Lo que no resuelve: si la "
-                      "zapata de un cabezal es una de esas zapatas; el "
-                      "proyecto lo lee asi -- lado seguro --, porque el "
-                      "mismo articulo abre exigiendo que ninguna parte de la "
-                      "estructura se mueva por socavacion (la lectura, con "
-                      "lo que juega en contra, es la `Interpretacion` de la "
-                      "cita). Y aplica el MISMO margen a la base del "
-                      "dentellon de la losa de salida, cuya frase en el "
-                      "articulo dice solo «extending below» sin cifra. Es "
-                      "[C] y no [N] "
-                      "porque la hoja de ruta (§0.1) pone la Seccion 12 de "
-                      "AASHTO como fuente tecnica reconocida. La regla "
-                      "general de las zapatas (10.6.1.2) y HEC-14 (5.1.3, "
-                      "recomendacion) piden el desplante A la profundidad de "
-                      "la socavacion, sin margen: son el otro extremo de la "
-                      "ventana. La profundidad la entrega la Fase 6 (T-8): "
-                      "la declarada, o la hoya de HEC-14 Cap. 5; sin "
-                      "ninguna de las dos, el desplante de salida queda solo "
-                      "con el minimo de E.050 y la corrida lo avisa",
-        fuente="AASHTO LRFD 9a ed., 12.6.5 'Scour', pag. impresa 12-20 (PDF "
-               "1658; cita AASHTO_LRFD_9.12.6.5#ZAPATAS). Contraste: 10.6.1.2 "
-               "'Bearing Depth', pag. impresa 10-52 (PDF 1341) y HEC-14 "
-               "5.1.3, pag. impresa 5-2 (PDF 55)",
+                      "socavacion maxima prevista, y si la zapata de un "
+                      "cabezal es una de ellas no lo dice. El mismo margen "
+                      "se aplica a la base del dentellon de la losa de "
+                      "salida. Es [C] y no [N] porque las dos fuentes son "
+                      "tecnicas reconocidas (hoja de ruta §0.1). La "
+                      "profundidad la entrega la Fase 6 (T-8): la "
+                      "declarada, o la hoya de HEC-14 Cap. 5; sin ninguna de "
+                      "las dos, el desplante de salida queda solo con el "
+                      "minimo de E.050 y la corrida lo avisa",
+        fuente="HEC-14 5.1.3, pag. impresa 5-2 (PDF 55; cita "
+               "HEC14.5.1.3#CABEZAL) y AASHTO LRFD 9a ed., 10.6.1.2 'Bearing "
+               "Depth', pag. impresa 10-52 (PDF 1341; cita "
+               "AASHTO_LRFD_9.10.6.1.2#DESPLANTE). Contraste: 12.6.5 'Scour', "
+               "pag. impresa 12-20 (PDF 1658; cita "
+               "AASHTO_LRFD_9.12.6.5#ZAPATAS)",
         reemplazado_por="Un estudio de socavacion del cauce que fije el "
                         "desplante",
         resolucion=Libre(
-            que_lo_fija="AASHTO 12.6.5 da el numero; la lectura de que "
-                        "aplica a la zapata del cabezal es del proyecto",
+            que_lo_fija="el proyecto: HEC-14 5.1.3 y AASHTO 10.6.1.2 dan "
+                        "el cero y AASHTO 12.6.5 los 2.0 ft; cual aplica a "
+                        "la zapata de un cabezal no lo dice ninguna",
             dominio="m, entre 0 y 0.6096",
         ),
     ),
@@ -10797,7 +10812,7 @@ CRITERIOS: Dict[str, Criterio] = {
     ),
 
     "fila_phi_estabilidad_cabezal": Criterio(
-        valor="zapatas_seccion_10",
+        valor="muros_tabla_11_5_7",   # decision 11 del dueño (VE-3.15)
         nivel=NIVEL_EXPEDIENTE,
         etiqueta="A",
         forma=FORMA_CATEGORIA,
@@ -10827,24 +10842,33 @@ CRITERIOS: Dict[str, Criterio] = {
                       "deslizamiento de una zapata vaciada in situ), y el "
                       "cabezal no es ninguno de los muros que la Tabla "
                       "11.5.7-1 nombra sino una estructura modelada como "
-                      "tal. El proyecto adopta la de las zapatas por dos "
-                      "razones, y no porque la tabla de muros remita a la "
-                      "Seccion 10 (no lo hace para estas filas): es la mas "
-                      "exigente de las dos en las dos verificaciones, y es "
-                      "la que el Manual de Puentes peruano transcribe (num. "
-                      "2.8.1.1.12.6; no transcribe la 11.5.7-1). Es una "
-                      "eleccion [A] a la que el veredicto es sensible: con "
-                      "los datos de prueba de A-01 el deslizamiento estatico "
-                      "pasa de no cumplir a cumplir con la fila de muros, y "
-                      "la memoria lo avisa cuando una fila cambia de "
-                      "veredicto entre las dos opciones. Dentro de "
-                      "ella toma, en suelo friccionante, la fila del metodo "
-                      "teorico en arena con SPT (0.45, la menor de las de "
-                      "suelo) y la del concreto vaciado in situ sobre arena "
-                      "(0.80); en suelo cohesivo, 0.50 y 0.85. En Evento "
-                      "Extremo I no hay eleccion: el Art. 11.5.8 fija 0.8 al "
-                      "portante de los muros de semigravedad y 1.0 a lo "
-                      "demas",
+                      "tal. El proyecto adopta la fila de muros, decision 11 "
+                      "del dueño con la verificacion independiente de VE-3: "
+                      "es la letra del Art. 11.5.7 para el muro de "
+                      "semigravedad y la que usa el ejemplo resuelto de "
+                      "Caltrans. Lo que juega en contra, y se declara: el "
+                      "articulo de muros del Manual de Puentes peruano (num. "
+                      "2.8.1.1.12.6, Deslizamiento) define el factor del "
+                      "deslizamiento por la tabla de las zapatas y no "
+                      "transcribe la 11.5.7-1; la hoja de ruta (§0.2) "
+                      "adopta AASHTO LRFD de extremo a extremo y deja las "
+                      "dos tablas en la ventana de este [A]. Y una salvedad "
+                      "que queda para el EMS real: el comentario C11.5.7 "
+                      "pide factores menores cuando la variabilidad del "
+                      "sitio o del material es inusualmente alta, y mientras "
+                      "el suelo de fundacion sea de prueba esa revision esta "
+                      "pendiente. Es una eleccion [A] a la que el veredicto "
+                      "es sensible: con los datos de prueba de A-01 el "
+                      "deslizamiento estatico pasa de no cumplir a cumplir "
+                      "con la fila de muros, y la memoria lo avisa cuando "
+                      "una fila cambia de veredicto entre las dos opciones. "
+                      "Con la fila de zapatas toma, en suelo friccionante, "
+                      "la del metodo teorico en arena con SPT (0.45, la "
+                      "menor de las de suelo) y la del concreto vaciado in "
+                      "situ sobre arena (0.80); en suelo cohesivo, 0.50 y "
+                      "0.85. En Evento Extremo I no hay eleccion: el Art. "
+                      "11.5.8 fija 0.8 al portante de los muros de "
+                      "semigravedad y 1.0 a lo demas",
         fuente="AASHTO LRFD 9a ed., Tabla 10.5.5.2.2-1, pag. impresa 10-42 "
                "(PDF 1331; cita AASHTO_LRFD_9.10.5.5.2.2#T1) y 11.5.7 con su "
                "Tabla 11.5.7-1, pags. impresas 11-15 y 11-17 (PDF 1484 y "
@@ -11332,7 +11356,14 @@ CRITERIOS: Dict[str, Criterio] = {
                       "sismo la fuente no da un coeficiente de reposo: manda "
                       "no reducir k_h (11.6.5.4) y pide considerar la "
                       "resultante a h/2 (cita "
-                      "AASHTO_LRFD_9.C11.6.5.4#H_MEDIOS)",
+                      "AASHTO_LRFD_9.C11.6.5.4#H_MEDIOS). Un solo regimen "
+                      "(decision 12 del dueño, con la verificacion "
+                      "independiente de VE-3): el reposo es el del archivo y "
+                      "«cedente» se declara solo con justificacion -- aleros "
+                      "con junta, desplazamiento aceptado por el Propietario "
+                      "y pantalla por encima de la altura de C3.11.5.2 --, y "
+                      "es el unico con que la corrida acepta la reduccion de "
+                      "k_h de 'factor_muro_eleccion'",
         fuente="AASHTO LRFD 9a ed., C3.11.1, pag. impresa 3-117 (PDF 171); "
                "3.11.5.2 y C3.11.5.2, pag. impresa 3-120 (PDF 174); 11.6.5.4 "
                "y C11.6.5.4, pag. impresa 11-32 (PDF 1501). Factor de carga "
@@ -12181,7 +12212,7 @@ CRITERIOS: Dict[str, Criterio] = {
     # fuente y la verifico el dueño (verificaciones_del_dueno/
     # cabezal_decisiones_9_14.md). NIVEL: el de la Fase 9 (expediente).
     "momento_talon_cabezal": Criterio(
-        valor="peso_entero",
+        valor="exacto",             # decision 9 del dueño (VE-3.15)
         nivel=NIVEL_EXPEDIENTE,
         etiqueta="A",
         forma=FORMA_CATEGORIA,
@@ -12202,12 +12233,19 @@ CRITERIOS: Dict[str, Criterio] = {
                       "manda el peso entero, salvo que se use un metodo mas "
                       "exacto, y 10.6.5 (cita AASHTO_LRFD_9.10.6.5#LINEAL) "
                       "fija la presion de contacto lineal con las cargas "
-                      "factoradas. El valor de archivo es la regla por "
-                      "defecto; «exacto» descuenta la reaccion combinacion "
-                      "por combinacion, sin traccion, y deja el peso entero "
-                      "impreso como contraste. Los ensayos midieron el peso "
-                      "entero 2.3 a 4.3 veces mayor en las geometrias que "
-                      "cumplen",
+                      "factoradas. El valor de archivo es «exacto», "
+                      "decision 9 del dueño, con la verificacion "
+                      "independiente de VE-3: descuenta la "
+                      "reaccion combinacion por combinacion -- Resistencia I "
+                      "con los gamma maximos y minimos y los dos casos del "
+                      "Evento Extremo I --, sin traccion, y deja el peso "
+                      "entero impreso como contraste; si la resultante cae "
+                      "fuera de la base, rige el peso entero. Los ensayos "
+                      "midieron el peso entero 2.3 a 4.3 veces mayor en las "
+                      "geometrias que cumplen. La hoja de ruta (§9.4, punto "
+                      "5) describe el peso entero como lo que hace el "
+                      "codigo: sigue asi hasta que se corrija (ficha "
+                      "VE3-18)",
         fuente="AASHTO LRFD 9a ed., 11.6.1.2, pag. impresa 11-20 (PDF 1489) "
                "y 10.6.5, pag. impresa 10-86 (PDF 1375)",
         reemplazado_por="Decision del proyectista, con el EMS",
@@ -12218,7 +12256,7 @@ CRITERIOS: Dict[str, Criterio] = {
     ),
 
     "carga_pantalla_cabezal": Criterio(
-        valor="plano_virtual_del_talon",
+        valor="cuna_sobre_la_pantalla",   # decision 10 del dueño (VE-3.15)
         nivel=NIVEL_EXPEDIENTE,
         etiqueta="A",
         forma=FORMA_CATEGORIA,
@@ -12246,10 +12284,13 @@ CRITERIOS: Dict[str, Criterio] = {
                       "diagrama del de la estabilidad externa; bajo sismo, "
                       "la cuña sismica y la inercia de la pantalla, no la "
                       "del relleno sobre el talon (pag. 11.2-33). El valor "
-                      "de archivo es la cota superior de T7C-12; la "
-                      "alternativa lleva la cuña hasta la superficie real "
-                      "(talud sobre la corona y sobrecarga), con las "
-                      "condiciones del dueño",
+                      "de archivo es la cuña sobre la pantalla, decision del "
+                      "dueño (decision 10), con sus dos "
+                      "condiciones: la cuña llega a la superficie real "
+                      "(talud sobre la corona y sobrecarga) y bajo sismo se "
+                      "suma la inercia de la pantalla. El plano virtual del "
+                      "talon queda en la ventana como la cota superior de "
+                      "T7C-12",
         fuente="Caltrans Bridge Design Practice, cap. 11.2 (oct. 2022), "
                "11.2.2.4.1, pags. 11.2-27, 11.2-28 y 11.2-33 (ejemplo "
                "resuelto del repositorio de normas, ejemplos_resueltos/"
@@ -12290,7 +12331,12 @@ CRITERIOS: Dict[str, Criterio] = {
                       "incremento); la alternativa toma el mayor del "
                       "centroide estatico y h/3, y solo con el muro que cede: "
                       "para el que no cede C11.6.5.4 pide la resultante a "
-                      "h/2, y la eleccion se rechaza",
+                      "h/2, y la eleccion se rechaza. Es la decision 13 del "
+                      "dueño: la distribucion estatica es la del muro que "
+                      "cede y se declara junto con la reduccion de k_h "
+                      "('factor_muro_eleccion') y el armado que cede; el "
+                      "archivo, con el muro que no cede, conserva la "
+                      "fraccion fija",
         fuente="AASHTO LRFD 9a ed., 11.6.5.3 y C11.6.5.3, pag. impresa "
                "11-30 (PDF 1499); C11.6.5.4, pag. impresa 11-32 (PDF 1501); "
                "Manual de Puentes 2.8.1.1.14.3 y A.11.3.1",

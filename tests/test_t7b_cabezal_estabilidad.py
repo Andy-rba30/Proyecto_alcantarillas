@@ -2812,6 +2812,8 @@ DECLARACIONES_DE_PRUEBA = {
                         "gamma_kn_m3": 18.0},
     "drenaje_trasdos": "drenado",
     "factor_muro_eleccion": "reduccion_por_desplazamiento",
+    # VE-3.15 (decision 12): la reduccion solo con el armado que cede.
+    "regimen_resistencia_elementos_cabezal": "cedente",
 }
 FILA_A01 = ("A-01,0+380,A,1.167,850,0.006,42.10,44.20,44.05,8.5,15,9.60,"
             "41.30,,,SM,,,")

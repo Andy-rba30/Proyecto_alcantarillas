@@ -8,6 +8,15 @@ Fase 9: muro de cabecera en voladizo con punta, talón y aleros), en el commit
 **Pregunta:** ¿la app produce un BUEN diseño de cabezal? Se contrasta su geometría y su
 armado con un diseño propio hecho a mano **antes** de mirar el resultado de la app.
 
+> **Corrección de cifras (VE-3.15, 2026-11-18), según la verificación independiente
+> `verificaciones_del_dueno/cabezal_decisiones_9_14.md`:** el «2.4 a 13 veces» del momento del
+> talón (§ del talón, H-2) es **2.3 a 4.3 veces** en las geometrías que cumplen la estabilidad;
+> las razones de 8 a 13 salen de geometrías que no la cumplen. El «1.5 a 4 veces» de la carga
+> de la pantalla (H-4) es **1.35 a 1.5 veces** con la zapata de 0.40 m. Y casi todo el efecto
+> de las opciones se midió con k_h reducido: con el valor de archivo (`sin_reduccion`) ni la
+> app ni el diseño a mano obtienen una zapata racional a PGA 0.50 g. El texto de abajo se deja
+> como se escribió.
+>
 > Estado del documento: se escribe por etapas. §1–§3 se escribieron y se congelaron
 > ANTES de correr la app a expediente (sello en §3.4).
 

@@ -748,6 +748,20 @@ def factor_muro() -> float:
                    f"numeral no tabula filas: autoriza una reduccion",
         )
     if declarado == FACTOR_MURO_CON_REDUCCION:
+        # Un solo regimen (decision 12 del dueño, VE-3.15): la reduccion es
+        # del muro que CEDE, y no se declara con el armado del que no cede
+        # (C11.6.5.4 pone el estribo con aleros estructurales entre los que
+        # pueden no ceder; la hoja de ruta §9.2 lo advierte).
+        regimen = ca.valor(CRITERIO_REGIMEN_RESISTENCIA)
+        if regimen != REGIMEN_RESISTENCIA_CEDENTE:
+            raise DatoInvalidoError(
+                CRITERIO_FACTOR_MURO, valor=declarado,
+                motivo=(f"la reduccion de k_h por desplazamiento supone un "
+                        f"muro que cede, y "
+                        f"'{CRITERIO_REGIMEN_RESISTENCIA}' = '{regimen}' arma "
+                        f"el cabezal como muro que no cede: un solo regimen. "
+                        f"Se declaran juntos (el desplazamiento aceptado por "
+                        f"el Propietario y la pantalla que cede) o ninguno"))
         return REDUCCION_KH_POR_DESPLAZAMIENTO
     return 1.0   # literal-ok: ausencia de reduccion, k_h = k_h0 por definicion
 

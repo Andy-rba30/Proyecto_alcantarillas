@@ -23,5 +23,6 @@
   "gamma_kn_m3": 18.0
  },
  "drenaje_trasdos": "drenado",
- "factor_muro_eleccion": "reduccion_por_desplazamiento"
+ "factor_muro_eleccion": "reduccion_por_desplazamiento",
+ "regimen_resistencia_elementos_cabezal": "cedente"
 }
