@@ -1,0 +1,1531 @@
+From efd7ecda726023e18d8311989e81518b6d19e8ad Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Wed, 18 Nov 2026 13:32:23 +0000
+Subject: [PATCH] =?UTF-8?q?validacion(VE-3.16):=20drenaje=5Ftrasdos=20?=
+ =?UTF-8?q?=C2=ABdrenado=C2=BB=20de=20archivo=20(AASHTO=2011.6.6=20=C2=ABs?=
+ =?UTF-8?q?hall=20be=20drained=C2=BB;=20decisi=C3=B3n=20del=20due=C3=B1o?=
+ =?UTF-8?q?=20del=202026-11-18)?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+- criterio drenaje_trasdos: valor de archivo «drenado»; ficha y M9 (aviso
+  del caso «sin_drenaje» declarado, que ya no dice que el sismo no se evalúa)
+- juego de la validación integral: ya no declara el drenaje ni lo pisa; la
+  titular sólo vuelve el muro que no cede; la variante drenaje_de_archivo
+  pasa a sin_drenaje_declarado; el γ saturado del relleno pasa a las
+  condicionales no medidas (contrato §7 y §3.3)
+- tests t7b/t7c/t11 cambiados declarándolo (VE-3.16)
+- ficha VE3-21; validacion_integral.md, validacion_sensibilidad.md y la
+  línea base regenerados (en la línea base sólo cambia la huella de
+  criterios)
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_014iJGrugEWsR7Mv973BnxSk
+---
+ docs/contrato_entradas.md                     |  19 +-
+ docs/decisiones_diferidas.md                  |  27 ++
+ docs/validacion_integral.md                   |  44 ++-
+ docs/validacion_sensibilidad.md               | 286 +++++++++---------
+ src/criterios_adoptados.py                    |  29 +-
+ src/modulos/M9_cabezal.py                     |  24 +-
+ tests/apoyo/sensibilidad.py                   |  19 +-
+ tests/apoyo/validacion_integral.py            |  68 +++--
+ .../hidrologia_calculada/declaraciones.json   |   1 -
+ tests/fixtures/juego_validacion_integral.py   |  85 +++---
+ .../informe_expediente.json                   |   2 +-
+ .../informe_familia_c.json                    |   2 +-
+ .../informe_perfil_ancho.json                 |   2 +-
+ .../informe_rama_error.json                   |   2 +-
+ .../memoria_expediente.html                   |   2 +-
+ .../linea_base_familia_c/memoria_perfil.html  |   2 +-
+ .../memoria_perfil_ancha.html                 |   2 +-
+ .../memoria_resumida_expediente.html          |   2 +-
+ tests/test_t11_validacion_integral.py         |  58 ++--
+ tests/test_t7b_cabezal_estabilidad.py         |  15 +-
+ tests/test_t7c_cabezal_armado.py              |   3 +-
+ 21 files changed, 391 insertions(+), 303 deletions(-)
+
+diff --git a/docs/contrato_entradas.md b/docs/contrato_entradas.md
+index 127d96e..acecd76 100644
+--- a/docs/contrato_entradas.md
++++ b/docs/contrato_entradas.md
+@@ -273,9 +273,9 @@ programa **no** puede elegir, y de quién es:
+ | Nivel freático del cruce | columna `NF_profundidad_m` del CSV | **EMS** | Bloqueo «dato faltante» de la estabilidad de los dos cabezales del punto y de su armado, que sale de las mismas solicitaciones (medido por T-11: `docs/validacion_integral.md` §4) |
+ | Ángulo de fricción del relleno del trasdós | criterio `phi_relleno_trasdos` (ensayo; ventana 30–38°) | **EMS** · especificación del relleno | `CriterioPendienteError`: es lo único de los cuatro ángulos del empuje que detiene, y detiene la estabilidad y el armado de los dos cabezales de cada punto |
+ | Suelo de fundación: `cohesivo` (sí/no), `c_kpa`, `phi_grados`, `gamma_kn_m3`; y, si el estudio las entrega, `q_n_kpa` (resistencia portante **nominal**, para el marco LRFD), `q_adm_kpa` (presión **admisible**, para el marco ASD) | clave `suelo_fundacion` de `--datos-externos` (objeto, por punto o global), o el criterio de corredor `c_phi_fundacion` | **EMS** (calicata del cruce) | `CriterioPendienteError` sobre `c_phi_fundacion`. El dato del punto **gana** sobre el de corredor. Un `q_n_kpa` o `q_adm_kpa` del estudio gana sobre el calculado, cada uno en **su** marco |
+-| Peso específico saturado del relleno | criterio `peso_especifico_saturado_relleno_kn_m3` (ensayo) | **EMS** | Sólo hace falta si hay agua en el relleno (freático sobre la zapata, o `drenaje_trasdos` = `sin_drenaje`, que es el valor de archivo): entonces, `CriterioPendienteError` |
++| Peso específico saturado del relleno | criterio `peso_especifico_saturado_relleno_kn_m3` (ensayo) | **EMS** | Sólo hace falta si hay agua en el relleno (freático sobre la zapata, o `drenaje_trasdos` = `sin_drenaje` declarado; desde VE-3.16 el valor de archivo es `drenado`): entonces, `CriterioPendienteError` |
+ | Capacidad portante admisible del terreno de fundación | criterio `capacidad_portante_adm` ([S] pendiente de ensayo, desde VE-3.2) | **EMS** | Hoy ningún módulo la consume: la estabilidad lee `q_adm_kpa` de `suelo_fundacion` o la calcula; la fila existe porque todo [S] del archivo de criterios tiene la suya |
+-| Si el trasdós tiene drenaje | criterio `drenaje_trasdos` [A]: `sin_drenaje` (archivo) o `drenado` | **Proyectista** (y los planos: filtro y lloraderos) | Rige `sin_drenaje`: el relleno retenido se calcula lleno de agua hasta su superficie contra el trasdós, nunca por encima del muro (AASHTO 11.6.6), y la condición sísmica no es evaluable (relleno saturado). Con `drenado`, la corrida avisa que no se modela el desembalse rápido tras la avenida |
++| Si el trasdós tiene drenaje | criterio `drenaje_trasdos` [A]: `drenado` (archivo desde VE-3.16) o `sin_drenaje` | **Proyectista** (y los planos: filtro y lloraderos, y su mantenimiento) | Rige `drenado` (AASHTO 11.6.6: el relleno «shall be drained»): el agua del relleno queda en el freático natural del punto, también bajo sismo, y la corrida avisa que no se modela el desembalse rápido tras la avenida. Adoptarlo compromete el filtro y los lloraderos en los planos. `sin_drenaje` se declara cuando el drenaje no puede darse: el relleno retenido se calcula lleno de agua hasta su superficie contra el trasdós, nunca por encima del muro, y pide el peso específico saturado del relleno (ficha VE3-21) |
+ | Si el muro admite desplazamiento bajo sismo | criterio `factor_muro_eleccion` [A] | **Propietario** | Rige `sin_reduccion` (k_h = k_h0). Desde el cierre de T-7b el empuje sísmico sale de la cuña de tanteo con la superficie real del relleno (`regla_pendiente_relleno_trasdos` = `cuna_de_tanteo`), que da cifra también con k_h0; Mononobe-Okabe con la pendiente equivalente queda como contraste |
+ | Si el cabezal se modela como muro que cede o que no cede | criterio `regimen_cabezal` [A]: `cedente` (archivo) o `no_cedente` | **Proyectista** (hipótesis de modelación) | Rige `cedente` (empuje activo, la hipótesis de 11.6.5.3). `no_cedente` detiene la estabilidad con «método no evaluable»: las presiones de muro rígido de 11.6.5.4 no están implementadas. Las solicitaciones para T-7c llevan el coeficiente con que salieron y el K0 de referencia |
+ | Orientación del muro frente al tráfico y distancia del borde de calzada al trasdós | `[S]` de corredor (§4.1) | **Trazo** | La sobrecarga viva no se puede leer de su tabla: `CriterioPendienteError` del dato de sitio, que detiene la estabilidad y el armado de los dos cabezales de cada punto |
+@@ -446,9 +446,11 @@ hoy se leen de segunda mano, y cada una tiene declarada la lectura que rige mien
+ T-11 corrió el fixture de punta a punta a `--alcance expediente` **sin** datos y con un
+ juego de **DATOS DE PRUEBA** completo, quitándole una entrada a la vez sobre **dos bases**:
+ el juego, y el juego con las **decisiones de archivo** que el juego pisa
+-(`drenaje_trasdos` = `sin_drenaje`, `factor_muro_eleccion` = `sin_reduccion`; corrección
+-H1 de la auditoría de T-11: medida sólo sobre el juego, la lista no veía el peso
+-específico saturado del relleno y contradecía a la §3.3)
++(`factor_muro_eleccion` = `sin_reduccion`, con su armado en reposo; corrección H1 de la
++auditoría de T-11). Hasta VE-3.16 la segunda base volvía también `drenaje_trasdos` a
++`sin_drenaje`, entonces su valor de archivo, y destapaba el peso específico saturado del
++relleno; desde que el archivo es `drenado` ninguna base lo lee y figura entre las
++condicionales no medidas
+ (`tests/apoyo/validacion_integral.py`, documento generado `docs/validacion_integral.md`).
+ Esta es la lista de lo que, si falta, **detiene una etapa** (sale como `Bloqueo` y cuenta en
+ «Etapas bloqueadas») **además de las columnas obligatorias de la §2** (sin ellas M0 no
+@@ -473,7 +475,6 @@ tabla: detienen sólo en una rama que ninguna de las dos bases recorre.
+ | `orientacion_muro_respecto_al_trafico` | entrada del proyecto ([S] de corredor) | Trazo | La estabilidad y el armado de los dos cabezales de cada punto (sobrecarga viva) |
+ | `distancia_borde_calzada_al_trasdos_m` | entrada del proyecto ([S] de corredor) | Trazo | Ídem |
+ | `exposicion_quimica_ems` | entrada del proyecto ([S] pendiente de ensayo) | EMS | Las cuatro etapas de la 9.4 de la Fase 9 del proyecto (§3.4) |
+-| `peso_especifico_saturado_relleno_kn_m3` | entrada del proyecto (ensayo) | EMS (material de cantera del relleno) | Con el `drenaje_trasdos` de archivo (`sin_drenaje`) o agua sobre la zapata: la estabilidad (estática y sísmica) y el armado de los dos cabezales de cada punto — seis etapas por punto (§3.3; lo destapa la segunda base) |
+ | `desnivel_perfil_canal_m` | entrada del proyecto (del canal) | ANA / Junta de Usuarios (perfil del canal) | VC3 de la Familia C, y con ella el punto, a los dos alcances (desde VE-3.10; hasta entonces sólo un aviso de 7.B) |
+ | `Q_evento_extremo_m3s` | entrada del proyecto | Estudio hidrológico | V8, y con ella el punto (sólo con `TR_evento_extremo` declarado) |
+ | `TW_evento_extremo_m` | entrada del proyecto | Estudio hidrológico · hidráulico del receptor | Ídem |
+@@ -517,6 +518,12 @@ test exige que esta lista las nombre):
+   `nf_del_punto` (VE-2): detiene V7, y con ella el punto. Con esa alternativa V7 exige
+   además `NF_profundidad_m` del punto y, si el nivel de agua de diseño queda sobre la clave,
+   `peso_especifico_saturado_relleno_kn_m3` (ficha VE2-C).
++- `peso_especifico_saturado_relleno_kn_m3` (ensayo del EMS, material de cantera del
++  relleno) — sólo con agua en el relleno del cabezal: `drenaje_trasdos` = `sin_drenaje`
++  declarado o el freático sobre la base de la zapata; entonces detiene la estabilidad
++  (estática y sísmica) y el armado de los dos cabezales del punto (§3.3). Con el relleno
++  drenado de archivo (VE-3.16) y el freático del juego bajo las zapatas ninguna base lo lee;
++  la variante `sin_drenaje_declarado` de la validación corre con él declarado.
+ 
+ **Una entrada que no detiene pero cambia el diseño:** sin `TW_m` (ni `cota_TW`, ni
+ `Q_receptor_m3s`) el TW sale de los dos escenarios acotados con la sección **adoptada** de
+diff --git a/docs/decisiones_diferidas.md b/docs/decisiones_diferidas.md
+index cc4d76a..da102b5 100644
+--- a/docs/decisiones_diferidas.md
++++ b/docs/decisiones_diferidas.md
+@@ -8317,3 +8317,30 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
+   que permite el movimiento (junta en los aleros y en la unión con el conducto) con la
+   aceptación escrita del Propietario.
+ - **Dónde vive:** `src/modulos/M9_cabezal.py::factor_muro`
++
++## VE3-21 · El trasdós drenado es el valor de archivo (VE-3.16, decisión del dueño del 2026-11-18)
++
++- **Cerrado:** `drenaje_trasdos` pasa de «sin_drenaje» a «drenado» de archivo. AASHTO LRFD
++  11.6.6 manda drenar el relleno («shall be drained») y sólo admite la hidrostática plena «if
++  drainage cannot be provided»: el archivo tenía la excepción de la norma como regla. Adoptarlo
++  COMPROMETE el filtro y los lloraderos en los planos y su mantenimiento (un lloradero tapado
++  devuelve el caso «sin_drenaje»; C11.6.6 advierte que los lloraderos solos no aseguran el
++  drenaje). La reducción de k_h (`factor_muro_eleccion`) y
++  `regimen_resistencia_elementos_cabezal` no cambian de valor de archivo (VE3-20).
++- **Cerrado con el valor de archivo:** con el relleno drenado el agua del relleno bajo sismo es
++  la del freático del punto, que es el nivel medio que pide C11.6.5.3: la corrección del nivel
++  medio queda cubierta sin tocar el ensamble. El juego de la validación integral ya no declara
++  el drenaje, y su corrida titular no lee el peso específico saturado del relleno, que pasa a
++  las condicionales no medidas del contrato de entradas (§7).
++- **Qué se difirió:** con «sin_drenaje» declarado el sismo sigue con el relleno lleno hasta su
++  superficie, no con el nivel medio.
++- **Por qué:** separar el agua estática de la sísmica en `M9.cargas_del_cabezal` exigiría
++  duplicar las cargas WA (empuje del agua y subpresión) por condición, y el caso declarado es
++  el excepcional de la norma.
++- **Abierto, la hoja de ruta (no se edita aquí):** su Fase 9 («El agua una sola vez») sigue
++  diciendo `sin_drenaje` de archivo. Mientras no se corrija, quien la lea sin leer el código
++  creerá que el relleno se calcula lleno de agua por defecto.
++- **Qué haría falta:** cargas WA por condición (estática y sísmica) en el ensamble, y la lectura
++  del nivel medio de un relleno sin drenar bajo sismo verificada contra C11.6.5.3; y que el
++  dueño corrija la Fase 9 de la hoja de ruta.
++- **Dónde vive:** `src/modulos/M9_cabezal.py::cargas_del_cabezal`
+diff --git a/docs/validacion_integral.md b/docs/validacion_integral.md
+index bf6a52b..41e8943 100644
+--- a/docs/validacion_integral.md
++++ b/docs/validacion_integral.md
+@@ -4,7 +4,7 @@
+ 
+ ## 1. Qué se juzga, y con qué regla
+ 
+-- **La corrida titular** es la del juego con las **decisiones de archivo** (§2): el juego pisa dos criterios que tienen valor de archivo y que el dueño confirmó, y eso se presenta como variante (§2.1), no como resultado.
++- **La corrida titular** es la del juego con las **decisiones de archivo** (§2): el juego pisa una decisión con valor de archivo que el dueño confirmó (la reducción de k_h, con su armado), y eso se presenta como variante (§2.1), no como resultado.
+ - **Llega a la Fase 11 con diseño**: el punto sale dimensionado (MD aceptó material y sección) y la memoria de la Fase 11 lleva su bloque y el cuadro resumen su fila. Las filas E y A del cabezal son **resultados** de la Fase 9, no condición de llegada: la geometría del cabezal la propone la regla de T-7a y no se itera (alcance declarado, ficha T7B-09).
+ - **Llega con un bloqueo**: la corrida termina (ninguna excepción fuera de `ErrorProyecto`) y cada bloqueo cae en una de tres clases: *entrada del proyecto que falta*, *criterio que el Propietario o el proyectista debe declarar* o *metodo diferido con ficha*. Un bloqueo fuera de las tres es un fallo del test.
+ - **La lista exacta de lo que sigue requiriendo entrada** es lo que la corrida SIN juego bloquea (§3) más lo que, quitado de a uno, detiene una etapa en **cualquiera de las dos bases**: el juego (§4.1) y el juego con las decisiones de archivo (§4.2). Es la lista **además de las columnas obligatorias del CSV** (§2 del contrato: sin ellas M0 no carga). Las condicionales que ninguna de las dos bases dispara **no se midieron** y se nombran en §4.3.
+@@ -21,11 +21,10 @@ python cli.py <tmp>/puntos.csv --alcance expediente \
+ 
+ ## 2. Corrida titular: el juego con las decisiones de archivo (`--alcance expediente`)
+ 
+-El juego declara, sobre criterios que **tienen valor de archivo**, lo que esta tabla dice. La corrida titular los deja en su valor de archivo (variante `decisiones_de_archivo`) y declara el peso específico saturado del relleno que el relleno sin drenaje pide (ensayo del EMS, sin valor de archivo: 20 kN/m³ de prueba, con su línea en el juego).
++El juego declara, sobre criterios que **tienen valor de archivo**, lo que esta tabla dice. La corrida titular los deja en su valor de archivo (variante `decisiones_de_archivo`). El trasdós es **drenado** de archivo desde VE-3.16 (AASHTO 11.6.6, «shall be drained»; compromete filtro y lloraderos en los planos), y con el freático del juego bajo las zapatas la titular no lee el peso específico saturado del relleno.
+ 
+ | Criterio | Valor de archivo | Valor del juego | Por qué el juego lo cambia |
+ |---|---|---|---|
+-| `drenaje_trasdos` | 'sin_drenaje' | 'drenado' | con 'sin_drenaje' el relleno se calcula saturado y la condicion sismica del cabezal es «metodo no evaluable» (ficha T7B-05): 'drenado' deja evaluar la cadena sismica entera |
+ | `factor_muro_eleccion` | 'sin_reduccion' | 'reduccion_por_desplazamiento' | 'reduccion_por_desplazamiento' (k_h = 0.5·k_h0) es la otra rama de la eleccion del Propietario: con el relleno drenado ejercita el empuje sismico reducido |
+ | `regimen_resistencia_elementos_cabezal` | 'no_cedente_k0' | 'cedente' | 'cedente' acompaña a la reduccion de k_h: desde VE-3.15 (decision 12 del dueño) la reduccion solo se acepta con el armado del muro que cede, un solo regimen |
+ 
+@@ -40,16 +39,16 @@ Verificaciones que no salen «cumple» (conducto y cabezal), por punto. Son RESU
+ 
+ | Punto | Verificaciones |
+ |---|---|
+-| A-01 | E1-ASD.sis.e (indicador), E1-LRFD.sis.e (no cumple), E3-ASD.sis.e (indicador), E3-LRFD.sis.e (no cumple), E1-ASD.sis.s (indicador), E1-LRFD.sis.s (no cumple), E3-ASD.sis.s (indicador), E3-LRFD.sis.s (no cumple), A2.pantalla.s (indicador), A2.alero.s (indicador) |
+-| A-02 | E1-ASD.sis.e (indicador), E1-LRFD.sis.e (no cumple), E3-ASD.sis.e (indicador), E3-LRFD.sis.e (no cumple), E1-ASD.sis.s (indicador), E1-LRFD.sis.s (no cumple), E3-ASD.sis.s (indicador), E3-LRFD.sis.s (no cumple), A2.pantalla.s (indicador), A2.alero.s (indicador) |
+-| B-01 | E1-ASD.sis.e (indicador), E1-LRFD.sis.e (no cumple), E3-ASD.sis.e (indicador), E3-LRFD.sis.e (no cumple), E1-ASD.sis.s (indicador), E1-LRFD.sis.s (no cumple), E3-ASD.sis.s (indicador), E3-LRFD.sis.s (no cumple), A2.pantalla.s (indicador), A2.alero.s (indicador) |
+-| C-01 | V2b (indicador), VC2 (indicador), E1-ASD.sis.e (indicador), E1-LRFD.sis.e (no cumple), E3-ASD.sis.e (indicador), E3-LRFD.sis.e (no cumple), E1-ASD.sis.s (indicador), E1-LRFD.sis.s (no cumple), E3-ASD.sis.s (indicador), E3-LRFD.sis.s (no cumple), A2.pantalla.s (indicador), A2.alero.s (indicador) |
++| A-01 | E1-ASD.sis.e (indicador), E3-ASD.sis.e (indicador), E3-LRFD.sis.e (no cumple), E1-ASD.sis.s (indicador), E1-LRFD.sis.s (no cumple), E3-ASD.sis.s (indicador), E3-LRFD.sis.s (no cumple) |
++| A-02 | E1-ASD.sis.e (indicador), E3-ASD.sis.e (indicador), E3-LRFD.sis.e (no cumple), E1-ASD.sis.s (indicador), E1-LRFD.sis.s (no cumple), E3-ASD.sis.s (indicador), E3-LRFD.sis.s (no cumple), A2.pantalla.s (indicador), A2.alero.s (indicador) |
++| B-01 | E1-ASD.sis.e (indicador), E3-ASD.sis.e (indicador), E3-LRFD.sis.e (no cumple), E1-ASD.sis.s (indicador), E1-LRFD.sis.s (no cumple), E3-ASD.sis.s (indicador), E3-LRFD.sis.s (no cumple) |
++| C-01 | V2b (indicador), VC2 (indicador), E1-ASD.sis.e (indicador), E3-ASD.sis.e (indicador), E3-LRFD.sis.e (no cumple), E1-ASD.sis.s (indicador), E1-LRFD.sis.s (no cumple), E3-ASD.sis.s (indicador), E3-LRFD.sis.s (no cumple), A2.pantalla.s (indicador), A2.alero.s (indicador) |
+ 
+-Lectura de ingeniería (no la escribe el programa; las cifras sí): con las decisiones de archivo los cuatro puntos dimensionan igual que con el juego —el cabezal no entra al dimensionamiento del conducto—. La zapata de la regla de T-7a no pasa la estabilidad estática del marco LRFD que rige, y desde VE-3.5 **se dimensiona**: crece por el talón con el paso y el tope de `dimensionamiento_zapata_cabezal` (valor de archivo desde VE-3.9, decisión del dueño) en 8 de 8 cabezales, y la estabilidad evaluada cumple en 0 de 8. El talón más largo pedía más **peralte** para armarse, y desde VE-3.9 el peralte crece por su armado en 0 de 8 cabezales: quedan 0 filas del armado de la zapata sin cumplir, y 0 de la pantalla y el alero, que desde VE-3.14 se dimensionan por su armado. Donde ninguna zapata corrida de la grilla cumple la estabilidad dentro del tope, el cabezal se declara NO FACTIBLE con estos criterios (VE-3.14) y su peralte no se itera: por eso pueden quedar filas del armado de la zapata sin cumplir. Desde VE-3.14 la condición **sísmica se evalúa** también con el relleno saturado (AASHTO C11.6.5.3: el incremento con el peso total bajo el agua, `agua_del_relleno_bajo_sismo` [C]); con el trasdós sin drenaje y el k_h sin reducción es la que no cumple. El **peso específico saturado del relleno** es un ensayo del EMS que esta rama necesita: sin él la estabilidad y el armado de los ocho cabezales se detienen (§4.2). No es un fallo de la validación: es lo que el dimensionamiento de VE-3.5 y VE-3.9 resuelve y lo que deja.
++Lectura de ingeniería (no la escribe el programa; las cifras sí): con las decisiones de archivo los cuatro puntos dimensionan igual que con el juego —el cabezal no entra al dimensionamiento del conducto—. La zapata de la regla de T-7a no pasa la estabilidad estática del marco LRFD que rige, y desde VE-3.5 **se dimensiona**: crece por el talón con el paso y el tope de `dimensionamiento_zapata_cabezal` (valor de archivo desde VE-3.9, decisión del dueño) en 8 de 8 cabezales, y la estabilidad evaluada cumple en 0 de 8. El talón más largo pedía más **peralte** para armarse, y desde VE-3.9 el peralte crece por su armado en 0 de 8 cabezales: quedan 0 filas del armado de la zapata sin cumplir, y 0 de la pantalla y el alero, que desde VE-3.14 se dimensionan por su armado. Donde ninguna zapata corrida de la grilla cumple la estabilidad dentro del tope, el cabezal se declara NO FACTIBLE con estos criterios (VE-3.14) y su peralte no se itera: por eso pueden quedar filas del armado de la zapata sin cumplir. Desde VE-3.14 la condición **sísmica se evalúa** también con el relleno saturado (AASHTO C11.6.5.3: el incremento con el peso total bajo el agua, `agua_del_relleno_bajo_sismo` [C]); con el trasdós drenado de archivo (VE-3.16) el agua bajo sismo es la del freático del punto, y con el k_h sin reducción (k_h = k_h0, desplazamiento nulo) es la que no cumple. El **peso específico saturado del relleno** es un ensayo del EMS que sólo pide el relleno con agua (`drenaje_trasdos` = 'sin_drenaje' declarado, o el freático sobre la zapata): la titular no lo lee (§4.3). No es un fallo de la validación: es lo que el dimensionamiento de VE-3.5 y VE-3.9 resuelve y lo que deja.
+ 
+-### 2.1 Variante que ejercita la cadena sísmica y el caso drenado: el juego tal como está
++### 2.1 Variante que ejercita el empuje sísmico reducido: el juego tal como está
+ 
+-El juego pisa las dos decisiones de la tabla de arriba (trasdós drenado, muro que admite desplazamiento) para que la cadena sísmica y el caso drenado se recorran. Es la base de los barridos de `docs/validacion_sensibilidad.md`, porque con los valores de archivo la sísmica no es evaluable.
++El juego pisa la decisión de la tabla de arriba (muro que admite desplazamiento, k_h = 0.5·k_h0, armado como muro que cede) para que la rama del empuje sísmico reducido se recorra. Es la base de los barridos de `docs/validacion_sensibilidad.md`.
+ 
+ | Punto | Familia | Dimensiona | Material | Sección | Fase 11 (memoria / resumen) | Bloqueos |
+ |---|---|---|---|---|---|---|
+@@ -107,7 +106,7 @@ Cada fila es una corrida: la base sin esa entrada. **DETIENE** = aparece un bloq
+ | abrasion (global) | --datos-externos | SIN EFECTO MEDIBLE | — |
+ | acceso_mantenimiento_previsto (global) | --datos-externos | SIN EFECTO MEDIBLE | — |
+ | ancho_derecho_via_m (global) | --datos-externos | SIN EFECTO MEDIBLE | — |
+-| bombeo (global) | --datos-externos | SOLO AVISA | 36 avisos nuevos |
++| bombeo (global) | --datos-externos | SOLO AVISA | 38 avisos nuevos |
+ | cloruros_ppm (global) | --datos-externos | SIN EFECTO MEDIBLE | — |
+ | luz_m (global) | --datos-externos | DETIENE | A-01: entrada del proyecto que falta — luz_m; A-02: entrada del proyecto que falta — luz_m; B-01: entrada del proyecto que falta — luz_m; C-01: entrada del proyecto que falta — luz_m · no dimensiona A-01, A-02, B-01, C-01 · 1 avisos nuevos |
+ | pH (global) | --datos-externos | SIN EFECTO MEDIBLE | — |
+@@ -119,13 +118,13 @@ Cada fila es una corrida: la base sin esa entrada. **DETIENE** = aparece un bloq
+ | TW_evento_extremo_m (A-01) | --datos-externos | DETIENE | A-01: entrada del proyecto que falta — TW_evento_extremo_m · no dimensiona A-01 |
+ | cota_afectacion_aguas_arriba_msnm (A-01) | --datos-externos | DETIENE | A-01: entrada del proyecto que falta — cota_afectacion_aguas_arriba_msnm · no dimensiona A-01 |
+ | duracion_caudal_pico_min (A-01) | --datos-externos | SOLO AVISA | 7 avisos nuevos |
+-| material_lecho_salida (A-01) | --datos-externos | CAMBIA VEREDICTOS | 2 veredictos · 10 avisos nuevos |
++| material_lecho_salida (A-01) | --datos-externos | CAMBIA VEREDICTOS | 2 veredictos · 9 avisos nuevos |
+ | tipo_terreno_entrada (A-01) | --datos-externos | SOLO AVISA | 1 avisos nuevos |
+ | tipo_terreno_receptor (A-01) | --datos-externos | SOLO AVISA | 1 avisos nuevos |
+ | Q_evento_extremo_m3s (A-02) | --datos-externos | DETIENE | A-02: entrada del proyecto que falta — Q_evento_extremo_m3s · no dimensiona A-02 |
+ | TW_evento_extremo_m (A-02) | --datos-externos | DETIENE | A-02: entrada del proyecto que falta — TW_evento_extremo_m · no dimensiona A-02 |
+ | cota_afectacion_aguas_arriba_msnm (A-02) | --datos-externos | DETIENE | A-02: entrada del proyecto que falta — cota_afectacion_aguas_arriba_msnm · no dimensiona A-02 |
+-| profundidad_socavacion_estimada_m (A-02) | --datos-externos | CAMBIA VEREDICTOS | 2 veredictos · 9 avisos nuevos |
++| profundidad_socavacion_estimada_m (A-02) | --datos-externos | CAMBIA VEREDICTOS | 2 veredictos · 8 avisos nuevos |
+ | tipo_terreno_entrada (A-02) | --datos-externos | SOLO AVISA | 1 avisos nuevos |
+ | tipo_terreno_receptor (A-02) | --datos-externos | SOLO AVISA | 1 avisos nuevos |
+ | Q_evento_extremo_m3s (B-01) | --datos-externos | DETIENE | B-01: entrada del proyecto que falta — Q_evento_extremo_m3s · no dimensiona B-01 |
+@@ -142,9 +141,9 @@ Cada fila es una corrida: la base sin esa entrada. **DETIENE** = aparece un bloq
+ | S_cauce (C-01) | --datos-externos | DETIENE | C-01: entrada del proyecto que falta — S_cauce · no dimensiona C-01 |
+ | S_conducto (C-01) | --datos-externos | CAMBIA VEREDICTOS | 1 veredictos · 10 avisos nuevos |
+ | TW_evento_extremo_m (C-01) | --datos-externos | DETIENE | C-01: entrada del proyecto que falta — TW_evento_extremo_m · no dimensiona C-01 |
+-| TW_m (C-01) | --datos-externos | SOLO AVISA | 5 avisos nuevos |
++| TW_m (C-01) | --datos-externos | SOLO AVISA | 3 avisos nuevos |
+ | desnivel_perfil_canal_m (C-01) | --datos-externos | DETIENE | C-01: entrada del proyecto que falta — desnivel_perfil_canal_m · no dimensiona C-01 |
+-| profundidad_socavacion_estimada_m (C-01) | --datos-externos | CAMBIA VEREDICTOS | 1 veredictos · 8 avisos nuevos |
++| profundidad_socavacion_estimada_m (C-01) | --datos-externos | CAMBIA VEREDICTOS | 1 veredictos · 7 avisos nuevos |
+ | seccion_receptor_medida (C-01) | --datos-externos | SOLO AVISA | 1 avisos nuevos |
+ | tipo_terreno_entrada (C-01) | --datos-externos | SOLO AVISA | 1 avisos nuevos |
+ | tipo_terreno_receptor (C-01) | --datos-externos | SOLO AVISA | 1 avisos nuevos |
+@@ -157,9 +156,8 @@ Cada fila es una corrida: la base sin esa entrada. **DETIENE** = aparece un bloq
+ | c_phi_fundacion | --declarar | DETIENE | A-01: entrada del proyecto que falta — c_phi_fundacion; A-02: entrada del proyecto que falta — c_phi_fundacion; B-01: entrada del proyecto que falta — c_phi_fundacion; C-01: entrada del proyecto que falta — c_phi_fundacion · 96 veredictos · 11 avisos nuevos |
+ | categoria_refuerzo_aashto | --declarar | DETIENE | proyecto: criterio que el Propietario o el proyectista debe declarar — categoria_refuerzo_aashto · 16 avisos nuevos |
+ | clase_exposicion_fisuracion_cabezal | --declarar | SIN EFECTO MEDIBLE | — |
+-| drenaje_trasdos | --declarar | CAMBIA VEREDICTOS | 8 veredictos · 40 avisos nuevos |
+ | exposicion_quimica_ems | --declarar | DETIENE | proyecto: entrada del proyecto que falta — exposicion_quimica_ems · 8 veredictos · 24 avisos nuevos |
+-| factor_muro_eleccion + regimen_resistencia_elementos_cabezal | --declarar | CAMBIA VEREDICTOS | 18 veredictos · 57 avisos nuevos |
++| factor_muro_eleccion + regimen_resistencia_elementos_cabezal | --declarar | CAMBIA VEREDICTOS | 18 veredictos · 58 avisos nuevos |
+ | homogeneidad_serie_fen | --declarar | SIN EFECTO MEDIBLE | — |
+ | peso_especifico_saturado_relleno_kn_m3 | --declarar | SIN EFECTO MEDIBLE | — |
+ | phi_relleno_trasdos | --declarar | DETIENE | A-01: entrada del proyecto que falta — phi_relleno_trasdos; A-02: entrada del proyecto que falta — phi_relleno_trasdos; B-01: entrada del proyecto que falta — phi_relleno_trasdos; C-01: entrada del proyecto que falta — phi_relleno_trasdos · 304 veredictos |
+@@ -173,7 +171,7 @@ Se corrieron 66 entradas; las 65 que no salen aquí tienen el mismo efecto que e
+ 
+ | Entrada quitada | Puerta | Efecto | Detalle |
+ |---|---|---|---|
+-| peso_especifico_saturado_relleno_kn_m3 | --declarar | DETIENE | A-01: entrada del proyecto que falta — peso_especifico_saturado_relleno_kn_m3; A-02: entrada del proyecto que falta — peso_especifico_saturado_relleno_kn_m3; B-01: entrada del proyecto que falta — peso_especifico_saturado_relleno_kn_m3; C-01: entrada del proyecto que falta — peso_especifico_saturado_relleno_kn_m3 · 304 veredictos |
++| bombeo (global) | --datos-externos | CAMBIA VEREDICTOS | 2 veredictos · 55 avisos nuevos |
+ 
+ ### 4.3 La lista exacta: lo que detiene una etapa si falta
+ 
+@@ -196,7 +194,6 @@ Se corrieron 66 entradas; las 65 que no salen aquí tienen el mismo efecto que e
+ | `exposicion_quimica_ems` | entrada del proyecto que falta | proyecto: aviso de ambiente corrosivo (9.4); proyecto: aviso de ambiente corrosivo (9.4) (con las decisiones de archivo); proyecto: aviso de ambiente corrosivo (9.4) (sin juego); proyecto: recubrimiento de diseno 'contra_suelo' (9.4); proyecto: recubrimiento de diseno 'contra_suelo' (9.4) (con las decisiones de archivo); proyecto: recubrimiento de diseno 'suelo_intemperie_ge_3_4' (9.4); proyecto:… |
+ | `luz_m` | entrada del proyecto que falta | A-01: umbral de luz (Sec. 2.1); A-01: umbral de luz (Sec. 2.1) (con las decisiones de archivo); A-01: umbral de luz (Sec. 2.1) (sin juego); A-02: umbral de luz (Sec. 2.1); A-02: umbral de luz (Sec. 2.1) (con las decisiones de archivo); A-02: umbral de luz (Sec. 2.1) (sin juego); B-01: umbral de luz (Sec. 2.1); B-01: umbral de luz (Sec. 2.1) (con las decisiones de archivo); B-01: umbral de luz (Se… |
+ | `orientacion_muro_respecto_al_trafico` | entrada del proyecto que falta | A-01: armado del cabezal de entrada: solicitaciones de resistencia (T-7c); A-01: armado del cabezal de entrada: solicitaciones de resistencia (T-7c) (con las decisiones de archivo); A-01: armado del cabezal de salida: solicitaciones de resistencia (T-7c); A-01: armado del cabezal de salida: solicitaciones de resistencia (T-7c) (con las decisiones de archivo); A-01: estabilidad E1-E3 del cabezal d… |
+-| `peso_especifico_saturado_relleno_kn_m3` | entrada del proyecto que falta | A-01: armado del cabezal de entrada: solicitaciones de resistencia (T-7c) (con las decisiones de archivo); A-01: armado del cabezal de salida: solicitaciones de resistencia (T-7c) (con las decisiones de archivo); A-01: estabilidad E1-E3 del cabezal de entrada, condicion estatico (T-7b) (con las decisiones de archivo); A-01: estabilidad E1-E3 del cabezal de entrada, condicion sismico (T-7b) (con l… |
+ | `phi_relleno_trasdos` | entrada del proyecto que falta | A-01: armado del cabezal de entrada: solicitaciones de resistencia (T-7c); A-01: armado del cabezal de entrada: solicitaciones de resistencia (T-7c) (con las decisiones de archivo); A-01: armado del cabezal de salida: solicitaciones de resistencia (T-7c); A-01: armado del cabezal de salida: solicitaciones de resistencia (T-7c) (con las decisiones de archivo); A-01: estabilidad E1-E3 del cabezal d… |
+ | `remanso_derecho_via` | criterio que el Propietario o el proyectista debe declarar | A-01: material y diametro (bucle de MD); A-01: material y diametro (bucle de MD) (con las decisiones de archivo); A-02: material y diametro (bucle de MD); A-02: material y diametro (bucle de MD) (con las decisiones de archivo); B-01: material y diametro (bucle de MD); B-01: material y diametro (bucle de MD) (con las decisiones de archivo) |
+ | `umbral_no_colapso_evento_extremo` | criterio que el Propietario o el proyectista debe declarar | A-01: material y diametro (bucle de MD); A-01: material y diametro (bucle de MD) (con las decisiones de archivo); A-02: material y diametro (bucle de MD); A-02: material y diametro (bucle de MD) (con las decisiones de archivo); B-01: material y diametro (bucle de MD); B-01: material y diametro (bucle de MD) (con las decisiones de archivo); C-01: material y diametro (bucle de MD); C-01: material y… |
+@@ -215,21 +212,22 @@ Cada una está nombrada en `docs/contrato_entradas.md` §7 (lo comprueba el test
+ - `N_cq_N_gammaq_meyerhof` — solo con `terreno_delante_del_cabezal` = 'talud_descendente': la zapata en talud del Manual de Puentes 2.8.1.3.1.2c.
+ - `q_n_kpa` — la resistencia portante nominal del EMS (`suelo_fundacion`): solo con la cimentacion en ROCA (filas A o B declaradas en 'F_pga'), donde la ecuacion de 10.6.3.1.2a no aplica y sin el dato la capacidad portante es «metodo no evaluable».
+ - `margen_estacional_nf_v7_m` — solo con `nivel_agua_diseno_v7` = 'nf_del_punto': detiene V7 (el ascenso estacional del freatico sobre la lectura de `NF_profundidad_m`), y con esa alternativa V7 exige ademas el NF del punto y, con el nivel sobre la clave, `peso_especifico_saturado_relleno_kn_m3` (ficha VE2-C).
++- `peso_especifico_saturado_relleno_kn_m3` — solo con agua en el relleno del cabezal: `drenaje_trasdos` = 'sin_drenaje' declarado (el drenaje no puede darse) o el freatico sobre la base de la zapata; con el relleno drenado de archivo (VE-3.16) y el freatico bajo la zapata no se lee. El juego lo declara (20 kN/m³ de prueba) para la variante `sin_drenaje_declarado`.
+ 
+ ## 5. Variantes: una decisión del juego, del otro lado
+ 
+ | Variante | Qué cambia | Efecto | Resultado | Detalle |
+ |---|---|---|---|---|
+-| `decisiones_de_archivo` | Las dos decisiones de ARCHIVO que el juego pisa (`drenaje_trasdos` = 'sin_drenaje' y el muro que NO cede: `factor_muro_eleccion` = 'sin_reduccion' con el armado en reposo, un solo regimen desde VE-3.15), con el gamma saturado del relleno de prueba (20 kN/m³) que el relleno sin drenaje pide: la corrida TITULAR de §2 | CAMBIA VEREDICTOS | A-01: Ø 0.90 m · A-02: Ø 0.90 m · B-01: Ø 0.90 m · C-01: marco 1.20 × 0.90 m | A-01 A2.alero.s: cumple → indicador; A-01 A2.pantalla.s: cumple → indicador; A-01 E1-LRFD.sis.e: cumple → no cumple; A-01 E1-LRFD.sis.s: cumple → no cumple; A-01 E3-ASD.sis.s: cumple → indicador; A-01 E3-LRFD.sis.e: cumple → no cumple; A-01 E3-LRFD.sis.s: cumple → no cumple; A-02 A2.alero.s: cumple → indicador; A-02 A2.pantalla.s: cumple → indicador; A-02 E1-LRFD.sis.e: cumple → no cumple; A-02 E1-LRFD.sis.s: cumple → no cumple; A-02 E3-ASD.sis.s: cumple → indicador; A-02 E3-LRFD.sis.e: cumple → no cumple; A-02 E3-LRFD.sis.s: cumple → no cumple; B-01 A2.alero.s: cumple → indicador; B-01 A2.pantalla.s: cumple → indicador; B-01 E1-LRFD.sis.e: cumple → no cumple; B-01 E1-LRFD.sis.s: cumple → no cumple; B-01 E3-LRFD.sis.e: cumple → no cumple; B-01 E3-LRFD.sis.s: cumple → no cumple; C-01 A2.alero.s: cumple → indicador; C-01 A2.pantalla.s: cumple → indicador; C-01 E1-LRFD.sis.e: cumple → no cumple; C-01 E1-LRFD.sis.s: cumple → no cumple; C-01 E3-LRFD.sis.e: cumple → no cumple; C-01 E3-LRFD.sis.s: cumple → no cumple |
++| `decisiones_de_archivo` | La decision de ARCHIVO que el juego pisa (el muro que NO cede: `factor_muro_eleccion` = 'sin_reduccion' con el armado en reposo, un solo regimen desde VE-3.15), con el trasdos drenado de archivo (VE-3.16): la corrida TITULAR de §2 | CAMBIA VEREDICTOS | A-01: Ø 0.90 m · A-02: Ø 0.90 m · B-01: Ø 0.90 m · C-01: marco 1.20 × 0.90 m | A-01 E1-LRFD.sis.s: cumple → no cumple; A-01 E3-ASD.sis.s: cumple → indicador; A-01 E3-LRFD.sis.e: cumple → no cumple; A-01 E3-LRFD.sis.s: cumple → no cumple; A-02 A2.alero.s: cumple → indicador; A-02 A2.pantalla.s: cumple → indicador; A-02 E1-LRFD.sis.s: cumple → no cumple; A-02 E3-ASD.sis.s: cumple → indicador; A-02 E3-LRFD.sis.e: cumple → no cumple; A-02 E3-LRFD.sis.s: cumple → no cumple; B-01 E1-LRFD.sis.s: cumple → no cumple; B-01 E3-LRFD.sis.e: cumple → no cumple; B-01 E3-LRFD.sis.s: cumple → no cumple; C-01 A2.alero.s: cumple → indicador; C-01 A2.pantalla.s: cumple → indicador; C-01 E1-LRFD.sis.s: cumple → no cumple; C-01 E3-LRFD.sis.e: cumple → no cumple; C-01 E3-LRFD.sis.s: cumple → no cumple |
+ | `B01_tw_de_la_linea_base` | B-01 con el TW de 1.00 m de la linea base (el caso por defecto que el dueño decidio dejar) | NO FACTIBLE | A-01: Ø 0.90 m · A-02: Ø 0.90 m · B-01: no dimensiona · C-01: marco 1.20 × 0.90 m | B-01: resultado: ningun material ni seccion cumple — Fase 5 |
+ | `B01_sin_inicio_de_tramo` | B-01 sin `inicio_tramo_cuneta_km`: el tramo empieza en A-02 (530 m), el caso de la linea base | CAMBIA VEREDICTOS | A-01: Ø 0.90 m · A-02: Ø 0.90 m · B-01: Ø 0.90 m · C-01: marco 1.20 × 0.90 m | B-01 VB1: cumple → no cumple |
+-| `freatico_a_2m` | Freatico a 2.0 m (el de T-7b) en los cuatro puntos | CAMBIA VEREDICTOS | A-01: Ø 0.90 m · A-02: Ø 0.90 m · B-01: Ø 0.90 m · C-01: marco 1.20 × 0.90 m | C-01 E3-ASD.sis.s: indicador → cumple |
++| `freatico_a_2m` | Freatico a 2.0 m (el de T-7b) en los cuatro puntos | SOLO AVISA | A-01: Ø 0.90 m · A-02: Ø 0.90 m · B-01: Ø 0.90 m · C-01: marco 1.20 × 0.90 m | — |
+ | `agua_con_cloruros` | Analisis quimico con cloruros (la fila de cloruros de la Tabla 4.2 de E.060), como en el conftest | CAMBIA VEREDICTOS | A-01: Ø 0.90 m · A-02: Ø 0.90 m · B-01: Ø 0.90 m · C-01: marco 1.20 × 0.90 m | A-01 A7.concreto.e: no aplica → no cumple; A-01 A7.concreto.s: no aplica → no cumple; A-02 A7.concreto.e: no aplica → no cumple; A-02 A7.concreto.s: no aplica → no cumple; B-01 A7.concreto.e: no aplica → no cumple; B-01 A7.concreto.s: no aplica → no cumple; C-01 A7.concreto.e: no aplica → no cumple; C-01 A7.concreto.s: no aplica → no cumple |
+ | `sin_socavacion_A01` | A-01 sin lecho declarado: la hoya no se estima y el desplante de salida queda en el minimo de E.050 | CAMBIA VEREDICTOS | A-01: Ø 0.90 m · A-02: Ø 0.90 m · B-01: Ø 0.90 m · C-01: marco 1.20 × 0.90 m | A-01 CB5.s: cumple → —; A-01 E3-ASD.sis.s: cumple → indicador |
+ | `C01_lecho_cohesivo` | C-01 con lecho cohesivo estimado (IP 8, Sv 25 kPa, 60 % de finos) en vez de la socavacion de un estudio | CAMBIA VEREDICTOS | A-01: Ø 0.90 m · A-02: Ø 0.90 m · B-01: Ø 0.90 m · C-01: marco 1.20 × 0.90 m | C-01 E3-ASD.sis.s: indicador → cumple |
+ | `C01_sin_desnivel` | C-01 sin el desnivel del perfil del canal (F de VC3): desde VE-3.10 el punto se detiene pidiendo el dato del proyecto del canal | DETIENE | A-01: Ø 0.90 m · A-02: Ø 0.90 m · B-01: Ø 0.90 m · C-01: no dimensiona | C-01: entrada del proyecto que falta — desnivel_perfil_canal_m |
+-| `zapata_declarada_3m` | A-01 con la zapata de sus dos cabezales declarada de 3.00 m de ancho (`cabezal_declarado`, la prueba de T-7b) | CAMBIA VEREDICTOS | A-01: Ø 0.90 m · A-02: Ø 0.90 m · B-01: Ø 0.90 m · C-01: marco 1.20 × 0.90 m | A-01 E1-ASD.sis.e: indicador → cumple; A-01 E1-LRFD.sis.s: cumple → no cumple; A-01 E3-ASD.sis.e: indicador → cumple |
+-| `drenaje_de_archivo` | Trasdos sin drenaje (el valor de archivo de `drenaje_trasdos`) | CAMBIA VEREDICTOS | A-01: Ø 0.90 m · A-02: Ø 0.90 m · B-01: Ø 0.90 m · C-01: marco 1.20 × 0.90 m | A-01 E1-LRFD.sis.s: cumple → no cumple; A-01 E3-ASD.sis.s: cumple → indicador; A-01 E3-LRFD.sis.s: cumple → no cumple; A-02 A5.alero.s: cumple → indicador; A-02 A5.pantalla.s: cumple → indicador; A-02 E1-LRFD.sis.s: cumple → no cumple; A-02 E3-ASD.sis.s: cumple → indicador; C-01 E1-LRFD.sis.s: cumple → no cumple |
++| `zapata_declarada_3m` | A-01 con la zapata de sus dos cabezales declarada de 3.00 m de ancho (`cabezal_declarado`, la prueba de T-7b) | CAMBIA VEREDICTOS | A-01: Ø 0.90 m · A-02: Ø 0.90 m · B-01: Ø 0.90 m · C-01: marco 1.20 × 0.90 m | A-01 E1-ASD.sis.e: indicador → cumple; A-01 E3-ASD.sis.e: indicador → cumple |
++| `sin_drenaje_declarado` | Trasdos sin drenaje declarado (`drenaje_trasdos` = 'sin_drenaje': el drenaje no puede darse y el relleno se llena de agua) | CAMBIA VEREDICTOS | A-01: Ø 0.90 m · A-02: Ø 0.90 m · B-01: Ø 0.90 m · C-01: marco 1.20 × 0.90 m | A-01 E1-ASD.sis.e: indicador → cumple; A-01 E1-LRFD.sis.s: cumple → no cumple; A-01 E3-ASD.sis.s: cumple → indicador; A-01 E3-LRFD.sis.s: cumple → no cumple; A-02 A5.alero.s: cumple → indicador; A-02 A5.pantalla.s: cumple → indicador; A-02 E1-LRFD.sis.s: cumple → no cumple; A-02 E3-ASD.sis.s: cumple → indicador |
+ | `caudal_calculado` | A-01, A-02 y B-01 con `Q_m3s` vacio: el caudal lo calcula la Fase 1-bis con las cuencas y la serie sinteticas de T-1, y sin el caudal del evento extremo del juego, que es el de su Q declarado | DETIENE | A-01: no dimensiona · A-02: no dimensiona · B-01: no dimensiona · C-01: marco 1.20 × 0.90 m | A-01: resultado: ningun material ni seccion cumple — Fase 5; A-02: resultado: ningun material ni seccion cumple — Fase 5; B-01: entrada del proyecto que falta — Q_evento_extremo_m3s |
+ | `C01_fondo_en_el_canal` | C-01 con la cota de fondo de entrada en el canal (36.30 msnm: la salida queda a 5 mm sobre el fondo del canal, 36.20) en vez de la regla de archivo, que la pone en el terreno del cruce | CAMBIA VEREDICTOS | A-01: Ø 0.90 m · A-02: Ø 0.90 m · B-01: Ø 0.90 m · C-01: marco 1.20 × 0.90 m | C-01 VC2: indicador → cumple |
+ | `v_max_concreto_3_con_tmc_excluida` | `v_max_concreto_eleccion` = 3.0 m/s (extremo inferior de la Tabla N 10) con `suelo_agresivo_lrfd_sobre_tmc` = 'excluye': el TMC al que A-01 pasaria queda fuera por los sulfatos del juego | DETIENE | A-01: no dimensiona · A-02: Ø 0.90 m · B-01: Ø 0.90 m · C-01: marco 1.20 × 0.90 m | A-01: entrada del proyecto que falta — perfil_hdpe_fabricante |
+diff --git a/docs/validacion_sensibilidad.md b/docs/validacion_sensibilidad.md
+index 7e7cc6e..a6a743c 100644
+--- a/docs/validacion_sensibilidad.md
++++ b/docs/validacion_sensibilidad.md
+@@ -4,7 +4,7 @@
+ 
+ ## 1. Cómo leer este anexo
+ 
+-- **La base de los barridos es el juego tal como está**, la variante que ejercita la cadena sísmica y el caso drenado (`docs/validacion_integral.md` §2.1), y **no la corrida titular** (§2, con las decisiones de archivo): con `drenaje_trasdos` = 'sin_drenaje' la condición sísmica del cabezal es «método no evaluable» (ficha T7B-05), y hace falta una base donde el método sea evaluable para medir los [A] del cabezal. Lo que las dos decisiones de archivo hacen se lee en sus propios barridos (`drenaje_trasdos`, `factor_muro_eleccion`).
++- **La base de los barridos es el juego tal como está**, la variante que ejercita el empuje sísmico reducido (`docs/validacion_integral.md` §2.1), y **no la corrida titular** (§2, con la decisión de archivo del muro que no cede): con k_h = k_h0 la condición sísmica del cabezal no cumple en ningún cabezal del juego, y hace falta una base donde el cabezal cierre para medir los [A] del cabezal. Lo que la decisión de archivo hace se lee en su propio barrido (`factor_muro_eleccion`); el trasdós es drenado de archivo desde VE-3.16, y el otro lado se lee en el barrido de `drenaje_trasdos`.
+ - **Primer valor = el efectivo en el juego** (el que el juego declara o el de archivo): su corrida es la del juego, y cada otra se compara con ella por el comparador de E-B. Los demás valores son los extremos de la ventana del criterio (`Criterio.sensibilidad`), o sus otras opciones.
+ - **MUEVE EL DISEÑO**: algún punto cambia de material o de sección, o deja de dimensionar. **MUEVE VEREDICTOS**: cambia el veredicto de alguna verificación del conducto, del cabezal o de la Fase 10. **MUEVE EL HW**: sólo cambia la carga que gobierna, en más de 5e-05 m (media unidad de la cuarta cifra con que se imprime). **LEÍDO, SIN EFECTO MEDIBLE** quiere decir que la corrida lee el criterio y que no cambian ni el material, ni la sección, ni ningún veredicto, ni el HW que gobierna: **las demás magnitudes no se comparan** (la hoya de socavación, el espesor y la longitud de la protección, las longitudes, los márgenes, el armado), y pueden cambiar. **NO LO LEE LA CORRIDA**: la clave no está entre los criterios usados de ninguna corrida del barrido, y barrerla no mueve nada en ESTE juego (la razón, en la tabla).
+ - **La lista se deriva del censo**: se barre todo criterio con valor efectivo en el juego y ventana legible por máquina (una categoría cerrada o dos extremos numéricos), más los que necesitan valores propios. Los que no se barren están en §5, **por nombre y con su razón**. Un barrido mide UNA clave a la vez, sobre UN juego: no es el producto cartesiano ni dice nada de otro sitio.
+@@ -31,25 +31,25 @@
+ | conducto | `fraccion_llena_mayor_parte` | [A] | 0.5–0.9 | 0.5, 0.9 | juego | LEÍDO, SIN EFECTO MEDIBLE | — |
+ | conducto | `instalacion_estandar_concreto` | [A] | tipo_1 / tipo_2 / tipo_3 / tipo_4 | 'tipo_3', 'tipo_1', 'tipo_2', 'tipo_4' | juego | LEÍDO, SIN EFECTO MEDIBLE | — |
+ | conducto | `carga_viva_bajo_relleno_alto` | [A] | conservar / despreciar_3_6_1_2_6a | 'conservar', 'despreciar_3_6_1_2_6a' | juego | LEÍDO, SIN EFECTO MEDIBLE | — |
+-| conducto | `eta_importancia_operativa_conducto` | [A] | 0.95–1.05 | 1.05, 0.95 | juego | MUEVE VEREDICTOS | veredictos que cambian: A-01 con 0.95: 1; A-02 con 0.95: 1; B-01 con 0.95: 1; C-01 con 0.95: 1 |
+-| cabezal | `factor_muro_eleccion` | [A] | sin_reduccion / reduccion_por_desplazamiento | 'reduccion_por_desplazamiento', 'sin_reduccion' | juego | MUEVE VEREDICTOS | veredictos que cambian: A-01 con 'sin_reduccion': 14; A-02 con 'sin_reduccion': 13; B-01 con 'sin_reduccion': 15; C-01 con 'sin_reduccion': 13 |
+-| cabezal | `gamma_EQ` | [A] | 0.0–1.0 | 0.5, 0.0, 1.0 | juego | MUEVE VEREDICTOS | veredictos que cambian: A-01 con 0.0: 1; A-02 con 1.0: 1 |
+-| cabezal | `fraccion_delta_sobre_phi_trasdos` | [C] | 0.33–0.67 | 0.67, 0.33 | juego | MUEVE VEREDICTOS | veredictos que cambian: A-01 con 0.33: 1 |
+-| cabezal | `fila_phi_estabilidad_cabezal` | [A] | zapatas_seccion_10 / muros_tabla_11_5_7 | 'zapatas_seccion_10', 'muros_tabla_11_5_7' | juego_cabezal_de_la_regla | MUEVE VEREDICTOS | veredictos que cambian: A-01 con 'muros_tabla_11_5_7': 1; A-02 con 'muros_tabla_11_5_7': 1; C-01 con 'muros_tabla_11_5_7': 1 |
+-| cabezal | `factores_inclinacion_carga_portante` | [A] | aplicar / omitir | 'aplicar', 'omitir' | juego_cabezal_de_la_regla | MUEVE VEREDICTOS | veredictos que cambian: A-01 con 'omitir': 4; A-02 con 'omitir': 4; B-01 con 'omitir': 4; C-01 con 'omitir': 4 |
+-| cabezal | `regla_pendiente_relleno_trasdos` | [A] | cuna_de_tanteo / talud_quebrado_2h / talud_del_terraplen | 'cuna_de_tanteo', 'talud_quebrado_2h', 'talud_del_terraplen' | juego | MUEVE VEREDICTOS | veredictos que cambian: A-01 con 'talud_quebrado_2h': 3; A-02 con 'talud_quebrado_2h': 1; B-01 con 'talud_quebrado_2h': 1; C-01 con 'talud_quebrado_2h': 5; A-01 con 'talud_del_terraplen': 14; A-02 con 'talud_del_terraplen': 14; B-01 con 'talud_del_terraplen': 14; C-01 con 'talud_del_terraplen': 16 |
+-| cabezal | `regimen_resistencia_elementos_cabezal` | [A] | no_cedente_k0 / cedente | 'no_cedente_k0', 'cedente' | juego | MUEVE VEREDICTOS | veredictos que cambian: A-01 con 'cedente': 2; A-02 con 'cedente': 2; B-01 con 'cedente': 2 |
+-| cabezal | `eta_ductilidad_cabezal` | [A] | 0.95–1.05 | 1.0, 0.95, 1.05 | juego | MUEVE VEREDICTOS | veredictos que cambian: A-01 con 0.95: 1; A-02 con 0.95: 3; B-01 con 0.95: 1; C-01 con 0.95: 1; A-01 con 1.05: 1; A-02 con 1.05: 2; B-01 con 1.05: 1; C-01 con 1.05: 2 |
+-| cabezal | `eta_redundancia_cabezal` | [A] | 0.95–1.05 | 1.0, 0.95, 1.05 | juego | MUEVE VEREDICTOS | veredictos que cambian: A-01 con 0.95: 1; A-02 con 0.95: 3; B-01 con 0.95: 1; C-01 con 0.95: 1; A-01 con 1.05: 1; A-02 con 1.05: 2; B-01 con 1.05: 1; C-01 con 1.05: 2 |
+-| cabezal | `marco_estabilidad_cabezal` | [A] | lrfd_rige_asd_informa / asd_rige_lrfd_informa / envolvente_de_los_dos | 'lrfd_rige_asd_informa', 'asd_rige_lrfd_informa', 'envolvente_de_los_dos' | juego | MUEVE VEREDICTOS | veredictos que cambian: A-01 con 'asd_rige_lrfd_informa': 2; A-02 con 'asd_rige_lrfd_informa': 5; B-01 con 'asd_rige_lrfd_informa': 3; C-01 con 'asd_rige_lrfd_informa': 3; A-01 con 'envolvente_de_los_dos': 2; A-02 con 'envolvente_de_los_dos': 5; B-01 con 'envolvente_de_los_dos': 3; C-01 con 'envolvente_de_los_dos': 3 |
++| conducto | `eta_importancia_operativa_conducto` | [A] | 0.95–1.05 | 1.05, 0.95 | juego | LEÍDO, SIN EFECTO MEDIBLE | — |
++| cabezal | `factor_muro_eleccion` | [A] | sin_reduccion / reduccion_por_desplazamiento | 'reduccion_por_desplazamiento', 'sin_reduccion' | juego | MUEVE VEREDICTOS | veredictos que cambian: A-01 con 'sin_reduccion': 4; A-02 con 'sin_reduccion': 4; B-01 con 'sin_reduccion': 3; C-01 con 'sin_reduccion': 3 |
++| cabezal | `gamma_EQ` | [A] | 0.0–1.0 | 0.5, 0.0, 1.0 | juego | LEÍDO, SIN EFECTO MEDIBLE | — |
++| cabezal | `fraccion_delta_sobre_phi_trasdos` | [C] | 0.33–0.67 | 0.67, 0.33 | juego | LEÍDO, SIN EFECTO MEDIBLE | — |
++| cabezal | `fila_phi_estabilidad_cabezal` | [A] | zapatas_seccion_10 / muros_tabla_11_5_7 | 'muros_tabla_11_5_7', 'zapatas_seccion_10' | juego_cabezal_de_la_regla | MUEVE VEREDICTOS | veredictos que cambian: A-01 con 'zapatas_seccion_10': 1; C-01 con 'zapatas_seccion_10': 2 |
++| cabezal | `factores_inclinacion_carga_portante` | [A] | aplicar / omitir | 'aplicar', 'omitir' | juego_cabezal_de_la_regla | MUEVE VEREDICTOS | veredictos que cambian: A-01 con 'omitir': 5; A-02 con 'omitir': 6; B-01 con 'omitir': 6; C-01 con 'omitir': 3 |
++| cabezal | `regla_pendiente_relleno_trasdos` | [A] | cuna_de_tanteo / talud_quebrado_2h / talud_del_terraplen | 'cuna_de_tanteo', 'talud_quebrado_2h', 'talud_del_terraplen' | juego | MUEVE VEREDICTOS | veredictos que cambian: A-02 con 'talud_quebrado_2h': 1; A-01 con 'talud_del_terraplen': 13; A-02 con 'talud_del_terraplen': 13; B-01 con 'talud_del_terraplen': 12; C-01 con 'talud_del_terraplen': 12 |
++| cabezal | `regimen_resistencia_elementos_cabezal` | [A] | no_cedente_k0 / cedente | 'cedente', 'no_cedente_k0' | juego | MUEVE VEREDICTOS | veredictos que cambian: A-01 con 'no_cedente_k0': 65; A-02 con 'no_cedente_k0': 65; B-01 con 'no_cedente_k0': 64; C-01 con 'no_cedente_k0': 64 |
++| cabezal | `eta_ductilidad_cabezal` | [A] | 0.95–1.05 | 1.0, 0.95, 1.05 | juego | LEÍDO, SIN EFECTO MEDIBLE | — |
++| cabezal | `eta_redundancia_cabezal` | [A] | 0.95–1.05 | 1.0, 0.95, 1.05 | juego | LEÍDO, SIN EFECTO MEDIBLE | — |
++| cabezal | `marco_estabilidad_cabezal` | [A] | lrfd_rige_asd_informa / asd_rige_lrfd_informa / envolvente_de_los_dos | 'lrfd_rige_asd_informa', 'asd_rige_lrfd_informa', 'envolvente_de_los_dos' | juego | MUEVE VEREDICTOS | veredictos que cambian: A-01 con 'asd_rige_lrfd_informa': 3; A-02 con 'asd_rige_lrfd_informa': 3; B-01 con 'asd_rige_lrfd_informa': 4; C-01 con 'asd_rige_lrfd_informa': 4; A-01 con 'envolvente_de_los_dos': 3; A-02 con 'envolvente_de_los_dos': 3; B-01 con 'envolvente_de_los_dos': 4; C-01 con 'envolvente_de_los_dos': 4 |
+ | cabezal | `regimen_cabezal` | [A] | cedente / no_cedente | 'cedente', 'no_cedente' | juego | MUEVE VEREDICTOS | veredictos que cambian: A-01 con 'no_cedente': 24; A-02 con 'no_cedente': 24; B-01 con 'no_cedente': 24; C-01 con 'no_cedente': 24 |
+-| cabezal | `drenaje_trasdos` | [A] | sin_drenaje / drenado | 'drenado', 'sin_drenaje' | juego | MUEVE VEREDICTOS | veredictos que cambian: A-01 con 'sin_drenaje': 8; A-02 con 'sin_drenaje': 7; B-01 con 'sin_drenaje': 1; C-01 con 'sin_drenaje': 3 |
+-| cabezal | `fc_cabezal_mpa` | [A] | 17.5–35.0 | 21.0, 17.5, 35.0 | juego | MUEVE VEREDICTOS | veredictos que cambian: A-01 con 35.0: 2; B-01 con 35.0: 2; C-01 con 35.0: 2 |
++| cabezal | `drenaje_trasdos` | [A] | sin_drenaje / drenado | 'drenado', 'sin_drenaje' | juego | MUEVE VEREDICTOS | veredictos que cambian: A-01 con 'sin_drenaje': 4; A-02 con 'sin_drenaje': 4 |
++| cabezal | `fc_cabezal_mpa` | [A] | 17.5–35.0 | 21.0, 17.5, 35.0 | juego | LEÍDO, SIN EFECTO MEDIBLE | — |
+ | cabezal | `duracion_caudal_pico_socavacion_min` | [A] | 30.0–360.0 | 360.0, 30.0 | juego | LEÍDO, SIN EFECTO MEDIBLE | — |
+ | hidrología | `factor_intervalo_fijo_p24` | [A] | 1.0–1.13 | 1.0, 1.13 | juego_caudal_calculado | LEÍDO, SIN EFECTO MEDIBLE | — |
+-| cabezal | `F_pga_lectura_columna_extrema` | [A] | limite_inclusive / limite_estricto | 'limite_inclusive', 'limite_estricto' | juego | MUEVE VEREDICTOS | veredictos que cambian: A-01 con 'limite_estricto': 64; A-02 con 'limite_estricto': 64; B-01 con 'limite_estricto': 64; C-01 con 'limite_estricto': 64 |
++| cabezal | `F_pga_lectura_columna_extrema` | [A] | limite_inclusive / limite_estricto | 'limite_inclusive', 'limite_estricto' | juego | MUEVE VEREDICTOS | veredictos que cambian: A-01 con 'limite_estricto': 65; A-02 con 'limite_estricto': 65; B-01 con 'limite_estricto': 64; C-01 con 'limite_estricto': 64 |
+ | cabezal | `inclinacion_muro_beta` | [A] | 0.0–10.0 | 0.0, 10.0 | juego | NO LO LEE LA CORRIDA | sólo lo lee la vía de contraste de Coulomb / Mononobe-Okabe; el empuje que rige sale de la cuña de tanteo sobre el plano vertical del talón |
+-| cabezal | `punto_aplicacion_incremento_sismico` | [C] | 0.333–0.6 | 0.6, 0.333 | juego | MUEVE VEREDICTOS | veredictos que cambian: A-01 con 0.333: 1 |
++| cabezal | `punto_aplicacion_incremento_sismico` | [C] | 0.333–0.6 | 0.6, 0.333 | juego | LEÍDO, SIN EFECTO MEDIBLE | — |
+ | hidrología | `homogeneidad_serie_fen` | [A] | serie_completa / serie_sin_fen / dos_poblaciones | 'serie_completa', 'serie_sin_fen', 'dos_poblaciones' | juego | NO LO LEE LA CORRIDA | sólo lo lee el caudal CALCULADO; en el juego el caudal es el declarado del CSV (lo mide la variante `caudal_calculado_sin_fen` de `docs/validacion_integral.md`) |
+ | sin consumidor | `umbral_area_quebrada_importante_ha` | [A] | 50.0–200.0 | 100.0, 50.0, 200.0 | juego | LEÍDO, SIN EFECTO MEDIBLE | — |
+ | hidrología | `distribucion_precipitacion_maxima` | [A] | mejor_ajuste_ks / normal / lognormal_2p / gumbel / lognormal_3p / gamma_2p / gamma_3p / log_pearson_3 / log_gumbel | 'mejor_ajuste_ks', 'normal', 'lognormal_2p', 'gumbel', 'lognormal_3p', 'gamma_2p', 'gamma_3p', 'log_pearson_3', 'log_gumbel' | juego | NO LO LEE LA CORRIDA | hidrología: sólo la lee el caudal calculado, y en el juego el caudal es el declarado |
+@@ -70,26 +70,26 @@
+ | conducto | `acceso_mantenimiento_v2b` | [A] | camara_o_buzon_en_cabecera / acceso_por_cabezal_sin_obra_adicional / sin_acceso_declarado_como_limitacion | 'camara_o_buzon_en_cabecera', 'acceso_por_cabezal_sin_obra_adicional', 'sin_acceso_declarado_como_limitacion' | juego | LEÍDO, SIN EFECTO MEDIBLE | — |
+ | conducto | `pendiente_minima_conducto` | [A] | 0.0–0.005 | 0.0, 0.005 | juego | MUEVE EL DISEÑO | diseño: C-01 con 0.005: Concreto reforzado, marco 1.20 × 0.90 m → no dimensiona · veredictos que cambian: C-01 con 0.005: 107 |
+ | conducto | `pendiente_maxima_conducto` | [A] | 0.02–0.1 | 0.1, 0.02 | juego | LEÍDO, SIN EFECTO MEDIBLE | — |
+-| cabezal | `phi_relleno_trasdos` | [A] | 30.0–38.0 | 34.0, 30.0, 38.0 | juego | MUEVE VEREDICTOS | veredictos que cambian: B-01 con 30.0: 2; C-01 con 30.0: 2; A-01 con 38.0: 1; A-02 con 38.0: 2; B-01 con 38.0: 2; C-01 con 38.0: 3 |
++| cabezal | `phi_relleno_trasdos` | [A] | 30.0–38.0 | 34.0, 30.0, 38.0 | juego | MUEVE VEREDICTOS | veredictos que cambian: A-02 con 30.0: 1 |
+ | sin consumidor | `demanda_sismica_licuefaccion` | [A] | 475–1000 | 1000, 475 | juego | NO LO LEE LA CORRIDA | sin consumidor (`SIN_CONSUMIDOR_Y_SIN_MEDIDA`): la licuefacción no se evalúa |
+ | conducto | `diametro_de_diseno_concreto` | [A] | designado / designado_o_ingles_convertido | 'designado', 'designado_o_ingles_convertido' | juego | LEÍDO, SIN EFECTO MEDIBLE | — |
+ | conducto | `condicion_pavimento` | [A] | no_pavimentado / flexible / rigido | 'flexible', 'no_pavimentado', 'rigido' | juego | LEÍDO, SIN EFECTO MEDIBLE | — |
+ | conducto | `corrugacion_y_espesor_tmc` | [A] | 68x13/1.32 / 68x13/1.63 / 68x13/2.01 / 68x13/2.77 / 68x13/3.51 / 68x13/4.27 / 75x25/1.32 / 75x25/1.63 / 75x25/2.01 / 75x25/2.77 / 75x25/3.51 / 75x25/4.27 / 125x25/1.63 / 125x25/2.01 / 125x25/2.77 / 125x25/3.51 / 125x25/4.27 | '68x13/2.01', '68x13/1.32', '68x13/1.63', '68x13/2.77', '68x13/3.51', '68x13/4.27', '75x25/1.32', '75x25/1.63', '75x25/2.01', '75x25/2.77', '75x25/3.51', '75x25/4.27', '125x25/1.63', '125x25/2.01', '125x25/2.77', '125x25/3.51', '125x25/4.27' | juego | LEÍDO, SIN EFECTO MEDIBLE | — |
+ | conducto | `suelo_agresivo_lrfd_sobre_tmc` | [A] | aviso / excluye | 'aviso', 'excluye' | juego | LEÍDO, SIN EFECTO MEDIBLE | — |
+ | conducto | `relleno_max_contraste_acpa_m` | [A] | 0.6096–1.5 | 1.0, 0.6096, 1.5 | juego | LEÍDO, SIN EFECTO MEDIBLE | — |
+-| conducto | `peso_especifico_relleno_kn_m3` | [A] | 17.0–20.0 | 17.0, 20.0 | juego | MUEVE VEREDICTOS | veredictos que cambian: C-01 con 20.0: 2 |
++| conducto | `peso_especifico_relleno_kn_m3` | [A] | 17.0–20.0 | 17.0, 20.0 | juego | LEÍDO, SIN EFECTO MEDIBLE | — |
+ | conducto | `nivel_agua_diseno_v7` | [A] | en_la_clave / nf_del_punto | 'en_la_clave', 'nf_del_punto' | juego | MUEVE EL DISEÑO | diseño: A-01 con 'nf_del_punto': Concreto reforzado, Ø 0.90 m → no dimensiona; A-02 con 'nf_del_punto': Concreto reforzado, Ø 0.90 m → no dimensiona; B-01 con 'nf_del_punto': Concreto reforzado, Ø 0.90 m → no dimensiona; C-01 con 'nf_del_punto': Concreto reforzado, marco 1.20 × 0.90 m → no dimensiona · veredictos que cambian: A-01 con 'nf_del_punto': 105; A-02 con 'nf_del_punto': 105; B-01 con 'nf_del_punto': 105; C-01 con 'nf_del_punto': 107 |
+ | conducto | `fabricacion_tmc` | [A] | helicoidal / anular_remachada_simple / anular_remachada_doble / anular_empernada | 'anular_remachada_simple', 'helicoidal', 'anular_remachada_doble', 'anular_empernada' | juego | NO LO LEE LA CORRIDA | ningún punto adopta TMC: el concreto es el primer candidato |
+ | conducto | `relleno_estructural_hdpe` | [A] | Sn-100 / Sn-95 / Si-95 / Cl-95 | 'Si-95', 'Sn-100', 'Sn-95', 'Cl-95' | juego | NO LO LEE LA CORRIDA | ningún punto adopta HDPE: el concreto es el primer candidato |
+-| conducto | `talud_terraplen` | [A] | 1.5–2.0 | 2.0, 1.5 | juego | MUEVE VEREDICTOS | veredictos que cambian: A-02 con 1.5: 1; B-01 con 1.5: 2; C-01 con 1.5: 1 |
++| conducto | `talud_terraplen` | [A] | 1.5–2.0 | 2.0, 1.5 | juego | LEÍDO, SIN EFECTO MEDIBLE | — |
+ | protección | `espesor_proteccion_salida` | [A] | 1.5–2.0 | 1.75, 1.5, 2.0 | juego | LEÍDO, SIN EFECTO MEDIBLE | — |
+ | protección | `longitud_proteccion_salida` | [A] | 3.0–8.0 | 5.0, 3.0, 8.0 | juego | LEÍDO, SIN EFECTO MEDIBLE | — |
+ | protección | `tipo_proteccion_entrada` | [A] | emboquillado_de_piedra / enchapado_de_roca_acomodada / otro_revestimiento | 'emboquillado_de_piedra', 'enchapado_de_roca_acomodada', 'otro_revestimiento' | juego | LEÍDO, SIN EFECTO MEDIBLE | — |
+ | protección | `lectura_coeficientes_socavacion_hec14` | [A] | envolvente_de_filas_vecinas / interpolacion_lineal | 'envolvente_de_filas_vecinas', 'interpolacion_lineal' | juego | LEÍDO, SIN EFECTO MEDIBLE | — |
+ | protección | `regla_espesor_longitud_proteccion_salida` | [A] | manual / envolvente_hec14 | 'envolvente_hec14', 'manual' | juego | LEÍDO, SIN EFECTO MEDIBLE | — |
+-| protección | `referencia_profundidad_socavacion` | [A] | fondo_del_cauce_receptor / solera_de_salida | 'fondo_del_cauce_receptor', 'solera_de_salida' | juego | MUEVE VEREDICTOS | veredictos que cambian: A-01 con 'solera_de_salida': 3; B-01 con 'solera_de_salida': 2; C-01 con 'solera_de_salida': 2 |
++| protección | `referencia_profundidad_socavacion` | [A] | fondo_del_cauce_receptor / solera_de_salida | 'fondo_del_cauce_receptor', 'solera_de_salida' | juego | MUEVE VEREDICTOS | veredictos que cambian: A-01 con 'solera_de_salida': 1; A-02 con 'solera_de_salida': 1 |
+ | cabezal | `regimen_cortante_muro_e060_art_11_10_2` | [A] | en_el_plano / perpendicular_al_plano | 'perpendicular_al_plano', 'en_el_plano' | juego | LEÍDO, SIN EFECTO MEDIBLE | — |
+-| cabezal | `margen_zapata_bajo_socavacion_m` | [C] | 0.0–0.6096 | 0.6096, 0.0 | juego | MUEVE VEREDICTOS | veredictos que cambian: A-01 con 0.0: 2; A-02 con 0.0: 1; B-01 con 0.0: 2; C-01 con 0.0: 2 |
++| cabezal | `margen_zapata_bajo_socavacion_m` | [C] | 0.0–0.6096 | 0.0, 0.6096 | juego | MUEVE VEREDICTOS | veredictos que cambian: A-01 con 0.6096: 1; A-02 con 0.6096: 1 |
+ | conducto | `umbral_no_colapso_evento_extremo` | [A] | sin_desborde_de_la_plataforma / desborde_admitido_con_terraplen_protegido | 'sin_desborde_de_la_plataforma', 'desborde_admitido_con_terraplen_protegido' | juego | MUEVE EL DISEÑO | diseño: A-01 con 'desborde_admitido_con_terraplen_protegido': Concreto reforzado, Ø 0.90 m → no dimensiona; A-02 con 'desborde_admitido_con_terraplen_protegido': Concreto reforzado, Ø 0.90 m → no dimensiona; B-01 con 'desborde_admitido_con_terraplen_protegido': Concreto reforzado, Ø 0.90 m → no dimensiona; C-01 con 'desborde_admitido_con_terraplen_protegido': Concreto reforzado, marco 1.20 × 0.90 m → no dimensiona · veredictos que cambian: A-01 con 'desborde_admitido_con_terraplen_protegido': 105; A-02 con 'desborde_admitido_con_terraplen_protegido': 105; B-01 con 'desborde_admitido_con_terraplen_protegido': 105; C-01 con 'desborde_admitido_con_terraplen_protegido': 107 |
+ | cabezal | `terreno_delante_del_cabezal` | [A] | horizontal / talud_descendente | 'horizontal', 'talud_descendente' | juego | MUEVE VEREDICTOS | veredictos que cambian: A-01 con 'talud_descendente': 24; A-02 con 'talud_descendente': 24; B-01 con 'talud_descendente': 24; C-01 con 'talud_descendente': 24 |
+ | cabezal | `acero_refuerzo_cabezal` | [A] | A615_grado_60 / A706_grado_60 | 'A615_grado_60', 'A706_grado_60' | juego | LEÍDO, SIN EFECTO MEDIBLE | — |
+@@ -100,17 +100,17 @@
+ | conducto | `metodo_longitud_conducto` | [A] | terraplen_simetrico / por_extremo | 'por_extremo', 'terraplen_simetrico' | juego | LEÍDO, SIN EFECTO MEDIBLE | — |
+ | conducto | `desnivel_minimo_entrega_m` | [A] | 0.0–0.3 | 0.0, 0.3 | juego | LEÍDO, SIN EFECTO MEDIBLE | — |
+ | conducto | `desajuste_empalme_canal_m` | [A] | 0.01–0.02 | 0.01, 0.02 | juego | LEÍDO, SIN EFECTO MEDIBLE | — |
+-| cabezal | `momento_talon_cabezal` | [A] | peso_entero / exacto | 'peso_entero', 'exacto' | juego | LEÍDO, SIN EFECTO MEDIBLE | — |
+-| cabezal | `carga_pantalla_cabezal` | [A] | plano_virtual_del_talon / cuna_sobre_la_pantalla | 'plano_virtual_del_talon', 'cuna_sobre_la_pantalla' | juego | LEÍDO, SIN EFECTO MEDIBLE | — |
+-| cabezal | `distribucion_incremento_sismico` | [A] | fraccion_de_h / distribucion_estatica | 'fraccion_de_h', 'distribucion_estatica' | juego | MUEVE VEREDICTOS | veredictos que cambian: A-01 con 'distribucion_estatica': 1 |
+-| cabezal | `agua_del_relleno_bajo_sismo` | [C] | se_mueve_con_el_suelo / relleno_muy_abierto | 'se_mueve_con_el_suelo', 'relleno_muy_abierto' | juego | NO LO LEE LA CORRIDA | el juego declara el trasdós drenado y su freático queda bajo las zapatas: no hay agua en el plano de empuje bajo sismo, que es lo único que lee la elección (VE-3.14, C11.6.5.3) |
++| cabezal | `momento_talon_cabezal` | [A] | peso_entero / exacto | 'exacto', 'peso_entero' | juego | LEÍDO, SIN EFECTO MEDIBLE | — |
++| cabezal | `carga_pantalla_cabezal` | [A] | plano_virtual_del_talon / cuna_sobre_la_pantalla | 'cuna_sobre_la_pantalla', 'plano_virtual_del_talon' | juego | LEÍDO, SIN EFECTO MEDIBLE | — |
++| cabezal | `distribucion_incremento_sismico` | [A] | segun_regimen / fraccion_de_h / distribucion_estatica | 'segun_regimen', 'fraccion_de_h', 'distribucion_estatica' | juego | LEÍDO, SIN EFECTO MEDIBLE | — |
++| cabezal | `agua_del_relleno_bajo_sismo` | [C] | se_mueve_con_el_suelo / relleno_muy_abierto | 'se_mueve_con_el_suelo', 'relleno_muy_abierto' | juego | NO LO LEE LA CORRIDA | el trasdós del juego es drenado (valor de archivo desde VE-3.16) y su freático queda bajo las zapatas: no hay agua en el plano de empuje bajo sismo, que es lo único que lee la elección (VE-3.14, C11.6.5.3) |
+ 
+ ## 3. Lo que el resumen dice, por clase
+ 
+ - **MUEVE EL DISEÑO** (11): `seccion_receptor` (juego_sin_TW), `v_max_concreto_eleccion`, `v_max_concreto_eleccion` (juego_tmc_excluida), `regimen_v2b`, `borde_libre_y_sobre_d_max`, `embocadura_cabezal`, `origen_cota_fondo_entrada`, `remanso_derecho_via`, `pendiente_minima_conducto`, `nivel_agua_diseno_v7`, `umbral_no_colapso_evento_extremo`.
+-- **MUEVE VEREDICTOS** (24): `eta_importancia_operativa_conducto`, `factor_muro_eleccion`, `gamma_EQ`, `fraccion_delta_sobre_phi_trasdos`, `fila_phi_estabilidad_cabezal` (juego_cabezal_de_la_regla), `factores_inclinacion_carga_portante` (juego_cabezal_de_la_regla), `regla_pendiente_relleno_trasdos`, `regimen_resistencia_elementos_cabezal`, `eta_ductilidad_cabezal`, `eta_redundancia_cabezal`, `marco_estabilidad_cabezal`, `regimen_cabezal`, `drenaje_trasdos`, `fc_cabezal_mpa`, `F_pga_lectura_columna_extrema`, `punto_aplicacion_incremento_sismico`, `revestimiento_cuneta`, `phi_relleno_trasdos`, `peso_especifico_relleno_kn_m3`, `talud_terraplen`, `referencia_profundidad_socavacion`, `margen_zapata_bajo_socavacion_m`, `terreno_delante_del_cabezal`, `distribucion_incremento_sismico`.
++- **MUEVE VEREDICTOS** (14): `factor_muro_eleccion`, `fila_phi_estabilidad_cabezal` (juego_cabezal_de_la_regla), `factores_inclinacion_carga_portante` (juego_cabezal_de_la_regla), `regla_pendiente_relleno_trasdos`, `regimen_resistencia_elementos_cabezal`, `marco_estabilidad_cabezal`, `regimen_cabezal`, `drenaje_trasdos`, `F_pga_lectura_columna_extrema`, `revestimiento_cuneta`, `phi_relleno_trasdos`, `referencia_profundidad_socavacion`, `margen_zapata_bajo_socavacion_m`, `terreno_delante_del_cabezal`.
+ - **MUEVE EL HW** (2): `n_manning_cajon`, `ke_entrada`.
+-- **LEÍDO, SIN EFECTO MEDIBLE** (37): `HW_D_max`, `v_max_tmc`, `v_max_hdpe`, `espesor_pared_cajon`, `fraccion_llena_mayor_parte`, `instalacion_estandar_concreto`, `carga_viva_bajo_relleno_alto`, `duracion_caudal_pico_socavacion_min`, `factor_intervalo_fijo_p24` (juego_caudal_calculado), `umbral_area_quebrada_importante_ha`, `columna_n_manning_concreto`, `esviaje_max_grados`, `borde_libre_canal_m`, `long_max_cuneta`, `lectura_velocidad_limite_cuneta`, `obras_familia_a_extremo_de_cuneta`, `acceso_mantenimiento_v2b`, `pendiente_maxima_conducto`, `diametro_de_diseno_concreto`, `condicion_pavimento`, `corrugacion_y_espesor_tmc`, `suelo_agresivo_lrfd_sobre_tmc`, `relleno_max_contraste_acpa_m`, `espesor_proteccion_salida`, `longitud_proteccion_salida`, `tipo_proteccion_entrada`, `lectura_coeficientes_socavacion_hec14`, `regla_espesor_longitud_proteccion_salida`, `regimen_cortante_muro_e060_art_11_10_2`, `acero_refuerzo_cabezal`, `regla_minimos_constructivos_cabezal`, `clase_exposicion_fisuracion_cabezal`, `metodo_longitud_conducto`, `desnivel_minimo_entrega_m`, `desajuste_empalme_canal_m`, `momento_talon_cabezal`, `carga_pantalla_cabezal`.
++- **LEÍDO, SIN EFECTO MEDIBLE** (47): `HW_D_max`, `v_max_tmc`, `v_max_hdpe`, `espesor_pared_cajon`, `fraccion_llena_mayor_parte`, `instalacion_estandar_concreto`, `carga_viva_bajo_relleno_alto`, `eta_importancia_operativa_conducto`, `gamma_EQ`, `fraccion_delta_sobre_phi_trasdos`, `eta_ductilidad_cabezal`, `eta_redundancia_cabezal`, `fc_cabezal_mpa`, `duracion_caudal_pico_socavacion_min`, `factor_intervalo_fijo_p24` (juego_caudal_calculado), `punto_aplicacion_incremento_sismico`, `umbral_area_quebrada_importante_ha`, `columna_n_manning_concreto`, `esviaje_max_grados`, `borde_libre_canal_m`, `long_max_cuneta`, `lectura_velocidad_limite_cuneta`, `obras_familia_a_extremo_de_cuneta`, `acceso_mantenimiento_v2b`, `pendiente_maxima_conducto`, `diametro_de_diseno_concreto`, `condicion_pavimento`, `corrugacion_y_espesor_tmc`, `suelo_agresivo_lrfd_sobre_tmc`, `relleno_max_contraste_acpa_m`, `peso_especifico_relleno_kn_m3`, `talud_terraplen`, `espesor_proteccion_salida`, `longitud_proteccion_salida`, `tipo_proteccion_entrada`, `lectura_coeficientes_socavacion_hec14`, `regla_espesor_longitud_proteccion_salida`, `regimen_cortante_muro_e060_art_11_10_2`, `acero_refuerzo_cabezal`, `regla_minimos_constructivos_cabezal`, `clase_exposicion_fisuracion_cabezal`, `metodo_longitud_conducto`, `desnivel_minimo_entrega_m`, `desajuste_empalme_canal_m`, `momento_talon_cabezal`, `carga_pantalla_cabezal`, `distribucion_incremento_sismico`.
+ - **NO LO LEE LA CORRIDA** (17): `borde_libre_bajo_tw_ahogante`, `seccion_receptor`, `hw_entrada_fuera_de_rango`, `inclinacion_muro_beta`, `homogeneidad_serie_fen`, `distribucion_precipitacion_maxima`, `nivel_significancia_ks`, `relacion_intensidad_duracion`, `duracion_minima_lluvia_min`, `tc_fuera_de_la_poblacion_del_metodo`, `coeficiente_uniformidad_temez`, `demanda_sismica_licuefaccion`, `fabricacion_tmc`, `relleno_estructural_hdpe`, `criterio_traccion_cabezal_ciclopeo`, `junta_arranque_cabezal_ciclopeo`, `agua_del_relleno_bajo_sismo`.
+ 
+ ### 3.1 El cabezal de la regla: E3 estática y E1 sísmica del marco LRFD frente a sus dos [A]
+@@ -119,10 +119,10 @@ Con la zapata que propone la regla de T-7a, SIN dimensionar (base `juego_cabezal
+ 
+ | Criterio | Valor | `E1-LRFD.sis.e` | `E1-LRFD.sis.s` | `E3-LRFD.est.e` | `E3-LRFD.est.s` |
+ |---|---|---|---|---|---|
+-| `fila_phi_estabilidad_cabezal` | 'zapatas_seccion_10' | no pasa en ninguno | no pasa en ninguno | no pasa en ninguno | no pasa en ninguno |
+-| `fila_phi_estabilidad_cabezal` | 'muros_tabla_11_5_7' | no pasa en ninguno | no pasa en ninguno | no pasa en ninguno | pasa en A-01, A-02, C-01 |
+-| `factores_inclinacion_carga_portante` | 'aplicar' | no pasa en ninguno | no pasa en ninguno | no pasa en ninguno | no pasa en ninguno |
+-| `factores_inclinacion_carga_portante` | 'omitir' | pasa en A-01, A-02, B-01, C-01 | pasa en A-01, A-02, B-01, C-01 | no pasa en ninguno | no pasa en ninguno |
++| `fila_phi_estabilidad_cabezal` | 'muros_tabla_11_5_7' | pasa en A-01, C-01 | no pasa en ninguno | no pasa en ninguno | pasa en A-01, C-01 |
++| `fila_phi_estabilidad_cabezal` | 'zapatas_seccion_10' | pasa en A-01, C-01 | no pasa en ninguno | no pasa en ninguno | no pasa en ninguno |
++| `factores_inclinacion_carga_portante` | 'aplicar' | pasa en A-01, C-01 | no pasa en ninguno | no pasa en ninguno | pasa en A-01, C-01 |
++| `factores_inclinacion_carga_portante` | 'omitir' | pasa en A-01, A-02, B-01, C-01 | pasa en A-01, A-02, B-01, C-01 | no pasa en ninguno | pasa en A-01, C-01 |
+ 
+ Ninguno de los dos hace pasar E3 estática a la ENTRADA: ahí el deslizamiento lo resuelve la zapata más ancha —la que el dimensionamiento de VE-3.5 adopta, o la declarada de la variante `zapata_declarada_3m` de `docs/validacion_integral.md` §5—, no la lectura de un [A].
+ 
+@@ -443,7 +443,7 @@ carga viva pasados 8 ft de relleno en la Fase 8 (T-11). Base: el juego completo.
+ 
+ ### `eta_importancia_operativa_conducto`
+ 
+-el η del cruce: Fase 8 y combinaciones del cabezal (PRECISIONES). Base: el juego completo. Efecto: **MUEVE VEREDICTOS**.
++el η del cruce: Fase 8 y combinaciones del cabezal (PRECISIONES). Base: el juego completo. Efecto: **LEÍDO, SIN EFECTO MEDIBLE**.
+ 
+ | Valor | Punto | Material y sección | HW (m) | Control | Verificaciones que cambian frente al primer valor | Incumplidas o bloqueo si no dimensiona | Comparable |
+ |---|---|---|---|---|---|---|---|
+@@ -451,10 +451,10 @@ el η del cruce: Fase 8 y combinaciones del cabezal (PRECISIONES). Base: el jueg
+ | 1.05 | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
+ | 1.05 | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
+ | 1.05 | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
+-| 0.95 | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | E1-ASD.sis.e | — | sí |
+-| 0.95 | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | E1-ASD.sis.e | — | sí |
+-| 0.95 | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | E1-ASD.sis.e | — | sí |
+-| 0.95 | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | E1-ASD.sis.e | — | sí |
++| 0.95 | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | ninguna | — | sí |
++| 0.95 | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
++| 0.95 | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
++| 0.95 | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
+ 
+ ### `factor_muro_eleccion`
+ 
+@@ -466,14 +466,14 @@ reducción de k_h por desplazamiento (PRECISIONES). Base: el juego completo. Efe
+ | 'reduccion_por_desplazamiento' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
+ | 'reduccion_por_desplazamiento' | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
+ | 'reduccion_por_desplazamiento' | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
+-| 'sin_reduccion' | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | A1.talon.e, A1.talon.s, A2.talon.e, A2.talon.s, A3.talon.s, A4.talon.s, A5.talon.e, A5.talon.s, A6.talon.s, E1-ASD.sis.e, E1-LRFD.sis.s, E3-ASD.sis.s, E3-LRFD.sis.e, E3-LRFD.sis.s | — | sí |
+-| 'sin_reduccion' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | A1.talon.e, A1.talon.s, A2.talon.e, A2.talon.s, A3.talon.s, A4.talon.s, A5.talon.e, A5.talon.s, A6.talon.s, E1-ASD.sis.e, E1-LRFD.sis.s, E3-LRFD.sis.e, E3-LRFD.sis.s | — | sí |
+-| 'sin_reduccion' | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | A1.talon.e, A1.talon.s, A2.alero.s, A2.pantalla.s, A2.talon.e, A2.talon.s, A3.talon.s, A4.talon.s, A5.talon.e, A5.talon.s, A6.talon.s, E1-ASD.sis.e, E1-LRFD.sis.s, E3-LRFD.sis.e, E3-LRFD.sis.s | — | sí |
+-| 'sin_reduccion' | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | A1.talon.e, A1.talon.s, A2.talon.e, A2.talon.s, A3.talon.s, A4.talon.s, A5.talon.e, A5.talon.s, A6.talon.s, E1-ASD.sis.e, E1-LRFD.sis.s, E3-LRFD.sis.e, E3-LRFD.sis.s | — | sí |
++| 'sin_reduccion' | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | E1-LRFD.sis.s, E3-ASD.sis.s, E3-LRFD.sis.e, E3-LRFD.sis.s | — | sí |
++| 'sin_reduccion' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | E1-LRFD.sis.s, E3-ASD.sis.s, E3-LRFD.sis.e, E3-LRFD.sis.s | — | sí |
++| 'sin_reduccion' | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | E1-LRFD.sis.s, E3-LRFD.sis.e, E3-LRFD.sis.s | — | sí |
++| 'sin_reduccion' | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | E1-LRFD.sis.s, E3-LRFD.sis.e, E3-LRFD.sis.s | — | sí |
+ 
+ ### `gamma_EQ`
+ 
+-factor de la carga viva en el Evento Extremo I (PRECISIONES). Base: el juego completo. Efecto: **MUEVE VEREDICTOS**.
++factor de la carga viva en el Evento Extremo I (PRECISIONES). Base: el juego completo. Efecto: **LEÍDO, SIN EFECTO MEDIBLE**.
+ 
+ | Valor | Punto | Material y sección | HW (m) | Control | Verificaciones que cambian frente al primer valor | Incumplidas o bloqueo si no dimensiona | Comparable |
+ |---|---|---|---|---|---|---|---|
+@@ -481,18 +481,18 @@ factor de la carga viva en el Evento Extremo I (PRECISIONES). Base: el juego com
+ | 0.5 | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
+ | 0.5 | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
+ | 0.5 | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
+-| 0.0 | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | E3-ASD.sis.s | — | sí |
++| 0.0 | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | ninguna | — | sí |
+ | 0.0 | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
+ | 0.0 | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
+ | 0.0 | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
+ | 1.0 | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | ninguna | — | sí |
+-| 1.0 | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | E3-ASD.sis.s | — | sí |
++| 1.0 | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
+ | 1.0 | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
+ | 1.0 | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
+ 
+ ### `fraccion_delta_sobre_phi_trasdos`
+ 
+-fricción del trasdós δ/φ (PRECISIONES). Base: el juego completo. Efecto: **MUEVE VEREDICTOS**.
++fricción del trasdós δ/φ (PRECISIONES). Base: el juego completo. Efecto: **LEÍDO, SIN EFECTO MEDIBLE**.
+ 
+ | Valor | Punto | Material y sección | HW (m) | Control | Verificaciones que cambian frente al primer valor | Incumplidas o bloqueo si no dimensiona | Comparable |
+ |---|---|---|---|---|---|---|---|
+@@ -500,7 +500,7 @@ fricción del trasdós δ/φ (PRECISIONES). Base: el juego completo. Efecto: **M
+ | 0.67 | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
+ | 0.67 | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
+ | 0.67 | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
+-| 0.33 | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | E3-ASD.sis.s | — | sí |
++| 0.33 | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | ninguna | — | sí |
+ | 0.33 | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
+ | 0.33 | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
+ | 0.33 | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
+@@ -511,14 +511,14 @@ fila de φ de la estabilidad LRFD (PRECISIONES). Base: el juego sin `dimensionam
+ 
+ | Valor | Punto | Material y sección | HW (m) | Control | Verificaciones que cambian frente al primer valor | Incumplidas o bloqueo si no dimensiona | Comparable |
+ |---|---|---|---|---|---|---|---|
+-| 'zapatas_seccion_10' | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | ninguna | — | sí |
++| 'muros_tabla_11_5_7' | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | ninguna | — | sí |
++| 'muros_tabla_11_5_7' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
++| 'muros_tabla_11_5_7' | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
++| 'muros_tabla_11_5_7' | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
++| 'zapatas_seccion_10' | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | E3-LRFD.est.s | — | sí |
+ | 'zapatas_seccion_10' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
+ | 'zapatas_seccion_10' | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
+-| 'zapatas_seccion_10' | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
+-| 'muros_tabla_11_5_7' | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | E3-LRFD.est.s | — | sí |
+-| 'muros_tabla_11_5_7' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | E3-LRFD.est.s | — | sí |
+-| 'muros_tabla_11_5_7' | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
+-| 'muros_tabla_11_5_7' | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | E3-LRFD.est.s | — | sí |
++| 'zapatas_seccion_10' | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | E1-LRFD.est.s, E3-LRFD.est.s | — | sí |
+ 
+ ### `factores_inclinacion_carga_portante` — base `juego_cabezal_de_la_regla`
+ 
+@@ -530,10 +530,10 @@ factores de inclinación de la capacidad portante (PRECISIONES). Base: el juego
+ | 'aplicar' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
+ | 'aplicar' | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
+ | 'aplicar' | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
+-| 'omitir' | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | E1-ASD.sis.e, E1-ASD.sis.s, E1-LRFD.sis.e, E1-LRFD.sis.s | — | sí |
+-| 'omitir' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | E1-ASD.sis.e, E1-ASD.sis.s, E1-LRFD.sis.e, E1-LRFD.sis.s | — | sí |
+-| 'omitir' | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | E1-ASD.sis.e, E1-ASD.sis.s, E1-LRFD.sis.e, E1-LRFD.sis.s | — | sí |
+-| 'omitir' | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | E1-ASD.sis.e, E1-ASD.sis.s, E1-LRFD.sis.e, E1-LRFD.sis.s | — | sí |
++| 'omitir' | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | E1-ASD.est.s, E1-ASD.sis.e, E1-ASD.sis.s, E1-LRFD.est.s, E1-LRFD.sis.s | — | sí |
++| 'omitir' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | E1-ASD.est.s, E1-ASD.sis.e, E1-ASD.sis.s, E1-LRFD.est.s, E1-LRFD.sis.e, E1-LRFD.sis.s | — | sí |
++| 'omitir' | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | E1-ASD.est.s, E1-ASD.sis.e, E1-ASD.sis.s, E1-LRFD.est.s, E1-LRFD.sis.e, E1-LRFD.sis.s | — | sí |
++| 'omitir' | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | E1-ASD.sis.e, E1-ASD.sis.s, E1-LRFD.sis.s | — | sí |
+ 
+ ### `regla_pendiente_relleno_trasdos`
+ 
+@@ -545,14 +545,14 @@ superficie del relleno para el empuje (PRECISIONES). Base: el juego completo. Ef
+ | 'cuna_de_tanteo' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
+ | 'cuna_de_tanteo' | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
+ | 'cuna_de_tanteo' | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
+-| 'talud_quebrado_2h' | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | A5.alero.e, A5.pantalla.e, E1-ASD.sis.e | — | sí |
+-| 'talud_quebrado_2h' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | E1-ASD.sis.e | — | sí |
+-| 'talud_quebrado_2h' | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | E1-ASD.sis.e | — | sí |
+-| 'talud_quebrado_2h' | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | A2.alero.s, A2.pantalla.s, A5.alero.e, A5.pantalla.e, E1-ASD.sis.e | — | sí |
+-| 'talud_del_terraplen' | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | A2.alero.s, A2.pantalla.s, E1-ASD.sis.e, E1-ASD.sis.s, E1-LRFD.sis.e, E1-LRFD.sis.s, E2-ASD.sis.e, E2-ASD.sis.s, E2-LRFD.sis.e, E2-LRFD.sis.s, E3-ASD.sis.e, E3-ASD.sis.s, E3-LRFD.sis.e, E3-LRFD.sis.s | — | sí |
+-| 'talud_del_terraplen' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | A5.alero.e, A5.pantalla.e, E1-ASD.sis.e, E1-ASD.sis.s, E1-LRFD.sis.e, E1-LRFD.sis.s, E2-ASD.sis.e, E2-ASD.sis.s, E2-LRFD.sis.e, E2-LRFD.sis.s, E3-ASD.sis.e, E3-ASD.sis.s, E3-LRFD.sis.e, E3-LRFD.sis.s | — | sí |
+-| 'talud_del_terraplen' | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | A2.alero.s, A2.pantalla.s, E1-ASD.sis.e, E1-ASD.sis.s, E1-LRFD.sis.e, E1-LRFD.sis.s, E2-ASD.sis.e, E2-ASD.sis.s, E2-LRFD.sis.e, E2-LRFD.sis.s, E3-ASD.sis.e, E3-ASD.sis.s, E3-LRFD.sis.e, E3-LRFD.sis.s | — | sí |
+-| 'talud_del_terraplen' | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | A2.alero.s, A2.pantalla.s, A5.alero.e, A5.pantalla.e, E1-ASD.sis.e, E1-ASD.sis.s, E1-LRFD.sis.e, E1-LRFD.sis.s, E2-ASD.sis.e, E2-ASD.sis.s, E2-LRFD.sis.e, E2-LRFD.sis.s, E3-ASD.sis.e, E3-ASD.sis.s, E3-LRFD.sis.e, E3-LRFD.sis.s | — | sí |
++| 'talud_quebrado_2h' | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | ninguna | — | sí |
++| 'talud_quebrado_2h' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | E3-ASD.sis.s | — | sí |
++| 'talud_quebrado_2h' | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
++| 'talud_quebrado_2h' | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
++| 'talud_del_terraplen' | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | E1-ASD.est.s, E1-ASD.sis.e, E1-ASD.sis.s, E1-LRFD.sis.e, E1-LRFD.sis.s, E2-ASD.sis.e, E2-ASD.sis.s, E2-LRFD.sis.e, E2-LRFD.sis.s, E3-ASD.sis.e, E3-ASD.sis.s, E3-LRFD.sis.e, E3-LRFD.sis.s | — | sí |
++| 'talud_del_terraplen' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | E1-ASD.est.s, E1-ASD.sis.e, E1-ASD.sis.s, E1-LRFD.sis.e, E1-LRFD.sis.s, E2-ASD.sis.e, E2-ASD.sis.s, E2-LRFD.sis.e, E2-LRFD.sis.s, E3-ASD.sis.e, E3-ASD.sis.s, E3-LRFD.sis.e, E3-LRFD.sis.s | — | sí |
++| 'talud_del_terraplen' | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | E1-ASD.sis.e, E1-ASD.sis.s, E1-LRFD.sis.e, E1-LRFD.sis.s, E2-ASD.sis.e, E2-ASD.sis.s, E2-LRFD.sis.e, E2-LRFD.sis.s, E3-ASD.sis.e, E3-ASD.sis.s, E3-LRFD.sis.e, E3-LRFD.sis.s | — | sí |
++| 'talud_del_terraplen' | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | E1-ASD.sis.e, E1-ASD.sis.s, E1-LRFD.sis.e, E1-LRFD.sis.s, E2-ASD.sis.e, E2-ASD.sis.s, E2-LRFD.sis.e, E2-LRFD.sis.s, E3-ASD.sis.e, E3-ASD.sis.s, E3-LRFD.sis.e, E3-LRFD.sis.s | — | sí |
+ 
+ ### `regimen_resistencia_elementos_cabezal`
+ 
+@@ -560,18 +560,18 @@ empuje con que se arman los elementos (PRECISIONES). Base: el juego completo. Ef
+ 
+ | Valor | Punto | Material y sección | HW (m) | Control | Verificaciones que cambian frente al primer valor | Incumplidas o bloqueo si no dimensiona | Comparable |
+ |---|---|---|---|---|---|---|---|
+-| 'no_cedente_k0' | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | ninguna | — | sí |
+-| 'no_cedente_k0' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
+-| 'no_cedente_k0' | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
+-| 'no_cedente_k0' | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
+-| 'cedente' | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | A2.alero.s, A2.pantalla.s | — | sí |
+-| 'cedente' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | A2.alero.s, A2.pantalla.s | — | sí |
+-| 'cedente' | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | A2.alero.s, A2.pantalla.s | — | sí |
++| 'cedente' | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | ninguna | — | sí |
++| 'cedente' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
++| 'cedente' | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
+ | 'cedente' | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
++| 'no_cedente_k0' | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | A1.alero.e, A1.alero.s, A1.pantalla.e, A1.pantalla.s, A1.punta.e, A1.punta.s, A1.talon.e, A1.talon.s, A2.alero.e, A2.alero.s, A2.pantalla.e, A2.pantalla.s, A2.punta.e, A2.punta.s, A2.talon.e, A2.talon.s, A3.alero.e, A3.alero.s, A3.pantalla.e, A3.pantalla.s, A3.punta.e, A3.punta.s, A3.talon.e, A3.talon.s, A4.alero.e, A4.alero.s, A4.pantalla.e, A4.pantalla.s, A4.punta.e, A4.punta.s, A4.talon.e, A4.talon.s, A5.alero.e, A5.alero.s, A5.pantalla.e, A5.pantalla.s, A5.punta.e, A5.punta.s, A5.talon.e, A5.talon.s, A6.alero.e, A6.alero.s, A6.pantalla.e, A6.pantalla.s, A6.punta.e, A6.punta.s, A6.talon.e, A6.talon.s, A7.concreto.e, A7.concreto.s, A8.zapata.e, A8.zapata.s, E1-ASD.est.s, E1-ASD.sis.e, E1-ASD.sis.s, E1-LRFD.sis.e, E1-LRFD.sis.s, E2-ASD.sis.e, E2-ASD.sis.s, E2-LRFD.sis.e, E2-LRFD.sis.s, E3-ASD.sis.e, E3-ASD.sis.s, E3-LRFD.sis.e, E3-LRFD.sis.s | — | sí |
++| 'no_cedente_k0' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | A1.alero.e, A1.alero.s, A1.pantalla.e, A1.pantalla.s, A1.punta.e, A1.punta.s, A1.talon.e, A1.talon.s, A2.alero.e, A2.alero.s, A2.pantalla.e, A2.pantalla.s, A2.punta.e, A2.punta.s, A2.talon.e, A2.talon.s, A3.alero.e, A3.alero.s, A3.pantalla.e, A3.pantalla.s, A3.punta.e, A3.punta.s, A3.talon.e, A3.talon.s, A4.alero.e, A4.alero.s, A4.pantalla.e, A4.pantalla.s, A4.punta.e, A4.punta.s, A4.talon.e, A4.talon.s, A5.alero.e, A5.alero.s, A5.pantalla.e, A5.pantalla.s, A5.punta.e, A5.punta.s, A5.talon.e, A5.talon.s, A6.alero.e, A6.alero.s, A6.pantalla.e, A6.pantalla.s, A6.punta.e, A6.punta.s, A6.talon.e, A6.talon.s, A7.concreto.e, A7.concreto.s, A8.zapata.e, A8.zapata.s, E1-ASD.est.s, E1-ASD.sis.e, E1-ASD.sis.s, E1-LRFD.sis.e, E1-LRFD.sis.s, E2-ASD.sis.e, E2-ASD.sis.s, E2-LRFD.sis.e, E2-LRFD.sis.s, E3-ASD.sis.e, E3-ASD.sis.s, E3-LRFD.sis.e, E3-LRFD.sis.s | — | sí |
++| 'no_cedente_k0' | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | A1.alero.e, A1.alero.s, A1.pantalla.e, A1.pantalla.s, A1.punta.e, A1.punta.s, A1.talon.e, A1.talon.s, A2.alero.e, A2.alero.s, A2.pantalla.e, A2.pantalla.s, A2.punta.e, A2.punta.s, A2.talon.e, A2.talon.s, A3.alero.e, A3.alero.s, A3.pantalla.e, A3.pantalla.s, A3.punta.e, A3.punta.s, A3.talon.e, A3.talon.s, A4.alero.e, A4.alero.s, A4.pantalla.e, A4.pantalla.s, A4.punta.e, A4.punta.s, A4.talon.e, A4.talon.s, A5.alero.e, A5.alero.s, A5.pantalla.e, A5.pantalla.s, A5.punta.e, A5.punta.s, A5.talon.e, A5.talon.s, A6.alero.e, A6.alero.s, A6.pantalla.e, A6.pantalla.s, A6.punta.e, A6.punta.s, A6.talon.e, A6.talon.s, A7.concreto.e, A7.concreto.s, A8.zapata.e, A8.zapata.s, E1-ASD.sis.e, E1-ASD.sis.s, E1-LRFD.sis.e, E1-LRFD.sis.s, E2-ASD.sis.e, E2-ASD.sis.s, E2-LRFD.sis.e, E2-LRFD.sis.s, E3-ASD.sis.e, E3-ASD.sis.s, E3-LRFD.sis.e, E3-LRFD.sis.s | — | sí |
++| 'no_cedente_k0' | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | A1.alero.e, A1.alero.s, A1.pantalla.e, A1.pantalla.s, A1.punta.e, A1.punta.s, A1.talon.e, A1.talon.s, A2.alero.e, A2.alero.s, A2.pantalla.e, A2.pantalla.s, A2.punta.e, A2.punta.s, A2.talon.e, A2.talon.s, A3.alero.e, A3.alero.s, A3.pantalla.e, A3.pantalla.s, A3.punta.e, A3.punta.s, A3.talon.e, A3.talon.s, A4.alero.e, A4.alero.s, A4.pantalla.e, A4.pantalla.s, A4.punta.e, A4.punta.s, A4.talon.e, A4.talon.s, A5.alero.e, A5.alero.s, A5.pantalla.e, A5.pantalla.s, A5.punta.e, A5.punta.s, A5.talon.e, A5.talon.s, A6.alero.e, A6.alero.s, A6.pantalla.e, A6.pantalla.s, A6.punta.e, A6.punta.s, A6.talon.e, A6.talon.s, A7.concreto.e, A7.concreto.s, A8.zapata.e, A8.zapata.s, E1-ASD.sis.e, E1-ASD.sis.s, E1-LRFD.sis.e, E1-LRFD.sis.s, E2-ASD.sis.e, E2-ASD.sis.s, E2-LRFD.sis.e, E2-LRFD.sis.s, E3-ASD.sis.e, E3-ASD.sis.s, E3-LRFD.sis.e, E3-LRFD.sis.s | — | sí |
+ 
+ ### `eta_ductilidad_cabezal`
+ 
+-η_D del cabezal (T-11). Base: el juego completo. Efecto: **MUEVE VEREDICTOS**.
++η_D del cabezal (T-11). Base: el juego completo. Efecto: **LEÍDO, SIN EFECTO MEDIBLE**.
+ 
+ | Valor | Punto | Material y sección | HW (m) | Control | Verificaciones que cambian frente al primer valor | Incumplidas o bloqueo si no dimensiona | Comparable |
+ |---|---|---|---|---|---|---|---|
+@@ -579,18 +579,18 @@ empuje con que se arman los elementos (PRECISIONES). Base: el juego completo. Ef
+ | 1.0 | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
+ | 1.0 | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
+ | 1.0 | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
+-| 0.95 | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | E1-ASD.sis.e | — | sí |
+-| 0.95 | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | A2.alero.s, A2.pantalla.s, E1-ASD.sis.e | — | sí |
+-| 0.95 | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | E1-ASD.sis.e | — | sí |
+-| 0.95 | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | E1-ASD.sis.e | — | sí |
+-| 1.05 | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | E3-ASD.sis.e | — | sí |
+-| 1.05 | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | E3-ASD.sis.e, E3-ASD.sis.s | — | sí |
+-| 1.05 | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | E3-ASD.sis.e | — | sí |
+-| 1.05 | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | E3-ASD.sis.e, E3-ASD.sis.s | — | sí |
++| 0.95 | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | ninguna | — | sí |
++| 0.95 | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
++| 0.95 | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
++| 0.95 | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
++| 1.05 | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | ninguna | — | sí |
++| 1.05 | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
++| 1.05 | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
++| 1.05 | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
+ 
+ ### `eta_redundancia_cabezal`
+ 
+-η_R del cabezal (T-11). Base: el juego completo. Efecto: **MUEVE VEREDICTOS**.
++η_R del cabezal (T-11). Base: el juego completo. Efecto: **LEÍDO, SIN EFECTO MEDIBLE**.
+ 
+ | Valor | Punto | Material y sección | HW (m) | Control | Verificaciones que cambian frente al primer valor | Incumplidas o bloqueo si no dimensiona | Comparable |
+ |---|---|---|---|---|---|---|---|
+@@ -598,14 +598,14 @@ empuje con que se arman los elementos (PRECISIONES). Base: el juego completo. Ef
+ | 1.0 | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
+ | 1.0 | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
+ | 1.0 | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
+-| 0.95 | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | E1-ASD.sis.e | — | sí |
+-| 0.95 | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | A2.alero.s, A2.pantalla.s, E1-ASD.sis.e | — | sí |
+-| 0.95 | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | E1-ASD.sis.e | — | sí |
+-| 0.95 | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | E1-ASD.sis.e | — | sí |
+-| 1.05 | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | E3-ASD.sis.e | — | sí |
+-| 1.05 | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | E3-ASD.sis.e, E3-ASD.sis.s | — | sí |
+-| 1.05 | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | E3-ASD.sis.e | — | sí |
+-| 1.05 | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | E3-ASD.sis.e, E3-ASD.sis.s | — | sí |
++| 0.95 | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | ninguna | — | sí |
++| 0.95 | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
++| 0.95 | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
++| 0.95 | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
++| 1.05 | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | ninguna | — | sí |
++| 1.05 | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
++| 1.05 | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
++| 1.05 | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
+ 
+ ### `marco_estabilidad_cabezal`
+ 
+@@ -617,14 +617,14 @@ cuál marco de estabilidad rige (T-11). Base: el juego completo. Efecto: **MUEVE
+ | 'lrfd_rige_asd_informa' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
+ | 'lrfd_rige_asd_informa' | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
+ | 'lrfd_rige_asd_informa' | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
+-| 'asd_rige_lrfd_informa' | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | E1-ASD.sis.s, E3-ASD.sis.e | — | sí |
+-| 'asd_rige_lrfd_informa' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | A2.alero.s, A2.pantalla.s, E1-ASD.sis.s, E3-ASD.sis.e, E3-ASD.sis.s | — | sí |
+-| 'asd_rige_lrfd_informa' | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | E1-ASD.sis.s, E3-ASD.sis.e, E3-ASD.sis.s | — | sí |
+-| 'asd_rige_lrfd_informa' | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | E1-ASD.sis.s, E3-ASD.sis.e, E3-ASD.sis.s | — | sí |
+-| 'envolvente_de_los_dos' | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | E1-ASD.sis.s, E3-ASD.sis.e | — | sí |
+-| 'envolvente_de_los_dos' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | A2.alero.s, A2.pantalla.s, E1-ASD.sis.s, E3-ASD.sis.e, E3-ASD.sis.s | — | sí |
+-| 'envolvente_de_los_dos' | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | E1-ASD.sis.s, E3-ASD.sis.e, E3-ASD.sis.s | — | sí |
+-| 'envolvente_de_los_dos' | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | E1-ASD.sis.s, E3-ASD.sis.e, E3-ASD.sis.s | — | sí |
++| 'asd_rige_lrfd_informa' | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | E1-ASD.sis.e, E1-ASD.sis.s, E3-ASD.sis.e | — | sí |
++| 'asd_rige_lrfd_informa' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | E1-ASD.sis.e, E1-ASD.sis.s, E3-ASD.sis.e | — | sí |
++| 'asd_rige_lrfd_informa' | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | E1-ASD.sis.e, E1-ASD.sis.s, E3-ASD.sis.e, E3-ASD.sis.s | — | sí |
++| 'asd_rige_lrfd_informa' | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | E1-ASD.sis.e, E1-ASD.sis.s, E3-ASD.sis.e, E3-ASD.sis.s | — | sí |
++| 'envolvente_de_los_dos' | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | E1-ASD.sis.e, E1-ASD.sis.s, E3-ASD.sis.e | — | sí |
++| 'envolvente_de_los_dos' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | E1-ASD.sis.e, E1-ASD.sis.s, E3-ASD.sis.e | — | sí |
++| 'envolvente_de_los_dos' | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | E1-ASD.sis.e, E1-ASD.sis.s, E3-ASD.sis.e, E3-ASD.sis.s | — | sí |
++| 'envolvente_de_los_dos' | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | E1-ASD.sis.e, E1-ASD.sis.s, E3-ASD.sis.e, E3-ASD.sis.s | — | sí |
+ 
+ ### `regimen_cabezal`
+ 
+@@ -651,14 +651,14 @@ trasdós drenado o no (T-11). Base: el juego completo. Efecto: **MUEVE VEREDICTO
+ | 'drenado' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
+ | 'drenado' | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
+ | 'drenado' | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
+-| 'sin_drenaje' | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | A1.talon.s, A2.talon.s, A3.talon.s, A4.talon.s, A5.talon.s, A6.talon.s, E1-ASD.sis.e, E3-ASD.sis.s | — | sí |
+-| 'sin_drenaje' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | A1.talon.s, A2.talon.s, A3.talon.s, A4.talon.s, A5.talon.s, A6.talon.s, E1-ASD.sis.e | — | sí |
+-| 'sin_drenaje' | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | E1-ASD.sis.e | — | sí |
+-| 'sin_drenaje' | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | A2.alero.s, A2.pantalla.s, E1-ASD.sis.e | — | sí |
++| 'sin_drenaje' | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | E1-ASD.sis.e, E1-LRFD.sis.s, E3-ASD.sis.s, E3-LRFD.sis.s | — | sí |
++| 'sin_drenaje' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | A5.alero.s, A5.pantalla.s, E1-LRFD.sis.s, E3-ASD.sis.s | — | sí |
++| 'sin_drenaje' | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
++| 'sin_drenaje' | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
+ 
+ ### `fc_cabezal_mpa`
+ 
+-resistencia del concreto del cabezal (T-11). Base: el juego completo. Efecto: **MUEVE VEREDICTOS**.
++resistencia del concreto del cabezal (T-11). Base: el juego completo. Efecto: **LEÍDO, SIN EFECTO MEDIBLE**.
+ 
+ | Valor | Punto | Material y sección | HW (m) | Control | Verificaciones que cambian frente al primer valor | Incumplidas o bloqueo si no dimensiona | Comparable |
+ |---|---|---|---|---|---|---|---|
+@@ -670,10 +670,10 @@ resistencia del concreto del cabezal (T-11). Base: el juego completo. Efecto: **
+ | 17.5 | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
+ | 17.5 | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
+ | 17.5 | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
+-| 35.0 | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | A2.alero.s, A2.pantalla.s | — | sí |
++| 35.0 | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | ninguna | — | sí |
+ | 35.0 | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
+-| 35.0 | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | A2.alero.s, A2.pantalla.s | — | sí |
+-| 35.0 | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | A2.alero.s, A2.pantalla.s | — | sí |
++| 35.0 | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
++| 35.0 | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
+ 
+ ### `duracion_caudal_pico_socavacion_min`
+ 
+@@ -715,8 +715,8 @@ derivado del censo (valor efectivo y ventana legible por máquina; correcciones
+ | 'limite_inclusive' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
+ | 'limite_inclusive' | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
+ | 'limite_inclusive' | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
+-| 'limite_estricto' | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | A1.alero.e, A1.alero.s, A1.pantalla.e, A1.pantalla.s, A1.punta.e, A1.punta.s, A1.talon.e, A1.talon.s, A2.alero.e, A2.alero.s, A2.pantalla.e, A2.pantalla.s, A2.punta.e, A2.punta.s, A2.talon.e, A2.talon.s, A3.alero.e, A3.alero.s, A3.pantalla.e, A3.pantalla.s, A3.punta.e, A3.punta.s, A3.talon.e, A3.talon.s, A4.alero.e, A4.alero.s, A4.pantalla.e, A4.pantalla.s, A4.punta.e, A4.punta.s, A4.talon.e, A4.talon.s, A5.alero.e, A5.alero.s, A5.pantalla.e, A5.pantalla.s, A5.punta.e, A5.punta.s, A5.talon.e, A5.talon.s, A6.alero.e, A6.alero.s, A6.pantalla.e, A6.pantalla.s, A6.punta.e, A6.punta.s, A6.talon.e, A6.talon.s, A7.concreto.e, A7.concreto.s, A8.zapata.e, A8.zapata.s, E1-ASD.sis.e, E1-ASD.sis.s, E1-LRFD.sis.e, E1-LRFD.sis.s, E2-ASD.sis.e, E2-ASD.sis.s, E2-LRFD.sis.e, E2-LRFD.sis.s, E3-ASD.sis.e, E3-ASD.sis.s, E3-LRFD.sis.e, E3-LRFD.sis.s | — | sí |
+-| 'limite_estricto' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | A1.alero.e, A1.alero.s, A1.pantalla.e, A1.pantalla.s, A1.punta.e, A1.punta.s, A1.talon.e, A1.talon.s, A2.alero.e, A2.alero.s, A2.pantalla.e, A2.pantalla.s, A2.punta.e, A2.punta.s, A2.talon.e, A2.talon.s, A3.alero.e, A3.alero.s, A3.pantalla.e, A3.pantalla.s, A3.punta.e, A3.punta.s, A3.talon.e, A3.talon.s, A4.alero.e, A4.alero.s, A4.pantalla.e, A4.pantalla.s, A4.punta.e, A4.punta.s, A4.talon.e, A4.talon.s, A5.alero.e, A5.alero.s, A5.pantalla.e, A5.pantalla.s, A5.punta.e, A5.punta.s, A5.talon.e, A5.talon.s, A6.alero.e, A6.alero.s, A6.pantalla.e, A6.pantalla.s, A6.punta.e, A6.punta.s, A6.talon.e, A6.talon.s, A7.concreto.e, A7.concreto.s, A8.zapata.e, A8.zapata.s, E1-ASD.sis.e, E1-ASD.sis.s, E1-LRFD.sis.e, E1-LRFD.sis.s, E2-ASD.sis.e, E2-ASD.sis.s, E2-LRFD.sis.e, E2-LRFD.sis.s, E3-ASD.sis.e, E3-ASD.sis.s, E3-LRFD.sis.e, E3-LRFD.sis.s | — | sí |
++| 'limite_estricto' | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | A1.alero.e, A1.alero.s, A1.pantalla.e, A1.pantalla.s, A1.punta.e, A1.punta.s, A1.talon.e, A1.talon.s, A2.alero.e, A2.alero.s, A2.pantalla.e, A2.pantalla.s, A2.punta.e, A2.punta.s, A2.talon.e, A2.talon.s, A3.alero.e, A3.alero.s, A3.pantalla.e, A3.pantalla.s, A3.punta.e, A3.punta.s, A3.talon.e, A3.talon.s, A4.alero.e, A4.alero.s, A4.pantalla.e, A4.pantalla.s, A4.punta.e, A4.punta.s, A4.talon.e, A4.talon.s, A5.alero.e, A5.alero.s, A5.pantalla.e, A5.pantalla.s, A5.punta.e, A5.punta.s, A5.talon.e, A5.talon.s, A6.alero.e, A6.alero.s, A6.pantalla.e, A6.pantalla.s, A6.punta.e, A6.punta.s, A6.talon.e, A6.talon.s, A7.concreto.e, A7.concreto.s, A8.zapata.e, A8.zapata.s, E1-ASD.est.s, E1-ASD.sis.e, E1-ASD.sis.s, E1-LRFD.sis.e, E1-LRFD.sis.s, E2-ASD.sis.e, E2-ASD.sis.s, E2-LRFD.sis.e, E2-LRFD.sis.s, E3-ASD.sis.e, E3-ASD.sis.s, E3-LRFD.sis.e, E3-LRFD.sis.s | — | sí |
++| 'limite_estricto' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | A1.alero.e, A1.alero.s, A1.pantalla.e, A1.pantalla.s, A1.punta.e, A1.punta.s, A1.talon.e, A1.talon.s, A2.alero.e, A2.alero.s, A2.pantalla.e, A2.pantalla.s, A2.punta.e, A2.punta.s, A2.talon.e, A2.talon.s, A3.alero.e, A3.alero.s, A3.pantalla.e, A3.pantalla.s, A3.punta.e, A3.punta.s, A3.talon.e, A3.talon.s, A4.alero.e, A4.alero.s, A4.pantalla.e, A4.pantalla.s, A4.punta.e, A4.punta.s, A4.talon.e, A4.talon.s, A5.alero.e, A5.alero.s, A5.pantalla.e, A5.pantalla.s, A5.punta.e, A5.punta.s, A5.talon.e, A5.talon.s, A6.alero.e, A6.alero.s, A6.pantalla.e, A6.pantalla.s, A6.punta.e, A6.punta.s, A6.talon.e, A6.talon.s, A7.concreto.e, A7.concreto.s, A8.zapata.e, A8.zapata.s, E1-ASD.est.s, E1-ASD.sis.e, E1-ASD.sis.s, E1-LRFD.sis.e, E1-LRFD.sis.s, E2-ASD.sis.e, E2-ASD.sis.s, E2-LRFD.sis.e, E2-LRFD.sis.s, E3-ASD.sis.e, E3-ASD.sis.s, E3-LRFD.sis.e, E3-LRFD.sis.s | — | sí |
+ | 'limite_estricto' | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | A1.alero.e, A1.alero.s, A1.pantalla.e, A1.pantalla.s, A1.punta.e, A1.punta.s, A1.talon.e, A1.talon.s, A2.alero.e, A2.alero.s, A2.pantalla.e, A2.pantalla.s, A2.punta.e, A2.punta.s, A2.talon.e, A2.talon.s, A3.alero.e, A3.alero.s, A3.pantalla.e, A3.pantalla.s, A3.punta.e, A3.punta.s, A3.talon.e, A3.talon.s, A4.alero.e, A4.alero.s, A4.pantalla.e, A4.pantalla.s, A4.punta.e, A4.punta.s, A4.talon.e, A4.talon.s, A5.alero.e, A5.alero.s, A5.pantalla.e, A5.pantalla.s, A5.punta.e, A5.punta.s, A5.talon.e, A5.talon.s, A6.alero.e, A6.alero.s, A6.pantalla.e, A6.pantalla.s, A6.punta.e, A6.punta.s, A6.talon.e, A6.talon.s, A7.concreto.e, A7.concreto.s, A8.zapata.e, A8.zapata.s, E1-ASD.sis.e, E1-ASD.sis.s, E1-LRFD.sis.e, E1-LRFD.sis.s, E2-ASD.sis.e, E2-ASD.sis.s, E2-LRFD.sis.e, E2-LRFD.sis.s, E3-ASD.sis.e, E3-ASD.sis.s, E3-LRFD.sis.e, E3-LRFD.sis.s | — | sí |
+ | 'limite_estricto' | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | A1.alero.e, A1.alero.s, A1.pantalla.e, A1.pantalla.s, A1.punta.e, A1.punta.s, A1.talon.e, A1.talon.s, A2.alero.e, A2.alero.s, A2.pantalla.e, A2.pantalla.s, A2.punta.e, A2.punta.s, A2.talon.e, A2.talon.s, A3.alero.e, A3.alero.s, A3.pantalla.e, A3.pantalla.s, A3.punta.e, A3.punta.s, A3.talon.e, A3.talon.s, A4.alero.e, A4.alero.s, A4.pantalla.e, A4.pantalla.s, A4.punta.e, A4.punta.s, A4.talon.e, A4.talon.s, A5.alero.e, A5.alero.s, A5.pantalla.e, A5.pantalla.s, A5.punta.e, A5.punta.s, A5.talon.e, A5.talon.s, A6.alero.e, A6.alero.s, A6.pantalla.e, A6.pantalla.s, A6.punta.e, A6.punta.s, A6.talon.e, A6.talon.s, A7.concreto.e, A7.concreto.s, A8.zapata.e, A8.zapata.s, E1-ASD.sis.e, E1-ASD.sis.s, E1-LRFD.sis.e, E1-LRFD.sis.s, E2-ASD.sis.e, E2-ASD.sis.s, E2-LRFD.sis.e, E2-LRFD.sis.s, E3-ASD.sis.e, E3-ASD.sis.s, E3-LRFD.sis.e, E3-LRFD.sis.s | — | sí |
+ 
+@@ -737,7 +737,7 @@ derivado del censo (valor efectivo y ventana legible por máquina; correcciones
+ 
+ ### `punto_aplicacion_incremento_sismico`
+ 
+-derivado del censo (valor efectivo y ventana legible por máquina; correcciones de T-11, H3). Base: el juego completo. Efecto: **MUEVE VEREDICTOS**.
++derivado del censo (valor efectivo y ventana legible por máquina; correcciones de T-11, H3). Base: el juego completo. Efecto: **LEÍDO, SIN EFECTO MEDIBLE**.
+ 
+ | Valor | Punto | Material y sección | HW (m) | Control | Verificaciones que cambian frente al primer valor | Incumplidas o bloqueo si no dimensiona | Comparable |
+ |---|---|---|---|---|---|---|---|
+@@ -745,7 +745,7 @@ derivado del censo (valor efectivo y ventana legible por máquina; correcciones
+ | 0.6 | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
+ | 0.6 | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
+ | 0.6 | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
+-| 0.333 | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | E3-ASD.sis.s | — | sí |
++| 0.333 | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | ninguna | — | sí |
+ | 0.333 | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
+ | 0.333 | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
+ | 0.333 | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
+@@ -1137,13 +1137,13 @@ derivado del censo (valor efectivo y ventana legible por máquina; correcciones
+ | 34.0 | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
+ | 34.0 | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
+ | 30.0 | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | ninguna | — | sí |
+-| 30.0 | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
+-| 30.0 | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | A2.alero.s, A2.pantalla.s | — | sí |
+-| 30.0 | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | A2.alero.s, A2.pantalla.s | — | sí |
+-| 38.0 | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | E1-ASD.sis.e | — | sí |
+-| 38.0 | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | A2.alero.s, A2.pantalla.s | — | sí |
+-| 38.0 | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | A2.alero.s, A2.pantalla.s | — | sí |
+-| 38.0 | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | A2.alero.s, A2.pantalla.s, E1-ASD.sis.e | — | sí |
++| 30.0 | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | E3-ASD.sis.s | — | sí |
++| 30.0 | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
++| 30.0 | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
++| 38.0 | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | ninguna | — | sí |
++| 38.0 | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
++| 38.0 | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
++| 38.0 | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
+ 
+ ### `demanda_sismica_licuefaccion`
+ 
+@@ -1305,7 +1305,7 @@ derivado del censo (valor efectivo y ventana legible por máquina; correcciones
+ 
+ ### `peso_especifico_relleno_kn_m3`
+ 
+-derivado del censo (valor efectivo y ventana legible por máquina; correcciones de T-11, H3). Base: el juego completo. Efecto: **MUEVE VEREDICTOS**.
++derivado del censo (valor efectivo y ventana legible por máquina; correcciones de T-11, H3). Base: el juego completo. Efecto: **LEÍDO, SIN EFECTO MEDIBLE**.
+ 
+ | Valor | Punto | Material y sección | HW (m) | Control | Verificaciones que cambian frente al primer valor | Incumplidas o bloqueo si no dimensiona | Comparable |
+ |---|---|---|---|---|---|---|---|
+@@ -1316,7 +1316,7 @@ derivado del censo (valor efectivo y ventana legible por máquina; correcciones
+ | 20.0 | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | ninguna | — | sí |
+ | 20.0 | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
+ | 20.0 | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
+-| 20.0 | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | A2.alero.s, A2.pantalla.s | — | sí |
++| 20.0 | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
+ 
+ ### `nivel_agua_diseno_v7`
+ 
+@@ -1381,7 +1381,7 @@ derivado del censo (valor efectivo y ventana legible por máquina; correcciones
+ 
+ ### `talud_terraplen`
+ 
+-derivado del censo (valor efectivo y ventana legible por máquina; correcciones de T-11, H3). Base: el juego completo. Efecto: **MUEVE VEREDICTOS**.
++derivado del censo (valor efectivo y ventana legible por máquina; correcciones de T-11, H3). Base: el juego completo. Efecto: **LEÍDO, SIN EFECTO MEDIBLE**.
+ 
+ | Valor | Punto | Material y sección | HW (m) | Control | Verificaciones que cambian frente al primer valor | Incumplidas o bloqueo si no dimensiona | Comparable |
+ |---|---|---|---|---|---|---|---|
+@@ -1390,9 +1390,9 @@ derivado del censo (valor efectivo y ventana legible por máquina; correcciones
+ | 2.0 | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
+ | 2.0 | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
+ | 1.5 | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | ninguna | — | sí |
+-| 1.5 | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | E3-ASD.sis.s | — | sí |
+-| 1.5 | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | A2.alero.s, A2.pantalla.s | — | sí |
+-| 1.5 | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | E1-ASD.sis.e | — | sí |
++| 1.5 | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
++| 1.5 | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
++| 1.5 | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
+ 
+ ### `espesor_proteccion_salida`
+ 
+@@ -1491,10 +1491,10 @@ derivado del censo (valor efectivo y ventana legible por máquina; correcciones
+ | 'fondo_del_cauce_receptor' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
+ | 'fondo_del_cauce_receptor' | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
+ | 'fondo_del_cauce_receptor' | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
+-| 'solera_de_salida' | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | A2.alero.s, A2.pantalla.s, E3-ASD.sis.s | — | sí |
+-| 'solera_de_salida' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
+-| 'solera_de_salida' | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | A2.alero.s, A2.pantalla.s | — | sí |
+-| 'solera_de_salida' | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | A2.alero.s, A2.pantalla.s | — | sí |
++| 'solera_de_salida' | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | E3-ASD.sis.s | — | sí |
++| 'solera_de_salida' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | E3-ASD.sis.s | — | sí |
++| 'solera_de_salida' | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
++| 'solera_de_salida' | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
+ 
+ ### `regimen_cortante_muro_e060_art_11_10_2`
+ 
+@@ -1517,14 +1517,14 @@ derivado del censo (valor efectivo y ventana legible por máquina; correcciones
+ 
+ | Valor | Punto | Material y sección | HW (m) | Control | Verificaciones que cambian frente al primer valor | Incumplidas o bloqueo si no dimensiona | Comparable |
+ |---|---|---|---|---|---|---|---|
+-| 0.6096 | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | ninguna | — | sí |
+-| 0.6096 | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
++| 0.0 | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | ninguna | — | sí |
++| 0.0 | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
++| 0.0 | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
++| 0.0 | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
++| 0.6096 | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | E3-ASD.sis.s | — | sí |
++| 0.6096 | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | E3-ASD.sis.s | — | sí |
+ | 0.6096 | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
+ | 0.6096 | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
+-| 0.0 | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | A2.alero.s, A2.pantalla.s | — | sí |
+-| 0.0 | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | E3-ASD.sis.s | — | sí |
+-| 0.0 | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | A2.alero.s, A2.pantalla.s | — | sí |
+-| 0.0 | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | A2.alero.s, A2.pantalla.s | — | sí |
+ 
+ ### `umbral_no_colapso_evento_extremo`
+ 
+@@ -1682,14 +1682,14 @@ derivado del censo (valor efectivo y ventana legible por máquina; correcciones
+ 
+ | Valor | Punto | Material y sección | HW (m) | Control | Verificaciones que cambian frente al primer valor | Incumplidas o bloqueo si no dimensiona | Comparable |
+ |---|---|---|---|---|---|---|---|
+-| 'peso_entero' | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | ninguna | — | sí |
+-| 'peso_entero' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
+-| 'peso_entero' | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
+-| 'peso_entero' | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
+ | 'exacto' | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | ninguna | — | sí |
+ | 'exacto' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
+ | 'exacto' | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
+ | 'exacto' | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
++| 'peso_entero' | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | ninguna | — | sí |
++| 'peso_entero' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
++| 'peso_entero' | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
++| 'peso_entero' | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
+ 
+ ### `carga_pantalla_cabezal`
+ 
+@@ -1697,26 +1697,30 @@ derivado del censo (valor efectivo y ventana legible por máquina; correcciones
+ 
+ | Valor | Punto | Material y sección | HW (m) | Control | Verificaciones que cambian frente al primer valor | Incumplidas o bloqueo si no dimensiona | Comparable |
+ |---|---|---|---|---|---|---|---|
+-| 'plano_virtual_del_talon' | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | ninguna | — | sí |
+-| 'plano_virtual_del_talon' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
+-| 'plano_virtual_del_talon' | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
+-| 'plano_virtual_del_talon' | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
+ | 'cuna_sobre_la_pantalla' | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | ninguna | — | sí |
+ | 'cuna_sobre_la_pantalla' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
+ | 'cuna_sobre_la_pantalla' | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
+ | 'cuna_sobre_la_pantalla' | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
++| 'plano_virtual_del_talon' | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | ninguna | — | sí |
++| 'plano_virtual_del_talon' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
++| 'plano_virtual_del_talon' | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
++| 'plano_virtual_del_talon' | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
+ 
+ ### `distribucion_incremento_sismico`
+ 
+-derivado del censo (valor efectivo y ventana legible por máquina; correcciones de T-11, H3). Base: el juego completo. Efecto: **MUEVE VEREDICTOS**.
++derivado del censo (valor efectivo y ventana legible por máquina; correcciones de T-11, H3). Base: el juego completo. Efecto: **LEÍDO, SIN EFECTO MEDIBLE**.
+ 
+ | Valor | Punto | Material y sección | HW (m) | Control | Verificaciones que cambian frente al primer valor | Incumplidas o bloqueo si no dimensiona | Comparable |
+ |---|---|---|---|---|---|---|---|
++| 'segun_regimen' | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | ninguna | — | sí |
++| 'segun_regimen' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
++| 'segun_regimen' | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
++| 'segun_regimen' | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
+ | 'fraccion_de_h' | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | ninguna | — | sí |
+ | 'fraccion_de_h' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
+ | 'fraccion_de_h' | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
+ | 'fraccion_de_h' | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
+-| 'distribucion_estatica' | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | E3-ASD.sis.s | — | sí |
++| 'distribucion_estatica' | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | ninguna | — | sí |
+ | 'distribucion_estatica' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
+ | 'distribucion_estatica' | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
+ | 'distribucion_estatica' | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
+diff --git a/src/criterios_adoptados.py b/src/criterios_adoptados.py
+index a7dccee..0987b1b 100644
+--- a/src/criterios_adoptados.py
++++ b/src/criterios_adoptados.py
+@@ -10905,7 +10905,14 @@ CRITERIOS: Dict[str, Criterio] = {
+     ),
+ 
+     "drenaje_trasdos": Criterio(
+-        valor="sin_drenaje",
++        # VALOR DE ARCHIVO «drenado» desde VE-3.16 (2026-11-18, decision del
++        # dueño al aceptar la recomendacion de la verificacion independiente
++        # `sismo_cabezal_que_se_pasa.md`, punto 2): AASHTO 11.6.6 MANDA drenar
++        # el relleno ("shall be drained") y solo admite la hidrostatica plena
++        # "if drainage cannot be provided", de modo que «sin_drenaje» era la
++        # excepcion de la norma convertida en regla. Hasta VE-3.15 el valor
++        # de archivo era «sin_drenaje».
++        valor="drenado",
+         nivel=NIVEL_EXPEDIENTE,
+         etiqueta="A",
+         forma=FORMA_CATEGORIA,
+@@ -10932,12 +10939,14 @@ CRITERIOS: Dict[str, Criterio] = {
+                       "nivel sube el agua de un relleno sin drenar; el "
+                       "proyecto lee que hasta su superficie (la lectura esta "
+                       "en la `Interpretacion` de la cita). El valor de "
+-                      "archivo es «sin_drenaje»: el drenaje reduce la "
+-                      "hidrostatica SOLO si se declara, porque declararlo "
+-                      "compromete un detalle -- filtro y lloraderos -- que "
+-                      "tiene que estar en los planos, y el comentario de la "
+-                      "fuente advierte que los lloraderos solos no aseguran "
+-                      "el drenaje. Sin drenaje el agua llena el relleno "
++                      "archivo es «drenado» (VE-3.16): es lo que la fuente "
++                      "manda, y adoptarlo COMPROMETE un detalle -- filtro y "
++                      "lloraderos -- que tiene que estar en los planos y en "
++                      "su mantenimiento (un lloradero tapado devuelve el "
++                      "caso «sin_drenaje»), y el comentario de la fuente "
++                      "advierte que los lloraderos solos no aseguran el "
++                      "drenaje. «sin_drenaje» se declara cuando el drenaje "
++                      "no puede darse. Sin drenaje el agua llena el relleno "
+                       "RETENIDO hasta su superficie contra el trasdos "
+                       "(coronacion menos bordillo) y nunca sube por encima "
+                       "del muro. Con «drenado» el agua del relleno queda en "
+@@ -10949,9 +10958,9 @@ CRITERIOS: Dict[str, Criterio] = {
+                       "vacio --, que el comentario C11.6.6 hace plausible al "
+                       "advertir que los lloraderos no aseguran el drenaje: "
+                       "el ensamble lo avisa con su orden de magnitud. "
+-                      "Declararlo es escribir 'drenaje_trasdos' = «drenado» "
+-                      "en la sesion o con --declarar, y compromete el filtro "
+-                      "y los lloraderos en los planos. En los dos casos el "
++                      "Declarar «sin_drenaje» es escribir 'drenaje_trasdos' = "
++                      "«sin_drenaje» en la sesion o con --declarar. En los "
++                      "dos casos el "
+                       "empuje del suelo bajo el agua va con su peso "
+                       "sumergido (AASHTO 3.11.3), y el agua no se cuenta dos "
+                       "veces",
+diff --git a/src/modulos/M9_cabezal.py b/src/modulos/M9_cabezal.py
+index a613f1a..ce7b0b4 100644
+--- a/src/modulos/M9_cabezal.py
++++ b/src/modulos/M9_cabezal.py
+@@ -8319,10 +8319,10 @@ def _pasos_de_cargas(entorno, condicion, cargas, combos, datos,
+                    f"agua en el relleno con '{CRITERIO_DRENAJE}' = "
+                    f"'{datos['drenaje']}': "
+                    + ("hasta la superficie del relleno retenido contra el "
+-                      "trasdos (z_rel; sin drenaje declarado, AASHTO "
++                      "trasdos (z_rel; el drenaje no puede darse, AASHTO "
+                       "11.6.6), nunca por encima del muro"
+                       if datos["drenaje"] == DRENAJE_SIN else
+-                      "el freatico natural (drenaje declarado: filtro y "
++                      "el freatico natural (relleno drenado: filtro y "
+                       "lloraderos en planos)"))),
+             resultado=Magnitud(
+                 "E_w / U",
+@@ -8596,15 +8596,19 @@ def ensamble_estabilidad(entorno: EntornoDelCabezal,
+             "quedan diferidas al expediente con el estudio de suelos "
+             "(AASHTO LRFD 11.6.3.7; E.050 39.13.6 b y Art. 30.3)")
+         if datos["drenaje"] == DRENAJE_SIN:
++            # VE-3.16: el valor de archivo es 'drenado'; este aviso es el
++            # del caso declarado. Hasta VE-3.16 decia ademas que la
++            # condicion sismica no era evaluable, que dejo de ser cierto en
++            # VE-3.14 (C11.6.5.3, peso total bajo el agua).
+             avisos.append(
+-                f"Cabezal de {entorno.extremo} de {entorno.id_punto}: sin "
+-                f"drenaje declarado del trasdos ('{CRITERIO_DRENAJE}' = "
+-                f"'{DRENAJE_SIN}'), la estabilidad se calcula con el relleno "
+-                "retenido lleno de agua hasta su superficie contra el "
+-                "trasdos (AASHTO 11.6.6), y la condicion sismica no es "
+-                "evaluable (relleno saturado, 11.6.5.3). Declarar el "
+-                "drenaje ('drenado') lo deja en el freatico natural y "
+-                "compromete el filtro y los lloraderos en planos")
++                f"Cabezal de {entorno.extremo} de {entorno.id_punto}: con el "
++                f"trasdos sin drenaje ('{CRITERIO_DRENAJE}' = "
++                f"'{DRENAJE_SIN}', declarado: el drenaje no puede darse), la "
++                "estabilidad se calcula con el relleno retenido lleno de "
++                "agua hasta su superficie contra el trasdos (AASHTO "
++                "11.6.6), tambien bajo sismo (ficha VE3-21). El valor de "
++                f"archivo ('{DRENAJE_CON}') lo deja en el freatico natural "
++                "y compromete el filtro y los lloraderos en planos")
+         else:
+             avisos.append(_aviso_desembalse_rapido(entorno, datos, cargas))
+         if suelo["cohesivo"]:
+diff --git a/tests/apoyo/sensibilidad.py b/tests/apoyo/sensibilidad.py
+index f508cbd..7b11a25 100644
+--- a/tests/apoyo/sensibilidad.py
++++ b/tests/apoyo/sensibilidad.py
+@@ -419,8 +419,8 @@ NO_BARRIBLES: Dict[str, str] = {
+ # EXACTAMENTE las claves (y bases) que la medida da como no leidas.
+ NO_LEIDO_PORQUE: Dict[Tuple[str, str], str] = {
+     ("agua_del_relleno_bajo_sismo", "juego"): (
+-        "el juego declara el trasdós drenado y su freático queda bajo las "
+-        "zapatas: no hay agua en el plano de empuje bajo sismo, que es lo "
++        "el trasdós del juego es drenado (valor de archivo desde VE-3.16) y "
++        "su freático queda bajo las zapatas: no hay agua en el plano de empuje bajo sismo, que es lo "
+         "único que lee la elección (VE-3.14, C11.6.5.3)"),
+     ("seccion_receptor", "juego"): (
+         "el juego declara `TW_m` (vía 1 de la Sec. 1.3), que manda sobre las "
+@@ -701,14 +701,15 @@ def generar(medidas: Optional[Sequence[Medida]] = None) -> str:
+     A("## 1. Cómo leer este anexo")
+     A("")
+     A("- **La base de los barridos es el juego tal como está**, la variante "
+-      "que ejercita la cadena sísmica y el caso drenado "
++      "que ejercita el empuje sísmico reducido "
+       "(`docs/validacion_integral.md` §2.1), y **no la corrida titular** (§2, "
+-      "con las decisiones de archivo): con `drenaje_trasdos` = 'sin_drenaje' "
+-      "la condición sísmica del cabezal es «método no evaluable» (ficha "
+-      "T7B-05), y hace falta una base donde el método sea evaluable para "
+-      "medir los [A] del cabezal. Lo que las dos decisiones de archivo hacen "
+-      "se lee en sus propios barridos (`drenaje_trasdos`, "
+-      "`factor_muro_eleccion`).")
++      "con la decisión de archivo del muro que no cede): con k_h = k_h0 la "
++      "condición sísmica del cabezal no cumple en ningún cabezal del juego, "
++      "y hace falta una base donde el cabezal cierre para medir los [A] del "
++      "cabezal. Lo que la decisión de archivo hace se lee en su propio "
++      "barrido (`factor_muro_eleccion`); el trasdós es drenado de archivo "
++      "desde VE-3.16, y el otro lado se lee en el barrido de "
++      "`drenaje_trasdos`.")
+     A("- **Primer valor = el efectivo en el juego** (el que el juego declara "
+       "o el de archivo): su corrida es la del juego, y cada otra se compara "
+       "con ella por el comparador de E-B. Los demás valores son los extremos "
+diff --git a/tests/apoyo/validacion_integral.py b/tests/apoyo/validacion_integral.py
+index b53c8eb..47e7f8a 100644
+--- a/tests/apoyo/validacion_integral.py
++++ b/tests/apoyo/validacion_integral.py
+@@ -599,12 +599,13 @@ def quitar_una(base: Optional[Any] = None, *,
+ 
+ # LA SEGUNDA BASE DE LA LISTA EXACTA (correcciones de T-11, H1 de su
+ # auditoria, ALTA): el juego SIN las declaraciones que pisan un valor de
+-# archivo --`drenaje_trasdos` y `factor_muro_eleccion` vuelven a 'sin_drenaje'
+-# y 'sin_reduccion'--, que es la corrida TITULAR (variante
+-# `decisiones_de_archivo`). Medida solo sobre el juego, la lista no veia el
+-# peso especifico SATURADO del relleno: con el relleno drenado no se pide, y
+-# con el valor de archivo (sin drenaje) detiene la estabilidad y el armado de
+-# los dos cabezales de los cuatro puntos. La lista es la UNION de las dos.
++# archivo --`factor_muro_eleccion` vuelve a 'sin_reduccion', con su armado
++# en reposo--, que es la corrida TITULAR (variante `decisiones_de_archivo`).
++# Hasta VE-3.16 la titular volvia tambien `drenaje_trasdos` a 'sin_drenaje',
++# y por eso esta base destapaba el peso especifico SATURADO del relleno;
++# desde que 'drenado' es el valor de archivo ninguna de las dos bases lo
++# pide y es una condicional (`CONDICIONALES_NO_MEDIDAS`). La lista es la
++# UNION de las dos.
+ VARIANTE_TITULAR = "decisiones_de_archivo"
+ 
+ 
+@@ -815,9 +816,9 @@ def generar(*, base: Any = None, por_defecto: Any = None,
+     A("## 1. Qué se juzga, y con qué regla")
+     A("")
+     A("- **La corrida titular** es la del juego con las **decisiones de "
+-      "archivo** (§2): el juego pisa dos criterios que tienen valor de "
+-      "archivo y que el dueño confirmó, y eso se presenta como variante "
+-      "(§2.1), no como resultado.")
++      "archivo** (§2): el juego pisa una decisión con valor de archivo que "
++      "el dueño confirmó (la reducción de k_h, con su armado), y eso se "
++      "presenta como variante (§2.1), no como resultado.")
+     A("- **Llega a la Fase 11 con diseño**: el punto sale dimensionado (MD "
+       "aceptó material y sección) y la memoria de la Fase 11 lleva su bloque "
+       "y el cuadro resumen su fila. Las filas E y A del cabezal son "
+@@ -855,10 +856,11 @@ def generar(*, base: Any = None, por_defecto: Any = None,
+     A("")
+     A("El juego declara, sobre criterios que **tienen valor de archivo**, lo "
+       "que esta tabla dice. La corrida titular los deja en su valor de "
+-      "archivo (variante `decisiones_de_archivo`) y declara el peso "
+-      "específico saturado del relleno que el relleno sin drenaje pide "
+-      "(ensayo del EMS, sin valor de archivo: 20 kN/m³ de prueba, con su "
+-      "línea en el juego).")
++      "archivo (variante `decisiones_de_archivo`). El trasdós es **drenado** "
++      "de archivo desde VE-3.16 (AASHTO 11.6.6, «shall be drained»; "
++      "compromete filtro y lloraderos en los planos), y con el freático del "
++      "juego bajo las zapatas la titular no lee el peso específico saturado "
++      "del relleno.")
+     A("")
+     L += _tabla(("Criterio", "Valor de archivo", "Valor del juego",
+                  "Por qué el juego lo cambia"),
+@@ -900,23 +902,25 @@ def generar(*, base: Any = None, por_defecto: Any = None,
+       "zapata sin cumplir. Desde VE-3.14 la condición **sísmica se evalúa** "
+       "también con el relleno saturado (AASHTO C11.6.5.3: el incremento con "
+       "el peso total bajo el agua, `agua_del_relleno_bajo_sismo` [C]); con "
+-      "el trasdós sin drenaje y el k_h sin reducción es la que no cumple"
++      "el trasdós drenado de archivo (VE-3.16) el agua bajo sismo es la del "
++      "freático del punto, y con el k_h sin reducción (k_h = k_h0, "
++      "desplazamiento nulo) es la que no cumple"
+       + ("" if not sismicas else
+          f" ({sismicas} bloqueos «método no evaluable» quedan)")
+       + ". El "
+-      "**peso específico saturado del relleno** es un ensayo del EMS que esta "
+-      "rama necesita: sin él la estabilidad y el armado de los ocho "
+-      "cabezales se detienen (§4.2). No es un fallo de la validación: es lo "
++      "**peso específico saturado del relleno** es un ensayo del EMS que sólo "
++      "pide el relleno con agua (`drenaje_trasdos` = 'sin_drenaje' declarado, "
++      "o el freático sobre la zapata): la titular no lo lee (§4.3). No es un "
++      "fallo de la validación: es lo "
+       "que el dimensionamiento de VE-3.5 y VE-3.9 resuelve y lo que deja.")
+     A("")
+-    A("### 2.1 Variante que ejercita la cadena sísmica y el caso drenado: el "
+-      "juego tal como está")
++    A("### 2.1 Variante que ejercita el empuje sísmico reducido: el juego "
++      "tal como está")
+     A("")
+-    A("El juego pisa las dos decisiones de la tabla de arriba (trasdós "
+-      "drenado, muro que admite desplazamiento) para que la cadena sísmica y "
+-      "el caso drenado se recorran. Es la base de los barridos de "
+-      "`docs/validacion_sensibilidad.md`, porque con los valores de archivo "
+-      "la sísmica no es evaluable.")
++    A("El juego pisa la decisión de la tabla de arriba (muro que admite "
++      "desplazamiento, k_h = 0.5·k_h0, armado como muro que cede) para que "
++      "la rama del empuje sísmico reducido se recorra. Es la base de los "
++      "barridos de `docs/validacion_sensibilidad.md`.")
+     A("")
+     L += _tabla(ENCABEZADO_CORRIDA, _filas_de_la_corrida(base))
+     A("")
+@@ -1167,9 +1171,8 @@ def lista_exacta(por_defecto: Any,
+     DETIENE algo. Para un quitado que detiene se nombran la entrada quitada Y
+     lo que el bloqueo pide: quitar `S_cuneta` hace faltar `L_hidraulico_m`,
+     y es esa la que el mensaje nombra. La clase de una entrada quitada es la
+-    del bloqueo que provoca: quitar `drenaje_trasdos` no deja un dato
+-    faltante sino un metodo sin evaluar (ficha T7B-05), y la lista lo dice
+-    asi. Es la lista ADEMAS de las columnas obligatorias del CSV (sin ellas
++    del bloqueo que provoca: un quitado que deja un metodo sin evaluar
++    no es un dato faltante, y la lista lo dice asi. Es la lista ADEMAS de las columnas obligatorias del CSV (sin ellas
+     M0 no carga) y SIN las condicionales que ninguna de las dos bases
+     dispara (`CONDICIONALES_NO_MEDIDAS`).
+     """
+@@ -1248,6 +1251,17 @@ CONDICIONALES_NO_MEDIDAS: Dict[str, str] = {
+         "`NF_profundidad_m`), y con esa alternativa V7 exige ademas el NF "
+         "del punto y, con el nivel sobre la clave, "
+         "`peso_especifico_saturado_relleno_kn_m3` (ficha VE2-C)"),
++    # --- VE-3.16 --- hasta entonces la segunda base (la titular, con el
++    # trasdos 'sin_drenaje' de archivo) lo medía: detenia la estabilidad y
++    # el armado de los ocho cabezales. Con 'drenado' de archivo y el
++    # freatico del juego bajo las zapatas ninguna base lo lee.
++    "peso_especifico_saturado_relleno_kn_m3": (
++        "solo con agua en el relleno del cabezal: `drenaje_trasdos` = "
++        "'sin_drenaje' declarado (el drenaje no puede darse) o el freatico "
++        "sobre la base de la zapata; con el relleno drenado de archivo "
++        "(VE-3.16) y el freatico bajo la zapata no se lee. El juego lo "
++        "declara (20 kN/m³ de prueba) para la variante "
++        "`sin_drenaje_declarado`"),
+ }
+ 
+ 
+diff --git a/tests/fixtures/corridas_de_referencia/hidrologia_calculada/declaraciones.json b/tests/fixtures/corridas_de_referencia/hidrologia_calculada/declaraciones.json
+index 7d9bc7f..5efd6cc 100644
+--- a/tests/fixtures/corridas_de_referencia/hidrologia_calculada/declaraciones.json
++++ b/tests/fixtures/corridas_de_referencia/hidrologia_calculada/declaraciones.json
+@@ -10,7 +10,6 @@
+   "gamma_kn_m3": 18.0
+  },
+  "peso_especifico_saturado_relleno_kn_m3": 20.0,
+- "drenaje_trasdos": "drenado",
+  "factor_muro_eleccion": "reduccion_por_desplazamiento",
+  "regimen_resistencia_elementos_cabezal": "cedente",
+  "categoria_refuerzo_aashto": "A",
+diff --git a/tests/fixtures/juego_validacion_integral.py b/tests/fixtures/juego_validacion_integral.py
+index 242a18a..28dafb5 100644
+--- a/tests/fixtures/juego_validacion_integral.py
++++ b/tests/fixtures/juego_validacion_integral.py
+@@ -275,16 +275,21 @@ DECLARACIONES: Dict[str, Any] = {
+     "umbral_no_colapso_evento_extremo": "sin_desborde_de_la_plataforma",
+     # Geotecnia del cabezal (ensayos del EMS): los de T-7b. Relleno de
+     # trasdos granular, phi 34 grados (ventana 30-38); fundacion no cohesiva
+-    # phi 32 grados, gamma 18 kN/m3; gamma saturado del relleno 20 kN/m3.
++    # phi 32 grados, gamma 18 kN/m3; gamma saturado del relleno 20 kN/m3
++    # (VE-3.16: con el relleno drenado de archivo y el freatico bajo las
++    # zapatas nadie lo lee en el juego; se conserva para la variante
++    # `sin_drenaje_declarado`, que llena el relleno de agua y lo pide).
+     "phi_relleno_trasdos": 34.0,
+     "c_phi_fundacion": {"cohesivo": False, "c_kpa": 0.0, "phi_grados": 32.0,
+                         "gamma_kn_m3": 18.0},
+     "peso_especifico_saturado_relleno_kn_m3": 20.0,
+-    # Decisiones de proyectista y Propietario que T-7b declaro en su corrida
+-    # de punta a punta (el archivo tiene otro valor; se declaran porque son
+-    # de quien hace los planos): trasdos con filtro y lloraderos, y muro que
+-    # admite el desplazamiento bajo sismo.
+-    "drenaje_trasdos": "drenado",
++    # Decision del Propietario que T-7b declaro en su corrida de punta a
++    # punta (el archivo tiene otro valor; se declara porque es de quien
++    # acepta el desplazamiento): muro que admite el desplazamiento bajo
++    # sismo. El trasdos drenado (filtro y lloraderos) lo declaraba tambien
++    # el juego hasta VE-3.16; desde entonces es el valor de archivo de
++    # `drenaje_trasdos` (decision del dueño del 2026-11-18, AASHTO 11.6.6
++    # «shall be drained») y el juego ya no lo declara.
+     "factor_muro_eleccion": "reduccion_por_desplazamiento",
+     # Un solo regimen (VE-3.15, decision 12): el muro que cede se arma
+     # tambien como muro que cede.
+@@ -314,13 +319,16 @@ DECLARACIONES: Dict[str, Any] = {
+     # (decision del dueño del 2026-11-17) y el juego ya no los declara.
+ }
+ 
+-# Por que el juego PISA un valor de archivo (correcciones de T-11, H2): las
+-# dos son decisiones del Propietario y del proyectista que el dueño CONFIRMO
+-# con su valor de archivo el 2026-11-13; el juego las cambia para que la
+-# validacion recorra la cadena sismica y el caso drenado, que con los
+-# valores de archivo no se ejercitan. Por eso la corrida TITULAR es la
+-# variante `decisiones_de_archivo` y el juego tal como esta es la variante
+-# que ejercita esas dos ramas. Un test exige que esta tabla nombre
++# Por que el juego PISA un valor de archivo (correcciones de T-11, H2): es
++# una decision del Propietario (con su armado, un solo regimen) que el
++# dueño CONFIRMO con su valor de archivo; el juego la cambia para que la
++# validacion recorra el empuje sismico reducido, que con los valores de
++# archivo no se ejercita. Por eso la corrida TITULAR es la variante
++# `decisiones_de_archivo` y el juego tal como esta es la variante que
++# ejercita esa rama. Hasta VE-3.16 el juego pisaba tambien
++# `drenaje_trasdos` ('drenado' sobre el 'sin_drenaje' de archivo); desde
++# VE-3.16 'drenado' es el valor de archivo y la declaracion se retiro. Un
++# test exige que esta tabla nombre
+ # exactamente las claves de `DECLARACIONES` cuyo criterio tiene valor de
+ # archivo.
+ # Declaraciones que son UNA decision y se quitan juntas (VE-3.15, decision 12
+@@ -332,10 +340,6 @@ DECLARACIONES_QUE_VAN_JUNTAS: Dict[str, Tuple[str, ...]] = {
+ }
+ 
+ PISA_EL_ARCHIVO_PORQUE: Dict[str, str] = {
+-    "drenaje_trasdos": (
+-        "con 'sin_drenaje' el relleno se calcula saturado y la condicion "
+-        "sismica del cabezal es «metodo no evaluable» (ficha T7B-05): "
+-        "'drenado' deja evaluar la cadena sismica entera"),
+     "factor_muro_eleccion": (
+         "'reduccion_por_desplazamiento' (k_h = 0.5·k_h0) es la otra rama de "
+         "la eleccion del Propietario: con el relleno drenado ejercita el "
+@@ -393,27 +397,23 @@ OMITIDAS_A_PROPOSITO: Dict[str, str] = {
+ VARIANTES: Dict[str, Tuple[str, Tuple[Tuple[Any, ...], ...]]] = {
+     # LA CORRIDA TITULAR de la validacion (correcciones de T-11, H2 de su
+     # auditoria; resolucion del orquestador aceptada por el dueño el
+-    # 2026-11-13): el juego con las DOS DECISIONES DE ARCHIVO que el dueño
+-    # confirmo el 2026-11-13 --`drenaje_trasdos` = 'sin_drenaje' y
+-    # `factor_muro_eleccion` = 'sin_reduccion'--, que el juego pisa para
+-    # ejercitar la cadena sismica y el caso drenado (ver
+-    # `PISA_EL_ARCHIVO_PORQUE`). Con el relleno sin drenaje el agua llega al
+-    # plano de empuje y el peso especifico SATURADO del relleno, que es un
+-    # ensayo del EMS sin valor de archivo, se pide: el juego lo declara por
+-    # la puerta de los ensayos (`--declarar`) con 20 kN/m3 --relleno granular
+-    # compactado: gamma_sat = gamma_d + n·gamma_w ≈ 17.5 + 0.25·9.81 = 20.0
+-    # kN/m3; el rango usual de un granular saturado es 19 a 22 kN/m3--. No es
+-    # un dato del sitio.
++    # 2026-11-13): el juego con la DECISION DE ARCHIVO del muro que no cede
++    # --`factor_muro_eleccion` = 'sin_reduccion', con su armado en reposo--,
++    # que el juego pisa para ejercitar el empuje sismico reducido (ver
++    # `PISA_EL_ARCHIVO_PORQUE`). El trasdos queda con su valor de archivo,
++    # 'drenado' desde VE-3.16: hasta entonces la titular volvia tambien a
++    # 'sin_drenaje' y redeclaraba el peso especifico SATURADO del relleno de
++    # prueba (20 kN/m3) que el relleno lleno de agua pide; con el relleno
++    # drenado y el freatico del juego bajo las zapatas no se lee, y la
++    # titular ya no lo toca (el juego lo sigue declarando para la variante
++    # `sin_drenaje_declarado`).
+     "decisiones_de_archivo": (
+-        "Las dos decisiones de ARCHIVO que el juego pisa (`drenaje_trasdos` = "
+-        "'sin_drenaje' y el muro que NO cede: `factor_muro_eleccion` = "
+-        "'sin_reduccion' con el armado en reposo, un solo regimen desde "
+-        "VE-3.15), con el gamma saturado del relleno de prueba (20 kN/m³) que "
+-        "el relleno sin drenaje pide: la corrida TITULAR de §2",
+-        (("declarar", "drenaje_trasdos", None),
+-         ("declarar", "factor_muro_eleccion", None),
+-         ("declarar", "regimen_resistencia_elementos_cabezal", None),
+-         ("declarar", "peso_especifico_saturado_relleno_kn_m3", 20.0))),
++        "La decision de ARCHIVO que el juego pisa (el muro que NO cede: "
++        "`factor_muro_eleccion` = 'sin_reduccion' con el armado en reposo, "
++        "un solo regimen desde VE-3.15), con el trasdos drenado de archivo "
++        "(VE-3.16): la corrida TITULAR de §2",
++        (("declarar", "factor_muro_eleccion", None),
++         ("declarar", "regimen_resistencia_elementos_cabezal", None))),
+     "B01_tw_de_la_linea_base": (
+         "B-01 con el TW de 1.00 m de la linea base (el caso por defecto que "
+         "el dueño decidio dejar)",
+@@ -452,9 +452,14 @@ VARIANTES: Dict[str, Tuple[str, Tuple[Tuple[Any, ...], ...]]] = {
+         "A-01 con la zapata de sus dos cabezales declarada de 3.00 m de "
+         "ancho (`cabezal_declarado`, la prueba de T-7b)",
+         (("externo", "A-01", "cabezal_declarado", {"ancho_zapata_m": 3.0}),)),
+-    "drenaje_de_archivo": (
+-        "Trasdos sin drenaje (el valor de archivo de `drenaje_trasdos`)",
+-        (("declarar", "drenaje_trasdos", None),)),
++    # VE-3.16: hasta entonces se llamaba `drenaje_de_archivo` y volvia al
++    # valor de archivo; desde que el archivo es 'drenado' la variante
++    # DECLARA 'sin_drenaje' (el caso «if drainage cannot be provided» de
++    # AASHTO 11.6.6), con el gamma saturado de prueba del juego.
++    "sin_drenaje_declarado": (
++        "Trasdos sin drenaje declarado (`drenaje_trasdos` = 'sin_drenaje': "
++        "el drenaje no puede darse y el relleno se llena de agua)",
++        (("declarar", "drenaje_trasdos", "sin_drenaje"),)),
+     # --- VE-2 (bloque 1, decision (b) de VE1-02) --- LA VARIANTE VACIA
+     # TAMBIEN EL CAUDAL DEL EVENTO EXTREMO de los tres puntos. El del juego
+     # es el de su Q DECLARADO (1.11 veces el de diseño, de T-7b), y con el
+diff --git a/tests/linea_base_familia_c/informe_expediente.json b/tests/linea_base_familia_c/informe_expediente.json
+index db3fcf7..1a91e55 100644
+--- a/tests/linea_base_familia_c/informe_expediente.json
++++ b/tests/linea_base_familia_c/informe_expediente.json
+@@ -3,7 +3,7 @@
+     "csv": "tests/ejemplo_puntos.csv",
+     "generado_utc": "<UTC>",
+     "csv_sha1": "7ae59002159b228f3681ec0d34a4e8ae65052015",
+-    "criterios_sha1": "300b064da274805ba4ef14d9e6bba5052b853904",
++    "criterios_sha1": "07ecd684a1900c815dff43fde2aa78b3075ce68b",
+     "corredor_del_proyecto": {
+       "valor": "terraplen de ~5 km de la Fase 0-bis de la hoja de ruta, num. 150",
+       "origen": "src/datos_sitio.py"
+diff --git a/tests/linea_base_familia_c/informe_familia_c.json b/tests/linea_base_familia_c/informe_familia_c.json
+index 6cd3cb1..b41878d 100644
+--- a/tests/linea_base_familia_c/informe_familia_c.json
++++ b/tests/linea_base_familia_c/informe_familia_c.json
+@@ -3,7 +3,7 @@
+     "csv": "<SALIDA>/puntos_c.csv",
+     "generado_utc": "<UTC>",
+     "csv_sha1": "b715b1694f4a17566bcbb365c439af196c47e185",
+-    "criterios_sha1": "300b064da274805ba4ef14d9e6bba5052b853904",
++    "criterios_sha1": "07ecd684a1900c815dff43fde2aa78b3075ce68b",
+     "corredor_del_proyecto": {
+       "valor": "terraplen de ~5 km de la Fase 0-bis de la hoja de ruta, num. 150",
+       "origen": "src/datos_sitio.py"
+diff --git a/tests/linea_base_familia_c/informe_perfil_ancho.json b/tests/linea_base_familia_c/informe_perfil_ancho.json
+index 4b16f3a..d165899 100644
+--- a/tests/linea_base_familia_c/informe_perfil_ancho.json
++++ b/tests/linea_base_familia_c/informe_perfil_ancho.json
+@@ -3,7 +3,7 @@
+     "csv": "tests/ejemplo_puntos.csv",
+     "generado_utc": "<UTC>",
+     "csv_sha1": "7ae59002159b228f3681ec0d34a4e8ae65052015",
+-    "criterios_sha1": "300b064da274805ba4ef14d9e6bba5052b853904",
++    "criterios_sha1": "07ecd684a1900c815dff43fde2aa78b3075ce68b",
+     "corredor_del_proyecto": {
+       "valor": "terraplen de ~5 km de la Fase 0-bis de la hoja de ruta, num. 150",
+       "origen": "src/datos_sitio.py"
+diff --git a/tests/linea_base_familia_c/informe_rama_error.json b/tests/linea_base_familia_c/informe_rama_error.json
+index 265a93d..0184448 100644
+--- a/tests/linea_base_familia_c/informe_rama_error.json
++++ b/tests/linea_base_familia_c/informe_rama_error.json
+@@ -3,7 +3,7 @@
+     "csv": "tests/ejemplo_puntos.csv",
+     "generado_utc": "<UTC>",
+     "csv_sha1": "7ae59002159b228f3681ec0d34a4e8ae65052015",
+-    "criterios_sha1": "300b064da274805ba4ef14d9e6bba5052b853904",
++    "criterios_sha1": "07ecd684a1900c815dff43fde2aa78b3075ce68b",
+     "corredor_del_proyecto": {
+       "valor": "terraplen de ~5 km de la Fase 0-bis de la hoja de ruta, num. 150",
+       "origen": "src/datos_sitio.py"
+diff --git a/tests/linea_base_familia_c/memoria_expediente.html b/tests/linea_base_familia_c/memoria_expediente.html
+index e392cfd..20913db 100644
+--- a/tests/linea_base_familia_c/memoria_expediente.html
++++ b/tests/linea_base_familia_c/memoria_expediente.html
+@@ -222,7 +222,7 @@ ninguna es auditable.</p>
+     <tr><th>Fecha de criterios_adoptados.py</th>
+         <td><FECHA></td></tr>
+     <tr><th>SHA-1 de criterios_adoptados.py</th>
+-        <td class="mono">300b064da274805ba4ef14d9e6bba5052b853904</td></tr>
++        <td class="mono">07ecd684a1900c815dff43fde2aa78b3075ce68b</td></tr>
+     <tr><th>Fecha de generacion</th>
+         <td><FECHA> &nbsp;(corrida UTC: <UTC>)</td></tr>
+     <tr><th>Estado del expediente</th>
+diff --git a/tests/linea_base_familia_c/memoria_perfil.html b/tests/linea_base_familia_c/memoria_perfil.html
+index d049486..78dce5c 100644
+--- a/tests/linea_base_familia_c/memoria_perfil.html
++++ b/tests/linea_base_familia_c/memoria_perfil.html
+@@ -241,7 +241,7 @@ lo que hace defendible la memoria, y el alcance no la cambia.</p>
+     <tr><th>Fecha de criterios_adoptados.py</th>
+         <td><FECHA></td></tr>
+     <tr><th>SHA-1 de criterios_adoptados.py</th>
+-        <td class="mono">300b064da274805ba4ef14d9e6bba5052b853904</td></tr>
++        <td class="mono">07ecd684a1900c815dff43fde2aa78b3075ce68b</td></tr>
+     <tr><th>Fecha de generacion</th>
+         <td><FECHA> &nbsp;(corrida UTC: <UTC>)</td></tr>
+     <tr><th>Estado (al alcance declarado)</th>
+diff --git a/tests/linea_base_familia_c/memoria_perfil_ancha.html b/tests/linea_base_familia_c/memoria_perfil_ancha.html
+index b08d9f5..31eadf2 100644
+--- a/tests/linea_base_familia_c/memoria_perfil_ancha.html
++++ b/tests/linea_base_familia_c/memoria_perfil_ancha.html
+@@ -241,7 +241,7 @@ lo que hace defendible la memoria, y el alcance no la cambia.</p>
+     <tr><th>Fecha de criterios_adoptados.py</th>
+         <td><FECHA></td></tr>
+     <tr><th>SHA-1 de criterios_adoptados.py</th>
+-        <td class="mono">300b064da274805ba4ef14d9e6bba5052b853904</td></tr>
++        <td class="mono">07ecd684a1900c815dff43fde2aa78b3075ce68b</td></tr>
+     <tr><th>Fecha de generacion</th>
+         <td><FECHA> &nbsp;(corrida UTC: <UTC>)</td></tr>
+     <tr><th>Estado (al alcance declarado)</th>
+diff --git a/tests/linea_base_familia_c/memoria_resumida_expediente.html b/tests/linea_base_familia_c/memoria_resumida_expediente.html
+index 7a88a44..9b3807d 100644
+--- a/tests/linea_base_familia_c/memoria_resumida_expediente.html
++++ b/tests/linea_base_familia_c/memoria_resumida_expediente.html
+@@ -210,7 +210,7 @@ al de la memoria completa, en la nota del principio.</p>
+     <tr><th>Fecha de criterios_adoptados.py</th>
+         <td><FECHA></td></tr>
+     <tr><th>SHA-1 de criterios_adoptados.py</th>
+-        <td class="mono">300b064da274805ba4ef14d9e6bba5052b853904</td></tr>
++        <td class="mono">07ecd684a1900c815dff43fde2aa78b3075ce68b</td></tr>
+     <tr><th>Fecha de generacion</th>
+         <td><FECHA> &nbsp;(corrida UTC: <UTC>)</td></tr>
+     <tr><th>Estado del expediente</th>
+diff --git a/tests/test_t11_validacion_integral.py b/tests/test_t11_validacion_integral.py
+index 413ceef..27bd2fb 100644
+--- a/tests/test_t11_validacion_integral.py
++++ b/tests/test_t11_validacion_integral.py
+@@ -138,7 +138,10 @@ def test_ningun_vacio_del_proyecto_se_relleno_en_los_archivos_de_valores():
+     assert sin_valor_que_el_juego_declara <= set(J.DECLARACIONES)
+     for clave in sin_valor_que_el_juego_declara:
+         assert ca.CRITERIOS[clave].valor is None, clave
+-    assert ca.CRITERIOS["drenaje_trasdos"].valor == "sin_drenaje"
++    # VE-3.16: el drenaje es «drenado» de archivo (AASHTO 11.6.6 manda
++    # drenar); la reduccion de k_h sigue «sin_reduccion» porque aceptar el
++    # desplazamiento es del Propietario y el programa no lo asume.
++    assert ca.CRITERIOS["drenaje_trasdos"].valor == "drenado"
+     assert ca.CRITERIOS["factor_muro_eleccion"].valor == "sin_reduccion"
+     for clave in J.SITIO:
+         assert ds.DATOS_SITIO[clave].valor is None, clave
+@@ -357,7 +360,9 @@ def test_la_lista_exacta_esta_nombrada_en_el_contrato_de_entradas(
+     correcciones de T-11 (H1, ALTA) la medida es sobre DOS BASES --el juego
+     y el juego con las decisiones de archivo--: sobre una sola, la §7 no
+     nombraba el peso especifico saturado del relleno, que con el
+-    `drenaje_trasdos` de archivo detiene 24 etapas, y contradecia a la §3.3.
++    `drenaje_trasdos` de archivo de entonces ('sin_drenaje') detenia 24
++    etapas, y contradecia a la §3.3. VE-3.16: con 'drenado' de archivo
++    ninguna base lo lee y pasa a las condicionales no medidas (§7).
+     """
+     contrato = V.CONTRATO.read_text(encoding="utf-8")
+     cuerpo = contrato[:contrato.index("## 7. La lista exacta")]
+@@ -391,14 +396,14 @@ def test_la_lista_exacta_esta_nombrada_en_el_contrato_de_entradas(
+     assert {"luz_m", "NF_profundidad_m", "c_phi_fundacion", "phi_relleno_trasdos",
+             "exposicion_quimica_ems", "Q_evento_extremo_m3s",
+             "cota_coronacion_canal", "TR_evento_extremo",
+-            "remanso_derecho_via",
+-            # H1: la entrada que la segunda base destapa (ensayo del EMS).
+-            "peso_especifico_saturado_relleno_kn_m3"} <= set(nombres)
+-    # El γ saturado sale SOLO de la segunda base, y como entrada (ensayo).
+-    clases = {n: c for n, c, _d in lista}
+-    assert clases["peso_especifico_saturado_relleno_kn_m3"] == V.CLASE_ENTRADA
+-    assert "peso_especifico_saturado_relleno_kn_m3" not in {
+-        n for n, _c, _d in V.lista_exacta(por_defecto, una)}
++            "remanso_derecho_via"} <= set(nombres)
++    # VE-3.16 (CAMBIADO DECLARANDOLO): hasta entonces el γ saturado salia
++    # SOLO de la segunda base (la titular, con el trasdos 'sin_drenaje' de
++    # archivo), como entrada (ensayo). Con 'drenado' de archivo y el
++    # freatico del juego bajo las zapatas ninguna base lo lee: no esta en
++    # la medida y la §7 lo nombra entre las condicionales.
++    assert "peso_especifico_saturado_relleno_kn_m3" not in set(nombres)
++    assert "peso_especifico_saturado_relleno_kn_m3" in V.CONDICIONALES_NO_MEDIDAS
+     # Las condicionales que ninguna base dispara: nombradas en la §7, y la
+     # frase que decia «lo que no esta aqui no detiene nada» ya no esta.
+     seccion_7 = contrato[contrato.index("## 7. La lista exacta"):]
+@@ -448,9 +453,11 @@ def test_las_variantes_que_dejan_un_metodo_sin_evaluar(variantes):
+     # CAMBIADO DECLARANDOLO (VE-3.14, H-3): con agua en el plano de empuje
+     # el sismo ya no se detiene (C11.6.5.3, peso total bajo el agua); hasta
+     # VE-3.14 «freatico_a_2m» dejaba T7B-06 en A-01 y A-02, y
+-    # «drenaje_de_archivo» T7B-05 en los cuatro puntos.
++    # «drenaje_de_archivo» T7B-05 en los cuatro puntos. VE-3.16: esa
++    # variante se llama «sin_drenaje_declarado» (declara 'sin_drenaje' sobre
++    # el 'drenado' de archivo).
+     assert fichas("freatico_a_2m") == set()
+-    assert fichas("drenaje_de_archivo") == set()
++    assert fichas("sin_drenaje_declarado") == set()
+     # Sin ("C-01", "T7C-03") desde VE-3.9: el peralte de la salida de C-01
+     # partia de 0.473 m (H_c/10, ya sobre 16 in) con el cortante fuera de
+     # 5.7.3.4.1, y hoy crece por su armado hasta 0.873 m, donde se verifica.
+@@ -520,9 +527,11 @@ def test_la_corrida_titular_es_la_de_las_decisiones_de_archivo(titular):
+     """
+     H2 (MEDIA), con la resolucion del orquestador aceptada por el dueño: el
+     resultado TITULAR del §2 es el de los valores de ARCHIVO. El juego pisa
+-    exactamente dos criterios con valor de archivo, cada uno con su razon
+-    escrita (`J.PISA_EL_ARCHIVO_PORQUE`), y la variante titular los deja en
+-    su valor. Con ellos los cuatro puntos dimensionan igual, las tres filas
++    criterios con valor de archivo, cada uno con su razon escrita
++    (`J.PISA_EL_ARCHIVO_PORQUE`), y la variante titular los deja en su
++    valor (desde VE-3.16 ya no `drenaje_trasdos`, cuyo archivo es el
++    'drenado' que el juego declaraba). Con ellos los cuatro puntos
++    dimensionan igual, las tres filas
+     estaticas del marco LRFD pasan en los ocho cabezales con la zapata
+     dimensionada (desde VE-3.5; antes no pasaban en ninguno) y la condicion
+     sismica es «metodo no evaluable» (T7B-05) en los ocho.
+@@ -530,18 +539,21 @@ def test_la_corrida_titular_es_la_de_las_decisiones_de_archivo(titular):
+     pisadas = {k for k in J.DECLARACIONES if ca.CRITERIOS[k].valor is not None}
+     # VE-3.15 (decision 12): el muro que cede del juego es UNA decision de
+     # dos criterios (la reduccion de k_h y el armado «cedente»).
++    # VE-3.16: `drenaje_trasdos` sale del grupo (su archivo es 'drenado',
++    # lo que el juego declaraba) y el juego ya no lo declara.
+     assert pisadas == set(J.PISA_EL_ARCHIVO_PORQUE) == {
+-        "drenaje_trasdos", "factor_muro_eleccion",
+-        "regimen_resistencia_elementos_cabezal"}
++        "factor_muro_eleccion", "regimen_resistencia_elementos_cabezal"}
++    assert "drenaje_trasdos" not in J.DECLARACIONES
+     assert [c for c, *_ in V.pisa_el_archivo()] == sorted(
+         pisadas, key=list(J.DECLARACIONES).index)
+     cambios = dict(((c[1], c[2]) for c in J.VARIANTES[V.VARIANTE_TITULAR][1]))
+-    assert cambios["drenaje_trasdos"] is None
+     assert cambios["factor_muro_eleccion"] is None
+     assert cambios["regimen_resistencia_elementos_cabezal"] is None
+-    # El γ saturado de prueba, declarado por la puerta de los ensayos.
+-    assert cambios["peso_especifico_saturado_relleno_kn_m3"] == \
+-        pytest.approx(20.0, rel=REL_TRANSPORTE)
++    # VE-3.16 (CAMBIADO DECLARANDOLO): la titular ya no toca el drenaje ni
++    # redeclara el γ saturado de prueba: con el relleno drenado de archivo
++    # no se lee.
++    assert "drenaje_trasdos" not in cambios
++    assert "peso_especifico_saturado_relleno_kn_m3" not in cambios
+     for p in titular.puntos:
+         r = V.resumen_del_punto(titular, p)
+         assert (r["familia"], r["material"], r["seccion"]) == \
+@@ -563,7 +575,9 @@ def test_el_documento_presenta_primero_la_titular():
+     """H2: el §2 del documento es la titular; el juego es su §2.1."""
+     texto = V.DOCUMENTO.read_text(encoding="utf-8")
+     i2 = texto.index("## 2. Corrida titular: el juego con las decisiones de archivo")
+-    i21 = texto.index("### 2.1 Variante que ejercita la cadena sísmica")
++    # VE-3.16: el rotulo del §2.1 ya no habla del «caso drenado» (es el
++    # archivo): la variante ejercita el empuje sismico reducido.
++    i21 = texto.index("### 2.1 Variante que ejercita el empuje sísmico reducido")
+     assert i2 < i21
+     for clave in J.PISA_EL_ARCHIVO_PORQUE:
+         assert f"| `{clave}` |" in texto[i2:i21], clave
+diff --git a/tests/test_t7b_cabezal_estabilidad.py b/tests/test_t7b_cabezal_estabilidad.py
+index b08d18d..b42beff 100644
+--- a/tests/test_t7b_cabezal_estabilidad.py
++++ b/tests/test_t7b_cabezal_estabilidad.py
+@@ -340,7 +340,9 @@ def test_lo_que_el_programa_no_puede_elegir_sigue_sin_valor_de_archivo(clave):
+     # tests/test_ve3_15_decisiones_cabezal.py.
+     ("fila_phi_estabilidad_cabezal", "zapatas_seccion_10",
+      ("zapatas_seccion_10", "muros_tabla_11_5_7")),
+-    ("drenaje_trasdos", "sin_drenaje", ("sin_drenaje", "drenado")),
++    # VE-3.16, declarado: el valor de archivo paso de «sin_drenaje» a
++    # «drenado» (AASHTO 11.6.6 «shall be drained»); la ventana no cambia.
++    ("drenaje_trasdos", "drenado", ("sin_drenaje", "drenado")),
+     # CORRECCIONES DE T-7b (H4), declarado: la regla de archivo paso de
+     # «talud_quebrado_2h» a la cuña de tanteo, que entra en la ventana.
+     ("regla_pendiente_relleno_trasdos", "cuna_de_tanteo",
+@@ -1147,8 +1149,9 @@ def test_con_el_freatico_bajo_la_zapata_y_drenaje_no_hay_carga_de_agua(tanteo):
+ def test_sin_drenaje_el_agua_llega_a_la_superficie_y_pide_el_peso_saturado(
+         tanteo):
+     """
+-    Valor de archivo: 'sin_drenaje' (AASHTO 11.6.6). El relleno se llena de
+-    agua, y el peso saturado es dato del ensayo: sin el, criterio pendiente.
++    'sin_drenaje' declarado (AASHTO 11.6.6; valor de archivo hasta VE-3.16,
++    que lo paso a 'drenado'). El relleno se llena de agua, y el peso
++    saturado es dato del ensayo: sin el, criterio pendiente.
+     """
+     ca.establecer_valor_dinamico("drenaje_trasdos", "sin_drenaje")
+     with pytest.raises(CriterioPendienteError) as exc:
+@@ -2710,9 +2713,11 @@ def test_H6_con_drenaje_se_avisa_el_desembalse_rapido_con_su_orden(tanteo):
+                for a in sin_nivel.avisos)
+ 
+ 
+-def test_H6_drenaje_de_archivo_sigue_sin_drenaje_y_la_ficha_lo_dice():
++def test_H6_drenaje_de_archivo_es_drenado_desde_ve3_16_y_la_ficha_lo_dice():
++    """VE-3.16: el valor de archivo paso de «sin_drenaje» a «drenado»; la
++    ficha conserva la lectura del agua del relleno sin drenar (H6)."""
+     c = ca.CRITERIOS["drenaje_trasdos"]
+-    assert c.valor == "sin_drenaje"
++    assert c.valor == "drenado"
+     assert "desembalse rapido" in c.justificacion
+     assert "nunca sube por encima del muro" in c.justificacion
+     assert "nunca por encima del muro" in cn.HIPOTESIS_EMPUJE_BAJO_NF
+diff --git a/tests/test_t7c_cabezal_armado.py b/tests/test_t7c_cabezal_armado.py
+index f575df9..34f3712 100644
+--- a/tests/test_t7c_cabezal_armado.py
++++ b/tests/test_t7c_cabezal_armado.py
+@@ -1812,7 +1812,8 @@ def test_una_seccion_fuera_del_cuerpo_del_muro_se_rechaza(tanteo, z):
+ 
+ def test_el_agua_del_relleno_entra_a_las_secciones_del_cuerpo(tanteo):
+     """
+-    Sin drenaje (el valor de archivo) el relleno se llena de agua: la
++    Sin drenaje declarado ('sin_drenaje'; VE-3.16: el valor de archivo es
++    'drenado' desde entonces) el relleno se llena de agua: la
+     seccion la recibe como empuje hidrostatico y con el suelo sumergido por
+     debajo del nivel.
+     """
+-- 
+2.43.0
+
