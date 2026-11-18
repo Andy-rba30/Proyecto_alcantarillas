@@ -126,6 +126,21 @@ JSON) y deja las elecciones 9–14 como opciones con su efecto medido; respaldo
     enrocado (H-14):** doble protección. **Recomendación: con el delantal de enrocado
     diseñado, desplantar bajo la hoya protegida** (o bajar el margen); a decidir.
 
+## AVISO DE INTEGRACIÓN EN `main` (2026-11-18, sesión orquestadora, modelo Haiku 5.5)
+
+Cumplidas las dos condiciones de la respuesta del dueño (punto 5):
+- **Ensayos del cabezal hechos:** `ENSAYOS_DISENO_CABEZAL.md` (Opus, esfuerzo máximo) y su
+  corrección en VE-3.14 (bloques 1–5 y las opciones 9, 10, 11, 13 y 14; la 12 no se propone).
+  Las fichas VE3-12 a VE3-17 los recogen.
+- **Suite verde:** se mide sobre el conjunto integrado (VE-3.1 a VE-3.14) en clon limpio y en
+  exportación; el par medido se anota en la bitácora antes de subir a `main`.
+
+Lo que entra en `main`: VE-3 completo (VE-3.1 a VE-3.14, con las verificaciones y las
+correcciones de los ensayos). Las **decisiones 9 a 14 siguen pendientes** y NO cambian ningún
+valor de archivo: las opciones están implementadas y medidas (tabla en
+`ENSAYOS_DISENO_CABEZAL.md`), y el dueño elige cuál activar cambiando el valor. Si el dueño
+prefiere no entrar en `main` hasta decidirlas, avisar aquí antes del push.
+
 ## Dónde está cada cosa
 
 
