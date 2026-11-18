@@ -134,3 +134,41 @@ def declarados(valores: dict):
 # Centinela: `None` es un valor legitimo de un criterio y no puede significar
 # "no habia declaracion de corrida".
 _SIN_DECLARAR = object()
+
+
+# Los valores de archivo del cabezal ANTERIORES a VE-3.15 (decisiones 9 a 14
+# del dueño, ficha VE3-18). Los dorados a mano de T-7a, T-7b, T-7c y de VE-3.x
+# se calcularon con ellos y miden un METODO, no la eleccion del dueño: sus
+# archivos los corren declarados con `declarados(VALORES_PREVIOS_VE3_15)`, y
+# los valores nuevos los fija tests/test_ve3_15_decisiones_cabezal.py.
+VALORES_PREVIOS_VE3_15 = {
+    "momento_talon_cabezal": "peso_entero",
+    "carga_pantalla_cabezal": "plano_virtual_del_talon",
+    "fila_phi_estabilidad_cabezal": "zapatas_seccion_10",
+    "margen_zapata_bajo_socavacion_m": 0.6096,
+}
+
+
+@contextmanager
+def valores_previos_ve3_15():
+    """
+    El archivo con los valores del cabezal ANTERIORES a VE-3.15 mientras dure
+    el bloque. Cambia solo `valor` del `Criterio` (la ventana, la forma y la
+    justificacion se quedan: los cuatro valores estan dentro de su ventana),
+    y lo cambia EN EL ARCHIVO y no como declaracion de corrida, porque
+    `tests.apoyo.validacion_integral.correr` vacia las declaraciones al
+    entrar. Restaura siempre.
+    """
+    originales = {clave: ca.CRITERIOS[clave] for clave in VALORES_PREVIOS_VE3_15}
+    for clave, valor in VALORES_PREVIOS_VE3_15.items():
+        ca.CRITERIOS[clave] = replace(originales[clave], valor=valor)
+    try:
+        yield VALORES_PREVIOS_VE3_15
+    finally:
+        for clave, original in originales.items():
+            ca.CRITERIOS[clave] = original
+
+
+# Lo mismo para una corrida de la CLI en subproceso: `--declarar` de cada uno.
+ARGS_PREVIOS_VE3_15 = [arg for clave, valor in VALORES_PREVIOS_VE3_15.items()
+                       for arg in ("--declarar", f"{clave}={valor!r}")]

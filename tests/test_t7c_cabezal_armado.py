@@ -72,6 +72,16 @@ from tests.fixtures.casos_patron import (CP_T7B_ESTABILIDAD, CP_T7C_ARMADO,
                                          CP_T7C_BASE_SERVICIO,
                                          CP_T7C_CICLOPEO, CP_T7C_EC_11_32,
                                          CP_T7C_TEMPERATURA_PUBLICADA)
+from tests.apoyo.criterios import valores_previos_ve3_15  # noqa: E402
+
+
+@pytest.fixture(autouse=True, scope="module")
+def _valores_previos_ve3_15():
+    """Los dorados de este archivo son del metodo con los valores de archivo
+    anteriores a VE-3.15 (ficha VE3-18); los nuevos los fija
+    tests/test_ve3_15_decisiones_cabezal.py."""
+    with valores_previos_ve3_15():
+        yield
 
 RAIZ = Path(__file__).resolve().parents[1]
 CSV_EJEMPLO = RAIZ / "tests" / "ejemplo_puntos.csv"
@@ -1976,7 +1986,10 @@ DECLARACIONES_DE_PRUEBA = {
     "c_phi_fundacion": {"cohesivo": False, "c_kpa": 0.0, "phi_grados": 32.0,
                         "gamma_kn_m3": 18.0},
     "drenaje_trasdos": "drenado",
-    "factor_muro_eleccion": "reduccion_por_desplazamiento",
+    # VE-3.15 (decision 12, un solo regimen): este archivo arma con el
+    # empuje en REPOSO (el armado de archivo), y la reduccion de k_h del
+    # muro que cede ya no se acepta con el: el sismo va con k_h0 entero.
+    "factor_muro_eleccion": "sin_reduccion",
 }
 FILA_A01 = ("A-01,0+380,A,1.167,850,0.006,42.10,44.20,44.05,8.5,15,9.60,"
             "41.30,,,SM,,,")
@@ -3530,7 +3543,11 @@ def test_el_armado_final_de_A01_con_los_datos_de_prueba(tmp_path):
                 if v.codigo == "A2.pantalla.s").estado \
         is EstadoDeVerificacion.INDICADOR
     assert any("se DESCARTA" in x for x in salida.avisos)
-    assert any("1.0·k_h0 = 0.500" in x for x in salida.avisos)
+    # Desde VE-3.15 (un solo regimen) la estabilidad ya no reduce k_h con
+    # el armado en reposo: los dos van con k_h0 y el aviso de que el armado
+    # NO hereda la reduccion no tiene de que avisar. Los momentos de arriba
+    # no cambian: el armado en reposo ya iba con k_h0.
+    assert not any("1.0·k_h0 = 0.500" in x for x in salida.avisos)
 
 
 

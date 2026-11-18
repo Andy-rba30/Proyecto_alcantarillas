@@ -63,6 +63,16 @@ from tests.fixtures.casos_patron import (CP_T7B_COHESIVO, CP_T7B_CUNA,
                                          CP_T7B_ESTABILIDAD, CP_T7B_MURO_2,
                                          CP_T7B_PEOR_COMBINACION,
                                          CP_T7B_SOLICITACIONES, CP_T7B_V5)
+from tests.apoyo.criterios import valores_previos_ve3_15  # noqa: E402
+
+
+@pytest.fixture(autouse=True, scope="module")
+def _valores_previos_ve3_15():
+    """Los dorados de este archivo son del metodo con los valores de archivo
+    anteriores a VE-3.15 (ficha VE3-18); los nuevos los fija
+    tests/test_ve3_15_decisiones_cabezal.py."""
+    with valores_previos_ve3_15():
+        yield
 
 RAIZ = Path(__file__).resolve().parents[1]
 CSV_EJEMPLO = RAIZ / "tests" / "ejemplo_puntos.csv"
@@ -2619,11 +2629,17 @@ def test_H5_los_factores_de_inclinacion_tambien_se_contrastan(tanteo):
     assert e.verificaciones == M9.ensamble_estabilidad(tanteo, SIS).verificaciones
 
 
-def test_H5_la_fila_de_phi_se_justifica_como_la_mas_exigente_y_no_por_remision():
+def test_H5_la_fila_de_phi_se_justifica_por_la_letra_y_no_por_remision():
+    """
+    Desde VE-3.15 (decision 11 del dueño) el archivo toma la fila de muros
+    por la letra de 11.5.7; la justificacion sigue sin apoyarse en una
+    remision que la tabla no hace, y declara lo que juega en contra.
+    """
     c = ca.CRITERIOS["fila_phi_estabilidad_cabezal"]
-    assert "la mas exigente" in c.justificacion
+    assert "es la letra del Art. 11.5.7" in c.justificacion
     assert "AASHTO_LRFD_9.11.5.7#MUROS" in c.justificacion
-    assert "no porque la tabla de muros remita" in c.justificacion
+    assert "remita" not in c.justificacion
+    assert "2.8.1.1.12.6" in c.justificacion
     assert "sensible" in c.justificacion
 
 

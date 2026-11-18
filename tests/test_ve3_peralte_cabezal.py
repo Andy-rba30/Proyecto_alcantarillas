@@ -47,6 +47,16 @@ from src.modelos import ORIGEN_DIMENSION_DECLARADA, ORIGEN_DIMENSION_REGLA
 from src.modulos import M9_cabezal as M9
 from tests.apoyo import validacion_integral as V
 from tests.apoyo.aproximacion import ABS_CERO
+from tests.apoyo.criterios import valores_previos_ve3_15  # noqa: E402
+
+
+@pytest.fixture(autouse=True, scope="module")
+def _valores_previos_ve3_15():
+    """Los dorados de este archivo son del metodo con los valores de archivo
+    anteriores a VE-3.15 (ficha VE3-18); los nuevos los fija
+    tests/test_ve3_15_decisiones_cabezal.py."""
+    with valores_previos_ve3_15():
+        yield
 
 PASO = 0.10
 ABS_MM = 5e-7   # sumas exactas de datos con tres decimales

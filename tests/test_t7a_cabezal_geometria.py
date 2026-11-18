@@ -72,6 +72,16 @@ from src.normativa.registro import construir
 from tests.apoyo.aproximacion import ABS_CERO
 from tests.apoyo.criterios import declarados, sin_valor
 from tests.test_canal_discrepancias import DECLARACIONES_DEL_CAJON
+from tests.apoyo.criterios import valores_previos_ve3_15  # noqa: E402
+
+
+@pytest.fixture(autouse=True, scope="module")
+def _valores_previos_ve3_15():
+    """Los dorados de este archivo son del metodo con los valores de archivo
+    anteriores a VE-3.15 (ficha VE3-18); los nuevos los fija
+    tests/test_ve3_15_decisiones_cabezal.py."""
+    with valores_previos_ve3_15():
+        yield
 
 RAIZ = Path(__file__).resolve().parents[1]
 CSV_EJEMPLO = RAIZ / "tests" / "ejemplo_puntos.csv"

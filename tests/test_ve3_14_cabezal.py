@@ -28,6 +28,17 @@ from src.modelos import (CondicionAnalisis, ELEMENTO_ZAPATA, SECCION_PUNTA,
                          SolicitacionDeArmado)
 from src.modulos import M9_cabezal as M9
 from tests.apoyo.aproximacion import REL_TRANSPORTE
+from tests.apoyo.criterios import (ARGS_PREVIOS_VE3_15,  # noqa: E402
+                                   valores_previos_ve3_15)
+
+
+@pytest.fixture(autouse=True, scope="module")
+def _valores_previos_ve3_15():
+    """Los dorados de este archivo son del metodo con los valores de archivo
+    anteriores a VE-3.15 (ficha VE3-18); los nuevos los fija
+    tests/test_ve3_15_decisiones_cabezal.py."""
+    with valores_previos_ve3_15():
+        yield
 
 
 def _beta_a_mano(M_u, V_u, d_v, A_s):
@@ -183,7 +194,7 @@ def correr_e5(tmp_path):
     for clave, valor in json.loads(
             (E5 / "declaraciones.json").read_text(encoding="utf-8")).items():
         args += ["--declarar", f"{clave}={valor!r}"]
-    subprocess.run(args, cwd=RAIZ, capture_output=True, text=True,
+    subprocess.run(args + ARGS_PREVIOS_VE3_15, cwd=RAIZ, capture_output=True, text=True,
                    check=False)
     return json.loads(salida.read_text(encoding="utf-8"))
 
@@ -274,44 +285,73 @@ def test_fuera_del_simplificado_el_cortante_pide_acero_antes_que_espesor():
                                s.As_minimo_constructivo)
 
 
-def test_la_pantalla_y_el_alero_se_dimensionan_por_su_armado(juego):
+def test_la_pantalla_y_el_alero_se_dimensionan_por_su_armado(e2):
     """
-    La salida de A-01 del juego: con la pantalla de 0.30 m de la regla, A1 de
-    la pantalla y del alero no cumplian; la pantalla crece a 0.40 m (un
-    paso), corona y arranque, el alero la hereda y los tres llevan el origen
-    «dimensionada por armado». Ninguna fila del cabezal queda sin cumplir.
+    La salida de E2 (VE-3.15: el juego, con el muro que cede declarado
+    entero, ya no lo ejercita -- su pantalla de 0.30 m cumple): con la
+    pantalla de 0.30 m de la regla, A1 de la pantalla y del alero no
+    cumplen; la pantalla crece a 0.40 m (un paso), corona y arranque, el
+    alero la hereda y los tres llevan el origen «dimensionada por armado».
+    Ninguna fila de la Fase 9 queda sin cumplir; la entrada no se toca.
     """
-    cab = _a01(juego).cabezal
-    g = cab.salida
-    assert g.espesor_corona == pytest.approx(0.40, abs=ABS_MM)
-    assert g.espesor_base_muro == pytest.approx(0.40, abs=ABS_MM)
-    assert g.aleros.espesor == pytest.approx(0.40, abs=ABS_MM)
-    origen = {d.nombre: d.origen for d in g.dimensiones}
+    punto = e2["puntos"][0]
+    cab = punto["cabezal"]
+    g = next(c for c in cab["cabezales"] if c["extremo"] == "salida")
+    assert g["espesor_corona_m"] == pytest.approx(0.40, abs=ABS_MM)
+    assert g["espesor_base_muro_m"] == pytest.approx(0.40, abs=ABS_MM)
+    assert g["aleros"]["espesor_m"] == pytest.approx(0.40, abs=ABS_MM)
+    origen = {d["nombre"]: d["origen"] for d in g["dimensiones"]}
     for nombre in ("espesor de la pantalla en la corona",
                    "espesor de la pantalla en el arranque",
                    "espesor de los aleros"):
         assert origen[nombre] == ORIGEN_DIMENSION_ARMADO, nombre
-    traza = [i for i in cab.intentos_de_pantalla if i.startswith("salida")]
+    traza = [i for i in cab["intentos_de_pantalla"] if i.startswith("salida")]
     assert traza and "0.300 m: no cumplen A1.pantalla.s" in traza[0]
     assert traza[0].endswith("0.400 m: cumple")
-    assert not cab.verificaciones_incumplidas
-    paso = next(p for p in cab.pasos if p.codigo == "9.3.m.s")
-    assert paso.resultado.valor == pytest.approx(0.40, abs=ABS_MM)
-    # La entrada cumplia con la regla: no se toca.
-    assert cab.entrada.espesor_base_muro == pytest.approx(0.30, abs=ABS_MM)
-    assert not [i for i in cab.intentos_de_pantalla if i.startswith("entrada")]
+    fallan = [v["codigo"] for v in punto["verificaciones"]
+              if "Fase 9" in (v.get("fase") or "") and not v["cumple"]]
+    assert not fallan, fallan
+    entrada = next(c for c in cab["cabezales"] if c["extremo"] == "entrada")
+    assert entrada["espesor_base_muro_m"] == pytest.approx(0.30, abs=ABS_MM)
+    assert not [i for i in cab["intentos_de_pantalla"]
+                if i.startswith("entrada")]
 
 
 def test_la_pantalla_crece_con_la_zapata_y_la_punta_y_el_talon_no_cambian(
-        juego):
-    """La zapata crece lo mismo que la pantalla: B = B_estabilidad + Δe."""
-    cab = _a01(juego).cabezal
+        monkeypatch):
+    """
+    La zapata crece lo mismo que la pantalla: B = B_estabilidad + Δe. Desde
+    VE-3.15 la pantalla de la salida del juego cumple con 0.30 m, de modo que
+    el crecimiento se FUERZA un paso (la pantalla de la salida «no cumple»
+    por debajo de 0.40 m), como en el test de terminacion de abajo.
+    """
+    original = M9.incumplidas_del_armado_de_la_pantalla
+
+    def hasta_040(entorno):
+        base = original(entorno)
+        if base is None:
+            return None
+        g = entorno.geometria
+        if g.extremo == "salida" and g.espesor_base_muro < 0.40 - ABS_MM:
+            return tuple(base) + ("A1.pantalla.prueba",)
+        return tuple(base)
+
+    monkeypatch.setattr(M9, "incumplidas_del_armado_de_la_pantalla",
+                        hasta_040)
+    cab = _a01(V.correr_juego(V.juego_completo())).cabezal
     g = cab.salida
+    assert g.espesor_base_muro == pytest.approx(0.40, abs=ABS_MM)
     aceptado = [i for i in cab.intentos_de_zapata if i.extremo == "salida"
                 and i.cumple and not i.reoptimizado][-1]
     assert g.B == pytest.approx(aceptado.B + (0.40 - 0.30), abs=ABS_MM)
     assert g.ancho_talon == pytest.approx(
         aceptado.B - g.ancho_punta - 0.30, abs=ABS_MM)
+
+
+@pytest.fixture(scope="module")
+def e2(tmp_path_factory):
+    """E2 de los ensayos por la CLI, una vez por modulo."""
+    return correr_escenario(E2, tmp_path_factory.mktemp("e2"))
 
 
 def correr_escenario(carpeta, tmp_path, *extra):
@@ -329,25 +369,25 @@ def correr_escenario(carpeta, tmp_path, *extra):
             (carpeta / "declaraciones.json").read_text(encoding="utf-8")
             ).items():
         args += ["--declarar", f"{clave}={valor!r}"]
-    subprocess.run(args + list(extra), cwd=RAIZ, capture_output=True,
+    subprocess.run(args + ARGS_PREVIOS_VE3_15 + list(extra), cwd=RAIZ, capture_output=True,
                    text=True, check=False)
     return json.loads(salida.read_text(encoding="utf-8"))
 
 
-def test_e2_alto_entrega_un_cabezal_completo_que_cumple(tmp_path):
+def test_e2_alto_entrega_un_cabezal_completo_que_cumple(e2):
     """
     E2 de los ensayos (H_c de la salida 4.51 m): hasta VE-3.14 la app
     entregaba la pantalla de 0.30 m con A1 a A6 de la pantalla y del alero
     sin cumplir. Hoy: pantalla y alero dimensionados, ninguna fila de la Fase
     9 sin cumplir, y la traza de los tres dimensionamientos en el JSON.
     """
-    d = correr_escenario(E2, tmp_path)
-    punto = d["puntos"][0]
+    punto = e2["puntos"][0]
     cab = punto["cabezal"]
     salida = next(c for c in cab["cabezales"] if c["extremo"] == "salida")
-    # 0.70 m: con el acero que el cortante general pide (sin el, 1.20 m:
-    # el espesor crecia para bajar un εs que el acero de flexion dejaba alto).
-    assert salida["espesor_base_muro_m"] == pytest.approx(0.70, abs=ABS_MM)
+    # 0.40 m desde VE-3.15: el muro que cede se declara entero (la reduccion
+    # de k_h con el armado «cedente», decision 12), y el armado activo pide
+    # un paso; con el armado en reposo y la reduccion, 0.70 m (VE-3.14).
+    assert salida["espesor_base_muro_m"] == pytest.approx(0.40, abs=ABS_MM)
     assert salida["aleros"]["espesor_m"] == pytest.approx(
         salida["espesor_base_muro_m"], abs=ABS_MM)
     fallan = [v["codigo"] for v in punto["verificaciones"]
@@ -416,12 +456,14 @@ def test_e3_con_agua_la_condicion_sismica_se_evalua_y_dimensiona(tmp_path):
                    if e["extremo"] == "salida" and e["condicion"] == "sismico")
     assert sismica["K_AE"] is not None
     # La cifra, medida (DATOS DE PRUEBA): con el sismo el ancho de la salida
-    # crece a 5.970 m (sin el, la app daba 4.670 m; el revisor de los
-    # ensayos, 5.05 a 5.37 m con sus criterios). Un incremento sismico con
+    # crece a 5.570 m (sin el, la app daba 4.670 m; el revisor de los
+    # ensayos, 5.05 a 5.37 m con sus criterios). Hasta VE-3.15 era 5.970 m:
+    # el muro que cede se declara ahora entero (armado «cedente», decision
+    # 12) y el peralte que el armado pide es otro. Un incremento sismico con
     # el peso sumergido en vez del total da otro ancho.
     salida = next(c for c in punto["cabezal"]["cabezales"]
                   if c["extremo"] == "salida")
-    assert salida["B_m"] == pytest.approx(5.970032344780179, abs=ABS_MM)
+    assert salida["B_m"] == pytest.approx(5.57003234478018, abs=ABS_MM)
 
 
 def test_e3_con_relleno_muy_abierto_se_detiene_y_no_rotula_estabilidad(
@@ -517,7 +559,7 @@ def test_el_resumen_atribuye_el_metodo_no_evaluable_a_su_causa(tmp_path):
     args += ["--declarar",
              "agua_del_relleno_bajo_sismo='relleno_muy_abierto'",
              "--json", str(tmp_path / "e3.json")]
-    r = subprocess.run(args, cwd=RAIZ, capture_output=True, text=True,
+    r = subprocess.run(args + ARGS_PREVIOS_VE3_15, cwd=RAIZ, capture_output=True, text=True,
                        check=False)
     resumen = r.stdout[r.stdout.rindex("RESUMEN"):]
     assert "metodo no evaluable" in resumen

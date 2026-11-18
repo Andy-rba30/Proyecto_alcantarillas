@@ -1079,3 +1079,15 @@ mueven ninguna cifra aquí. Lo que se mueve:
   ninguna corrida arma un cabezal).
 
 **Diámetros, secciones, materiales y HW movidos: ninguno.**
+
+## 29. VE-3.15: decisiones 9 a 14 del dueño sobre el cabezal; ningún número se mueve (2026-11-18)
+
+Regenerada con `sh tests/linea_base_familia_c/regenerar.sh` (con el Python del proyecto primero
+en el `PATH`). Ninguna corrida de la línea base llega al cabezal, de modo que los nuevos valores
+de archivo (talón por el método exacto, cuña sobre la pantalla, factores φ de la tabla de muros,
+margen cero bajo la hoya) no mueven ninguna cifra aquí. Lo que se mueve:
+
+- La huella `criterios_sha1` en los cuatro JSON y en las memorias.
+- En la memoria completa del expediente, la justificación de `factor_muro_eleccion`, que dice
+  ahora que la reducción de k_h sólo se acepta con el armado del muro que cede (un solo régimen,
+  decisión 12; ficha VE3-18).
