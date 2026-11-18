@@ -3,6 +3,46 @@
 Material de proceso, no del entregable. Lo mantiene la sesión orquestadora y se actualiza
 cada vez que se integra algo. Fecha de esta versión: 2026-11-17.
 
+> **ESTADO (2026-11-18, ~12:30 UTC, sesión `claude/cool-euler-tpoj7o`).** La sesión del dueño
+> en `claude/festive-bell-wrmps1` **se cortó** después de `b3a8831` (04:49 UTC; el último
+> respaldo de sus agentes es de las 04:54 y no trae nada que no esté en la rama). Esta sesión
+> retoma desde ese commit en `claude/cool-euler-tpoj7o`. Lo que la sesión cortada dejó hecho y
+> sin cerrar:
+>
+> - Hecho: VE-3.15 (decisiones 9 a 14) con las correcciones H1 a H8 de su revisión Fable;
+>   T11-10, T11-03 (abiertos 3 y 4), T8-08 y T8-09; los textos de la hoja de ruta que el dueño
+>   corrigió (VE1-01 D3, VE2-01, VE3-18); la validación hidrológica con seis casos reales
+>   (`docs/validacion_hidrologica.md`, VE3-19); los informes Fable del dentellón y del sismo.
+> - Sin cerrar: los documentos generados (sólo se regeneraron `validacion_integral.md`,
+>   `validacion_hidrologica.md` y la línea base), la suite en clon limpio y exportación, los
+>   sellos, la bitácora y este LEEME.
+>
+> **El análisis de por qué el cabezal no cierra el sismo TERMINÓ**
+> (`verificaciones_del_dueno/sismo_cabezal_que_se_pasa.md`): no hay error aritmético; lo que
+> lo hace fallar es el relleno lleno de agua bajo sismo (`drenaje_trasdos` = `sin_drenaje`,
+> contra el nivel medio de C11.6.5.3) sobre k_h = k_h0 completo. Medido por esta sesión con
+> la app: con los valores de archivo los cuatro puntos del juego fallan E1 y E3 sísmicos en
+> sus dos cabezales; con `drenado`, `reduccion_por_desplazamiento` y `cedente` (lo que el
+> juego declara) los cuatro cumplen.
+>
+> **Decisión del dueño (2026-11-18, en el chat de esta sesión): seguir las recomendaciones.**
+> Orden de trabajo de esta sesión:
+> 1. Cerrar VE-3.15 tal como está: regenerar los documentos, suite en clon limpio y en
+>    exportación, sellos, bitácora.
+> 2. VE-3.16: `drenaje_trasdos` = `drenado` como valor de archivo (11.6.6: «shall be
+>    drained»), con el juego de validación, el contrato de entradas y la línea base
+>    reajustados (borrador del cambio del criterio en el stash de la sesión; se rehace si se
+>    pierde). Con el relleno drenado, el agua del sismo es la del freático del punto, que es
+>    lo que pide C11.6.5.3: la corrección del nivel medio queda cubierta para el valor de
+>    archivo; con `sin_drenaje` declarado el sismo sigue con el relleno lleno (es lo que se
+>    declara) y se ficha.
+> 3. La reducción de k_h (0.5·k_h0, muro que cede) NO pasa a valor de archivo: aceptar el
+>    desplazamiento es del Propietario y la §9.2 de la hoja de ruta lo desaconseja para el
+>    cabezal empotrado. Se declara por obra, como ya hace el juego. El defecto de la §9.2
+>    («sin reducción» presentado como el lado seguro sin decir que es desplazamiento nulo y
+>    que con PGA 0.50 g no cierra) se REPORTA en una ficha; la hoja de ruta no se edita.
+> 4. Integrar en `main` sólo con autorización expresa del dueño.
+
 > **CAMBIO DE SESIÓN (2026-11-18, decisión del dueño).** VE-3 hasta VE-3.14 está en `main`
 > (`5e0fa00`, fast-forward de 81 commits, empujado por la sesión del dueño). **La sesión
 > orquestadora de `claude/youthful-shannon-rjzmuc` NO empuja más** ni a esa rama ni a `main`.
