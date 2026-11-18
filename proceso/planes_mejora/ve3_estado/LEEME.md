@@ -3,6 +3,22 @@
 Material de proceso, no del entregable. Lo mantiene la sesión orquestadora y se actualiza
 cada vez que se integra algo. Fecha de esta versión: 2026-11-17.
 
+> **CAMBIO DE SESIÓN (2026-11-18, decisión del dueño).** VE-3 hasta VE-3.14 está en `main`
+> (`5e0fa00`, fast-forward de 81 commits, empujado por la sesión del dueño). **La sesión
+> orquestadora de `claude/youthful-shannon-rjzmuc` NO empuja más** ni a esa rama ni a `main`.
+> Desde aquí sigue la sesión del dueño en `claude/festive-bell-wrmps1`: VE-3.15 (decisiones
+> 9 a 14 del cabezal, aceptadas como abajo) y su paso a `main`.
+>
+> **Decisiones 9 a 14, respuesta del dueño (2026-11-18): se aceptan los dictámenes de
+> `verificaciones_del_dueno/cabezal_decisiones_9_14.md`.** 9 método exacto del talón con la
+> envolvente (Resistencia I con γ máx. y mín., Evento Extremo I; presión lineal de 10.6.5 con
+> despegue). 10 cuña sobre la cara de la pantalla hasta la superficie real, con la inercia de
+> la pantalla en sismo. 11 `muros_tabla_11_5_7` por AASHTO 11.5.7, sin la cita del Manual de
+> Puentes 2.11.8.5 y declarando la tensión con su 2.8.1.1.12.6. 12 un solo régimen, «no cede»
+> en el archivo; «cede» sólo declarado con justificación, con guardia. 13 el mayor entre el
+> centroide estático y H/3 sólo con el muro que cede; h/2 con el que no cede. 14 margen 0
+> bajo la hoya sin proteger; no la «hoya protegida».
+
 > **MENSAJE DEL DUEÑO A LA SESIÓN ORQUESTADORA DE VE-3 (2026-11-17, 20:30 UTC), dejado
 > desde otra sesión porque el dueño ya NO tiene acceso a esta.** Nadie va a leer el chat de
 > esta sesión ni a responder preguntas en él: todo lo que importe tiene que quedar en el
