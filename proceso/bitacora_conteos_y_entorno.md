@@ -2774,3 +2774,23 @@ entorno que la fila anterior.
 Los 11 saltos del clon: los diez estructurales de `test_familias_del_csv` y uno nuevo de la
 integración (medido; se revisa en la corrida final). La exportación se vuelve a medir con
 VE-3.14 integrado.
+
+## VE-3, integración de VE-3.14 (2026-11-18): el par con ventana Tk, MEDIDO
+
+VE-3.14 (defectos del diseño del cabezal de los ensayos, y las opciones 9, 10, 11, 13 y 14 como
+alternativas medidas; la 12 no se propone): cortante general de 5.7.3.4.2, bucle de la zapata al
+tope, pantalla y alero dimensionados por armado, sismo con agua por C11.6.5.3, alcance declarado y
+resumen de la CLI, opciones de criterio. 153 criterios. Integrado en `claude/youthful-shannon-rjzmuc`
+en `b36cb1d` (sellado en el commit siguiente). Entorno: el de la fila anterior (`python` 3.12.13 de
+`uv` con Tk 9.0, `NORMAS_DIR` = clon de `Andy-rba30/Normas`, `xvfb-run -a`).
+
+| Suite y árbol | `NORMAS_DIR` | Ventana Tk | `passed` | `skipped` | `collected` |
+|---|---|---|---|---|---|
+| entregable, `b36cb1d`, clon limpio fuera del repositorio (sellos PROVISIONAL; después se sellan con este par) | sí | sí | 7767 (7765 + los 2 de sello que el sellado satisface) | 11 | 7778 |
+| entregable, `b36cb1d`, exportación (`git archive HEAD`, fuera del repo) | sí | sí | 7763 (7761 + los 2 de sello) | 15 | 7778 |
+| proceso, este commit | — | — | no se remide en esta integración | — | — |
+
+Antes de medir la suite se corrigieron dos guardias de estilo que la suite completa encontró en las
+justificaciones de las opciones 9 y 10 (citar por `cita_id` en vez de transcribir una frase; un número
+sin unidad). Con ello, la huella de `criterios_adoptados.py` cambió y la línea base y los documentos se
+regeneraron. Los 2 de sello se comprobaron por separado tras sellar: pasan.

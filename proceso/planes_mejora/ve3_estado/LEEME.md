@@ -128,6 +128,10 @@ JSON) y deja las elecciones 9–14 como opciones con su efecto medido; respaldo
 
 ## AVISO DE INTEGRACIÓN EN `main` (2026-11-18, sesión orquestadora, modelo Haiku 5.5)
 
+**Estado al integrar (2026-11-18):** suite verde en clon limpio (7767 / 11 / 7778, bitácora) y en
+exportación (7763 / 15 / 7778). Se integra en `main` la rama completa (VE-2 y VE-3, con VE-3.14); las
+decisiones 9–14 siguen pendientes del dueño y no cambian ningún valor de archivo.
+
 Cumplidas las dos condiciones de la respuesta del dueño (punto 5):
 - **Ensayos del cabezal hechos:** `ENSAYOS_DISENO_CABEZAL.md` (Opus, esfuerzo máximo) y su
   corrección en VE-3.14 (bloques 1–5 y las opciones 9, 10, 11, 13 y 14; la 12 no se propone).
