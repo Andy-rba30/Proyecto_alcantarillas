@@ -1,0 +1,177 @@
+=== Caso 1 Piura
+  indeci_piura/Miraflores mejor_ajuste_ks TR 25: lognormal_2p P = 131.7565 D = 0.0591 d = 0.2154 -> COINCIDE; avisos: 1
+  indeci_piura/Miraflores mejor_ajuste_ks TR 50: lognormal_2p P = 192.3542 D = 0.0591 d = 0.2154 -> COINCIDE; avisos: 0
+  indeci_piura/Miraflores mejor_ajuste_ks TR 100: lognormal_2p P = 270.3416 D = 0.0591 d = 0.2154 -> COINCIDE; avisos: 0
+  indeci_piura/Miraflores normal TR 25: MetodoNoEvaluableError | a mano: D = 0.2447 vs d = 0.2154 -> esperado (no pasa K-S)
+  indeci_piura/Miraflores normal TR 50: MetodoNoEvaluableError | a mano: D = 0.2447 vs d = 0.2154 -> esperado (no pasa K-S)
+  indeci_piura/Miraflores normal TR 100: MetodoNoEvaluableError | a mano: D = 0.2447 vs d = 0.2154 -> esperado (no pasa K-S)
+  indeci_piura/Miraflores lognormal_2p TR 25: lognormal_2p P = 131.7565 D = 0.0591 d = 0.2154 -> COINCIDE; avisos: 1
+  indeci_piura/Miraflores lognormal_2p TR 50: lognormal_2p P = 192.3542 D = 0.0591 d = 0.2154 -> COINCIDE; avisos: 0
+  indeci_piura/Miraflores lognormal_2p TR 100: lognormal_2p P = 270.3416 D = 0.0591 d = 0.2154 -> COINCIDE; avisos: 0
+  indeci_piura/Miraflores gumbel TR 25: MetodoNoEvaluableError | a mano: D = 0.2219 vs d = 0.2154 -> esperado (no pasa K-S)
+  indeci_piura/Miraflores gumbel TR 50: MetodoNoEvaluableError | a mano: D = 0.2219 vs d = 0.2154 -> esperado (no pasa K-S)
+  indeci_piura/Miraflores gumbel TR 100: MetodoNoEvaluableError | a mano: D = 0.2219 vs d = 0.2154 -> esperado (no pasa K-S)
+   AVISO: La precipitacion de diseño P24(25 años) = 131.8 mm queda POR DEBAJO de 151.4 mm, que la estacion «Miraflores» registro en 1983 y cuyo periodo de retorno empirico es 19.5 años (ecuacion 13: (n + 1)/m con n = 38 y m = 2). La distribucion «lognormal_2p» pasa la prueba de Kolmogorov-Smirnov y aun asi no cubre lo observado: la prueba
+  serie_sin_fen: MetodoNoEvaluableError: método no evaluable (Manual de Hidrología, cap. III): P24(TR) -- el tratamiento 'serie_sin_fen' da una precipitacion de diseño de 71.6 mm (lognormal_2p, n = 32) y con 'serie_completa' es 131.8 mm (lognormal_2p, n = 38, que pasa la prueba de Kolmogorov-Smirnov): el adoptado NO es el mas conservador de los dos. La Fase 1-bis de la hoja de ruta manda reportar el ajuste con los años FEN y sin ellos y adoptar el mas conse
+  dos_poblaciones: MetodoNoEvaluableError: método no evaluable (Manual de Hidrología, cap. III): P24(TR) -- el tratamiento 'dos_poblaciones' pide un analisis de poblacion mixta (una distribucion para los años FEN, otra para los neutros, combinadas por su probabilidad de ocurrencia) y ni el Manual de Hidrologia ni ninguna fuente de normas/ da ese procedimiento. Hace falta: declarar 'serie_completa' o 'serie_sin_fen' en 'homogeneidad_serie_fen', o el caudal de 
+  sin declarar: CriterioPendienteError
+  gumbel con alfa 0.01: P = 113.65 D = 0.2219 d = 0.2584
+  variante fen 5, serie_sin_fen: MetodoNoEvaluableError
+=== Caso 2 UPeU
+  upeu_colpahuayco/Sicuani mejor_ajuste_ks TR 35: lognormal_2p P = 42.3974 D = 0.0546 d = 0.2499 -> COINCIDE; avisos: 2
+  upeu_colpahuayco/Sicuani mejor_ajuste_ks TR 70: lognormal_2p P = 44.7259 D = 0.0546 d = 0.2499 -> COINCIDE; avisos: 1
+  upeu_colpahuayco/Sicuani normal TR 35: normal P = 41.1632 D = 0.0831 d = 0.2499 -> COINCIDE; avisos: 2
+  upeu_colpahuayco/Sicuani normal TR 70: normal P = 42.8095 D = 0.0831 d = 0.2499 -> COINCIDE; avisos: 2
+  upeu_colpahuayco/Sicuani lognormal_2p TR 35: lognormal_2p P = 42.3974 D = 0.0546 d = 0.2499 -> COINCIDE; avisos: 2
+  upeu_colpahuayco/Sicuani lognormal_2p TR 70: lognormal_2p P = 44.7259 D = 0.0546 d = 0.2499 -> COINCIDE; avisos: 1
+  upeu_colpahuayco/Sicuani gumbel TR 35: gumbel P = 43.5065 D = 0.0769 d = 0.2499 -> COINCIDE; avisos: 2
+  upeu_colpahuayco/Sicuani gumbel TR 70: gumbel P = 46.6377 D = 0.0769 d = 0.2499 -> COINCIDE; avisos: 1
+  upeu_colpahuayco/MC-01 TR 35: Q = 2.2770 I = 27.103 C = 0.3 tc = 37.773 min P24 = 42.397 (lognormal_2p) -> COINCIDE
+  upeu_colpahuayco/MC-01 TR 70: Q = 2.4020 I = 28.591 C = 0.3 tc = 37.773 min P24 = 44.726 (lognormal_2p) -> COINCIDE
+  upeu_colpahuayco/MC-07 TR 35: DatoFaltanteError (esperada) CN
+  upeu_colpahuayco/MC-14 TR 35: DatoFaltanteError (esperada) CN
+  upeu_colpahuayco: 24 (cuenca, TR) coinciden, 2 excepciones esperadas, 0 discrepancias
+=== Caso 3 Tumbes
+  fen vacio: DatoFaltanteError: Falta el dato 'fen'. celda vacia en 'estacion_como_se_publica_fen_vacio.csv', linea 6: cada año de la serie tiene que decir si fue del fenomeno El Niño, «si» o «no». Una celda vacia no se lee como «no
+  untumbes_tu107/Cañaveral mejor_ajuste_ks TR 35: lognormal_2p P = 719.3404 D = 0.0535 d = 0.2100 -> COINCIDE; avisos: 1
+  untumbes_tu107/Cañaveral mejor_ajuste_ks TR 70: lognormal_2p P = 930.2483 D = 0.0535 d = 0.2100 -> COINCIDE; avisos: 1
+  untumbes_tu107/Cañaveral mejor_ajuste_ks TR 140: lognormal_2p P = 1174.7983 D = 0.0535 d = 0.2100 -> COINCIDE; avisos: 1
+  untumbes_tu107/Cañaveral normal TR 35: normal P = 511.2057 D = 0.1618 d = 0.2100 -> COINCIDE; avisos: 2
+  untumbes_tu107/Cañaveral normal TR 70: normal P = 559.8910 D = 0.1618 d = 0.2100 -> COINCIDE; avisos: 2
+  untumbes_tu107/Cañaveral normal TR 140: normal P = 604.0855 D = 0.1618 d = 0.2100 -> COINCIDE; avisos: 2
+  untumbes_tu107/Cañaveral lognormal_2p TR 35: lognormal_2p P = 719.3404 D = 0.0535 d = 0.2100 -> COINCIDE; avisos: 1
+  untumbes_tu107/Cañaveral lognormal_2p TR 70: lognormal_2p P = 930.2483 D = 0.0535 d = 0.2100 -> COINCIDE; avisos: 1
+  untumbes_tu107/Cañaveral lognormal_2p TR 140: lognormal_2p P = 1174.7983 D = 0.0535 d = 0.2100 -> COINCIDE; avisos: 1
+  untumbes_tu107/Cañaveral gumbel TR 35: gumbel P = 580.5052 D = 0.1074 d = 0.2100 -> COINCIDE; avisos: 2
+  untumbes_tu107/Cañaveral gumbel TR 70: gumbel P = 673.1062 D = 0.1074 d = 0.2100 -> COINCIDE; avisos: 2
+  untumbes_tu107/Cañaveral gumbel TR 140: gumbel P = 765.2221 D = 0.1074 d = 0.2100 -> COINCIDE; avisos: 1
+   AVISO: La serie de «Cañaveral» no es continua: entre 1983 y 2024 faltan 2 años (1988, 2022). El programa ajusta los años que hay y no rellena los que faltan; si entre ellos hay un año del fenomeno El Niño, la lluvia de diseño esta subestimada.
+   paso de consistencia: uno seria rellenar un vacio. El proyectista tiene que declarar en la memoria que la evaluo, con que procedimiento y con que resultado. Para orientarlo, la serie entera de la estacion «Cañaveral» (40 años) va de 19.0 mm (1986) a 729.2 mm (1997), con mediana 134.7 mm y un cociente maximo / mediana de 5.4: el programa no los juzga.
+  untumbes_tu107/C-1 TR 35: Q = 6.2150 I = 580.817 C = 0.15 tc = 27.666 min P24 = 719.340 (lognormal_2p) -> COINCIDE
+  untumbes_tu107/C-1 TR 70: Q = 8.0372 I = 751.110 C = 0.15 tc = 27.666 min P24 = 930.248 (lognormal_2p) -> COINCIDE
+  untumbes_tu107/C-6 TR 35: Q = 2784.1684 I = 76.191 C = 0.8788289277576268 tc = 430.603 min P24 = 719.340 (lognormal_2p) -> COINCIDE
+  untumbes_tu107/C-6 TR 70: Q = 3751.9553 I = 98.530 C = 0.9158030149147586 tc = 430.603 min P24 = 930.248 (lognormal_2p) -> COINCIDE
+  untumbes_tu107/C-20 TR 35: MetodoNoEvaluableError (esperada) 
+  untumbes_tu107/C-27 TR 35: MetodoNoEvaluableError (esperada) 
+  untumbes_tu107: 78 (cuenca, TR) coinciden, 2 excepciones esperadas, 0 discrepancias
+=== Caso 4 UNSAAC
+  unsaac_42tmc/Colquepata mejor_ajuste_ks TR 35: normal P = 48.3697 D = 0.1721 d = 0.2600 -> COINCIDE; avisos: 1
+  unsaac_42tmc/Colquepata mejor_ajuste_ks TR 70: normal P = 52.1346 D = 0.1721 d = 0.2600 -> COINCIDE; avisos: 1
+  unsaac_42tmc/Colquepata normal TR 35: normal P = 48.3697 D = 0.1721 d = 0.2600 -> COINCIDE; avisos: 1
+  unsaac_42tmc/Colquepata normal TR 70: normal P = 52.1346 D = 0.1721 d = 0.2600 -> COINCIDE; avisos: 1
+  unsaac_42tmc/Colquepata lognormal_2p TR 35: MetodoNoEvaluableError | a mano: D = 0.2696 vs d = 0.2600 -> esperado (no pasa K-S)
+  unsaac_42tmc/Colquepata lognormal_2p TR 70: MetodoNoEvaluableError | a mano: D = 0.2696 vs d = 0.2600 -> esperado (no pasa K-S)
+  unsaac_42tmc/Colquepata gumbel TR 35: gumbel P = 53.7287 D = 0.2419 d = 0.2600 -> COINCIDE; avisos: 1
+  unsaac_42tmc/Colquepata gumbel TR 70: gumbel P = 60.8896 D = 0.2419 d = 0.2600 -> COINCIDE; avisos: 1
+  unsaac_42tmc/A1 TR 35: Q = 5.6753 I = 47.996 C = 0.5 tc = 24.178 min P24 = 53.729 (gumbel) -> COINCIDE
+  unsaac_42tmc/A1 TR 70: Q = 6.4317 I = 54.393 C = 0.5 tc = 24.178 min P24 = 60.890 (gumbel) -> COINCIDE
+  unsaac_42tmc/A8 TR 35: MetodoNoEvaluableError (esperada) 
+  unsaac_42tmc/A9 TR 35: MetodoNoEvaluableError (esperada) 
+  unsaac_42tmc/A10 TR 35: MetodoNoEvaluableError (esperada) 
+  unsaac_42tmc/A11 TR 35: MetodoNoEvaluableError (esperada) 
+  unsaac_42tmc/A12 TR 35: MetodoNoEvaluableError (esperada) 
+  unsaac_42tmc/A13 TR 35: MetodoNoEvaluableError (esperada) 
+  unsaac_42tmc/A15 TR 35: MetodoNoEvaluableError (esperada) 
+  unsaac_42tmc: 16 (cuenca, TR) coinciden, 7 excepciones esperadas, 0 discrepancias
+=== Caso 5 UPAO
+  upao_la_jalca/Chachapoyas-A mejor_ajuste_ks TR 10: gumbel P = 60.0722 D = 0.1032 d = 0.3180 -> COINCIDE; avisos: 3
+  upao_la_jalca/Chachapoyas-A mejor_ajuste_ks TR 50: gumbel P = 79.8089 D = 0.1032 d = 0.3180 -> COINCIDE; avisos: 4
+  upao_la_jalca/Chachapoyas-A mejor_ajuste_ks TR 100: gumbel P = 88.1527 D = 0.1032 d = 0.3180 -> COINCIDE; avisos: 4
+  upao_la_jalca/Chachapoyas-A mejor_ajuste_ks TR 175: gumbel P = 94.8660 D = 0.1032 d = 0.3180 -> COINCIDE; avisos: 3
+  upao_la_jalca/Chachapoyas-A mejor_ajuste_ks TR 500: gumbel P = 107.4340 D = 0.1032 d = 0.3180 -> COINCIDE; avisos: 3
+  upao_la_jalca/Chachapoyas-A normal TR 10: normal P = 59.7178 D = 0.1591 d = 0.3180 -> COINCIDE; avisos: 3
+  upao_la_jalca/Chachapoyas-A normal TR 50: normal P = 71.5527 D = 0.1591 d = 0.3180 -> COINCIDE; avisos: 4
+  upao_la_jalca/Chachapoyas-A normal TR 100: normal P = 75.7306 D = 0.1591 d = 0.3180 -> COINCIDE; avisos: 4
+  upao_la_jalca/Chachapoyas-A normal TR 175: normal P = 78.8413 D = 0.1591 d = 0.3180 -> COINCIDE; avisos: 4
+  upao_la_jalca/Chachapoyas-A normal TR 500: normal P = 84.1878 D = 0.1591 d = 0.3180 -> COINCIDE; avisos: 4
+  upao_la_jalca/Chachapoyas-A lognormal_2p TR 10: lognormal_2p P = 56.8925 D = 0.1149 d = 0.3180 -> COINCIDE; avisos: 3
+  upao_la_jalca/Chachapoyas-A lognormal_2p TR 50: lognormal_2p P = 72.5056 D = 0.1149 d = 0.3180 -> COINCIDE; avisos: 4
+  upao_la_jalca/Chachapoyas-A lognormal_2p TR 100: lognormal_2p P = 78.9859 D = 0.1149 d = 0.3180 -> COINCIDE; avisos: 4
+  upao_la_jalca/Chachapoyas-A lognormal_2p TR 175: lognormal_2p P = 84.1844 D = 0.1149 d = 0.3180 -> COINCIDE; avisos: 4
+  upao_la_jalca/Chachapoyas-A lognormal_2p TR 500: lognormal_2p P = 93.9310 D = 0.1149 d = 0.3180 -> COINCIDE; avisos: 3
+  upao_la_jalca/Chachapoyas-A gumbel TR 10: gumbel P = 60.0722 D = 0.1032 d = 0.3180 -> COINCIDE; avisos: 3
+  upao_la_jalca/Chachapoyas-A gumbel TR 50: gumbel P = 79.8089 D = 0.1032 d = 0.3180 -> COINCIDE; avisos: 4
+  upao_la_jalca/Chachapoyas-A gumbel TR 100: gumbel P = 88.1527 D = 0.1032 d = 0.3180 -> COINCIDE; avisos: 4
+  upao_la_jalca/Chachapoyas-A gumbel TR 175: gumbel P = 94.8660 D = 0.1032 d = 0.3180 -> COINCIDE; avisos: 3
+  upao_la_jalca/Chachapoyas-A gumbel TR 500: gumbel P = 107.4340 D = 0.1032 d = 0.3180 -> COINCIDE; avisos: 3
+  upao_la_jalca/Chachapoyas-B mejor_ajuste_ks TR 2: gumbel P = 35.5137 D = 0.1253 d = 0.3180 -> COINCIDE; avisos: 3
+  upao_la_jalca/Chachapoyas-B mejor_ajuste_ks TR 5: gumbel P = 42.4678 D = 0.1253 d = 0.3180 -> COINCIDE; avisos: 4
+  upao_la_jalca/Chachapoyas-B mejor_ajuste_ks TR 10: gumbel P = 47.0721 D = 0.1253 d = 0.3180 -> COINCIDE; avisos: 3
+  upao_la_jalca/Chachapoyas-B mejor_ajuste_ks TR 25: gumbel P = 52.8896 D = 0.1253 d = 0.3180 -> COINCIDE; avisos: 4
+  upao_la_jalca/Chachapoyas-B mejor_ajuste_ks TR 50: gumbel P = 57.2053 D = 0.1253 d = 0.3180 -> COINCIDE; avisos: 3
+  upao_la_jalca/Chachapoyas-B mejor_ajuste_ks TR 100: gumbel P = 61.4892 D = 0.1253 d = 0.3180 -> COINCIDE; avisos: 3
+  upao_la_jalca/Chachapoyas-B mejor_ajuste_ks TR 500: gumbel P = 71.3886 D = 0.1253 d = 0.3180 -> COINCIDE; avisos: 3
+  upao_la_jalca/Chachapoyas-B normal TR 2: normal P = 36.8059 D = 0.1388 d = 0.3180 -> COINCIDE; avisos: 3
+  upao_la_jalca/Chachapoyas-B normal TR 5: normal P = 43.4284 D = 0.1388 d = 0.3180 -> COINCIDE; avisos: 4
+  upao_la_jalca/Chachapoyas-B normal TR 10: normal P = 46.8902 D = 0.1388 d = 0.3180 -> COINCIDE; avisos: 4
+  upao_la_jalca/Chachapoyas-B normal TR 25: normal P = 50.5817 D = 0.1388 d = 0.3180 -> COINCIDE; avisos: 4
+  upao_la_jalca/Chachapoyas-B normal TR 50: normal P = 52.9664 D = 0.1388 d = 0.3180 -> COINCIDE; avisos: 4
+  upao_la_jalca/Chachapoyas-B normal TR 100: normal P = 55.1115 D = 0.1388 d = 0.3180 -> COINCIDE; avisos: 3
+  upao_la_jalca/Chachapoyas-B normal TR 500: normal P = 59.4536 D = 0.1388 d = 0.3180 -> COINCIDE; avisos: 3
+  upao_la_jalca/Chachapoyas-B lognormal_2p TR 2: lognormal_2p P = 36.0557 D = 0.1317 d = 0.3180 -> COINCIDE; avisos: 3
+  upao_la_jalca/Chachapoyas-B lognormal_2p TR 5: lognormal_2p P = 42.9223 D = 0.1317 d = 0.3180 -> COINCIDE; avisos: 4
+  upao_la_jalca/Chachapoyas-B lognormal_2p TR 10: lognormal_2p P = 47.0173 D = 0.1317 d = 0.3180 -> COINCIDE; avisos: 3
+  upao_la_jalca/Chachapoyas-B lognormal_2p TR 25: lognormal_2p P = 51.8154 D = 0.1317 d = 0.3180 -> COINCIDE; avisos: 4
+  upao_la_jalca/Chachapoyas-B lognormal_2p TR 50: lognormal_2p P = 55.1723 D = 0.1317 d = 0.3180 -> COINCIDE; avisos: 3
+  upao_la_jalca/Chachapoyas-B lognormal_2p TR 100: lognormal_2p P = 58.3772 D = 0.1317 d = 0.3180 -> COINCIDE; avisos: 3
+  upao_la_jalca/Chachapoyas-B lognormal_2p TR 500: lognormal_2p P = 65.4458 D = 0.1317 d = 0.3180 -> COINCIDE; avisos: 3
+  upao_la_jalca/Chachapoyas-B gumbel TR 2: gumbel P = 35.5137 D = 0.1253 d = 0.3180 -> COINCIDE; avisos: 3
+  upao_la_jalca/Chachapoyas-B gumbel TR 5: gumbel P = 42.4678 D = 0.1253 d = 0.3180 -> COINCIDE; avisos: 4
+  upao_la_jalca/Chachapoyas-B gumbel TR 10: gumbel P = 47.0721 D = 0.1253 d = 0.3180 -> COINCIDE; avisos: 3
+  upao_la_jalca/Chachapoyas-B gumbel TR 25: gumbel P = 52.8896 D = 0.1253 d = 0.3180 -> COINCIDE; avisos: 4
+  upao_la_jalca/Chachapoyas-B gumbel TR 50: gumbel P = 57.2053 D = 0.1253 d = 0.3180 -> COINCIDE; avisos: 3
+  upao_la_jalca/Chachapoyas-B gumbel TR 100: gumbel P = 61.4892 D = 0.1253 d = 0.3180 -> COINCIDE; avisos: 3
+  upao_la_jalca/Chachapoyas-B gumbel TR 500: gumbel P = 71.3886 D = 0.1253 d = 0.3180 -> COINCIDE; avisos: 3
+  ALC-19 por omision: MetodoNoEvaluableError
+  ALC-19 con indicador: Q = 9.2297 (a mano 9.2297) I = 75.886 (75.886) tc = 14.271 (14.271) -> COINCIDE
+=== Caso 6 ESPOL
+  espol_intervalles/La Argelia mejor_ajuste_ks TR 25: lognormal_2p P = 65.1333 D = 0.0689 d = 0.1884 -> COINCIDE; avisos: 1
+  espol_intervalles/La Argelia mejor_ajuste_ks TR 50: lognormal_2p P = 70.3704 D = 0.0689 d = 0.1884 -> COINCIDE; avisos: 1
+  espol_intervalles/La Argelia mejor_ajuste_ks TR 100: lognormal_2p P = 75.4398 D = 0.0689 d = 0.1884 -> COINCIDE; avisos: 1
+  espol_intervalles/La Argelia normal TR 25: normal P = 62.1630 D = 0.1021 d = 0.1884 -> COINCIDE; avisos: 2
+  espol_intervalles/La Argelia normal TR 50: normal P = 65.4786 D = 0.1021 d = 0.1884 -> COINCIDE; avisos: 1
+  espol_intervalles/La Argelia normal TR 100: normal P = 68.4610 D = 0.1021 d = 0.1884 -> COINCIDE; avisos: 1
+  espol_intervalles/La Argelia lognormal_2p TR 25: lognormal_2p P = 65.1333 D = 0.0689 d = 0.1884 -> COINCIDE; avisos: 1
+  espol_intervalles/La Argelia lognormal_2p TR 50: lognormal_2p P = 70.3704 D = 0.0689 d = 0.1884 -> COINCIDE; avisos: 1
+  espol_intervalles/La Argelia lognormal_2p TR 100: lognormal_2p P = 75.4398 D = 0.0689 d = 0.1884 -> COINCIDE; avisos: 1
+  espol_intervalles/La Argelia gumbel TR 25: gumbel P = 65.3718 D = 0.0896 d = 0.1884 -> COINCIDE; avisos: 1
+  espol_intervalles/La Argelia gumbel TR 50: gumbel P = 71.3722 D = 0.0896 d = 0.1884 -> COINCIDE; avisos: 1
+  espol_intervalles/La Argelia gumbel TR 100: gumbel P = 77.3282 D = 0.0896 d = 0.1884 -> COINCIDE; avisos: 1
+  espol_intervalles/Gonzanama mejor_ajuste_ks TR 25: lognormal_2p P = 118.8318 D = 0.0600 d = 0.1922 -> COINCIDE; avisos: 3
+  espol_intervalles/Gonzanama mejor_ajuste_ks TR 50: lognormal_2p P = 132.0927 D = 0.0600 d = 0.1922 -> COINCIDE; avisos: 3
+  espol_intervalles/Gonzanama mejor_ajuste_ks TR 100: lognormal_2p P = 145.2802 D = 0.0600 d = 0.1922 -> COINCIDE; avisos: 3
+  espol_intervalles/Gonzanama normal TR 25: normal P = 114.3594 D = 0.0937 d = 0.1922 -> COINCIDE; avisos: 3
+  espol_intervalles/Gonzanama normal TR 50: normal P = 122.2820 D = 0.0937 d = 0.1922 -> COINCIDE; avisos: 3
+  espol_intervalles/Gonzanama normal TR 100: normal P = 129.4081 D = 0.0937 d = 0.1922 -> COINCIDE; avisos: 3
+  espol_intervalles/Gonzanama lognormal_2p TR 25: lognormal_2p P = 118.8318 D = 0.0600 d = 0.1922 -> COINCIDE; avisos: 3
+  espol_intervalles/Gonzanama lognormal_2p TR 50: lognormal_2p P = 132.0927 D = 0.0600 d = 0.1922 -> COINCIDE; avisos: 3
+  espol_intervalles/Gonzanama lognormal_2p TR 100: lognormal_2p P = 145.2802 D = 0.0600 d = 0.1922 -> COINCIDE; avisos: 3
+  espol_intervalles/Gonzanama gumbel TR 25: gumbel P = 122.0267 D = 0.0686 d = 0.1922 -> COINCIDE; avisos: 3
+  espol_intervalles/Gonzanama gumbel TR 50: gumbel P = 136.3644 D = 0.0686 d = 0.1922 -> COINCIDE; avisos: 3
+  espol_intervalles/Gonzanama gumbel TR 100: gumbel P = 150.5962 D = 0.0686 d = 0.1922 -> COINCIDE; avisos: 3
+  espol_intervalles/Malacatos mejor_ajuste_ks TR 25: lognormal_2p P = 68.3471 D = 0.0709 d = 0.1903 -> COINCIDE; avisos: 2
+  espol_intervalles/Malacatos mejor_ajuste_ks TR 50: lognormal_2p P = 74.4594 D = 0.0709 d = 0.1903 -> COINCIDE; avisos: 3
+  espol_intervalles/Malacatos mejor_ajuste_ks TR 100: lognormal_2p P = 80.4230 D = 0.0709 d = 0.1903 -> COINCIDE; avisos: 2
+  espol_intervalles/Malacatos normal TR 25: normal P = 64.3015 D = 0.0895 d = 0.1903 -> COINCIDE; avisos: 3
+  espol_intervalles/Malacatos normal TR 50: normal P = 67.9371 D = 0.0895 d = 0.1903 -> COINCIDE; avisos: 3
+  espol_intervalles/Malacatos normal TR 100: normal P = 71.2072 D = 0.0895 d = 0.1903 -> COINCIDE; avisos: 3
+  espol_intervalles/Malacatos lognormal_2p TR 25: lognormal_2p P = 68.3471 D = 0.0709 d = 0.1903 -> COINCIDE; avisos: 2
+  espol_intervalles/Malacatos lognormal_2p TR 50: lognormal_2p P = 74.4594 D = 0.0709 d = 0.1903 -> COINCIDE; avisos: 3
+  espol_intervalles/Malacatos lognormal_2p TR 100: lognormal_2p P = 80.4230 D = 0.0709 d = 0.1903 -> COINCIDE; avisos: 2
+  espol_intervalles/Malacatos gumbel TR 25: gumbel P = 67.8199 D = 0.0787 d = 0.1903 -> COINCIDE; avisos: 2
+  espol_intervalles/Malacatos gumbel TR 50: gumbel P = 74.3994 D = 0.0787 d = 0.1903 -> COINCIDE; avisos: 3
+  espol_intervalles/Malacatos gumbel TR 100: gumbel P = 80.9302 D = 0.0787 d = 0.1903 -> COINCIDE; avisos: 2
+  espol_intervalles/Catamayo mejor_ajuste_ks TR 25: lognormal_2p P = 68.8360 D = 0.1672 d = 0.2457 -> COINCIDE; avisos: 2
+  espol_intervalles/Catamayo mejor_ajuste_ks TR 50: lognormal_2p P = 76.7915 D = 0.1672 d = 0.2457 -> COINCIDE; avisos: 2
+  espol_intervalles/Catamayo mejor_ajuste_ks TR 100: lognormal_2p P = 84.7298 D = 0.1672 d = 0.2457 -> COINCIDE; avisos: 2
+  espol_intervalles/Catamayo normal TR 25: normal P = 69.7079 D = 0.2360 d = 0.2457 -> COINCIDE; avisos: 2
+  espol_intervalles/Catamayo normal TR 50: normal P = 74.9772 D = 0.2360 d = 0.2457 -> COINCIDE; avisos: 2
+  espol_intervalles/Catamayo normal TR 100: normal P = 79.7169 D = 0.2360 d = 0.2457 -> COINCIDE; avisos: 2
+  espol_intervalles/Catamayo lognormal_2p TR 25: lognormal_2p P = 68.8360 D = 0.1672 d = 0.2457 -> COINCIDE; avisos: 2
+  espol_intervalles/Catamayo lognormal_2p TR 50: lognormal_2p P = 76.7915 D = 0.1672 d = 0.2457 -> COINCIDE; avisos: 2
+  espol_intervalles/Catamayo lognormal_2p TR 100: lognormal_2p P = 84.7298 D = 0.1672 d = 0.2457 -> COINCIDE; avisos: 2
+  espol_intervalles/Catamayo gumbel TR 25: gumbel P = 74.8074 D = 0.1676 d = 0.2457 -> COINCIDE; avisos: 2
+  espol_intervalles/Catamayo gumbel TR 50: gumbel P = 84.3435 D = 0.1676 d = 0.2457 -> COINCIDE; avisos: 2
+  espol_intervalles/Catamayo gumbel TR 100: gumbel P = 93.8091 D = 0.1676 d = 0.2457 -> COINCIDE; avisos: 2
+PEOR DIFERENCIA RELATIVA programa vs calculo a mano en lo comparado: 9.677e-16
+etiqueta de año repetida: DatoInvalidoError

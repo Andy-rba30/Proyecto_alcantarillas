@@ -1,0 +1,154 @@
+{
+ "entrada": "indeci_piura/estacion.csv",
+ "funcion": "MH.precipitacion_de_diseno(serie, TR)",
+ "TR": [
+  25,
+  50,
+  100
+ ],
+ "serie_completa": {
+  "normal": {
+   "D": 0.24470455531783253,
+   "P_TR_mm": {
+    "25": 101.71751380935896,
+    "50": 114.04695274798098,
+    "100": 125.1370365106846
+   },
+   "parametros": {}
+  },
+  "lognormal_2p": {
+   "D": 0.059118519045932294,
+   "P_TR_mm": {
+    "25": 131.75648041797592,
+    "50": 192.35418221484846,
+    "100": 270.34159114763924
+   },
+   "parametros": {
+    "Y": 2.69517157364926,
+    "Sy": 1.2485298396373272
+   }
+  },
+  "gumbel": {
+   "D": 0.22189139916693068,
+   "P_TR_mm": {
+    "25": 113.64968210035315,
+    "50": 135.96270088183223,
+    "100": 158.1109638351223
+   },
+   "parametros": {
+    "alfa": 0.03152439404901629,
+    "beta": 12.187485666947175
+   }
+  },
+  "n": 38,
+  "media": 30.49473684210526,
+  "s": 40.68278038924019,
+  "d_critico_0.05": 0.21543835682662318,
+  "d_origen": "cuantil exacto K-S (la Tabla N 03 no trae la fila)",
+  "mejor_ajuste_ks": "lognormal_2p"
+ },
+ "serie_sin_fen__ajuste_que_se_reporta_como_contraste": {
+  "normal": {
+   "D": 0.23611468221376597,
+   "P_TR_mm": {
+    "25": 56.54981385990811,
+    "50": 63.11338956082786,
+    "100": 69.0171946462344
+   },
+   "parametros": {}
+  },
+  "lognormal_2p": {
+   "D": 0.08038602570535713,
+   "P_TR_mm": {
+    "25": 71.57519356265739,
+    "50": 99.14809666954937,
+    "100": 132.91697714555704
+   },
+   "parametros": {
+    "Y": 2.3883361527536557,
+    "Sy": 1.0752426911204018
+   }
+  },
+  "gumbel": {
+   "D": 0.18413601114931408,
+   "P_TR_mm": {
+    "25": 62.90190256758841,
+    "50": 74.78023609252416,
+    "100": 86.57086186726386
+   },
+   "parametros": {
+    "alfa": 0.05921743104904544,
+    "beta": 8.888511497039024
+   }
+  },
+  "n": 32,
+  "media": 18.634375,
+  "s": 21.657474451024388,
+  "d_critico_0.05": 0.23424085995174143,
+  "d_origen": "cuantil exacto K-S (la Tabla N 03 no trae la fila)",
+  "mejor_ajuste_ks": "lognormal_2p"
+ },
+ "serie_sin_fen": {
+  "excepcion": "MetodoNoEvaluableError",
+  "motivo": "da menos lluvia que la serie completa (regla del mas conservador)"
+ },
+ "dos_poblaciones": {
+  "excepcion": "MetodoNoEvaluableError"
+ },
+ "sin_declarar_homogeneidad_serie_fen": {
+  "excepcion": "CriterioPendienteError"
+ },
+ "serie_completa + distribucion=normal": {
+  "excepcion": "MetodoNoEvaluableError",
+  "motivo": "D >= d"
+ },
+ "serie_completa + distribucion=gumbel": {
+  "excepcion": "MetodoNoEvaluableError",
+  "motivo": "D >= d (0.2219 vs 0.2154)"
+ },
+ "aviso_lo_observado": {
+  "TR25": "P24 = 131.8 mm < 151.4 mm (1983, T empirico 19.5 años): aviso, no detiene",
+  "TR50": "cubre 173.6 (1998)"
+ },
+ "variante_fen_5": {
+  "normal": {
+   "D": 0.22010958855064244,
+   "P_TR_mm": {
+    "25": 56.46923888181311,
+    "50": 62.958195395869474,
+    "100": 68.79488201491762
+   },
+   "parametros": {}
+  },
+  "lognormal_2p": {
+   "D": 0.08341985350366032,
+   "P_TR_mm": {
+    "25": 73.54278335861922,
+    "50": 101.80710269968652,
+    "100": 136.40140656799232
+   },
+   "parametros": {
+    "Y": 2.419230267045388,
+    "Sy": 1.0730861958562925
+   }
+  },
+  "gumbel": {
+   "D": 0.17436292188359975,
+   "P_TR_mm": {
+    "25": 62.749112730421274,
+    "50": 74.49240529151189,
+    "100": 86.14898722368596
+   },
+   "parametros": {
+    "alfa": 0.05989839670869294,
+    "beta": 9.349782578046959
+   }
+  },
+  "n": 33,
+  "media": 18.984848484848484,
+  "s": 21.411257570670056,
+  "d_critico_0.05": 0.23076141758551308,
+  "d_origen": "cuantil exacto K-S (la Tabla N 03 no trae la fila)",
+  "mejor_ajuste_ks": "lognormal_2p"
+ }
+}

@@ -1,0 +1,279 @@
+==============================================================================
+CASO 1. INDECI-OEA Piura, estacion Miraflores 1971-2008
+==============================================================================
+  [serie completa (con FEN), 38 años] n = 38  media = 30.4947  s(n-1) = 40.6828  d(0.05) = 0.2154 (cuantil exacto K-S (la Tabla N 03 no trae la fila))
+    normal: D = 0.2447 (NO pasa) [K-S de escalon: 0.2616]
+      P(TR): 2: 30.49  5: 64.73  10: 82.63  20: 97.41  25: 101.72  50: 114.05  100: 125.14  200: 135.29  500: 147.59  1000: 156.21
+    lognormal_2p: D = 0.0591 (pasa) [K-S de escalon: 0.0679] Y = 2.6952 Sy = 1.2485 (log10: 1.1705, 0.5422)
+      P(TR): 2: 14.81  5: 42.35  10: 73.35  20: 115.45  25: 131.76  50: 192.35  100: 270.34  200: 369.14  500: 538.42  1000: 701.64
+    gumbel: D = 0.2219 (NO pasa) [K-S de escalon: 0.2475] alfa = 0.03152 beta = 12.1875
+      P(TR): 2: 23.81  5: 59.77  10: 83.57  20: 106.41  25: 113.65  50: 135.96  100: 158.11  200: 180.18  500: 209.29  1000: 231.30
+    mejor ajuste K-S (menor D): lognormal_2p
+  [sin FEN segun el estudio (quita 1972,1973,1983,1987,1992,1998), 32 años] n = 32  media = 18.6344  s(n-1) = 21.6575  d(0.05) = 0.2342 (cuantil exacto K-S (la Tabla N 03 no trae la fila))
+    normal: D = 0.2361 (NO pasa) [K-S de escalon: 0.2598]
+      P(TR): 2: 18.63  5: 36.86  10: 46.39  20: 54.26  25: 56.55  50: 63.11  100: 69.02  200: 74.42  500: 80.97  1000: 85.56
+    lognormal_2p: D = 0.0804 (pasa) [K-S de escalon: 0.0965] Y = 2.3883 Sy = 1.0752 (log10: 1.0372, 0.4670)
+      P(TR): 2: 10.90  5: 26.93  10: 43.22  20: 63.88  25: 71.58  50: 99.15  100: 132.92  200: 173.81  500: 240.58  1000: 302.20
+    gumbel: D = 0.1841 (pasa) [K-S de escalon: 0.2144] alfa = 0.05922 beta = 8.8885
+      P(TR): 2: 15.08  5: 34.22  10: 46.89  20: 59.05  25: 62.90  50: 74.78  100: 86.57  200: 98.32  500: 113.82  1000: 125.53
+    mejor ajuste K-S (menor D): lognormal_2p
+  -- contraste con lo impreso (con_fen) --
+    media 30.49 vs 30.5; s 40.68 vs 40.68; log10: 1.170 vs 1.17; 0.542 vs 0.542
+    normal vs columna «normal»: dif. max = -0.02 %  (TR 25: 101.72 vs 101.73)
+    lognormal_2p vs columna «lognormal»: dif. max = -0.05 %  (TR 25: 131.76 vs 131.82)
+    gumbel vs columna «gumbel_mod»: dif. max = +0.01 %  (TR 25: 113.65 vs 113.65)
+    Gumbel momentos vs columna «Gumbel» (N=20, Ponce): TR 25: 113.65 vs 132.89 (-14.5 %)
+    K_T Gumbel momentos TR 5/25/100: 0.7195 2.0440 3.1369 vs impreso «modificado» 0.7195 2.0439 3.1368
+    Delta K-S (ec. 13) normal 0.245 vs 0.245; LN 0.059 vs 0.059; Gumbel mom. 0.222 vs «mod.» 0.222 / «N=20» 0.254; critico 0.2154 vs 0.22 (1.36/raiz(n) = 0.2206)
+  -- contraste con lo impreso (sin_fen) --
+    media 18.63 vs 18.6; s 21.66 vs 21.66; log10: 1.037 vs 1.037; 0.467 vs 0.467
+    normal vs columna «normal»: dif. max = +0.02 %  (TR 25: 56.55 vs 56.56)
+    lognormal_2p vs columna «lognormal»: dif. max = -0.05 %  (TR 25: 71.58 vs 71.61)
+    gumbel vs columna «gumbel_mod»: dif. max = +0.01 %  (TR 25: 62.90 vs 62.9)
+    Gumbel momentos vs columna «Gumbel» (N=20, Ponce): TR 25: 62.90 vs 73.14 (-14.0 %)
+    K_T Gumbel momentos TR 5/25/100: 0.7195 2.0440 3.1369 vs impreso «modificado» 0.7195 2.0439 3.1368
+    Delta K-S (ec. 13) normal 0.236 vs 0.236; LN 0.080 vs 0.08; Gumbel mom. 0.184 vs «mod.» 0.184 / «N=20» 0.22; critico 0.2342 vs 0.24 (1.36/raiz(n) = 0.2404)
+  -- solo FEN (5 datos): media 106.46 s 57.76 ; log10 1.961 0.286 (impreso 106.5, 57.76, 1.961, 0.286)
+  -- regla FEN (mas conservador): P24(TR) LN completa vs LN sin FEN --
+    TR 25: completa 131.8 mm ; sin FEN 71.6 mm ; razon 1.84
+    TR 50: completa 192.4 mm ; sin FEN 99.1 mm ; razon 1.94
+    TR 100: completa 270.3 mm ; sin FEN 132.9 mm ; razon 2.03
+    contraste con lo observado TR 25: registro 151.4 mm (1983), m = 2, T emp = 19.5; LN da 131.8
+    contraste con lo observado TR 50: registro 173.6 mm (1998), m = 1, T emp = 39.0; LN da 192.4
+    contraste con lo observado TR 100: registro 173.6 mm (1998), m = 1, T emp = 39.0; LN da 270.3
+  -- sensibilidad a la declaracion de años FEN (LN, TR 25 / 100) --
+    estudio (6 años): n = 32, mejor = lognormal_2p (D 0.0804), LN P25 = 71.6, P100 = 132.9
+    solo los 5 del Anexo 07.3 (1973 se queda): n = 33, mejor = lognormal_2p (D 0.0834), LN P25 = 73.5, P100 = 136.4
+    estudio + 1997: n = 31, mejor = lognormal_2p (D 0.0859), LN P25 = 65.3, P100 = 119.6
+    estudio + 1997 + 2002: n = 30, mejor = lognormal_2p (D 0.1063), LN P25 = 53.1, P100 = 93.1
+    serie completa sin 1971 (año parcial): n = 37, LN P25 = 130.5, P100 = 261.7, D LN = 0.0643
+  -- intensidad del estudio (Cuadro 27): P24/6 h: 131.82/6 = 21.97 (impreso 21.97)
+
+==============================================================================
+CASO 2. UPeU Colpahuayco-Langui, estacion Sicuani 1993-2020
+==============================================================================
+  [Sicuani, 28 años] n = 28  media = 30.2571  s(n-1) = 5.7334  d(0.05) = 0.2499 (cuantil exacto K-S (la Tabla N 03 no trae la fila))
+    normal: D = 0.0831 (pasa) [K-S de escalon: 0.1003]
+      P(TR): 5: 35.08  20: 39.69  35: 41.16  50: 42.03  70: 42.81  100: 43.59
+    lognormal_2p: D = 0.0546 (pasa) [K-S de escalon: 0.0693] Y = 3.3929 Sy = 0.1862 (log10: 1.4735, 0.0809)
+      P(TR): 5: 34.80  20: 40.41  35: 42.40  50: 43.61  70: 44.73  100: 45.88
+    gumbel: D = 0.0769 (pasa) [K-S de escalon: 0.0894] alfa = 0.22369 beta = 27.6771
+      P(TR): 5: 34.38  20: 40.96  35: 43.51  50: 45.12  70: 46.64  100: 48.24
+    mejor ajuste K-S (menor D): lognormal_2p
+    Pearson III impreso (Tabla 7): 5: 34.83  20: 40.59  35: 42.62  50: 43.85  70: 44.98  100: 46.15
+    normal vs Pearson III impreso, TR 35 / 70: -3.4 % / -4.8 %
+    lognormal_2p vs Pearson III impreso, TR 35 / 70: -0.5 % / -0.6 %
+    gumbel vs Pearson III impreso, TR 35 / 70: +2.1 % / +3.7 %
+    Delta tabular impreso 0.2570 = 1.36/raiz(28) = 0.2570; el del programa: 0.2499
+  -- racional modificado del documento (TR 70, Pd = 44.98 mm), recalculado con la Tabla 6 --
+   id   A6km2  A8ha   L km   s     Tc_h   K     K_imp  KA     I(34)  I_imp  dif%   C_imp CN(C)  Q_T6   Q_T8A  Q_T8A_sinK  Q_imp
+    1    0.97  113.89  2.01  0.33  0.630 1.039  1.04 1.0009  27.14  27.10  +0.2  0.28  77.7   2.13   2.50   2.41       2.41   [0.278·C·I_imp·A8: sin K 2.40, con K 2.50]
+    2    0.42   39.22  1.61  0.26  0.556 1.033  1.03 1.0251  29.85  30.04  -0.6  0.22  74.2   0.79   0.74   0.72       0.74   [0.278·C·I_imp·A8: sin K 0.72, con K 0.74]
+    3    0.90   92.09  2.43  0.25  0.767 1.049  1.05 1.0031  24.24  24.80  -2.2  0.30  78.8   1.91   1.95   1.86       1.88   [0.278·C·I_imp·A8: sin K 1.90, con K 2.00]
+    4    1.40  141.29  2.92  0.20  0.920 1.060  1.06 0.9903  21.47  22.49  -4.5  0.32  79.8   2.84   2.86   2.70       2.80   [0.278·C·I_imp·A8: sin K 2.83, con K 3.00]
+    5    1.32  143.15  2.60  0.20  0.842 1.054  1.05 0.9920  22.68  23.40  -3.1  0.27  77.2   2.37   2.57   2.44       2.49   [0.278·C·I_imp·A8: sin K 2.51, con K 2.64]
+    6    1.53  154.11  2.99  0.18  0.955 1.063  1.06 0.9877  20.93  21.36  -2.0  0.26  76.6   2.46   2.48   2.33       2.34   [0.278·C·I_imp·A8: sin K 2.38, con K 2.52]
+    8    3.70  403.16  3.94  0.11  1.294 1.090  1.08 0.9621  16.93  18.29  -7.4  0.30  78.8   5.69   6.20   5.69       6.09   [0.278·C·I_imp·A8: sin K 6.15, con K 6.64]
+    9    1.86  192.78  2.70  0.17  0.894 1.058  1.05 0.9820  21.67  22.52  -3.8  0.32  79.8   3.79   3.93   3.72       3.86   [0.278·C·I_imp·A8: sin K 3.86, con K 4.06]
+   10    0.20   25.57  0.99  0.38  0.358 1.019  1.02 1.0466  39.01  39.42  -1.0  0.31  79.3   0.69   0.88   0.86       0.87   [0.278·C·I_imp·A8: sin K 0.87, con K 0.89]
+   11    0.21   28.03  1.13  0.39  0.394 1.022  1.02 1.0452  36.96  36.65  +0.9  0.31  79.3   0.68   0.91   0.89       0.89   [0.278·C·I_imp·A8: sin K 0.89, con K 0.90]
+   12    0.39   44.22  1.81  0.27  0.604 1.037  1.04 1.0273  28.54  28.82  -1.0  0.31  79.3   0.99   1.13   1.09       1.11   [0.278·C·I_imp·A8: sin K 1.10, con K 1.14]
+   13    0.09   11.75  1.17  0.28  0.431 1.024  1.02 1.0697  36.00  35.49  +1.4  0.31  79.3   0.29   0.37   0.36       0.36   [0.278·C·I_imp·A8: sin K 0.36, con K 0.37]
+  -- lo que hace MH bajo 10 km2 (metodo racional, tc Temez, Dick-Peschke, K aplicado): I y Q por unidad de C --
+   id   tc_min  Pd_dp  I_dp   I(34)  dp/34   Q/C con K (A Tabla 6)   Temez en rango 0.25-24 h
+    1   37.77  18.10  28.75  27.14  1.06     8.052                 si
+    2   33.39  17.55  31.54  29.85  1.06     3.805                 si
+    3   46.00  19.02  24.80  24.24  1.02     6.509                 si
+    4   55.18  19.90  21.64  21.47  1.01     8.931                 si
+    5   50.52  19.47  23.12  22.68  1.02     8.946                 si
+    6   57.32  20.09  21.03  20.93  1.00     9.511                 si
+    8   77.62  21.67  16.75  16.93  0.99    18.778                 si
+    9   53.62  19.76  22.11  21.67  1.02    12.101                 si
+   10   21.47  15.72  43.93  39.01  1.13     2.490                 si
+   11   23.62  16.10  40.89  36.96  1.11     2.439                 si
+   12   36.24  17.91  29.66  28.54  1.04     3.334                 si
+   13   25.83  16.46  38.24  36.00  1.06     0.980                 si
+  -- cuencas 7 y 14 (>= 10 km2): racional modificado completo, falta CN --
+   7: A = 29.94 km2, Tc = 2.485 h, K = 1.1823, KA = 0.9016, P = 40.55 mm, I = 10.43 mm/h; CN 70: Q = 16.50; CN 75: Q = 23.87; CN 80: Q = 33.28; CN 85: Q = 45.59; CN 90: Q = 62.10; HEC-HMS impreso 15.1 m3/s <-> CN equivalente 68.9; Po(CN) = Pd en CN = 52.6
+   14: A = 10.6 km2, Tc = 2.098 h, K = 1.1528, KA = 0.9316, P = 41.91 mm, I = 12.05 mm/h; CN 70: Q = 6.58; CN 75: Q = 9.52; CN 80: Q = 13.27; CN 85: Q = 18.18; CN 90: Q = 24.77; HEC-HMS impreso 8.0 m3/s <-> CN equivalente 72.6; Po(CN) = Pd en CN = 52.6
+  -- Tc de la Tabla 6 (min) vs Kirpich del Manual (0.01947 L^0.77 S^-0.385) --
+   1: impreso 10.2 min ; Kirpich con s = 10.43 ; con S = 10.19; (Hmax-hmin)/L = 0.333
+   2: impreso 9.51 min ; Kirpich con s = 9.64 ; con S = 9.50; (Hmax-hmin)/L = 0.256
+   7: impreso 38.02 min ; Kirpich con s = 55.06 ; con S = 37.97; (Hmax-hmin)/L = 0.083
+   14: impreso 28.56 min ; Kirpich con s = 45.34 ; con S = 28.52; (Hmax-hmin)/L = 0.092
+
+==============================================================================
+CASO 3. UNTumbes TU-107, estacion Cañaveral (40 años)
+==============================================================================
+  [Cañaveral tal como se publica, 40 años] n = 40  media = 188.6725  s(n-1) = 169.5565  d(0.05) = 0.2100 (Tabla N 03)
+    normal: D = 0.1618 (pasa) [K-S de escalon: 0.1782]
+      P(TR): 5: 331.37  10: 405.97  25: 485.51  35: 511.21  50: 536.90  70: 559.89  100: 583.12  140: 604.09  500: 676.68
+    lognormal_2p: D = 0.0535 (pasa) [K-S de escalon: 0.0596] Y = 4.8750 Sy = 0.8955 (log10: 2.1172, 0.3889)
+      P(TR): 5: 278.28  10: 412.63  25: 628.07  35: 719.34  50: 823.88  70: 930.25  100: 1051.66  140: 1174.80  500: 1723.75
+    gumbel: D = 0.1074 (pasa) [K-S de escalon: 0.1318] alfa = 0.00756 beta = 112.3721
+      P(TR): 5: 310.68  10: 409.89  25: 535.24  35: 580.51  50: 628.24  70: 673.11  100: 720.55  140: 765.22  500: 933.86
+    mejor ajuste K-S (menor D): lognormal_2p
+    impreso: media 188.673, s 169.556, ln: 4.875, 0.8955; Delta N 0.1618, LN2 0.0535, Gumbel 0.1074; critico 0.215
+    LN2 vs Tabla 47 (HidroEsta): 5: 278.28/278.23 (+0.02%)  10: 412.63/412.7 (-0.02%)  25: 628.07/628.29 (-0.04%)  50: 823.88/824.21 (-0.04%)  70: 930.25/930.62 (-0.04%)  100: 1051.66/1052.08 (-0.04%)  140: 1174.80/1175.25 (-0.04%)  500: 1723.75/1724.28 (-0.03%)
+  -- filas duplicadas mes a mes (Tabla 23) --
+    1989 y 2002: 12 de 12 meses identicos (12 de 12 a menos de 0.11 mm); maximo anual 129.0 y 129.0
+    1996 y 2001: 11 de 12 meses identicos (12 de 12 a menos de 0.11 mm); maximo anual 63.0 y 63.0
+    maximos anuales repetidos (valor: años): {129.0: [1989, 2002], 63.0: [1996, 2001]}
+  [sin las dos filas copiadas (2001, 2002), 38 años] n = 38  media = 193.5500  s(n-1) = 172.4990  d(0.05) = 0.2154 (cuantil exacto K-S (la Tabla N 03 no trae la fila))
+    normal: D = 0.1555 (pasa) [K-S de escalon: 0.1723]
+      P(TR): 5: 338.73  10: 414.62  25: 495.54  35: 521.68  50: 547.82  70: 571.21  100: 594.84  140: 616.17  500: 690.03
+    lognormal_2p: D = 0.0559 (pasa) [K-S de escalon: 0.0626] Y = 4.8946 Sy = 0.9112 (log10: 2.1257, 0.3957)
+      P(TR): 5: 287.59  10: 429.41  25: 658.45  35: 755.94  50: 867.87  70: 982.01  100: 1112.58  140: 1245.27  500: 1839.52
+    gumbel: D = 0.1024 (pasa) [K-S de escalon: 0.1280] alfa = 0.00743 beta = 115.9255
+      P(TR): 5: 317.67  10: 418.60  25: 546.14  35: 592.18  50: 640.74  70: 686.39  100: 734.66  140: 780.11  500: 951.67
+    mejor ajuste K-S (menor D): lognormal_2p
+    efecto de quitar las copias en LN2: P35 +5.1 %, P70 +5.6 %, P140 +6.0 %
+  -- plausibilidad: meses con «maxima en 24 h» >= 300 mm --
+    1983: 491, 337, 375
+    1987: 360, 322
+    1991: 717
+    1992: 306.3
+    1997: 502.3, 729.2, 447.6, 427.4
+    2000: 334.8
+    2017: 369.2
+    2023: 381.3
+    max/mediana de la serie: 729.2/134.7 = 5.4
+  -- 41 cuencas: Temez (ec. 30) con L y S de la Tabla 26 vs la columna TEMEZ de la Tabla 27 --
+    con S = (cota max - cota min)/L: desvio maximo contra lo impreso = 0.007 h (redondeo a 2 decimales = 0.005)
+    fuera del rango 0.25-24 h de Temez: [('C-20', 0.204), ('C-27', 0.246)]
+    C-1: S tabla 0.07, S cotas 0.0714; Tc(S tabla) 0.463, Tc(S cotas) 0.461, impreso 0.46
+    C-2: S tabla 0.04, S cotas 0.0385; Tc(S tabla) 1.010, Tc(S cotas) 1.018, impreso 1.02
+    C-6: S tabla 0.02, S cotas 0.0180; Tc(S tabla) 7.034, Tc(S cotas) 7.176, impreso 7.17
+    C-20: S tabla 0.29, S cotas 0.2864; Tc(S tabla) 0.203, Tc(S cotas) 0.204, impreso 0.2
+    C-35: S tabla 0.04, S cotas 0.0429; Tc(S tabla) 2.521, Tc(S cotas) 2.487, impreso 2.49
+  -- caudal del documento: IDF propia y C I A / 3.6, recalculado --
+    C-1: I35 = 280.25 (impreso 280.28); Q35 = C·I·A/3.6 = 2.92 (impreso 2.86); A que reproduce Q: 0.245 km2 (tabla 0.25)
+    C-2: I35 = 178.97 (impreso 178.98); Q35 = C·I·A/3.6 = 4.67 (impreso 4.66); A que reproduce Q: 0.937 km2 (tabla 0.94)
+    C-35: I35 = 108.60 (impreso 108.6); Q35 = C·I·A/3.6 = 24.43 (impreso 24.42); A que reproduce Q: 8.095 km2 (tabla 8.1)
+    C-39: I35 = 364.39 (impreso 364.37); Q35 = C·I·A/3.6 = 1.82 (impreso 1.79); A que reproduce Q: 0.118 km2 (tabla 0.12)
+  -- lo que daria el metodo del Manual que MH implementa (LN2 serie publicada, f = 1.00, Dick-Peschke, K Temez) --
+   cuenca  A     tc_min(Temez,S cotas)  P24(35)  I_dp    Q/C·K    | doc: I35     razon I_dp/I_doc
+   C-1    0.25    27.66                 719.3   580.8   41.44   |  280.28    2.07
+   C-2    0.94    61.07                 719.3   320.7   89.51   |  178.98    1.79
+   C-5    2.31    62.83                 719.3   314.0  215.80   |  179.21    1.75
+   C-35   8.10   149.23                 719.3   164.1  436.91   |  108.60    1.51
+   C-39   0.12    17.68                 719.3   812.4   27.52   |  364.37    2.23
+
+==============================================================================
+CASO 4. UNSAAC Roquepata, estacion Colquepata 1990-2014
+==============================================================================
+  [Colquepata, 25 años] n = 25  media = 23.4280  s(n-1) = 13.1119  d(0.05) = 0.2600 (Tabla N 03)
+    normal: D = 0.1721 (pasa) [K-S de escalon: 0.1968]
+      P(TR): 10: 40.23  30: 47.47  35: 48.37  70: 52.13  100: 53.93  150: 55.88  200: 57.20  250: 58.20  500: 61.17  1000: 63.95
+    lognormal_2p: D = 0.2696 (NO pasa) [K-S de escalon: 0.2943] Y = 2.9195 Sy = 0.7846 (log10: 1.2679, 0.3407)
+      P(TR): 10: 50.65  30: 78.12  35: 82.42  70: 103.25  100: 114.96  150: 129.16  200: 139.82  250: 148.44  500: 177.24  1000: 209.33
+    gumbel: D = 0.2419 (pasa) [K-S de escalon: 0.2665] alfa = 0.09781 beta = 17.5276
+      P(TR): 10: 40.53  30: 52.13  35: 53.73  70: 60.89  100: 64.56  150: 68.72  200: 71.67  250: 73.96  500: 81.05  1000: 88.15
+    mejor ajuste K-S (menor D): normal
+    impreso: media 23.43, s 13.11; desv. poblacional (n) = 12.847
+    Gumbel por momentos vs Tabla 6.7 (K, Pmax): 10: K 1.3047/1.3046 P 40.535/40.5334  30: K 2.1888/2.1887 P 52.128/52.1259  35: K 2.3109/2.3108 P 53.729/53.7268  70: K 2.8571/2.8569 P 60.890/60.8874  100: K 3.1369/3.1367 P 64.558/64.556  150: K 3.4543/3.4541 P 68.721/68.7183  200: K 3.6793/3.6791 P 71.671/71.668  250: K 3.8537/3.8535 P 73.957/73.9544  500: K 4.3949/4.3947 P 81.054/81.0509  1000: K 4.9358/4.9355 P 88.146/88.1423
+    dif. maxima P: 0.004 %
+    inhomogeneidad: media 1990-1997 = 6.54 mm (max 9.3), media 1998-2014 = 31.38 mm (min 20.1)
+  [solo 1998-2014 (17 años), para ver el efecto del quiebre] n = 17  media = 31.3765  s(n-1) = 6.8410  d(0.05) = 0.3180 (cuantil exacto K-S (la Tabla N 03 no trae la fila))
+    normal: D = 0.1540 (pasa) [K-S de escalon: 0.1801]
+      P(TR): 10: 40.14  30: 43.92  35: 44.39  70: 46.35  100: 47.29  150: 48.31  200: 49.00  250: 49.52  500: 51.07  1000: 52.52
+    lognormal_2p: D = 0.1477 (pasa) [K-S de escalon: 0.1771] Y = 3.4243 Sy = 0.2144 (log10: 1.4872, 0.0931)
+      P(TR): 10: 40.41  30: 45.49  35: 46.16  70: 49.09  100: 50.55  150: 52.19  200: 53.33  250: 54.21  500: 56.90  1000: 59.55
+    gumbel: D = 0.1760 (pasa) [K-S de escalon: 0.2054] alfa = 0.18747 beta = 28.2980
+      P(TR): 10: 40.30  30: 46.35  35: 47.19  70: 50.92  100: 52.84  150: 55.01  200: 56.55  250: 57.74  500: 61.44  1000: 65.14
+    mejor ajuste K-S (menor D): lognormal_2p
+  -- Dick-Peschke (ec. 16), Tabla 6.8: I = P24 (d/1440)^0.25 / (d/60) --
+    48 celdas recalculadas con la P24 impresa a 2 decimales: desvio maximo = 0.013 mm/h
+    ejemplo T = 70, d = 20 min: 62.71 (impreso 62.71)
+  -- 15 microcuencas: Temez (ec. 30) vs Tabla 6.5; rango 0.25-24 h; Kirpich y su poblacion 3-10 % --
+   id    A km2   L m   S      Temez_min imp    en rango  Kirpich_min   Q_doc35  I_doc35 | MH: I_dp(tc Temez) K     Q35(C=0.5,K)  dif% vs doc
+   A1   0.8320  1147 0.3663    24.18  24.18  si        6.50        5.20    44.99  |   48.00           1.022    5.68       +9.1   [I doc recalc 44.99; Q doc recalc 5.20]
+   A2   1.3730  1055 0.4120    22.19  22.19  si        5.83        9.37    49.16  |   51.19           1.020    9.97       +6.4   [I doc recalc 49.16; Q doc recalc 9.37]
+   A3   0.3670   775 0.3679    17.93  17.93  si        4.80        2.88    56.53  |   60.05           1.016    3.11       +8.0   [I doc recalc 56.51; Q doc recalc 2.88]
+   A4   0.2801   884 0.2664    21.07  21.07  si        6.02        1.91    49.01  |   53.21           1.019    2.11      +10.5   [I doc recalc 49.02; Q doc recalc 1.91]
+   A5   0.4054   745 0.3838    17.26  17.26  si        4.58        3.30    58.56  |   61.79           1.015    3.53       +7.1   [I doc recalc 58.56; Q doc recalc 3.30]
+   A6   0.3867   638 0.3134    15.95  15.95  si        4.40        3.37    62.79  |   65.58           1.013    3.57       +6.0   [I doc recalc 62.80; Q doc recalc 3.37]
+   A7   0.3336   640 0.3595    15.57  15.57  si        4.18        2.95    63.62  |   66.75           1.013    3.14       +6.3   [I doc recalc 63.63; Q doc recalc 2.95]
+   A8   0.1401   466 0.3292    12.44  12.44  NO        3.39        1.46    74.98  |   78.99           1.010    1.55       +6.4   [I doc recalc 75.00; Q doc recalc 1.46]
+   A9   0.3156   478 0.3222    12.74  12.74  NO        3.48        3.31    75.54  |   77.62           1.010    3.44       +3.9   [I doc recalc 75.54; Q doc recalc 3.31]
+   A10  0.1381   318 0.3871     9.02   9.02  NO        2.37        1.89    98.36  |  100.51           1.007    1.94       +2.7   [I doc recalc 98.39; Q doc recalc 1.89]
+   A11  0.0901   252 0.3273     7.81   7.81  NO        2.11        1.38   110.06  |  112.05           1.006    1.41       +2.3   [I doc recalc 110.06; Q doc recalc 1.38]
+   A12  0.2564   300 0.4250     8.48   8.48  NO        2.19        3.76   105.58  |  105.29           1.006    3.78       +0.4   [I doc recalc 105.57; Q doc recalc 3.76]
+   A13  0.3455   458 0.1904    13.63  13.63  NO        4.13        3.46    72.14  |   73.79           1.011    3.58       +3.6   [I doc recalc 72.16; Q doc recalc 3.46]
+   A14  0.3883   649 0.3057    16.23  16.23  si        4.50        3.34    61.88  |   64.71           1.014    3.54       +6.0   [I doc recalc 61.87; Q doc recalc 3.34]
+   A15  0.4497   434 0.3734    11.51  11.51  NO        3.05        5.19    83.10  |   83.75           1.009    5.28       +1.8   [I doc recalc 83.12; Q doc recalc 5.19]
+    P24 Gumbel TR 35 = 53.729 mm ; TR 70 = 60.890 mm
+
+==============================================================================
+CASO 5. UPAO La Jalca, estacion Chachapoyas (dos series)
+==============================================================================
+  [serie A, Cuadro 18 (1964-73, 1995-2001), 17 años] n = 17  media = 40.0765  s(n-1) = 15.3262  d(0.05) = 0.3180 (cuantil exacto K-S (la Tabla N 03 no trae la fila))
+    normal: D = 0.1591 (pasa) [K-S de escalon: 0.2081]
+      P(TR): 2: 40.08  5: 52.98  10: 59.72  25: 66.91  50: 71.55  100: 75.73  175: 78.84  500: 84.19
+    lognormal_2p: D = 0.1149 (pasa) [K-S de escalon: 0.1378] Y = 3.6387 Sy = 0.3140 (log10: 1.5803, 0.1364)
+      P(TR): 2: 38.04  5: 49.55  10: 56.89  25: 65.92  50: 72.51  100: 78.99  175: 84.18  500: 93.93
+    gumbel: D = 0.1032 (pasa) [K-S de escalon: 0.1550] alfa = 0.08368 beta = 33.1797
+      P(TR): 2: 37.56  5: 51.10  10: 60.07  25: 71.40  50: 79.81  100: 88.15  175: 94.87  500: 107.43
+    mejor ajuste K-S (menor D): gumbel
+    normal: D 0.1591 vs impreso 0.1591; P: 10: 59.72/59.72  50: 71.55/71.56  100: 75.73/75.74  175: 78.84/78.85  500: 84.19/84.19
+    lognormal_2p: D 0.1149 vs impreso 0.1149; P: 10: 56.89/56.9  50: 72.51/72.52  100: 78.99/79.0  175: 84.18/84.2  500: 93.93/93.94
+    gumbel: D 0.1032 vs impreso 0.1032; P: 10: 60.07/60.07  50: 79.81/79.81  100: 88.15/88.15  175: 94.87/94.86  500: 107.43/107.43
+    critico impreso 0.3298 = 1.36/raiz(17) = 0.3298; exacto: 0.3180
+  [serie B, tabla Gumbel (1965-73, 2004-11), 17 años] n = 17  media = 36.8059  s(n-1) = 7.8688  d(0.05) = 0.3180 (cuantil exacto K-S (la Tabla N 03 no trae la fila))
+    normal: D = 0.1388 (pasa) [K-S de escalon: 0.1617]
+      P(TR): 2: 36.81  5: 43.43  10: 46.89  25: 50.58  50: 52.97  100: 55.11  175: 56.71  500: 59.45
+    lognormal_2p: D = 0.1317 (pasa) [K-S de escalon: 0.1546] Y = 3.5851 Sy = 0.2071 (log10: 1.5570, 0.0900)
+      P(TR): 2: 36.06  5: 42.92  10: 47.02  25: 51.82  50: 55.17  100: 58.38  175: 60.88  500: 65.45
+    gumbel: D = 0.1253 (pasa) [K-S de escalon: 0.1482] alfa = 0.16299 beta = 33.2649
+      P(TR): 2: 35.51  5: 42.47  10: 47.07  25: 52.89  50: 57.21  100: 61.49  175: 64.94  500: 71.39
+    mejor ajuste K-S (menor D): gumbel
+    suma 625.7 vs 625.7; SC 990.7 vs 990.7; media 36.81 vs 36.81; s 7.87 vs 7.87; 1/alfa 6.136 vs 6.14; beta 33.265 vs u 33.26
+    XT' impreso vs Gumbel momentos del Manual: 2: 35.5137/35.5133 (+0.001%)  5: 42.4678/42.4672 (+0.001%)  10: 47.0721/47.0712 (+0.002%)  25: 52.8896/52.8885 (+0.002%)  50: 57.2053/57.2041 (+0.002%)  100: 61.4892/61.4878 (+0.002%)  500: 71.3886/71.3868 (+0.003%)
+    años comunes con valor distinto entre las dos series: [(1973, 25.5, 27.0)]
+  -- alcantarilla 19: Kirpich impreso con exponente 0.76: 13.20 min (impreso 14.27); con 0.77 (Manual): 14.27 min
+     I = 32.714 (impreso 32.72327); Q = 0.278·0.35·I·1.25 = 3.980 (impreso 3.99); pendiente 0.211 fuera de 3-10 %
+     MH (Gumbel serie B, f = 1.00, Dick-Peschke en tc Kirpich 0.77 = 14.27 min): P24(50) = 57.21; I = 75.89 mm/h; Q/C = 26.371
+
+==============================================================================
+CASO 6. ESPOL Intervalles (Ecuador): cuatro series INAMHI, solo K-S
+==============================================================================
+  La Argelia: n = 50 (impreso 50), media 43.01, s 10.94, d = 0.1884
+     normal: D ec.13 = 0.1021; D de escalon = 0.1119; Hydrognomon = 0.10209; P25/50/100 = 62.2/65.5/68.5
+     lognormal_2p: D ec.13 = 0.0689; D de escalon = 0.0759; Hydrognomon = 0.07205; P25/50/100 = 65.1/70.4/75.4
+     gumbel: D ec.13 = 0.0896; D de escalon = 0.0967; Hydrognomon = 0.0896; P25/50/100 = 65.4/71.4/77.3
+  Gonzanama: n = 48 (impreso 48), media 68.59, s 26.14, d = 0.1922
+     normal: D ec.13 = 0.0937; D de escalon = 0.1124; Hydrognomon = 0.09365; P25/50/100 = 114.4/122.3/129.4
+     lognormal_2p: D ec.13 = 0.0600; D de escalon = 0.0787; Hydrognomon = 0.06859; P25/50/100 = 118.8/132.1/145.3
+     gumbel: D ec.13 = 0.0686; D de escalon = 0.0873; Hydrognomon = 0.06861; P25/50/100 = 122.0/136.4/150.6
+  Malacatos: n = 49 (impreso 49), media 43.30, s 12.00, d = 0.1903
+     normal: D ec.13 = 0.0895; D de escalon = 0.1001; Hydrognomon = 0.08111; P25/50/100 = 64.3/67.9/71.2
+     lognormal_2p: D ec.13 = 0.0709; D de escalon = 0.0843; Hydrognomon = 0.07291; P25/50/100 = 68.3/74.5/80.4
+     gumbel: D ec.13 = 0.0787; D de escalon = 0.0901; Hydrognomon = 0.08131; P25/50/100 = 67.8/74.4/80.9
+  Catamayo: n = 29 (impreso 29), media 39.27, s 17.39, d = 0.2457
+     normal: D ec.13 = 0.2360; D de escalon = 0.2601; Hydrognomon = 0.23595; P25/50/100 = 69.7/75.0/79.7
+     lognormal_2p: D ec.13 = 0.1672; D de escalon = 0.1913; Hydrognomon = 0.15415; P25/50/100 = 68.8/76.8/84.7
+     gumbel: D ec.13 = 0.1676; D de escalon = 0.1918; Hydrognomon = 0.16758; P25/50/100 = 74.8/84.3/93.8
+
+==============================================================================
+COMPLEMENTOS
+==============================================================================
+  -- UPeU: Temez con la pendiente de la MICROCUENCA (S) en vez de la del cauce (s) --
+   id   Tc_h(S)  K(S)   I(34) con S   I_imp   dif%
+    1   0.623  1.038   27.32         27.10  +0.81
+    2   0.553  1.033   29.97         30.04  -0.24
+    3   0.736  1.046   24.83         24.80  +0.14
+    4   0.851  1.055   22.49         22.49  -0.01
+    5   0.790  1.051   23.56         23.40  +0.67
+    6   0.920  1.060   21.42         21.36  +0.28
+    8   1.125  1.076   18.46         18.29  +0.96
+    9   0.844  1.055   22.42         22.52  -0.43
+   10   0.353  1.019   39.32         39.42  -0.25
+   11   0.411  1.023   36.08         36.65  -1.55
+   12   0.596  1.036   28.76         28.82  -0.21
+   13   0.443  1.025   35.42         35.49  -0.21
+  -- Tumbes: cuencas de 10 km2 o mas, racional modificado del Manual con el CN de la Tabla 67 --
+   C-6: A 102.71 km2, CN 62, Tc 7.176 h, K 1.4562, KA 0.8659; TR35: I 76.2, C 0.879, Q 2784.3 (doc HU 1326.75); TR70: I 98.5, C 0.916, Q 3752.1 (doc HU 1827.93)
+   C-7: A 12.11 km2, CN 70, Tc 3.251 h, K 1.2377, KA 0.9278; TR35: I 143.2, C 0.928, Q 553.6 (doc HU 252.71); TR70: I 185.2, C 0.951, Q 734.3 (doc HU 345.23)
+   C-13: A 17.3 km2, CN 62, Tc 4.654 h, K 1.3281, KA 0.9175; TR35: I 110.4, C 0.879, Q 619.7 (doc HU 269.05); TR70: I 142.8, C 0.916, Q 835.1 (doc HU 372.98)
+   C-16: A 20.43 km2, CN 70, Tc 3.776 h, K 1.2732, KA 0.9126; TR35: I 127.1, C 0.928, Q 852.7 (doc HU 392.15); TR70: I 164.4, C 0.951, Q 1131.0 (doc HU 534.64)
+   C-17: A 13.05 km2, CN 62, Tc 3.154 h, K 1.2309, KA 0.9256; TR35: I 145.9, C 0.879, Q 572.5 (doc HU 247.81); TR70: I 188.6, C 0.916, Q 771.5 (doc HU 345.99)

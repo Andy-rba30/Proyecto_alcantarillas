@@ -1,0 +1,49 @@
+# DATOS DE CASO REAL PUBLICADO. Ramos Estrada (UNTumbes, 2025), tesis.pdf, Tabla 26, p. 64: area, longitud de cauce y cotas maxima y minima.
+# S_cauce_cuenca = (cota max - cota min) / L, a 4 decimales: la tabla la imprime a 2 y la columna TEMEZ de la Tabla 27
+# (p. 65) solo se reproduce con la no redondeada. H_desnivel_m = cota max - cota min. CN: columna «N» de la Tabla 67 (p. 93),
+# solo en las cinco cuencas de 10 km2 o mas.
+# NO PUBLICADO, VEHICULO DEL VERIFICADOR: cobertura, suelo y S_terreno. La tesis da C = 0.10, 0.15 o 0.20 por cuenca
+# (Tabla 66, p. 92) sin decir de que fila; se pone bosques/permeable con S_terreno 0.03, 0.10 o 0.30 para que la
+# Tabla N 08 lea ese mismo C (suave 0.10, media 0.15, alta 0.20). S_terreno NO es un dato del caso.
+id,area_km2,L_cauce_m,S_cauce_cuenca,S_terreno,cobertura,suelo,estacion,metodo_tc,H_desnivel_m,ajuste_kirpich,CN
+C-1,0.25,910,0.0714,0.1,bosques_densa_vegetacion,permeable,Cañaveral,temez,65,,
+C-2,0.94,2210,0.0385,0.03,bosques_densa_vegetacion,permeable,Cañaveral,temez,85,,
+C-3,0.56,1830,0.0497,0.03,bosques_densa_vegetacion,permeable,Cañaveral,temez,91,,
+C-4,0.18,810,0.0259,0.03,bosques_densa_vegetacion,permeable,Cañaveral,temez,21,,
+C-5,2.31,2600,0.0635,0.1,bosques_densa_vegetacion,permeable,Cañaveral,temez,165,,
+C-6,102.71,23880,0.018,0.03,bosques_densa_vegetacion,permeable,Cañaveral,temez,430,,62
+C-7,12.11,8460,0.0183,0.03,bosques_densa_vegetacion,permeable,Cañaveral,temez,155,,70
+C-8,0.11,470,0.0702,0.1,bosques_densa_vegetacion,permeable,Cañaveral,temez,33,,
+C-9,1.23,1900,0.0684,0.1,bosques_densa_vegetacion,permeable,Cañaveral,temez,130,,
+C-10,0.31,1140,0.0886,0.1,bosques_densa_vegetacion,permeable,Cañaveral,temez,101,,
+C-11,0.27,930,0.1161,0.1,bosques_densa_vegetacion,permeable,Cañaveral,temez,108,,
+C-12,1.1,1570,0.0841,0.1,bosques_densa_vegetacion,permeable,Cañaveral,temez,132,,
+C-13,17.3,14260,0.0224,0.03,bosques_densa_vegetacion,permeable,Cañaveral,temez,319,,62
+C-14,0.22,950,0.0242,0.03,bosques_densa_vegetacion,permeable,Cañaveral,temez,23,,
+C-15,0.65,1360,0.025,0.03,bosques_densa_vegetacion,permeable,Cañaveral,temez,34,,
+C-16,20.43,11650,0.03,0.03,bosques_densa_vegetacion,permeable,Cañaveral,temez,349,,70
+C-17,13.05,9780,0.0383,0.03,bosques_densa_vegetacion,permeable,Cañaveral,temez,375,,62
+C-18,0.68,1370,0.1299,0.1,bosques_densa_vegetacion,permeable,Cañaveral,temez,178,,
+C-19,0.14,680,0.1647,0.1,bosques_densa_vegetacion,permeable,Cañaveral,temez,112,,
+C-20,0.1,440,0.2864,0.3,bosques_densa_vegetacion,permeable,Cañaveral,temez,126,,
+C-21,1.04,1620,0.1167,0.1,bosques_densa_vegetacion,permeable,Cañaveral,temez,189,,
+C-22,1.92,2680,0.0802,0.1,bosques_densa_vegetacion,permeable,Cañaveral,temez,215,,
+C-23,0.17,880,0.0273,0.03,bosques_densa_vegetacion,permeable,Cañaveral,temez,24,,
+C-24,2.57,4150,0.0564,0.1,bosques_densa_vegetacion,permeable,Cañaveral,temez,234,,
+C-25,0.69,1750,0.0651,0.1,bosques_densa_vegetacion,permeable,Cañaveral,temez,114,,
+C-26,0.19,1030,0.0835,0.1,bosques_densa_vegetacion,permeable,Cañaveral,temez,86,,
+C-27,0.18,460,0.1261,0.1,bosques_densa_vegetacion,permeable,Cañaveral,temez,58,,
+C-28,2.86,2290,0.1013,0.1,bosques_densa_vegetacion,permeable,Cañaveral,temez,232,,
+C-29,0.2,670,0.0896,0.1,bosques_densa_vegetacion,permeable,Cañaveral,temez,60,,
+C-30,0.14,830,0.1289,0.1,bosques_densa_vegetacion,permeable,Cañaveral,temez,107,,
+C-31,0.13,800,0.115,0.1,bosques_densa_vegetacion,permeable,Cañaveral,temez,92,,
+C-32,0.16,1030,0.1388,0.1,bosques_densa_vegetacion,permeable,Cañaveral,temez,143,,
+C-33,0.11,520,0.1615,0.1,bosques_densa_vegetacion,permeable,Cañaveral,temez,84,,
+C-34,3.78,4770,0.0587,0.1,bosques_densa_vegetacion,permeable,Cañaveral,temez,280,,
+C-35,8.1,7360,0.0429,0.03,bosques_densa_vegetacion,permeable,Cañaveral,temez,316,,
+C-36,1.35,2340,0.0859,0.1,bosques_densa_vegetacion,permeable,Cañaveral,temez,201,,
+C-37,0.17,1020,0.0941,0.1,bosques_densa_vegetacion,permeable,Cañaveral,temez,96,,
+C-38,0.91,1680,0.106,0.1,bosques_densa_vegetacion,permeable,Cañaveral,temez,178,,
+C-39,0.12,490,0.0633,0.1,bosques_densa_vegetacion,permeable,Cañaveral,temez,31,,
+C-40,1.32,2210,0.0729,0.1,bosques_densa_vegetacion,permeable,Cañaveral,temez,161,,
+C-41,0.34,1170,0.0581,0.1,bosques_densa_vegetacion,permeable,Cañaveral,temez,68,,

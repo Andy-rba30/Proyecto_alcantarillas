@@ -1,0 +1,39 @@
+# DATOS DE CASO REAL PUBLICADO. Campos Muñoz e Inga Yopan (UPAO, 2016), La Jalca-Nueva Esperanza, tesis.pdf. Estacion Chachapoyas, DOS series:
+# «Chachapoyas-A»: Cuadro N 18, PDF 91-92 (imp. 71-72), 1964-73 y 1995-2001 (la de los Cuadros 19 y 20).
+# «Chachapoyas-B»: tabla mensual y tabla Gumbel, PDF 113-114 (imp. 93-94), 1965-73 y 2004-11 (la de las curvas IDF).
+# 1973 vale 25.5 en la A y 27.0 en la B. Columna fen: la tesis no declara años FEN; «no» es DECLARACION DEL VERIFICADOR.
+estacion,anio,p24_mm,fen
+Chachapoyas-A,1964,29,no
+Chachapoyas-A,1965,29.5,no
+Chachapoyas-A,1966,44.3,no
+Chachapoyas-A,1967,37.4,no
+Chachapoyas-A,1968,45,no
+Chachapoyas-A,1969,36,no
+Chachapoyas-A,1970,30,no
+Chachapoyas-A,1971,28,no
+Chachapoyas-A,1972,47,no
+Chachapoyas-A,1973,25.5,no
+Chachapoyas-A,1995,90.3,no
+Chachapoyas-A,1996,37.5,no
+Chachapoyas-A,1997,46.7,no
+Chachapoyas-A,1998,42.4,no
+Chachapoyas-A,1999,31.5,no
+Chachapoyas-A,2000,28.4,no
+Chachapoyas-A,2001,52.8,no
+Chachapoyas-B,1965,29.5,no
+Chachapoyas-B,1966,44.3,no
+Chachapoyas-B,1967,37.4,no
+Chachapoyas-B,1968,45,no
+Chachapoyas-B,1969,36,no
+Chachapoyas-B,1970,30,no
+Chachapoyas-B,1971,28,no
+Chachapoyas-B,1972,47,no
+Chachapoyas-B,1973,27,no
+Chachapoyas-B,2004,31.5,no
+Chachapoyas-B,2005,30.5,no
+Chachapoyas-B,2006,44.5,no
+Chachapoyas-B,2007,33.9,no
+Chachapoyas-B,2008,41.4,no
+Chachapoyas-B,2009,53.9,no
+Chachapoyas-B,2010,35.1,no
+Chachapoyas-B,2011,30.7,no
