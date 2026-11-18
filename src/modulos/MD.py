@@ -158,12 +158,15 @@ Excepciones
                             si es un dato del punto, en la Fase 5
                             (correcciones de VE-2, A1 y N1).
     DatoInvalidoError       llega desde M3 / M4 / M5: un dato que no puede
-                            ser. Si un candidato cierra, el material que lo
-                            detecto se descarta; si ninguno cierra y lo
-                            levanto la Fase 5, sale esta excepcion con su
-                            `campo` cuando el dato detuvo un escalon que
-                            cumplia lo demas o a todos los candidatos
-                            (`_exigir_datos_validos`, T11-03).
+                            ser. Sale con su `campo` si lo levanto la Fase 5
+                            en un material anterior al que cierra
+                            (`_exigir_datos_validos_al_aceptar`, abierto 3
+                            de T11-03) o, si ninguno cierra, cuando detuvo
+                            en la Fase 5 un escalon que cumplia lo demas o
+                            detuvo a todos los candidatos, tambien antes de
+                            la Fase 5 (`_exigir_datos_validos`, T11-03 y su
+                            abierto 4). Si no, el material que lo detecto
+                            se descarta como «no evaluable».
     CriterioPendienteError  llega desde M2 o M4: un criterio [A] sin valor.
 
 Uso
@@ -1019,9 +1022,12 @@ def disenar_punto(punto: PuntoCritico, *, L: float, TW: float,
 
     Y UN DATO INVALIDO DEL PUNTO NO ES «NO FACTIBLE» (T11-03, el «hermano»):
     si ningun candidato cierra y un `DatoInvalidoError` de un dato del punto,
-    levantado por la Fase 5, detuvo un escalon que cumplia lo demas --o a
-    todos los candidatos--, sale esa excepcion, con su `campo`. Ver
-    `_exigir_datos_validos`, que dice tambien lo que deja fuera.
+    levantado por la Fase 5, detuvo un escalon que cumplia lo demas --o un
+    dato invalido del punto, de la Fase 5 o de antes, detuvo a todos los
+    candidatos--, sale esa excepcion, con su `campo`. Y si un candidato
+    cierra, el de la Fase 5 en un material anterior lo bloquea igual. Ver
+    `_exigir_datos_validos` y `_exigir_datos_validos_al_aceptar`, que dicen
+    tambien lo que dejan fuera.
 
     Distincion entre BLOQUEADO y NO FACTIBLE
     ----------------------------------------
@@ -1067,7 +1073,7 @@ def disenar_punto(punto: PuntoCritico, *, L: float, TW: float,
     faltantes: List[DatoFaltanteError] = []
     no_evaluables: List[MetodoNoEvaluableError] = []
     invalidos_de_criterio: List[DatoInvalidoError] = []
-    invalidos_del_punto: List[DatoInvalidoError] = []      # T11-03 (C)
+    invalidos_del_punto: List[DatoInvalidoError] = []      # T11-03 (C, 3, 4)
     # T11-03 (A, B): el escalon que no cupo de cada material descartado por
     # rasante, con su material -- de ahi salen el rotulo y el delta del punto.
     por_rasante: List[Tuple[Material, PasoDiseno, Tuple[PasoDiseno, ...]]] = []
@@ -1134,17 +1140,18 @@ def disenar_punto(punto: PuntoCritico, *, L: float, TW: float,
                 fallos.append(f"{material.nombre}: {_motivo_material_fallido(exc)}")
                 invalidos_de_criterio.append(exc)
                 continue
-            # Un dato invalido DEL PUNTO sigue siendo del material que lo
-            # detecto mientras algun candidato cierre. Si ninguno cierra y
-            # lo levanto la FASE 5 --la excepcion trae lo que se le evaluo
-            # antes, `verificaciones_completadas`--, decide
-            # `_exigir_datos_validos` (T11-03, el «hermano»): no se declara
-            # «no factible» un punto al que hay que CORREGIRLE un dato. El
-            # escalon que no cabe bajo la subrasante ya no llega aqui:
-            # `disenar_material` lo devuelve como descarte por rasante.
+            # Un dato invalido DEL PUNTO no se traga (T11-03, el «hermano», y
+            # sus abiertos 3 y 4): se acumula, lo levantara la Fase 5 --la
+            # excepcion trae lo que se le evaluo antes,
+            # `verificaciones_completadas`-- o M3 / M4 antes de ella. Si un
+            # candidato posterior cierra, el de la Fase 5 lo bloquea
+            # (`_exigir_datos_validos_al_aceptar`); si ninguno cierra, decide
+            # `_exigir_datos_validos`: no se declara «no factible» un punto
+            # al que hay que CORREGIRLE un dato. El escalon que no cabe bajo
+            # la subrasante ya no llega aqui: `disenar_material` lo devuelve
+            # como descarte por rasante.
             fallos.append(f"{material.nombre}: {_motivo_material_fallido(exc)}")
-            if _lo_levanto_la_fase_5(exc):
-                invalidos_del_punto.append(exc)
+            invalidos_del_punto.append(exc)
             continue
         except ErrorProyecto as exc:
             # Un material que revienta se descarta COMO MATERIAL y el bucle
@@ -1165,6 +1172,7 @@ def disenar_punto(punto: PuntoCritico, *, L: float, TW: float,
             _exigir_criterios_declarados(pendientes)
             _exigir_criterios_validos(invalidos_de_criterio)
             _exigir_metodo_evaluable(no_evaluables)
+            _exigir_datos_validos_al_aceptar(invalidos_del_punto)
             _exigir_datos_presentes(faltantes)
             # --- VE-3.13 (decision 8 del dueño) --- si el diametro lo
             # goberno el NIVEL DEL RECEPTOR, se dice; el diametro no cambia.
@@ -1437,32 +1445,33 @@ def _exigir_datos_validos(invalidos: Sequence[DatoInvalidoError],
                           n_candidatos: int) -> None:
     """
     --- T11-03 (el «hermano») --- Cuando NINGUN candidato cierra, un
-    `DatoInvalidoError` de un DATO DEL PUNTO que levanto la FASE 5 no se
-    degrada a «no factible» (el caudal del evento extremo menor que el de
-    diseño, que V8 rechaza): el revisor tiene que CORREGIR un dato y el
-    informe le decia que no existe diseño, con `campo: None`. Sale el
-    primero, con su campo -- el bloqueo DATO_INVALIDO --, por el MISMO
-    patron que el dato que falta (PC-28 y T-5), con sus dos mitades:
+    `DatoInvalidoError` de un DATO DEL PUNTO no se degrada a «no factible»
+    (el caudal del evento extremo menor que el de diseño, que V8 rechaza):
+    el revisor tiene que CORREGIR un dato y el informe le decia que no
+    existe diseño, con `campo: None`. Sale el primero, con su campo -- el
+    bloqueo DATO_INVALIDO --, por el MISMO patron que el dato que falta
+    (PC-28 y T-5), con sus dos mitades:
 
-      * DECISIVO: el dato invalido detuvo un escalon que cumplia todo lo que
-        la Fase 5 le habia evaluado. Ese escalon no fallo: a ese material
-        solo lo separa de un diseño un dato mal escrito;
-      * COMUN A TODOS: a todos los candidatos los detuvo en la Fase 5 un
-        dato invalido, cumplieran o no lo anterior.
+      * DECISIVO: el dato invalido lo levanto la Fase 5 y detuvo un escalon
+        que cumplia todo lo que la tabla le habia evaluado. Ese escalon no
+        fallo: a ese material solo lo separa de un diseño un dato mal
+        escrito;
+      * COMUN A TODOS: a todos los candidatos los detuvo un dato invalido
+        del punto, cumplieran o no lo anterior. DESDE EL ABIERTO 4 DE LA
+        FICHA T11-03 cuenta tambien el que M3 o M4 levantan ANTES de la
+        Fase 5: el diametro de arranque negativo de la rama de error de la
+        linea base (`--declarar 'diametros_normalizados={"inicio": -0.90,
+        ...}'`) detiene a los tres en M3 sobre 'D', ningun material se
+        evaluo, y el punto salia «no factible». MD no reinterpreta la
+        excepcion: sale con el `campo` que la seccion le puso.
 
     Fuera de esas dos, vale lo de la ficha T4-10 para el dato que falta: el
-    material que se detuvo sobre un escalon que YA incumplia queda citado
-    como «no evaluable» y el punto es lo que son los que si se evaluaron.
-
-    `invalidos` trae SOLO los de la Fase 5 (`_lo_levanto_la_fase_5`). TRES
-    COSAS QUEDAN FUERA, a proposito y dichas
-    en la ficha T11-03: (1) el caso en que un candidato posterior cierra
-    --ese resultado no se toca--; (2) el `DatoInvalidoError` que M3 o M4
-    levantan ANTES de la Fase 5 (un diametro de arranque negativo declarado
-    en 'diametros_normalizados' llega como 'D', que no es un dato del
-    punto): sigue saliendo como hasta hoy, material «no evaluable»; y (3) el
-    valor invalido de un CRITERIO, que va por `_exigir_criterios_validos`.
-    El escalon que no cabe bajo la subrasante ya no es un dato invalido.
+    material que se detuvo sobre un escalon que YA incumplia, o antes de la
+    Fase 5, queda citado como «no evaluable» y el punto es lo que son los
+    que si se evaluaron. El caso en que un candidato posterior cierra es de
+    `_exigir_datos_validos_al_aceptar`; el valor invalido de un CRITERIO va
+    por `_exigir_criterios_validos`. El escalon que no cabe bajo la
+    subrasante ya no es un dato invalido.
     """
     decisivos = [exc for exc in invalidos
                  if _detuvo_un_escalon_que_cumplia(exc)]
@@ -1470,6 +1479,31 @@ def _exigir_datos_validos(invalidos: Sequence[DatoInvalidoError],
         raise decisivos[0]
     if invalidos and len(invalidos) == n_candidatos:
         raise invalidos[0]
+
+
+def _exigir_datos_validos_al_aceptar(
+        invalidos: Sequence[DatoInvalidoError]) -> None:
+    """
+    --- T11-03, abierto 3 --- Antes de ACEPTAR un candidato, ninguno de los
+    anteriores --todos mas preferentes en el orden de M2-- puede haberse
+    detenido en la Fase 5 por un dato invalido DEL PUNTO. Es la regla de
+    `_exigir_datos_presentes` (ficha T4-10) para el dato que falta y la de
+    `_exigir_criterios_validos` para el criterio invalido: un material que no
+    termino de recorrer su catalogo no se evaluo, y adoptar el siguiente seria
+    elegirlo por descarte. Hasta esta correccion ese material se descartaba
+    en silencio y el punto salia dimensionado con el siguiente. Se relanza el
+    primero, con su `campo`, cumpliera o no el escalon en que se detuvo.
+
+    EL ALCANCE ES EL DE T11-03 (C) Y EL DE VE-2 A1/N1: el que levanto la
+    Fase 5 (`_lo_levanto_la_fase_5`) y nombra un dato del punto (el de un
+    criterio no llega a `invalidos`). El que M3 o M4 levantan antes de la
+    Fase 5 en UN material no bloquea al que cierra (`tests/test_MD.py::
+    test_un_material_que_revienta_no_impide_que_otro_cierre`): decide solo
+    cuando detiene a todos (`_exigir_datos_validos`).
+    """
+    de_la_fase_5 = [exc for exc in invalidos if _lo_levanto_la_fase_5(exc)]
+    if de_la_fase_5:
+        raise de_la_fase_5[0]
 
 
 def _exigir_criterios_validos(

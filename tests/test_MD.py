@@ -38,7 +38,7 @@ from src.constantes_normativas import Y_SOBRE_D_MAX
 from src.modelos import (ControlGobernante, CriterioPendienteError,
                      DatoFaltanteError, DatoInvalidoError,
                      DisenoNoFactibleError, ErrorProyecto, Familia,
-                     PuntoCritico, TipoDePerfil, TipoMaterial, Verificacion)
+                     LimiteNumericoError, PuntoCritico, TipoDePerfil, TipoMaterial, Verificacion)
 from src.modulos.M0_carga import cargar_puntos
 from src.modulos.M2_material import catalogo
 from src.modulos.MD import (FUNCION_VERIFICACIONES, MENSAJE_DIAMETRO_SUPERADO,
@@ -568,15 +568,17 @@ def test_si_todos_los_materiales_revientan_sigue_siendo_no_factible():
     con DisenoNoFactibleError, como cuando se agota el catalogo. El motivo
     lleva los tres materiales, cada uno con su causa citada entera.
 
-    SIGUE VALIENDO TRAS T11-03, y hay que decir por que: el doble levanta su
-    `DatoInvalidoError` SIN `verificaciones_completadas`, que es como llega
-    el que M3 o M4 rechazan antes de la Fase 5 (el diametro de arranque
-    negativo de la rama de error de la linea base). El dato invalido que
-    levanta la FASE 5 --el que si trae lo evaluado-- ya no termina asi:
-    `tests/test_t11_no_factible_por_rasante.py`.
+    DESDE EL ABIERTO 4 DE LA FICHA T11-03 EL DOBLE NO LEVANTA UN DATO
+    INVALIDO: un `DatoInvalidoError` de un dato del punto que detiene a los
+    tres candidatos --tambien el de antes de la Fase 5, como el diametro de
+    arranque negativo de la rama de error de la linea base-- ya no termina
+    «no factible», sale con su campo (`tests/test_t11_03_diagnostico.py`).
+    Lo que este test fija es el material que REVIENTA por otra causa de
+    proyecto: un `LimiteNumericoError` de la aritmetica.
     """
     verificar = _RevientaMaterial(TipoMaterial.CONCRETO_REFORZADO,
-                                  TipoMaterial.TMC, TipoMaterial.HDPE)
+                                  TipoMaterial.TMC, TipoMaterial.HDPE,
+                                  exc=LimiteNumericoError)
 
     with pytest.raises(DisenoNoFactibleError) as excinfo:
         disenar_punto(_punto(), L=L_CONDUCTO, TW=TW_LIBRE, verificar=verificar)
@@ -585,7 +587,7 @@ def test_si_todos_los_materiales_revientan_sigue_siendo_no_factible():
     for tipo in (TipoMaterial.CONCRETO_REFORZADO, TipoMaterial.TMC,
                  TipoMaterial.HDPE):
         assert catalogo(tipo).nombre in motivo
-    assert "DatoInvalidoError" in motivo
+    assert "LimiteNumericoError" in motivo
     assert "no evaluable" in motivo
 
 

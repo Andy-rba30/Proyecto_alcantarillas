@@ -6819,18 +6819,21 @@ y un test regenera cada uno.
   recubrimiento (`_delta_de_7A`); es cota inferior para ese escalón, y lo dice. A-01 sin
   TW: 0.320 m; B-01 con TW = 1.00 m, sin delta y con V2 en el motivo. **(C)** el dato
   inválido del punto que levanta la Fase 5 sale con su `campo` (`_exigir_datos_validos`).
+- **Cerrado (abiertos 3 y 4, decisión del dueño, README §8; `tests/test_t11_03_diagnostico.py`):**
+  **(3)** un candidato que cierra no se adopta si la Fase 5 detuvo a uno anterior por un dato
+  inválido DEL PUNTO: sale ése, con su `campo` (`_exigir_datos_validos_al_aceptar`, la regla
+  de T4-10). **(4)** el que M3 o M4 levantan antes de la Fase 5 cuenta para «detuvo a todos»:
+  la rama de error de la línea base sale DATO_INVALIDO sobre `D`, no «no factible».
 - **Abierto:** (1) el delta no es el remedio verificado del punto: con la rasante nueva la
   corrida se repite, y un escalón menor que hoy sólo incumple V4 o V7 podría cerrar con
   menos. (2) Si el escalón que no cabe incumple sólo V4, el tamizado daría un delta por
-  resguardo, que depende del HW: no se informa. (3) El resultado aceptado cuando un
-  candidato cierra no se tocó: un material anterior detenido por un dato INVÁLIDO se sigue
-  descartando (para el dato que FALTA, T4-10 bloquea). (4) El `DatoInvalidoError` que M3 o
-  M4 levantan antes de la Fase 5 sigue saliendo «no factible» (la rama de error de la línea
-  base: diámetro de arranque negativo). (5) Un marco con alturas declaradas no crecientes
-  se detiene en el primer escalón que no cabe, como antes.
+  resguardo, que depende del HW: no se informa. (5) Un marco con alturas declaradas no
+  crecientes se detiene en el primer escalón que no cabe, como antes. (6) El inválido de
+  antes de la Fase 5 que detiene a UN solo material no bloquea ni decide; el `campo` del
+  arranque negativo es `D`, no `diametros_normalizados`.
 - **Qué haría falta:** para (1), el tamizado previo de 7.A corrido antes del bucle con la
-  sección máxima supuesta, que el servicio no corre; para (3) y (4), decisión del dueño:
-  mueven un resultado aceptado y la rama de error de la línea base.
+  sección máxima supuesta, que el servicio no corre; para (6), decisión del dueño, y que M2
+  valide el arranque de la progresión.
 - **Dónde vive:** `src/modulos/MD.py::_resumen_por_rasante`
 
 ## T11-04 · Validación externa: HDS-5 y HEC-14 contra sus ejemplos resueltos; HY-8 sólo como procedimiento, con la tolerancia que el dueño aceptó
