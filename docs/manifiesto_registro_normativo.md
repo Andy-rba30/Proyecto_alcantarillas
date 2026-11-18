@@ -288,7 +288,7 @@ línea que se pueda romper.
 
 > **`AASHTO_LRFD_9.10.5.5.2.2#T1`** — La tabla, «Resistance Factors for Geotechnical Resistance of Shallow Foundations at the Strength Limit State», esta transcrita entera en `constantes_normativas.PHI_ZAPATAS_T10_5_5_2_2_1`: portante 0.50 (teorico en arcilla), 0.50 (arena con CPT), 0.45 (arena con SPT), 0.45 (semiempirico), 0.45 (roca), 0.55 (ensayo de placa); deslizamiento 0.90 (prefabricado sobre arena), 0.80 (vaciado in situ sobre arena), 0.85 (concreto sobre arcilla), 0.90 (suelo sobre suelo); pasivo 0.50. Es la tabla que el Manual de Puentes transcribe (2.8.1.1.12.6).
 
-> **`AASHTO_LRFD_9.10.6.1.2#DESPLANTE`** — La regla general de las zapatas superficiales de la Seccion 10: bajo la socavacion, sin margen. La de las estructuras enterradas (12.6.5) le añade 2.0 ft, y es la que el proyecto aplica al cabezal de salida.
+> **`AASHTO_LRFD_9.10.6.1.2#DESPLANTE`** — La regla general de las zapatas superficiales de la Seccion 10: bajo la socavacion, sin margen. Es la que el proyecto aplica al cabezal de salida desde VE-3.15 (decision 14 del dueño); la de las estructuras enterradas (12.6.5) le añade 2.0 ft y queda como el extremo alto de la ventana.
 
 > **`AASHTO_LRFD_9.10.6.3.1.1#NIVEL_FREATICO`** — La misma pagina fija q_R = phi_b·q_n (ec. 10.6.3.1.1-1) y manda usar las dimensiones EFECTIVAS de la zapata cuando la carga es excentrica («shall be used instead of the overall dimensions L and B in all equations, tables, and figures pertaining to bearing resistance»): el ensamble calcula q_n con B' = B - 2e de cada combinacion.
 
@@ -392,7 +392,7 @@ línea que se pueda romper.
 
 > **`AASHTO_LRFD_9.12.6.5#DENTELLON`** — Es el dentellon (cut-off wall) del borde de la losa de entrega: bajo la socavacion maxima prevista. La misma frase admite la alternativa «or a paved invert»; el proyecto declara las dos cosas -- losa Y dentellon --, que es lo que dibujan las Laminas 02 y 02-A del Manual («LOSA INFERIOR» y «UÑA»).
 
-> **`AASHTO_LRFD_9.12.6.5#ZAPATAS`** — Articulo de la Seccion 12 (estructuras enterradas: las alcantarillas). Abre con «Buried structures shall be designed so that no movement of any part of the structure will occur as a result of scour». El proyecto LEE que el cabezal de salida es parte de la estructura y que su zapata es una de esas «footings»: es una lectura, y por eso la regla es [C] y no [N] (la hoja de ruta pone la Seccion 12 de AASHTO como [C], tabla de la §0.1). 2.0 ft = 0.6096 m exactos (1 ft = 0.3048 m).
+> **`AASHTO_LRFD_9.12.6.5#ZAPATAS`** — Articulo de la Seccion 12 (estructuras enterradas: las alcantarillas). Abre con «Buried structures shall be designed so that no movement of any part of the structure will occur as a result of scour». Si la zapata del cabezal de salida es una de esas «footings» no lo dice: es una lectura, y por eso la regla es [C] y no [N] (la hoja de ruta pone la Seccion 12 de AASHTO como [C], tabla de la §0.1). Desde VE-3.15 (decision 14 del dueño) el proyecto NO aplica este margen al cabezal: es el extremo alto de la ventana de 'margen_zapata_bajo_socavacion_m'. 2.0 ft = 0.6096 m exactos (1 ft = 0.3048 m).
 
 > **`AASHTO_LRFD_9.12.6.6.3#COBERTURA`** — El ARTICULO abre en la pag. impresa 12-21; solo la TABLA esta en la 12-22. Y una correccion contra la ficha de auditoria, no contra el repositorio: NOR-VAC-01 transcribe la fila de Reinforced Concrete Pipe como «raiz(Bc)/8» y el PDF imprime «B'c/8», con Bc' definido en 12-21 como «out-to-out vertical rise of pipe». Es una PRIMA, no un radical: artefacto de la linearizacion de la capa de texto. Corregir en la ficha antes de derivar cualquier numero.
 
@@ -1217,6 +1217,8 @@ línea que se pueda romper.
 | `HEC14.10.2#TW_ALTO` | 10.2 | «10.2 RIPRAP APRON» | pág. impresa **10-18** · PDF 219 | aproximacion | 2026-11-12 · texto |
 | `HEC14.3#CONTINUIDAD` | 3 | «CHAPTER 3: CULVERT OUTLET VELOCITY AND VELOCITY MODIFICATION» | pág. impresa **3-1** · PDF 32 | definicion | 2026-11-12 · texto |
 | `HEC14.3.1.3#BORDE` | 3.1.3 | «3.1.3 Unsubmerged Outlets (Brink Depth)» | pág. impresa **3-3** · PDF 34 | definicion | 2026-11-12 · texto |
+| `HEC14.3.1.3#FIGURAS` | 3.1.3 | «3.1.3 Unsubmerged Outlets (Brink Depth)» | pág. impresa **3-3** · PDF 34 | permiso | 2026-11-18 · texto |
+| `HEC14.3.1.3#OTRAS_FORMAS` | 3.1.3 | «3.1.3 Unsubmerged Outlets (Brink Depth)» | pág. impresa **3-3** · PDF 34 | permiso | 2026-11-18 · texto |
 | `HEC14.3.2.2#V_SALIDA_NORMAL` | 3.2.2 | «3.2.2 Unsubmerged Outlets (Normal Depth)» | pág. impresa **3-7** · PDF 38 | aproximacion | 2026-11-17 · texto |
 | `HEC14.5#PEOR_CASO` | 5 | «CHAPTER 5: ESTIMATING SCOUR AT CULVERT OUTLETS» | pág. impresa **5-1** · PDF 54 | definicion | 2026-11-12 · texto |
 | `HEC14.5.1#EC_5_1` | 5.1, Ec. (5.1) | «COHESIONLESS SOILS» | pág. impresa **5-1** · PDF 54 | aproximacion | 2026-11-12 · ambos |
@@ -1231,6 +1233,8 @@ línea que se pueda romper.
 | `HEC14.5.2#EC_5_4` | 5.2, Ec. (5.4) | «COHESIVE SOILS» | pág. impresa **5-7** · PDF 60 | definicion | 2026-11-12 · ambos |
 | `HEC14.5.2#RANGO_IP` | 5.2 | «COHESIVE SOILS» | pág. impresa **5-7** · PDF 60 | aproximacion | 2026-11-12 · texto |
 | `HEC14.D#SOLO_VELOCIDAD` | D | «APPENDIX D: RIPRAP APRON SIZING EQUATIONS» | pág. impresa **D-2** · PDF 281 | recomendacion | 2026-11-12 · texto |
+| `HEC14.F3.3` | 3.1.3, Figure 3.3 | «3.1.3 Unsubmerged Outlets (Brink Depth)» | pág. impresa **3-5** · PDF 36 | definicion | 2026-11-18 · imagen renderizada |
+| `HEC14.F3.4` | 3.1.3, Figure 3.4 | «3.1.3 Unsubmerged Outlets (Brink Depth)» | pág. impresa **3-6** · PDF 37 | definicion | 2026-11-18 · imagen renderizada |
 
 > **`HEC14.1#T1_1_APRON`** — Es la nota 8 de la Table 1.1 «Energy Dissipators and Limitations», y cuelga de la fila «Riprap apron» (Chapter 10), cuya columna de Froude dice «na». La Sec. 10.2 lo dice como poblacion y no como prohibicion: «The most commonly used device for outlet protection, primarily for culverts 1500 mm (60 in) or smaller, is a riprap apron» (pag. impresa 10-16). La tabla se titula «Limitations» y la nota es una de ellas: un conducto mas alto sale como metodo no evaluable. LA FUENTE DA DOS CIFRAS QUE NO COINCIDEN: 60 in son 1.524 m, no 1.500. Rige 1.524 m (`constantes_normativas.HEC14_APRON_ALTURA_MAX_M`), lectura declarada: es la que deja evaluar el ejemplo resuelto de la propia fuente, que usa D = 5.0 ft = 60 in (pag. impresa 10-19). La misma tabla limita la POZA de enrocado (riprap basin) a Fr < 3.
 
@@ -1258,7 +1262,11 @@ línea que se pueda romper.
 
 > **`HEC14.3#CONTINUIDAD`** — Sigue: «The flow area, A, for determining outlet velocity is calculated using the culvert outlet depth that is consistent with the culvert flow type», y el num. 3.1.2 (pag. impresa 3-2, PDF 33) da la regla de HDS-5 que M4 aplica: «the higher of the tailwater or critical depth», o la seccion llena con la salida sumergida (3.1.1). Es la relacion con que M6 asigna a la velocidad de salida su area, A = Q/V, para el tirante equivalente del Froude; los procedimientos de HEC-14 hacen lo mismo («A = Q/Vo», pag. impresa 9-40, PDF 197).
 
-> **`HEC14.3.1.3#BORDE`** — Con el TW bajo el tirante critico, el tirante en el borde de la salida (brink depth) es MENOR que el critico: la velocidad real a la salida es MAYOR que Q/A(yc), que es la que M4 toma por HDS-5 3.1.6. El mismo numeral lo dice al aproximar el borde con las curvas criticas: «Since critical depth is larger than brink depth, determining brink depth in this manner is not conservative, but is acceptable». Las Figuras 3.3 y 3.4 dan el borde y no estan digitalizadas.
+> **`HEC14.3.1.3#BORDE`** — Con el TW bajo el tirante critico, el tirante en el borde de la salida (brink depth) es MENOR que el critico: la velocidad real a la salida es MAYOR que Q/A(yc), que es la que M4 toma por HDS-5 3.1.6. El mismo numeral lo dice al aproximar el borde con las curvas criticas: «Since critical depth is larger than brink depth, determining brink depth in this manner is not conservative, but is acceptable». Las Figuras 3.3 y 3.4 dan el borde: desde el cierre de T8-08 estan digitalizadas (tablas HEC14.F3_3 y HEC14.F3_4) y `M4.tirante_de_borde` las lee.
+
+> **`HEC14.3.1.3#FIGURAS`** — La frase que sigue dice como se leen: «These figures are dimensionless rating curves that indicate the effect on brink depth of tailwater for culverts on mild or horizontal slopes. In order to use these curves, the designer must determine normal depth or tailwater (TW) in the outlet channel and Q/(BD3/2) or Q/D5/2 for the culvert». Y la pag. 3-4 (PDF 35): «When the tailwater depth is low, culverts on mild or horizontal slopes will flow with critical depth near the outlet [...] As the tailwater increases, the depth at the brink increases at a variable rate along the Q/(BD3/2) or Q/D5/2 curve, until a point where the tailwater and brink depth vary linearly at the 45o line on the figures».
+
+> **`HEC14.3.1.3#OTRAS_FORMAS`** — La frase anterior: «For culvert shapes other than rectangular and circular, the brink depth for low tailwater can be approximated from the critical depth curves found in Appendix B». Es el PERMISO con que M4 se queda en el tirante critico donde las figuras no dan lectura, y la razon por la que esa velocidad se rotula como COTA INFERIOR: la fuente dice que el critico es mayor que el borde.
 
 > **`HEC14.3.2.2#V_SALIDA_NORMAL`** — Es la seccion 3.2 «Culverts on Steep Slopes», «culverts flowing with inlet control» (misma pagina). El ejemplo que sigue, «Design Example: Increasing Roughness to Reduce Velocity (SI)» (pag. impresa 3-8, PDF 39), resuelve UN tirante por cada n: con n = 0.012 «y = 0.41(1.524) = 0.625 m», «A = 0.3032(1.524)2 = 0.704 m2» y «Vo, = Q/A = 2.832/0.704 = 4.02 m/s»; con n = 0.024 «y = 0.62(1.524) = 0.945 m», «A = 0.5115(1.524)2 = 1.19 m2» y «Vo, = Q/A = 2.832/1.19 = 2.38 m/s»; y concluye del primero «Since yc > y, the flow is supercritical and exit depth is normal depth». Es lo que sostiene que la velocidad de n_min se mida con el tirante normal de n_min y no con el de n_max (VE-2, ficha VE2-B): ninguna fuente toma el tirante de un n y la velocidad de otro.
 
@@ -1287,6 +1295,10 @@ línea que se pueda romper.
 > **`HEC14.5.2#RANGO_IP`** — LIMITE DE VALIDEZ. El suelo ensayado fue UNA arcilla arenosa (58 % arena, 27 % arcilla, 15 % limo, indice de plasticidad 15; pag. impresa 5-6).
 
 > **`HEC14.D#SOLO_VELOCIDAD`** — Las dos ecuaciones que HEC-14 descarta son las que dimensionan la piedra SOLO con la velocidad de salida: D.2 (Berry, 1948; Peterka, 1978), D50 = α·V² con α = 0.0413 en SI, y D.3 (Searcy, 1967; la de la edicion anterior de HEC-14 y de HEC 11), D50 = 0.692/(S − 1)·V²/(2g). Ninguna de las dos es la de Laushey, que HEC-14 no nombra. El apendice compara seis relaciones sobre diez casos de HY8 y retiene la de Fletcher y Grace (Ec. D.5), que es la Ec. (10.4) del Capitulo 10 escrita sin la gravedad. La lectura de que la ec. (49) del Manual pertenece a la misma familia que D.2 y D.3 es del proyecto y va en `M6_proteccion`, no aqui.
+
+> **`HEC14.F3.3`** — LEIDA POR IMAGEN, con una tolerancia de lectura de 0.01 en yo/D (`tolerancias.TOL_LECTURA_FIGURA_HEC14`). La figura es una imagen incrustada (403 x 659 px la 3.3, 454 x 668 px la 3.4); se extrajo sin reescalar y cada celda se leyo como el centro de la traza de la curva en las dos columnas de pixeles a cuatro pixeles de cada linea vertical de la reticula (TW/D = 0, 0.1, ..., 1.0), promediadas, sobre una escala vertical lineal calibrada con las lineas horizontales (0.05 en yo/D = unos 30 px). Donde la traza cae sobre una linea de la reticula la celda se leyo sobre la pagina renderizada a 200 dpi. Las celdas en que la curva ya se confundio con la recta de 45 grados («the tailwater and brink depth vary linearly at the 45o line», pag. 3-4) llevan el valor de esa recta en la columna. Celda vacia (NO_IMPRESO): la curva no esta dibujada en esa columna --sale por el techo yo/D = 1.0, o arranca a la derecha de TW/D = 0--. Las curvas de trazo DISCONTINUO se transcriben como se dibujan; la figura no dice que significa el trazo, y en la circular la de 6.0 da en TW/D = 0 un borde (0.973 D) MAYOR que el critico de ese caudal (0.955 D), contra la frase «Since critical depth is larger than brink depth» de la pag. 3-3: por eso M4 contrasta toda lectura con el critico y no usa la que no queda debajo. «Ku = 1.811 for SI, Ku = 1.0 for CU» esta impreso dentro de la figura. Ejes: «TW/D» y «yo/D»; familia «KuQ/(BD3/2)» = 0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5 y 4.0 (trazo continuo) y 5.0, 6.0, 7.0 y 8.0 (discontinuo); no hay curva 4.5. «D = height of barrel», «B = width of barrel». La curva 3.0 arranca en TW/D = 0.05: su celda de TW/D = 0 no esta impresa.
+
+> **`HEC14.F3.4`** — LEIDA POR IMAGEN, con una tolerancia de lectura de 0.01 en yo/D (`tolerancias.TOL_LECTURA_FIGURA_HEC14`). La figura es una imagen incrustada (403 x 659 px la 3.3, 454 x 668 px la 3.4); se extrajo sin reescalar y cada celda se leyo como el centro de la traza de la curva en las dos columnas de pixeles a cuatro pixeles de cada linea vertical de la reticula (TW/D = 0, 0.1, ..., 1.0), promediadas, sobre una escala vertical lineal calibrada con las lineas horizontales (0.05 en yo/D = unos 30 px). Donde la traza cae sobre una linea de la reticula la celda se leyo sobre la pagina renderizada a 200 dpi. Las celdas en que la curva ya se confundio con la recta de 45 grados («the tailwater and brink depth vary linearly at the 45o line», pag. 3-4) llevan el valor de esa recta en la columna. Celda vacia (NO_IMPRESO): la curva no esta dibujada en esa columna --sale por el techo yo/D = 1.0, o arranca a la derecha de TW/D = 0--. Las curvas de trazo DISCONTINUO se transcriben como se dibujan; la figura no dice que significa el trazo, y en la circular la de 6.0 da en TW/D = 0 un borde (0.973 D) MAYOR que el critico de ese caudal (0.955 D), contra la frase «Since critical depth is larger than brink depth» de la pag. 3-3: por eso M4 contrasta toda lectura con el critico y no usa la que no queda debajo. «Ku = 1.811 for SI, Ku = 1.0 for CU» esta impreso dentro de la figura. Ejes: «TW/D» y «yo/D»; familia «KuQ/D2.5» = 0.0 a 3.5 de 0.5 en 0.5 (trazo continuo) y 4.0 a 6.0 (discontinuo). «D = culvert diameter». Contrastada con los tres anclajes que la ficha T8-08 tomo antes de digitalizar (descarga libre, curvas 1.0, 2.0 y 3.0: 0.323, 0.467 y 0.572; la tabla da 0.322, 0.466 y 0.570) y con el ejemplo resuelto de la pag. impresa 3-4 (yo/D impreso 0.64, 0.55, 0.47 y 0.42; la tabla interpolada da 0.637, 0.547, 0.476 y 0.424).
 
 ### Manual de Hidrologia, Hidraulica y Drenaje  (`MC_HHD`)
 
@@ -2649,6 +2661,50 @@ sus campos `alcance` y `uso`, de modo que no puede contradecirlos.
 
 > * Note: "End Sections conforming to fill slope," made of either metal or concrete, are the sections commonly available from manufacturers.  From limited hydraulic tests they are equivalent in operation to a headwall in both inlet and outlet control.
 
+### `HEC14.F3_3` — Figure 3.3. Dimensionless Rating Curves for the Outlets of Rectangular Culverts on Horizontal and Mild Slopes (Simons, 1970)
+
+- Cita: `HEC14.F3.3`
+- Tabla completa · el calculo usa 12 de 12 columnas y 13 de 13 filas
+- Vistas de cálculo derivadas: `HEC14_BORDE_RECTANGULAR`, `HEC14_BORDE_TW_SOBRE_D`
+
+| Fila | KuQ/(BD3/2) | 0 | 0.1 | 0.2 | 0.3 | 0.4 | 0.5 | 0.6 | 0.7 | 0.8 | 0.9 | 1.0 | Uso |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| KuQ/(BD3/2)=0.0 | 0.0 |  | 0.087 | 0.189 | 0.291 | 0.392 | 0.493 | 0.595 | 0.698 | 0.8 | 0.9 | 1.0 | usada |
+| 0.5 | 0.5 | 0.15 | 0.158 | 0.189 | 0.291 | 0.392 | 0.493 | 0.595 | 0.698 | 0.8 | 0.9 | 1.0 | usada |
+| 1.0 | 1.0 | 0.239 | 0.248 | 0.251 | 0.291 | 0.392 | 0.493 | 0.595 | 0.698 | 0.8 | 0.9 | 1.0 | usada |
+| 1.5 | 1.5 | 0.322 | 0.33 | 0.335 | 0.343 | 0.392 | 0.493 | 0.595 | 0.698 | 0.8 | 0.9 | 1.0 | usada |
+| 2.0 | 2.0 | 0.382 | 0.389 | 0.396 | 0.401 | 0.42 | 0.493 | 0.595 | 0.698 | 0.8 | 0.9 | 1.0 | usada |
+| 2.5 | 2.5 | 0.442 | 0.447 | 0.457 | 0.461 | 0.473 | 0.499 | 0.595 | 0.698 | 0.8 | 0.9 | 1.0 | usada |
+| 3.0 | 3.0 |  | 0.505 | 0.514 | 0.52 | 0.527 | 0.542 | 0.595 | 0.698 | 0.8 | 0.9 | 1.0 | usada |
+| 3.5 | 3.5 | 0.55 | 0.562 | 0.57 | 0.577 | 0.582 | 0.592 | 0.624 | 0.698 | 0.8 | 0.9 | 1.0 | usada |
+| 4.0 | 4.0 | 0.607 | 0.614 | 0.622 | 0.628 | 0.634 | 0.642 | 0.655 | 0.7 | 0.8 | 0.9 | 1.0 | usada |
+| KuQ/(BD3/2)= 5.0 | 5.0 | 0.703 | 0.712 | 0.719 | 0.726 | 0.73 | 0.737 | 0.75 | 0.789 | 0.891 | 0.99 |  | usada |
+| 6.0 | 6.0 | 0.795 | 0.804 | 0.813 | 0.82 | 0.824 | 0.828 | 0.839 | 0.887 | 0.979 |  |  | usada |
+| 7.0 | 7.0 | 0.882 | 0.891 | 0.898 | 0.903 | 0.91 | 0.914 | 0.933 |  |  |  |  | usada |
+| 8.0 | 8.0 | 0.964 | 0.971 | 0.976 | 0.989 |  |  |  |  |  |  |  | usada |
+
+### `HEC14.F3_4` — Figure 3.4. Dimensionless Rating Curves for the Outlets of Circular Culverts on Horizontal and Mild Slopes (Simons, 1970)
+
+- Cita: `HEC14.F3.4`
+- Tabla completa · el calculo usa 12 de 12 columnas y 13 de 13 filas
+- Vistas de cálculo derivadas: `HEC14_BORDE_CIRCULAR`, `HEC14_BORDE_TW_SOBRE_D`
+
+| Fila | KuQ/D2.5 | 0 | 0.1 | 0.2 | 0.3 | 0.4 | 0.5 | 0.6 | 0.7 | 0.8 | 0.9 | 1.0 | Uso |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 0.0 =KuQ/D2.5 | 0.0 |  | 0.087 | 0.188 | 0.289 | 0.395 | 0.492 | 0.594 | 0.69 | 0.795 | 0.894 | 1.0 | usada |
+| 0.5 | 0.5 | 0.224 | 0.229 | 0.248 | 0.29 | 0.395 | 0.492 | 0.594 | 0.69 | 0.795 | 0.894 | 1.0 | usada |
+| 1.0 | 1.0 | 0.322 | 0.327 | 0.338 | 0.361 | 0.404 | 0.492 | 0.594 | 0.69 | 0.795 | 0.894 | 1.0 | usada |
+| 1.5 | 1.5 | 0.4 | 0.4 | 0.408 | 0.425 | 0.455 | 0.502 | 0.594 | 0.69 | 0.795 | 0.894 | 1.0 | usada |
+| 2.0 | 2.0 | 0.466 | 0.472 | 0.48 | 0.491 | 0.511 | 0.545 | 0.6 | 0.69 | 0.795 | 0.894 | 1.0 | usada |
+| 2.5 | 2.5 | 0.52 | 0.524 | 0.531 | 0.542 | 0.559 | 0.585 | 0.628 | 0.69 | 0.795 | 0.894 | 1.0 | usada |
+| 3.0 | 3.0 | 0.57 | 0.574 | 0.58 | 0.589 | 0.604 | 0.627 | 0.666 | 0.711 | 0.795 | 0.894 | 1.0 | usada |
+| 3.5 | 3.5 | 0.612 | 0.618 | 0.624 | 0.634 | 0.646 | 0.668 | 0.698 | 0.74 | 0.797 | 0.894 | 1.0 | usada |
+| 4.0 | 4.0 | 0.65 | 0.656 | 0.662 | 0.672 | 0.686 | 0.707 | 0.735 | 0.776 | 0.84 | 0.935 |  | usada |
+| 4.5 | 4.5 | 0.734 | 0.738 | 0.743 | 0.752 | 0.766 | 0.786 | 0.821 | 0.873 | 0.951 |  |  | usada |
+| 5.0 | 5.0 | 0.814 | 0.817 | 0.824 | 0.832 | 0.845 | 0.868 | 0.906 | 0.971 |  |  |  | usada |
+| KuQ/D2.5= 5.5 | 5.5 | 0.894 | 0.896 | 0.902 | 0.912 | 0.928 | 0.947 | 0.99 |  |  |  |  | usada |
+| 6.0 | 6.0 | 0.973 | 0.977 | 0.985 | 0.995 |  |  |  |  |  |  |  | usada |
+
 ### `MC_HHD.T02` — TABLA Nº 02: VALORES  MAXIMOS RECOMENDADOS DE RIESGO ADMISIBLE DE OBRAS DE DRENAJE
 
 - Cita: `MC_HHD.3.6`
@@ -3142,11 +3198,12 @@ recomienda.
 | `F4.HORIZONTAL` | Fase 4 - Dimensionamiento hidraulico | Barril horizontal (S = 0): no hay tirante normal, y el regimen del conducto lo fija el extremo de aguas abajo | **permite** | `HDS5_3ED.3.3.4#HORIZONTAL`, `HDS5_3ED.3.3.4#KS`, `HDS5_3ED.3.3.4#H_SIN_AJUSTE`, `HDS5_3ED.3.5.1#H2` |
 | `F4.MANNING` | Fase 4 - Dimensionamiento hidraulico | Tirante normal y velocidad en el conducto, por Manning: DOS tirantes normales, uno con cada extremo del rango de la Tabla N 09 (n_max y n_min), y la velocidad de cada uno con su propio tirante | **define** | `MC_HHD.4.1.1.3.6`, `MC_HHD.4.1.1.3.6#T09`, `HDS5_3ED.3.3.2#V_SALIDA_ENTRADA`, `HEC14.3.2.2#V_SALIDA_NORMAL` |
 | `F4.N_CAJON` | Fase 4 - Dimensionamiento hidraulico | Coeficiente de rugosidad de Manning del cajon de concreto, por analogia declarada dentro del grupo A de la Tabla N 09 | **define** | `MC_HHD.4.1.1.3.6`, `MC_HHD.4.1.1.3.6#T09` |
+| `F4.N_CAJON_IN_SITU` | Fase 4 - Dimensionamiento hidraulico | Coeficiente de rugosidad de Manning del cajon de concreto vaciado in situ, por el par de la especificacion del encofrado | **define** | `HDS5_3ED.B.3#CAJON_IN_SITU` |
 | `F4.N_CAJON_TB1` | Fase 4 - Dimensionamiento hidraulico | Coeficiente de rugosidad de Manning del cajon de concreto, por la fila del cajon de la Tabla B.1 del HDS-5 | **define** | `HDS5_3ED.TB.1`, `HDS5_3ED.B.3#CAJON_IN_SITU` |
 | `F4.N_CONCRETO` | Fase 4 - Dimensionamiento hidraulico | Coeficiente de rugosidad de Manning del tubo de concreto: de que columna de la Tabla N 09 sale el n de capacidad y el de velocidad | **define** | `MC_HHD.4.1.1.3.6`, `MC_HHD.4.1.1.3.6#T09`, `HDS5_3ED.3.1.4#N_TIPICO`, `HDS5_3ED.B.2#CONCRETO_CAMPO` |
 | `F4.PERFIL` | Fase 4 - Dimensionamiento hidraulico | Perfil de la lamina de agua por paso directo desde la salida hacia la entrada: longitud a seccion llena y carga a la entrada por remanso (HDS-5 pag. 3.12 y Section 3.5) | **define** | `HDS5_3ED.3.1.4#REMANSO`, `HDS5_3ED.3.1.4#EMPALME`, `HDS5_3ED.3.1.4#HW_REMANSO`, `HDS5_3ED.3.1.4#0_75D`, `HDS5_3ED.3.5#PERFIL`, `HDS5_3ED.3.5.1#S1`, `HDS5_3ED.3.5.1#TIPO7`, `HDS5_3ED.3.3.3#HO` |
 | `F4.PISO_HW` | Fase 4 - Dimensionamiento hidraulico | Carga de control de entrada cuando la correccion por pendiente Ks·S la deja nula o negativa: el piso adoptado (`hw_entrada_fuera_de_rango`) | **define** | `HDS5_3ED.A.2.1#FORMA_1`, `HDS5_3ED.A.2.1#KS`, `HDS5_3ED.A.3#PENDIENTE_2` |
-| `F4.REGIMEN` | Fase 4 - Dimensionamiento hidraulico | Regimen del barril y velocidad a la salida, con el area que HDS-5 3.1.6 asigna a cada caso | **define** | `HDS5_3ED.3.1.6#V_SALIDA`, `HDS5_3ED.3.1.6#V_SALIDA_TW`, `HDS5_3ED.3.3.2#V_SALIDA_ENTRADA`, `HDS5_3ED.3.1.3#SUMERGENCIA` |
+| `F4.REGIMEN` | Fase 4 - Dimensionamiento hidraulico | Regimen del barril y velocidad a la salida, con el area que HDS-5 3.1.6 asigna a cada caso | **define** | `HDS5_3ED.3.1.6#V_SALIDA`, `HDS5_3ED.3.1.6#V_SALIDA_TW`, `HDS5_3ED.3.3.2#V_SALIDA_ENTRADA`, `HDS5_3ED.3.1.3#SUMERGENCIA`, `HEC14.3.1.3#BORDE`, `HEC14.3.1.3#FIGURAS`, `HEC14.3.1.3#OTRAS_FORMAS` |
 | `F4.SECCION` | Fase 4 - Dimensionamiento hidraulico | Area, perimetro mojado y radio hidraulico de la seccion, para el tirante de trabajo | **define** | `MC_HHD.4.1.1.3.6` |
 | `F4.YC` | Fase 4 - Dimensionamiento hidraulico | Tirante critico de la seccion, y la energia critica H_c | **define** | `HDS5_3ED.3.3.3#HO`, `HDS5_3ED.A.2`, `HDS5_3ED.A.3.1#CRITICO` |
 | `F5.V1` | Fase 5 - Verificaciones | V1 - Borde libre: y no mayor que la relacion de llenado adoptada (por defecto 0.75 de la altura, diametro o flecha de la estructura, el complemento del 25 % recomendado) | **recomienda** | `MC_HHD.4.1.1.3.7b`, `MC_HHD.4.1.1.3.7b#LLENA` |
@@ -3218,7 +3275,7 @@ recomienda.
 | `F9.CICLOPEO` | Fase 9 - Cabezal y aletas | Cabezal de gravedad en concreto ciclopeo: posicion de la resultante en la base y en el cuerpo, y limites del material | **obliga** | `E060.22.10.2#CICLOPEO`, `E060.22.10.2.3#PHI`, `E060.22.5.3#TRACCION`, `E060.22.5.4#CORTANTE`, `E060.22.4.7#JUNTAS`, `E060.22.6.3#TERCIO`, `E060.22.6.3#EXCENTRICIDAD`, `E060.22.6.6.5#ABERTURAS`, `E060.22.4.8#PERALTE`, `EG2013.503.04#T503_07` |
 | `F9.COMBINACIONES` | Fase 9 - Cabezal y aletas | Cargas del cabezal con sus brazos y combinaciones de cada marco: factoradas (LRFD) y de servicio (ASD) | **obliga** | `AASHTO_LRFD_9.11.6.3.2#PORTANTE`, `AASHTO_LRFD_9.C11.5.6#FIGURAS`, `AASHTO_LRFD_9.C11.5.6#SOBRECARGA`, `MP.T2.4.5.3.1-2`, `E050.17.1#SERVICIO` |
 | `F9.CORONACION` | Fase 9 - Cabezal y aletas | Coronacion y altura del cabezal: sobre la clave exterior y sobre el nivel de agua del extremo | **obliga** | `HDS5_3ED.3.3.5#ENCAJE` |
-| `F9.DESPLANTE` | Fase 9 - Cabezal y aletas | Profundidad de desplante del cabezal: minimo de E.050 y, a la salida, bajo la socavacion | **obliga** | `E050.26.2#PROFUNDIDAD`, `AASHTO_LRFD_9.12.6.5#ZAPATAS`, `AASHTO_LRFD_9.10.6.1.2#DESPLANTE`, `HEC14.5.1.3#CABEZAL` |
+| `F9.DESPLANTE` | Fase 9 - Cabezal y aletas | Profundidad de desplante del cabezal: minimo de E.050 y, a la salida, bajo la socavacion | **obliga** | `E050.26.2#PROFUNDIDAD`, `AASHTO_LRFD_9.10.6.1.2#DESPLANTE`, `HEC14.5.1.3#CABEZAL`, `AASHTO_LRFD_9.12.6.5#ZAPATAS` |
 | `F9.DIMENSIONADO` | Fase 9 - Cabezal y aletas | Dimensionamiento del ancho de la zapata del cabezal hasta que la estabilidad cumple | **obliga** | `AASHTO_LRFD_9.11.6.3.2#PORTANTE`, `AASHTO_LRFD_9.11.6.3.3#EXC`, `AASHTO_LRFD_9.11.6.3.6#DESLIZAMIENTO` |
 | `F9.DIMENSIONADO_PANTALLA` | Fase 9 - Cabezal y aletas | Dimensionamiento del espesor de la pantalla del cabezal (y de sus aleros) hasta que su armado cumple | **obliga** | `AASHTO_LRFD_9.5.6.3.2.1#MR`, `AASHTO_LRFD_9.5.7.3.3#VN` |
 | `F9.DIMENSIONADO_PERALTE` | Fase 9 - Cabezal y aletas | Dimensionamiento del peralte de la zapata del cabezal hasta que su armado cumple | **obliga** | `AASHTO_LRFD_9.5.6.3.2.1#MR`, `AASHTO_LRFD_9.5.7.3.3#VN` |
@@ -3401,7 +3458,7 @@ vigila. Una cita con cualquier campo pendiente NO puede llevar firma de
 verificación.
 
 
-Citas sin firma de verificación: **6** de 539.
+Citas sin firma de verificación: **6** de 543.
 - `AASHTO_M294_TRAD.1.1.1`
 - `AASHTO_M294_TRAD.1.4`
 - `AASHTO_M294_TRAD.7.2.1`
