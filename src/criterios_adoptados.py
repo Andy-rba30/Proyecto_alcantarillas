@@ -3105,7 +3105,8 @@ CRITERIOS: Dict[str, Criterio] = {
     # COLUMNA DEL n DEL TUBO DE CONCRETO ES UNA ELECCION [A]. Hasta VE-2 la
     # doble n del concreto era lectura directa de la Tabla N 09 --MINIMO para
     # velocidad, MAXIMO para capacidad-- rotulada «Regla [N]» por la hoja de
-    # ruta (§4.1) sin numeral (ficha VE1-01, D3). El valor de archivo es esa
+    # ruta (§4.1) sin numeral (ficha VE1-01, D3; la hoja de ruta la escribe
+    # como adopcion [A] desde su correccion del 2026-11-18). El valor de archivo es esa
     # misma doble n: ningun numero del expediente se mueve.
     "columna_n_manning_concreto": Criterio(
         valor="doble_n_minimo_maximo",
@@ -3129,9 +3130,8 @@ CRITERIOS: Dict[str, Criterio] = {
                       "0.013 (lectura corregida del bloque A.2, errata "
                       "DIS-MCHHD-T09-A2-DESPLAZADA), sin regla de columna: "
                       "la doble n es una adopcion del proyecto, sin numeral "
-                      "que la sostenga, y la hoja de ruta la rotula «Regla "
-                      "[N]» en su §4.1, que sigue mal mientras el dueño no la "
-                      "corrija (ficha VE1-01). Se adopta la doble n "
+                      "que la sostenga, y asi la escribe la hoja de ruta en "
+                      "su §4.1. Se adopta la doble n "
                       "('doble_n_minimo_maximo'): el MAXIMO (0.013) para "
                       "capacidad, tirante y control de salida, y el MINIMO "
                       "(0.010) para velocidad maxima y socavacion, cada "
@@ -3162,8 +3162,8 @@ CRITERIOS: Dict[str, Criterio] = {
                "HDS5_3ED.B.2#CONCRETO_CAMPO: «These values are increased to "
                "0.011 to 0.013 based on field installation and aging». LA "
                "DOBLE N NO TIENE NUMERAL, sin numeral en ninguna de las tres "
-               "fuentes: es la Sec. 4.1 de la hoja de ruta, que la rotula "
-               "[N] (ficha VE1-01, D3)",
+               "fuentes: es la Sec. 4.1 de la hoja de ruta, que la escribe "
+               "como adopcion [A]",
         reemplazado_por="Ficha tecnica del tubo especificado (metodo de "
                         "fabricacion y juntas), con el n del fabricante y el "
                         "ensayo que lo respalda",

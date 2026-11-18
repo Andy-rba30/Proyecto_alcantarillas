@@ -42,15 +42,16 @@ la inundacion. n MINIMO para velocidad MAXIMA y socavacion (V3, Laushey):
 conservador del lado de la erosion. Cada extremo con SU tirante normal (VE-2,
 ver abajo).
 
-DISCREPANCIA CON LA HOJA DE RUTA (VE-1, ficha VE1-01). Su Sec. 4.1 rotula
-esta regla «Regla [N]», y la fuente primaria no la sostiene: el Manual de
-Hidrologia, num. 4.1.1.3.6, pag. impresa 74, solo dice
+LA DOBLE N ES ADOPCION [A], NO NORMA. El Manual de Hidrologia, num.
+4.1.1.3.6, pag. impresa 74, solo dice
 «n : Coeficiente de Manning (Ver Tabla Nº 09)», y la Tabla Nº 09 (pag.
 impresa 75) da las columnas MINIMO, NORMAL y MAXIMO sin decir cual se usa.
 Los valores de la tabla son [N]; que columna rige cada verificacion es
-ADOPCION del proyecto, la que la hoja de ruta escribe y este modulo aplica.
-La hoja de ruta sigue mal mientras el dueño no la corrija, y si la
-eleccion pasa a ser un criterio declarable es la decision VE1-02 (a).
+ADOPCION del proyecto: para el tubo de concreto, el criterio [A]
+'columna_n_manning_concreto' (VE-2, ficha VE2-A), que este modulo recibe ya
+resuelto en `Material.n_min` / `n_max`. La hoja de ruta (Sec. 4.1) la dice
+asi desde su correccion del 2026-11-18; hasta entonces la rotulaba «Regla
+[N]», y la discrepancia se declaraba aqui (ficha VE1-01, D3, cerrada).
 
 CADA EXTREMO RESUELVE SU PROPIO TIRANTE (VE-2, decision (b) de VE1-02)
 -------------------------------------------------------------------------
