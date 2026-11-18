@@ -56,6 +56,19 @@ from tests.test_t7c_cabezal_armado import (_correr_de_prueba, _de,
 
 __all__ = ["tanteo"]        # el fixture del muro de tanteo de T-7c
 
+from tests.apoyo.criterios import valores_previos_ve3_15  # noqa: E402
+
+
+@pytest.fixture(autouse=True, scope="module")
+def _valores_previos_ve3_15():
+    """Los dorados de este archivo (P7, P9 y el eta de T7V-04) son del metodo
+    con los valores de archivo anteriores a VE-3.15 (ficha VE3-18), como los
+    de T-7a, T-7b y T-7c; los nuevos los fija
+    tests/test_ve3_15_decisiones_cabezal.py. Este archivo se habia quedado
+    fuera del cambio de VE-3.15 y sus tres dorados del cabezal fallaban."""
+    with valores_previos_ve3_15():
+        yield
+
 EST = modelos.CondicionAnalisis.ESTATICO
 SIS = modelos.CondicionAnalisis.SISMICO
 CP = CP_T7V_ETA
@@ -643,7 +656,16 @@ def test_p7_p9_A01_con_los_datos_de_prueba_las_doce_filas_y_A8(tmp_path):
                  = 95.8285;  0.8·95.8285·0.62486935 = 0.8·59.8803 = 47.9042
     """
     _sin_datos_de_exposicion()
-    _, a01 = _correr_de_prueba(tmp_path)
+    # VE-3.15 (decision 12, un solo regimen): las filas sismicas de arriba se
+    # calcularon con la reduccion de k_h (0.5·k_h0), que `_correr_de_prueba`
+    # ya no declara (T-7c paso a «sin_reduccion» con el armado en reposo, y
+    # con k_h0 entero la cuña de tanteo de A-01 no tiene maximo: la fila
+    # queda sin evaluar). Este test mide la ESTABILIDAD con la reduccion, y
+    # la declara como se acepta desde VE-3.15: junto con el armado del muro
+    # que cede. A8 es geometria y no depende del regimen.
+    _, a01 = _correr_de_prueba(tmp_path, declaraciones={
+        "factor_muro_eleccion": "reduccion_por_desplazamiento",
+        "regimen_resistencia_elementos_cabezal": "cedente"})
     assert a01.dimensionado
     assert a01.resultado.seccion.etiqueta() == "Ø 0.90 m"
     for g in a01.cabezal.geometrias:
