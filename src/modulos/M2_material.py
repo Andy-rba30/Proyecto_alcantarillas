@@ -178,11 +178,12 @@ era la subfila del concreto por analogia) y su velocidad maxima del criterio
 
 LO QUE «SIN VACIO NORMATIVO PROPIO» NO CUBRE (VE-1, ficha VE1-01): los dos
 valores del concreto son [N], pero tomar el MINIMO y el MAXIMO de la fila es
-la doble n de la Sec. 4.1 de la hoja de ruta, que la rotula «Regla [N]» sin
-numeral. El Manual de Hidrologia, num. 4.1.1.3.6, pag. impresa 74, solo dice
+la doble n de la Sec. 4.1 de la hoja de ruta, que es adopcion y no norma. El
+Manual de Hidrologia, num. 4.1.1.3.6, pag. impresa 74, solo dice
 «n : Coeficiente de Manning (Ver Tabla Nº 09)», y la tabla da MINIMO, NORMAL
-y MAXIMO sin regla de columna: la eleccion es adopcion del proyecto, y la
-hoja de ruta sigue mal mientras el dueño no la corrija (decision VE1-02 (a)).
+y MAXIMO sin regla de columna: la eleccion es adopcion del proyecto (la hoja
+de ruta la rotulaba «Regla [N]» hasta su correccion del 2026-11-18; ficha
+VE1-01, D3, cerrada).
 DESDE VE-2 la eleccion esta escrita donde se hace: es el criterio [A] de
 perfil 'columna_n_manning_concreto', con la doble n de siempre como valor de
 archivo y dos alternativas barribles --la columna NORMAL (0.011) y el n
@@ -1711,9 +1712,9 @@ def _par_manning_del_tubo_de_concreto() -> Tuple[float, float]:
     Los valores de la fila se LEEN de `TABLA_09_FILAS` (la transcripcion
     [N]) y el del HDS-5 de `criterios_adoptados.N_MANNING_PARED_LISA_HDS5`
     ([C]): aqui no se escribe ningun n. La DOBLE N NO TIENE NUMERAL --la
-    hoja de ruta la rotula «Regla [N]» en su §4.1 y sigue mal mientras el
-    dueño no la corrija (ficha VE1-01)--, y por eso la columna es una
-    eleccion [A] y no una lectura. Con un n unico, n_min = n_max: la
+    hoja de ruta (§4.1) la escribe como adopcion [A] desde su correccion del
+    2026-11-18 (ficha VE1-01, D3)--, y por eso la columna es una eleccion [A]
+    y no una lectura. Con un n unico, n_min = n_max: la
     estimacion alta y la baja de velocidad coinciden.
     """
     columna = _columna_n_del_concreto()
@@ -1816,11 +1817,10 @@ def _pasos_del_tubo_de_concreto(n_min: float,
             cita_id="MC_HHD.4.1.1.3.6#T09",
             clave_criterio=CRITERIO_COLUMNA_N_CONCRETO),),
         nota_del_proyecto=(
-            "La hoja de ruta (Sec. 4.1) rotula la doble n «Regla [N]» y no "
-            "tiene numeral que la sostenga: el Manual solo dice «n : "
-            "Coeficiente de Manning (Ver Tabla Nº 09)» y la tabla no dice "
-            "que columna usar. La hoja de ruta sigue mal mientras el dueño "
-            "no la corrija (ficha VE1-01). El num. B.2 del HDS-5 da 0.011 a "
+            "La doble n no tiene numeral que la sostenga: el Manual solo "
+            "dice «n : Coeficiente de Manning (Ver Tabla Nº 09)» y la tabla "
+            "no dice que columna usar, y la hoja de ruta (Sec. 4.1) la "
+            "escribe como adopcion [A]. El num. B.2 del HDS-5 da 0.011 a "
             "0.013 para el tubo de concreto en obra: el MINIMO de la fila "
             "(0.010) queda por debajo, del lado seguro para la velocidad "
             "maxima."),

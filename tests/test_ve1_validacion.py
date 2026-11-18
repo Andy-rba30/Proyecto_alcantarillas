@@ -22,9 +22,12 @@ D2 · DOCUMENTACION. V7 (flotacion) NO lee `NF_profundidad_m`: supone el
      documentacion, no V7, y se dice quien la lee de verdad.
 D3 · HOJA DE RUTA. La hoja de ruta dice en su §1.2 que V7 lee el NF
      (contra su propia fila V7) y rotula «Regla [N]» la doble n del
-     concreto sin numeral que la sostenga. No se edita: se declara la
-     discrepancia en el punto de uso, se reporta en la ficha VE1-01 y se
-     deja dicho que sigue mal mientras el dueño no la corrija. La
+     concreto sin numeral que la sostenga. VE-1 no la edito: declaro la
+     discrepancia en el punto de uso, la reporto en la ficha VE1-01 y dejo
+     dicho que seguia mal mientras el dueño no la corrigiera. EL DUEÑO LA
+     CORRIGIO EL 2026-11-18 (D3 cerrada): las declaraciones del punto de uso
+     y el centinela se retiraron, y en su lugar queda una guardia de que los
+     dos textos no vuelven. La
      verificacion contra la fuente primaria, hecha con
      `python3 -m src.normativa.extraccion` sobre el Manual de Hidrologia:
      el num. 4.1.1.3.6 (pag. impresa 74, PDF 77) dice solo «n : Coeficiente
@@ -413,8 +416,9 @@ def test_d2_la_fila_del_contrato_no_atribuye_el_nf_a_v7():
     # Dice lo que de verdad la lee, y que V7 no.
     assert "V7 no la lee" in fila
     assert "Fase 8" in fila and "cabezal" in fila
-    # D3: la discrepancia con la hoja de ruta, declarada en el punto de uso.
-    assert "VE1-01" in fila and "hoja de ruta" in fila
+    # D3: la discrepancia con la hoja de ruta se declaraba aqui hasta que el
+    # dueño la corrigio (2026-11-18); la declaracion se retiro.
+    assert "sigue mal" not in fila and "Discrepancia con la hoja" not in fila
 
 
 def test_d2_el_concepto_de_la_columna_dice_quien_la_lee():
@@ -423,15 +427,16 @@ def test_d2_el_concepto_de_la_columna_dice_quien_la_lee():
     # --- VE-2 (c2) --- CAMBIADO DECLARANDO LA CAUSA. Decia «dice que la lee
     # V7; no la lee», que desde VE-2 es falso a medias: V7 la lee con la
     # alternativa 'nf_del_punto' de 'nivel_agua_diseno_v7' y no con el valor
-    # de archivo. El concepto dice las dos cosas, y la discrepancia de la
-    # hoja de ruta (§1.2, «la lee V7» sin condicion) remite a VE1-01.
+    # de archivo. El concepto dice las dos cosas. La discrepancia de la hoja
+    # de ruta (§1.2, «la lee V7» sin condicion) remitia a VE1-01 hasta que el
+    # dueño la corrigio (2026-11-18): la remision se retiro.
     assert "V7 solo con 'nivel_agua_diseno_v7' = 'nf_del_punto'" in concepto
-    assert "no con el de archivo" in concepto and "VE1-01" in concepto
+    assert "no con el de archivo" in concepto and "VE1-01" not in concepto
     assert "Fase 8" in concepto and "cabezal" in concepto
 
 
 # ===========================================================================
-# D3 · la hoja de ruta sigue mal, y el registro lo dice
+# D3 · la hoja de ruta seguia mal; el dueño la corrigio (2026-11-18)
 # ===========================================================================
 
 def _fichas() -> dict:
@@ -450,19 +455,20 @@ def _fichas() -> dict:
     return {k: "\n".join(v) for k, v in fichas.items()}
 
 
-def test_d3_la_ficha_ve1_01_reporta_los_dos_defectos_de_la_hoja_de_ruta():
+def test_d3_la_ficha_ve1_01_reporta_los_dos_defectos_y_su_cierre():
     """
-    La regla de «Fuente de verdad» de CLAUDE.md, en sus tres partes: la
-    discrepancia se declara en el punto de uso (el contrato, arriba), se
-    reporta CONTRA la hoja de ruta y se deja dicho que sigue mal mientras no
-    se corrija. Con la cita de la fuente primaria que la sostiene.
+    La regla de «Fuente de verdad» de CLAUDE.md: el defecto se reporto
+    CONTRA la hoja de ruta, con la cita de la fuente primaria que lo sostiene,
+    y la ficha lo conserva al cerrarse (2026-11-18, el dueño corrigio la hoja
+    de ruta): D3 dice ahora «Cerrado» y que los dos textos llevan su nota.
     """
     ficha = _fichas()["VE1-01"]
     for necesario in ("D1", "D2", "D3", "«la lee V7»", "Regla [N]",
-                      "sigue mal", "4.1.1.3.6", "Tabla Nº 09",
+                      "4.1.1.3.6", "Tabla Nº 09",
                       "«n : Coeficiente de Manning (Ver Tabla Nº 09)»",
-                      "2.4.3.8.2"):
+                      "2.4.3.8.2", "**Cerrado (D3"):
         assert necesario in ficha, necesario
+    assert "**Abierto (D3)" not in ficha
 
 
 def test_ve1_02_lista_las_siete_decisiones_sin_tomarlas():
@@ -475,24 +481,28 @@ def test_ve1_02_lista_las_siete_decisiones_sin_tomarlas():
         assert medido in ficha, medido
 
 
-def test_d3_centinela_la_hoja_de_ruta_sigue_sin_corregir():
+def test_d3_guardia_la_hoja_de_ruta_corregida_no_vuelve_atras():
     """
-    CENTINELA, no guardia de comportamiento: VE-1 NO edita la hoja de ruta
-    (es la fuente normativa del proyecto; su huella va en el encabezado de
-    la memoria y en la linea base, y la corrige el dueño). Los dos textos
-    defectuosos siguen ahi. EL DIA QUE EL DUEÑO LA CORRIJA ESTE TEST CAE, y
-    es a proposito: hay que retirar en el mismo cambio las declaraciones de
-    discrepancia del punto de uso (la fila `NF_profundidad_m` del contrato y
-    el concepto de la columna) y cerrar la parte D3 de la ficha VE1-01.
+    GUARDIA. Sustituye al CENTINELA de VE-1, que fijaba los dos textos
+    defectuosos para caer el dia que el dueño corrigiera la hoja de ruta. Lo
+    hizo el 2026-11-18, y en el mismo cambio se retiraron las declaraciones
+    del punto de uso y se cerro D3. Ahora se fija lo contrario: los dos
+    textos no vuelven, y cada correccion lleva su nota con la cita que la
+    sostiene y el criterio [A] que la recoge.
     """
     hoja = HOJA_DE_RUTA.read_text(encoding="utf-8")
-    assert "medido punto a punto; la lee V7)" in hoja, (
-        "la §1.2 de la hoja de ruta ya no dice que V7 lee el NF: retira la "
-        "declaracion de discrepancia del contrato y del concepto de la "
-        "columna, y cierra D3 en la ficha VE1-01")
-    assert "**Regla [N]:** **n máximo** para capacidad" in hoja, (
-        "la hoja de ruta ya no rotula [N] la doble n: cierra D3 en la ficha "
-        "VE1-01 y revisa la decision VE1-02 (a)")
+    assert "medido punto a punto; la lee V7)" not in hoja
+    assert "**Regla [N]:** **n máximo** para capacidad" not in hoja
+    assert ("V7 **sólo** con el criterio `nivel_agua_diseno_v7` = "
+            "`nf_del_punto`" in hoja)
+    assert "**Regla de doble n — adopción [A], no [N]**" in hoja
+    for nota in ("> **Corregido (`VE1-01` D3, `VE2-01` (3), dueño, "
+                 "2026-11-18).**",
+                 "> **Corregido (`VE1-01` D3, `VE2-01` (1), dueño, "
+                 "2026-11-18).**"):
+        assert hoja.count(nota) == 1, nota
+    assert "«n : Coeficiente de Manning (Ver Tabla Nº 09)»" in hoja
+    assert "`columna_n_manning_concreto`" in hoja
 
 
 # ===========================================================================
@@ -688,12 +698,19 @@ def _parrafo(docstring: str, titulo: str) -> str:
     (M3, "Regla de doble n (Sec. 4.1)"),
     (M2, "Sec. 3.4 - Matriz de decision de material"),
 ], ids=["M3_hidraulica", "M2_material"])
-def test_h3_la_discrepancia_de_la_doble_n_esta_en_el_punto_de_uso(modulo, titulo):
+def test_h3_la_doble_n_es_adopcion_en_el_punto_de_uso(modulo, titulo):
+    # --- correccion de la hoja de ruta (2026-11-18) --- CAMBIADO DECLARANDO
+    # LA CAUSA. Exigia ademas «sigue mal»: la discrepancia con la hoja de ruta
+    # declarada en el punto de uso. El dueño corrigio la §4.1 y la
+    # declaracion se retiro; queda lo que no depende de la hoja: la doble n
+    # es adopcion, con la cita de la fuente primaria que lo sostiene.
     parrafo = " ".join(_parrafo(modulo.__doc__, titulo).split())
-    for necesario in ("VE1-01", "Regla [N]", "4.1.1.3.6",
+    for necesario in ("VE1-01", "4.1.1.3.6",
                       "«n : Coeficiente de Manning (Ver Tabla Nº 09)»",
-                      "sigue mal"):
+                      "'columna_n_manning_concreto'"):
         assert necesario in parrafo, (modulo.__name__, necesario)
+    assert "adopcion" in parrafo.lower(), modulo.__name__
+    assert "sigue mal" not in parrafo, modulo.__name__
 
 
 # --- H5 · el concepto de la columna, corto; las fichas, completas ----------
@@ -705,7 +722,9 @@ def test_h5_el_concepto_del_nf_es_corto_y_la_discrepancia_breve():
     # la lee y con que criterio) y VE1-01 (la discrepancia de la hoja de
     # ruta). Cambiado declarando la causa: la cola anterior negaba sin
     # condicion que V7 la leyera.
-    assert concepto.endswith("no con el de archivo: fichas VE2-C y VE1-01")
+    # --- correccion de la hoja de ruta (2026-11-18) --- La remision a
+    # VE1-01 se retiro con la discrepancia: queda VE2-C.
+    assert concepto.endswith("no con el de archivo: ficha VE2-C")
 
 
 def test_h5_ve1_02_g_con_numero_y_donde_vive_de_cada_decision():

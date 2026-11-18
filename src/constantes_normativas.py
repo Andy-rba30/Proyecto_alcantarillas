@@ -394,7 +394,7 @@ RIESGO_ADMISIBLE = {
 # --- VE-2 (a) --- ESE PARRAFO DESCRIBE LA ELECCION DE ARCHIVO, NO UNA NORMA.
 # La «regla de doble n» no tiene numeral: el num. 4.1.1.3.6 solo remite a
 # esta tabla, y la tabla no dice que columna usar (ficha VE1-01, D3; la hoja
-# de ruta la rotula «Regla [N]» y sigue mal mientras no se corrija). Para el
+# de ruta la rotulaba «Regla [N]» hasta su correccion del 2026-11-18). Para el
 # TUBO de concreto la columna es desde VE-2 el criterio [A]
 # 'columna_n_manning_concreto' (archivo: la doble n; alternativas: la
 # columna NORMAL o el n unico de pared lisa del HDS-5). Los valores de la

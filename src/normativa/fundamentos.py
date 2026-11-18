@@ -216,8 +216,9 @@ D_MIN = _fundamento(
 # el calculo fija UNA geometria y evalua sobre ella DOS velocidades, «una
 # seccion y dos rugosidades sobre la misma seccion», y lo apoyaba solo en el
 # Manual: leida en la memoria, la doble n parecia una regla del Manual, que
-# es lo que la hoja de ruta escribe («Regla [N]», Sec. 4.1) y la fuente no
-# sostiene (ficha VE1-01, D3). Hoy dice las dos cosas por separado: la
+# es lo que la hoja de ruta escribia («Regla [N]», Sec. 4.1, hasta su
+# correccion del 2026-11-18) y la fuente no sostiene (ficha VE1-01, D3,
+# cerrada). Hoy dice las dos cosas por separado: la
 # eleccion de los dos extremos es ADOPCION del proyecto, y la velocidad de
 # cada extremo es la de su propio tirante normal, que es lo que el HDS-5 y
 # HEC-14 si dicen (APROXIMACION: «is assumed»; DEFINE es compatible).
@@ -237,9 +238,8 @@ MANNING = _fundamento(
         "un TECHO de velocidad el extremo conservador es el n minimo --la "
         "estimacion alta-- y contra un PISO de velocidad o un nivel de agua "
         "es el n maximo. La tabla no dice que columna se usa: tomar los DOS "
-        "extremos, y cual para que, es adopcion del proyecto. La hoja de ruta "
-        "la escribe como «Regla [N]» (Sec. 4.1) sin un numeral que la "
-        "sostenga, y sigue asi mientras no se corrija (ficha VE1-01). Lo que "
+        "extremos, y cual para que, es adopcion del proyecto, sin un numeral "
+        "que la sostenga, y la hoja de ruta (Sec. 4.1) la escribe asi. Lo que "
         "las fuentes si dicen es COMO se obtiene la velocidad de cada "
         "extremo: a tirante normal. El HDS-5 toma la velocidad del tirante "
         "normal como la de salida bajo control de entrada, y HEC-14 la "
@@ -2104,8 +2104,9 @@ N_CAJON_IN_SITU = _fundamento(
 
 # --- VE-2 (a) --- La columna de la Tabla N 09 de la que sale el n del TUBO
 # de concreto. Hasta VE-2 era lectura directa «n_min = MINIMO, n_max =
-# MAXIMO», rotulada «Regla [N]» por la hoja de ruta (§4.1) sin numeral que la
-# sostenga (ficha VE1-01, D3); desde VE-2 es el criterio [A]
+# MAXIMO», rotulada «Regla [N]» por la hoja de ruta (§4.1, hasta su
+# correccion del 2026-11-18) sin numeral que la sostenga (ficha VE1-01, D3,
+# cerrada); desde VE-2 es el criterio [A]
 # 'columna_n_manning_concreto', y este paso desarrolla la eleccion. Verbo
 # DEFINE: las tres citas DESCRIBEN valores (la tabla, el n tipico del HDS-5 y
 # el de obra del num. B.2); ninguna manda una columna.

@@ -44,9 +44,10 @@ Los cinco puntos de Fase 8, y lo que hace este modulo con cada uno:
          no es un valor unico de proyecto sino la columna 'NF_profundidad_m'
          de cada cruce, y lo que obliga a verificar la flotacion es AASHTO
          LRFD 12.6.1 y 12.6.2.3 con la subpresion del Manual de Puentes
-         2.4.3.8.2; ver «Por que U asume sumersion completa». La discrepancia
-         se reporta contra la hoja de ruta en la ficha VE2-C de
-         `docs/decisiones_diferidas.md`.
+         2.4.3.8.2; ver «Por que U asume sumersion completa». La hoja de
+         ruta lo dice asi desde su correccion del 2026-11-18 (el nivel de
+         agua de diseño es el criterio [A] 'nivel_agua_diseno_v7'; fichas
+         VE2-C y VE2-01).
          `empuje_flotacion_kn_m()`, `peso_relleno_kn_m()` y
          `factores_carga_flotacion()` -- SI implementadas: son las piezas
          del EQUILIBRIO DE FACTORES DE CARGA LRFD que
@@ -162,8 +163,10 @@ Solamente", es de una combinacion que Sec. 9.2 no nombra.
 Por que U asume sumersion completa
 -------------------------------------
 La fila V7 de la Fase 5 fija la hipotesis de calculo: "tuberia vacia, NF en
-su cota mas alta". CUAL ES ESA COTA NO LA FIJA LA NORMA, y eso es lo que este
-apartado tiene que decir (VE-2, c1). El Manual de Puentes, num. 2.4.3.8.1
+su cota mas alta". CUAL ES ESA COTA NO LA FIJA LA NORMA (VE-2, c1), y la
+hoja de ruta lo dice en esa fila desde su correccion del 2026-11-18: es la
+hipotesis del valor de archivo `en_la_clave` del criterio [A]
+'nivel_agua_diseno_v7'. El Manual de Puentes, num. 2.4.3.8.1
 (pag. impresa 113): «Los niveles de agua de diseño para los diferentes estados
 límites serán los especificados y/o aprobados por el Propietario» (AASHTO LRFD
 3.7.1, pag. 3-45, igual); la subpresion del num. 2.4.3.8.2, en la misma
