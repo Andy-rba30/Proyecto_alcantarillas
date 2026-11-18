@@ -519,9 +519,16 @@ def elementos_del_juego(juego: Optional[Juego] = None) -> Tuple[Elemento, ...]:
     for clave in sorted(j.sitio):
         salida.append(Elemento(clave, "--datos-sitio",
                                (("sitio", clave, None),)))
+    juntas = {otra for otras in J.DECLARACIONES_QUE_VAN_JUNTAS.values()
+              for otra in otras}
     for clave in sorted(j.declaraciones):
-        salida.append(Elemento(clave, "--declarar",
-                               (("declarar", clave, None),)))
+        if clave in juntas:
+            continue
+        grupo = (clave,) + tuple(
+            otra for otra in J.DECLARACIONES_QUE_VAN_JUNTAS.get(clave, ())
+            if otra in j.declaraciones)
+        salida.append(Elemento(" + ".join(grupo), "--declarar",
+                               tuple(("declarar", c, None) for c in grupo)))
     salida.append(Elemento("--cuencas y --estacion", "--cuencas / --estacion",
                            (("hidrologia", False),)))
     return tuple(salida)

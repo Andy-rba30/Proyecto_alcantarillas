@@ -323,6 +323,14 @@ DECLARACIONES: Dict[str, Any] = {
 # que ejercita esas dos ramas. Un test exige que esta tabla nombre
 # exactamente las claves de `DECLARACIONES` cuyo criterio tiene valor de
 # archivo.
+# Declaraciones que son UNA decision y se quitan juntas (VE-3.15, decision 12
+# del dueño: un solo regimen). La primera clave nombra el grupo; quitar solo
+# la segunda dejaria la reduccion de k_h con el armado en reposo, una
+# combinacion que la corrida rechaza (`M9.factor_muro`).
+DECLARACIONES_QUE_VAN_JUNTAS: Dict[str, Tuple[str, ...]] = {
+    "factor_muro_eleccion": ("regimen_resistencia_elementos_cabezal",),
+}
+
 PISA_EL_ARCHIVO_PORQUE: Dict[str, str] = {
     "drenaje_trasdos": (
         "con 'sin_drenaje' el relleno se calcula saturado y la condicion "
@@ -398,11 +406,13 @@ VARIANTES: Dict[str, Tuple[str, Tuple[Tuple[Any, ...], ...]]] = {
     # un dato del sitio.
     "decisiones_de_archivo": (
         "Las dos decisiones de ARCHIVO que el juego pisa (`drenaje_trasdos` = "
-        "'sin_drenaje', `factor_muro_eleccion` = 'sin_reduccion'), con el "
-        "gamma saturado del relleno de prueba (20 kN/m³) que el relleno sin "
-        "drenaje pide: la corrida TITULAR de §2",
+        "'sin_drenaje' y el muro que NO cede: `factor_muro_eleccion` = "
+        "'sin_reduccion' con el armado en reposo, un solo regimen desde "
+        "VE-3.15), con el gamma saturado del relleno de prueba (20 kN/m³) que "
+        "el relleno sin drenaje pide: la corrida TITULAR de §2",
         (("declarar", "drenaje_trasdos", None),
          ("declarar", "factor_muro_eleccion", None),
+         ("declarar", "regimen_resistencia_elementos_cabezal", None),
          ("declarar", "peso_especifico_saturado_relleno_kn_m3", 20.0))),
     "B01_tw_de_la_linea_base": (
         "B-01 con el TW de 1.00 m de la linea base (el caso por defecto que "
