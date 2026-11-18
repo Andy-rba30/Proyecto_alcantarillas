@@ -218,12 +218,18 @@ línea que se pueda romper.
 | `AASHTO_LRFD_9.5.7.2.8#DV` | 5.7.2.8 | «Shear Stress on Concrete» | pág. impresa **5-65** · PDF 424 | definicion | 2026-11-13 · texto |
 | `AASHTO_LRFD_9.5.7.3.3#VN` | 5.7.3.3 | «Nominal Shear Resistance» | pág. impresa **5-67** · PDF 426 | exigencia | 2026-11-13 · ambos |
 | `AASHTO_LRFD_9.5.7.3.4.1#SIMPLIFICADO` | 5.7.3.4.1 | «Simplified Procedure for Nonprestressed Sections» | pág. impresa **5-70** · PDF 429 | permiso | 2026-11-13 · texto |
+| `AASHTO_LRFD_9.5.7.3.4.2#GENERAL` | 5.7.3.4.2 | «General Procedure» | pág. impresa **5-70** · PDF 429 | permiso | 2026-11-17 · ambos |
+| `AASHTO_LRFD_9.5.7.3.4.2#MU` | 5.7.3.4.2 | «General Procedure» | pág. impresa **5-71** · PDF 430 | definicion | 2026-11-17 · texto |
+| `AASHTO_LRFD_9.5.7.3.4.2#SX` | 5.7.3.4.2 | «General Procedure» | pág. impresa **5-72** · PDF 431 | definicion | 2026-11-17 · texto |
+| `AASHTO_LRFD_9.5.7.3.4.2#SXE` | 5.7.3.4.2 | «General Procedure» | pág. impresa **5-71** · PDF 430 | definicion | 2026-11-17 · ambos |
 | `AASHTO_LRFD_9.A11.3.1#KAE` | A11.3.1, ec. A11.3.1-1 | «Mononobe–Okabe Method» | pág. impresa **11-145** · PDF 1614 | aproximacion | 2026-08-28 · imagen renderizada |
 | `AASHTO_LRFD_9.C10.5.5.2.2#ASD` | C10.5.5.2.2 | «Spread Footings» | pág. impresa **10-42** · PDF 1331 | definicion | 2026-11-13 · texto |
 | `AASHTO_LRFD_9.C10.6.3.3#EQUIVALENCIA` | C10.6.3.3 | «Eccentric Load Limitations» | pág. impresa **10-84** · PDF 1373 | definicion | 2026-11-13 · texto |
 | `AASHTO_LRFD_9.C11.5.6#FIGURAS` | C11.5.6, Figuras C11.5.6-1 y C11.5.6-2 | «Load Combinations and Load Factors» | pág. impresa **11-13** · PDF 1482 | definicion | 2026-11-13 · ambos |
 | `AASHTO_LRFD_9.C11.5.6#SOBRECARGA` | C11.5.6 | «Load Combinations and Load Factors» | pág. impresa **11-12** · PDF 1481 | definicion | 2026-11-13 · texto |
 | `AASHTO_LRFD_9.C11.6.3.3#REEMPLAZA` | C11.6.3.3 | «Eccentricity Limits» | pág. impresa **11-24** · PDF 1493 | definicion | 2026-11-13 · texto |
+| `AASHTO_LRFD_9.C11.6.5.3#AGUA_ABIERTO` | C11.6.5.3 | «Calculation of Seismic Active Earth Pressures» | pág. impresa **11-32** · PDF 1501 | recomendacion | 2026-11-17 · texto |
+| `AASHTO_LRFD_9.C11.6.5.3#AGUA_TOTAL` | C11.6.5.3 | «Calculation of Seismic Active Earth Pressures» | pág. impresa **11-31** · PDF 1500 | recomendacion | 2026-11-17 · texto |
 | `AASHTO_LRFD_9.C11.6.5.3#CUNA` | C11.6.5.3 | «Calculation of Seismic Active Earth Pressures» | pág. impresa **11-30** · PDF 1499 | permiso | 2026-11-13 · texto |
 | `AASHTO_LRFD_9.C11.6.5.3#RESULTANTE` | C11.6.5.3 | «Calculation of Seismic Active Earth Pressures» | pág. impresa **11-30** · PDF 1499 | definicion | 2026-11-13 · texto |
 | `AASHTO_LRFD_9.C11.6.5.4#CEDENTE` | C11.6.5.4 | «Calculation of Seismic Earth Pressure for Nonyielding Abutments and Walls» | pág. impresa **11-32** · PDF 1501 | definicion | 2026-11-13 · texto |
@@ -247,6 +253,7 @@ línea que se pueda romper.
 | `AASHTO_LRFD_9.C5.4.2.4#EC` | C5.4.2.4 | «Modulus of Elasticity» | pág. impresa **5-20** · PDF 379 | permiso | 2026-11-13 · ambos |
 | `AASHTO_LRFD_9.C5.6.7#CLASE_1` | C5.6.7 | «Control of Cracking by Distribution of Reinforcement» | pág. impresa **5-56** · PDF 415 | definicion | 2026-11-13 · texto |
 | `AASHTO_LRFD_9.C5.7.3.4.1#GRANDES` | C5.7.3.4.1 | «Simplified Procedure for Nonprestressed Sections» | pág. impresa **5-70** · PDF 429 | definicion | 2026-11-13 · texto |
+| `AASHTO_LRFD_9.C5.7.3.4.2#NEGATIVO` | 5.7.3.4.2 | «General Procedure» | pág. impresa **5-72** · PDF 431 | recomendacion | 2026-11-17 · texto |
 | `AASHTO_LRFD_9.T12.10.2.1-1` | Table 12.10.2.1-1 | «Table 12.10.2.1-1—Standard Embankment Installation Soils and Minimum Compaction Requirements» | pág. impresa **12-50** · PDF 1688 | exigencia | 2026-11-12 · texto |
 | `AASHTO_LRFD_9.T12.10.2.1-1#PROCTOR` | Table 12.10.2.1-1 | «Table 12.10.2.1-1—Standard Embankment Installation Soils and Minimum Compaction Requirements» | pág. impresa **12-51** · PDF 1689 | definicion | 2026-11-12 · texto |
 | `AASHTO_LRFD_9.T12.12.3.3-1` | Table 12.12.3.3-1 | «Table 12.12.3.3-1—Mechanical Properties of Thermoplastic Pipe» | pág. impresa **12-77** · PDF 1715 | definicion | 2026-11-12 · texto |
@@ -477,7 +484,15 @@ línea que se pueda romper.
 
 > **`AASHTO_LRFD_9.5.7.3.3#VN`** — Ec. 5.7.3.3-1: V_n = V_c + V_s + V_p; ec. 5.7.3.3-2: V_n = 0.25·f'c·b_v·d_v + V_p; ec. 5.7.3.3-3: V_c = 0.0316·β·λ·√f'c·b_v·d_v (kip, ksi, in), leidas por imagen. El 0.0316 es 1/√1000, la conversion psi → ksi, no una constante fisica; en SI es `constantes_normativas.VC_COEFICIENTE_AASHTO_SI` (0.0830 MPa^0.5). El cabezal no lleva refuerzo transversal ni presfuerzo: V_s = V_p = 0.
 
-> **`AASHTO_LRFD_9.5.7.3.4.1#SIMPLIFICADO`** — Los valores: «β = 2.0» y «θ = 45 degrees». Es un PERMISO con condiciones, y el programa las comprueba una a una antes de usarlo: zapata con la distancia del cortante nulo a la cara del muro menor que 3·d_v, o seccion de peralte total menor que 16.0 in (0.4064 m) -- la pantalla y los aleros no llevan refuerzo transversal --. Fuera de ellas la fuente manda el procedimiento general de 5.7.3.4.2, que el programa no implementa: se detiene con «metodo no evaluable».
+> **`AASHTO_LRFD_9.5.7.3.4.1#SIMPLIFICADO`** — Los valores: «β = 2.0» y «θ = 45 degrees». Es un PERMISO con condiciones, y el programa las comprueba una a una antes de usarlo: zapata con la distancia del cortante nulo a la cara del muro menor que 3·d_v, o seccion de peralte total menor que 16.0 in (0.4064 m) -- la pantalla y los aleros no llevan refuerzo transversal --. Fuera de ellas la fuente manda el procedimiento general de 5.7.3.4.2, que el programa implementa desde VE-3.14 (hasta entonces se detenia con «metodo no evaluable»).
+
+> **`AASHTO_LRFD_9.5.7.3.4.2#GENERAL`** — Ec. 5.7.3.4.2-2, leida por imagen: β = [4.8 / (1 + 750·εs)]·[51 / (39 + s_xe)], s_xe en in. Ec. 5.7.3.4.2-4: εs = (|M_u|/d_v + 0.5·N_u + |V_u − V_p| − A_ps·f_po) / (E_s·A_s + E_p·A_ps). Es el procedimiento que la fuente da para la seccion fuera de las condiciones de 5.7.3.4.1; el cabezal no lleva refuerzo transversal ni presfuerzo ni traccion axial (N_u = A_ps = V_p = 0).
+
+> **`AASHTO_LRFD_9.5.7.3.4.2#MU`** — Sigue «|V_u − V_p|·d_v (kip-in.)», por imagen.
+
+> **`AASHTO_LRFD_9.5.7.3.4.2#SX`** — La seccion del cabezal lleva una sola capa de acero en la cara en traccion, sin capas intermedias de control de fisuras: s_x = d_v.
+
+> **`AASHTO_LRFD_9.5.7.3.4.2#SXE`** — Ec. 5.7.3.4.2-7, por imagen: s_xe = s_x·1.38 / (a_g + 0.63), con «12.0 in. ≤ s_xe ≤ 80.0 in.» (pag. 5-72, PDF 431).
 
 > **`AASHTO_LRFD_9.A11.3.1#KAE`** — El ENCABEZADO del articulo se imprime en la pag. impresa 11-144 (PDF 1613) y la ECUACION en la 11-145 (PDF 1614). La forma exacta del corchete -- «[1 + raiz(...)]» -- NO ES VERIFICABLE por extraccion de texto: la capa devuelve la formula rota. Se decide sobre la imagen renderizada, y por eso el metodo es IMAGEN. Las unidades de la fuente son imperiales (kcf, ft).
 
@@ -490,6 +505,10 @@ línea que se pueda romper.
 > **`AASHTO_LRFD_9.C11.5.6#SOBRECARGA`** — La oracion arranca en la pag. impresa 11-11: «Where live load surcharge is applicable, the factored surcharge force is generally included over the backfill immediately above the wall only for evaluation of foundation bearing resistance and structure design, as shown in Figure C11.5.6-3. The live load surcharge is not included over the backfill for evaluation of eccentricity, sliding…». Es decir: el PESO de la sobrecarga viva sobre el talon entra solo en el portante; su EMPUJE entra siempre. Y: «The load factor for live load surcharge is the same for both vertical and horizontal load effects»; en Evento Extremo I ese factor es gamma_EQ. El mismo comentario fija que el factor de WA «is always 1.0».
 
 > **`AASHTO_LRFD_9.C11.6.3.3#REEMPLAZA`** — Es el comentario que dice por que el marco LRFD NO TIENE factor de seguridad al volteo: lo REEMPLAZAN el limite de excentricidad y la presion de contacto. Por eso la fila E2 del marco LRFD es la excentricidad (e <= B/3 en suelo, sobre cargas factoradas) y la del marco ASD el cociente de momentos de E.050 39.13.6: son dos verificaciones distintas con el mismo numero de fila, y no se cruzan.
+
+> **`AASHTO_LRFD_9.C11.6.5.3#AGUA_ABIERTO`** — El caso, en la frase anterior: «If the backfill material is a very open granular material, such as quarry spalls, it is possible that the water will not move with the soil during seismic loading». La presion hidrodinamica «Generally, these methods involve a form of the Westergaard solution» (Kramer, 1996): la formula no esta en ninguna fuente del repositorio de normas, y por eso el programa se detiene en este caso en vez de inventarla.
+
+> **`AASHTO_LRFD_9.C11.6.5.3#AGUA_TOTAL`** — El sujeto, en la frase anterior: «If the soil within the wedge is fully saturated, then the total unit weight (γt)». El mismo comentario abre el parrafo con que el agua dentro de la cuña «can influence the magnitude of the seismic active earth pressure» y pide el nivel medio del agua en el tiempo.
 
 > **`AASHTO_LRFD_9.C11.6.5.3#CUNA`** — Es lo que sostiene la cuña pseudoestatica bajo sismo (`M9.cuna_de_tanteo` con k_h y k_v): con el relleno que sube y se quiebra en la plataforma, Mononobe-Okabe con una pendiente equivalente queda fuera de su dominio con el k_h de archivo, y la cuña da cifra. La condicion de la frase -- suelo no estratificado detras del muro -- es la del relleno compactado del trasdos. El mismo comentario añade que estos metodos de equilibrio limite «may be overly conservative».
 
@@ -530,6 +549,8 @@ línea que se pueda romper.
 > **`AASHTO_LRFD_9.C5.6.7#CLASE_1`** — Es lo que sostiene que, SIN la clase declarada, la barra propuesta respete al menos la Clase 1: cualquier clase que el Propietario declare pide eso o mas. Sigue: «Areas that the Owner may consider for Class 2 exposure condition would include decks and substructures exposed to water».
 
 > **`AASHTO_LRFD_9.C5.7.3.4.1#GRANDES`** — Por que el permiso tiene limite de peralte: con β = 2.0 y θ = 45 grados las expresiones son «essentially identical to those traditionally used», y esas son inseguras en elementos grandes sin estribos. Es la razon de no extender el simplificado a una pantalla o una zapata mas gruesa que el limite.
+
+> **`AASHTO_LRFD_9.C5.7.3.4.2#NEGATIVO`** — Sin traccion axial ni presfuerzo y con M_u y V_u no negativos, εs no puede salir negativo; la regla se aplica igual (se toma 0).
 
 > **`AASHTO_LRFD_9.T12.10.2.1-1`** — La fila del Tipo 4, riñones y costado inferior. Las otras tres (misma pagina): Tipo 1, riñones 95 % Categoria I, costado 90 % I, 95 % II o 100 % III; Tipo 2, riñones 90 % I o 95 % II, costado 85 % I, 90 % II o 95 % III; Tipo 3, riñones y costado 85 % I, 90 % II o 95 % III. Cama: D_o/24, no menos de 3.0 in, en los Tipos 1 a 3 sobre suelo; ninguna en el Tipo 4.
 
@@ -3182,7 +3203,7 @@ recomienda.
 | `F8.TMC_FF` | Fase 8 - Verificacion estructural del conducto | Tuberia metalica corrugada: factor de flexibilidad de manejo e instalacion | **obliga** | `AASHTO_LRFD_9.12.5.6.1#FF`, `ASTM_A796.10.3` |
 | `F9.AGUA` | Fase 9 - Cabezal y aletas | Agua en el trasdos: nivel, empuje hidrostatico, suelo sumergido y subpresion | **obliga** | `AASHTO_LRFD_9.3.11.3`, `AASHTO_LRFD_9.11.6.6#DRENAJE`, `E050.39.13.8#DRENAJE`, `MP.2.4.3.8.2` |
 | `F9.ALEROS` | Fase 9 - Cabezal y aletas | Aleros: angulo, longitud, alturas inicial y final, espesor | **obliga** | `AASHTO_LRFD_9.12.6.5#ALEROS`, `MC_HHD.LAMINA_02A`, `HDS5_3ED.SIMBOLOS#THETA_W` |
-| `F9.ARM_CORTANTE` | Fase 9 - Cabezal y aletas | Resistencia a cortante del concreto, sin refuerzo transversal, frente al cortante factorado | **obliga** | `AASHTO_LRFD_9.5.7.3.3#VN`, `AASHTO_LRFD_9.5.7.3.4.1#SIMPLIFICADO`, `AASHTO_LRFD_9.C5.7.3.4.1#GRANDES`, `AASHTO_LRFD_9.5.7.2.8#DV`, `AASHTO_LRFD_9.5.5.4.2#CORTE`, `AASHTO_LRFD_9.5.7.2.3#TRANSVERSAL`, `AASHTO_LRFD_9.1.3.2.1#EXTREMO` |
+| `F9.ARM_CORTANTE` | Fase 9 - Cabezal y aletas | Resistencia a cortante del concreto, sin refuerzo transversal, frente al cortante factorado | **obliga** | `AASHTO_LRFD_9.5.7.3.3#VN`, `AASHTO_LRFD_9.5.7.3.4.1#SIMPLIFICADO`, `AASHTO_LRFD_9.C5.7.3.4.1#GRANDES`, `AASHTO_LRFD_9.5.7.2.8#DV`, `AASHTO_LRFD_9.5.5.4.2#CORTE`, `AASHTO_LRFD_9.5.7.2.3#TRANSVERSAL`, `AASHTO_LRFD_9.1.3.2.1#EXTREMO`, `AASHTO_LRFD_9.5.7.3.4.2#GENERAL`, `AASHTO_LRFD_9.5.7.3.4.2#MU`, `AASHTO_LRFD_9.5.7.3.4.2#SXE`, `AASHTO_LRFD_9.5.7.3.4.2#SX`, `AASHTO_LRFD_9.C5.7.3.4.2#NEGATIVO` |
 | `F9.ARM_CORTANTE_PLANO` | Fase 9 - Cabezal y aletas | Cuantias minimas del muro bajo el regimen de cortante en su plano | **obliga** | `E060.11.10.1`, `E060.11.10.2`, `E060.11.10.7#UMBRAL`, `E060.11.10.10.2`, `E060.11.10.10.3`, `E060.14.3.1` |
 | `F9.ARM_DURABILIDAD` | Fase 9 - Cabezal y aletas | Resistencia del concreto del cabezal frente a la minima por durabilidad | **obliga** | `E060.T4.4`, `E060.T4.2`, `E060.4.4.2` |
 | `F9.ARM_E060` | Fase 9 - Cabezal y aletas | Contraste con la norma peruana de concreto: flexion y cortante con sus combinaciones y sus factores | **obliga** | `E060.9.2.5#EMPUJE`, `E060.9.3.1#PHI`, `E060.10.2.7#BLOQUE`, `E060.10.3.4#MAXIMO`, `E060.11.3.1#VC`, `E060.11.10.1`, `E060.11.12.1.1#VIGA`, `E060.14.8.1#CONTENCION` |
@@ -3199,6 +3220,7 @@ recomienda.
 | `F9.CORONACION` | Fase 9 - Cabezal y aletas | Coronacion y altura del cabezal: sobre la clave exterior y sobre el nivel de agua del extremo | **obliga** | `HDS5_3ED.3.3.5#ENCAJE` |
 | `F9.DESPLANTE` | Fase 9 - Cabezal y aletas | Profundidad de desplante del cabezal: minimo de E.050 y, a la salida, bajo la socavacion | **obliga** | `E050.26.2#PROFUNDIDAD`, `AASHTO_LRFD_9.12.6.5#ZAPATAS`, `AASHTO_LRFD_9.10.6.1.2#DESPLANTE`, `HEC14.5.1.3#CABEZAL` |
 | `F9.DIMENSIONADO` | Fase 9 - Cabezal y aletas | Dimensionamiento del ancho de la zapata del cabezal hasta que la estabilidad cumple | **obliga** | `AASHTO_LRFD_9.11.6.3.2#PORTANTE`, `AASHTO_LRFD_9.11.6.3.3#EXC`, `AASHTO_LRFD_9.11.6.3.6#DESLIZAMIENTO` |
+| `F9.DIMENSIONADO_PANTALLA` | Fase 9 - Cabezal y aletas | Dimensionamiento del espesor de la pantalla del cabezal (y de sus aleros) hasta que su armado cumple | **obliga** | `AASHTO_LRFD_9.5.6.3.2.1#MR`, `AASHTO_LRFD_9.5.7.3.3#VN` |
 | `F9.DIMENSIONADO_PERALTE` | Fase 9 - Cabezal y aletas | Dimensionamiento del peralte de la zapata del cabezal hasta que su armado cumple | **obliga** | `AASHTO_LRFD_9.5.6.3.2.1#MR`, `AASHTO_LRFD_9.5.7.3.3#VN` |
 | `F9.DIMENSIONES` | Fase 9 - Cabezal y aletas | Predimensionamiento del cabezal: tipo, espesores, zapata y longitud del muro | **define** | `MC_HHD.LAMINA_02A`, `E060.22.7.4#ZAPATA`, `E060.15.7#PERALTE`, `E060.22.10.2#CICLOPEO` |
 | `F9.E1_LRFD` | Fase 9 - Cabezal y aletas | E1 (LRFD): presion factorada sobre el ancho efectivo frente a la resistencia portante factorada | **obliga** | `AASHTO_LRFD_9.11.6.3.2#PORTANTE`, `AASHTO_LRFD_9.10.6.3.1.1#NIVEL_FREATICO`, `AASHTO_LRFD_9.10.6.3.1.2a#QN`, `AASHTO_LRFD_9.10.6.3.1.2a#T1`, `AASHTO_LRFD_9.10.6.3.1.2c#TALUD`, `AASHTO_LRFD_9.10.5.5.2.2#T1`, `AASHTO_LRFD_9.11.5.7#MUROS`, `AASHTO_LRFD_9.11.5.8#PORTANTE` |
@@ -3210,7 +3232,7 @@ recomienda.
 | `F9.GLOBAL` | Fase 9 - Cabezal y aletas | E4 y E5: estabilidad global del muro y del talud, diferidas al expediente | **obliga** | `AASHTO_LRFD_9.11.6.3.7#GLOBAL`, `E050.39.13.6`, `E050.30.3` |
 | `F9.LONGITUD` | Fase 9 - Cabezal y aletas | Longitud entre cabezales con el talud muriendo en el relleno que retienen, y longitud de metrado del barril | **obliga** | `HDS5_3ED.3.3.5#ENCAJE`, `HDS5_3ED.3.1.4#LONGITUD` |
 | `F9.LOSA` | Fase 9 - Cabezal y aletas | Losa de entrega y dentellon delante del cabezal | **obliga** | `AASHTO_LRFD_9.12.6.5#DENTELLON`, `MC_HHD.LAMINA_04#DENTELLON`, `MC_HHD.LAMINA_02` |
-| `F9.SISMO` | Fase 9 - Cabezal y aletas | Demanda sismica del cabezal: empuje sismico (cuña de tanteo pseudoestatica, o Mononobe-Okabe), su punto de aplicacion, la inercia del muro y los dos casos de combinacion | **obliga** | `AASHTO_LRFD_9.11.6.5.3#VALIDEZ`, `AASHTO_LRFD_9.C11.6.5.3#CUNA`, `AASHTO_LRFD_9.C11.6.5.4#CEDENTE`, `AASHTO_LRFD_9.C11.6.5.4#K0`, `AASHTO_LRFD_9.3.11.5.2#K0`, `AASHTO_LRFD_9.11.6.5.3#DISTRIBUCION`, `AASHTO_LRFD_9.C11.6.5.3#RESULTANTE`, `AASHTO_LRFD_9.11.6.5.4#NO_CEDENTE`, `AASHTO_LRFD_9.11.6.5.2.2#REDUCCION`, `AASHTO_LRFD_9.A11.3.1#KAE`, `MP.2.8.1.1.14.1#EXC` |
+| `F9.SISMO` | Fase 9 - Cabezal y aletas | Demanda sismica del cabezal: empuje sismico (cuña de tanteo pseudoestatica, o Mononobe-Okabe), su punto de aplicacion, la inercia del muro y los dos casos de combinacion | **obliga** | `AASHTO_LRFD_9.11.6.5.3#VALIDEZ`, `AASHTO_LRFD_9.C11.6.5.3#CUNA`, `AASHTO_LRFD_9.C11.6.5.4#CEDENTE`, `AASHTO_LRFD_9.C11.6.5.4#K0`, `AASHTO_LRFD_9.3.11.5.2#K0`, `AASHTO_LRFD_9.11.6.5.3#DISTRIBUCION`, `AASHTO_LRFD_9.C11.6.5.3#RESULTANTE`, `AASHTO_LRFD_9.11.6.5.4#NO_CEDENTE`, `AASHTO_LRFD_9.11.6.5.2.2#REDUCCION`, `AASHTO_LRFD_9.A11.3.1#KAE`, `MP.2.8.1.1.14.1#EXC`, `AASHTO_LRFD_9.C11.6.5.3#AGUA_TOTAL`, `AASHTO_LRFD_9.C11.6.5.3#AGUA_ABIERTO` |
 | `F9.SOBRECARGA` | Fase 9 - Cabezal y aletas | Sobrecarga viva de trafico sobre el relleno: altura equivalente, empuje y peso sobre el talon | **obliga** | `MP.2.4.2.2#SOBRECARGA`, `AASHTO_LRFD_9.3.11.6.4`, `AASHTO_LRFD_9.3.11.6.4#ALTURA`, `AASHTO_LRFD_9.C11.5.6#SOBRECARGA` |
 | `FH.AJUSTE` | Fase 1-bis - Hidrologia: caudal de diseño | Precipitacion maxima en 24 horas para el periodo de retorno, por ajuste de una distribucion de probabilidad a la serie | **recomienda** | `MC_HHD.3.7.1`, `MC_HHD.3.7.1.1`, `MC_HHD.3.7.1.2`, `MC_HHD.3.7.1.7`, `MC_HHD.3.7.2b` |
 | `FH.C` | Fase 1-bis - Hidrologia: caudal de diseño | Coeficiente de escorrentia C de la Tabla Nº 08, por cobertura vegetal, tipo de suelo y pendiente del terreno | **obliga** | `MC_HHD.3.12.2#T08`, `WSDOT_HM.2-6.2#T2-2`, `WSDOT_HM.2-6.2#FRECUENCIA` |
@@ -3379,7 +3401,7 @@ vigila. Una cita con cualquier campo pendiente NO puede llevar firma de
 verificación.
 
 
-Citas sin firma de verificación: **6** de 532.
+Citas sin firma de verificación: **6** de 539.
 - `AASHTO_M294_TRAD.1.1.1`
 - `AASHTO_M294_TRAD.1.4`
 - `AASHTO_M294_TRAD.7.2.1`
