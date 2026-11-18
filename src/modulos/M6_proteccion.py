@@ -70,8 +70,7 @@ disponibles en la zona, que es dato del proyecto), ni los disipadores
 internos de su Capitulo 7, ni el aliviadero escalonado de la Lámina Nº 04 del
 Manual (la medida que el num. 4.1.1.3.7 c) da para REDUCIR la velocidad); no
 digitaliza la Figura 10.3 (atenuacion de la velocidad con el TW sobre la
-clave) ni las Figuras 3.3 y 3.4 (tirante de borde con el TW bajo el critico),
-no diseña el filtro granular (HEC 11 no esta en el repositorio de normas) y
+clave), no diseña el filtro granular (HEC 11 no esta en el repositorio de normas) y
 no da dimensiones al revestimiento de la entrada, porque ninguna fuente de
 normas/ las da. Cada uno tiene su ficha en `docs/decisiones_diferidas.md`.
 
@@ -620,9 +619,11 @@ def velocidad_admisible_del_cauce(*, V: Magnitud, tipo_terreno: str,
 
     `cota_inferior` (H2 de la segunda auditoria): la velocidad que se compara
     es MENOR que la real --control de salida con el TW bajo el critico, donde
-    M4 toma el tirante critico y el de borde es menor--. Si aun asi supera la
-    admisible, el contraste vale; si no la supera, NO CONCLUYE: el resultado
-    lleva `concluyente=False` y el veredicto es INDICADOR.
+    las Figuras 3.3 y 3.4 de HEC-14 no dieron el tirante de borde y M4 se
+    quedo en el critico (`ResultadoHidraulico.V_salida_cota_inferior`; desde
+    el cierre de T8-08, solo ahi)--. Si aun asi supera la admisible, el
+    contraste vale; si no la supera, NO CONCLUYE: el resultado lleva
+    `concluyente=False` y el veredicto es INDICADOR.
     """
     _exigir_velocidad(V, "velocidad_admisible_del_cauce")
     _exigir_texto_de("donde", donde, (DONDE_SALIDA, DONDE_ENTRADA),
@@ -1358,93 +1359,41 @@ def _aviso_el_contraste_no_concluye(admisible: VelocidadAdmisible) -> str:
 
 def _con_la_velocidad_al_critico(resultado: ResultadoHidraulico) -> bool:
     """
-    La velocidad de salida se tomo con el tirante CRITICO: control de salida
-    (o barril horizontal) con el TW bajo el critico, primera viñeta de HDS-5
-    3.1.6. Es la condicion en que esa velocidad es una cota inferior.
+    La velocidad de salida es una COTA INFERIOR de la real: control de
+    salida (o barril horizontal) con el TW bajo el critico, primera viñeta
+    de HDS-5 3.1.6, DONDE LAS FIGURAS 3.3 Y 3.4 DE HEC-14 NO DIERON EL
+    TIRANTE DE BORDE y M4 se quedo en el critico. Lo decide M4 y lo dice en
+    `ResultadoHidraulico.V_salida_cota_inferior` (cierre de T8-08); hasta
+    entonces esta funcion lo infería de y_salida = y_c, que era toda la
+    primera viñeta.
     """
-    por_la_salida = (resultado.control_gobernante is ControlGobernante.SALIDA
-                     or resultado.sin_tirante_normal)
-    y = resultado.y_salida_m
-    return bool(por_la_salida and y is not None
-                and resultado.y_critico is not None
-                and not abs(y - resultado.y_critico) > TOL_UMBRAL_NORMATIVO)
+    return bool(resultado.V_salida_cota_inferior)
 
 
 def _aviso_tirante_de_borde(resultado: ResultadoHidraulico) -> Tuple[str, ...]:
     """
-    Hallazgo 9 de la primera auditoria de T-8 y H2 de la segunda: bajo
-    control de salida con el TW bajo el critico, M4 toma la velocidad al
-    tirante critico (HDS-5 3.1.6), y HEC-14 3.1.3 dice que el flujo pasa por
-    el critico AGUAS ARRIBA de la salida: en el borde el tirante es menor y
-    la velocidad mayor. V, el Froude y el d50 son COTAS INFERIORES. Las
-    Figuras 3.3 y 3.4, que dan el borde, no estan digitalizadas (ficha
-    diferida): se avisa, no se corrige.
-
-    LA MAGNITUD QUE EL AVISO DA, Y DE DONDE SALE. Son dos lecturas de la
-    fuente hechas por la sesion, no un calculo del programa:
-      * Figura 3.4 (pag. impresa 3-6, PDF 37), leida por imagen en descarga
-        libre (TW/D -> 0): curvas KuQ/D^2.5 = 1.0, 2.0 y 3.0 -> yo/D = 0.323,
-        0.467 y 0.572. El tirante critico de esas descargas (Q²·T/(g·A³) = 1
-        en la seccion circular) es yc/D = 0.420, 0.604 y 0.743, y la razon
-        de areas A(yc)/A(yo), que es V_borde/V_critica, 1.43, 1.38 y 1.35.
-        Al cuadrado, que es como va el d50 de Laushey: 2.03, 1.90 y 1.81.
-      * El ejemplo resuelto de la pag. impresa 3-4 (PDF 35), con TW/D de
-        0.41 a 0.58, imprime A/D² al borde 0.5308, 0.4426, 0.3627 y 0.3130;
-        con sus tirantes criticos impresos (0.73, 0.70, 0.70 y 0.67 m) el
-        area critica es 0.5829, 0.4756, 0.4112 y 0.3395: de +8 % a +13 %.
+    Hallazgo 9 de la primera auditoria de T-8 y H2 de la segunda, CERRADOS
+    por T8-08: bajo control de salida con el TW bajo el critico, M4 mide la
+    velocidad al tirante de BORDE de las Figuras 3.3 y 3.4 de HEC-14
+    (`M4.tirante_de_borde`). Este aviso queda para lo que la figura no
+    cubre --otra forma, fuera de su familia de curvas, una lectura que no
+    queda bajo el critico--, donde M4 se quedo en el critico con el permiso
+    de la fuente («not conservative, but is acceptable», num. 3.1.3) y V, el
+    Froude y el d50 son COTAS INFERIORES. El motivo lo da M4
+    (`ResultadoHidraulico.borde.motivo`); aqui no se recalcula.
     """
     if not _con_la_velocidad_al_critico(resultado):
         return ()
+    motivo = ("" if resultado.borde is None or not resultado.borde.motivo
+              else f" ({resultado.borde.motivo})")
     return ("Proteccion de salida: la velocidad de salida se tomo con el "
-            "tirante critico (HDS-5 num. 3.1.6) porque el TW queda bajo el. "
-            "HEC-14 num. 3.1.3: «" + _literal("HEC14.3.1.3#BORDE") + "»; en "
-            "el borde el tirante es MENOR que el critico y la velocidad "
-            "MAYOR, de modo que V, el Froude y el d50 de Laushey son una "
-            "cota inferior (no conservador). Magnitud, leida de la fuente y "
-            "no calculada: en la Figura 3.4 de HEC-14, con descarga libre, "
-            "la velocidad de borde es de 1.35 a 1.43 veces la critica, y el "
-            "d50 de Laushey, que va con V², de 1.8 a 2.0 veces el impreso; "
-            "en su ejemplo resuelto (pag. impresa 3-4, TW de 0.41 a 0.58 "
-            "diametros), de 1.08 a 1.13 veces. Las Figuras 3.3 y 3.4, que "
-            "dan el tirante de borde, no estan digitalizadas",)
-
-
-def _aviso_banda_de_regimen(resultado: ResultadoHidraulico
-                            ) -> Tuple[str, ...]:
-    """
-    H14 de la segunda auditoria de T-8 (es de M4, y aqui solo se AVISA): bajo
-    control de salida con la velocidad al critico, si la rama de n MINIMO de
-    la regla de doble n da una velocidad normal mayor que la critica, con n
-    minimo el tirante normal seria supercritico y la estimacion ALTA de la
-    velocidad de salida seria `V_erosion`, la que entra bajo control de
-    entrada. El auditor midio el salto en A-01: con S = 0.0058 (control de
-    entrada) 3.160 m/s y d50 = 0.329 m; con S = 0.0056 (control de salida)
-    2.412 m/s y d50 = 0.191 m (con la formula anterior a VE-2).
-
-    DESDE VE-2 LA IMPLICACION ES EXACTA. `V_erosion` es la velocidad del
-    tirante normal RESUELTO con n_min, Q_celda / A(y_n), y con el mismo Q y
-    la misma seccion V_erosion > V_c equivale a y_n(n_min) < y_c: el aviso
-    afirma lo que la comparacion prueba. Hasta VE-2 `V_erosion` era la de
-    n_min sobre la geometria de n_max, mayor que la de su propio tirante, y
-    el aviso podia saltar sin que el tirante normal de n_min fuera
-    supercritico.
-    """
-    if not _con_la_velocidad_al_critico(resultado) \
-            or resultado.sin_tirante_normal or resultado.V_erosion is None \
-            or resultado.V_salida is None:
-        return ()
-    V_alta, V = resultado.V_erosion, resultado.V_salida.valor
-    if not V_alta > V + TOL_UMBRAL_NORMATIVO:
-        return ()
-    return (f"Proteccion de salida: gobierna el control de salida y la "
-            f"velocidad de salida es la critica ({V:.3f} m/s), pero la rama "
-            f"de n minimo de la regla de doble n da una velocidad normal "
-            f"MAYOR ({V_alta:.3f} m/s): con n minimo el tirante normal seria "
-            "supercritico y la estimacion alta de la velocidad de salida "
-            f"seria esa. Con ella el d50 de Laushey seria "
-            f"{laushey_d50(V=V_alta):.3f} m y no {laushey_d50(V=V):.3f} m. "
-            "La velocidad de salida la fija M4 (HDS-5 num. 3.1.6) y aqui no "
-            "se cambia",)
+            "tirante critico (HDS-5 num. 3.1.6) porque el TW queda bajo el y "
+            "las Figuras 3.3 y 3.4 de HEC-14 no dan aqui el tirante de borde"
+            + motivo + ". HEC-14 num. 3.1.3: «" + _literal("HEC14.3.1.3#BORDE")
+            + "»; en el borde el tirante es MENOR que el critico y la "
+            "velocidad MAYOR, de modo que V, el Froude y el d50 de Laushey "
+            "son una cota inferior: «" + _literal("HEC14.3.1.3#OTRAS_FORMAS")
+            + "»",)
 
 
 # La lectura del proyecto con que se cruza el terreno declarado del receptor
@@ -1693,7 +1642,6 @@ def proteccion_salida(*, V: Magnitud,
                                y_critico=resultado.y_critico)
         al_critico = _con_la_velocidad_al_critico(resultado)
         avisos.extend(_aviso_tirante_de_borde(resultado))
-        avisos.extend(_aviso_banda_de_regimen(resultado))
 
     admisible = None
     if tipo_terreno is not None and regimen_flujo is not None:

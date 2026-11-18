@@ -5917,4 +5917,108 @@ T34 = _tabla(
 )
 
 
+# ===========================================================================
+# HEC-14 — Figuras 3.3 y 3.4, tirante de borde a la salida (T8-08)
+# ===========================================================================
+# SON FIGURAS, NO TABLAS, y se transcriben como tabla porque es la forma que
+# el registro sabe llevar: una FILA por curva de la familia (su rotulo es el
+# que la figura imprime junto a la curva) y una COLUMNA por linea vertical de
+# la reticula (TW/D = 0, 0.1, ..., 1.0, el rotulo del eje). La celda es el
+# yo/D en que la curva corta esa linea, LEIDO POR IMAGEN: como se leyo, con
+# que tolerancia y que hacer con los trazos discontinuos lo dice la nota de
+# la cita de cada figura (`HEC14.F3.3`, `HEC14.F3.4`). Lo que la figura da
+# entre dos lineas de la reticula y entre dos curvas lo interpola M4
+# (`M4.tirante_de_borde`, lineal en las dos direcciones): es la lectura del
+# proyecto de una familia de curvas, declarada en el paso 4.3b.
+#
+# CELDA VACIA = la curva no esta dibujada en esa columna (`NO_IMPRESO`): sale
+# por el techo yo/D = 1.0, o arranca a la derecha de TW/D = 0 (la 3.0 de la
+# Figura 3.3 y la recta 0.0 de las dos). No es un cero.
+_TW_SOBRE_D_RETICULA = ("0", "0.1", "0.2", "0.3", "0.4", "0.5", "0.6",
+                        "0.7", "0.8", "0.9", "1.0")
+_USO_BORDE = Usada(por=("M4.tirante_de_borde",))
+_NI = CeldaSinValor.NO_IMPRESO
+
+
+def _columnas_borde(rotulo_familia: str) -> tuple:
+    return (ColumnaDeTabla(id="curva", etiqueta_literal=rotulo_familia,
+                           unidad="-", uso=_USO_BORDE),
+            *(ColumnaDeTabla(id="tw_" + x.replace(".", "_"),
+                             etiqueta_literal=x, unidad="TW/D",
+                             uso=_USO_BORDE)
+              for x in _TW_SOBRE_D_RETICULA))
+
+
+def _filas_borde(tabla: str, curvas: tuple) -> tuple:
+    filas = []
+    for rotulo, q, celdas in curvas:
+        valores = {"curva": q}
+        for x, celda in zip(_TW_SOBRE_D_RETICULA, celdas):
+            valores["tw_" + x.replace(".", "_")] = celda
+        filas.append(FilaDeTabla(
+            id=f"{tabla}#q_{str(q).replace('.', '_')}",
+            etiqueta_literal=rotulo, valores=valores, uso=_USO_BORDE))
+    return tuple(filas)
+
+
+# (rotulo impreso junto a la curva, valor de la curva, yo/D en TW/D = 0 ...
+# 1.0). La recta de 45 grados (curva 0.0) y las curvas que ya se confundieron
+# con ella llevan el valor de la recta en la columna.
+_CURVAS_F3_3 = (
+    ("KuQ/(BD3/2)=0.0", 0.0, (_NI, 0.087, 0.189, 0.291, 0.392, 0.493, 0.595, 0.698, 0.800, 0.900, 1.000)),
+    ("0.5", 0.5, (0.150, 0.158, 0.189, 0.291, 0.392, 0.493, 0.595, 0.698, 0.800, 0.900, 1.000)),
+    ("1.0", 1.0, (0.239, 0.248, 0.251, 0.291, 0.392, 0.493, 0.595, 0.698, 0.800, 0.900, 1.000)),
+    ("1.5", 1.5, (0.322, 0.330, 0.335, 0.343, 0.392, 0.493, 0.595, 0.698, 0.800, 0.900, 1.000)),
+    ("2.0", 2.0, (0.382, 0.389, 0.396, 0.401, 0.420, 0.493, 0.595, 0.698, 0.800, 0.900, 1.000)),
+    ("2.5", 2.5, (0.442, 0.447, 0.457, 0.461, 0.473, 0.499, 0.595, 0.698, 0.800, 0.900, 1.000)),
+    ("3.0", 3.0, (_NI, 0.505, 0.514, 0.520, 0.527, 0.542, 0.595, 0.698, 0.800, 0.900, 1.000)),
+    ("3.5", 3.5, (0.550, 0.562, 0.570, 0.577, 0.582, 0.592, 0.624, 0.698, 0.800, 0.900, 1.000)),
+    ("4.0", 4.0, (0.607, 0.614, 0.622, 0.628, 0.634, 0.642, 0.655, 0.700, 0.800, 0.900, 1.000)),
+    ("KuQ/(BD3/2)= 5.0", 5.0, (0.703, 0.712, 0.719, 0.726, 0.730, 0.737, 0.750, 0.789, 0.891, 0.990, _NI)),
+    ("6.0", 6.0, (0.795, 0.804, 0.813, 0.820, 0.824, 0.828, 0.839, 0.887, 0.979, _NI, _NI)),
+    ("7.0", 7.0, (0.882, 0.891, 0.898, 0.903, 0.910, 0.914, 0.933, _NI, _NI, _NI, _NI)),
+    ("8.0", 8.0, (0.964, 0.971, 0.976, 0.989, _NI, _NI, _NI, _NI, _NI, _NI, _NI)),
+)
+
+_CURVAS_F3_4 = (
+    ("0.0 =KuQ/D2.5", 0.0, (_NI, 0.087, 0.188, 0.289, 0.395, 0.492, 0.594, 0.690, 0.795, 0.894, 1.000)),
+    ("0.5", 0.5, (0.224, 0.229, 0.248, 0.290, 0.395, 0.492, 0.594, 0.690, 0.795, 0.894, 1.000)),
+    ("1.0", 1.0, (0.322, 0.327, 0.338, 0.361, 0.404, 0.492, 0.594, 0.690, 0.795, 0.894, 1.000)),
+    ("1.5", 1.5, (0.400, 0.400, 0.408, 0.425, 0.455, 0.502, 0.594, 0.690, 0.795, 0.894, 1.000)),
+    ("2.0", 2.0, (0.466, 0.472, 0.480, 0.491, 0.511, 0.545, 0.600, 0.690, 0.795, 0.894, 1.000)),
+    ("2.5", 2.5, (0.520, 0.524, 0.531, 0.542, 0.559, 0.585, 0.628, 0.690, 0.795, 0.894, 1.000)),
+    ("3.0", 3.0, (0.570, 0.574, 0.580, 0.589, 0.604, 0.627, 0.666, 0.711, 0.795, 0.894, 1.000)),
+    ("3.5", 3.5, (0.612, 0.618, 0.624, 0.634, 0.646, 0.668, 0.698, 0.740, 0.797, 0.894, 1.000)),
+    ("4.0", 4.0, (0.650, 0.656, 0.662, 0.672, 0.686, 0.707, 0.735, 0.776, 0.840, 0.935, _NI)),
+    ("4.5", 4.5, (0.734, 0.738, 0.743, 0.752, 0.766, 0.786, 0.821, 0.873, 0.951, _NI, _NI)),
+    ("5.0", 5.0, (0.814, 0.817, 0.824, 0.832, 0.845, 0.868, 0.906, 0.971, _NI, _NI, _NI)),
+    ("KuQ/D2.5= 5.5", 5.5, (0.894, 0.896, 0.902, 0.912, 0.928, 0.947, 0.990, _NI, _NI, _NI, _NI)),
+    ("6.0", 6.0, (0.973, 0.977, 0.985, 0.995, _NI, _NI, _NI, _NI, _NI, _NI, _NI)),
+)
+
+T_HEC14_F3_3 = _tabla(
+    id="HEC14.F3_3",
+    cita_id="HEC14.F3.3",
+    titulo_literal=("Figure 3.3. Dimensionless Rating Curves for the Outlets "
+                    "of Rectangular Culverts on Horizontal and Mild Slopes "
+                    "(Simons, 1970)"),
+    columnas=_columnas_borde("KuQ/(BD3/2)"),
+    filas=_filas_borde("HEC14.F3_3", _CURVAS_F3_3),
+    alcance=Integra(),
+    vistas_de_calculo=("HEC14_BORDE_RECTANGULAR", "HEC14_BORDE_TW_SOBRE_D"),
+)
+
+T_HEC14_F3_4 = _tabla(
+    id="HEC14.F3_4",
+    cita_id="HEC14.F3.4",
+    titulo_literal=("Figure 3.4. Dimensionless Rating Curves for the Outlets "
+                    "of Circular Culverts on Horizontal and Mild Slopes "
+                    "(Simons, 1970)"),
+    columnas=_columnas_borde("KuQ/D2.5"),
+    filas=_filas_borde("HEC14.F3_4", _CURVAS_F3_4),
+    alcance=Integra(),
+    vistas_de_calculo=("HEC14_BORDE_CIRCULAR", "HEC14_BORDE_TW_SOBRE_D"),
+)
+
+
 TABLAS: Dict[str, TablaNormativa] = {t.id: t for t in _TODAS}

@@ -77,6 +77,7 @@ from src.modelos import MOTIVO_METODO_NO_EVALUABLE
 from typing import Tuple
 
 from src.normativa import registro as _registro_normativo
+from src.normativa.esquema import CeldaSinValor
 
 _reg = _registro_normativo.construir()
 
@@ -4691,6 +4692,44 @@ HEC14_APRON_ALTURA_MAX_M = 1.524
 # «at least 2D50 thick» (poza, Sec. 10.1, pag. impresa 10-1) y «to a limit
 # of 2.0D50» (apron, Sec. 10.2, pag. impresa 10-18).
 HEC14_ESPESOR_MIN_EN_D50 = 2.0
+
+# --- HEC-14 num. 3.1.3, Figuras 3.3 y 3.4: tirante de borde (T8-08) --------
+# Las dos familias de curvas yo/D = f(TW/D, KuQ/(B·D^1.5)) (marco, pag.
+# impresa 3-5, PDF 36) y yo/D = f(TW/D, KuQ/D^2.5) (tubo, pag. impresa 3-6,
+# PDF 37), LEIDAS POR IMAGEN y transcritas en el registro (tablas HEC14.F3_3
+# y HEC14.F3_4; la lectura y su tolerancia, en la nota de las citas
+# HEC14.F3.3 y HEC14.F3.4). DERIVADAS, no copiadas (D2): {valor de la curva:
+# (yo/D en cada abscisa de la reticula)}, con `None` donde la curva no esta
+# dibujada. Las consume `M4.tirante_de_borde`.
+_F3_3 = _reg.tabla("HEC14.F3_3")
+_F3_4 = _reg.tabla("HEC14.F3_4")
+_COLUMNAS_BORDE = tuple(c for c in _F3_4.columnas if c.id.startswith("tw_"))
+HEC14_BORDE_TW_SOBRE_D: Tuple[float, ...] = tuple(
+    float(c.etiqueta_literal) for c in _COLUMNAS_BORDE)
+HEC14_BORDE_RECTANGULAR = {
+    _f.valores["curva"]: tuple(
+        None if isinstance(_f.valores[_c.id], CeldaSinValor)
+        else _f.valores[_c.id] for _c in _COLUMNAS_BORDE)
+    for _f in _F3_3.filas}
+HEC14_BORDE_CIRCULAR = {
+    _f.valores["curva"]: tuple(
+        None if isinstance(_f.valores[_c.id], CeldaSinValor)
+        else _f.valores[_c.id] for _c in _COLUMNAS_BORDE)
+    for _f in _F3_4.filas}
+# «Ku = 1.811 for SI», impreso DENTRO de las dos figuras (por imagen). Es el
+# mismo numero que `KU_SI` de HDS-5 (num. A.2.1) y por la misma razon --la
+# conversion de Q/D^2.5 de pies a metros: 35.3147/3.2808^2.5 = 1.811--, y se
+# nombra aparte porque lo imprime OTRA fuente para OTRO grupo: un cambio de
+# edicion de una no puede mover la otra en silencio (el precedente es
+# `G_LAUSHEY`).
+# Imperial: «Ku = 1.0 for CU», el que la figura escribe al lado y NO se usa:
+# el codigo opera en SI y con Ku = 1.0 el grupo saldria 1.811 veces menor y
+# se leeria una curva mas baja, un borde mas alto y una velocidad menor.
+HEC14_KU_BORDE_SI = 1.811
+# Los exponentes de D en los dos grupos de las figuras: KuQ/D^2.5 (tubo) y
+# KuQ/(B·D^1.5) (marco), «Q/(BD3/2) or Q/D5/2» (num. 3.1.3, pag. 3-3).
+HEC14_BORDE_EXPONENTE_CIRCULAR = 2.5
+HEC14_BORDE_EXPONENTE_RECTANGULAR = 1.5
 
 
 # ===========================================================================

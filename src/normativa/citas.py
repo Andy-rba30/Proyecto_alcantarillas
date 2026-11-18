@@ -9483,7 +9483,143 @@ HEC14_3_1_3_BORDE = _cita(
           "curvas criticas: «Since critical depth is larger than brink "
           "depth, determining brink depth in this manner is not "
           "conservative, but is acceptable». Las Figuras 3.3 y 3.4 dan el "
-          "borde y no estan digitalizadas."),
+          "borde: desde el cierre de T8-08 estan digitalizadas (tablas "
+          "HEC14.F3_3 y HEC14.F3_4) y `M4.tirante_de_borde` las lee."),
+)
+
+# ---- T8-08 (trabajo posterior a la cadena T): las Figuras 3.3 y 3.4 -------
+# Mismo regimen que T-8: la propia sesion abrio las paginas -- la 34 (3-3) y
+# la 35 (3-4) por su capa de texto, las 36 (3-5) y 37 (3-6) por IMAGEN, que
+# es lo unico que las figuras ofrecen: su capa de texto es el pie y una
+# descripcion de accesibilidad--. Nombre propio y no `TESIS_T8`: es otra
+# sesion, posterior a la cadena.
+FECHA_T8_08 = "2026-11-18"
+POR_T8_08 = ("validacion/T8-08 · lectura directa de la pagina por la sesion "
+             "(figuras por imagen)")
+T8_08 = (FECHA_T8_08, POR_T8_08)
+
+HEC14_3_1_3_FIGURAS = _cita(
+    id="HEC14.3.1.3#FIGURAS",
+    fuente_id="HEC14",
+    numeral="3.1.3",
+    titulo_numeral="3.1.3 Unsubmerged Outlets (Brink Depth)",
+    pagina_impresa="3-3",
+    pagina_pdf=34,
+    texto_literal=Verbatim(
+        texto=("Figures 3.3 and 3.4 may be used to determine outlet brink "
+               "depths for rectangular and circular sections."),
+        pagina_pdf=34),
+    caracter=Caracter.PERMISO,
+    sesion=T8_08,
+    nota=("La frase que sigue dice como se leen: «These figures are "
+          "dimensionless rating curves that indicate the effect on brink "
+          "depth of tailwater for culverts on mild or horizontal slopes. In "
+          "order to use these curves, the designer must determine normal "
+          "depth or tailwater (TW) in the outlet channel and Q/(BD3/2) or "
+          "Q/D5/2 for the culvert». Y la pag. 3-4 (PDF 35): «When the "
+          "tailwater depth is low, culverts on mild or horizontal slopes "
+          "will flow with critical depth near the outlet [...] As the "
+          "tailwater increases, the depth at the brink increases at a "
+          "variable rate along the Q/(BD3/2) or Q/D5/2 curve, until a point "
+          "where the tailwater and brink depth vary linearly at the 45o line "
+          "on the figures»."),
+)
+
+HEC14_3_1_3_OTRAS_FORMAS = _cita(
+    id="HEC14.3.1.3#OTRAS_FORMAS",
+    fuente_id="HEC14",
+    numeral="3.1.3",
+    titulo_numeral="3.1.3 Unsubmerged Outlets (Brink Depth)",
+    pagina_impresa="3-3",
+    pagina_pdf=34,
+    texto_literal=Verbatim(
+        texto=("Since critical depth is larger than brink depth, determining "
+               "brink depth in this manner is not conservative, but is "
+               "acceptable."),
+        pagina_pdf=34),
+    caracter=Caracter.PERMISO,
+    sesion=T8_08,
+    nota=("La frase anterior: «For culvert shapes other than rectangular and "
+          "circular, the brink depth for low tailwater can be approximated "
+          "from the critical depth curves found in Appendix B». Es el "
+          "PERMISO con que M4 se queda en el tirante critico donde las "
+          "figuras no dan lectura, y la razon por la que esa velocidad se "
+          "rotula como COTA INFERIOR: la fuente dice que el critico es mayor "
+          "que el borde."),
+)
+
+_NOTA_LECTURA_FIGURAS = (
+    "LEIDA POR IMAGEN, con una tolerancia de lectura de 0.01 en yo/D "
+    "(`tolerancias.TOL_LECTURA_FIGURA_HEC14`). La figura es una imagen "
+    "incrustada (403 x 659 px la 3.3, 454 x 668 px la 3.4); se extrajo sin "
+    "reescalar y cada celda se leyo como el centro de la traza de la curva "
+    "en las dos columnas de pixeles a cuatro pixeles de cada linea vertical "
+    "de la reticula (TW/D = 0, 0.1, ..., 1.0), promediadas, sobre una escala "
+    "vertical lineal calibrada con las lineas horizontales (0.05 en yo/D = "
+    "unos 30 px). Donde la traza cae sobre una linea de la reticula la celda "
+    "se leyo sobre la pagina renderizada a 200 dpi. Las celdas en que la "
+    "curva ya se confundio con la recta de 45 grados («the tailwater and "
+    "brink depth vary linearly at the 45o line», pag. 3-4) llevan el valor "
+    "de esa recta en la columna. Celda vacia (NO_IMPRESO): la curva no esta "
+    "dibujada en esa columna --sale por el techo yo/D = 1.0, o arranca a la "
+    "derecha de TW/D = 0--. Las curvas de trazo DISCONTINUO se transcriben "
+    "como se dibujan; la figura no dice que significa el trazo, y en la "
+    "circular la de 6.0 da en TW/D = 0 un borde (0.973 D) MAYOR que el "
+    "critico de ese caudal (0.955 D), contra la frase «Since critical depth "
+    "is larger than brink depth» de la pag. 3-3: por eso M4 contrasta toda "
+    "lectura con el critico y no usa la que no queda debajo. «Ku = 1.811 "
+    "for SI, Ku = 1.0 for CU» esta impreso dentro de la figura.")
+
+HEC14_F3_3 = _cita(
+    id="HEC14.F3.3",
+    fuente_id="HEC14",
+    numeral="3.1.3, Figure 3.3",
+    titulo_numeral="3.1.3 Unsubmerged Outlets (Brink Depth)",
+    pagina_impresa="3-5",
+    pagina_pdf=36,
+    pagina_pdf_titulo=34,
+    texto_literal=Verbatim(
+        texto=("Figure 3.3. Dimensionless Rating Curves for the Outlets of "
+               "Rectangular Culverts on Horizontal and Mild Slopes (Simons, "
+               "1970)"),
+        pagina_pdf=36),
+    caracter=Caracter.DEFINICION,
+    metodo=IMAGEN,
+    derivado_de="HEC14.3.1.3#FIGURAS",
+    sesion=T8_08,
+    nota=(_NOTA_LECTURA_FIGURAS + " Ejes: «TW/D» y «yo/D»; familia "
+          "«KuQ/(BD3/2)» = 0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5 y 4.0 "
+          "(trazo continuo) y 5.0, 6.0, 7.0 y 8.0 (discontinuo); no hay "
+          "curva 4.5. «D = height of barrel», «B = width of barrel». La "
+          "curva 3.0 arranca en TW/D = 0.05: su celda de TW/D = 0 no esta "
+          "impresa."),
+)
+
+HEC14_F3_4 = _cita(
+    id="HEC14.F3.4",
+    fuente_id="HEC14",
+    numeral="3.1.3, Figure 3.4",
+    titulo_numeral="3.1.3 Unsubmerged Outlets (Brink Depth)",
+    pagina_impresa="3-6",
+    pagina_pdf=37,
+    pagina_pdf_titulo=34,
+    texto_literal=Verbatim(
+        texto=("Figure 3.4. Dimensionless Rating Curves for the Outlets of "
+               "Circular Culverts on Horizontal and Mild Slopes (Simons, "
+               "1970)"),
+        pagina_pdf=37),
+    caracter=Caracter.DEFINICION,
+    metodo=IMAGEN,
+    derivado_de="HEC14.3.1.3#FIGURAS",
+    sesion=T8_08,
+    nota=(_NOTA_LECTURA_FIGURAS + " Ejes: «TW/D» y «yo/D»; familia "
+          "«KuQ/D2.5» = 0.0 a 3.5 de 0.5 en 0.5 (trazo continuo) y 4.0 a "
+          "6.0 (discontinuo). «D = culvert diameter». Contrastada con los "
+          "tres anclajes que la ficha T8-08 tomo antes de digitalizar "
+          "(descarga libre, curvas 1.0, 2.0 y 3.0: 0.323, 0.467 y 0.572; "
+          "la tabla da 0.322, 0.466 y 0.570) y con el ejemplo resuelto de "
+          "la pag. impresa 3-4 (yo/D impreso 0.64, 0.55, 0.47 y 0.42; la "
+          "tabla interpolada da 0.637, 0.547, 0.476 y 0.424)."),
 )
 
 # ---- VE-2 (decision (b) de VE1-02): la velocidad a TIRANTE NORMAL ---------
