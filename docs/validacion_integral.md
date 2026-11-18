@@ -107,7 +107,7 @@ Cada fila es una corrida: la base sin esa entrada. **DETIENE** = aparece un bloq
 | abrasion (global) | --datos-externos | SIN EFECTO MEDIBLE | — |
 | acceso_mantenimiento_previsto (global) | --datos-externos | SIN EFECTO MEDIBLE | — |
 | ancho_derecho_via_m (global) | --datos-externos | SIN EFECTO MEDIBLE | — |
-| bombeo (global) | --datos-externos | SOLO AVISA | 36 avisos nuevos |
+| bombeo (global) | --datos-externos | SOLO AVISA | 38 avisos nuevos |
 | cloruros_ppm (global) | --datos-externos | SIN EFECTO MEDIBLE | — |
 | luz_m (global) | --datos-externos | DETIENE | A-01: entrada del proyecto que falta — luz_m; A-02: entrada del proyecto que falta — luz_m; B-01: entrada del proyecto que falta — luz_m; C-01: entrada del proyecto que falta — luz_m · no dimensiona A-01, A-02, B-01, C-01 · 1 avisos nuevos |
 | pH (global) | --datos-externos | SIN EFECTO MEDIBLE | — |
@@ -119,13 +119,13 @@ Cada fila es una corrida: la base sin esa entrada. **DETIENE** = aparece un bloq
 | TW_evento_extremo_m (A-01) | --datos-externos | DETIENE | A-01: entrada del proyecto que falta — TW_evento_extremo_m · no dimensiona A-01 |
 | cota_afectacion_aguas_arriba_msnm (A-01) | --datos-externos | DETIENE | A-01: entrada del proyecto que falta — cota_afectacion_aguas_arriba_msnm · no dimensiona A-01 |
 | duracion_caudal_pico_min (A-01) | --datos-externos | SOLO AVISA | 7 avisos nuevos |
-| material_lecho_salida (A-01) | --datos-externos | CAMBIA VEREDICTOS | 2 veredictos · 10 avisos nuevos |
+| material_lecho_salida (A-01) | --datos-externos | CAMBIA VEREDICTOS | 2 veredictos · 9 avisos nuevos |
 | tipo_terreno_entrada (A-01) | --datos-externos | SOLO AVISA | 1 avisos nuevos |
 | tipo_terreno_receptor (A-01) | --datos-externos | SOLO AVISA | 1 avisos nuevos |
 | Q_evento_extremo_m3s (A-02) | --datos-externos | DETIENE | A-02: entrada del proyecto que falta — Q_evento_extremo_m3s · no dimensiona A-02 |
 | TW_evento_extremo_m (A-02) | --datos-externos | DETIENE | A-02: entrada del proyecto que falta — TW_evento_extremo_m · no dimensiona A-02 |
 | cota_afectacion_aguas_arriba_msnm (A-02) | --datos-externos | DETIENE | A-02: entrada del proyecto que falta — cota_afectacion_aguas_arriba_msnm · no dimensiona A-02 |
-| profundidad_socavacion_estimada_m (A-02) | --datos-externos | CAMBIA VEREDICTOS | 2 veredictos · 9 avisos nuevos |
+| profundidad_socavacion_estimada_m (A-02) | --datos-externos | CAMBIA VEREDICTOS | 2 veredictos · 8 avisos nuevos |
 | tipo_terreno_entrada (A-02) | --datos-externos | SOLO AVISA | 1 avisos nuevos |
 | tipo_terreno_receptor (A-02) | --datos-externos | SOLO AVISA | 1 avisos nuevos |
 | Q_evento_extremo_m3s (B-01) | --datos-externos | DETIENE | B-01: entrada del proyecto que falta — Q_evento_extremo_m3s · no dimensiona B-01 |
@@ -142,9 +142,9 @@ Cada fila es una corrida: la base sin esa entrada. **DETIENE** = aparece un bloq
 | S_cauce (C-01) | --datos-externos | DETIENE | C-01: entrada del proyecto que falta — S_cauce · no dimensiona C-01 |
 | S_conducto (C-01) | --datos-externos | CAMBIA VEREDICTOS | 1 veredictos · 10 avisos nuevos |
 | TW_evento_extremo_m (C-01) | --datos-externos | DETIENE | C-01: entrada del proyecto que falta — TW_evento_extremo_m · no dimensiona C-01 |
-| TW_m (C-01) | --datos-externos | SOLO AVISA | 5 avisos nuevos |
+| TW_m (C-01) | --datos-externos | SOLO AVISA | 3 avisos nuevos |
 | desnivel_perfil_canal_m (C-01) | --datos-externos | DETIENE | C-01: entrada del proyecto que falta — desnivel_perfil_canal_m · no dimensiona C-01 |
-| profundidad_socavacion_estimada_m (C-01) | --datos-externos | CAMBIA VEREDICTOS | 1 veredictos · 8 avisos nuevos |
+| profundidad_socavacion_estimada_m (C-01) | --datos-externos | CAMBIA VEREDICTOS | 1 veredictos · 7 avisos nuevos |
 | seccion_receptor_medida (C-01) | --datos-externos | SOLO AVISA | 1 avisos nuevos |
 | tipo_terreno_entrada (C-01) | --datos-externos | SOLO AVISA | 1 avisos nuevos |
 | tipo_terreno_receptor (C-01) | --datos-externos | SOLO AVISA | 1 avisos nuevos |
@@ -157,9 +157,9 @@ Cada fila es una corrida: la base sin esa entrada. **DETIENE** = aparece un bloq
 | c_phi_fundacion | --declarar | DETIENE | A-01: entrada del proyecto que falta — c_phi_fundacion; A-02: entrada del proyecto que falta — c_phi_fundacion; B-01: entrada del proyecto que falta — c_phi_fundacion; C-01: entrada del proyecto que falta — c_phi_fundacion · 96 veredictos · 11 avisos nuevos |
 | categoria_refuerzo_aashto | --declarar | DETIENE | proyecto: criterio que el Propietario o el proyectista debe declarar — categoria_refuerzo_aashto · 16 avisos nuevos |
 | clase_exposicion_fisuracion_cabezal | --declarar | SIN EFECTO MEDIBLE | — |
-| drenaje_trasdos | --declarar | CAMBIA VEREDICTOS | 8 veredictos · 40 avisos nuevos |
+| drenaje_trasdos | --declarar | CAMBIA VEREDICTOS | 8 veredictos · 39 avisos nuevos |
 | exposicion_quimica_ems | --declarar | DETIENE | proyecto: entrada del proyecto que falta — exposicion_quimica_ems · 8 veredictos · 24 avisos nuevos |
-| factor_muro_eleccion + regimen_resistencia_elementos_cabezal | --declarar | CAMBIA VEREDICTOS | 18 veredictos · 57 avisos nuevos |
+| factor_muro_eleccion + regimen_resistencia_elementos_cabezal | --declarar | CAMBIA VEREDICTOS | 18 veredictos · 58 avisos nuevos |
 | homogeneidad_serie_fen | --declarar | SIN EFECTO MEDIBLE | — |
 | peso_especifico_saturado_relleno_kn_m3 | --declarar | SIN EFECTO MEDIBLE | — |
 | phi_relleno_trasdos | --declarar | DETIENE | A-01: entrada del proyecto que falta — phi_relleno_trasdos; A-02: entrada del proyecto que falta — phi_relleno_trasdos; B-01: entrada del proyecto que falta — phi_relleno_trasdos; C-01: entrada del proyecto que falta — phi_relleno_trasdos · 304 veredictos |
@@ -223,13 +223,13 @@ Cada una está nombrada en `docs/contrato_entradas.md` §7 (lo comprueba el test
 | `decisiones_de_archivo` | Las dos decisiones de ARCHIVO que el juego pisa (`drenaje_trasdos` = 'sin_drenaje' y el muro que NO cede: `factor_muro_eleccion` = 'sin_reduccion' con el armado en reposo, un solo regimen desde VE-3.15), con el gamma saturado del relleno de prueba (20 kN/m³) que el relleno sin drenaje pide: la corrida TITULAR de §2 | CAMBIA VEREDICTOS | A-01: Ø 0.90 m · A-02: Ø 0.90 m · B-01: Ø 0.90 m · C-01: marco 1.20 × 0.90 m | A-01 A2.alero.s: cumple → indicador; A-01 A2.pantalla.s: cumple → indicador; A-01 E1-LRFD.sis.e: cumple → no cumple; A-01 E1-LRFD.sis.s: cumple → no cumple; A-01 E3-ASD.sis.s: cumple → indicador; A-01 E3-LRFD.sis.e: cumple → no cumple; A-01 E3-LRFD.sis.s: cumple → no cumple; A-02 A2.alero.s: cumple → indicador; A-02 A2.pantalla.s: cumple → indicador; A-02 E1-LRFD.sis.e: cumple → no cumple; A-02 E1-LRFD.sis.s: cumple → no cumple; A-02 E3-ASD.sis.s: cumple → indicador; A-02 E3-LRFD.sis.e: cumple → no cumple; A-02 E3-LRFD.sis.s: cumple → no cumple; B-01 A2.alero.s: cumple → indicador; B-01 A2.pantalla.s: cumple → indicador; B-01 E1-LRFD.sis.e: cumple → no cumple; B-01 E1-LRFD.sis.s: cumple → no cumple; B-01 E3-LRFD.sis.e: cumple → no cumple; B-01 E3-LRFD.sis.s: cumple → no cumple; C-01 A2.alero.s: cumple → indicador; C-01 A2.pantalla.s: cumple → indicador; C-01 E1-LRFD.sis.e: cumple → no cumple; C-01 E1-LRFD.sis.s: cumple → no cumple; C-01 E3-LRFD.sis.e: cumple → no cumple; C-01 E3-LRFD.sis.s: cumple → no cumple |
 | `B01_tw_de_la_linea_base` | B-01 con el TW de 1.00 m de la linea base (el caso por defecto que el dueño decidio dejar) | NO FACTIBLE | A-01: Ø 0.90 m · A-02: Ø 0.90 m · B-01: no dimensiona · C-01: marco 1.20 × 0.90 m | B-01: resultado: ningun material ni seccion cumple — Fase 5 |
 | `B01_sin_inicio_de_tramo` | B-01 sin `inicio_tramo_cuneta_km`: el tramo empieza en A-02 (530 m), el caso de la linea base | CAMBIA VEREDICTOS | A-01: Ø 0.90 m · A-02: Ø 0.90 m · B-01: Ø 0.90 m · C-01: marco 1.20 × 0.90 m | B-01 VB1: cumple → no cumple |
-| `freatico_a_2m` | Freatico a 2.0 m (el de T-7b) en los cuatro puntos | CAMBIA VEREDICTOS | A-01: Ø 0.90 m · A-02: Ø 0.90 m · B-01: Ø 0.90 m · C-01: marco 1.20 × 0.90 m | C-01 E3-ASD.sis.s: indicador → cumple |
+| `freatico_a_2m` | Freatico a 2.0 m (el de T-7b) en los cuatro puntos | SOLO AVISA | A-01: Ø 0.90 m · A-02: Ø 0.90 m · B-01: Ø 0.90 m · C-01: marco 1.20 × 0.90 m | — |
 | `agua_con_cloruros` | Analisis quimico con cloruros (la fila de cloruros de la Tabla 4.2 de E.060), como en el conftest | CAMBIA VEREDICTOS | A-01: Ø 0.90 m · A-02: Ø 0.90 m · B-01: Ø 0.90 m · C-01: marco 1.20 × 0.90 m | A-01 A7.concreto.e: no aplica → no cumple; A-01 A7.concreto.s: no aplica → no cumple; A-02 A7.concreto.e: no aplica → no cumple; A-02 A7.concreto.s: no aplica → no cumple; B-01 A7.concreto.e: no aplica → no cumple; B-01 A7.concreto.s: no aplica → no cumple; C-01 A7.concreto.e: no aplica → no cumple; C-01 A7.concreto.s: no aplica → no cumple |
 | `sin_socavacion_A01` | A-01 sin lecho declarado: la hoya no se estima y el desplante de salida queda en el minimo de E.050 | CAMBIA VEREDICTOS | A-01: Ø 0.90 m · A-02: Ø 0.90 m · B-01: Ø 0.90 m · C-01: marco 1.20 × 0.90 m | A-01 CB5.s: cumple → —; A-01 E3-ASD.sis.s: cumple → indicador |
 | `C01_lecho_cohesivo` | C-01 con lecho cohesivo estimado (IP 8, Sv 25 kPa, 60 % de finos) en vez de la socavacion de un estudio | CAMBIA VEREDICTOS | A-01: Ø 0.90 m · A-02: Ø 0.90 m · B-01: Ø 0.90 m · C-01: marco 1.20 × 0.90 m | C-01 E3-ASD.sis.s: indicador → cumple |
 | `C01_sin_desnivel` | C-01 sin el desnivel del perfil del canal (F de VC3): desde VE-3.10 el punto se detiene pidiendo el dato del proyecto del canal | DETIENE | A-01: Ø 0.90 m · A-02: Ø 0.90 m · B-01: Ø 0.90 m · C-01: no dimensiona | C-01: entrada del proyecto que falta — desnivel_perfil_canal_m |
-| `zapata_declarada_3m` | A-01 con la zapata de sus dos cabezales declarada de 3.00 m de ancho (`cabezal_declarado`, la prueba de T-7b) | CAMBIA VEREDICTOS | A-01: Ø 0.90 m · A-02: Ø 0.90 m · B-01: Ø 0.90 m · C-01: marco 1.20 × 0.90 m | A-01 E1-ASD.sis.e: indicador → cumple; A-01 E1-LRFD.sis.s: cumple → no cumple; A-01 E3-ASD.sis.e: indicador → cumple |
-| `drenaje_de_archivo` | Trasdos sin drenaje (el valor de archivo de `drenaje_trasdos`) | CAMBIA VEREDICTOS | A-01: Ø 0.90 m · A-02: Ø 0.90 m · B-01: Ø 0.90 m · C-01: marco 1.20 × 0.90 m | A-01 E1-LRFD.sis.s: cumple → no cumple; A-01 E3-ASD.sis.s: cumple → indicador; A-01 E3-LRFD.sis.s: cumple → no cumple; A-02 A5.alero.s: cumple → indicador; A-02 A5.pantalla.s: cumple → indicador; A-02 E1-LRFD.sis.s: cumple → no cumple; A-02 E3-ASD.sis.s: cumple → indicador; C-01 E1-LRFD.sis.s: cumple → no cumple |
+| `zapata_declarada_3m` | A-01 con la zapata de sus dos cabezales declarada de 3.00 m de ancho (`cabezal_declarado`, la prueba de T-7b) | CAMBIA VEREDICTOS | A-01: Ø 0.90 m · A-02: Ø 0.90 m · B-01: Ø 0.90 m · C-01: marco 1.20 × 0.90 m | A-01 E1-ASD.sis.e: indicador → cumple; A-01 E3-ASD.sis.e: indicador → cumple |
+| `drenaje_de_archivo` | Trasdos sin drenaje (el valor de archivo de `drenaje_trasdos`) | CAMBIA VEREDICTOS | A-01: Ø 0.90 m · A-02: Ø 0.90 m · B-01: Ø 0.90 m · C-01: marco 1.20 × 0.90 m | A-01 E1-ASD.sis.e: indicador → cumple; A-01 E1-LRFD.sis.s: cumple → no cumple; A-01 E3-ASD.sis.s: cumple → indicador; A-01 E3-LRFD.sis.s: cumple → no cumple; A-02 A5.alero.s: cumple → indicador; A-02 A5.pantalla.s: cumple → indicador; A-02 E1-LRFD.sis.s: cumple → no cumple; A-02 E3-ASD.sis.s: cumple → indicador |
 | `caudal_calculado` | A-01, A-02 y B-01 con `Q_m3s` vacio: el caudal lo calcula la Fase 1-bis con las cuencas y la serie sinteticas de T-1, y sin el caudal del evento extremo del juego, que es el de su Q declarado | DETIENE | A-01: no dimensiona · A-02: no dimensiona · B-01: no dimensiona · C-01: marco 1.20 × 0.90 m | A-01: resultado: ningun material ni seccion cumple — Fase 5; A-02: resultado: ningun material ni seccion cumple — Fase 5; B-01: entrada del proyecto que falta — Q_evento_extremo_m3s |
 | `C01_fondo_en_el_canal` | C-01 con la cota de fondo de entrada en el canal (36.30 msnm: la salida queda a 5 mm sobre el fondo del canal, 36.20) en vez de la regla de archivo, que la pone en el terreno del cruce | CAMBIA VEREDICTOS | A-01: Ø 0.90 m · A-02: Ø 0.90 m · B-01: Ø 0.90 m · C-01: marco 1.20 × 0.90 m | C-01 VC2: indicador → cumple |
 | `v_max_concreto_3_con_tmc_excluida` | `v_max_concreto_eleccion` = 3.0 m/s (extremo inferior de la Tabla N 10) con `suelo_agresivo_lrfd_sobre_tmc` = 'excluye': el TMC al que A-01 pasaria queda fuera por los sulfatos del juego | DETIENE | A-01: no dimensiona · A-02: Ø 0.90 m · B-01: Ø 0.90 m · C-01: marco 1.20 × 0.90 m | A-01: entrada del proyecto que falta — perfil_hdpe_fabricante |
