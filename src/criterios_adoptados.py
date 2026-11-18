@@ -3105,8 +3105,9 @@ CRITERIOS: Dict[str, Criterio] = {
     # COLUMNA DEL n DEL TUBO DE CONCRETO ES UNA ELECCION [A]. Hasta VE-2 la
     # doble n del concreto era lectura directa de la Tabla N 09 --MINIMO para
     # velocidad, MAXIMO para capacidad-- rotulada «Regla [N]» por la hoja de
-    # ruta (§4.1) sin numeral (ficha VE1-01, D3). El valor de archivo es esa
-    # misma doble n: ningun numero del expediente se mueve.
+    # ruta (§4.1) sin numeral (ficha VE1-01, D3; la hoja de ruta la escribe
+    # como adopcion [A] desde su correccion del 2026-11-18). El valor de
+    # archivo es esa misma doble n: ningun numero del expediente se mueve.
     "columna_n_manning_concreto": Criterio(
         valor="doble_n_minimo_maximo",
         # DE PERFIL: lo lee `M2.catalogo` al armar el tubo de concreto, que
@@ -3129,9 +3130,8 @@ CRITERIOS: Dict[str, Criterio] = {
                       "0.013 (lectura corregida del bloque A.2, errata "
                       "DIS-MCHHD-T09-A2-DESPLAZADA), sin regla de columna: "
                       "la doble n es una adopcion del proyecto, sin numeral "
-                      "que la sostenga, y la hoja de ruta la rotula «Regla "
-                      "[N]» en su §4.1, que sigue mal mientras el dueño no la "
-                      "corrija (ficha VE1-01). Se adopta la doble n "
+                      "que la sostenga, y asi la escribe la hoja de ruta en "
+                      "su §4.1. Se adopta la doble n "
                       "('doble_n_minimo_maximo'): el MAXIMO (0.013) para "
                       "capacidad, tirante y control de salida, y el MINIMO "
                       "(0.010) para velocidad maxima y socavacion, cada "
@@ -3162,8 +3162,8 @@ CRITERIOS: Dict[str, Criterio] = {
                "HDS5_3ED.B.2#CONCRETO_CAMPO: «These values are increased to "
                "0.011 to 0.013 based on field installation and aging». LA "
                "DOBLE N NO TIENE NUMERAL, sin numeral en ninguna de las tres "
-               "fuentes: es la Sec. 4.1 de la hoja de ruta, que la rotula "
-               "[N] (ficha VE1-01, D3)",
+               "fuentes: es la Sec. 4.1 de la hoja de ruta, que la escribe "
+               "como adopcion [A]",
         reemplazado_por="Ficha tecnica del tubo especificado (metodo de "
                         "fabricacion y juntas), con el n del fabricante y el "
                         "ensayo que lo respalda",
@@ -12242,10 +12242,8 @@ CRITERIOS: Dict[str, Criterio] = {
                       "entero impreso como contraste; si la resultante cae "
                       "fuera de la base, rige el peso entero. Los ensayos "
                       "midieron el peso entero 2.3 a 4.3 veces mayor en las "
-                      "geometrias que cumplen. La hoja de ruta (§9.4, punto "
-                      "5) describe el peso entero como lo que hace el "
-                      "codigo: sigue asi hasta que se corrija (ficha "
-                      "VE3-18)",
+                      "geometrias que cumplen (ficha VE3-18; la hoja de "
+                      "ruta, §9.4, lo dice asi)",
         fuente="AASHTO LRFD 9a ed., 11.6.1.2, pag. impresa 11-20 (PDF 1489) "
                "y 10.6.5, pag. impresa 10-86 (PDF 1375)",
         reemplazado_por="Decision del proyectista, con el EMS",

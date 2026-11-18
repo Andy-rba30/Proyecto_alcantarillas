@@ -7570,21 +7570,23 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   corrida fuera de `ErrorProyecto` o recorrían otra serie
   (`criterios_adoptados._verificar_campos_de_la_progresion`); (H3) la discrepancia de la
   doble n está declarada en `M3_hidraulica` y en `M2_material`.
-- **Abierto (D3): la hoja de ruta sigue mal**, y la corrige el dueño. (1) Su §1.2, nota
-  `INF-5.1.11`, dice de la columna «la lee V7», contra su fila V7 («Tubería vacía, NF en
+- **Cerrado (D3, el dueño corrigió la hoja de ruta, 2026-11-18):** (1) su §1.2, nota
+  `INF-5.1.11`, decía de la columna «la lee V7», contra su fila V7 («Tubería vacía, NF en
   su cota más alta») y el Manual de Puentes núm. 2.4.3.8.2, pág. 113 («debajo del nivel
-  de agua de diseño»). (2) Su §4.1 rotula «Regla [N]» la doble n sin numeral: el Manual
+  de agua de diseño»); (2) su §4.1 rotulaba «Regla [N]» la doble n sin numeral: el Manual
   de Hidrología, núm. 4.1.1.3.6, pág. impresa 74, sólo dice
   «n : Coeficiente de Manning (Ver Tabla Nº 09)», y la Tabla Nº 09 (pág. impresa 75) da
-  MÍNIMO, NORMAL y MÁXIMO sin regla de columna. Las dos, declaradas donde se usan. Y las
-  magnitudes `D` de los pasos de la memoria siguen con dos decimales, fuera del permiso.
+  MÍNIMO, NORMAL y MÁXIMO sin regla de columna. Las dos llevan su nota «Corregido
+  (`VE1-01` D3…)»; se retiraron las declaraciones del punto de uso y el centinela.
+- **Abierto (fuera de D3):** las magnitudes `D` de los pasos de la memoria siguen con dos
+  decimales, fuera del permiso.
 - **Por qué así:** D1 en el consumidor porque la ficha y la puerta aceptan la serie (la
   otra vía es VE1-02 (g)); quitar el redondeo a secas dejaba 1.7999999999999998 en el
   JSON. D2 y D3 en la documentación: el código lo sostienen la fila V7 y el Manual de
-  Puentes. Tests en rojo, guardias y un centinela que cae cuando el dueño corrija la hoja
-  de ruta (`tests/test_ve1_validacion.py`).
-- **Qué haría falta:** que el dueño corrija la §1.2 y el rótulo de la §4.1, y retirar
-  entonces las declaraciones del punto de uso y el centinela.
+  Puentes. Tests en rojo, guardias y un centinela que caía cuando el dueño corrigiera la
+  hoja de ruta, retirado al corregirla (`tests/test_ve1_validacion.py`).
+- **Qué haría falta:** para D3, nada; para los dos decimales de `D`, una decisión de
+  formato en la memoria.
 - **Dónde vive:** `src/modulos/M2_material.py::_escalon_de_la_serie`
 
 ## VE1-02 · Las decisiones del dueño que la validación externa dejó a la vista, sin tomarlas
@@ -7631,8 +7633,8 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   `V_sedimentacion`, el tirante de capacidad ni la velocidad de salida bajo control de
   salida. Citas: HDS-5 núm. 3.3.2, pág. impresa 3.24 (ya registrada) y HEC-14 núm.
   3.2.2, pág. impresa 3-7 (`HEC14.3.2.2#V_SALIDA_NORMAL`, nueva, con el ejemplo de la
-  pág. 3-8). `F4.MANNING` dice que la doble n es adopción y que la hoja de ruta la
-  rotula «Regla [N]».
+  pág. 3-8). `F4.MANNING` dice que la doble n es adopción (y, hasta que el dueño corrigió
+  la hoja de ruta el 2026-11-18, que ésta la rotulaba «Regla [N]»).
 - **Por qué así:** consumidores, con la tabla de cada uno verificada en el Manual
   (págs. impresas 76-77): V3 juzga la velocidad del conducto contra la Tabla Nº 10;
   M4 la toma como `V_salida` bajo control de entrada; M6 la usa en Laushey, el Froude
@@ -7651,7 +7653,7 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   nivel del cabezal: decisión del dueño, separando los dos tirantes en
   `ResultadoHidraulico`; (ii) el 1.184 m/s del dictamen (hoy 1.107) sigue como
   histórico en `src/servicio.py` y `src/constantes_normativas.py`, fuera del permiso;
-  (iii) la hoja de ruta §4.1 sigue mal (VE1-01, VE2-01).
+  (iii) la hoja de ruta §4.1, corregida por el dueño el 2026-11-18 (VE1-01, VE2-01).
 - **Dónde vive:** `src/modulos/M3_hidraulica.py::resolver_manning`
 
 ## VE2-A · La columna del n del concreto es una elección [A]
@@ -7673,13 +7675,12 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   pág. impresa B.2). Con el valor de archivo **ningún número se mueve**: la línea base
   cambia sólo en la huella de `criterios_adoptados.py`, el recuento 141 → 142, la ficha
   del criterio y el paso nuevo (texto); ninguna cota, tirante, velocidad ni diámetro.
-- **Abierto:** (1) la hoja de ruta (§4.1) sigue rotulando la doble n «Regla [N]» (ficha
-  VE1-01, D3). (2) La fila «Rugosidad (regla de doble n) … Fila de la Tabla N 09» de
+- **Abierto:** (1) cerrado el 2026-11-18: el dueño corrigió la §4.1 (ficha VE1-01, D3). (2) La fila «Rugosidad (regla de doble n) … Fila de la Tabla N 09» de
   `M11._filas_combinacion_adoptada` es texto fijo de M11, fuera del permiso: con una
   alternativa declarada imprime ese rótulo seguido de la columna o de la fuente real
   (`Material.fila_manning`). (3) El comentario de `modelos.Material.pasos` («VACIA EN LA
   CIRCULAR») ya no es cierto del tubo de concreto; `modelos.py` está fuera del permiso.
-- **Qué haría falta:** (1) que el dueño corrija la §4.1; (2) y (3), una línea en
+- **Qué haría falta:** (2) y (3), una línea en
   `M11_reporte.py` y otra en `modelos.py` al integrar.
 - **Dónde vive:** `src/modulos/M2_material.py::_par_manning_del_tubo_de_concreto`
 
@@ -7737,9 +7738,9 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   `nf_del_punto` y el nivel sobre la clave una corrida de perfil se detiene en
   `peso_especifico_saturado_relleno_kn_m3`, que hoy es [S] pendiente de ensayo y de perfil
   (VE2-05, N2), y el filtro de perfil de la pestaña 2 lo muestra;
-  (2) la hoja de ruta (fila V7; Fase 8, ítem 3, «con NF a 1.4 m») calla que el nivel lo
-  fija el Propietario, y sigue mal mientras el dueño no la corrija.
-- **Qué haría falta:** corregir (2).
+  (2) la hoja de ruta (fila V7; Fase 8, ítem 3, «con NF a 1.4 m») callaba que el nivel lo
+  fija el Propietario: cerrado el 2026-11-18, el dueño la corrigió (ficha VE2-01).
+- **Qué haría falta:** nada para (1) y (2).
 - **Dónde vive:** `src/modulos/M8_estructural.py::cota_nivel_agua_v7_del_nf`
 
 ## VE2-E · Aviso de consistencia de la serie de lluvias, sin umbral — Cerrado (VE-2)
@@ -7814,7 +7815,7 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   `caudal_calculado` en `tests/apoyo/sensibilidad.py`.
 - **Dónde vive:** `src/modulos/MH_hidrologia.py::precipitacion_de_diseno`
 
-## VE2-01 · Lo que sigue mal en la hoja de ruta después de VE-2 (no se edita: lo corrige el dueño)
+## VE2-01 · Lo que seguía mal en la hoja de ruta después de VE-2 (lo corrigió el dueño, 2026-11-18)
 
 - **Qué se difirió:** corregir `docs/hoja_de_ruta_alcantarillas_v8.md`, que VE-2 no edita.
   Tres textos, cada uno verificado contra su PDF y declarado en el punto de uso:
@@ -7834,8 +7835,14 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   equivocados (CLAUDE.md, «Fuente de verdad»). Las tres discrepancias están declaradas en
   `F4.MANNING`, en `M8_estructural` («Por que U asume sumersion completa») y en la fila de
   `NF_profundidad_m` de `docs/contrato_entradas.md`.
-- **Qué haría falta:** que el dueño corrija los tres textos, y retirar entonces las
-  declaraciones del punto de uso y el centinela de `tests/test_ve1_validacion.py`.
+- **Cerrado (el dueño corrigió la hoja de ruta, 2026-11-18):** los tres textos, verificados
+  de nuevo contra su PDF, con una nota «Corregido (`VE2-01` …)» cada uno: (1) la §4.1 rotula
+  la doble n adopción [A] (`columna_n_manning_concreto`); (2) la fila V7 y la Fase 8, ítem 3,
+  dicen que el nivel de agua de diseño lo especifica o aprueba el Propietario y que es el
+  criterio [A] `nivel_agua_diseno_v7`; (3) la §1.2 dice que V7 lee el NF sólo con
+  `nf_del_punto`. Retiradas las declaraciones de `F4.MANNING`, de `M8_estructural`, de la
+  fila del contrato, de los docstrings de M3 y M2, de la ficha del criterio, y el centinela.
+- **Qué haría falta:** nada.
 - **Dónde vive:** `src/modulos/M8_estructural.py::regla_nivel_agua_v7`
 
 ## VE2-02 · Lo que VE-2 dejó diferido, reunido
@@ -7846,8 +7853,8 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   permiso (VE2-B); (a) la fila «Rugosidad (regla de doble n)» de
   `M11._filas_combinacion_adoptada` es texto fijo que no nombra la columna declarada
   (VE2-A); (g) con la opción inglesa, el tope de 2.70 m y V9 comparan el diámetro de cálculo
-  y no el designado, y la pared del diámetro inglés no está decidida (VE2-G); (c2) la hoja de ruta calla que el nivel de agua de
-  diseño lo fija el Propietario (VE2-C; el dato de ensayo de expediente que perfil pedía lo
+  y no el designado, y la pared del diámetro inglés no está decidida (VE2-G); (c2) la hoja de ruta callaba que el nivel de agua de
+  diseño lo fija el Propietario, corregida por el dueño el 2026-11-18 (VE2-C, VE2-01; el dato de ensayo de expediente que perfil pedía lo
   cerró VE2-03, M3); (e) el contraste
   cuantitativo de la consistencia, sin fuente (VE2-E); (f) cuencas desde 770 km² y Pd ≤ Po
   (VE2-F); (d) el 1.13 como [C], sin el PDF de su fuente (VE2-D). Y uno de la integración:
@@ -8259,16 +8266,13 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
     salida SIN proteger (HEC-14 5.1.3, AASHTO 10.6.1.2), con el delantal de enrocado diseñado
     aparte. No se implementa una «hoya protegida»: ninguna fuente da su profundidad. AASHTO
     12.6.5 (2.0 ft) queda como el extremo alto de la ventana.
-- **Lo que sigue mal en la hoja de ruta (no se edita; regla de la fuente primaria de
-  `CLAUDE.md`):** la §9.4, en su bloque «Corregido» de T-7c, punto (5), dice que el talón se arma
-  «con el peso entero» (11.6.1.2), y el punto (9) que el armado va con k_h = 1.0·k_h0 «aunque la
-  estabilidad lo reduzca». Desde VE-3.15 el talón va por el método exacto y la reducción de la
-  estabilidad sólo existe con el armado que cede. Quien diseñe leyendo sólo la hoja de ruta
-  armará el talón con más momento del que el programa usa. Hasta que se corrija, rige el código
-  y esta ficha.
+- **Cerrado (hoja de ruta, corregida por el dueño el 2026-11-18):** la §9.4 (bloque de T-7c)
+  decía en su punto (5) el talón «con el peso entero» y en el (9) k_h = 1.0·k_h0 «aunque la
+  estabilidad lo reduzca»; los dos llevan su nota «Corregido (`VE3-18`…)». Retirada la
+  declaración de la ficha de `momento_talon_cabezal`.
 - **Por qué:** son elecciones [A] y [C] dentro de sus ventanas; las fijó el dueño con la
   verificación de cada cita contra el PDF.
-- **Qué haría falta:** corregir la §9.4 de la hoja de ruta; con el EMS real, revisar el φ de la
-  decisión 11 (C11.5.7) y la profundidad de socavación de la Fase 6.
+- **Qué haría falta:** con el EMS real, revisar el φ de la decisión 11 (C11.5.7) y la
+  profundidad de socavación de la Fase 6.
 - **Dónde vive:** `src/modulos/M9_cabezal.py::factor_muro` (la guardia de la decisión 12) y los
   cinco criterios en `src/criterios_adoptados.py`
