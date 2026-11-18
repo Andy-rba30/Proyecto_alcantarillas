@@ -5053,6 +5053,31 @@ MANNING_CAJON_HDS5 = {
     if _TB1.clave_corta(fila) == "concrete_boxes"
 }
 
+# --- T11-10 --- (decidido por el dueño el 2026-11-13: «abrir la forma») El
+# RANGO del n de un cajon VACIADO IN SITU, segun el encofrado: HDS-5 3a ed.,
+# Apendice B, num. B.3 'CONCRETE BOX CULVERT', pag. impresa B.2 (PDF 204),
+# «Manning's n values for cast-in-place boxes range from 0.012 to 0.022»
+# (cita HDS5_3ED.B.3#CAJON_IN_SITU, verificada contra la pagina). Es la
+# ventana del PAR (n_min, n_max) que 'n_manning_cajon' admite ademas de la
+# clave de una fila, y NO se escribe a mano: se LEE del texto literal de la
+# cita, la unica transcripcion, como `MANNING_CAJON_HDS5` se lee de su fila.
+# Su extremo inferior coincide con el n_min de la fila del cajon de la Tabla
+# B.1 (0.012): el de laboratorio, que el encofrado solo puede empeorar. Lo
+# consumen la puerta (`criterios_adoptados._verificar_par_de_encofrado`) y
+# el consumidor (`M2._fila_manning_de_cajon`).
+import re as _re  # noqa: E402  (bloque T11-10)
+
+_RANGO_B3 = _re.search(r"range from (\d+\.\d+) to (\d+\.\d+)",
+                       _reg.cita("HDS5_3ED.B.3#CAJON_IN_SITU").texto_literal.texto)
+if _RANGO_B3 is None:
+    raise RuntimeError(
+        "la cita HDS5_3ED.B.3#CAJON_IN_SITU ya no escribe «range from ... to "
+        "...»: el rango del cajon vaciado in situ no se puede leer de ella")
+MANNING_CAJON_IN_SITU_HDS5 = (float(_RANGO_B3.group(1)),
+                              float(_RANGO_B3.group(2)))
+NUMERAL_MANNING_CAJON_IN_SITU_HDS5 = _reg.cita(
+    "HDS5_3ED.B.3#CAJON_IN_SITU").como_texto()
+
 
 # ===========================================================================
 # --- T-9 --- (cadena T) · espaciamiento de alivios: la cuneta (M10)
