@@ -2072,6 +2072,36 @@ N_CAJON_TB1 = _fundamento(
 )
 
 
+# --- T11-10 --- El n del marco VACIADO IN SITU por el par de la
+# especificacion del encofrado, dentro del rango del num. B.3 del HDS-5. Es la
+# tercera lectura de 'n_manning_cajon' [C], la que la forma `str` no admitia
+# hasta T11-10. Verbo DEFINE: la cita DESCRIBE el rango y lo liga al
+# encofrado; no manda un valor.
+N_CAJON_IN_SITU = _fundamento(
+    id="F4.N_CAJON_IN_SITU",
+    fase=F4,
+    que_paso=("Coeficiente de rugosidad de Manning del cajon de concreto "
+              "vaciado in situ, por el par de la especificacion del "
+              "encofrado"),
+    por_que=(
+        "Las filas de la Tabla B.1 del HDS-5 son valores de laboratorio. En "
+        "un cajon vaciado in situ la fuente liga el n a la calidad del "
+        "encofrado, a las practicas constructivas y al envejecimiento, y da "
+        "el rango en que se mueve: el par que el proyecto declara es el de "
+        "la especificacion del encofrado, dentro de ese rango, y no una "
+        "fila. El rango se toma completo, minimo y maximo: la regla de doble "
+        "n pide los dos extremos, porque n_max es conservador para capacidad "
+        "y tirante y n_min para velocidad y socavacion."),
+    verbo=Verbo.DEFINE,
+    citas=("HDS5_3ED.B.3#CAJON_IN_SITU",),    # DEFINICION -> sostiene DEFINE
+    que_pasa_si_no_se_hace=(
+        "El marco vaciado in situ se calcularia con el n de laboratorio de la "
+        "fila del cajon aunque el encofrado especificado sea peor: el n de "
+        "capacidad quedaria del lado inseguro para el tirante y la carga de "
+        "salida, y la memoria no diria de donde sale el par."),
+)
+
+
 # --- VE-2 (a) --- La columna de la Tabla N 09 de la que sale el n del TUBO
 # de concreto. Hasta VE-2 era lectura directa «n_min = MINIMO, n_max =
 # MAXIMO», rotulada «Regla [N]» por la hoja de ruta (§4.1) sin numeral que la

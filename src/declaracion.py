@@ -696,6 +696,23 @@ def declarar_desde_tabla(clave: str, valor: Any, *,
             "o se declara la celda, o se escribe en la nota por que se "
             "adopta otro numero (la memoria lo imprimira como «DIFIERE de "
             "la celda»)")
+    # --- T11-10 --- LO MISMO PARA UN PAR. Desde que 'n_manning_cajon' admite
+    # el par del encofrado ademas de la clave de una fila, la ventana
+    # emergente --- que declara con la fila elegida y sin nota --- registraba
+    # «proviene de la fila concrete_boxes» para un par que esa fila no
+    # escribe. Un par que no es el de las dos celdas de la fila no proviene
+    # de ella: o trae nota, o no entra.
+    par_de_la_fila = (_par_de_la_fila(usada, filas)
+                      if _es_par_de_reales(valor) else None)
+    if par_de_la_fila is not None and not nota.strip() and not all(
+            abs(x - y) <= TOL_UMBRAL_NORMATIVO
+            for x, y in zip(valor, par_de_la_fila)):
+        raise ValueError(
+            f"'{clave}': el par declarado {tuple(valor)!r} DIFIERE del par "
+            f"{par_de_la_fila!r} de la fila {', '.join(filas)} de {usada}, y "
+            "no trae `nota`. Un par que no es el de la fila no PROVIENE de "
+            "ella: o se declara el de la fila, o se escribe en la nota de "
+            "donde sale (la especificacion que lo fija)")
 
     _ca.establecer_valor_dinamico(clave, valor)
 
@@ -760,6 +777,32 @@ def _celda_escalar(tabla_id: str, filas: Sequence[str],
     if len(numericas) != 1:
         return None
     return float(numericas[0])
+
+
+def _es_par_de_reales(valor: Any) -> bool:
+    return (isinstance(valor, (tuple, list)) and len(valor) == 2
+            and all(_ca._es_real(x) for x in valor))
+
+
+def _par_de_la_fila(tabla_id: str,
+                    filas: Sequence[str]) -> Optional[Tuple[float, float]]:
+    """
+    --- T11-10 --- El par que la fila elegida escribe, o None si la eleccion
+    no señala UNA fila con exactamente DOS celdas numericas (el par minimo,
+    maximo de la Tabla B.1). Una fila con tres (los n de la Tabla N 09) no
+    tiene par que citar: la procedencia dice «fila», como hasta ahora.
+    """
+    if len(filas) != 1:
+        return None
+    tabla = _registro.construir().tabla(tabla_id)
+    fila = next((f for f in tabla.filas
+                 if f.id == filas[0] or tabla.clave_corta(f) == filas[0]), None)
+    if fila is None:
+        return None
+    numericas = [float(x) for x in fila.valores.values() if _ca._es_real(x)]
+    if len(numericas) != 2:
+        return None
+    return (numericas[0], numericas[1])
 
 
 def declarar_en_rango(clave: str, valor: Any, *,
