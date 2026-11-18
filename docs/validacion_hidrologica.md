@@ -4,7 +4,7 @@
 
 ## 1. Qué es, de dónde sale y qué no valida
 
-El material es de una verificación independiente (dossier `proceso/planes_mejora/ve3_estado/verificaciones_del_dueno/hidrologia/hidrologia_casos_reales.md`): el verificador transcribió los seis documentos, hizo el cálculo a mano sin importar `src/`, lo congeló con sha1 antes de correr el programa y después comparó. Este documento rehace la comparación con el programa en cada corrida de la suite.
+El material es de una verificación independiente (dossier `hidrologia_casos_reales.md`, en la carpeta `verificaciones_del_dueno/hidrologia/` del estado de VE-3 del material de proceso): el verificador transcribió los seis documentos, hizo el cálculo a mano sin importar `src/`, lo congeló con sha1 antes de correr el programa y después comparó. Este documento rehace la comparación con el programa en cada corrida de la suite.
 
 **Lo que ningún caso valida: el caudal de punta a punta.** Ninguno de los seis documentos calcula el caudal con el método de MH (P24 por ajuste con K-S, tc de la Tabla N.º 05 o de Témez, Dick-Peschke bajo 1 h, C de la Tabla N.º 08, racional o racional modificado): todos usan otra relación intensidad-duración, otro tc o un C que la Tabla N.º 08 no puede dar. Lo que se valida con números de terceros son PIEZAS: el estadístico K-S de la ecuación (13), los tres estimadores (Normal, Log Normal 2P, Gumbel por momentos), Dick-Peschke, Témez y el K de Témez. El caudal se compara sólo contra el cálculo a mano del verificador (sección 10).
 

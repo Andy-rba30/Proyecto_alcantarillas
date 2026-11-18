@@ -65,8 +65,11 @@ from tests.apoyo.criterios import declarados, sin_valor
 RAIZ = Path(__file__).resolve().parents[2]
 DOCUMENTO = RAIZ / "docs" / "validacion_hidrologica.md"
 CASOS = RAIZ / "tests" / "fixtures" / "hidrologia_casos_reales"
-DOSSIER = ("proceso/planes_mejora/ve3_estado/verificaciones_del_dueno/"
-           "hidrologia/hidrologia_casos_reales.md")
+# El dossier vive en el material de proceso, que no es del entregable: se
+# nombra, no se lee (tests/test_t12_entregable.py).
+DOSSIER = ("`hidrologia_casos_reales.md`, en la carpeta "
+           "`verificaciones_del_dueno/hidrologia/` del estado de VE-3 del "
+           "material de proceso")
 
 INDECI = "INDECI Piura"
 TUMBES = "UNTumbes TU-107"
@@ -1167,7 +1170,7 @@ def generar() -> str:
     A("")
     A("## 1. Qué es, de dónde sale y qué no valida")
     A("")
-    A(f"El material es de una verificación independiente (dossier `{DOSSIER}`): "
+    A(f"El material es de una verificación independiente (dossier {DOSSIER}): "
       "el verificador transcribió los seis documentos, hizo el cálculo a "
       "mano sin importar `src/`, lo congeló con sha1 antes de correr el "
       "programa y después comparó. Este documento rehace la comparación con "
