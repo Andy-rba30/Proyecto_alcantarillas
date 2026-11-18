@@ -8259,8 +8259,8 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   (14; el desplante cita AASHTO 10.6.1.2 y HEC-14 5.1.3, y 12.6.5 es el techo de la ventana).
   La §9.4 de la hoja de ruta (puntos 5 y 9) la corrigió el dueño, con su nota «Corregido».
 - **Abierto:** (1) con el PGA del sitio (0.50 g) y los valores de archivo ningún cabezal del
-  juego cierra el sismo; el dentellón de corte no lo resuelve (informe `dentellon_norma.md`) y
-  se revisa qué se nos pasa; (2) el ancho final puede superar el tope cuando la pantalla crece
+  juego cierra el sismo; el dentellón de corte no lo resuelve (informe `dentellon_norma.md`);
+  la causa y lo que se decidió, en la ficha VE3-20; (2) el ancho final puede superar el tope cuando la pantalla crece
   después (A-01 salida, 4.852 frente a 4.825 m); (3) el φ de la decisión 11 se revisa con el
   EMS real (C11.5.7).
 - **Por qué:** son elecciones [A] y [C] dentro de sus ventanas, verificadas cita por cita
@@ -8294,3 +8294,26 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   una fila idéntica mes a mes a la de otro año sí sería `DatoInvalidoError`, con el par de años.
 - **Dónde vive:** `src/modulos/MH_hidrologia.py::maximos_anuales_repetidos` (el renglón, en
   `_paso_consistencia`)
+
+## VE3-20 · El sismo del cabezal con los valores de archivo no cierra: causa, decisión y defecto de la §9.2 de la hoja de ruta
+
+- **Qué se difirió:** la reducción de k_h a 0.5·k_h0 como valor de archivo. Sigue
+  «sin_reduccion» y se declara por obra junto con el armado «cedente» (decisión 12), como hace
+  el juego de la validación integral; con esas dos declaraciones y el relleno drenado los
+  cuatro puntos del juego cumplen E1 a E3 sísmicos.
+- **Por qué:** la revisión independiente
+  (`proceso/planes_mejora/ve3_estado/verificaciones_del_dueno/sismo_cabezal_que_se_pasa.md`)
+  no halló error aritmético: lo que no cierra es el relleno lleno de agua bajo sismo
+  (`drenaje_trasdos` de archivo) sobre k_h = k_h0, que por definición es desplazamiento nulo.
+  La exención de AASHTO 11.5.4.2 no aplica (A_s = 0.50 g). Aceptar el desplazamiento es del
+  Propietario («acceptable to the Owner»), y el programa no lo asume.
+- **Abierto, defecto de la hoja de ruta (no se edita aquí):** la §9.2 dice «No asumirlo en un
+  cabezal empotrado en terraplén» y presenta «sin reducción» como el lado seguro sin decir que
+  k_h0 es la aceleración con desplazamiento nulo, ni que con el PGA del sitio ningún cabezal del
+  juego lo cumple: la zapata crece hasta el tope sin converger. Mientras no se corrija, quien
+  lea sólo la hoja de ruta diseñará con una exigencia que el programa no puede cerrar.
+- **Qué haría falta:** que el dueño corrija la §9.2; el EMS real (φ de la fundación, clase de
+  sitio, licuefacción, que 11.5.4.2 pone como condición previa); y, para cada obra, el detalle
+  que permite el movimiento (junta en los aleros y en la unión con el conducto) con la
+  aceptación escrita del Propietario.
+- **Dónde vive:** `src/modulos/M9_cabezal.py::factor_muro`
