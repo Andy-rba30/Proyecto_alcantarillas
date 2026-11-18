@@ -23,13 +23,14 @@ B. EL DELTA DE RASANTE. `DisenoNoFactibleError.delta_rasante_m` lleva el del
 C. EL HERMANO. Un `DatoInvalidoError` de un DATO DEL PUNTO levantado en la
    Fase 5 sale como bloqueo DATO_INVALIDO con su `campo`, por el mismo patron
    que PC-28 y T-5 usan para el dato que falta, y no como «no factible». El
-   que M3 o M4 levantan ANTES de la Fase 5 queda como estaba (la rama de
-   error de la linea base no cambia de tipo), y esta fijado.
+   que M3 o M4 levantan ANTES de la Fase 5 quedaba como estaba; desde los
+   abiertos 3 y 4 de la ficha (`tests/test_t11_03_diagnostico.py`) sale con
+   su campo cuando detiene a todos, y el de la Fase 5 bloquea tambien al
+   material posterior que cierra.
 
 LO QUE NO CAMBIA, y esta fijado aqui: los escalones recorridos y las
-verificaciones evaluadas en cada uno (las `iteraciones`), el resultado
-aceptado cuando algun material cierra, y el `DatoInvalidoError` directo de
-`M5.altura_relleno_sobre_clave`.
+verificaciones evaluadas en cada uno (las `iteraciones`) y el
+`DatoInvalidoError` directo de `M5.altura_relleno_sobre_clave`.
 
 LOS DORADOS ESTAN A MANO, con la aritmetica escrita (fila A-01 del fixture,
 fondo de entrada adoptado igual al terreno, 42.10 msnm):
@@ -545,26 +546,32 @@ def test_el_dato_invalido_sobre_un_escalon_que_ya_incumple_no_decide():
     assert exc.value.delta_rasante_m is None
 
 
-def test_el_dato_invalido_de_antes_de_la_Fase_5_sigue_como_hasta_hoy():
+def test_el_dato_invalido_de_antes_de_la_Fase_5_comun_a_todos_sale_con_su_campo():
     """
-    Lo que la correccion deja FUERA, fijado: un `DatoInvalidoError` que no
-    trae `verificaciones_completadas` --el que M3 o M4 levantan antes de la
-    Fase 5, como el diametro de arranque negativo de la rama de error de la
-    linea base-- sigue saliendo «no factible» con el material «no evaluable»,
-    aunque detenga a los tres candidatos.
+    HASTA EL ABIERTO 4 DE LA FICHA T11-03 este test fijaba lo contrario: un
+    `DatoInvalidoError` sin `verificaciones_completadas` --el que M3 o M4
+    levantan antes de la Fase 5, como el diametro de arranque negativo de la
+    rama de error de la linea base-- salia «no factible» aunque detuviera a
+    los tres candidatos. Desde esa correccion (aprobada por el dueño, README
+    §8) sale con su campo; el resto, en `tests/test_t11_03_diagnostico.py`.
     """
     def de_M3(*, punto, material, seccion, resultado):
         raise DatoInvalidoError("D", valor=-0.9,
                                 motivo="el diametro debe ser positivo")
 
-    with pytest.raises(DisenoNoFactibleError) as exc:
+    with pytest.raises(DatoInvalidoError) as exc:
         MD.disenar_punto(_punto(), L=L_CONDUCTO, TW=TW_LIBRE, verificar=de_M3)
-    assert exc.value.motivo.count("material no evaluable") == len(TODOS)
-    assert exc.value.delta_rasante_m is None
+    assert exc.value.campo == "D"
 
 
-def test_un_material_que_cierra_no_cambia_porque_otro_tenga_un_dato_invalido():
-    """El resultado aceptado no se toca (encargo de T11-03)."""
+def test_un_material_que_cierra_no_se_adopta_si_otro_anterior_tiene_un_dato_invalido():
+    """
+    HASTA EL ABIERTO 3 DE LA FICHA T11-03 este test fijaba lo contrario («el
+    resultado aceptado no se toca», encargo de T11-03): el concreto detenido
+    por un dato invalido del punto en la Fase 5 se descartaba y el punto se
+    adoptaba en TMC. Desde esa correccion lo bloquea, como el dato que falta
+    (ficha T4-10); el resto, en `tests/test_t11_03_diagnostico.py`.
+    """
     def verificar(*, punto, material, seccion, resultado):
         if material.tipo is TipoMaterial.CONCRETO_REFORZADO:
             exc = DatoInvalidoError("Q_evento_extremo_m3s", valor=0.5,
@@ -573,9 +580,10 @@ def test_un_material_que_cierra_no_cambia_porque_otro_tenga_un_dato_invalido():
             raise exc
         return (_verificacion(True),)
 
-    resultado = MD.disenar_punto(_punto(), L=L_CONDUCTO, TW=TW_LIBRE,
-                                 verificar=verificar)
-    assert resultado.aceptado and resultado.material.tipo is TipoMaterial.TMC
+    with pytest.raises(DatoInvalidoError) as exc:
+        MD.disenar_punto(_punto(), L=L_CONDUCTO, TW=TW_LIBRE,
+                         verificar=verificar)
+    assert exc.value.campo == "Q_evento_extremo_m3s"
 
 
 def test_el_caudal_extremo_menor_que_el_de_diseno_es_un_dato_invalido():

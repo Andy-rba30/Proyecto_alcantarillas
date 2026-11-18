@@ -471,7 +471,12 @@ distinga un problema del expediente de un fallo del programa con un solo except.
   escalón cumple todo lo evaluado y gobierna el recubrimiento—, rotulado
   COTA INFERIOR para ese escalón y no remedio verificado del punto (ficha
   T11-03). Hasta T11-03 salía como dato inválido de una cota que nadie
-  había tocado, el material «no evaluable» y sin delta.
+  había tocado, el material «no evaluable» y sin delta. **Y no es la
+  salida de un punto al que hay que corregirle un dato** (abiertos 3 y 4 de
+  esa ficha): ni el diámetro de arranque negativo que detiene a todos los
+  candidatos antes de la Fase 5, ni el material posterior que cierra
+  después de que la Fase 5 detuvo a uno anterior por un dato inválido del
+  punto; los dos salen como `DatoInvalidoError` con su `campo` (ver abajo).
 - DatoFaltanteError: falta un dato de entrada. Falta la **columna** entera
   del CSV, o la celda obligatoria viene vacía. Lleva el nombre de la columna.
   **También cubre el dato que no es columna del CSV**: el que llega por
@@ -534,10 +539,17 @@ distinga un problema del expediente de un fallo del programa con un solo except.
   rechaza): `MD._exigir_datos_validos` relanza la primera, con su `campo`
   (bloqueo `DATO_INVALIDO`), si detuvo un escalón que cumplía todo lo que la
   Fase 5 le había evaluado o si detuvo a todos los candidatos —el mismo
-  patrón que PC-28 y T-5 para el dato que falta—. Fuera, a propósito y en la
-  ficha T11-03: el resultado aceptado cuando un candidato posterior cierra,
-  y el `DatoInvalidoError` que M3 o M4 levantan antes de la Fase 5 (la rama
-  de error de la línea base), que siguen como estaban.
+  patrón que PC-28 y T-5 para el dato que falta—. **Y desde los abiertos 3
+  y 4 de esa ficha (aprobados por el dueño) también en los dos casos que
+  dejó fuera:** si un candidato posterior cierra, el `DatoInvalidoError` de
+  un dato del punto que la Fase 5 levantó en un material anterior lo
+  bloquea igual (`MD._exigir_datos_validos_al_aceptar`, la regla de T4-10
+  para el dato que falta, con el alcance de T11-03 y de VE-2 A1/N1); y el
+  que M3 o M4 levantan ANTES de la Fase 5 cuenta para «detuvo a todos los
+  candidatos» —la rama de error de la línea base, el diámetro de arranque
+  negativo, sale como dato inválido sobre `D` y no «no factible»—. Sigue
+  fuera el de antes de la Fase 5 que detiene a UN material: no bloquea al
+  que cierra ni decide si los demás incumplen (ficha T11-03).
 - **LimiteNumericoError: cada dato cumple su rango y es la ARITMÉTICA la que
   no cabe.** Quinta de la taxonomía, añadida en S16.5. La regla que la separa
   de DatoInvalidoError: si el dato, por sí solo, viola un límite de
