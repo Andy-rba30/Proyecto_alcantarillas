@@ -3,7 +3,7 @@
     "csv": "tests/ejemplo_puntos.csv",
     "generado_utc": "<UTC>",
     "csv_sha1": "7ae59002159b228f3681ec0d34a4e8ae65052015",
-    "criterios_sha1": "7686cd155a9ca164d66664745c8d1e3b961aa1b9",
+    "criterios_sha1": "374495519b10214dc449e6b66b9b3d621121f528",
     "corredor_del_proyecto": {
       "valor": "terraplen de ~5 km de la Fase 0-bis de la hoja de ruta, num. 150",
       "origen": "src/datos_sitio.py"
@@ -59,9 +59,9 @@
       },
       {
         "clave": "iteracion_ancho_zapata_cabezal",
-        "texto": "El ancho de la zapata del cabezal no se itera: la geometria la propone la regla de predimensionamiento (o la declara `cabezal_declarado`) y la estabilidad la juzga como llega; la iteracion espera los parametros reales del EMS",
+        "texto": "El cabezal se dimensiona solo como zapata CORRIDA sobre la grilla de 'dimensionamiento_zapata_cabezal': el ancho por la estabilidad (VE-3.5, con la punta si el talon llega al tope), el peralte por el armado de la zapata (VE-3.9) y la pantalla por su armado (VE-3.14). Si ninguna zapata corrida cumple dentro del tope, el cabezal se declara NO FACTIBLE con estos criterios y no se proponen dentellon, llave de corte, mejoramiento del suelo ni pilotes; una dimension declarada (`cabezal_declarado`) no se itera y la estabilidad la juzga como llega; los parametros son los de prueba hasta el EMS",
         "ficha": "T7B-09",
-        "simbolo": "M9_cabezal.predimensionar_cabezal"
+        "simbolo": "M9_cabezal.dimensionar_zapata_por_estabilidad"
       },
       {
         "clave": "flotacion_marco_sin_peso_propio",
@@ -1015,7 +1015,6 @@
       "categoria_refuerzo_aashto",
       "clase_exposicion_fisuracion_cabezal",
       "clase_sitio",
-      "dimensionamiento_zapata_cabezal",
       "edicion_legal_que_rige_el_expediente",
       "edicion_que_rige_el_expediente",
       "exposicion_quimica_ems",
