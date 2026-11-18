@@ -3,7 +3,7 @@
     "csv": "<SALIDA>/puntos_c.csv",
     "generado_utc": "<UTC>",
     "csv_sha1": "b715b1694f4a17566bcbb365c439af196c47e185",
-    "criterios_sha1": "fcefcc616b50ab8373fedd6a195d1d765d04506b",
+    "criterios_sha1": "300b064da274805ba4ef14d9e6bba5052b853904",
     "corredor_del_proyecto": {
       "valor": "terraplen de ~5 km de la Fase 0-bis de la hoja de ruta, num. 150",
       "origen": "src/datos_sitio.py"
@@ -211,15 +211,9 @@
       },
       {
         "clave": "tirante_de_borde_hec14",
-        "texto": "Las Figuras 3.3 y 3.4 de HEC-14 (tirante de borde a la salida) no estan digitalizadas: con la velocidad tomada al tirante critico el contraste con la Tabla N 11 es un INDICADOR que no concluye; se digitalizaran en un trabajo posterior a la cadena",
+        "texto": "Donde las Figuras 3.3 y 3.4 de HEC-14 no dan el tirante de borde a la salida (una forma que no es circular ni rectangular, un caudal o un TW fuera de su familia de curvas, o una lectura que no queda bajo el tirante critico), la velocidad de salida bajo control de salida con el TW bajo el critico se toma al tirante critico: es una cota inferior y el contraste con la Tabla N 11 es un INDICADOR que no concluye",
         "ficha": "T8-08",
-        "simbolo": "M6_proteccion.proteccion_salida"
-      },
-      {
-        "clave": "velocidad_salida_banda_de_regimen",
-        "texto": "Cuando las dos ramas de n no coinciden en el regimen (con n maximo gobierna la salida con el TW bajo el critico; con n minimo el tirante normal seria supercritico), la velocidad de salida que llega a la Fase 6 es la critica y no la mayor de la critica y la de erosion: la Fase 6 lo avisa con las dos velocidades y el d50 que daria la alta; la regla de M4 queda para un trabajo posterior a la cadena, junto con las Figuras 3.3 y 3.4 de HEC-14",
-        "ficha": "T8-09",
-        "simbolo": "M6_proteccion._aviso_banda_de_regimen"
+        "simbolo": "M4_control.tirante_de_borde"
       },
       {
         "clave": "escalon_regla_salida_hw_1_2_d",
@@ -1858,12 +1852,10 @@
         "Remanso aguas arriba del canal: no se evaluo -- falta la seccion medida del canal (`seccion_receptor_medida` en --datos-externos: ancho de solera, talud, pendiente, n de Manning y profundidad), que en un paso de canal es la del mismo canal. Sin ella no se sabe cuanto levanta la obra la lamina del canal ni hasta donde llega el embalse; VC1 solo mide el nivel contra la coronacion en el cruce",
         "V2b: indicador disparado; el diseño no se detiene -- el conducto queda MAS PLANO que el cauce natural, que es el indicador de colmatacion del num. 5.3.3; el HDS-5 lo llama «built with an upstream depression» y dice que la sedimentacion es el resultado probable. Bajo regimen_v2b = indicador_con_aviso el punto NO se detiene: el indicador queda como aviso de mantenimiento junto al acceso de limpieza declarado, y la seccion no se descarta por el",
         "VC2: indicador disparado; el diseño no se detiene -- la salida queda 0.614 m SOBRE el fondo del canal aguas abajo: no empalma. Lo corrige medir la cota de fondo de la entrada en el cauce o declarar la pendiente que une las dos cotas del canal (S = (entrada - fondo aguas abajo) / L), no otra seccion. Con estas cotas, la pendiente que cerraria el empalme es S = (cota_entrada - cota_fondo_receptor) / L = (36.900 - 36.200) / 21.445 = 0.0326 m/m (valor calculado con la L de esta corrida, de primer orden: la longitud cambia con S). El punto NO se detiene por esto",
-        "Proteccion de salida: la velocidad de salida se tomo con el tirante critico (HDS-5 num. 3.1.6) porque el TW queda bajo el. HEC-14 num. 3.1.3: «The flow goes through critical depth upstream of the outlet when the tailwater elevation is below the critical depth elevation in the culvert.»; en el borde el tirante es MENOR que el critico y la velocidad MAYOR, de modo que V, el Froude y el d50 de Laushey son una cota inferior (no conservador). Magnitud, leida de la fuente y no calculada: en la Figura 3.4 de HEC-14, con descarga libre, la velocidad de borde es de 1.35 a 1.43 veces la critica, y el d50 de Laushey, que va con V², de 1.8 a 2.0 veces el impreso; en su ejemplo resuelto (pag. impresa 3-4, TW de 0.41 a 0.58 diametros), de 1.08 a 1.13 veces. Las Figuras 3.3 y 3.4, que dan el tirante de borde, no estan digitalizadas",
-        "Proteccion de salida: gobierna el control de salida y la velocidad de salida es la critica (1.908 m/s), pero la rama de n minimo de la regla de doble n da una velocidad normal MAYOR (1.955 m/s): con n minimo el tirante normal seria supercritico y la estimacion alta de la velocidad de salida seria esa. Con ella el d50 de Laushey seria 0.126 m y no 0.120 m. La velocidad de salida la fija M4 (HDS-5 num. 3.1.6) y aqui no se cambia",
         "Proteccion de salida: no se comparo la velocidad con la maxima admisible del terreno (Tabla Nº 11 del Manual) porque falta 'tipo_terreno_receptor' y 'regimen_flujo_descarga' en los datos externos del punto; el enrocado se dimensiona igual, sin saber si el terreno lo necesita",
         "Proteccion de salida: el apron de HEC-14 NO se evaluo -- la Ec. (10.4) es la que la fuente recomienda «for circular culverts» y el conducto es un marco. Hace falta: un disipador o una proteccion dimensionados para seccion rectangular (HEC-14, Sec. 10.1 o 10.3), que este programa no implementa. Rige el d50 de Laushey",
         "Proteccion de salida: la regla 'regla_espesor_longitud_proteccion_salida' pide la envolvente con HEC-14 y HEC-14 no es evaluable en este punto: rige el d50 de Laushey con el espesor y la longitud adoptados",
-        "Proteccion de salida: el espesor rige como 1.75 veces el d50 (0.210 m), bajo el piso de 2 veces de HEC-14: «Apron depth ranges from 3.5D50 for the smallest riprap to a limit of 2.0D50 for the larger riprap sizes.» (Sec. 10.2) y «The basin is pre-shaped and lined with riprap that is at least 2D50 thick.» (Sec. 10.1). Ver 'regla_espesor_longitud_proteccion_salida'",
+        "Proteccion de salida: el espesor rige como 1.75 veces el d50 (0.276 m), bajo el piso de 2 veces de HEC-14: «Apron depth ranges from 3.5D50 for the smallest riprap to a limit of 2.0D50 for the larger riprap sizes.» (Sec. 10.2) y «The basin is pre-shaped and lined with riprap that is at least 2D50 thick.» (Sec. 10.1). Ver 'regla_espesor_longitud_proteccion_salida'",
         "Proteccion de entrada: no se comparo la velocidad con la maxima admisible del terreno (Tabla Nº 11 del Manual) porque falta 'tipo_terreno_entrada' y 'regimen_flujo_descarga' en los datos externos del punto; no se sabe si la entrada necesita revestimiento",
         "Socavacion a la salida: NO se estimo -- falta el suelo del lecho (`material_lecho_salida`, dato del EMS: tipo, y D84 y D16 si no es cohesivo o indice de plasticidad y resistencia al corte saturada si lo es). El desplante del cabezal de salida queda sin profundidad de socavacion; tambien se puede declarar (`profundidad_socavacion_estimada_m`)"
       ],
@@ -1917,8 +1909,8 @@
         "numero_celdas": 1,
         "regimen_barril": "parcialmente lleno",
         "V_llena_m_s": 0.787037037037037,
-        "V_salida_m_s": 1.9082512799249043,
-        "V_salida_procedencia": "HDS-5 num. 3.1.6 (pag. impresa 3.18): bajo control de SALIDA el area de la velocidad de salida la fija el TW; aqui el TW queda bajo el tirante critico, de modo que el agua pasa por y_c a la salida (primera vineta de la pag. 3.18): V = Q_celda / A(y_c), con el area critica que el paso 4.2 ya resolvio. No lleva n de Manning: es un caudal entre un area, y por eso no entra en la regla de doble n.",
+        "V_salida_m_s": 2.188852844622772,
+        "V_salida_procedencia": "HEC-14 num. 3.1.3 (pag. impresa 3-3) y Figura 3.3 (pag. impresa 3-5): con el TW bajo el tirante critico (primera vineta de HDS-5 3.1.6, pag. impresa 3.18) el flujo pasa por y_c AGUAS ARRIBA de la salida y en el borde el tirante es menor. Tirante de borde leido de la figura (lectura por imagen, interpolada entre curvas y entre lineas de la reticula): y_o = 0.324 m con TW/D = 0.333 y KuQ/(B·D^1.5) = 1.502; V = Q_celda / A(y_o) = Q_celda / 0.388 m2. No lleva n de Manning.",
         "y_salida_m": 0.37119499972834213,
         "h_o_m": 0.6355974998641711,
         "TW_m": 0.3,
@@ -1944,9 +1936,9 @@
       },
       "proteccion_salida": {
         "numeral": "4.1.1.3.7 c)",
-        "V_salida_m_s": 1.9082512799249043,
-        "d50_m": 0.11986250649555744,
-        "espesor_m": 0.20975938636722552,
+        "V_salida_m_s": 2.188852844622772,
+        "d50_m": 0.15770496298265965,
+        "espesor_m": 0.2759836852196544,
         "longitud_m": 5.0,
         "criterio_espesor": "espesor_proteccion_salida",
         "criterio_longitud": "longitud_proteccion_salida",
@@ -1955,13 +1947,13 @@
           "El filtro no se dimensiona: se declara como requisito. Sin filtro el enrocado se socava por debajo y falla (Sec. 6 de la hoja de ruta; Lámina Nº 05 del Manual; HEC-14 Sec. 10.2; EG-2013 num. 511.08)",
           "Alcance: el d50 que rige sale del Manual MTC (num. 4.1.1.3.7 c), funcion solo de V. HDS-5 3a ed. (FHWA-HIF-12-026), Sec. 5.3.2 'Scour at Outlets', pag. 5.11, remite el apron de enrocado a HEC-14 Sec. 10.2, que lo dimensiona en funcion de Q, D y TW: se calcula AL LADO, como contraste, y la corrida avisa cuando pide mas que lo adoptado. La geometria de la proteccion se cierra en el expediente tecnico"
         ],
-        "d50_laushey_m": 0.11986250649555744,
+        "d50_laushey_m": 0.15770496298265965,
         "rige_la_envolvente": false,
         "requerida": null,
         "froude_salida": {
-          "Fr": 0.9999999999999999,
-          "y_equivalente_m": 0.37119499972834213,
-          "area_m2": 0.44543399967401054,
+          "Fr": 1.228489656566093,
+          "y_equivalente_m": 0.32360938976480524,
+          "area_m2": 0.38833126771776627,
           "supercritico": false,
           "seccion_llena": false
         },
@@ -1969,7 +1961,7 @@
         "apron_hec14": null,
         "clase_hec14_de_la_piedra": null,
         "regla_espesor_longitud": "envolvente_hec14",
-        "espesor_adoptado_m": 0.20975938636722552,
+        "espesor_adoptado_m": 0.2759836852196544,
         "longitud_adoptada_m": 5.0,
         "filtro": {
           "requisito": "El enrocado lleva FILTRO entre la piedra y el suelo (Lámina Nº 05 del Manual; HEC-14 Sec. 10.2). Si es geotextil: Clase 1 de la Tabla 511-01 (Clase 2 para geotextiles tejidos de monofilamento), con la permitividad y la abertura aparente de la Tabla 511-06 de EG-2013 (num. 511.08). NO SE DIMENSIONA: la tabla entra por el pasante del tamiz N.º 200 del suelo, que es dato del EMS (`material_lecho_salida.pasa_200_pct`)",
@@ -2175,7 +2167,7 @@
           "estado": "cumple",
           "cumple": true,
           "veredicto": "cumple",
-          "valor_obtenido": 1.9549494658358044,
+          "valor_obtenido": 2.188852844622772,
           "valor_admisible": 6.0,
           "criterio_aplicado": null
         },
@@ -2792,7 +2784,7 @@
         "etiqueta": "C",
         "valor": "concrete_boxes",
         "declarado_en_caliente": false,
-        "concepto": "Coeficiente de rugosidad de Manning del marco de concreto: fila de la que se toma la doble n (n_min, n_max)"
+        "concepto": "Coeficiente de rugosidad de Manning del marco de concreto: fila de la que se toma la doble n (n_min, n_max), o el par de la especificacion del encofrado de un marco vaciado in situ"
       },
       {
         "clave": "n_manning_hdpe",

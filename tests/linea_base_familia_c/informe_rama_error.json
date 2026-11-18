@@ -3,7 +3,7 @@
     "csv": "tests/ejemplo_puntos.csv",
     "generado_utc": "<UTC>",
     "csv_sha1": "7ae59002159b228f3681ec0d34a4e8ae65052015",
-    "criterios_sha1": "fcefcc616b50ab8373fedd6a195d1d765d04506b",
+    "criterios_sha1": "300b064da274805ba4ef14d9e6bba5052b853904",
     "corredor_del_proyecto": {
       "valor": "terraplen de ~5 km de la Fase 0-bis de la hoja de ruta, num. 150",
       "origen": "src/datos_sitio.py"
@@ -71,15 +71,9 @@
       },
       {
         "clave": "tirante_de_borde_hec14",
-        "texto": "Las Figuras 3.3 y 3.4 de HEC-14 (tirante de borde a la salida) no estan digitalizadas: con la velocidad tomada al tirante critico el contraste con la Tabla N 11 es un INDICADOR que no concluye; se digitalizaran en un trabajo posterior a la cadena",
+        "texto": "Donde las Figuras 3.3 y 3.4 de HEC-14 no dan el tirante de borde a la salida (una forma que no es circular ni rectangular, un caudal o un TW fuera de su familia de curvas, o una lectura que no queda bajo el tirante critico), la velocidad de salida bajo control de salida con el TW bajo el critico se toma al tirante critico: es una cota inferior y el contraste con la Tabla N 11 es un INDICADOR que no concluye",
         "ficha": "T8-08",
-        "simbolo": "M6_proteccion.proteccion_salida"
-      },
-      {
-        "clave": "velocidad_salida_banda_de_regimen",
-        "texto": "Cuando las dos ramas de n no coinciden en el regimen (con n maximo gobierna la salida con el TW bajo el critico; con n minimo el tirante normal seria supercritico), la velocidad de salida que llega a la Fase 6 es la critica y no la mayor de la critica y la de erosion: la Fase 6 lo avisa con las dos velocidades y el d50 que daria la alta; la regla de M4 queda para un trabajo posterior a la cadena, junto con las Figuras 3.3 y 3.4 de HEC-14",
-        "ficha": "T8-09",
-        "simbolo": "M6_proteccion._aviso_banda_de_regimen"
+        "simbolo": "M4_control.tirante_de_borde"
       },
       {
         "clave": "escalon_regla_salida_hw_1_2_d",
@@ -248,15 +242,15 @@
         {
           "fase": "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)",
           "etapa": "material y diametro (bucle de MD)",
-          "tipo": "DisenoNoFactibleError",
+          "tipo": "DatoInvalidoError",
           "criterio": null,
           "etiqueta": null,
           "concepto": null,
           "fuente": null,
-          "campo": null,
+          "campo": "D",
           "delta_rasante_m": null,
           "diferido_por_alcance": false,
-          "mensaje": "Diseno no factible en el punto A-01: ningun material candidato cumple la Fase 5. Concreto reforzado: material no evaluable: DatoInvalidoError: Dato invalido en 'D': el diametro debe ser positivo (valor leido: -0.9) | TMC galvanizada: material no evaluable: DatoInvalidoError: Dato invalido en 'D': el diametro debe ser positivo (valor leido: -0.9) | HDPE: material no evaluable: DatoInvalidoError: Dato invalido en 'D': el diametro debe ser positivo (valor leido: -0.9)"
+          "mensaje": "Dato invalido en 'D': el diametro debe ser positivo (valor leido: -0.9)"
         }
       ]
     },
@@ -418,15 +412,15 @@
         {
           "fase": "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)",
           "etapa": "material y diametro (bucle de MD)",
-          "tipo": "DisenoNoFactibleError",
+          "tipo": "DatoInvalidoError",
           "criterio": null,
           "etiqueta": null,
           "concepto": null,
           "fuente": null,
-          "campo": null,
+          "campo": "D",
           "delta_rasante_m": null,
           "diferido_por_alcance": false,
-          "mensaje": "Diseno no factible en el punto A-02: ningun material candidato cumple la Fase 5. Concreto reforzado: material no evaluable: DatoInvalidoError: Dato invalido en 'D': el diametro debe ser positivo (valor leido: -0.9) | TMC galvanizada: material no evaluable: DatoInvalidoError: Dato invalido en 'D': el diametro debe ser positivo (valor leido: -0.9) | HDPE: material no evaluable: DatoInvalidoError: Dato invalido en 'D': el diametro debe ser positivo (valor leido: -0.9)"
+          "mensaje": "Dato invalido en 'D': el diametro debe ser positivo (valor leido: -0.9)"
         }
       ]
     },
@@ -620,15 +614,15 @@
         {
           "fase": "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)",
           "etapa": "material y diametro (bucle de MD)",
-          "tipo": "DisenoNoFactibleError",
+          "tipo": "DatoInvalidoError",
           "criterio": null,
           "etiqueta": null,
           "concepto": null,
           "fuente": null,
-          "campo": null,
+          "campo": "D",
           "delta_rasante_m": null,
           "diferido_por_alcance": false,
-          "mensaje": "Diseno no factible en el punto B-01: ningun material candidato cumple la Fase 5. Concreto reforzado: material no evaluable: DatoInvalidoError: Dato invalido en 'D': el diametro debe ser positivo (valor leido: -0.9) | TMC galvanizada: material no evaluable: DatoInvalidoError: Dato invalido en 'D': el diametro debe ser positivo (valor leido: -0.9) | HDPE: material no evaluable: DatoInvalidoError: Dato invalido en 'D': el diametro debe ser positivo (valor leido: -0.9)"
+          "mensaje": "Dato invalido en 'D': el diametro debe ser positivo (valor leido: -0.9)"
         },
         {
           "fase": "Fase 10 - Espaciamiento de alivio (M10)",

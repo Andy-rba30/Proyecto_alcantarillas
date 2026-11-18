@@ -22,8 +22,8 @@ A-01  |  progresiva 0+380  |  Familia A
   aviso: fondo de entrada adoptado igual al terreno de plataforma: medir en el cauce
   aviso: plataforma tomada horizontal: no se declaro `bombeo` ni `peralte`. Declarar el bombeo de la seccion tipica: cada 1 % acorta la longitud 20.1 cm en este punto
   Bloqueos:
-    [DisenoNoFactibleError] Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5) -> material y diametro (bucle de MD)
-        Diseno no factible en el punto A-01: ningun material candidato cumple la Fase 5. Concreto reforzado: material no evaluable: DatoInvalidoError: Dato invalido en 'D': el diametro debe ser positivo (valor leido: -0.9) | TMC galvanizada: material no evaluable: DatoInvalidoError: Dato invalido en 'D': el diametro debe ser positivo (valor leido: -0.9) | HDPE: material no evaluable: DatoInvalidoError: Dato invalido en 'D': el diametro debe ser positivo (valor leido: -0.9)
+    [DatoInvalidoError] Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5) -> material y diametro (bucle de MD)
+        Dato invalido en 'D': el diametro debe ser positivo (valor leido: -0.9)
 
 ------------------------------------------------------------------------------
 A-02  |  progresiva 1+920  |  Familia A
@@ -43,8 +43,8 @@ A-02  |  progresiva 1+920  |  Familia A
   aviso: fondo de entrada adoptado igual al terreno de plataforma: medir en el cauce
   aviso: plataforma tomada horizontal: no se declaro `bombeo` ni `peralte`. Declarar el bombeo de la seccion tipica: cada 1 % acorta la longitud 19.6 cm en este punto
   Bloqueos:
-    [DisenoNoFactibleError] Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5) -> material y diametro (bucle de MD)
-        Diseno no factible en el punto A-02: ningun material candidato cumple la Fase 5. Concreto reforzado: material no evaluable: DatoInvalidoError: Dato invalido en 'D': el diametro debe ser positivo (valor leido: -0.9) | TMC galvanizada: material no evaluable: DatoInvalidoError: Dato invalido en 'D': el diametro debe ser positivo (valor leido: -0.9) | HDPE: material no evaluable: DatoInvalidoError: Dato invalido en 'D': el diametro debe ser positivo (valor leido: -0.9)
+    [DatoInvalidoError] Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5) -> material y diametro (bucle de MD)
+        Dato invalido en 'D': el diametro debe ser positivo (valor leido: -0.9)
 
 ------------------------------------------------------------------------------
 B-01  |  progresiva 2+450  |  Familia B
@@ -70,8 +70,8 @@ B-01  |  progresiva 2+450  |  Familia B
   aviso: VB2 (caudal de aporte frente a la capacidad de la cuneta) NO SE EVALUO: falta la pendiente de la cuneta (`S_cuneta`, por --datos-externos), sin la que la capacidad no se calcula; por la misma falta la Fase 10 del punto se detiene (ver su bloqueo)
   aviso: tramo de cuneta que VB1 no mira: del lado de progresivas mayores de B-01 (km 2.450) no hay obra que cierre el tramo; VB1 mide, de cada alivio, el tramo del lado de progresivas menores, y la longitud de esa cuneta no se verifica
   Bloqueos:
-    [DisenoNoFactibleError] Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5) -> material y diametro (bucle de MD)
-        Diseno no factible en el punto B-01: ningun material candidato cumple la Fase 5. Concreto reforzado: material no evaluable: DatoInvalidoError: Dato invalido en 'D': el diametro debe ser positivo (valor leido: -0.9) | TMC galvanizada: material no evaluable: DatoInvalidoError: Dato invalido en 'D': el diametro debe ser positivo (valor leido: -0.9) | HDPE: material no evaluable: DatoInvalidoError: Dato invalido en 'D': el diametro debe ser positivo (valor leido: -0.9)
+    [DatoInvalidoError] Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5) -> material y diametro (bucle de MD)
+        Dato invalido en 'D': el diametro debe ser positivo (valor leido: -0.9)
     [DatoFaltanteError] Fase 10 - Espaciamiento de alivio (M10) -> espaciamiento maximo entre alivios
         Falta el dato 'L_hidraulico_m'. La longitud por capacidad de la cuneta no esta declarada (`L_hidraulico_m`) y no se puede calcular: faltan los datos del trazo con que la Fase 10 la calcula (S_cuneta, por --datos-externos). Declarar esos datos, o la longitud
 
@@ -106,8 +106,7 @@ Fuera del alcance del expediente, por decision declarada:
   - El cabezal PARALELO a la via no se calcula: en las tres familias el cabezal es normal al eje del conducto, que es lo que supone la hidraulica (ke y cartas del HDS-5); el paralelo queda como alternativa solo para el marco, diferida (ficha T7A-03; M9_cabezal.predimensionar_aleros)
   - El cabezal se dimensiona solo como zapata CORRIDA sobre la grilla de 'dimensionamiento_zapata_cabezal': el ancho por la estabilidad (VE-3.5, con la punta si el talon llega al tope), el peralte por el armado de la zapata (VE-3.9) y la pantalla por su armado (VE-3.14). Si ninguna zapata corrida cumple dentro del tope, el cabezal se declara NO FACTIBLE con estos criterios y no se proponen dentellon, llave de corte, mejoramiento del suelo ni pilotes; una dimension declarada (`cabezal_declarado`) no se itera y la estabilidad la juzga como llega; los parametros son los de prueba hasta el EMS (ficha T7B-09; M9_cabezal.dimensionar_zapata_por_estabilidad)
   - V7 del marco no pesa el concreto del marco (DC = 0, del lado seguro): se revisara cuando llegue la seccion real del canal de la ANA o de la Junta de usuarios (ficha T3-08; M5_verificaciones.v7_flotacion)
-  - Las Figuras 3.3 y 3.4 de HEC-14 (tirante de borde a la salida) no estan digitalizadas: con la velocidad tomada al tirante critico el contraste con la Tabla N 11 es un INDICADOR que no concluye; se digitalizaran en un trabajo posterior a la cadena (ficha T8-08; M6_proteccion.proteccion_salida)
-  - Cuando las dos ramas de n no coinciden en el regimen (con n maximo gobierna la salida con el TW bajo el critico; con n minimo el tirante normal seria supercritico), la velocidad de salida que llega a la Fase 6 es la critica y no la mayor de la critica y la de erosion: la Fase 6 lo avisa con las dos velocidades y el d50 que daria la alta; la regla de M4 queda para un trabajo posterior a la cadena, junto con las Figuras 3.3 y 3.4 de HEC-14 (ficha T8-09; M6_proteccion._aviso_banda_de_regimen)
+  - Donde las Figuras 3.3 y 3.4 de HEC-14 no dan el tirante de borde a la salida (una forma que no es circular ni rectangular, un caudal o un TW fuera de su familia de curvas, o una lectura que no queda bajo el tirante critico), la velocidad de salida bajo control de salida con el TW bajo el critico se toma al tirante critico: es una cota inferior y el contraste con la Tabla N 11 es un INDICADOR que no concluye (ficha T8-08; M4_control.tirante_de_borde)
   - La regla de la carga de control de salida del HDS-5 num. 3.3.3 (entre 0.75 D y 1.2 D compiten la aproximacion y el remanso; sobre 1.2 D rige la aproximacion) tiene un escalon donde la aproximacion cruza HW/D = 1.2: un caudal mayor puede dar unos milimetros menos de carga (11 mm medidos con el tubo de A-01 entre 1.276 y 1.290 m3/s). Es el umbral que la fuente escribe y no se suaviza; en V8 lo cubre la guardia de la carga del evento extremo (ficha T7V-01; M4_control.resolver_control)
 Diferido al expediente por alcance (registrado con su fundamento; NO cuenta como bloqueo para el cierre):
   [C-01] Fase 5 - Verificaciones
@@ -134,7 +133,7 @@ Etapas bloqueadas       : 5
 Diferidas por alcance   : 2 (ver ALCANCE DE LA CORRIDA; no cuentan para el cierre)
 Expediente cerrado      : no
 
-El expediente NO cierra: falta o no vale un dato de entrada (el bloqueo de cada punto nombra el campo); una etapa no tiene solucion con estos datos (limite numerico o diseño no factible; ver el bloqueo).
+El expediente NO cierra: falta o no vale un dato de entrada (el bloqueo de cada punto nombra el campo).
 
 Advertencia de corredor: el proyecto no tiene nombre y los [S] de esta corrida gobiernan desde src/datos_sitio.py, que es la obra del repositorio (corredor «terraplen de ~5 km de la Fase 0-bis de la hoja de ruta, num. 150»). Si esta memoria es de otra obra, declare sus [S] con --datos-sitio sitio.json (CLI) o en el campo de sitio de la pestaña 1 (GUI), con su trazabilidad y su fecha; datos_sitio.py no se edita
 
