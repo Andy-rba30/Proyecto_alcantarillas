@@ -31,25 +31,25 @@
 | conducto | `fraccion_llena_mayor_parte` | [A] | 0.5–0.9 | 0.5, 0.9 | juego | LEÍDO, SIN EFECTO MEDIBLE | — |
 | conducto | `instalacion_estandar_concreto` | [A] | tipo_1 / tipo_2 / tipo_3 / tipo_4 | 'tipo_3', 'tipo_1', 'tipo_2', 'tipo_4' | juego | LEÍDO, SIN EFECTO MEDIBLE | — |
 | conducto | `carga_viva_bajo_relleno_alto` | [A] | conservar / despreciar_3_6_1_2_6a | 'conservar', 'despreciar_3_6_1_2_6a' | juego | LEÍDO, SIN EFECTO MEDIBLE | — |
-| conducto | `eta_importancia_operativa_conducto` | [A] | 0.95–1.05 | 1.05, 0.95 | juego | MUEVE VEREDICTOS | veredictos que cambian: A-01 con 0.95: 1; A-02 con 0.95: 1; B-01 con 0.95: 1; C-01 con 0.95: 1 |
-| cabezal | `factor_muro_eleccion` | [A] | sin_reduccion / reduccion_por_desplazamiento | 'reduccion_por_desplazamiento', 'sin_reduccion' | juego | MUEVE VEREDICTOS | veredictos que cambian: A-01 con 'sin_reduccion': 14; A-02 con 'sin_reduccion': 13; B-01 con 'sin_reduccion': 15; C-01 con 'sin_reduccion': 13 |
-| cabezal | `gamma_EQ` | [A] | 0.0–1.0 | 0.5, 0.0, 1.0 | juego | MUEVE VEREDICTOS | veredictos que cambian: A-01 con 0.0: 1; A-02 con 1.0: 1 |
-| cabezal | `fraccion_delta_sobre_phi_trasdos` | [C] | 0.33–0.67 | 0.67, 0.33 | juego | MUEVE VEREDICTOS | veredictos que cambian: A-01 con 0.33: 1 |
-| cabezal | `fila_phi_estabilidad_cabezal` | [A] | zapatas_seccion_10 / muros_tabla_11_5_7 | 'zapatas_seccion_10', 'muros_tabla_11_5_7' | juego_cabezal_de_la_regla | MUEVE VEREDICTOS | veredictos que cambian: A-01 con 'muros_tabla_11_5_7': 1; A-02 con 'muros_tabla_11_5_7': 1; C-01 con 'muros_tabla_11_5_7': 1 |
-| cabezal | `factores_inclinacion_carga_portante` | [A] | aplicar / omitir | 'aplicar', 'omitir' | juego_cabezal_de_la_regla | MUEVE VEREDICTOS | veredictos que cambian: A-01 con 'omitir': 4; A-02 con 'omitir': 4; B-01 con 'omitir': 4; C-01 con 'omitir': 4 |
-| cabezal | `regla_pendiente_relleno_trasdos` | [A] | cuna_de_tanteo / talud_quebrado_2h / talud_del_terraplen | 'cuna_de_tanteo', 'talud_quebrado_2h', 'talud_del_terraplen' | juego | MUEVE VEREDICTOS | veredictos que cambian: A-01 con 'talud_quebrado_2h': 3; A-02 con 'talud_quebrado_2h': 1; B-01 con 'talud_quebrado_2h': 1; C-01 con 'talud_quebrado_2h': 5; A-01 con 'talud_del_terraplen': 14; A-02 con 'talud_del_terraplen': 14; B-01 con 'talud_del_terraplen': 14; C-01 con 'talud_del_terraplen': 16 |
-| cabezal | `regimen_resistencia_elementos_cabezal` | [A] | no_cedente_k0 / cedente | 'no_cedente_k0', 'cedente' | juego | MUEVE VEREDICTOS | veredictos que cambian: A-01 con 'cedente': 2; A-02 con 'cedente': 2; B-01 con 'cedente': 2 |
-| cabezal | `eta_ductilidad_cabezal` | [A] | 0.95–1.05 | 1.0, 0.95, 1.05 | juego | MUEVE VEREDICTOS | veredictos que cambian: A-01 con 0.95: 1; A-02 con 0.95: 3; B-01 con 0.95: 1; C-01 con 0.95: 1; A-01 con 1.05: 1; A-02 con 1.05: 2; B-01 con 1.05: 1; C-01 con 1.05: 2 |
-| cabezal | `eta_redundancia_cabezal` | [A] | 0.95–1.05 | 1.0, 0.95, 1.05 | juego | MUEVE VEREDICTOS | veredictos que cambian: A-01 con 0.95: 1; A-02 con 0.95: 3; B-01 con 0.95: 1; C-01 con 0.95: 1; A-01 con 1.05: 1; A-02 con 1.05: 2; B-01 con 1.05: 1; C-01 con 1.05: 2 |
-| cabezal | `marco_estabilidad_cabezal` | [A] | lrfd_rige_asd_informa / asd_rige_lrfd_informa / envolvente_de_los_dos | 'lrfd_rige_asd_informa', 'asd_rige_lrfd_informa', 'envolvente_de_los_dos' | juego | MUEVE VEREDICTOS | veredictos que cambian: A-01 con 'asd_rige_lrfd_informa': 2; A-02 con 'asd_rige_lrfd_informa': 5; B-01 con 'asd_rige_lrfd_informa': 3; C-01 con 'asd_rige_lrfd_informa': 3; A-01 con 'envolvente_de_los_dos': 2; A-02 con 'envolvente_de_los_dos': 5; B-01 con 'envolvente_de_los_dos': 3; C-01 con 'envolvente_de_los_dos': 3 |
+| conducto | `eta_importancia_operativa_conducto` | [A] | 0.95–1.05 | 1.05, 0.95 | juego | LEÍDO, SIN EFECTO MEDIBLE | — |
+| cabezal | `factor_muro_eleccion` | [A] | sin_reduccion / reduccion_por_desplazamiento | 'reduccion_por_desplazamiento', 'sin_reduccion' | juego | MUEVE VEREDICTOS | veredictos que cambian: A-01 con 'sin_reduccion': 4; A-02 con 'sin_reduccion': 4; B-01 con 'sin_reduccion': 3; C-01 con 'sin_reduccion': 3 |
+| cabezal | `gamma_EQ` | [A] | 0.0–1.0 | 0.5, 0.0, 1.0 | juego | LEÍDO, SIN EFECTO MEDIBLE | — |
+| cabezal | `fraccion_delta_sobre_phi_trasdos` | [C] | 0.33–0.67 | 0.67, 0.33 | juego | LEÍDO, SIN EFECTO MEDIBLE | — |
+| cabezal | `fila_phi_estabilidad_cabezal` | [A] | zapatas_seccion_10 / muros_tabla_11_5_7 | 'muros_tabla_11_5_7', 'zapatas_seccion_10' | juego_cabezal_de_la_regla | MUEVE VEREDICTOS | veredictos que cambian: A-01 con 'zapatas_seccion_10': 1; C-01 con 'zapatas_seccion_10': 2 |
+| cabezal | `factores_inclinacion_carga_portante` | [A] | aplicar / omitir | 'aplicar', 'omitir' | juego_cabezal_de_la_regla | MUEVE VEREDICTOS | veredictos que cambian: A-01 con 'omitir': 5; A-02 con 'omitir': 6; B-01 con 'omitir': 6; C-01 con 'omitir': 3 |
+| cabezal | `regla_pendiente_relleno_trasdos` | [A] | cuna_de_tanteo / talud_quebrado_2h / talud_del_terraplen | 'cuna_de_tanteo', 'talud_quebrado_2h', 'talud_del_terraplen' | juego | MUEVE VEREDICTOS | veredictos que cambian: A-02 con 'talud_quebrado_2h': 1; A-01 con 'talud_del_terraplen': 13; A-02 con 'talud_del_terraplen': 13; B-01 con 'talud_del_terraplen': 12; C-01 con 'talud_del_terraplen': 12 |
+| cabezal | `regimen_resistencia_elementos_cabezal` | [A] | no_cedente_k0 / cedente | 'cedente', 'no_cedente_k0' | juego | MUEVE VEREDICTOS | veredictos que cambian: A-01 con 'no_cedente_k0': 65; A-02 con 'no_cedente_k0': 65; B-01 con 'no_cedente_k0': 64; C-01 con 'no_cedente_k0': 64 |
+| cabezal | `eta_ductilidad_cabezal` | [A] | 0.95–1.05 | 1.0, 0.95, 1.05 | juego | LEÍDO, SIN EFECTO MEDIBLE | — |
+| cabezal | `eta_redundancia_cabezal` | [A] | 0.95–1.05 | 1.0, 0.95, 1.05 | juego | LEÍDO, SIN EFECTO MEDIBLE | — |
+| cabezal | `marco_estabilidad_cabezal` | [A] | lrfd_rige_asd_informa / asd_rige_lrfd_informa / envolvente_de_los_dos | 'lrfd_rige_asd_informa', 'asd_rige_lrfd_informa', 'envolvente_de_los_dos' | juego | MUEVE VEREDICTOS | veredictos que cambian: A-01 con 'asd_rige_lrfd_informa': 3; A-02 con 'asd_rige_lrfd_informa': 3; B-01 con 'asd_rige_lrfd_informa': 4; C-01 con 'asd_rige_lrfd_informa': 4; A-01 con 'envolvente_de_los_dos': 3; A-02 con 'envolvente_de_los_dos': 3; B-01 con 'envolvente_de_los_dos': 4; C-01 con 'envolvente_de_los_dos': 4 |
 | cabezal | `regimen_cabezal` | [A] | cedente / no_cedente | 'cedente', 'no_cedente' | juego | MUEVE VEREDICTOS | veredictos que cambian: A-01 con 'no_cedente': 24; A-02 con 'no_cedente': 24; B-01 con 'no_cedente': 24; C-01 con 'no_cedente': 24 |
-| cabezal | `drenaje_trasdos` | [A] | sin_drenaje / drenado | 'drenado', 'sin_drenaje' | juego | MUEVE VEREDICTOS | veredictos que cambian: A-01 con 'sin_drenaje': 8; A-02 con 'sin_drenaje': 7; B-01 con 'sin_drenaje': 1; C-01 con 'sin_drenaje': 3 |
-| cabezal | `fc_cabezal_mpa` | [A] | 17.5–35.0 | 21.0, 17.5, 35.0 | juego | MUEVE VEREDICTOS | veredictos que cambian: A-01 con 35.0: 2; B-01 con 35.0: 2; C-01 con 35.0: 2 |
+| cabezal | `drenaje_trasdos` | [A] | sin_drenaje / drenado | 'drenado', 'sin_drenaje' | juego | MUEVE VEREDICTOS | veredictos que cambian: A-01 con 'sin_drenaje': 4; A-02 con 'sin_drenaje': 4 |
+| cabezal | `fc_cabezal_mpa` | [A] | 17.5–35.0 | 21.0, 17.5, 35.0 | juego | LEÍDO, SIN EFECTO MEDIBLE | — |
 | cabezal | `duracion_caudal_pico_socavacion_min` | [A] | 30.0–360.0 | 360.0, 30.0 | juego | LEÍDO, SIN EFECTO MEDIBLE | — |
 | hidrología | `factor_intervalo_fijo_p24` | [A] | 1.0–1.13 | 1.0, 1.13 | juego_caudal_calculado | LEÍDO, SIN EFECTO MEDIBLE | — |
-| cabezal | `F_pga_lectura_columna_extrema` | [A] | limite_inclusive / limite_estricto | 'limite_inclusive', 'limite_estricto' | juego | MUEVE VEREDICTOS | veredictos que cambian: A-01 con 'limite_estricto': 64; A-02 con 'limite_estricto': 64; B-01 con 'limite_estricto': 64; C-01 con 'limite_estricto': 64 |
+| cabezal | `F_pga_lectura_columna_extrema` | [A] | limite_inclusive / limite_estricto | 'limite_inclusive', 'limite_estricto' | juego | MUEVE VEREDICTOS | veredictos que cambian: A-01 con 'limite_estricto': 65; A-02 con 'limite_estricto': 65; B-01 con 'limite_estricto': 64; C-01 con 'limite_estricto': 64 |
 | cabezal | `inclinacion_muro_beta` | [A] | 0.0–10.0 | 0.0, 10.0 | juego | NO LO LEE LA CORRIDA | sólo lo lee la vía de contraste de Coulomb / Mononobe-Okabe; el empuje que rige sale de la cuña de tanteo sobre el plano vertical del talón |
-| cabezal | `punto_aplicacion_incremento_sismico` | [C] | 0.333–0.6 | 0.6, 0.333 | juego | MUEVE VEREDICTOS | veredictos que cambian: A-01 con 0.333: 1 |
+| cabezal | `punto_aplicacion_incremento_sismico` | [C] | 0.333–0.6 | 0.6, 0.333 | juego | LEÍDO, SIN EFECTO MEDIBLE | — |
 | hidrología | `homogeneidad_serie_fen` | [A] | serie_completa / serie_sin_fen / dos_poblaciones | 'serie_completa', 'serie_sin_fen', 'dos_poblaciones' | juego | NO LO LEE LA CORRIDA | sólo lo lee el caudal CALCULADO; en el juego el caudal es el declarado del CSV (lo mide la variante `caudal_calculado_sin_fen` de `docs/validacion_integral.md`) |
 | sin consumidor | `umbral_area_quebrada_importante_ha` | [A] | 50.0–200.0 | 100.0, 50.0, 200.0 | juego | LEÍDO, SIN EFECTO MEDIBLE | — |
 | hidrología | `distribucion_precipitacion_maxima` | [A] | mejor_ajuste_ks / normal / lognormal_2p / gumbel / lognormal_3p / gamma_2p / gamma_3p / log_pearson_3 / log_gumbel | 'mejor_ajuste_ks', 'normal', 'lognormal_2p', 'gumbel', 'lognormal_3p', 'gamma_2p', 'gamma_3p', 'log_pearson_3', 'log_gumbel' | juego | NO LO LEE LA CORRIDA | hidrología: sólo la lee el caudal calculado, y en el juego el caudal es el declarado |
@@ -70,26 +70,26 @@
 | conducto | `acceso_mantenimiento_v2b` | [A] | camara_o_buzon_en_cabecera / acceso_por_cabezal_sin_obra_adicional / sin_acceso_declarado_como_limitacion | 'camara_o_buzon_en_cabecera', 'acceso_por_cabezal_sin_obra_adicional', 'sin_acceso_declarado_como_limitacion' | juego | LEÍDO, SIN EFECTO MEDIBLE | — |
 | conducto | `pendiente_minima_conducto` | [A] | 0.0–0.005 | 0.0, 0.005 | juego | MUEVE EL DISEÑO | diseño: C-01 con 0.005: Concreto reforzado, marco 1.20 × 0.90 m → no dimensiona · veredictos que cambian: C-01 con 0.005: 107 |
 | conducto | `pendiente_maxima_conducto` | [A] | 0.02–0.1 | 0.1, 0.02 | juego | LEÍDO, SIN EFECTO MEDIBLE | — |
-| cabezal | `phi_relleno_trasdos` | [A] | 30.0–38.0 | 34.0, 30.0, 38.0 | juego | MUEVE VEREDICTOS | veredictos que cambian: B-01 con 30.0: 2; C-01 con 30.0: 2; A-01 con 38.0: 1; A-02 con 38.0: 2; B-01 con 38.0: 2; C-01 con 38.0: 3 |
+| cabezal | `phi_relleno_trasdos` | [A] | 30.0–38.0 | 34.0, 30.0, 38.0 | juego | MUEVE VEREDICTOS | veredictos que cambian: A-02 con 30.0: 1 |
 | sin consumidor | `demanda_sismica_licuefaccion` | [A] | 475–1000 | 1000, 475 | juego | NO LO LEE LA CORRIDA | sin consumidor (`SIN_CONSUMIDOR_Y_SIN_MEDIDA`): la licuefacción no se evalúa |
 | conducto | `diametro_de_diseno_concreto` | [A] | designado / designado_o_ingles_convertido | 'designado', 'designado_o_ingles_convertido' | juego | LEÍDO, SIN EFECTO MEDIBLE | — |
 | conducto | `condicion_pavimento` | [A] | no_pavimentado / flexible / rigido | 'flexible', 'no_pavimentado', 'rigido' | juego | LEÍDO, SIN EFECTO MEDIBLE | — |
 | conducto | `corrugacion_y_espesor_tmc` | [A] | 68x13/1.32 / 68x13/1.63 / 68x13/2.01 / 68x13/2.77 / 68x13/3.51 / 68x13/4.27 / 75x25/1.32 / 75x25/1.63 / 75x25/2.01 / 75x25/2.77 / 75x25/3.51 / 75x25/4.27 / 125x25/1.63 / 125x25/2.01 / 125x25/2.77 / 125x25/3.51 / 125x25/4.27 | '68x13/2.01', '68x13/1.32', '68x13/1.63', '68x13/2.77', '68x13/3.51', '68x13/4.27', '75x25/1.32', '75x25/1.63', '75x25/2.01', '75x25/2.77', '75x25/3.51', '75x25/4.27', '125x25/1.63', '125x25/2.01', '125x25/2.77', '125x25/3.51', '125x25/4.27' | juego | LEÍDO, SIN EFECTO MEDIBLE | — |
 | conducto | `suelo_agresivo_lrfd_sobre_tmc` | [A] | aviso / excluye | 'aviso', 'excluye' | juego | LEÍDO, SIN EFECTO MEDIBLE | — |
 | conducto | `relleno_max_contraste_acpa_m` | [A] | 0.6096–1.5 | 1.0, 0.6096, 1.5 | juego | LEÍDO, SIN EFECTO MEDIBLE | — |
-| conducto | `peso_especifico_relleno_kn_m3` | [A] | 17.0–20.0 | 17.0, 20.0 | juego | MUEVE VEREDICTOS | veredictos que cambian: C-01 con 20.0: 2 |
+| conducto | `peso_especifico_relleno_kn_m3` | [A] | 17.0–20.0 | 17.0, 20.0 | juego | LEÍDO, SIN EFECTO MEDIBLE | — |
 | conducto | `nivel_agua_diseno_v7` | [A] | en_la_clave / nf_del_punto | 'en_la_clave', 'nf_del_punto' | juego | MUEVE EL DISEÑO | diseño: A-01 con 'nf_del_punto': Concreto reforzado, Ø 0.90 m → no dimensiona; A-02 con 'nf_del_punto': Concreto reforzado, Ø 0.90 m → no dimensiona; B-01 con 'nf_del_punto': Concreto reforzado, Ø 0.90 m → no dimensiona; C-01 con 'nf_del_punto': Concreto reforzado, marco 1.20 × 0.90 m → no dimensiona · veredictos que cambian: A-01 con 'nf_del_punto': 105; A-02 con 'nf_del_punto': 105; B-01 con 'nf_del_punto': 105; C-01 con 'nf_del_punto': 107 |
 | conducto | `fabricacion_tmc` | [A] | helicoidal / anular_remachada_simple / anular_remachada_doble / anular_empernada | 'anular_remachada_simple', 'helicoidal', 'anular_remachada_doble', 'anular_empernada' | juego | NO LO LEE LA CORRIDA | ningún punto adopta TMC: el concreto es el primer candidato |
 | conducto | `relleno_estructural_hdpe` | [A] | Sn-100 / Sn-95 / Si-95 / Cl-95 | 'Si-95', 'Sn-100', 'Sn-95', 'Cl-95' | juego | NO LO LEE LA CORRIDA | ningún punto adopta HDPE: el concreto es el primer candidato |
-| conducto | `talud_terraplen` | [A] | 1.5–2.0 | 2.0, 1.5 | juego | MUEVE VEREDICTOS | veredictos que cambian: A-02 con 1.5: 1; B-01 con 1.5: 2; C-01 con 1.5: 1 |
+| conducto | `talud_terraplen` | [A] | 1.5–2.0 | 2.0, 1.5 | juego | LEÍDO, SIN EFECTO MEDIBLE | — |
 | protección | `espesor_proteccion_salida` | [A] | 1.5–2.0 | 1.75, 1.5, 2.0 | juego | LEÍDO, SIN EFECTO MEDIBLE | — |
 | protección | `longitud_proteccion_salida` | [A] | 3.0–8.0 | 5.0, 3.0, 8.0 | juego | LEÍDO, SIN EFECTO MEDIBLE | — |
 | protección | `tipo_proteccion_entrada` | [A] | emboquillado_de_piedra / enchapado_de_roca_acomodada / otro_revestimiento | 'emboquillado_de_piedra', 'enchapado_de_roca_acomodada', 'otro_revestimiento' | juego | LEÍDO, SIN EFECTO MEDIBLE | — |
 | protección | `lectura_coeficientes_socavacion_hec14` | [A] | envolvente_de_filas_vecinas / interpolacion_lineal | 'envolvente_de_filas_vecinas', 'interpolacion_lineal' | juego | LEÍDO, SIN EFECTO MEDIBLE | — |
 | protección | `regla_espesor_longitud_proteccion_salida` | [A] | manual / envolvente_hec14 | 'envolvente_hec14', 'manual' | juego | LEÍDO, SIN EFECTO MEDIBLE | — |
-| protección | `referencia_profundidad_socavacion` | [A] | fondo_del_cauce_receptor / solera_de_salida | 'fondo_del_cauce_receptor', 'solera_de_salida' | juego | MUEVE VEREDICTOS | veredictos que cambian: A-01 con 'solera_de_salida': 3; B-01 con 'solera_de_salida': 2; C-01 con 'solera_de_salida': 2 |
+| protección | `referencia_profundidad_socavacion` | [A] | fondo_del_cauce_receptor / solera_de_salida | 'fondo_del_cauce_receptor', 'solera_de_salida' | juego | MUEVE VEREDICTOS | veredictos que cambian: A-01 con 'solera_de_salida': 1; A-02 con 'solera_de_salida': 1 |
 | cabezal | `regimen_cortante_muro_e060_art_11_10_2` | [A] | en_el_plano / perpendicular_al_plano | 'perpendicular_al_plano', 'en_el_plano' | juego | LEÍDO, SIN EFECTO MEDIBLE | — |
-| cabezal | `margen_zapata_bajo_socavacion_m` | [C] | 0.0–0.6096 | 0.6096, 0.0 | juego | MUEVE VEREDICTOS | veredictos que cambian: A-01 con 0.0: 2; A-02 con 0.0: 1; B-01 con 0.0: 2; C-01 con 0.0: 2 |
+| cabezal | `margen_zapata_bajo_socavacion_m` | [C] | 0.0–0.6096 | 0.0, 0.6096 | juego | MUEVE VEREDICTOS | veredictos que cambian: A-01 con 0.6096: 1; A-02 con 0.6096: 1 |
 | conducto | `umbral_no_colapso_evento_extremo` | [A] | sin_desborde_de_la_plataforma / desborde_admitido_con_terraplen_protegido | 'sin_desborde_de_la_plataforma', 'desborde_admitido_con_terraplen_protegido' | juego | MUEVE EL DISEÑO | diseño: A-01 con 'desborde_admitido_con_terraplen_protegido': Concreto reforzado, Ø 0.90 m → no dimensiona; A-02 con 'desborde_admitido_con_terraplen_protegido': Concreto reforzado, Ø 0.90 m → no dimensiona; B-01 con 'desborde_admitido_con_terraplen_protegido': Concreto reforzado, Ø 0.90 m → no dimensiona; C-01 con 'desborde_admitido_con_terraplen_protegido': Concreto reforzado, marco 1.20 × 0.90 m → no dimensiona · veredictos que cambian: A-01 con 'desborde_admitido_con_terraplen_protegido': 105; A-02 con 'desborde_admitido_con_terraplen_protegido': 105; B-01 con 'desborde_admitido_con_terraplen_protegido': 105; C-01 con 'desborde_admitido_con_terraplen_protegido': 107 |
 | cabezal | `terreno_delante_del_cabezal` | [A] | horizontal / talud_descendente | 'horizontal', 'talud_descendente' | juego | MUEVE VEREDICTOS | veredictos que cambian: A-01 con 'talud_descendente': 24; A-02 con 'talud_descendente': 24; B-01 con 'talud_descendente': 24; C-01 con 'talud_descendente': 24 |
 | cabezal | `acero_refuerzo_cabezal` | [A] | A615_grado_60 / A706_grado_60 | 'A615_grado_60', 'A706_grado_60' | juego | LEÍDO, SIN EFECTO MEDIBLE | — |
@@ -100,17 +100,17 @@
 | conducto | `metodo_longitud_conducto` | [A] | terraplen_simetrico / por_extremo | 'por_extremo', 'terraplen_simetrico' | juego | LEÍDO, SIN EFECTO MEDIBLE | — |
 | conducto | `desnivel_minimo_entrega_m` | [A] | 0.0–0.3 | 0.0, 0.3 | juego | LEÍDO, SIN EFECTO MEDIBLE | — |
 | conducto | `desajuste_empalme_canal_m` | [A] | 0.01–0.02 | 0.01, 0.02 | juego | LEÍDO, SIN EFECTO MEDIBLE | — |
-| cabezal | `momento_talon_cabezal` | [A] | peso_entero / exacto | 'peso_entero', 'exacto' | juego | LEÍDO, SIN EFECTO MEDIBLE | — |
-| cabezal | `carga_pantalla_cabezal` | [A] | plano_virtual_del_talon / cuna_sobre_la_pantalla | 'plano_virtual_del_talon', 'cuna_sobre_la_pantalla' | juego | LEÍDO, SIN EFECTO MEDIBLE | — |
-| cabezal | `distribucion_incremento_sismico` | [A] | fraccion_de_h / distribucion_estatica | 'fraccion_de_h', 'distribucion_estatica' | juego | MUEVE VEREDICTOS | veredictos que cambian: A-01 con 'distribucion_estatica': 1 |
+| cabezal | `momento_talon_cabezal` | [A] | peso_entero / exacto | 'exacto', 'peso_entero' | juego | LEÍDO, SIN EFECTO MEDIBLE | — |
+| cabezal | `carga_pantalla_cabezal` | [A] | plano_virtual_del_talon / cuna_sobre_la_pantalla | 'cuna_sobre_la_pantalla', 'plano_virtual_del_talon' | juego | LEÍDO, SIN EFECTO MEDIBLE | — |
+| cabezal | `distribucion_incremento_sismico` | [A] | segun_regimen / fraccion_de_h / distribucion_estatica | 'segun_regimen', 'fraccion_de_h', 'distribucion_estatica' | juego | LEÍDO, SIN EFECTO MEDIBLE | — |
 | cabezal | `agua_del_relleno_bajo_sismo` | [C] | se_mueve_con_el_suelo / relleno_muy_abierto | 'se_mueve_con_el_suelo', 'relleno_muy_abierto' | juego | NO LO LEE LA CORRIDA | el juego declara el trasdós drenado y su freático queda bajo las zapatas: no hay agua en el plano de empuje bajo sismo, que es lo único que lee la elección (VE-3.14, C11.6.5.3) |
 
 ## 3. Lo que el resumen dice, por clase
 
 - **MUEVE EL DISEÑO** (11): `seccion_receptor` (juego_sin_TW), `v_max_concreto_eleccion`, `v_max_concreto_eleccion` (juego_tmc_excluida), `regimen_v2b`, `borde_libre_y_sobre_d_max`, `embocadura_cabezal`, `origen_cota_fondo_entrada`, `remanso_derecho_via`, `pendiente_minima_conducto`, `nivel_agua_diseno_v7`, `umbral_no_colapso_evento_extremo`.
-- **MUEVE VEREDICTOS** (24): `eta_importancia_operativa_conducto`, `factor_muro_eleccion`, `gamma_EQ`, `fraccion_delta_sobre_phi_trasdos`, `fila_phi_estabilidad_cabezal` (juego_cabezal_de_la_regla), `factores_inclinacion_carga_portante` (juego_cabezal_de_la_regla), `regla_pendiente_relleno_trasdos`, `regimen_resistencia_elementos_cabezal`, `eta_ductilidad_cabezal`, `eta_redundancia_cabezal`, `marco_estabilidad_cabezal`, `regimen_cabezal`, `drenaje_trasdos`, `fc_cabezal_mpa`, `F_pga_lectura_columna_extrema`, `punto_aplicacion_incremento_sismico`, `revestimiento_cuneta`, `phi_relleno_trasdos`, `peso_especifico_relleno_kn_m3`, `talud_terraplen`, `referencia_profundidad_socavacion`, `margen_zapata_bajo_socavacion_m`, `terreno_delante_del_cabezal`, `distribucion_incremento_sismico`.
+- **MUEVE VEREDICTOS** (14): `factor_muro_eleccion`, `fila_phi_estabilidad_cabezal` (juego_cabezal_de_la_regla), `factores_inclinacion_carga_portante` (juego_cabezal_de_la_regla), `regla_pendiente_relleno_trasdos`, `regimen_resistencia_elementos_cabezal`, `marco_estabilidad_cabezal`, `regimen_cabezal`, `drenaje_trasdos`, `F_pga_lectura_columna_extrema`, `revestimiento_cuneta`, `phi_relleno_trasdos`, `referencia_profundidad_socavacion`, `margen_zapata_bajo_socavacion_m`, `terreno_delante_del_cabezal`.
 - **MUEVE EL HW** (2): `n_manning_cajon`, `ke_entrada`.
-- **LEÍDO, SIN EFECTO MEDIBLE** (37): `HW_D_max`, `v_max_tmc`, `v_max_hdpe`, `espesor_pared_cajon`, `fraccion_llena_mayor_parte`, `instalacion_estandar_concreto`, `carga_viva_bajo_relleno_alto`, `duracion_caudal_pico_socavacion_min`, `factor_intervalo_fijo_p24` (juego_caudal_calculado), `umbral_area_quebrada_importante_ha`, `columna_n_manning_concreto`, `esviaje_max_grados`, `borde_libre_canal_m`, `long_max_cuneta`, `lectura_velocidad_limite_cuneta`, `obras_familia_a_extremo_de_cuneta`, `acceso_mantenimiento_v2b`, `pendiente_maxima_conducto`, `diametro_de_diseno_concreto`, `condicion_pavimento`, `corrugacion_y_espesor_tmc`, `suelo_agresivo_lrfd_sobre_tmc`, `relleno_max_contraste_acpa_m`, `espesor_proteccion_salida`, `longitud_proteccion_salida`, `tipo_proteccion_entrada`, `lectura_coeficientes_socavacion_hec14`, `regla_espesor_longitud_proteccion_salida`, `regimen_cortante_muro_e060_art_11_10_2`, `acero_refuerzo_cabezal`, `regla_minimos_constructivos_cabezal`, `clase_exposicion_fisuracion_cabezal`, `metodo_longitud_conducto`, `desnivel_minimo_entrega_m`, `desajuste_empalme_canal_m`, `momento_talon_cabezal`, `carga_pantalla_cabezal`.
+- **LEÍDO, SIN EFECTO MEDIBLE** (47): `HW_D_max`, `v_max_tmc`, `v_max_hdpe`, `espesor_pared_cajon`, `fraccion_llena_mayor_parte`, `instalacion_estandar_concreto`, `carga_viva_bajo_relleno_alto`, `eta_importancia_operativa_conducto`, `gamma_EQ`, `fraccion_delta_sobre_phi_trasdos`, `eta_ductilidad_cabezal`, `eta_redundancia_cabezal`, `fc_cabezal_mpa`, `duracion_caudal_pico_socavacion_min`, `factor_intervalo_fijo_p24` (juego_caudal_calculado), `punto_aplicacion_incremento_sismico`, `umbral_area_quebrada_importante_ha`, `columna_n_manning_concreto`, `esviaje_max_grados`, `borde_libre_canal_m`, `long_max_cuneta`, `lectura_velocidad_limite_cuneta`, `obras_familia_a_extremo_de_cuneta`, `acceso_mantenimiento_v2b`, `pendiente_maxima_conducto`, `diametro_de_diseno_concreto`, `condicion_pavimento`, `corrugacion_y_espesor_tmc`, `suelo_agresivo_lrfd_sobre_tmc`, `relleno_max_contraste_acpa_m`, `peso_especifico_relleno_kn_m3`, `talud_terraplen`, `espesor_proteccion_salida`, `longitud_proteccion_salida`, `tipo_proteccion_entrada`, `lectura_coeficientes_socavacion_hec14`, `regla_espesor_longitud_proteccion_salida`, `regimen_cortante_muro_e060_art_11_10_2`, `acero_refuerzo_cabezal`, `regla_minimos_constructivos_cabezal`, `clase_exposicion_fisuracion_cabezal`, `metodo_longitud_conducto`, `desnivel_minimo_entrega_m`, `desajuste_empalme_canal_m`, `momento_talon_cabezal`, `carga_pantalla_cabezal`, `distribucion_incremento_sismico`.
 - **NO LO LEE LA CORRIDA** (17): `borde_libre_bajo_tw_ahogante`, `seccion_receptor`, `hw_entrada_fuera_de_rango`, `inclinacion_muro_beta`, `homogeneidad_serie_fen`, `distribucion_precipitacion_maxima`, `nivel_significancia_ks`, `relacion_intensidad_duracion`, `duracion_minima_lluvia_min`, `tc_fuera_de_la_poblacion_del_metodo`, `coeficiente_uniformidad_temez`, `demanda_sismica_licuefaccion`, `fabricacion_tmc`, `relleno_estructural_hdpe`, `criterio_traccion_cabezal_ciclopeo`, `junta_arranque_cabezal_ciclopeo`, `agua_del_relleno_bajo_sismo`.
 
 ### 3.1 El cabezal de la regla: E3 estática y E1 sísmica del marco LRFD frente a sus dos [A]
@@ -119,10 +119,10 @@ Con la zapata que propone la regla de T-7a, SIN dimensionar (base `juego_cabezal
 
 | Criterio | Valor | `E1-LRFD.sis.e` | `E1-LRFD.sis.s` | `E3-LRFD.est.e` | `E3-LRFD.est.s` |
 |---|---|---|---|---|---|
-| `fila_phi_estabilidad_cabezal` | 'zapatas_seccion_10' | no pasa en ninguno | no pasa en ninguno | no pasa en ninguno | no pasa en ninguno |
-| `fila_phi_estabilidad_cabezal` | 'muros_tabla_11_5_7' | no pasa en ninguno | no pasa en ninguno | no pasa en ninguno | pasa en A-01, A-02, C-01 |
-| `factores_inclinacion_carga_portante` | 'aplicar' | no pasa en ninguno | no pasa en ninguno | no pasa en ninguno | no pasa en ninguno |
-| `factores_inclinacion_carga_portante` | 'omitir' | pasa en A-01, A-02, B-01, C-01 | pasa en A-01, A-02, B-01, C-01 | no pasa en ninguno | no pasa en ninguno |
+| `fila_phi_estabilidad_cabezal` | 'muros_tabla_11_5_7' | pasa en A-01, C-01 | no pasa en ninguno | no pasa en ninguno | pasa en A-01, C-01 |
+| `fila_phi_estabilidad_cabezal` | 'zapatas_seccion_10' | pasa en A-01, C-01 | no pasa en ninguno | no pasa en ninguno | no pasa en ninguno |
+| `factores_inclinacion_carga_portante` | 'aplicar' | pasa en A-01, C-01 | no pasa en ninguno | no pasa en ninguno | pasa en A-01, C-01 |
+| `factores_inclinacion_carga_portante` | 'omitir' | pasa en A-01, A-02, B-01, C-01 | pasa en A-01, A-02, B-01, C-01 | no pasa en ninguno | pasa en A-01, C-01 |
 
 Ninguno de los dos hace pasar E3 estática a la ENTRADA: ahí el deslizamiento lo resuelve la zapata más ancha —la que el dimensionamiento de VE-3.5 adopta, o la declarada de la variante `zapata_declarada_3m` de `docs/validacion_integral.md` §5—, no la lectura de un [A].
 
@@ -443,7 +443,7 @@ carga viva pasados 8 ft de relleno en la Fase 8 (T-11). Base: el juego completo.
 
 ### `eta_importancia_operativa_conducto`
 
-el η del cruce: Fase 8 y combinaciones del cabezal (PRECISIONES). Base: el juego completo. Efecto: **MUEVE VEREDICTOS**.
+el η del cruce: Fase 8 y combinaciones del cabezal (PRECISIONES). Base: el juego completo. Efecto: **LEÍDO, SIN EFECTO MEDIBLE**.
 
 | Valor | Punto | Material y sección | HW (m) | Control | Verificaciones que cambian frente al primer valor | Incumplidas o bloqueo si no dimensiona | Comparable |
 |---|---|---|---|---|---|---|---|
@@ -451,10 +451,10 @@ el η del cruce: Fase 8 y combinaciones del cabezal (PRECISIONES). Base: el jueg
 | 1.05 | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
 | 1.05 | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
 | 1.05 | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
-| 0.95 | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | E1-ASD.sis.e | — | sí |
-| 0.95 | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | E1-ASD.sis.e | — | sí |
-| 0.95 | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | E1-ASD.sis.e | — | sí |
-| 0.95 | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | E1-ASD.sis.e | — | sí |
+| 0.95 | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | ninguna | — | sí |
+| 0.95 | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
+| 0.95 | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
+| 0.95 | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
 
 ### `factor_muro_eleccion`
 
@@ -466,14 +466,14 @@ reducción de k_h por desplazamiento (PRECISIONES). Base: el juego completo. Efe
 | 'reduccion_por_desplazamiento' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
 | 'reduccion_por_desplazamiento' | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
 | 'reduccion_por_desplazamiento' | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
-| 'sin_reduccion' | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | A1.talon.e, A1.talon.s, A2.talon.e, A2.talon.s, A3.talon.s, A4.talon.s, A5.talon.e, A5.talon.s, A6.talon.s, E1-ASD.sis.e, E1-LRFD.sis.s, E3-ASD.sis.s, E3-LRFD.sis.e, E3-LRFD.sis.s | — | sí |
-| 'sin_reduccion' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | A1.talon.e, A1.talon.s, A2.talon.e, A2.talon.s, A3.talon.s, A4.talon.s, A5.talon.e, A5.talon.s, A6.talon.s, E1-ASD.sis.e, E1-LRFD.sis.s, E3-LRFD.sis.e, E3-LRFD.sis.s | — | sí |
-| 'sin_reduccion' | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | A1.talon.e, A1.talon.s, A2.alero.s, A2.pantalla.s, A2.talon.e, A2.talon.s, A3.talon.s, A4.talon.s, A5.talon.e, A5.talon.s, A6.talon.s, E1-ASD.sis.e, E1-LRFD.sis.s, E3-LRFD.sis.e, E3-LRFD.sis.s | — | sí |
-| 'sin_reduccion' | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | A1.talon.e, A1.talon.s, A2.talon.e, A2.talon.s, A3.talon.s, A4.talon.s, A5.talon.e, A5.talon.s, A6.talon.s, E1-ASD.sis.e, E1-LRFD.sis.s, E3-LRFD.sis.e, E3-LRFD.sis.s | — | sí |
+| 'sin_reduccion' | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | E1-LRFD.sis.s, E3-ASD.sis.s, E3-LRFD.sis.e, E3-LRFD.sis.s | — | sí |
+| 'sin_reduccion' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | E1-LRFD.sis.s, E3-ASD.sis.s, E3-LRFD.sis.e, E3-LRFD.sis.s | — | sí |
+| 'sin_reduccion' | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | E1-LRFD.sis.s, E3-LRFD.sis.e, E3-LRFD.sis.s | — | sí |
+| 'sin_reduccion' | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | E1-LRFD.sis.s, E3-LRFD.sis.e, E3-LRFD.sis.s | — | sí |
 
 ### `gamma_EQ`
 
-factor de la carga viva en el Evento Extremo I (PRECISIONES). Base: el juego completo. Efecto: **MUEVE VEREDICTOS**.
+factor de la carga viva en el Evento Extremo I (PRECISIONES). Base: el juego completo. Efecto: **LEÍDO, SIN EFECTO MEDIBLE**.
 
 | Valor | Punto | Material y sección | HW (m) | Control | Verificaciones que cambian frente al primer valor | Incumplidas o bloqueo si no dimensiona | Comparable |
 |---|---|---|---|---|---|---|---|
@@ -481,18 +481,18 @@ factor de la carga viva en el Evento Extremo I (PRECISIONES). Base: el juego com
 | 0.5 | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
 | 0.5 | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
 | 0.5 | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
-| 0.0 | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | E3-ASD.sis.s | — | sí |
+| 0.0 | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | ninguna | — | sí |
 | 0.0 | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
 | 0.0 | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
 | 0.0 | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
 | 1.0 | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | ninguna | — | sí |
-| 1.0 | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | E3-ASD.sis.s | — | sí |
+| 1.0 | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
 | 1.0 | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
 | 1.0 | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
 
 ### `fraccion_delta_sobre_phi_trasdos`
 
-fricción del trasdós δ/φ (PRECISIONES). Base: el juego completo. Efecto: **MUEVE VEREDICTOS**.
+fricción del trasdós δ/φ (PRECISIONES). Base: el juego completo. Efecto: **LEÍDO, SIN EFECTO MEDIBLE**.
 
 | Valor | Punto | Material y sección | HW (m) | Control | Verificaciones que cambian frente al primer valor | Incumplidas o bloqueo si no dimensiona | Comparable |
 |---|---|---|---|---|---|---|---|
@@ -500,7 +500,7 @@ fricción del trasdós δ/φ (PRECISIONES). Base: el juego completo. Efecto: **M
 | 0.67 | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
 | 0.67 | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
 | 0.67 | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
-| 0.33 | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | E3-ASD.sis.s | — | sí |
+| 0.33 | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | ninguna | — | sí |
 | 0.33 | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
 | 0.33 | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
 | 0.33 | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
@@ -511,14 +511,14 @@ fila de φ de la estabilidad LRFD (PRECISIONES). Base: el juego sin `dimensionam
 
 | Valor | Punto | Material y sección | HW (m) | Control | Verificaciones que cambian frente al primer valor | Incumplidas o bloqueo si no dimensiona | Comparable |
 |---|---|---|---|---|---|---|---|
-| 'zapatas_seccion_10' | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | ninguna | — | sí |
+| 'muros_tabla_11_5_7' | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | ninguna | — | sí |
+| 'muros_tabla_11_5_7' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
+| 'muros_tabla_11_5_7' | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
+| 'muros_tabla_11_5_7' | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
+| 'zapatas_seccion_10' | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | E3-LRFD.est.s | — | sí |
 | 'zapatas_seccion_10' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
 | 'zapatas_seccion_10' | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
-| 'zapatas_seccion_10' | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
-| 'muros_tabla_11_5_7' | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | E3-LRFD.est.s | — | sí |
-| 'muros_tabla_11_5_7' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | E3-LRFD.est.s | — | sí |
-| 'muros_tabla_11_5_7' | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
-| 'muros_tabla_11_5_7' | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | E3-LRFD.est.s | — | sí |
+| 'zapatas_seccion_10' | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | E1-LRFD.est.s, E3-LRFD.est.s | — | sí |
 
 ### `factores_inclinacion_carga_portante` — base `juego_cabezal_de_la_regla`
 
@@ -530,10 +530,10 @@ factores de inclinación de la capacidad portante (PRECISIONES). Base: el juego 
 | 'aplicar' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
 | 'aplicar' | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
 | 'aplicar' | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
-| 'omitir' | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | E1-ASD.sis.e, E1-ASD.sis.s, E1-LRFD.sis.e, E1-LRFD.sis.s | — | sí |
-| 'omitir' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | E1-ASD.sis.e, E1-ASD.sis.s, E1-LRFD.sis.e, E1-LRFD.sis.s | — | sí |
-| 'omitir' | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | E1-ASD.sis.e, E1-ASD.sis.s, E1-LRFD.sis.e, E1-LRFD.sis.s | — | sí |
-| 'omitir' | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | E1-ASD.sis.e, E1-ASD.sis.s, E1-LRFD.sis.e, E1-LRFD.sis.s | — | sí |
+| 'omitir' | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | E1-ASD.est.s, E1-ASD.sis.e, E1-ASD.sis.s, E1-LRFD.est.s, E1-LRFD.sis.s | — | sí |
+| 'omitir' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | E1-ASD.est.s, E1-ASD.sis.e, E1-ASD.sis.s, E1-LRFD.est.s, E1-LRFD.sis.e, E1-LRFD.sis.s | — | sí |
+| 'omitir' | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | E1-ASD.est.s, E1-ASD.sis.e, E1-ASD.sis.s, E1-LRFD.est.s, E1-LRFD.sis.e, E1-LRFD.sis.s | — | sí |
+| 'omitir' | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | E1-ASD.sis.e, E1-ASD.sis.s, E1-LRFD.sis.s | — | sí |
 
 ### `regla_pendiente_relleno_trasdos`
 
@@ -545,14 +545,14 @@ superficie del relleno para el empuje (PRECISIONES). Base: el juego completo. Ef
 | 'cuna_de_tanteo' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
 | 'cuna_de_tanteo' | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
 | 'cuna_de_tanteo' | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
-| 'talud_quebrado_2h' | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | A5.alero.e, A5.pantalla.e, E1-ASD.sis.e | — | sí |
-| 'talud_quebrado_2h' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | E1-ASD.sis.e | — | sí |
-| 'talud_quebrado_2h' | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | E1-ASD.sis.e | — | sí |
-| 'talud_quebrado_2h' | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | A2.alero.s, A2.pantalla.s, A5.alero.e, A5.pantalla.e, E1-ASD.sis.e | — | sí |
-| 'talud_del_terraplen' | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | A2.alero.s, A2.pantalla.s, E1-ASD.sis.e, E1-ASD.sis.s, E1-LRFD.sis.e, E1-LRFD.sis.s, E2-ASD.sis.e, E2-ASD.sis.s, E2-LRFD.sis.e, E2-LRFD.sis.s, E3-ASD.sis.e, E3-ASD.sis.s, E3-LRFD.sis.e, E3-LRFD.sis.s | — | sí |
-| 'talud_del_terraplen' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | A5.alero.e, A5.pantalla.e, E1-ASD.sis.e, E1-ASD.sis.s, E1-LRFD.sis.e, E1-LRFD.sis.s, E2-ASD.sis.e, E2-ASD.sis.s, E2-LRFD.sis.e, E2-LRFD.sis.s, E3-ASD.sis.e, E3-ASD.sis.s, E3-LRFD.sis.e, E3-LRFD.sis.s | — | sí |
-| 'talud_del_terraplen' | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | A2.alero.s, A2.pantalla.s, E1-ASD.sis.e, E1-ASD.sis.s, E1-LRFD.sis.e, E1-LRFD.sis.s, E2-ASD.sis.e, E2-ASD.sis.s, E2-LRFD.sis.e, E2-LRFD.sis.s, E3-ASD.sis.e, E3-ASD.sis.s, E3-LRFD.sis.e, E3-LRFD.sis.s | — | sí |
-| 'talud_del_terraplen' | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | A2.alero.s, A2.pantalla.s, A5.alero.e, A5.pantalla.e, E1-ASD.sis.e, E1-ASD.sis.s, E1-LRFD.sis.e, E1-LRFD.sis.s, E2-ASD.sis.e, E2-ASD.sis.s, E2-LRFD.sis.e, E2-LRFD.sis.s, E3-ASD.sis.e, E3-ASD.sis.s, E3-LRFD.sis.e, E3-LRFD.sis.s | — | sí |
+| 'talud_quebrado_2h' | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | ninguna | — | sí |
+| 'talud_quebrado_2h' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | E3-ASD.sis.s | — | sí |
+| 'talud_quebrado_2h' | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
+| 'talud_quebrado_2h' | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
+| 'talud_del_terraplen' | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | E1-ASD.est.s, E1-ASD.sis.e, E1-ASD.sis.s, E1-LRFD.sis.e, E1-LRFD.sis.s, E2-ASD.sis.e, E2-ASD.sis.s, E2-LRFD.sis.e, E2-LRFD.sis.s, E3-ASD.sis.e, E3-ASD.sis.s, E3-LRFD.sis.e, E3-LRFD.sis.s | — | sí |
+| 'talud_del_terraplen' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | E1-ASD.est.s, E1-ASD.sis.e, E1-ASD.sis.s, E1-LRFD.sis.e, E1-LRFD.sis.s, E2-ASD.sis.e, E2-ASD.sis.s, E2-LRFD.sis.e, E2-LRFD.sis.s, E3-ASD.sis.e, E3-ASD.sis.s, E3-LRFD.sis.e, E3-LRFD.sis.s | — | sí |
+| 'talud_del_terraplen' | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | E1-ASD.sis.e, E1-ASD.sis.s, E1-LRFD.sis.e, E1-LRFD.sis.s, E2-ASD.sis.e, E2-ASD.sis.s, E2-LRFD.sis.e, E2-LRFD.sis.s, E3-ASD.sis.e, E3-ASD.sis.s, E3-LRFD.sis.e, E3-LRFD.sis.s | — | sí |
+| 'talud_del_terraplen' | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | E1-ASD.sis.e, E1-ASD.sis.s, E1-LRFD.sis.e, E1-LRFD.sis.s, E2-ASD.sis.e, E2-ASD.sis.s, E2-LRFD.sis.e, E2-LRFD.sis.s, E3-ASD.sis.e, E3-ASD.sis.s, E3-LRFD.sis.e, E3-LRFD.sis.s | — | sí |
 
 ### `regimen_resistencia_elementos_cabezal`
 
@@ -560,18 +560,18 @@ empuje con que se arman los elementos (PRECISIONES). Base: el juego completo. Ef
 
 | Valor | Punto | Material y sección | HW (m) | Control | Verificaciones que cambian frente al primer valor | Incumplidas o bloqueo si no dimensiona | Comparable |
 |---|---|---|---|---|---|---|---|
-| 'no_cedente_k0' | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | ninguna | — | sí |
-| 'no_cedente_k0' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
-| 'no_cedente_k0' | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
-| 'no_cedente_k0' | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
-| 'cedente' | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | A2.alero.s, A2.pantalla.s | — | sí |
-| 'cedente' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | A2.alero.s, A2.pantalla.s | — | sí |
-| 'cedente' | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | A2.alero.s, A2.pantalla.s | — | sí |
+| 'cedente' | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | ninguna | — | sí |
+| 'cedente' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
+| 'cedente' | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
 | 'cedente' | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
+| 'no_cedente_k0' | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | A1.alero.e, A1.alero.s, A1.pantalla.e, A1.pantalla.s, A1.punta.e, A1.punta.s, A1.talon.e, A1.talon.s, A2.alero.e, A2.alero.s, A2.pantalla.e, A2.pantalla.s, A2.punta.e, A2.punta.s, A2.talon.e, A2.talon.s, A3.alero.e, A3.alero.s, A3.pantalla.e, A3.pantalla.s, A3.punta.e, A3.punta.s, A3.talon.e, A3.talon.s, A4.alero.e, A4.alero.s, A4.pantalla.e, A4.pantalla.s, A4.punta.e, A4.punta.s, A4.talon.e, A4.talon.s, A5.alero.e, A5.alero.s, A5.pantalla.e, A5.pantalla.s, A5.punta.e, A5.punta.s, A5.talon.e, A5.talon.s, A6.alero.e, A6.alero.s, A6.pantalla.e, A6.pantalla.s, A6.punta.e, A6.punta.s, A6.talon.e, A6.talon.s, A7.concreto.e, A7.concreto.s, A8.zapata.e, A8.zapata.s, E1-ASD.est.s, E1-ASD.sis.e, E1-ASD.sis.s, E1-LRFD.sis.e, E1-LRFD.sis.s, E2-ASD.sis.e, E2-ASD.sis.s, E2-LRFD.sis.e, E2-LRFD.sis.s, E3-ASD.sis.e, E3-ASD.sis.s, E3-LRFD.sis.e, E3-LRFD.sis.s | — | sí |
+| 'no_cedente_k0' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | A1.alero.e, A1.alero.s, A1.pantalla.e, A1.pantalla.s, A1.punta.e, A1.punta.s, A1.talon.e, A1.talon.s, A2.alero.e, A2.alero.s, A2.pantalla.e, A2.pantalla.s, A2.punta.e, A2.punta.s, A2.talon.e, A2.talon.s, A3.alero.e, A3.alero.s, A3.pantalla.e, A3.pantalla.s, A3.punta.e, A3.punta.s, A3.talon.e, A3.talon.s, A4.alero.e, A4.alero.s, A4.pantalla.e, A4.pantalla.s, A4.punta.e, A4.punta.s, A4.talon.e, A4.talon.s, A5.alero.e, A5.alero.s, A5.pantalla.e, A5.pantalla.s, A5.punta.e, A5.punta.s, A5.talon.e, A5.talon.s, A6.alero.e, A6.alero.s, A6.pantalla.e, A6.pantalla.s, A6.punta.e, A6.punta.s, A6.talon.e, A6.talon.s, A7.concreto.e, A7.concreto.s, A8.zapata.e, A8.zapata.s, E1-ASD.est.s, E1-ASD.sis.e, E1-ASD.sis.s, E1-LRFD.sis.e, E1-LRFD.sis.s, E2-ASD.sis.e, E2-ASD.sis.s, E2-LRFD.sis.e, E2-LRFD.sis.s, E3-ASD.sis.e, E3-ASD.sis.s, E3-LRFD.sis.e, E3-LRFD.sis.s | — | sí |
+| 'no_cedente_k0' | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | A1.alero.e, A1.alero.s, A1.pantalla.e, A1.pantalla.s, A1.punta.e, A1.punta.s, A1.talon.e, A1.talon.s, A2.alero.e, A2.alero.s, A2.pantalla.e, A2.pantalla.s, A2.punta.e, A2.punta.s, A2.talon.e, A2.talon.s, A3.alero.e, A3.alero.s, A3.pantalla.e, A3.pantalla.s, A3.punta.e, A3.punta.s, A3.talon.e, A3.talon.s, A4.alero.e, A4.alero.s, A4.pantalla.e, A4.pantalla.s, A4.punta.e, A4.punta.s, A4.talon.e, A4.talon.s, A5.alero.e, A5.alero.s, A5.pantalla.e, A5.pantalla.s, A5.punta.e, A5.punta.s, A5.talon.e, A5.talon.s, A6.alero.e, A6.alero.s, A6.pantalla.e, A6.pantalla.s, A6.punta.e, A6.punta.s, A6.talon.e, A6.talon.s, A7.concreto.e, A7.concreto.s, A8.zapata.e, A8.zapata.s, E1-ASD.sis.e, E1-ASD.sis.s, E1-LRFD.sis.e, E1-LRFD.sis.s, E2-ASD.sis.e, E2-ASD.sis.s, E2-LRFD.sis.e, E2-LRFD.sis.s, E3-ASD.sis.e, E3-ASD.sis.s, E3-LRFD.sis.e, E3-LRFD.sis.s | — | sí |
+| 'no_cedente_k0' | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | A1.alero.e, A1.alero.s, A1.pantalla.e, A1.pantalla.s, A1.punta.e, A1.punta.s, A1.talon.e, A1.talon.s, A2.alero.e, A2.alero.s, A2.pantalla.e, A2.pantalla.s, A2.punta.e, A2.punta.s, A2.talon.e, A2.talon.s, A3.alero.e, A3.alero.s, A3.pantalla.e, A3.pantalla.s, A3.punta.e, A3.punta.s, A3.talon.e, A3.talon.s, A4.alero.e, A4.alero.s, A4.pantalla.e, A4.pantalla.s, A4.punta.e, A4.punta.s, A4.talon.e, A4.talon.s, A5.alero.e, A5.alero.s, A5.pantalla.e, A5.pantalla.s, A5.punta.e, A5.punta.s, A5.talon.e, A5.talon.s, A6.alero.e, A6.alero.s, A6.pantalla.e, A6.pantalla.s, A6.punta.e, A6.punta.s, A6.talon.e, A6.talon.s, A7.concreto.e, A7.concreto.s, A8.zapata.e, A8.zapata.s, E1-ASD.sis.e, E1-ASD.sis.s, E1-LRFD.sis.e, E1-LRFD.sis.s, E2-ASD.sis.e, E2-ASD.sis.s, E2-LRFD.sis.e, E2-LRFD.sis.s, E3-ASD.sis.e, E3-ASD.sis.s, E3-LRFD.sis.e, E3-LRFD.sis.s | — | sí |
 
 ### `eta_ductilidad_cabezal`
 
-η_D del cabezal (T-11). Base: el juego completo. Efecto: **MUEVE VEREDICTOS**.
+η_D del cabezal (T-11). Base: el juego completo. Efecto: **LEÍDO, SIN EFECTO MEDIBLE**.
 
 | Valor | Punto | Material y sección | HW (m) | Control | Verificaciones que cambian frente al primer valor | Incumplidas o bloqueo si no dimensiona | Comparable |
 |---|---|---|---|---|---|---|---|
@@ -579,18 +579,18 @@ empuje con que se arman los elementos (PRECISIONES). Base: el juego completo. Ef
 | 1.0 | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
 | 1.0 | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
 | 1.0 | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
-| 0.95 | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | E1-ASD.sis.e | — | sí |
-| 0.95 | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | A2.alero.s, A2.pantalla.s, E1-ASD.sis.e | — | sí |
-| 0.95 | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | E1-ASD.sis.e | — | sí |
-| 0.95 | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | E1-ASD.sis.e | — | sí |
-| 1.05 | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | E3-ASD.sis.e | — | sí |
-| 1.05 | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | E3-ASD.sis.e, E3-ASD.sis.s | — | sí |
-| 1.05 | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | E3-ASD.sis.e | — | sí |
-| 1.05 | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | E3-ASD.sis.e, E3-ASD.sis.s | — | sí |
+| 0.95 | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | ninguna | — | sí |
+| 0.95 | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
+| 0.95 | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
+| 0.95 | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
+| 1.05 | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | ninguna | — | sí |
+| 1.05 | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
+| 1.05 | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
+| 1.05 | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
 
 ### `eta_redundancia_cabezal`
 
-η_R del cabezal (T-11). Base: el juego completo. Efecto: **MUEVE VEREDICTOS**.
+η_R del cabezal (T-11). Base: el juego completo. Efecto: **LEÍDO, SIN EFECTO MEDIBLE**.
 
 | Valor | Punto | Material y sección | HW (m) | Control | Verificaciones que cambian frente al primer valor | Incumplidas o bloqueo si no dimensiona | Comparable |
 |---|---|---|---|---|---|---|---|
@@ -598,14 +598,14 @@ empuje con que se arman los elementos (PRECISIONES). Base: el juego completo. Ef
 | 1.0 | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
 | 1.0 | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
 | 1.0 | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
-| 0.95 | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | E1-ASD.sis.e | — | sí |
-| 0.95 | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | A2.alero.s, A2.pantalla.s, E1-ASD.sis.e | — | sí |
-| 0.95 | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | E1-ASD.sis.e | — | sí |
-| 0.95 | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | E1-ASD.sis.e | — | sí |
-| 1.05 | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | E3-ASD.sis.e | — | sí |
-| 1.05 | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | E3-ASD.sis.e, E3-ASD.sis.s | — | sí |
-| 1.05 | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | E3-ASD.sis.e | — | sí |
-| 1.05 | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | E3-ASD.sis.e, E3-ASD.sis.s | — | sí |
+| 0.95 | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | ninguna | — | sí |
+| 0.95 | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
+| 0.95 | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
+| 0.95 | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
+| 1.05 | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | ninguna | — | sí |
+| 1.05 | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
+| 1.05 | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
+| 1.05 | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
 
 ### `marco_estabilidad_cabezal`
 
@@ -617,14 +617,14 @@ cuál marco de estabilidad rige (T-11). Base: el juego completo. Efecto: **MUEVE
 | 'lrfd_rige_asd_informa' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
 | 'lrfd_rige_asd_informa' | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
 | 'lrfd_rige_asd_informa' | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
-| 'asd_rige_lrfd_informa' | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | E1-ASD.sis.s, E3-ASD.sis.e | — | sí |
-| 'asd_rige_lrfd_informa' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | A2.alero.s, A2.pantalla.s, E1-ASD.sis.s, E3-ASD.sis.e, E3-ASD.sis.s | — | sí |
-| 'asd_rige_lrfd_informa' | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | E1-ASD.sis.s, E3-ASD.sis.e, E3-ASD.sis.s | — | sí |
-| 'asd_rige_lrfd_informa' | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | E1-ASD.sis.s, E3-ASD.sis.e, E3-ASD.sis.s | — | sí |
-| 'envolvente_de_los_dos' | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | E1-ASD.sis.s, E3-ASD.sis.e | — | sí |
-| 'envolvente_de_los_dos' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | A2.alero.s, A2.pantalla.s, E1-ASD.sis.s, E3-ASD.sis.e, E3-ASD.sis.s | — | sí |
-| 'envolvente_de_los_dos' | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | E1-ASD.sis.s, E3-ASD.sis.e, E3-ASD.sis.s | — | sí |
-| 'envolvente_de_los_dos' | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | E1-ASD.sis.s, E3-ASD.sis.e, E3-ASD.sis.s | — | sí |
+| 'asd_rige_lrfd_informa' | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | E1-ASD.sis.e, E1-ASD.sis.s, E3-ASD.sis.e | — | sí |
+| 'asd_rige_lrfd_informa' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | E1-ASD.sis.e, E1-ASD.sis.s, E3-ASD.sis.e | — | sí |
+| 'asd_rige_lrfd_informa' | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | E1-ASD.sis.e, E1-ASD.sis.s, E3-ASD.sis.e, E3-ASD.sis.s | — | sí |
+| 'asd_rige_lrfd_informa' | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | E1-ASD.sis.e, E1-ASD.sis.s, E3-ASD.sis.e, E3-ASD.sis.s | — | sí |
+| 'envolvente_de_los_dos' | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | E1-ASD.sis.e, E1-ASD.sis.s, E3-ASD.sis.e | — | sí |
+| 'envolvente_de_los_dos' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | E1-ASD.sis.e, E1-ASD.sis.s, E3-ASD.sis.e | — | sí |
+| 'envolvente_de_los_dos' | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | E1-ASD.sis.e, E1-ASD.sis.s, E3-ASD.sis.e, E3-ASD.sis.s | — | sí |
+| 'envolvente_de_los_dos' | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | E1-ASD.sis.e, E1-ASD.sis.s, E3-ASD.sis.e, E3-ASD.sis.s | — | sí |
 
 ### `regimen_cabezal`
 
@@ -651,14 +651,14 @@ trasdós drenado o no (T-11). Base: el juego completo. Efecto: **MUEVE VEREDICTO
 | 'drenado' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
 | 'drenado' | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
 | 'drenado' | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
-| 'sin_drenaje' | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | A1.talon.s, A2.talon.s, A3.talon.s, A4.talon.s, A5.talon.s, A6.talon.s, E1-ASD.sis.e, E3-ASD.sis.s | — | sí |
-| 'sin_drenaje' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | A1.talon.s, A2.talon.s, A3.talon.s, A4.talon.s, A5.talon.s, A6.talon.s, E1-ASD.sis.e | — | sí |
-| 'sin_drenaje' | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | E1-ASD.sis.e | — | sí |
-| 'sin_drenaje' | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | A2.alero.s, A2.pantalla.s, E1-ASD.sis.e | — | sí |
+| 'sin_drenaje' | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | E1-ASD.sis.e, E1-LRFD.sis.s, E3-ASD.sis.s, E3-LRFD.sis.s | — | sí |
+| 'sin_drenaje' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | A5.alero.s, A5.pantalla.s, E1-LRFD.sis.s, E3-ASD.sis.s | — | sí |
+| 'sin_drenaje' | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
+| 'sin_drenaje' | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
 
 ### `fc_cabezal_mpa`
 
-resistencia del concreto del cabezal (T-11). Base: el juego completo. Efecto: **MUEVE VEREDICTOS**.
+resistencia del concreto del cabezal (T-11). Base: el juego completo. Efecto: **LEÍDO, SIN EFECTO MEDIBLE**.
 
 | Valor | Punto | Material y sección | HW (m) | Control | Verificaciones que cambian frente al primer valor | Incumplidas o bloqueo si no dimensiona | Comparable |
 |---|---|---|---|---|---|---|---|
@@ -670,10 +670,10 @@ resistencia del concreto del cabezal (T-11). Base: el juego completo. Efecto: **
 | 17.5 | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
 | 17.5 | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
 | 17.5 | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
-| 35.0 | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | A2.alero.s, A2.pantalla.s | — | sí |
+| 35.0 | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | ninguna | — | sí |
 | 35.0 | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
-| 35.0 | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | A2.alero.s, A2.pantalla.s | — | sí |
-| 35.0 | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | A2.alero.s, A2.pantalla.s | — | sí |
+| 35.0 | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
+| 35.0 | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
 
 ### `duracion_caudal_pico_socavacion_min`
 
@@ -715,8 +715,8 @@ derivado del censo (valor efectivo y ventana legible por máquina; correcciones 
 | 'limite_inclusive' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
 | 'limite_inclusive' | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
 | 'limite_inclusive' | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
-| 'limite_estricto' | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | A1.alero.e, A1.alero.s, A1.pantalla.e, A1.pantalla.s, A1.punta.e, A1.punta.s, A1.talon.e, A1.talon.s, A2.alero.e, A2.alero.s, A2.pantalla.e, A2.pantalla.s, A2.punta.e, A2.punta.s, A2.talon.e, A2.talon.s, A3.alero.e, A3.alero.s, A3.pantalla.e, A3.pantalla.s, A3.punta.e, A3.punta.s, A3.talon.e, A3.talon.s, A4.alero.e, A4.alero.s, A4.pantalla.e, A4.pantalla.s, A4.punta.e, A4.punta.s, A4.talon.e, A4.talon.s, A5.alero.e, A5.alero.s, A5.pantalla.e, A5.pantalla.s, A5.punta.e, A5.punta.s, A5.talon.e, A5.talon.s, A6.alero.e, A6.alero.s, A6.pantalla.e, A6.pantalla.s, A6.punta.e, A6.punta.s, A6.talon.e, A6.talon.s, A7.concreto.e, A7.concreto.s, A8.zapata.e, A8.zapata.s, E1-ASD.sis.e, E1-ASD.sis.s, E1-LRFD.sis.e, E1-LRFD.sis.s, E2-ASD.sis.e, E2-ASD.sis.s, E2-LRFD.sis.e, E2-LRFD.sis.s, E3-ASD.sis.e, E3-ASD.sis.s, E3-LRFD.sis.e, E3-LRFD.sis.s | — | sí |
-| 'limite_estricto' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | A1.alero.e, A1.alero.s, A1.pantalla.e, A1.pantalla.s, A1.punta.e, A1.punta.s, A1.talon.e, A1.talon.s, A2.alero.e, A2.alero.s, A2.pantalla.e, A2.pantalla.s, A2.punta.e, A2.punta.s, A2.talon.e, A2.talon.s, A3.alero.e, A3.alero.s, A3.pantalla.e, A3.pantalla.s, A3.punta.e, A3.punta.s, A3.talon.e, A3.talon.s, A4.alero.e, A4.alero.s, A4.pantalla.e, A4.pantalla.s, A4.punta.e, A4.punta.s, A4.talon.e, A4.talon.s, A5.alero.e, A5.alero.s, A5.pantalla.e, A5.pantalla.s, A5.punta.e, A5.punta.s, A5.talon.e, A5.talon.s, A6.alero.e, A6.alero.s, A6.pantalla.e, A6.pantalla.s, A6.punta.e, A6.punta.s, A6.talon.e, A6.talon.s, A7.concreto.e, A7.concreto.s, A8.zapata.e, A8.zapata.s, E1-ASD.sis.e, E1-ASD.sis.s, E1-LRFD.sis.e, E1-LRFD.sis.s, E2-ASD.sis.e, E2-ASD.sis.s, E2-LRFD.sis.e, E2-LRFD.sis.s, E3-ASD.sis.e, E3-ASD.sis.s, E3-LRFD.sis.e, E3-LRFD.sis.s | — | sí |
+| 'limite_estricto' | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | A1.alero.e, A1.alero.s, A1.pantalla.e, A1.pantalla.s, A1.punta.e, A1.punta.s, A1.talon.e, A1.talon.s, A2.alero.e, A2.alero.s, A2.pantalla.e, A2.pantalla.s, A2.punta.e, A2.punta.s, A2.talon.e, A2.talon.s, A3.alero.e, A3.alero.s, A3.pantalla.e, A3.pantalla.s, A3.punta.e, A3.punta.s, A3.talon.e, A3.talon.s, A4.alero.e, A4.alero.s, A4.pantalla.e, A4.pantalla.s, A4.punta.e, A4.punta.s, A4.talon.e, A4.talon.s, A5.alero.e, A5.alero.s, A5.pantalla.e, A5.pantalla.s, A5.punta.e, A5.punta.s, A5.talon.e, A5.talon.s, A6.alero.e, A6.alero.s, A6.pantalla.e, A6.pantalla.s, A6.punta.e, A6.punta.s, A6.talon.e, A6.talon.s, A7.concreto.e, A7.concreto.s, A8.zapata.e, A8.zapata.s, E1-ASD.est.s, E1-ASD.sis.e, E1-ASD.sis.s, E1-LRFD.sis.e, E1-LRFD.sis.s, E2-ASD.sis.e, E2-ASD.sis.s, E2-LRFD.sis.e, E2-LRFD.sis.s, E3-ASD.sis.e, E3-ASD.sis.s, E3-LRFD.sis.e, E3-LRFD.sis.s | — | sí |
+| 'limite_estricto' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | A1.alero.e, A1.alero.s, A1.pantalla.e, A1.pantalla.s, A1.punta.e, A1.punta.s, A1.talon.e, A1.talon.s, A2.alero.e, A2.alero.s, A2.pantalla.e, A2.pantalla.s, A2.punta.e, A2.punta.s, A2.talon.e, A2.talon.s, A3.alero.e, A3.alero.s, A3.pantalla.e, A3.pantalla.s, A3.punta.e, A3.punta.s, A3.talon.e, A3.talon.s, A4.alero.e, A4.alero.s, A4.pantalla.e, A4.pantalla.s, A4.punta.e, A4.punta.s, A4.talon.e, A4.talon.s, A5.alero.e, A5.alero.s, A5.pantalla.e, A5.pantalla.s, A5.punta.e, A5.punta.s, A5.talon.e, A5.talon.s, A6.alero.e, A6.alero.s, A6.pantalla.e, A6.pantalla.s, A6.punta.e, A6.punta.s, A6.talon.e, A6.talon.s, A7.concreto.e, A7.concreto.s, A8.zapata.e, A8.zapata.s, E1-ASD.est.s, E1-ASD.sis.e, E1-ASD.sis.s, E1-LRFD.sis.e, E1-LRFD.sis.s, E2-ASD.sis.e, E2-ASD.sis.s, E2-LRFD.sis.e, E2-LRFD.sis.s, E3-ASD.sis.e, E3-ASD.sis.s, E3-LRFD.sis.e, E3-LRFD.sis.s | — | sí |
 | 'limite_estricto' | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | A1.alero.e, A1.alero.s, A1.pantalla.e, A1.pantalla.s, A1.punta.e, A1.punta.s, A1.talon.e, A1.talon.s, A2.alero.e, A2.alero.s, A2.pantalla.e, A2.pantalla.s, A2.punta.e, A2.punta.s, A2.talon.e, A2.talon.s, A3.alero.e, A3.alero.s, A3.pantalla.e, A3.pantalla.s, A3.punta.e, A3.punta.s, A3.talon.e, A3.talon.s, A4.alero.e, A4.alero.s, A4.pantalla.e, A4.pantalla.s, A4.punta.e, A4.punta.s, A4.talon.e, A4.talon.s, A5.alero.e, A5.alero.s, A5.pantalla.e, A5.pantalla.s, A5.punta.e, A5.punta.s, A5.talon.e, A5.talon.s, A6.alero.e, A6.alero.s, A6.pantalla.e, A6.pantalla.s, A6.punta.e, A6.punta.s, A6.talon.e, A6.talon.s, A7.concreto.e, A7.concreto.s, A8.zapata.e, A8.zapata.s, E1-ASD.sis.e, E1-ASD.sis.s, E1-LRFD.sis.e, E1-LRFD.sis.s, E2-ASD.sis.e, E2-ASD.sis.s, E2-LRFD.sis.e, E2-LRFD.sis.s, E3-ASD.sis.e, E3-ASD.sis.s, E3-LRFD.sis.e, E3-LRFD.sis.s | — | sí |
 | 'limite_estricto' | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | A1.alero.e, A1.alero.s, A1.pantalla.e, A1.pantalla.s, A1.punta.e, A1.punta.s, A1.talon.e, A1.talon.s, A2.alero.e, A2.alero.s, A2.pantalla.e, A2.pantalla.s, A2.punta.e, A2.punta.s, A2.talon.e, A2.talon.s, A3.alero.e, A3.alero.s, A3.pantalla.e, A3.pantalla.s, A3.punta.e, A3.punta.s, A3.talon.e, A3.talon.s, A4.alero.e, A4.alero.s, A4.pantalla.e, A4.pantalla.s, A4.punta.e, A4.punta.s, A4.talon.e, A4.talon.s, A5.alero.e, A5.alero.s, A5.pantalla.e, A5.pantalla.s, A5.punta.e, A5.punta.s, A5.talon.e, A5.talon.s, A6.alero.e, A6.alero.s, A6.pantalla.e, A6.pantalla.s, A6.punta.e, A6.punta.s, A6.talon.e, A6.talon.s, A7.concreto.e, A7.concreto.s, A8.zapata.e, A8.zapata.s, E1-ASD.sis.e, E1-ASD.sis.s, E1-LRFD.sis.e, E1-LRFD.sis.s, E2-ASD.sis.e, E2-ASD.sis.s, E2-LRFD.sis.e, E2-LRFD.sis.s, E3-ASD.sis.e, E3-ASD.sis.s, E3-LRFD.sis.e, E3-LRFD.sis.s | — | sí |
 
@@ -737,7 +737,7 @@ derivado del censo (valor efectivo y ventana legible por máquina; correcciones 
 
 ### `punto_aplicacion_incremento_sismico`
 
-derivado del censo (valor efectivo y ventana legible por máquina; correcciones de T-11, H3). Base: el juego completo. Efecto: **MUEVE VEREDICTOS**.
+derivado del censo (valor efectivo y ventana legible por máquina; correcciones de T-11, H3). Base: el juego completo. Efecto: **LEÍDO, SIN EFECTO MEDIBLE**.
 
 | Valor | Punto | Material y sección | HW (m) | Control | Verificaciones que cambian frente al primer valor | Incumplidas o bloqueo si no dimensiona | Comparable |
 |---|---|---|---|---|---|---|---|
@@ -745,7 +745,7 @@ derivado del censo (valor efectivo y ventana legible por máquina; correcciones 
 | 0.6 | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
 | 0.6 | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
 | 0.6 | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
-| 0.333 | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | E3-ASD.sis.s | — | sí |
+| 0.333 | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | ninguna | — | sí |
 | 0.333 | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
 | 0.333 | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
 | 0.333 | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
@@ -1137,13 +1137,13 @@ derivado del censo (valor efectivo y ventana legible por máquina; correcciones 
 | 34.0 | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
 | 34.0 | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
 | 30.0 | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | ninguna | — | sí |
-| 30.0 | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
-| 30.0 | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | A2.alero.s, A2.pantalla.s | — | sí |
-| 30.0 | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | A2.alero.s, A2.pantalla.s | — | sí |
-| 38.0 | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | E1-ASD.sis.e | — | sí |
-| 38.0 | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | A2.alero.s, A2.pantalla.s | — | sí |
-| 38.0 | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | A2.alero.s, A2.pantalla.s | — | sí |
-| 38.0 | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | A2.alero.s, A2.pantalla.s, E1-ASD.sis.e | — | sí |
+| 30.0 | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | E3-ASD.sis.s | — | sí |
+| 30.0 | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
+| 30.0 | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
+| 38.0 | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | ninguna | — | sí |
+| 38.0 | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
+| 38.0 | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
+| 38.0 | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
 
 ### `demanda_sismica_licuefaccion`
 
@@ -1305,7 +1305,7 @@ derivado del censo (valor efectivo y ventana legible por máquina; correcciones 
 
 ### `peso_especifico_relleno_kn_m3`
 
-derivado del censo (valor efectivo y ventana legible por máquina; correcciones de T-11, H3). Base: el juego completo. Efecto: **MUEVE VEREDICTOS**.
+derivado del censo (valor efectivo y ventana legible por máquina; correcciones de T-11, H3). Base: el juego completo. Efecto: **LEÍDO, SIN EFECTO MEDIBLE**.
 
 | Valor | Punto | Material y sección | HW (m) | Control | Verificaciones que cambian frente al primer valor | Incumplidas o bloqueo si no dimensiona | Comparable |
 |---|---|---|---|---|---|---|---|
@@ -1316,7 +1316,7 @@ derivado del censo (valor efectivo y ventana legible por máquina; correcciones 
 | 20.0 | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | ninguna | — | sí |
 | 20.0 | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
 | 20.0 | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
-| 20.0 | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | A2.alero.s, A2.pantalla.s | — | sí |
+| 20.0 | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
 
 ### `nivel_agua_diseno_v7`
 
@@ -1381,7 +1381,7 @@ derivado del censo (valor efectivo y ventana legible por máquina; correcciones 
 
 ### `talud_terraplen`
 
-derivado del censo (valor efectivo y ventana legible por máquina; correcciones de T-11, H3). Base: el juego completo. Efecto: **MUEVE VEREDICTOS**.
+derivado del censo (valor efectivo y ventana legible por máquina; correcciones de T-11, H3). Base: el juego completo. Efecto: **LEÍDO, SIN EFECTO MEDIBLE**.
 
 | Valor | Punto | Material y sección | HW (m) | Control | Verificaciones que cambian frente al primer valor | Incumplidas o bloqueo si no dimensiona | Comparable |
 |---|---|---|---|---|---|---|---|
@@ -1390,9 +1390,9 @@ derivado del censo (valor efectivo y ventana legible por máquina; correcciones 
 | 2.0 | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
 | 2.0 | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
 | 1.5 | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | ninguna | — | sí |
-| 1.5 | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | E3-ASD.sis.s | — | sí |
-| 1.5 | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | A2.alero.s, A2.pantalla.s | — | sí |
-| 1.5 | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | E1-ASD.sis.e | — | sí |
+| 1.5 | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
+| 1.5 | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
+| 1.5 | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
 
 ### `espesor_proteccion_salida`
 
@@ -1491,10 +1491,10 @@ derivado del censo (valor efectivo y ventana legible por máquina; correcciones 
 | 'fondo_del_cauce_receptor' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
 | 'fondo_del_cauce_receptor' | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
 | 'fondo_del_cauce_receptor' | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
-| 'solera_de_salida' | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | A2.alero.s, A2.pantalla.s, E3-ASD.sis.s | — | sí |
-| 'solera_de_salida' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
-| 'solera_de_salida' | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | A2.alero.s, A2.pantalla.s | — | sí |
-| 'solera_de_salida' | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | A2.alero.s, A2.pantalla.s | — | sí |
+| 'solera_de_salida' | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | E3-ASD.sis.s | — | sí |
+| 'solera_de_salida' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | E3-ASD.sis.s | — | sí |
+| 'solera_de_salida' | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
+| 'solera_de_salida' | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
 
 ### `regimen_cortante_muro_e060_art_11_10_2`
 
@@ -1517,14 +1517,14 @@ derivado del censo (valor efectivo y ventana legible por máquina; correcciones 
 
 | Valor | Punto | Material y sección | HW (m) | Control | Verificaciones que cambian frente al primer valor | Incumplidas o bloqueo si no dimensiona | Comparable |
 |---|---|---|---|---|---|---|---|
-| 0.6096 | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | ninguna | — | sí |
-| 0.6096 | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
+| 0.0 | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | ninguna | — | sí |
+| 0.0 | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
+| 0.0 | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
+| 0.0 | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
+| 0.6096 | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | E3-ASD.sis.s | — | sí |
+| 0.6096 | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | E3-ASD.sis.s | — | sí |
 | 0.6096 | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
 | 0.6096 | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
-| 0.0 | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | A2.alero.s, A2.pantalla.s | — | sí |
-| 0.0 | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | E3-ASD.sis.s | — | sí |
-| 0.0 | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | A2.alero.s, A2.pantalla.s | — | sí |
-| 0.0 | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | A2.alero.s, A2.pantalla.s | — | sí |
 
 ### `umbral_no_colapso_evento_extremo`
 
@@ -1682,14 +1682,14 @@ derivado del censo (valor efectivo y ventana legible por máquina; correcciones 
 
 | Valor | Punto | Material y sección | HW (m) | Control | Verificaciones que cambian frente al primer valor | Incumplidas o bloqueo si no dimensiona | Comparable |
 |---|---|---|---|---|---|---|---|
-| 'peso_entero' | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | ninguna | — | sí |
-| 'peso_entero' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
-| 'peso_entero' | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
-| 'peso_entero' | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
 | 'exacto' | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | ninguna | — | sí |
 | 'exacto' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
 | 'exacto' | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
 | 'exacto' | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
+| 'peso_entero' | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | ninguna | — | sí |
+| 'peso_entero' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
+| 'peso_entero' | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
+| 'peso_entero' | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
 
 ### `carga_pantalla_cabezal`
 
@@ -1697,26 +1697,30 @@ derivado del censo (valor efectivo y ventana legible por máquina; correcciones 
 
 | Valor | Punto | Material y sección | HW (m) | Control | Verificaciones que cambian frente al primer valor | Incumplidas o bloqueo si no dimensiona | Comparable |
 |---|---|---|---|---|---|---|---|
-| 'plano_virtual_del_talon' | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | ninguna | — | sí |
-| 'plano_virtual_del_talon' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
-| 'plano_virtual_del_talon' | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
-| 'plano_virtual_del_talon' | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
 | 'cuna_sobre_la_pantalla' | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | ninguna | — | sí |
 | 'cuna_sobre_la_pantalla' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
 | 'cuna_sobre_la_pantalla' | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
 | 'cuna_sobre_la_pantalla' | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
+| 'plano_virtual_del_talon' | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | ninguna | — | sí |
+| 'plano_virtual_del_talon' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
+| 'plano_virtual_del_talon' | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
+| 'plano_virtual_del_talon' | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
 
 ### `distribucion_incremento_sismico`
 
-derivado del censo (valor efectivo y ventana legible por máquina; correcciones de T-11, H3). Base: el juego completo. Efecto: **MUEVE VEREDICTOS**.
+derivado del censo (valor efectivo y ventana legible por máquina; correcciones de T-11, H3). Base: el juego completo. Efecto: **LEÍDO, SIN EFECTO MEDIBLE**.
 
 | Valor | Punto | Material y sección | HW (m) | Control | Verificaciones que cambian frente al primer valor | Incumplidas o bloqueo si no dimensiona | Comparable |
 |---|---|---|---|---|---|---|---|
+| 'segun_regimen' | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | ninguna | — | sí |
+| 'segun_regimen' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
+| 'segun_regimen' | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
+| 'segun_regimen' | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
 | 'fraccion_de_h' | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | ninguna | — | sí |
 | 'fraccion_de_h' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
 | 'fraccion_de_h' | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
 | 'fraccion_de_h' | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
-| 'distribucion_estatica' | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | E3-ASD.sis.s | — | sí |
+| 'distribucion_estatica' | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | ninguna | — | sí |
 | 'distribucion_estatica' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
 | 'distribucion_estatica' | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
 | 'distribucion_estatica' | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
