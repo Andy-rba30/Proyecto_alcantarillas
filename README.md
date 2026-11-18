@@ -332,6 +332,11 @@ Aprobado por el autor y **no lanzado** todavía:
   como dato inválido el diámetro de arranque negativo de la rama de error.
 - **Abrir la forma de `n_manning_cajon`** al par del HDS-5 núm. B.3 (marco vaciado in situ),
   hoy no declarable (ficha T11-10).
+- **Una guía para quien herede el código** (5 a 10 páginas, en `docs/`), cuando la app esté
+  terminada (después de VE-3): mapa de módulos y fases, el recorrido de una corrida de
+  punta a punta, cómo añadir un criterio o un dato de sitio y cómo regenerar los documentos
+  generados y la línea base. `CLAUDE.md` tiene las reglas, pero no está escrito para una
+  persona que llega nueva (decidido por el autor el 2026-11-17).
 
 **Pendiente del autor** (no lo resuelve el programa):
 
