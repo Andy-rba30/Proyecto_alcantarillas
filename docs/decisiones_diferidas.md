@@ -8068,8 +8068,8 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   peraltes de 1.00 a 1.50 m y anchos de 3.38 a 5.28 m; juego: dos salidas con 0.80 y 0.70 m).
 - **Abierto:** (1) los peraltes con el cortante fuera de 5.7.3.4.1 se saltan (el procedimiento
   general de 5.7.3.4.2 no está implementado), lo que agranda el peralte más de lo necesario;
-  (2) el espesor de la pantalla y del alero no se dimensiona (A1 de la salida de A-01, A-02 y
-  C-01 sin cumplir); (3) el dentellón de corte de 11.6.3.5 no se ofrece.
+  (2) el espesor de la pantalla y del alero no se dimensionaba (A1 de la salida de A-01, A-02 y
+  C-01 sin cumplir): CERRADO en VE-3.14 (ficha VE3-14); (3) el dentellón de corte de 11.6.3.5 no se ofrece.
 - **Qué haría falta:** el cortante general de 5.7.3.4.2 y extender el dimensionamiento a la
   pantalla y al alero.
 - **Dónde vive:** `src/modulos/M9_cabezal.py::dimensionar_peralte_por_armado`
@@ -8144,3 +8144,95 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
 - **Qué haría falta:** una decisión del dueño sobre las tres lecturas o la revisión de un
   ingeniero estructural; el B_FLL bajo 2 ft ya está transcrito.
 - **Dónde vive:** `src/modulos/M8_estructural.py::verificar_concreto`
+
+## VE3-12 · El cortante fuera de 5.7.3.4.1 se verifica con el procedimiento general de 5.7.3.4.2 (VE-3.14, bloque 1; H-2 de los ensayos)
+
+- **Cerrado:** fuera del simplificado, el cortante del cabezal se verifica con el procedimiento
+  general (β de la ec. 5.7.3.4.2-2 con ε_s de la ec. 5.7.3.4.2-4 y s_xe), con un β por
+  combinación. Antes el programa se detenía con «método no evaluable» en cuanto el simplificado
+  dejaba de aplicar, y cada peralte intermedio se rechazaba sin que nada fallara. Cinco citas
+  verificadas en el PDF. Con el general, los peraltes de la zapata del juego bajan a 0.45–0.50 m
+  donde antes salían 0.70–1.00 m (contraste con el motor del revisor).
+- **Abierto:** el acero longitudinal que pide el cortante general (`acero_para_cortante_general`,
+  ec. 5.7.3.4.2-2 despejada) sube antes que el espesor: sin eso el espesor crecía para bajar εs.
+  Es decisión de la sesión y se deja escrita aquí.
+- **Qué haría falta:** nada para el cortante; el acero longitudinal queda como decisión documentada de la sesión.
+- **Dónde vive:** `src/modulos/M9_cabezal.py::acero_para_cortante_general`
+
+## VE3-13 · El bucle de la zapata se detiene en el tope y prueba la punta (VE-3.14, bloque 2; H-5, H-6, H-12)
+
+- **Cerrado:** al llegar al tope de `fraccion_ancho_max`·H_c, la zapata se declara NO FACTIBLE y el
+  peralte deja de crecer (antes el bucle seguía con 14 intentos idénticos y un peralte de 1.70 m).
+  Con el talón al tope prueba crecer la punta, que el dimensionamiento no tocaba (suelo cohesivo,
+  excentricidad), y tras fijar el peralte vuelve a probar anchos menores, porque la zapata más
+  pesada ya no necesita tanto ancho (H-12). Demuestra que termina. En arcilla blanda (E5) la
+  zapata queda no factible con los criterios de archivo, y se dice.
+- **Abierto:** la fila NF de los casos en que la zapata no cabe no itera el peralte (H-6); ver
+  VE3-17 para las opciones de criterio.
+- **Qué haría falta:** la decisión 9 del dueño (ver VE3-17) para que el talón se calcule con el método exacto, y, si se quiere, iterar el peralte también en las filas NF.
+- **Dónde vive:** `src/modulos/M9_cabezal.py::dimensionar_zapata_por_estabilidad`
+
+## VE3-14 · La pantalla y el alero se dimensionan por su armado (VE-3.14, bloque 3; H-1)
+
+- **Cerrado:** el espesor de la pantalla (uniforme) crece con el paso de la zapata hasta que su
+  armado cumple, con tope físico e < H. La zapata crece lo mismo, con punta y talón fijos, y se
+  re-verifican la estabilidad y el armado de la zapata. Origen «dimensionada por armado» y paso de
+  memoria 9.3.m. Las trazas de los tres dimensionamientos (`intentos_de_zapata`,
+  `intentos_de_peralte`, `intentos_de_pantalla`) salen en el JSON.
+- **Decisión de la sesión, que conviene ver:** fuera del simplificado el armado sube primero el
+  acero longitudinal que pide el cortante general y sólo después el espesor. Sin eso la pantalla
+  de E2 llegaba a 1.20 m; con eso queda en 0.70 m.
+- **Abierto:** el alero se dimensiona con la pantalla, no por separado (sus aleros largos con
+  esviaje alto —13 m con 45°— quedan sin diseño, H-13).
+- **Qué haría falta:** dimensionar el alero por separado y decidir su tratamiento con esviaje alto (H-13).
+- **Dónde vive:** `src/modulos/M9_cabezal.py::dimensionar_peralte_por_armado`
+
+## VE3-15 · Con agua en el plano de empuje el sismo se evalúa (VE-3.14, bloque 4; H-3)
+
+- **Cerrado:** el incremento sísmico se calcula con el peso TOTAL bajo el agua (AASHTO C11.6.5.3,
+  criterio nuevo [C] `agua_del_relleno_bajo_sismo`, valor de archivo `se_mueve_con_el_suelo`), y el
+  ancho ya no se dimensiona solo con la estática. Un ancho dimensionado sin alguna condición
+  evaluada se rotula «dimensionada con la estabilidad evaluable (falta una condición)». El mensaje
+  ya no recomienda declarar el drenaje cuando está declarado.
+- **Abierto:** con `relleno_muy_abierto` la condición sísmica sigue deteniéndose: la fórmula de
+  Westergaard no está en ninguna fuente del repositorio de normas, y no se inventa.
+- **Qué haría falta:** una fuente en el repositorio de normas para la fórmula de Westergaard, o la decisión de no detener el sismo con relleno muy abierto.
+- **Dónde vive:** `src/modulos/M9_cabezal.py::cargas_del_cabezal`
+
+## VE3-16 · Lo que la app dice de sí misma: alcance declarado y resumen de la CLI (VE-3.14, bloque 5; H-10, H-11)
+
+- **Cerrado:** `ALCANCE_DECLARADO` (`iteracion_ancho_zapata_cabezal`) y el docstring de
+  `servicio._fase_9_armado` dicen lo que el código hace desde VE-3.5/3.9 (la zapata SÍ se itera);
+  `tests/test_t10_memoria.py` lo fija. La traza de los tres dimensionamientos sale en el JSON. El
+  resumen de la CLI atribuye el no cierre a la causa real de cada bloqueo (un método no evaluable
+  ya no se llama «criterio sin valor»).
+- **Qué haría falta:** nada.
+- **Por qué:** es presentación y registro de lo que el código ya hace; la línea base no cambia.
+- **Dónde vive:** `src/modelos.py::ALCANCE_DECLARADO`, `cli.py`
+
+## VE3-17 · Opciones 9, 10 y 13 del cabezal como alternativas de criterio; 11 y 14 con su alcance; 12 no se propone (VE-3.14, bloque 6)
+
+- **Qué se difirió:** tres decisiones de criterio del dueño, pendientes (LEEME, «Decisiones pendientes»,
+  con la verificación independiente en `verificaciones_del_dueno/cabezal_decisiones_9_14.md`).
+  Cada opción queda implementada y medida, y el valor de archivo es el comportamiento de HOY: no
+  cambia ningún número hasta que el dueño elija.
+  - **9 · `momento_talon_cabezal`:** `'exacto'` (envolvente de Resistencia I con γ máximo y mínimo
+    y de los dos casos del Evento Extremo I; reacción lineal de 10.6.5 sin tracción). Peso entero
+    como contraste.
+  - **10 · `carga_pantalla_cabezal`:** `'cuna_sobre_la_pantalla'` (la cuña llega a la superficie
+    real, con talud sobre la corona y sobrecarga, más la cuña sísmica).
+  - **13 · `distribucion_incremento_sismico`:** `'distribucion_estatica'` (centroide estático o h/3,
+    el mayor; sólo con el muro que cede; con el que no cede se rechaza).
+  - **11:** la justificación es AASHTO 11.5.7 y su Tabla 11.5.7-1 (0.55/1.0). La cita del Manual de
+    Puentes 2.11.8.5 se retiró: estaba mal leída (es de barreras de sonido).
+  - **14:** sólo bajar `margen_zapata_bajo_socavacion_m` (HEC-14 5.1.3 sostiene margen 0). La
+    «hoya protegida» no se implementa: no hay fuente que dé esa profundidad.
+  - **12 (régimen cedente o no cedente):** no se propone. C11.6.5.4 pone el estribo con aleros
+    estructurales entre los que pueden no ceder, y la hoja de ruta §9.2 lo advierte.
+- **Efecto medido:** tabla de opciones en `proceso/planes_mejora/ve3_estado/ENSAYOS_DISENO_CABEZAL.md`
+  (y su resumen en el LEEME). Con todas las opciones juntas, el peralte cae al rango del revisor
+  (0.40–0.55 m).
+- **Por qué:** cada opción cambia un diseño y la elección es del dueño, no de la sesión.
+- **Qué haría falta:** la decisión del dueño sobre 9, 10 y 13 (con las condiciones de la verificación),
+  y sobre 14.
+- **Dónde vive:** `src/modulos/M9_cabezal.py::CRITERIO_MOMENTO_TALON` (con sus hermanas `CRITERIO_CARGA_PANTALLA` y `CRITERIO_DISTRIBUCION_INCREMENTO`)
