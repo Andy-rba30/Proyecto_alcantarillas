@@ -138,28 +138,36 @@ def test_los_juicios_del_anexo(medidas):
             # evaluan dejan de dimensionar hasta que se declare.
             "nivel_agua_diseno_v7"},
         "MUEVE VEREDICTOS": {
-            # VE-3.14, opcion 13 (la alternativa rechaza el muro que
-            # no cede y mueve los veredictos sismicos del juego).
-            "distribucion_incremento_sismico",
-            "eta_importancia_operativa_conducto", "factor_muro_eleccion",
-            "gamma_EQ", "fraccion_delta_sobre_phi_trasdos",
+            "factor_muro_eleccion",
             # --- VE-3.5 --- los dos [A] de §3.1 se miden sobre la zapata de
             # la REGLA (base `juego_cabezal_de_la_regla`): con el juego la
             # zapata se dimensiona y las filas que miden pasan siempre.
             "fila_phi_estabilidad_cabezal@juego_cabezal_de_la_regla",
             "factores_inclinacion_carga_portante@juego_cabezal_de_la_regla",
             "regla_pendiente_relleno_trasdos",
-            "regimen_resistencia_elementos_cabezal", "eta_ductilidad_cabezal",
-            "eta_redundancia_cabezal", "marco_estabilidad_cabezal",
-            "regimen_cabezal", "drenaje_trasdos", "fc_cabezal_mpa",
+            "regimen_resistencia_elementos_cabezal",
+            "marco_estabilidad_cabezal",
+            "regimen_cabezal", "drenaje_trasdos",
             "F_pga_lectura_columna_extrema",
             "margen_zapata_bajo_socavacion_m",
-            "peso_especifico_relleno_kn_m3", "phi_relleno_trasdos",
-            "punto_aplicacion_incremento_sismico",
+            "phi_relleno_trasdos",
             "referencia_profundidad_socavacion", "revestimiento_cuneta",
-            "talud_terraplen", "terreno_delante_del_cabezal"},
+            "terreno_delante_del_cabezal"},
         "MUEVE EL HW": {"n_manning_cajon", "ke_entrada"},
         "LEÍDO, SIN EFECTO MEDIBLE": {
+            # --- CIERRE DE VE-3.15 --- MOVIDOS DE «MUEVE VEREDICTOS», medido
+            # (docs/validacion_sensibilidad.md regenerado): con los valores
+            # de archivo de las decisiones 9 a 14 (talon exacto, cuña sobre
+            # la pantalla, phi de muros, margen cero) el cabezal del juego
+            # tiene margen y estas diez perturbaciones dentro de su ventana
+            # ya no cambian ningun veredicto. La opcion 13 tampoco: desde
+            # VE-3.15 el brazo se deriva del regimen (`segun_regimen`).
+            "distribucion_incremento_sismico",
+            "eta_importancia_operativa_conducto", "gamma_EQ",
+            "fraccion_delta_sobre_phi_trasdos", "eta_ductilidad_cabezal",
+            "eta_redundancia_cabezal", "fc_cabezal_mpa",
+            "peso_especifico_relleno_kn_m3",
+            "punto_aplicacion_incremento_sismico", "talud_terraplen",
             # VE-3.14, opciones 9 y 10: mueven el peralte y la pantalla
             # del cabezal, no un diametro ni un veredicto del juego.
             "momento_talon_cabezal", "carga_pantalla_cabezal",
@@ -302,28 +310,40 @@ def test_leido_sin_efecto_se_define_y_el_HW_se_compara_con_tolerancia():
 def test_el_cabezal_de_la_regla_frente_a_sus_dos_A(medidas):
     """
     PRECISIONES_T-11: el cabezal de la regla que no pasa E3 estatico ni E1
-    sismico se presenta CON LA SENSIBILIDAD. Medido: omitir los factores de
-    inclinacion (C10.6.3.1.2a lo permite) hace pasar E1 sismica en los dos
-    extremos de los cuatro puntos; la fila de phi de muros (Tabla 11.5.7)
-    hace pasar E3 estatica a la SALIDA de A-01, A-02 y C-01; ninguno de los
-    dos hace pasar E3 estatica a la entrada.
+    sismico se presenta CON LA SENSIBILIDAD.
+
+    REESCRITO EN EL CIERRE DE VE-3.15, declarandolo, con la medida del anexo
+    regenerado (§3.1). Hasta VE-3.14 las cuatro filas no pasaban en ningun
+    punto con los valores de archivo. Desde VE-3.15 (fila de phi de muros de
+    11.5.7 como valor de archivo, talon exacto, cuña sobre la pantalla) la
+    zapata de la regla pasa E1 sismica de ENTRADA y E3 estatica de SALIDA en
+    A-01 y C-01, y sigue sin pasar en A-02 y B-01. Medido: omitir los
+    factores de inclinacion (C10.6.3.1.2a lo permite) hace pasar E1 sismica
+    en los dos extremos de los cuatro puntos; volver a la fila de phi de
+    zapatas (el valor anterior) quita E3 estatica de salida a A-01 y C-01;
+    ninguno de los dos hace pasar E3 estatica a la entrada, y con la fila de
+    phi ninguno pasa E1 sismica de salida.
     """
     por_clave = {m.barrido.clave: S.estados_del_cabezal(m) for m in medidas
                  if m.barrido.clave in S.CLAVES_DEL_CABEZAL_DE_LA_REGLA}
     puntos = ("A-01", "A-02", "B-01", "C-01")
+    pasan_con_el_archivo = {"A-01", "C-01"}
     for estados in por_clave.values():
         for p in puntos:
-            # Con el valor de archivo (el primero), las cuatro no pasan.
-            assert all(estados[(p, f)][0] == "no cumple"
-                       for f in S.FILAS_DEL_CABEZAL), p
+            # Con el valor de archivo (el primero de cada barrido).
+            esperado = "cumple" if p in pasan_con_el_archivo else "no cumple"
+            assert estados[(p, "E1-LRFD.sis.e")][0] == esperado, p
+            assert estados[(p, "E3-LRFD.est.s")][0] == esperado, p
+            assert estados[(p, "E1-LRFD.sis.s")][0] == "no cumple", p
             # E3 estatica de entrada no pasa con ninguno.
             assert set(estados[(p, "E3-LRFD.est.e")]) == {"no cumple"}, p
     inclinacion = por_clave["factores_inclinacion_carga_portante"]
     for p in puntos:
         assert inclinacion[(p, "E1-LRFD.sis.e")][1] == "cumple"
         assert inclinacion[(p, "E1-LRFD.sis.s")][1] == "cumple"
-        assert inclinacion[(p, "E3-LRFD.est.s")][1] == "no cumple"
+        assert inclinacion[(p, "E3-LRFD.est.s")][1] == \
+            inclinacion[(p, "E3-LRFD.est.s")][0]
     phi = por_clave["fila_phi_estabilidad_cabezal"]
     assert {p for p in puntos if phi[(p, "E3-LRFD.est.s")][1] == "cumple"} == \
-        {"A-01", "A-02", "C-01"}
-    assert all(phi[(p, "E1-LRFD.sis.e")][1] == "no cumple" for p in puntos)
+        set()
+    assert all(phi[(p, "E1-LRFD.sis.s")][1] == "no cumple" for p in puntos)

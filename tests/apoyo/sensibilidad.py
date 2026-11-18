@@ -777,8 +777,11 @@ def generar(medidas: Optional[Sequence[Medida]] = None) -> str:
     A("Con la zapata que propone la regla de T-7a, SIN dimensionar (base "
       "`juego_cabezal_de_la_regla`: desde VE-3.5 la zapata del juego crece "
       "hasta cumplir, y estas filas pasan con cualquier valor), estas cuatro "
-      "filas no pasan. Lo que cada uno de los dos [A] de los que dependen "
-      "hace con ellas, medido:")
+      "filas no pasan en todos los puntos (desde VE-3.15, con la fila de phi "
+      "de muros y el talon exacto, algunas pasan en algunos: la tabla lo "
+      "dice punto a punto). Lo que cada uno de los dos [A] de los que "
+      "dependen hace con ellas, medido (la primera fila de cada criterio es "
+      "su valor de archivo):")
     A("")
     A("| Criterio | Valor | " + " | ".join(f"`{f}`" for f in FILAS_DEL_CABEZAL)
       + " |")
