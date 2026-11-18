@@ -4722,10 +4722,12 @@ HEC14_BORDE_CIRCULAR = {
 # nombra aparte porque lo imprime OTRA fuente para OTRO grupo: un cambio de
 # edicion de una no puede mover la otra en silencio (el precedente es
 # `G_LAUSHEY`).
-# Imperial: «Ku = 1.0 for CU», el que la figura escribe al lado y NO se usa:
-# el codigo opera en SI y con Ku = 1.0 el grupo saldria 1.811 veces menor y
-# se leeria una curva mas baja, un borde mas alto y una velocidad menor.
 HEC14_KU_BORDE_SI = 1.811
+# Imperial: 1.0 («Ku = 1.0 for CU»), el que la figura escribe al lado y NO
+# se usa: el codigo opera en SI y con Ku = 1.0 el grupo saldria 1.811 veces
+# menor y se leeria una curva mas baja, un borde mas alto y una velocidad
+# menor. 1.0 s/ft^0.5 = 1.0/0.3048^0.5 = 1.8113 s/m^0.5.
+
 # Los exponentes de D en los dos grupos de las figuras: KuQ/D^2.5 (tubo) y
 # KuQ/(B·D^1.5) (marco), «Q/(BD3/2) or Q/D5/2» (num. 3.1.3, pag. 3-3).
 HEC14_BORDE_EXPONENTE_CIRCULAR = 2.5

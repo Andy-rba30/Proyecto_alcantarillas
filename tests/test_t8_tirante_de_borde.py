@@ -68,6 +68,24 @@ REL_FORMULA = 1e-9            # una formula recomputada en el test
 # El ejemplo impreso de la pag. 3-4 da yo/D con DOS cifras: media unidad de
 # la ultima, sumada a la tolerancia de lectura de la figura.
 ABS_YO_IMPRESO = 5e-3 + TOL_LECTURA_FIGURA_HEC14
+# El ejemplo impreso da KuQ/D^2.5, TW/D y V con dos cifras decimales: media
+# unidad de la ultima.
+ABS_IMPRESO_2_DECIMALES = 5e-3
+# A/D² se imprime con cuatro cifras, pero sale de un yo/D de DOS: la
+# geometria del programa con ese yo/D reproduce las cuatro cifras a menos de
+# 5e-4 (medio centesimo de la tercera).
+ABS_AREA_IMPRESA = 5e-4
+# Bilineal recomputada a mano con las celdas de la tabla: solo el redondeo.
+ABS_INTERPOLACION = 1e-6
+# V = Q/A(y_o) con el area por la via canonica (Brent sobre el llenado,
+# xtol 1e-10): el recomputo con la formula cerrada del test difiere menos.
+REL_AREA_CANONICA = 1e-6
+# La aritmetica a mano de un docstring, con la tabla a tres cifras y
+# redondeos intermedios: la velocidad a ±0.06 m/s y el d50 a ±0.012 m (con
+# V² el error relativo se dobla). No es la incertidumbre de la lectura de la
+# figura, que es TOL_LECTURA_FIGURA_HEC14 sobre yo/D.
+ABS_V_A_MANO = 0.06
+ABS_D50_A_MANO = 0.012
 KU_SI = 1.811                 # «Ku = 1.811 for SI», impreso en las dos figuras
 
 
@@ -143,11 +161,13 @@ def test_la_figura_3_4_tiene_sus_trece_curvas_y_la_3_3_las_suyas():
     Figura 3.4: 0.0 a 6.0 de 0.5 en 0.5 (trece). Figura 3.3: 0.0 a 4.0 de
     0.5 en 0.5 y 5.0, 6.0, 7.0 y 8.0 (trece: no tiene 4.5).
     """
-    assert tuple(CN.HEC14_BORDE_CIRCULAR) == tuple(
-        x / 2 for x in range(13))
-    assert tuple(CN.HEC14_BORDE_RECTANGULAR) == (
-        0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 5.0, 6.0, 7.0, 8.0)
-    assert CN.HEC14_BORDE_TW_SOBRE_D == tuple(x / 10 for x in range(11))
+    assert tuple(CN.HEC14_BORDE_CIRCULAR) == pytest.approx(tuple(
+        x / 2 for x in range(13)), rel=REL_FORMULA)
+    assert tuple(CN.HEC14_BORDE_RECTANGULAR) == pytest.approx(
+        tuple(x / 2 for x in range(9)) + tuple(float(x) for x in range(5, 9)),
+        rel=REL_FORMULA)
+    assert CN.HEC14_BORDE_TW_SOBRE_D == pytest.approx(
+        tuple(x / 10 for x in range(11)), rel=REL_FORMULA)
 
 
 def test_las_vistas_de_calculo_se_derivan_de_la_transcripcion():
@@ -204,13 +224,13 @@ def test_la_figura_3_4_reproduce_el_ejemplo_resuelto_de_la_pag_3_4(
     """
     Q, TW = 1.7, 0.610
     borde = _borde(Q, SeccionCircular(D), TW)
-    assert borde.caudal_adimensional == pytest.approx(q_impreso, abs=5e-3)
-    assert borde.TW_sobre_D == pytest.approx(tw_d, abs=5e-3)
+    assert borde.caudal_adimensional == pytest.approx(q_impreso, abs=ABS_IMPRESO_2_DECIMALES)
+    assert borde.TW_sobre_D == pytest.approx(tw_d, abs=ABS_IMPRESO_2_DECIMALES)
     assert borde.y_o / D == pytest.approx(yo_d, abs=ABS_YO_IMPRESO)
     # La geometria con que la fuente pasa de yo/D a la velocidad es la misma
     # del programa: con el yo/D IMPRESO, A/D² y V salen como los imprime.
-    assert _area_circular_sobre_D2(yo_d) == pytest.approx(a_d2, abs=5e-4)
-    assert Q / (a_d2 * D ** 2) == pytest.approx(V, abs=5e-3)
+    assert _area_circular_sobre_D2(yo_d) == pytest.approx(a_d2, abs=ABS_AREA_IMPRESA)
+    assert Q / (a_d2 * D ** 2) == pytest.approx(V, abs=ABS_IMPRESO_2_DECIMALES)
 
 
 @pytest.mark.parametrize("q, tw_d, esperado", [
@@ -229,7 +249,7 @@ def test_la_figura_3_3_da_el_borde_del_marco(q, tw_d, esperado):
     borde = _borde(_caudal_rectangular(q, B, D), seccion, tw_d * D)
     assert borde.figura == "3.3"
     assert borde.caudal_adimensional == pytest.approx(q, rel=REL_FORMULA)
-    assert borde.y_o / D == pytest.approx(esperado, abs=1e-6)
+    assert borde.y_o / D == pytest.approx(esperado, abs=ABS_INTERPOLACION)
 
 
 @pytest.mark.parametrize("vista, forma", [
@@ -331,8 +351,8 @@ def test_a02_horizontal_sale_con_la_velocidad_de_borde(tmp_path):
     assert h.borde.y_o / D == pytest.approx(0.3907, abs=TOL_LECTURA_FIGURA_HEC14)
     assert h.borde.y_o < h.y_critico
     A = _area_circular_sobre_D2(h.borde.y_o / D) * D ** 2
-    assert h.V_salida.valor == pytest.approx(h.Q_celda_m3s / A, rel=1e-6)
-    assert h.V_salida.valor == pytest.approx(2.084, abs=0.06)
+    assert h.V_salida.valor == pytest.approx(h.Q_celda_m3s / A, rel=REL_AREA_CANONICA)
+    assert h.V_salida.valor == pytest.approx(2.084, abs=ABS_V_A_MANO)
     assert h.V_salida_cota_inferior is False
     assert "Figura 3.4" in h.V_salida.procedencia
     # El tirante de REGISTRO no cambia: sigue siendo el critico.
@@ -382,11 +402,11 @@ def test_a01_con_s_0_0056_toma_la_mayor_de_borde_y_erosion(tmp_path):
     assert h.control_gobernante is ControlGobernante.SALIDA
     assert h.V_erosion > h.V_critica_m_s           # la banda
     assert h.V_salida.valor >= h.V_erosion - REL_FORMULA
-    assert h.V_salida.valor == pytest.approx(3.110, abs=0.06)
+    assert h.V_salida.valor == pytest.approx(3.110, abs=ABS_V_A_MANO)
     d50 = a01.proteccion.d50_laushey
     assert d50 == pytest.approx(h.V_salida.valor ** 2 / (3.1 * 9.8),
                                 rel=REL_FORMULA)
-    assert d50 > 0.288 and d50 == pytest.approx(0.318, abs=0.012)
+    assert d50 > 0.288 and d50 == pytest.approx(0.318, abs=ABS_D50_A_MANO)
     # El aviso de la banda (T-8) ya no existe: M4 lo resolvio.
     assert not any("n minimo de la regla de doble n" in x
                    for x in a01.avisos())

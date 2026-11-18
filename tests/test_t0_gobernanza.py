@@ -470,7 +470,15 @@ def test_hec14_la_cita_T8_y_wsdot_las_tiene_desde_t4():
     assert all(c.verificado for c in hec14)
     de_ve2 = {c.id for c in hec14 if "VE-2" in c.verificado.por}
     assert de_ve2 == {"HEC14.3.2.2#V_SALIDA_NORMAL"}
-    assert all("T-8" in c.verificado.por for c in hec14 if c.id not in de_ve2)
+    # El cierre de T8-08 (2026-11-18) suma CUATRO, firmadas por su propia
+    # sesion: las dos frases del num. 3.1.3 que permiten leer el borde de
+    # las figuras o quedarse en el critico, y las dos figuras, leidas por
+    # imagen. Se amplia el assert declarandolo.
+    de_t8_08 = {c.id for c in hec14 if "T8-08" in c.verificado.por}
+    assert de_t8_08 == {"HEC14.3.1.3#FIGURAS", "HEC14.3.1.3#OTRAS_FORMAS",
+                        "HEC14.F3.3", "HEC14.F3.4"}
+    assert all("T-8" in c.verificado.por for c in hec14
+               if c.id not in de_ve2 | de_t8_08)
     assert {"WSDOT_HM.2-6.3#TC_MINIMO", "WSDOT_HM.2-6.2#T2-2",
             "WSDOT_HM.2-6.2#FRECUENCIA"} <= {c.id for c in reg.citas_de("WSDOT_HM")}
 

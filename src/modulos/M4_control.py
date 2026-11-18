@@ -1924,11 +1924,11 @@ def _magnitudes_del_borde(borde: Optional[TiranteDeBorde],
     if borde.figura is not None:
         grupo = "KuQ/D^2.5" if borde.figura == "3.4" else "KuQ/(B·D^1.5)"
         salida += [
-            Magnitud(grupo, borde.caudal_adimensional, "-",
+            Magnitud(grupo, borde.caudal_adimensional, "",
                      f"grupo de caudal de la Figura {borde.figura} de HEC-14, "
                      "con Ku = 1.811 (SI, impreso en la figura) y el caudal "
                      "de UNA celda", cifras=CIFRAS_MAGNITUD),
-            Magnitud("TW/D", borde.TW_sobre_D, "-",
+            Magnitud("TW/D", borde.TW_sobre_D, "",
                      f"abscisa de la Figura {borde.figura}",
                      cifras=CIFRAS_MAGNITUD)]
     salida.append(

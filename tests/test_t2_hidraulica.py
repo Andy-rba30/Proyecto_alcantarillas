@@ -102,6 +102,9 @@ EXTERNOS_ANCHOS = RAIZ / "tests" / "linea_base_familia_c" / "entradas_ampliadas.
 REL_FORMULA = 1e-9        # una formula cerrada recomputada en el test
 REL_PERFIL = 1e-6         # el balance de energia entre dos estaciones del perfil
 ABS_BRENT = 1e-7          # una raiz de Brent contra su identidad (xtol 1e-10)
+# T8-08: un yo/D interpolado a mano con la tabla de la Figura 3.4 a tres
+# cifras: media unidad de la tercera, y algo mas por el redondeo intermedio.
+ABS_YO_A_MANO = 1e-3
 
 
 # LOS MUTANTES QUE QUEDAN VIVOS, UNO A UNO (ficha T2-07). Medidos con el arnes
@@ -376,7 +379,7 @@ def test_el_resultado_de_un_barril_horizontal_no_inventa_el_tirante_normal(concr
     assert r.perfil.tipo is TipoDePerfil.H2
     critico = M4.tirante_critico(Q, sec)
     assert r.borde is not None and r.borde.figura == "3.4"
-    assert r.borde.y_o / sec.altura == pytest.approx(0.387, abs=1e-3)
+    assert r.borde.y_o / sec.altura == pytest.approx(0.387, abs=ABS_YO_A_MANO)
     assert r.V_salida.valor == pytest.approx(Q / sec.area(r.borde.y_o),
                                              rel=REL_PERFIL)
     assert r.V_salida.valor > Q / critico.geometria.A
@@ -508,7 +511,7 @@ def test_un_barril_horizontal_gobernado_por_la_entrada(concreto):
     # KuQ/D^2.5 = 1.811·1.5/0.76843 = 3.535, TW/D = 0 -> yo/D = 0.612 +
     # 0.07·0.038 = 0.6147, bajo el critico (0.80 D).
     critico = M4.tirante_critico(Q, sec)
-    assert r.borde.y_o / sec.altura == pytest.approx(0.6147, abs=1e-3)
+    assert r.borde.y_o / sec.altura == pytest.approx(0.6147, abs=ABS_YO_A_MANO)
     assert r.V_salida.valor == pytest.approx(Q / sec.area(r.borde.y_o),
                                              rel=REL_PERFIL)
     assert r.V_salida.valor > Q / critico.geometria.A
