@@ -340,7 +340,9 @@ def test_lo_que_el_programa_no_puede_elegir_sigue_sin_valor_de_archivo(clave):
     # tests/test_ve3_15_decisiones_cabezal.py.
     ("fila_phi_estabilidad_cabezal", "zapatas_seccion_10",
      ("zapatas_seccion_10", "muros_tabla_11_5_7")),
-    ("drenaje_trasdos", "sin_drenaje", ("sin_drenaje", "drenado")),
+    # VE-3.16, declarado: el valor de archivo paso de «sin_drenaje» a
+    # «drenado» (AASHTO 11.6.6 «shall be drained»); la ventana no cambia.
+    ("drenaje_trasdos", "drenado", ("sin_drenaje", "drenado")),
     # CORRECCIONES DE T-7b (H4), declarado: la regla de archivo paso de
     # «talud_quebrado_2h» a la cuña de tanteo, que entra en la ventana.
     ("regla_pendiente_relleno_trasdos", "cuna_de_tanteo",
@@ -1147,8 +1149,9 @@ def test_con_el_freatico_bajo_la_zapata_y_drenaje_no_hay_carga_de_agua(tanteo):
 def test_sin_drenaje_el_agua_llega_a_la_superficie_y_pide_el_peso_saturado(
         tanteo):
     """
-    Valor de archivo: 'sin_drenaje' (AASHTO 11.6.6). El relleno se llena de
-    agua, y el peso saturado es dato del ensayo: sin el, criterio pendiente.
+    'sin_drenaje' declarado (AASHTO 11.6.6; valor de archivo hasta VE-3.16,
+    que lo paso a 'drenado'). El relleno se llena de agua, y el peso
+    saturado es dato del ensayo: sin el, criterio pendiente.
     """
     ca.establecer_valor_dinamico("drenaje_trasdos", "sin_drenaje")
     with pytest.raises(CriterioPendienteError) as exc:
@@ -2710,9 +2713,11 @@ def test_H6_con_drenaje_se_avisa_el_desembalse_rapido_con_su_orden(tanteo):
                for a in sin_nivel.avisos)
 
 
-def test_H6_drenaje_de_archivo_sigue_sin_drenaje_y_la_ficha_lo_dice():
+def test_H6_drenaje_de_archivo_es_drenado_desde_ve3_16_y_la_ficha_lo_dice():
+    """VE-3.16: el valor de archivo paso de «sin_drenaje» a «drenado»; la
+    ficha conserva la lectura del agua del relleno sin drenar (H6)."""
     c = ca.CRITERIOS["drenaje_trasdos"]
-    assert c.valor == "sin_drenaje"
+    assert c.valor == "drenado"
     assert "desembalse rapido" in c.justificacion
     assert "nunca sube por encima del muro" in c.justificacion
     assert "nunca por encima del muro" in cn.HIPOTESIS_EMPUJE_BAJO_NF

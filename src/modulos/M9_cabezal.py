@@ -8319,10 +8319,10 @@ def _pasos_de_cargas(entorno, condicion, cargas, combos, datos,
                    f"agua en el relleno con '{CRITERIO_DRENAJE}' = "
                    f"'{datos['drenaje']}': "
                    + ("hasta la superficie del relleno retenido contra el "
-                      "trasdos (z_rel; sin drenaje declarado, AASHTO "
+                      "trasdos (z_rel; el drenaje no puede darse, AASHTO "
                       "11.6.6), nunca por encima del muro"
                       if datos["drenaje"] == DRENAJE_SIN else
-                      "el freatico natural (drenaje declarado: filtro y "
+                      "el freatico natural (relleno drenado: filtro y "
                       "lloraderos en planos)"))),
             resultado=Magnitud(
                 "E_w / U",
@@ -8596,15 +8596,19 @@ def ensamble_estabilidad(entorno: EntornoDelCabezal,
             "quedan diferidas al expediente con el estudio de suelos "
             "(AASHTO LRFD 11.6.3.7; E.050 39.13.6 b y Art. 30.3)")
         if datos["drenaje"] == DRENAJE_SIN:
+            # VE-3.16: el valor de archivo es 'drenado'; este aviso es el
+            # del caso declarado. Hasta VE-3.16 decia ademas que la
+            # condicion sismica no era evaluable, que dejo de ser cierto en
+            # VE-3.14 (C11.6.5.3, peso total bajo el agua).
             avisos.append(
-                f"Cabezal de {entorno.extremo} de {entorno.id_punto}: sin "
-                f"drenaje declarado del trasdos ('{CRITERIO_DRENAJE}' = "
-                f"'{DRENAJE_SIN}'), la estabilidad se calcula con el relleno "
-                "retenido lleno de agua hasta su superficie contra el "
-                "trasdos (AASHTO 11.6.6), y la condicion sismica no es "
-                "evaluable (relleno saturado, 11.6.5.3). Declarar el "
-                "drenaje ('drenado') lo deja en el freatico natural y "
-                "compromete el filtro y los lloraderos en planos")
+                f"Cabezal de {entorno.extremo} de {entorno.id_punto}: con el "
+                f"trasdos sin drenaje ('{CRITERIO_DRENAJE}' = "
+                f"'{DRENAJE_SIN}', declarado: el drenaje no puede darse), la "
+                "estabilidad se calcula con el relleno retenido lleno de "
+                "agua hasta su superficie contra el trasdos (AASHTO "
+                "11.6.6), tambien bajo sismo (ficha VE3-21). El valor de "
+                f"archivo ('{DRENAJE_CON}') lo deja en el freatico natural "
+                "y compromete el filtro y los lloraderos en planos")
         else:
             avisos.append(_aviso_desembalse_rapido(entorno, datos, cargas))
         if suelo["cohesivo"]:

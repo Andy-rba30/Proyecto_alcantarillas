@@ -599,12 +599,13 @@ def quitar_una(base: Optional[Any] = None, *,
 
 # LA SEGUNDA BASE DE LA LISTA EXACTA (correcciones de T-11, H1 de su
 # auditoria, ALTA): el juego SIN las declaraciones que pisan un valor de
-# archivo --`drenaje_trasdos` y `factor_muro_eleccion` vuelven a 'sin_drenaje'
-# y 'sin_reduccion'--, que es la corrida TITULAR (variante
-# `decisiones_de_archivo`). Medida solo sobre el juego, la lista no veia el
-# peso especifico SATURADO del relleno: con el relleno drenado no se pide, y
-# con el valor de archivo (sin drenaje) detiene la estabilidad y el armado de
-# los dos cabezales de los cuatro puntos. La lista es la UNION de las dos.
+# archivo --`factor_muro_eleccion` vuelve a 'sin_reduccion', con su armado
+# en reposo--, que es la corrida TITULAR (variante `decisiones_de_archivo`).
+# Hasta VE-3.16 la titular volvia tambien `drenaje_trasdos` a 'sin_drenaje',
+# y por eso esta base destapaba el peso especifico SATURADO del relleno;
+# desde que 'drenado' es el valor de archivo ninguna de las dos bases lo
+# pide y es una condicional (`CONDICIONALES_NO_MEDIDAS`). La lista es la
+# UNION de las dos.
 VARIANTE_TITULAR = "decisiones_de_archivo"
 
 
@@ -815,9 +816,9 @@ def generar(*, base: Any = None, por_defecto: Any = None,
     A("## 1. Qué se juzga, y con qué regla")
     A("")
     A("- **La corrida titular** es la del juego con las **decisiones de "
-      "archivo** (§2): el juego pisa dos criterios que tienen valor de "
-      "archivo y que el dueño confirmó, y eso se presenta como variante "
-      "(§2.1), no como resultado.")
+      "archivo** (§2): el juego pisa una decisión con valor de archivo que "
+      "el dueño confirmó (la reducción de k_h, con su armado), y eso se "
+      "presenta como variante (§2.1), no como resultado.")
     A("- **Llega a la Fase 11 con diseño**: el punto sale dimensionado (MD "
       "aceptó material y sección) y la memoria de la Fase 11 lleva su bloque "
       "y el cuadro resumen su fila. Las filas E y A del cabezal son "
@@ -855,10 +856,11 @@ def generar(*, base: Any = None, por_defecto: Any = None,
     A("")
     A("El juego declara, sobre criterios que **tienen valor de archivo**, lo "
       "que esta tabla dice. La corrida titular los deja en su valor de "
-      "archivo (variante `decisiones_de_archivo`) y declara el peso "
-      "específico saturado del relleno que el relleno sin drenaje pide "
-      "(ensayo del EMS, sin valor de archivo: 20 kN/m³ de prueba, con su "
-      "línea en el juego).")
+      "archivo (variante `decisiones_de_archivo`). El trasdós es **drenado** "
+      "de archivo desde VE-3.16 (AASHTO 11.6.6, «shall be drained»; "
+      "compromete filtro y lloraderos en los planos), y con el freático del "
+      "juego bajo las zapatas la titular no lee el peso específico saturado "
+      "del relleno.")
     A("")
     L += _tabla(("Criterio", "Valor de archivo", "Valor del juego",
                  "Por qué el juego lo cambia"),
@@ -900,23 +902,25 @@ def generar(*, base: Any = None, por_defecto: Any = None,
       "zapata sin cumplir. Desde VE-3.14 la condición **sísmica se evalúa** "
       "también con el relleno saturado (AASHTO C11.6.5.3: el incremento con "
       "el peso total bajo el agua, `agua_del_relleno_bajo_sismo` [C]); con "
-      "el trasdós sin drenaje y el k_h sin reducción es la que no cumple"
+      "el trasdós drenado de archivo (VE-3.16) el agua bajo sismo es la del "
+      "freático del punto, y con el k_h sin reducción (k_h = k_h0, "
+      "desplazamiento nulo) es la que no cumple"
       + ("" if not sismicas else
          f" ({sismicas} bloqueos «método no evaluable» quedan)")
       + ". El "
-      "**peso específico saturado del relleno** es un ensayo del EMS que esta "
-      "rama necesita: sin él la estabilidad y el armado de los ocho "
-      "cabezales se detienen (§4.2). No es un fallo de la validación: es lo "
+      "**peso específico saturado del relleno** es un ensayo del EMS que sólo "
+      "pide el relleno con agua (`drenaje_trasdos` = 'sin_drenaje' declarado, "
+      "o el freático sobre la zapata): la titular no lo lee (§4.3). No es un "
+      "fallo de la validación: es lo "
       "que el dimensionamiento de VE-3.5 y VE-3.9 resuelve y lo que deja.")
     A("")
-    A("### 2.1 Variante que ejercita la cadena sísmica y el caso drenado: el "
-      "juego tal como está")
+    A("### 2.1 Variante que ejercita el empuje sísmico reducido: el juego "
+      "tal como está")
     A("")
-    A("El juego pisa las dos decisiones de la tabla de arriba (trasdós "
-      "drenado, muro que admite desplazamiento) para que la cadena sísmica y "
-      "el caso drenado se recorran. Es la base de los barridos de "
-      "`docs/validacion_sensibilidad.md`, porque con los valores de archivo "
-      "la sísmica no es evaluable.")
+    A("El juego pisa la decisión de la tabla de arriba (muro que admite "
+      "desplazamiento, k_h = 0.5·k_h0, armado como muro que cede) para que "
+      "la rama del empuje sísmico reducido se recorra. Es la base de los "
+      "barridos de `docs/validacion_sensibilidad.md`.")
     A("")
     L += _tabla(ENCABEZADO_CORRIDA, _filas_de_la_corrida(base))
     A("")
@@ -1167,9 +1171,8 @@ def lista_exacta(por_defecto: Any,
     DETIENE algo. Para un quitado que detiene se nombran la entrada quitada Y
     lo que el bloqueo pide: quitar `S_cuneta` hace faltar `L_hidraulico_m`,
     y es esa la que el mensaje nombra. La clase de una entrada quitada es la
-    del bloqueo que provoca: quitar `drenaje_trasdos` no deja un dato
-    faltante sino un metodo sin evaluar (ficha T7B-05), y la lista lo dice
-    asi. Es la lista ADEMAS de las columnas obligatorias del CSV (sin ellas
+    del bloqueo que provoca: un quitado que deja un metodo sin evaluar
+    no es un dato faltante, y la lista lo dice asi. Es la lista ADEMAS de las columnas obligatorias del CSV (sin ellas
     M0 no carga) y SIN las condicionales que ninguna de las dos bases
     dispara (`CONDICIONALES_NO_MEDIDAS`).
     """
@@ -1248,6 +1251,17 @@ CONDICIONALES_NO_MEDIDAS: Dict[str, str] = {
         "`NF_profundidad_m`), y con esa alternativa V7 exige ademas el NF "
         "del punto y, con el nivel sobre la clave, "
         "`peso_especifico_saturado_relleno_kn_m3` (ficha VE2-C)"),
+    # --- VE-3.16 --- hasta entonces la segunda base (la titular, con el
+    # trasdos 'sin_drenaje' de archivo) lo medía: detenia la estabilidad y
+    # el armado de los ocho cabezales. Con 'drenado' de archivo y el
+    # freatico del juego bajo las zapatas ninguna base lo lee.
+    "peso_especifico_saturado_relleno_kn_m3": (
+        "solo con agua en el relleno del cabezal: `drenaje_trasdos` = "
+        "'sin_drenaje' declarado (el drenaje no puede darse) o el freatico "
+        "sobre la base de la zapata; con el relleno drenado de archivo "
+        "(VE-3.16) y el freatico bajo la zapata no se lee. El juego lo "
+        "declara (20 kN/m³ de prueba) para la variante "
+        "`sin_drenaje_declarado`"),
 }
 
 

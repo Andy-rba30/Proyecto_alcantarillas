@@ -8317,3 +8317,30 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   que permite el movimiento (junta en los aleros y en la unión con el conducto) con la
   aceptación escrita del Propietario.
 - **Dónde vive:** `src/modulos/M9_cabezal.py::factor_muro`
+
+## VE3-21 · El trasdós drenado es el valor de archivo (VE-3.16, decisión del dueño del 2026-11-18)
+
+- **Cerrado:** `drenaje_trasdos` pasa de «sin_drenaje» a «drenado» de archivo. AASHTO LRFD
+  11.6.6 manda drenar el relleno («shall be drained») y sólo admite la hidrostática plena «if
+  drainage cannot be provided»: el archivo tenía la excepción de la norma como regla. Adoptarlo
+  COMPROMETE el filtro y los lloraderos en los planos y su mantenimiento (un lloradero tapado
+  devuelve el caso «sin_drenaje»; C11.6.6 advierte que los lloraderos solos no aseguran el
+  drenaje). La reducción de k_h (`factor_muro_eleccion`) y
+  `regimen_resistencia_elementos_cabezal` no cambian de valor de archivo (VE3-20).
+- **Cerrado con el valor de archivo:** con el relleno drenado el agua del relleno bajo sismo es
+  la del freático del punto, que es el nivel medio que pide C11.6.5.3: la corrección del nivel
+  medio queda cubierta sin tocar el ensamble. El juego de la validación integral ya no declara
+  el drenaje, y su corrida titular no lee el peso específico saturado del relleno, que pasa a
+  las condicionales no medidas del contrato de entradas (§7).
+- **Qué se difirió:** con «sin_drenaje» declarado el sismo sigue con el relleno lleno hasta su
+  superficie, no con el nivel medio.
+- **Por qué:** separar el agua estática de la sísmica en `M9.cargas_del_cabezal` exigiría
+  duplicar las cargas WA (empuje del agua y subpresión) por condición, y el caso declarado es
+  el excepcional de la norma.
+- **Abierto, la hoja de ruta (no se edita aquí):** su Fase 9 («El agua una sola vez») sigue
+  diciendo `sin_drenaje` de archivo. Mientras no se corrija, quien la lea sin leer el código
+  creerá que el relleno se calcula lleno de agua por defecto.
+- **Qué haría falta:** cargas WA por condición (estática y sísmica) en el ensamble, y la lectura
+  del nivel medio de un relleno sin drenar bajo sismo verificada contra C11.6.5.3; y que el
+  dueño corrija la Fase 9 de la hoja de ruta.
+- **Dónde vive:** `src/modulos/M9_cabezal.py::cargas_del_cabezal`

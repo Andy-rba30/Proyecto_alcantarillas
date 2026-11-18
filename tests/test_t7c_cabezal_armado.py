@@ -1812,7 +1812,8 @@ def test_una_seccion_fuera_del_cuerpo_del_muro_se_rechaza(tanteo, z):
 
 def test_el_agua_del_relleno_entra_a_las_secciones_del_cuerpo(tanteo):
     """
-    Sin drenaje (el valor de archivo) el relleno se llena de agua: la
+    Sin drenaje declarado ('sin_drenaje'; VE-3.16: el valor de archivo es
+    'drenado' desde entonces) el relleno se llena de agua: la
     seccion la recibe como empuje hidrostatico y con el suelo sumergido por
     debajo del nivel.
     """

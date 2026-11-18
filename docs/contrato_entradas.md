@@ -273,9 +273,9 @@ programa **no** puede elegir, y de quién es:
 | Nivel freático del cruce | columna `NF_profundidad_m` del CSV | **EMS** | Bloqueo «dato faltante» de la estabilidad de los dos cabezales del punto y de su armado, que sale de las mismas solicitaciones (medido por T-11: `docs/validacion_integral.md` §4) |
 | Ángulo de fricción del relleno del trasdós | criterio `phi_relleno_trasdos` (ensayo; ventana 30–38°) | **EMS** · especificación del relleno | `CriterioPendienteError`: es lo único de los cuatro ángulos del empuje que detiene, y detiene la estabilidad y el armado de los dos cabezales de cada punto |
 | Suelo de fundación: `cohesivo` (sí/no), `c_kpa`, `phi_grados`, `gamma_kn_m3`; y, si el estudio las entrega, `q_n_kpa` (resistencia portante **nominal**, para el marco LRFD), `q_adm_kpa` (presión **admisible**, para el marco ASD) | clave `suelo_fundacion` de `--datos-externos` (objeto, por punto o global), o el criterio de corredor `c_phi_fundacion` | **EMS** (calicata del cruce) | `CriterioPendienteError` sobre `c_phi_fundacion`. El dato del punto **gana** sobre el de corredor. Un `q_n_kpa` o `q_adm_kpa` del estudio gana sobre el calculado, cada uno en **su** marco |
-| Peso específico saturado del relleno | criterio `peso_especifico_saturado_relleno_kn_m3` (ensayo) | **EMS** | Sólo hace falta si hay agua en el relleno (freático sobre la zapata, o `drenaje_trasdos` = `sin_drenaje`, que es el valor de archivo): entonces, `CriterioPendienteError` |
+| Peso específico saturado del relleno | criterio `peso_especifico_saturado_relleno_kn_m3` (ensayo) | **EMS** | Sólo hace falta si hay agua en el relleno (freático sobre la zapata, o `drenaje_trasdos` = `sin_drenaje` declarado; desde VE-3.16 el valor de archivo es `drenado`): entonces, `CriterioPendienteError` |
 | Capacidad portante admisible del terreno de fundación | criterio `capacidad_portante_adm` ([S] pendiente de ensayo, desde VE-3.2) | **EMS** | Hoy ningún módulo la consume: la estabilidad lee `q_adm_kpa` de `suelo_fundacion` o la calcula; la fila existe porque todo [S] del archivo de criterios tiene la suya |
-| Si el trasdós tiene drenaje | criterio `drenaje_trasdos` [A]: `sin_drenaje` (archivo) o `drenado` | **Proyectista** (y los planos: filtro y lloraderos) | Rige `sin_drenaje`: el relleno retenido se calcula lleno de agua hasta su superficie contra el trasdós, nunca por encima del muro (AASHTO 11.6.6), y la condición sísmica no es evaluable (relleno saturado). Con `drenado`, la corrida avisa que no se modela el desembalse rápido tras la avenida |
+| Si el trasdós tiene drenaje | criterio `drenaje_trasdos` [A]: `drenado` (archivo desde VE-3.16) o `sin_drenaje` | **Proyectista** (y los planos: filtro y lloraderos, y su mantenimiento) | Rige `drenado` (AASHTO 11.6.6: el relleno «shall be drained»): el agua del relleno queda en el freático natural del punto, también bajo sismo, y la corrida avisa que no se modela el desembalse rápido tras la avenida. Adoptarlo compromete el filtro y los lloraderos en los planos. `sin_drenaje` se declara cuando el drenaje no puede darse: el relleno retenido se calcula lleno de agua hasta su superficie contra el trasdós, nunca por encima del muro, y pide el peso específico saturado del relleno (ficha VE3-21) |
 | Si el muro admite desplazamiento bajo sismo | criterio `factor_muro_eleccion` [A] | **Propietario** | Rige `sin_reduccion` (k_h = k_h0). Desde el cierre de T-7b el empuje sísmico sale de la cuña de tanteo con la superficie real del relleno (`regla_pendiente_relleno_trasdos` = `cuna_de_tanteo`), que da cifra también con k_h0; Mononobe-Okabe con la pendiente equivalente queda como contraste |
 | Si el cabezal se modela como muro que cede o que no cede | criterio `regimen_cabezal` [A]: `cedente` (archivo) o `no_cedente` | **Proyectista** (hipótesis de modelación) | Rige `cedente` (empuje activo, la hipótesis de 11.6.5.3). `no_cedente` detiene la estabilidad con «método no evaluable»: las presiones de muro rígido de 11.6.5.4 no están implementadas. Las solicitaciones para T-7c llevan el coeficiente con que salieron y el K0 de referencia |
 | Orientación del muro frente al tráfico y distancia del borde de calzada al trasdós | `[S]` de corredor (§4.1) | **Trazo** | La sobrecarga viva no se puede leer de su tabla: `CriterioPendienteError` del dato de sitio, que detiene la estabilidad y el armado de los dos cabezales de cada punto |
@@ -446,9 +446,11 @@ hoy se leen de segunda mano, y cada una tiene declarada la lectura que rige mien
 T-11 corrió el fixture de punta a punta a `--alcance expediente` **sin** datos y con un
 juego de **DATOS DE PRUEBA** completo, quitándole una entrada a la vez sobre **dos bases**:
 el juego, y el juego con las **decisiones de archivo** que el juego pisa
-(`drenaje_trasdos` = `sin_drenaje`, `factor_muro_eleccion` = `sin_reduccion`; corrección
-H1 de la auditoría de T-11: medida sólo sobre el juego, la lista no veía el peso
-específico saturado del relleno y contradecía a la §3.3)
+(`factor_muro_eleccion` = `sin_reduccion`, con su armado en reposo; corrección H1 de la
+auditoría de T-11). Hasta VE-3.16 la segunda base volvía también `drenaje_trasdos` a
+`sin_drenaje`, entonces su valor de archivo, y destapaba el peso específico saturado del
+relleno; desde que el archivo es `drenado` ninguna base lo lee y figura entre las
+condicionales no medidas
 (`tests/apoyo/validacion_integral.py`, documento generado `docs/validacion_integral.md`).
 Esta es la lista de lo que, si falta, **detiene una etapa** (sale como `Bloqueo` y cuenta en
 «Etapas bloqueadas») **además de las columnas obligatorias de la §2** (sin ellas M0 no
@@ -473,7 +475,6 @@ tabla: detienen sólo en una rama que ninguna de las dos bases recorre.
 | `orientacion_muro_respecto_al_trafico` | entrada del proyecto ([S] de corredor) | Trazo | La estabilidad y el armado de los dos cabezales de cada punto (sobrecarga viva) |
 | `distancia_borde_calzada_al_trasdos_m` | entrada del proyecto ([S] de corredor) | Trazo | Ídem |
 | `exposicion_quimica_ems` | entrada del proyecto ([S] pendiente de ensayo) | EMS | Las cuatro etapas de la 9.4 de la Fase 9 del proyecto (§3.4) |
-| `peso_especifico_saturado_relleno_kn_m3` | entrada del proyecto (ensayo) | EMS (material de cantera del relleno) | Con el `drenaje_trasdos` de archivo (`sin_drenaje`) o agua sobre la zapata: la estabilidad (estática y sísmica) y el armado de los dos cabezales de cada punto — seis etapas por punto (§3.3; lo destapa la segunda base) |
 | `desnivel_perfil_canal_m` | entrada del proyecto (del canal) | ANA / Junta de Usuarios (perfil del canal) | VC3 de la Familia C, y con ella el punto, a los dos alcances (desde VE-3.10; hasta entonces sólo un aviso de 7.B) |
 | `Q_evento_extremo_m3s` | entrada del proyecto | Estudio hidrológico | V8, y con ella el punto (sólo con `TR_evento_extremo` declarado) |
 | `TW_evento_extremo_m` | entrada del proyecto | Estudio hidrológico · hidráulico del receptor | Ídem |
@@ -517,6 +518,12 @@ test exige que esta lista las nombre):
   `nf_del_punto` (VE-2): detiene V7, y con ella el punto. Con esa alternativa V7 exige
   además `NF_profundidad_m` del punto y, si el nivel de agua de diseño queda sobre la clave,
   `peso_especifico_saturado_relleno_kn_m3` (ficha VE2-C).
+- `peso_especifico_saturado_relleno_kn_m3` (ensayo del EMS, material de cantera del
+  relleno) — sólo con agua en el relleno del cabezal: `drenaje_trasdos` = `sin_drenaje`
+  declarado o el freático sobre la base de la zapata; entonces detiene la estabilidad
+  (estática y sísmica) y el armado de los dos cabezales del punto (§3.3). Con el relleno
+  drenado de archivo (VE-3.16) y el freático del juego bajo las zapatas ninguna base lo lee;
+  la variante `sin_drenaje_declarado` de la validación corre con él declarado.
 
 **Una entrada que no detiene pero cambia el diseño:** sin `TW_m` (ni `cota_TW`, ni
 `Q_receptor_m3s`) el TW sale de los dos escenarios acotados con la sección **adoptada** de

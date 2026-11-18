@@ -275,16 +275,21 @@ DECLARACIONES: Dict[str, Any] = {
     "umbral_no_colapso_evento_extremo": "sin_desborde_de_la_plataforma",
     # Geotecnia del cabezal (ensayos del EMS): los de T-7b. Relleno de
     # trasdos granular, phi 34 grados (ventana 30-38); fundacion no cohesiva
-    # phi 32 grados, gamma 18 kN/m3; gamma saturado del relleno 20 kN/m3.
+    # phi 32 grados, gamma 18 kN/m3; gamma saturado del relleno 20 kN/m3
+    # (VE-3.16: con el relleno drenado de archivo y el freatico bajo las
+    # zapatas nadie lo lee en el juego; se conserva para la variante
+    # `sin_drenaje_declarado`, que llena el relleno de agua y lo pide).
     "phi_relleno_trasdos": 34.0,
     "c_phi_fundacion": {"cohesivo": False, "c_kpa": 0.0, "phi_grados": 32.0,
                         "gamma_kn_m3": 18.0},
     "peso_especifico_saturado_relleno_kn_m3": 20.0,
-    # Decisiones de proyectista y Propietario que T-7b declaro en su corrida
-    # de punta a punta (el archivo tiene otro valor; se declaran porque son
-    # de quien hace los planos): trasdos con filtro y lloraderos, y muro que
-    # admite el desplazamiento bajo sismo.
-    "drenaje_trasdos": "drenado",
+    # Decision del Propietario que T-7b declaro en su corrida de punta a
+    # punta (el archivo tiene otro valor; se declara porque es de quien
+    # acepta el desplazamiento): muro que admite el desplazamiento bajo
+    # sismo. El trasdos drenado (filtro y lloraderos) lo declaraba tambien
+    # el juego hasta VE-3.16; desde entonces es el valor de archivo de
+    # `drenaje_trasdos` (decision del dueño del 2026-11-18, AASHTO 11.6.6
+    # «shall be drained») y el juego ya no lo declara.
     "factor_muro_eleccion": "reduccion_por_desplazamiento",
     # Un solo regimen (VE-3.15, decision 12): el muro que cede se arma
     # tambien como muro que cede.
@@ -314,13 +319,16 @@ DECLARACIONES: Dict[str, Any] = {
     # (decision del dueño del 2026-11-17) y el juego ya no los declara.
 }
 
-# Por que el juego PISA un valor de archivo (correcciones de T-11, H2): las
-# dos son decisiones del Propietario y del proyectista que el dueño CONFIRMO
-# con su valor de archivo el 2026-11-13; el juego las cambia para que la
-# validacion recorra la cadena sismica y el caso drenado, que con los
-# valores de archivo no se ejercitan. Por eso la corrida TITULAR es la
-# variante `decisiones_de_archivo` y el juego tal como esta es la variante
-# que ejercita esas dos ramas. Un test exige que esta tabla nombre
+# Por que el juego PISA un valor de archivo (correcciones de T-11, H2): es
+# una decision del Propietario (con su armado, un solo regimen) que el
+# dueño CONFIRMO con su valor de archivo; el juego la cambia para que la
+# validacion recorra el empuje sismico reducido, que con los valores de
+# archivo no se ejercita. Por eso la corrida TITULAR es la variante
+# `decisiones_de_archivo` y el juego tal como esta es la variante que
+# ejercita esa rama. Hasta VE-3.16 el juego pisaba tambien
+# `drenaje_trasdos` ('drenado' sobre el 'sin_drenaje' de archivo); desde
+# VE-3.16 'drenado' es el valor de archivo y la declaracion se retiro. Un
+# test exige que esta tabla nombre
 # exactamente las claves de `DECLARACIONES` cuyo criterio tiene valor de
 # archivo.
 # Declaraciones que son UNA decision y se quitan juntas (VE-3.15, decision 12
@@ -332,10 +340,6 @@ DECLARACIONES_QUE_VAN_JUNTAS: Dict[str, Tuple[str, ...]] = {
 }
 
 PISA_EL_ARCHIVO_PORQUE: Dict[str, str] = {
-    "drenaje_trasdos": (
-        "con 'sin_drenaje' el relleno se calcula saturado y la condicion "
-        "sismica del cabezal es «metodo no evaluable» (ficha T7B-05): "
-        "'drenado' deja evaluar la cadena sismica entera"),
     "factor_muro_eleccion": (
         "'reduccion_por_desplazamiento' (k_h = 0.5·k_h0) es la otra rama de "
         "la eleccion del Propietario: con el relleno drenado ejercita el "
@@ -393,27 +397,23 @@ OMITIDAS_A_PROPOSITO: Dict[str, str] = {
 VARIANTES: Dict[str, Tuple[str, Tuple[Tuple[Any, ...], ...]]] = {
     # LA CORRIDA TITULAR de la validacion (correcciones de T-11, H2 de su
     # auditoria; resolucion del orquestador aceptada por el dueño el
-    # 2026-11-13): el juego con las DOS DECISIONES DE ARCHIVO que el dueño
-    # confirmo el 2026-11-13 --`drenaje_trasdos` = 'sin_drenaje' y
-    # `factor_muro_eleccion` = 'sin_reduccion'--, que el juego pisa para
-    # ejercitar la cadena sismica y el caso drenado (ver
-    # `PISA_EL_ARCHIVO_PORQUE`). Con el relleno sin drenaje el agua llega al
-    # plano de empuje y el peso especifico SATURADO del relleno, que es un
-    # ensayo del EMS sin valor de archivo, se pide: el juego lo declara por
-    # la puerta de los ensayos (`--declarar`) con 20 kN/m3 --relleno granular
-    # compactado: gamma_sat = gamma_d + n·gamma_w ≈ 17.5 + 0.25·9.81 = 20.0
-    # kN/m3; el rango usual de un granular saturado es 19 a 22 kN/m3--. No es
-    # un dato del sitio.
+    # 2026-11-13): el juego con la DECISION DE ARCHIVO del muro que no cede
+    # --`factor_muro_eleccion` = 'sin_reduccion', con su armado en reposo--,
+    # que el juego pisa para ejercitar el empuje sismico reducido (ver
+    # `PISA_EL_ARCHIVO_PORQUE`). El trasdos queda con su valor de archivo,
+    # 'drenado' desde VE-3.16: hasta entonces la titular volvia tambien a
+    # 'sin_drenaje' y redeclaraba el peso especifico SATURADO del relleno de
+    # prueba (20 kN/m3) que el relleno lleno de agua pide; con el relleno
+    # drenado y el freatico del juego bajo las zapatas no se lee, y la
+    # titular ya no lo toca (el juego lo sigue declarando para la variante
+    # `sin_drenaje_declarado`).
     "decisiones_de_archivo": (
-        "Las dos decisiones de ARCHIVO que el juego pisa (`drenaje_trasdos` = "
-        "'sin_drenaje' y el muro que NO cede: `factor_muro_eleccion` = "
-        "'sin_reduccion' con el armado en reposo, un solo regimen desde "
-        "VE-3.15), con el gamma saturado del relleno de prueba (20 kN/m³) que "
-        "el relleno sin drenaje pide: la corrida TITULAR de §2",
-        (("declarar", "drenaje_trasdos", None),
-         ("declarar", "factor_muro_eleccion", None),
-         ("declarar", "regimen_resistencia_elementos_cabezal", None),
-         ("declarar", "peso_especifico_saturado_relleno_kn_m3", 20.0))),
+        "La decision de ARCHIVO que el juego pisa (el muro que NO cede: "
+        "`factor_muro_eleccion` = 'sin_reduccion' con el armado en reposo, "
+        "un solo regimen desde VE-3.15), con el trasdos drenado de archivo "
+        "(VE-3.16): la corrida TITULAR de §2",
+        (("declarar", "factor_muro_eleccion", None),
+         ("declarar", "regimen_resistencia_elementos_cabezal", None))),
     "B01_tw_de_la_linea_base": (
         "B-01 con el TW de 1.00 m de la linea base (el caso por defecto que "
         "el dueño decidio dejar)",
@@ -452,9 +452,14 @@ VARIANTES: Dict[str, Tuple[str, Tuple[Tuple[Any, ...], ...]]] = {
         "A-01 con la zapata de sus dos cabezales declarada de 3.00 m de "
         "ancho (`cabezal_declarado`, la prueba de T-7b)",
         (("externo", "A-01", "cabezal_declarado", {"ancho_zapata_m": 3.0}),)),
-    "drenaje_de_archivo": (
-        "Trasdos sin drenaje (el valor de archivo de `drenaje_trasdos`)",
-        (("declarar", "drenaje_trasdos", None),)),
+    # VE-3.16: hasta entonces se llamaba `drenaje_de_archivo` y volvia al
+    # valor de archivo; desde que el archivo es 'drenado' la variante
+    # DECLARA 'sin_drenaje' (el caso «if drainage cannot be provided» de
+    # AASHTO 11.6.6), con el gamma saturado de prueba del juego.
+    "sin_drenaje_declarado": (
+        "Trasdos sin drenaje declarado (`drenaje_trasdos` = 'sin_drenaje': "
+        "el drenaje no puede darse y el relleno se llena de agua)",
+        (("declarar", "drenaje_trasdos", "sin_drenaje"),)),
     # --- VE-2 (bloque 1, decision (b) de VE1-02) --- LA VARIANTE VACIA
     # TAMBIEN EL CAUDAL DEL EVENTO EXTREMO de los tres puntos. El del juego
     # es el de su Q DECLARADO (1.11 veces el de diseño, de T-7b), y con el

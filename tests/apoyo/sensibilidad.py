@@ -419,8 +419,8 @@ NO_BARRIBLES: Dict[str, str] = {
 # EXACTAMENTE las claves (y bases) que la medida da como no leidas.
 NO_LEIDO_PORQUE: Dict[Tuple[str, str], str] = {
     ("agua_del_relleno_bajo_sismo", "juego"): (
-        "el juego declara el trasdós drenado y su freático queda bajo las "
-        "zapatas: no hay agua en el plano de empuje bajo sismo, que es lo "
+        "el trasdós del juego es drenado (valor de archivo desde VE-3.16) y "
+        "su freático queda bajo las zapatas: no hay agua en el plano de empuje bajo sismo, que es lo "
         "único que lee la elección (VE-3.14, C11.6.5.3)"),
     ("seccion_receptor", "juego"): (
         "el juego declara `TW_m` (vía 1 de la Sec. 1.3), que manda sobre las "
@@ -701,14 +701,15 @@ def generar(medidas: Optional[Sequence[Medida]] = None) -> str:
     A("## 1. Cómo leer este anexo")
     A("")
     A("- **La base de los barridos es el juego tal como está**, la variante "
-      "que ejercita la cadena sísmica y el caso drenado "
+      "que ejercita el empuje sísmico reducido "
       "(`docs/validacion_integral.md` §2.1), y **no la corrida titular** (§2, "
-      "con las decisiones de archivo): con `drenaje_trasdos` = 'sin_drenaje' "
-      "la condición sísmica del cabezal es «método no evaluable» (ficha "
-      "T7B-05), y hace falta una base donde el método sea evaluable para "
-      "medir los [A] del cabezal. Lo que las dos decisiones de archivo hacen "
-      "se lee en sus propios barridos (`drenaje_trasdos`, "
-      "`factor_muro_eleccion`).")
+      "con la decisión de archivo del muro que no cede): con k_h = k_h0 la "
+      "condición sísmica del cabezal no cumple en ningún cabezal del juego, "
+      "y hace falta una base donde el cabezal cierre para medir los [A] del "
+      "cabezal. Lo que la decisión de archivo hace se lee en su propio "
+      "barrido (`factor_muro_eleccion`); el trasdós es drenado de archivo "
+      "desde VE-3.16, y el otro lado se lee en el barrido de "
+      "`drenaje_trasdos`.")
     A("- **Primer valor = el efectivo en el juego** (el que el juego declara "
       "o el de archivo): su corrida es la del juego, y cada otra se compara "
       "con ella por el comparador de E-B. Los demás valores son los extremos "

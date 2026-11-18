@@ -10905,7 +10905,14 @@ CRITERIOS: Dict[str, Criterio] = {
     ),
 
     "drenaje_trasdos": Criterio(
-        valor="sin_drenaje",
+        # VALOR DE ARCHIVO «drenado» desde VE-3.16 (2026-11-18, decision del
+        # dueño al aceptar la recomendacion de la verificacion independiente
+        # `sismo_cabezal_que_se_pasa.md`, punto 2): AASHTO 11.6.6 MANDA drenar
+        # el relleno ("shall be drained") y solo admite la hidrostatica plena
+        # "if drainage cannot be provided", de modo que «sin_drenaje» era la
+        # excepcion de la norma convertida en regla. Hasta VE-3.15 el valor
+        # de archivo era «sin_drenaje».
+        valor="drenado",
         nivel=NIVEL_EXPEDIENTE,
         etiqueta="A",
         forma=FORMA_CATEGORIA,
@@ -10932,12 +10939,14 @@ CRITERIOS: Dict[str, Criterio] = {
                       "nivel sube el agua de un relleno sin drenar; el "
                       "proyecto lee que hasta su superficie (la lectura esta "
                       "en la `Interpretacion` de la cita). El valor de "
-                      "archivo es «sin_drenaje»: el drenaje reduce la "
-                      "hidrostatica SOLO si se declara, porque declararlo "
-                      "compromete un detalle -- filtro y lloraderos -- que "
-                      "tiene que estar en los planos, y el comentario de la "
-                      "fuente advierte que los lloraderos solos no aseguran "
-                      "el drenaje. Sin drenaje el agua llena el relleno "
+                      "archivo es «drenado» (VE-3.16): es lo que la fuente "
+                      "manda, y adoptarlo COMPROMETE un detalle -- filtro y "
+                      "lloraderos -- que tiene que estar en los planos y en "
+                      "su mantenimiento (un lloradero tapado devuelve el "
+                      "caso «sin_drenaje»), y el comentario de la fuente "
+                      "advierte que los lloraderos solos no aseguran el "
+                      "drenaje. «sin_drenaje» se declara cuando el drenaje "
+                      "no puede darse. Sin drenaje el agua llena el relleno "
                       "RETENIDO hasta su superficie contra el trasdos "
                       "(coronacion menos bordillo) y nunca sube por encima "
                       "del muro. Con «drenado» el agua del relleno queda en "
@@ -10949,9 +10958,9 @@ CRITERIOS: Dict[str, Criterio] = {
                       "vacio --, que el comentario C11.6.6 hace plausible al "
                       "advertir que los lloraderos no aseguran el drenaje: "
                       "el ensamble lo avisa con su orden de magnitud. "
-                      "Declararlo es escribir 'drenaje_trasdos' = «drenado» "
-                      "en la sesion o con --declarar, y compromete el filtro "
-                      "y los lloraderos en los planos. En los dos casos el "
+                      "Declarar «sin_drenaje» es escribir 'drenaje_trasdos' = "
+                      "«sin_drenaje» en la sesion o con --declarar. En los "
+                      "dos casos el "
                       "empuje del suelo bajo el agua va con su peso "
                       "sumergido (AASHTO 3.11.3), y el agua no se cuenta dos "
                       "veces",

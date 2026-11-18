@@ -138,7 +138,10 @@ def test_ningun_vacio_del_proyecto_se_relleno_en_los_archivos_de_valores():
     assert sin_valor_que_el_juego_declara <= set(J.DECLARACIONES)
     for clave in sin_valor_que_el_juego_declara:
         assert ca.CRITERIOS[clave].valor is None, clave
-    assert ca.CRITERIOS["drenaje_trasdos"].valor == "sin_drenaje"
+    # VE-3.16: el drenaje es «drenado» de archivo (AASHTO 11.6.6 manda
+    # drenar); la reduccion de k_h sigue «sin_reduccion» porque aceptar el
+    # desplazamiento es del Propietario y el programa no lo asume.
+    assert ca.CRITERIOS["drenaje_trasdos"].valor == "drenado"
     assert ca.CRITERIOS["factor_muro_eleccion"].valor == "sin_reduccion"
     for clave in J.SITIO:
         assert ds.DATOS_SITIO[clave].valor is None, clave
@@ -357,7 +360,9 @@ def test_la_lista_exacta_esta_nombrada_en_el_contrato_de_entradas(
     correcciones de T-11 (H1, ALTA) la medida es sobre DOS BASES --el juego
     y el juego con las decisiones de archivo--: sobre una sola, la §7 no
     nombraba el peso especifico saturado del relleno, que con el
-    `drenaje_trasdos` de archivo detiene 24 etapas, y contradecia a la §3.3.
+    `drenaje_trasdos` de archivo de entonces ('sin_drenaje') detenia 24
+    etapas, y contradecia a la §3.3. VE-3.16: con 'drenado' de archivo
+    ninguna base lo lee y pasa a las condicionales no medidas (§7).
     """
     contrato = V.CONTRATO.read_text(encoding="utf-8")
     cuerpo = contrato[:contrato.index("## 7. La lista exacta")]
@@ -391,14 +396,14 @@ def test_la_lista_exacta_esta_nombrada_en_el_contrato_de_entradas(
     assert {"luz_m", "NF_profundidad_m", "c_phi_fundacion", "phi_relleno_trasdos",
             "exposicion_quimica_ems", "Q_evento_extremo_m3s",
             "cota_coronacion_canal", "TR_evento_extremo",
-            "remanso_derecho_via",
-            # H1: la entrada que la segunda base destapa (ensayo del EMS).
-            "peso_especifico_saturado_relleno_kn_m3"} <= set(nombres)
-    # El γ saturado sale SOLO de la segunda base, y como entrada (ensayo).
-    clases = {n: c for n, c, _d in lista}
-    assert clases["peso_especifico_saturado_relleno_kn_m3"] == V.CLASE_ENTRADA
-    assert "peso_especifico_saturado_relleno_kn_m3" not in {
-        n for n, _c, _d in V.lista_exacta(por_defecto, una)}
+            "remanso_derecho_via"} <= set(nombres)
+    # VE-3.16 (CAMBIADO DECLARANDOLO): hasta entonces el γ saturado salia
+    # SOLO de la segunda base (la titular, con el trasdos 'sin_drenaje' de
+    # archivo), como entrada (ensayo). Con 'drenado' de archivo y el
+    # freatico del juego bajo las zapatas ninguna base lo lee: no esta en
+    # la medida y la §7 lo nombra entre las condicionales.
+    assert "peso_especifico_saturado_relleno_kn_m3" not in set(nombres)
+    assert "peso_especifico_saturado_relleno_kn_m3" in V.CONDICIONALES_NO_MEDIDAS
     # Las condicionales que ninguna base dispara: nombradas en la §7, y la
     # frase que decia «lo que no esta aqui no detiene nada» ya no esta.
     seccion_7 = contrato[contrato.index("## 7. La lista exacta"):]
@@ -448,9 +453,11 @@ def test_las_variantes_que_dejan_un_metodo_sin_evaluar(variantes):
     # CAMBIADO DECLARANDOLO (VE-3.14, H-3): con agua en el plano de empuje
     # el sismo ya no se detiene (C11.6.5.3, peso total bajo el agua); hasta
     # VE-3.14 «freatico_a_2m» dejaba T7B-06 en A-01 y A-02, y
-    # «drenaje_de_archivo» T7B-05 en los cuatro puntos.
+    # «drenaje_de_archivo» T7B-05 en los cuatro puntos. VE-3.16: esa
+    # variante se llama «sin_drenaje_declarado» (declara 'sin_drenaje' sobre
+    # el 'drenado' de archivo).
     assert fichas("freatico_a_2m") == set()
-    assert fichas("drenaje_de_archivo") == set()
+    assert fichas("sin_drenaje_declarado") == set()
     # Sin ("C-01", "T7C-03") desde VE-3.9: el peralte de la salida de C-01
     # partia de 0.473 m (H_c/10, ya sobre 16 in) con el cortante fuera de
     # 5.7.3.4.1, y hoy crece por su armado hasta 0.873 m, donde se verifica.
@@ -528,9 +535,11 @@ def test_la_corrida_titular_es_la_de_las_decisiones_de_archivo(titular):
     """
     H2 (MEDIA), con la resolucion del orquestador aceptada por el dueño: el
     resultado TITULAR del §2 es el de los valores de ARCHIVO. El juego pisa
-    exactamente dos criterios con valor de archivo, cada uno con su razon
-    escrita (`J.PISA_EL_ARCHIVO_PORQUE`), y la variante titular los deja en
-    su valor. Con ellos los cuatro puntos dimensionan igual, las tres filas
+    criterios con valor de archivo, cada uno con su razon escrita
+    (`J.PISA_EL_ARCHIVO_PORQUE`), y la variante titular los deja en su
+    valor (desde VE-3.16 ya no `drenaje_trasdos`, cuyo archivo es el
+    'drenado' que el juego declaraba). Con ellos los cuatro puntos
+    dimensionan igual, las tres filas
     estaticas del marco LRFD pasan en los ocho cabezales con la zapata
     dimensionada (desde VE-3.5; antes no pasaban en ninguno) y la condicion
     sismica es «metodo no evaluable» (T7B-05) en los ocho.
@@ -538,18 +547,21 @@ def test_la_corrida_titular_es_la_de_las_decisiones_de_archivo(titular):
     pisadas = {k for k in J.DECLARACIONES if ca.CRITERIOS[k].valor is not None}
     # VE-3.15 (decision 12): el muro que cede del juego es UNA decision de
     # dos criterios (la reduccion de k_h y el armado «cedente»).
+    # VE-3.16: `drenaje_trasdos` sale del grupo (su archivo es 'drenado',
+    # lo que el juego declaraba) y el juego ya no lo declara.
     assert pisadas == set(J.PISA_EL_ARCHIVO_PORQUE) == {
-        "drenaje_trasdos", "factor_muro_eleccion",
-        "regimen_resistencia_elementos_cabezal"}
+        "factor_muro_eleccion", "regimen_resistencia_elementos_cabezal"}
+    assert "drenaje_trasdos" not in J.DECLARACIONES
     assert [c for c, *_ in V.pisa_el_archivo()] == sorted(
         pisadas, key=list(J.DECLARACIONES).index)
     cambios = dict(((c[1], c[2]) for c in J.VARIANTES[V.VARIANTE_TITULAR][1]))
-    assert cambios["drenaje_trasdos"] is None
     assert cambios["factor_muro_eleccion"] is None
     assert cambios["regimen_resistencia_elementos_cabezal"] is None
-    # El γ saturado de prueba, declarado por la puerta de los ensayos.
-    assert cambios["peso_especifico_saturado_relleno_kn_m3"] == \
-        pytest.approx(20.0, rel=REL_TRANSPORTE)
+    # VE-3.16 (CAMBIADO DECLARANDOLO): la titular ya no toca el drenaje ni
+    # redeclara el γ saturado de prueba: con el relleno drenado de archivo
+    # no se lee.
+    assert "drenaje_trasdos" not in cambios
+    assert "peso_especifico_saturado_relleno_kn_m3" not in cambios
     for p in titular.puntos:
         r = V.resumen_del_punto(titular, p)
         assert (r["familia"], r["material"], r["seccion"]) == \
@@ -571,7 +583,9 @@ def test_el_documento_presenta_primero_la_titular():
     """H2: el §2 del documento es la titular; el juego es su §2.1."""
     texto = V.DOCUMENTO.read_text(encoding="utf-8")
     i2 = texto.index("## 2. Corrida titular: el juego con las decisiones de archivo")
-    i21 = texto.index("### 2.1 Variante que ejercita la cadena sísmica")
+    # VE-3.16: el rotulo del §2.1 ya no habla del «caso drenado» (es el
+    # archivo): la variante ejercita el empuje sismico reducido.
+    i21 = texto.index("### 2.1 Variante que ejercita el empuje sísmico reducido")
     assert i2 < i21
     for clave in J.PISA_EL_ARCHIVO_PORQUE:
         assert f"| `{clave}` |" in texto[i2:i21], clave
