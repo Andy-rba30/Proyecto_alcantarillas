@@ -822,7 +822,11 @@ ErrorProyecto.
   que escriben `python -m tests.apoyo.validacion_cabezal --escribir` y
   `python -m tests.apoyo.validacion_conducto --escribir`; los PDF de esos
   ejemplos están en el repositorio de normas, `ejemplos_resueltos/`, aparte
-  de `normas/`. El sello (fecha, commit
+  de `normas/`. Y desde la validación hidrológica uno más, también sin
+  sello: `docs/validacion_hidrologica.md` (MH contra seis casos reales
+  publicados, con sus datos rotulados en
+  `tests/fixtures/hidrologia_casos_reales/`), que escribe `python -m
+  tests.apoyo.validacion_hidrologica --escribir`. El sello (fecha, commit
   de origen, alcance, par de la suite con su entorno) lo pone quien regenera
   y el test lo LEE del documento para comparar el cuerpo y no la fecha.
 

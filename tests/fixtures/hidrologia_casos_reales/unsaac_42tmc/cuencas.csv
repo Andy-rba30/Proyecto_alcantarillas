@@ -1,0 +1,20 @@
+# DATOS DE CASO REAL PUBLICADO — no son datos de este proyecto. Fuente: Bermejo Colque y Cruz Huaman (UNSAAC, 2019), camino vecinal Emp. CU112-Roquepata, tesis.pdf.
+# area_km2 (m2 / 1e6), L_cauce_m y S_cauce_cuenca (%, Taylor-Schwarz / 100): Tablas 6.4 y 6.5, PDF 98-100 (imp. 86-88).
+# NO PUBLICADO, VEHICULO DEL VERIFICADOR: cobertura, suelo y S_terreno. La tesis usa C = 0.5 unico (Tabla 6.13, PDF 111,
+# imp. 99) sin fila; pastos/semipermeable con S_terreno = 0.30 («alta > 20 %») lee C = 0.50 en la Tabla N 08.
+id,area_km2,L_cauce_m,S_cauce_cuenca,S_terreno,cobertura,suelo,estacion,metodo_tc,H_desnivel_m,ajuste_kirpich,CN
+A1,0.832021,1147,0.3663,0.30,pastos_vegetacion_ligera,semipermeable,Colquepata,temez,,,
+A2,1.373003,1055,0.4120,0.30,pastos_vegetacion_ligera,semipermeable,Colquepata,temez,,,
+A3,0.367035,775,0.3679,0.30,pastos_vegetacion_ligera,semipermeable,Colquepata,temez,,,
+A4,0.280120,884,0.2664,0.30,pastos_vegetacion_ligera,semipermeable,Colquepata,temez,,,
+A5,0.405391,745,0.3838,0.30,pastos_vegetacion_ligera,semipermeable,Colquepata,temez,,,
+A6,0.386725,638,0.3134,0.30,pastos_vegetacion_ligera,semipermeable,Colquepata,temez,,,
+A7,0.333560,640,0.3595,0.30,pastos_vegetacion_ligera,semipermeable,Colquepata,temez,,,
+A8,0.140121,466,0.3292,0.30,pastos_vegetacion_ligera,semipermeable,Colquepata,temez,,,
+A9,0.315622,478,0.3222,0.30,pastos_vegetacion_ligera,semipermeable,Colquepata,temez,,,
+A10,0.138053,318,0.3871,0.30,pastos_vegetacion_ligera,semipermeable,Colquepata,temez,,,
+A11,0.090122,252,0.3273,0.30,pastos_vegetacion_ligera,semipermeable,Colquepata,temez,,,
+A12,0.256386,300,0.4250,0.30,pastos_vegetacion_ligera,semipermeable,Colquepata,temez,,,
+A13,0.345516,458,0.1904,0.30,pastos_vegetacion_ligera,semipermeable,Colquepata,temez,,,
+A14,0.388308,649,0.3057,0.30,pastos_vegetacion_ligera,semipermeable,Colquepata,temez,,,
+A15,0.449718,434,0.3734,0.30,pastos_vegetacion_ligera,semipermeable,Colquepata,temez,,,

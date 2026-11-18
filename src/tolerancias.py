@@ -231,6 +231,23 @@ TOL_COMPARADOR_REL = 1e-9
 # resultado. Solo decide cuando dos celdas dejan de ser la misma medida.
 TOL_REL_AREA_ESCRITA_DOS_VECES = 1e-2
 
+# ---------------------------------------------------------------------------
+# --- VE3-19 --- Dos maximos anuales «iguales» de la serie de una estacion
+# ---------------------------------------------------------------------------
+# El aviso de consistencia de la Fase 1-bis (`MH._paso_consistencia`) lista
+# los maximos anuales que aparecen en mas de un año (`MH.
+# maximos_anuales_repetidos`): en la serie de Cañaveral de UNTumbes dos años
+# son copia de otros dos, y con un maximo por año eso solo se ve como un
+# valor repetido. Dos valores son el MISMO cuando difieren menos que esto,
+# en mm: absorbe la representacion binaria de dos escrituras del mismo
+# numero («129» y «129.00») y nada mas. NO es un umbral de cercania --dos
+# maximos a 0.1 mm son dos valores distintos y no se listan-- y no es un
+# numero de corte del aviso, que no tiene ninguno.
+#
+# NO es un valor de proyecto: no entra en ninguna formula ni mueve ningun
+# resultado. Solo decide que dos celdas dicen el mismo numero.
+TOL_ABS_MISMO_MAXIMO_ANUAL_MM = 1e-9
+
 
 # ---------------------------------------------------------------------------
 # --- T-5 --- La busqueda del relleno maximo de la Fase 8
