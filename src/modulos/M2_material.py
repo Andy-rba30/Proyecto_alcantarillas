@@ -276,6 +276,8 @@ from src import criterios_adoptados as ca
 from src.constantes_normativas import (ALCANCE_NORMA_PRODUCTO, CARTAS_CAJON_TA1,
                                    FILAS_MANNING_CONCRETO,HDS5_INLET, H_RELLENO_MIN, MANNING,
                                    MANNING_CAJON_HDS5,
+                                   MANNING_CAJON_IN_SITU_HDS5,
+                                   NUMERAL_MANNING_CAJON_IN_SITU_HDS5,
                                    SECCION_EG2013,
                                    SECCION_EG2013_CAJON,
                                    TABLA_09_FILAS, V_MAX)
@@ -1280,9 +1282,10 @@ def _carta_de_cajon() -> str:
     return clave
 
 
-def _fila_manning_de_cajon() -> str:
+def _fila_manning_de_cajon() -> Union[str, Tuple[float, float]]:
     """
-    La fila de la que 'n_manning_cajon' toma la doble n del marco.
+    La fila de la que 'n_manning_cajon' toma la doble n del marco, o el PAR
+    de la especificacion del encofrado (T11-10).
 
     --- T-3 (auditoria, H1) --- DOS TABLAS Y NO UNA. El valor de archivo es
     la fila PROPIA del marco, «Concrete Boxes / Smooth» de la Tabla B.1 del
@@ -1297,31 +1300,73 @@ def _fila_manning_de_cajon() -> str:
     puede tomar prestada la n de un metal corrugado ni la de unas duelas de
     madera, y sin esta guardia `MANNING[...]` las aceptaba -- y una errata en
     la clave salia como `KeyError` desnudo --.
+
+    --- T11-10 --- Y EL PAR, fuera de las tablas. Para un marco VACIADO IN
+    SITU el num. B.3 del HDS-5 (pag. impresa B.2) da el n de 0.012 a 0.022
+    segun el encofrado, y la ficha del criterio lo deja declarar como el par
+    (n_min, n_max) de la especificacion del encofrado. La puerta ya lo exige
+    (`ca._verificar_par_de_encofrado`); esto es la segunda linea para quien
+    la esquive, con la guardia de la Tabla B.1: dos reales finitos, no
+    booleanos, en orden, y dentro del rango del B.3, cuyo extremo inferior es
+    el n_min de la fila del cajon de la Tabla B.1 -- el de laboratorio, que el
+    encofrado no mejora --. Se devuelve como tupla de floats, la forma de las
+    columnas de una fila, para que la regla de doble n lo use igual.
     """
-    clave = ca.valor(CRITERIO_N_MANNING_CAJON)
+    eleccion = ca.valor(CRITERIO_N_MANNING_CAJON)
+    if isinstance(eleccion, (tuple, list)):
+        return _par_de_encofrado(eleccion)
     admitidas = frozenset(MANNING_CAJON_HDS5) | FILAS_MANNING_CONCRETO
-    if not isinstance(clave, str) or clave not in admitidas:
+    if not isinstance(eleccion, str) or eleccion not in admitidas:
         raise DatoInvalidoError(
-            CRITERIO_N_MANNING_CAJON, valor=clave,
+            CRITERIO_N_MANNING_CAJON, valor=eleccion,
             motivo="se espera la CLAVE de la fila del marco: la de la Tabla "
                    "B.1 del HDS-5 («Concrete Boxes», el valor de archivo) o, "
                    "por analogia, una del subgrupo «a. Concreto» del grupo A "
                    "de la Tabla N 09. Ni una fila de tubo de la Tabla B.1 ni "
                    "una de otro material de la Tabla N 09 describen el "
-                   "marco. Claves admitidas: " + ", ".join(sorted(admitidas)),
+                   "marco. Claves admitidas: " + ", ".join(sorted(admitidas))
+                   + ". O el PAR (n_min, n_max) de la especificacion del "
+                   "encofrado de un marco vaciado in situ (num. B.3 del "
+                   "HDS-5)",
         )
-    return clave
+    return eleccion
 
 
-def _par_manning_de_cajon(clave: str) -> Tuple[float, float]:
+def _par_de_encofrado(par: Any) -> Tuple[float, float]:
+    """
+    --- T11-10 --- El par (n_min, n_max) del encofrado, validado contra el
+    rango del num. B.3 del HDS-5 (`MANNING_CAJON_IN_SITU_HDS5`). Condicion en
+    positivo y negada (forma MAT-D13): un NaN cae del lado del rechazo.
+    """
+    minimo, maximo = MANNING_CAJON_IN_SITU_HDS5
+    reales = (len(par) == 2
+              and all(ca._es_real(x) and math.isfinite(x) for x in par))
+    if not (reales and minimo <= par[0] <= par[1] <= maximo):
+        raise DatoInvalidoError(
+            CRITERIO_N_MANNING_CAJON, valor=par,
+            motivo=f"el par del encofrado es (n_min, n_max): dos numeros "
+                   f"reales finitos, el minimo primero, dentro del rango "
+                   f"[{minimo}, {maximo}] que da para el cajon vaciado in "
+                   f"situ el {NUMERAL_MANNING_CAJON_IN_SITU_HDS5} del HDS-5. "
+                   f"Su extremo inferior es el n de laboratorio de la fila "
+                   f"del cajon de la Tabla B.1: un encofrado no lo mejora",
+        )
+    return float(par[0]), float(par[1])
+
+
+def _par_manning_de_cajon(eleccion: Union[str, Tuple[float, float]]
+                          ) -> Tuple[float, float]:
     """
     --- T-3 (auditoria, H1) --- El par (n_min, n_max) de la fila que
     `_fila_manning_de_cajon` admitio, leido de SU tabla: la Tabla B.1 del
-    HDS-5 para la fila del marco y la Tabla N 09 para la alternativa.
+    HDS-5 para la fila del marco y la Tabla N 09 para la alternativa. Desde
+    T11-10, el par del encofrado tal como entro, ya validado.
     """
-    if clave in MANNING_CAJON_HDS5:
-        return MANNING_CAJON_HDS5[clave]
-    return MANNING[clave]
+    if isinstance(eleccion, tuple):
+        return eleccion
+    if eleccion in MANNING_CAJON_HDS5:
+        return MANNING_CAJON_HDS5[eleccion]
+    return MANNING[eleccion]
 
 
 def numero_de_celdas(material: Material) -> int:
@@ -1956,6 +2001,65 @@ def _pasos_del_marco() -> Tuple[PasoDeMemoria, ...]:
     # F4.N_CAJON_TB1); la alternativa barrible, una fila del subgrupo «a.
     # Concreto» de la Tabla N 09 aplicada por analogia (F4.N_CAJON). Son dos
     # situaciones normativas distintas y la memoria tiene que decir cual fue.
+    # --- T11-10 --- Y una tercera: el PAR de la especificacion del encofrado
+    # de un marco vaciado in situ (F4.N_CAJON_IN_SITU), que no sale de
+    # ninguna fila y se acota con el rango del num. B.3 del HDS-5.
+    if isinstance(fila, tuple):
+        minimo_b3, maximo_b3 = MANNING_CAJON_IN_SITU_HDS5
+        n_manning = paso(
+            "F4.N_CAJON_IN_SITU",
+            codigo="4.1",
+            que="Coeficiente de rugosidad de Manning del marco",
+            formula="par (n_min, n_max) de la especificacion del encofrado del "
+                    "marco vaciado in situ, dentro del rango del num. B.3 del "
+                    "HDS-5",
+            formula_cita_id="HDS5_3ED.B.3#CAJON_IN_SITU",
+            citas_textuales=("HDS5_3ED.B.3#CAJON_IN_SITU", "HDS5_3ED.TB.1"),
+            sustitucion=(
+                Magnitud("n_min", n_min, "",
+                         "extremo inferior del par declarado: rama de EROSION "
+                         "(V3, d50): el lado seguro para la velocidad maxima",
+                         cifras=CIFRAS_FINA),
+                Magnitud("n_max", n_max, "",
+                         "extremo superior del par declarado: rama de "
+                         "CAPACIDAD (tirante, V1, HW de salida): el lado "
+                         "seguro para la inundacion", cifras=CIFRAS_FINA)),
+            resultado=Magnitud("par adoptado", f"{n_min} - {n_max}", "",
+                               "el par de la especificacion del encofrado, "
+                               "declarado por el proyectista: [C] acotado por "
+                               "el num. B.3, no una fila de tabla",
+                               cifras=None),
+            veredicto=Veredicto(tipo=TipoDeVeredicto.SIN_VEREDICTO,
+                                explicacion="adopcion, no verificacion"),
+            elecciones=(EleccionDeProyecto(
+                que_se_adopto="el par del que sale la doble n del marco",
+                valor=fila,
+                entre=("Tabla B.1 del HDS-5: Concrete Boxes / Smooth "
+                       "(0.012-0.015)",
+                       "Tabla N 09: A.2 NO METALICOS - a. Concreto - afinado "
+                       "(0.011-0.014, lectura corregida), por analogia",
+                       f"num. B.3 del HDS-5: {minimo_b3} a {maximo_b3} en un "
+                       f"cajon vaciado in situ, segun el encofrado"),
+                de_donde="HDS-5 3a ed., Apendice B, num. B.3 (pag. impresa "
+                         "B.2): la especificacion del encofrado",
+                por_que="el marco se vacia in situ y la fuente liga su n a la "
+                        "calidad del encofrado: el par de la especificacion "
+                        "describe la obra mejor que el valor de laboratorio "
+                        "de la Tabla B.1",
+                cita_id="HDS5_3ED.B.3#CAJON_IN_SITU",
+                clave_criterio=CRITERIO_N_MANNING_CAJON),),
+            nota_del_proyecto=(
+                f"El rango se toma COMPLETO -- {n_min} a {n_max} -- y no un "
+                f"valor corriente: la regla de doble n pide los dos extremos. "
+                f"El par cae dentro del rango del num. B.3 ({minimo_b3} a "
+                f"{maximo_b3}), cuyo extremo inferior es el n de laboratorio "
+                f"de la fila del cajon de la Tabla B.1. La carta de HDS-5 que "
+                f"acompana a esta decision es '{carta}', del bloque de CAJON "
+                f"de la Tabla A.1: el num. A.3 prohibe cruzar coeficientes "
+                f"entre geometrias."),
+        )
+        return (tipo_marco, seccion_canal, mantenimiento, n_celdas, n_manning)
+
     if fila in MANNING_CAJON_HDS5:
         n_manning = paso(
             "F4.N_CAJON_TB1",
@@ -2075,7 +2179,13 @@ def _fila_manning(tipo: TipoMaterial, forma: FormaSeccion) -> str:
     if forma is FormaSeccion.RECTANGULAR:
         # --- T-3 (auditoria, H1) --- la fila del marco de la Tabla B.1 del
         # HDS-5 es el valor de archivo; la de la Tabla N 09, la alternativa.
-        clave = ca.valor(CRITERIO_N_MANNING_CAJON)
+        clave = _fila_manning_de_cajon()
+        if isinstance(clave, tuple):
+            # --- T11-10 --- el par del encofrado, que no es una fila.
+            return (f"par {clave[0]} - {clave[1]} de la especificacion del "
+                    f"encofrado del marco vaciado in situ, dentro del rango "
+                    f"del num. B.3 del HDS-5 [C], criterio "
+                    f"'{CRITERIO_N_MANNING_CAJON}': no es una fila de tabla")
         if clave in MANNING_CAJON_HDS5:
             return ("Concrete Boxes / Smooth -- fila del CAJON de concreto de "
                     "la Tabla B.1 del HDS-5 [C], criterio "

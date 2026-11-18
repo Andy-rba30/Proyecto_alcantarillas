@@ -82,6 +82,8 @@ from src.constantes_fisicas import PULGADA_EN_MM
 from src.constantes_normativas import (  # --- T-7c ---
     BETA_SIMPLIFICADO_AASHTO, PHI_CORTE_AASHTO, PHI_EVENTO_EXTREMO_AASHTO,
     PHI_FLEXION_AASHTO)
+from src.constantes_normativas import (  # --- T11-10 ---
+    MANNING_CAJON_IN_SITU_HDS5, NUMERAL_MANNING_CAJON_IN_SITU_HDS5)
 from src.dominios import MILIMETROS_POR_METRO
 from src.normativa import esquema as _esquema
 from src.normativa import registro as _registro_normativo
@@ -5793,9 +5795,19 @@ CRITERIOS: Dict[str, Criterio] = {
         valor="concrete_boxes",
         nivel=NIVEL_PERFIL,
         etiqueta="C",
-        forma=FORMA_STR,
+        # --- T11-10 (decidido por el dueño el 2026-11-13: «abrir la forma»)
+        # --- LA UNION de la fila y el par, como `k_v`: la CLAVE de una fila
+        # de tabla (el valor de archivo y la alternativa barrible) O el PAR
+        # (n_min, n_max) de la especificacion del encofrado de un marco
+        # vaciado in situ, que la tercera ventana de abajo promete y hasta
+        # T11-10 la forma `str` rechazaba. El par lo acota el rango del num.
+        # B.3 en la puerta (`_verificar_par_de_encofrado`) y en el consumidor
+        # (`M2._fila_manning_de_cajon`). El valor de archivo NO cambia.
+        forma=(FORMA_STR, FORMA_PAR_ORDENADO),
         concepto="Coeficiente de rugosidad de Manning del marco de concreto: "
-                 "fila de la que se toma la doble n (n_min, n_max)",
+                 "fila de la que se toma la doble n (n_min, n_max), o el par "
+                 "de la especificacion del encofrado de un marco vaciado in "
+                 "situ",
         justificacion="Decide de que fila sale la doble n del marco de "
                       "concreto, tomando siempre el rango completo (minimo, "
                       "maximo): la regla de doble n pide los dos extremos -- "
@@ -5896,7 +5908,10 @@ CRITERIOS: Dict[str, Criterio] = {
             que_elige="la fila cuyo par (minimo, maximo) es la doble n del "
                       "marco: la del cajon de concreto de la Tabla B.1 del "
                       "HDS-5 ([C]) o, por analogia, una del subgrupo «a. "
-                      "Concreto» de la Tabla N 09",
+                      "Concreto» de la Tabla N 09. Fuera de las tablas, el "
+                      "par (n_min, n_max) de la especificacion del encofrado "
+                      "de un marco vaciado in situ, dentro del rango del num. "
+                      "B.3 del HDS-5, con la nota que dice de donde sale",
             laguna="la Tabla N 09 no trae fila de cajon. El vacio es de FILA "
                    "y no de grupo: el rotulo del grupo A -- conducto cerrado "
                    "con escurrimiento parcialmente lleno -- ya cubre al marco",
@@ -13413,9 +13428,54 @@ def _verificar_criterio(clave: str, c: Criterio) -> None:
     # la de las CLAVES (UI-5): la estructura del valor, primero; sus claves,
     # despues.
     _verificar_forma(clave, c)
+    _verificar_par_de_encofrado(clave, c)
     _verificar_signo(clave, c)
     _verificar_claves_de_la_ficha(clave, c)
     _verificar_campos_de_la_progresion(clave, c)
+
+
+# --- T11-10 --- La VENTANA DEL PAR de un criterio cuya forma es la union de
+# una fila y un par: el rango que la fuente escribe para el par que no sale
+# de ninguna fila. Hoy uno: 'n_manning_cajon', el par del encofrado de un
+# marco vaciado in situ, acotado por el num. B.3 del HDS-5. Es una tabla de
+# la GUARDIA, como `_CAMPOS_DE_LA_PROGRESION`: no cambia el valor, la
+# etiqueta ni la ventana de la ficha, cuya `sensibilidad` es la tupla de las
+# tres lecturas (simbolica) y no puede ademas ser un rango numerico.
+_VENTANA_DEL_PAR = {
+    "n_manning_cajon": (MANNING_CAJON_IN_SITU_HDS5,
+                        "HDS5_3ED.B.3#CAJON_IN_SITU",
+                        NUMERAL_MANNING_CAJON_IN_SITU_HDS5),
+}
+
+
+def _verificar_par_de_encofrado(clave: str, c: Criterio) -> None:
+    """
+    El PAR de un criterio de `_VENTANA_DEL_PAR` cae dentro del rango que la
+    fuente escribe (T11-10). Va DESPUES de `_verificar_forma`, de modo que
+    aqui un valor que no es texto ya es un par ordenado de dos reales finitos
+    sin booleanos (`_cumple_la_forma`, `_verificar_finitud`); esta guardia
+    solo mira los extremos.
+
+    Para 'n_manning_cajon' el rango es el del num. B.3 del HDS-5 para el cajon
+    VACIADO IN SITU (0.012 a 0.022 segun el encofrado). Un n_min por debajo
+    seria un marco mas liso que el de laboratorio de la Tabla B.1, cuya fila
+    del cajon empieza en el mismo 0.012; un n_max por encima, un encofrado
+    que la fuente no describe. La condicion se escribe en positivo y negada
+    (forma MAT-D13). Un texto no es un par: lo acota el consumidor contra las
+    filas admitidas.
+    """
+    ventana = _VENTANA_DEL_PAR.get(clave)
+    if ventana is None or c.valor is None or isinstance(c.valor, str):
+        return
+    (minimo, maximo), cita_id, numeral = ventana
+    n_min, n_max = c.valor
+    if not (minimo <= n_min and n_max <= maximo):
+        raise ValueError(
+            f"'{clave}' recibe el par {tuple(c.valor)!r}, fuera del rango "
+            f"[{minimo}, {maximo}] que la fuente escribe para el par que no "
+            f"sale de ninguna fila ({numeral}, cita {cita_id}). Se rechaza en "
+            "la puerta de declaracion: un par fuera de ese rango no es la "
+            "especificacion de un encofrado que la fuente describa")
 
 
 def _verificar_signo(clave: str, c: Criterio) -> None:

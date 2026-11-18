@@ -66,7 +66,8 @@ CLAVE_DERIVADA = "tabla_recubrimiento_aashto_mm"
 # son longitudes en metros.
 FORMA_DEL_CAJON = {
     "embocadura_cajon": "str",
-    "n_manning_cajon": "str",
+    # --- T11-10 --- la union de la fila y el par del encofrado (num. B.3).
+    "n_manning_cajon": ("str", "par_ordenado"),
     "ke_entrada_cajon": "str",
     "espesor_pared_cajon": "float",
     "cobertura_minima_cajon": "float",
@@ -149,7 +150,8 @@ def test_una_forma_que_no_es_de_la_familia_no_pasa_la_guardia():
 
 def test_los_siete_del_cajon_llevan_la_forma_que_sus_consumidores_exigen():
     for clave, forma in FORMA_DEL_CAJON.items():
-        assert _formas_de(clave) == (forma,), clave
+        assert _formas_de(clave) == (
+            forma if isinstance(forma, tuple) else (forma,)), clave
 
 
 @pytest.mark.parametrize("clave", sorted(ca.CRITERIOS))

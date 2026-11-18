@@ -330,8 +330,6 @@ Aprobado por el autor y **no lanzado** todavía:
 - Las **dos correcciones de diagnóstico de MD** de la ficha T11-03 (abiertos 3 y 4):
   detener también cuando un candidato cierra y uno anterior tenía un dato inválido, y sacar
   como dato inválido el diámetro de arranque negativo de la rama de error.
-- **Abrir la forma de `n_manning_cajon`** al par del HDS-5 núm. B.3 (marco vaciado in situ),
-  hoy no declarable (ficha T11-10).
 - **Una guía para quien herede el código** (5 a 10 páginas, en `docs/`), cuando la app esté
   terminada (después de VE-3): mapa de módulos y fases, el recorrido de una corrida de
   punta a punta, cómo añadir un criterio o un dato de sitio y cómo regenerar los documentos

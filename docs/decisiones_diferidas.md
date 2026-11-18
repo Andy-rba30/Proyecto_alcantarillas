@@ -6873,8 +6873,8 @@ y un test regenera cada uno.
   `TOL_HW_SENSIBILIDAD_M`; las demás magnitudes no se comparan).
 - **Abierto:** un solo juego, sin producto cartesiano; los no barribles (ventana en prosa,
   por campo o de tabla) no se midieron, y lo dicen. El lado ALTO de la ventana de
-  `n_manning_cajon` (HDS-5 B.3, 0.012–0.022 en vaciado in situ) no se puede declarar
-  (ficha T11-10). El criterio `v_max_concreto_eleccion` se queda SIN valor por decisión del
+  `n_manning_cajon` (HDS-5 B.3, 0.012–0.022 en vaciado in situ) no se podía declarar y
+  el anexo no lo midió; desde T11-10 se declara como par (ficha T11-10). El criterio `v_max_concreto_eleccion` se queda SIN valor por decisión del
   dueño (rige 6.0 m/s de la Tabla Nº 10): su resultado es de la tesis y no cambia el
   fixture.
 - **Qué haría falta:** repetir el anexo con los datos del sitio.
@@ -6951,20 +6951,36 @@ y un test regenera cada uno.
 
 ## T11-10 · El lado alto de la ventana de `n_manning_cajon` no se puede declarar
 
-- **Qué se difirió:** medir el n del marco con el num. B.3 del HDS-5 (0.012 a 0.022 en un
-  cajón vaciado in situ, según el encofrado), que la ficha del criterio da como la ventana
-  hacia arriba —el lado seguro para el tirante y el HW— y dice que «se declara como el par
-  de la especificación del encofrado».
-- **Por qué:** la forma del criterio es `str` (el nombre de una fila de tabla), y la
-  puerta de declaración rechaza el par con `ValueError` (medido en las correcciones de
-  T-11, H3). La ficha promete una declaración que la forma no admite. No se cambió la forma
-  porque mueve un criterio de archivo y su consumidor (`M2._fila_manning_de_cajon`), y T-11
-  no cambia cálculo. C-01 está gobernado por la salida, que es donde n pesa.
-- **Qué haría falta:** abrir la forma del criterio a la unión (fila o par) con la guardia
-  de la Tabla B.1 en el consumidor, o corregir la ficha para que no prometa el par.
-  **Decidido por el dueño el 2026-11-13: abrir la forma, en el lote POSTERIOR a la cadena**
-  (aprobado, no lanzado; el README de usuario lo nombra como trabajo posterior).
-- **Dónde vive:** `src/criterios_adoptados.py::n_manning_cajon`
+- **Qué se difirió (hasta T11-10):** medir el n del marco con el num. B.3 del HDS-5 (0.012 a
+  0.022 en un cajón vaciado in situ, según el encofrado), que la ficha del criterio da como la
+  ventana hacia arriba —el lado seguro para el tirante y el HW— y dice que «se declara como el
+  par de la especificación del encofrado». La forma era `str` y la puerta rechazaba el par con
+  `ValueError` (medido en las correcciones de T-11, H3): la ficha prometía una declaración que
+  la forma no admitía.
+- **Cerrado (T11-10, decisión del dueño del 2026-11-13: «abrir la forma»):** la forma del
+  criterio es la UNIÓN `(str, par_ordenado)`, como `k_v`; el valor de archivo no cambia
+  (`concrete_boxes`). El rango del B.3 se LEE de la cita `HDS5_3ED.B.3#CAJON_IN_SITU` (pág.
+  impresa B.2, PDF 204: «Manning's n values for cast-in-place boxes range from 0.012 to
+  0.022», verificado contra la página) en `constantes_normativas.MANNING_CAJON_IN_SITU_HDS5`;
+  su extremo inferior es el n_min de la fila del cajón de la Tabla B.1 (pág. impresa B.6, PDF
+  208: 0.012-0.015). La puerta (`criterios_adoptados._verificar_par_de_encofrado`, por los
+  tres caminos) rechaza con `ValueError` el par invertido, con booleanos o textos, de otro
+  largo, no finito o fuera del rango; el consumidor (`M2._fila_manning_de_cajon`, segunda
+  línea) lo detiene como `DatoInvalidoError` y lo usa en la regla de doble n como las columnas
+  de una fila, con su propio paso (`F4.N_CAJON_IN_SITU`). Los editores tipados lo admiten por
+  el campo único de la unión (sin campos nuevos); sin fila exige la nota, que dice de dónde
+  sale el par. Y `declaracion.declarar_desde_tabla` rechaza sin nota un par que DIFIERE del de
+  la fila elegida (EXT-V-02 extendido al par): sin eso la ventana emergente, que declara con
+  fila y sin nota, registraba «proviene de la fila concrete_boxes» para un par que esa fila no
+  escribe. La CLI lo declara con `--declarar n_manning_cajon=(0.013,0.016)`. Lo fija
+  `tests/test_t11_10_n_cajon.py`, con C-01 de punta a punta.
+- **Abierto:** la ventana emergente no tiene campo de nota (EB-06), de modo que el par del
+  encofrado, que no es el de ninguna fila, se declara desde la pestaña 2 o la CLI, no desde
+  ella. La línea base y los documentos generados no se regeneraron en T11-10 (la huella de
+  `criterios_adoptados.py` cambia).
+- **Qué haría falta:** nada para el criterio; regenerar la línea base y los documentos
+  generados cuando el dueño lo indique.
+- **Dónde vive:** `src/criterios_adoptados.py::_verificar_par_de_encofrado`
 
 # Parte LV — Lo que T-12 de la cadena T dejó escrito: el repositorio listo para la sustentación
 
