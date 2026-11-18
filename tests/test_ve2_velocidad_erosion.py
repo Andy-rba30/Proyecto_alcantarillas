@@ -425,8 +425,9 @@ def test_el_fundamento_de_manning_ya_no_presenta_la_doble_n_como_norma():
     """
     F4.MANNING decia «UNA geometria y DOS velocidades ... una seccion y dos
     rugosidades sobre la misma seccion», con citas solo del Manual: leida en
-    la memoria, la doble n parecia del Manual (la hoja de ruta la rotula
-    «Regla [N]» sin numeral; ficha VE1-01, D3). Hoy dice que la eleccion de
+    la memoria, la doble n parecia del Manual (la hoja de ruta la rotulaba
+    «Regla [N]» sin numeral hasta su correccion del 2026-11-18; ficha VE1-01,
+    D3). Hoy dice que la eleccion de
     los dos extremos es adopcion del proyecto y cita la «velocidad a tirante
     normal» del HDS-5 y de HEC-14.
     """
@@ -436,9 +437,12 @@ def test_el_fundamento_de_manning_ya_no_presenta_la_doble_n_como_norma():
     assert "misma seccion" not in texto
     assert "UNA geometria" not in texto
     assert "adopcion" in texto.lower()
-    assert "Regla [N]" in f.por_que, (
-        "el fundamento declara en el punto de uso que la hoja de ruta sigue "
-        "rotulando la doble n como «Regla [N]»")
+    # --- correccion de la hoja de ruta (2026-11-18) --- CAMBIADO DECLARANDO
+    # LA CAUSA. Exigia «Regla [N]» en el por_que: la declaracion, en el punto
+    # de uso, de que la hoja de ruta seguia rotulando asi la doble n. El
+    # dueño corrigio la §4.1 y la declaracion se retiro.
+    assert "Regla [N]" not in f.por_que
+    assert "sin un numeral" in f.por_que
 
 
 def _pasos(resultado, fundamento_id):

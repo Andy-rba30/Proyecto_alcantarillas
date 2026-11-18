@@ -2334,7 +2334,7 @@ def _pasos_hidraulicos(*, seccion, Q, S, L, TW, material, normal, critico, entra
             f"velocidad: un piso y un techo tienen extremos conservadores "
             f"opuestos. Usar los DOS extremos de la Tabla Nº 09, y cual para "
             f"que, es adopcion del proyecto: la tabla da minimo, normal y "
-            f"maximo sin regla de columna (ficha VE1-01)."),
+            f"maximo sin regla de columna (ficha VE2-A)."),
     )
 
     # SU FUNDAMENTO YA NO ES `F4.CONTROL`, Y NO ES UN CAMBIO COSMETICO. Ese

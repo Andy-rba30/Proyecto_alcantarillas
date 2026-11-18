@@ -3106,8 +3106,8 @@ CRITERIOS: Dict[str, Criterio] = {
     # doble n del concreto era lectura directa de la Tabla N 09 --MINIMO para
     # velocidad, MAXIMO para capacidad-- rotulada «Regla [N]» por la hoja de
     # ruta (§4.1) sin numeral (ficha VE1-01, D3; la hoja de ruta la escribe
-    # como adopcion [A] desde su correccion del 2026-11-18). El valor de archivo es esa
-    # misma doble n: ningun numero del expediente se mueve.
+    # como adopcion [A] desde su correccion del 2026-11-18). El valor de
+    # archivo es esa misma doble n: ningun numero del expediente se mueve.
     "columna_n_manning_concreto": Criterio(
         valor="doble_n_minimo_maximo",
         # DE PERFIL: lo lee `M2.catalogo` al armar el tubo de concreto, que
@@ -12242,10 +12242,8 @@ CRITERIOS: Dict[str, Criterio] = {
                       "entero impreso como contraste; si la resultante cae "
                       "fuera de la base, rige el peso entero. Los ensayos "
                       "midieron el peso entero 2.3 a 4.3 veces mayor en las "
-                      "geometrias que cumplen. La hoja de ruta (§9.4, punto "
-                      "5) describe el peso entero como lo que hace el "
-                      "codigo: sigue asi hasta que se corrija (ficha "
-                      "VE3-18)",
+                      "geometrias que cumplen (ficha VE3-18; la hoja de "
+                      "ruta, §9.4, lo dice asi)",
         fuente="AASHTO LRFD 9a ed., 11.6.1.2, pag. impresa 11-20 (PDF 1489) "
                "y 10.6.5, pag. impresa 10-86 (PDF 1375)",
         reemplazado_por="Decision del proyectista, con el EMS",

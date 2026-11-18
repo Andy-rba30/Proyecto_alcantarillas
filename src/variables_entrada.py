@@ -791,14 +791,15 @@ _COLUMNAS: Dict[str, _Columna] = {
         # el detalle en la ficha VE1-01.
         # --- VE-2 (c2) --- Desde VE-2 V7 la lee, pero SOLO con la alternativa
         # 'nf_del_punto' de 'nivel_agua_diseno_v7' (`M8.cota_nivel_agua_v7_
-        # del_nf`); con el valor de archivo, no. Las dos cosas en el texto, y
-        # la discrepancia de la hoja de ruta (§1.2: «la lee V7», sin esa
-        # condicion) sigue en la ficha VE1-01.
+        # del_nf`); con el valor de archivo, no. Las dos cosas en el texto.
+        # La discrepancia de la hoja de ruta (§1.2: «la lee V7», sin esa
+        # condicion) se declaraba aqui hasta que el dueño la corrigio
+        # (2026-11-18, ficha VE1-01, D3, cerrada).
         concepto="Profundidad del nivel freatico bajo el terreno natural en "
                  "el cruce. La leen el cabezal (Fase 9), la presion del agua "
                  "sobre un TMC o un HDPE (Fase 8) y V7 solo con "
                  "'nivel_agua_diseno_v7' = 'nf_del_punto', no con el de "
-                 "archivo: fichas VE2-C y VE1-01",
+                 "archivo: ficha VE2-C",
         unidad="m",
         resolucion=DeEnsayo(
             ensayo="medicion del nivel freatico en la calicata o el "
