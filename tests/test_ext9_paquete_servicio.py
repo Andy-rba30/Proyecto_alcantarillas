@@ -79,24 +79,25 @@ NOMBRES_PLANOS = sorted(
        and ruta.name != "__pycache__"})
 
 
-# Evidencia CONGELADA por sha1 antes de correr el programa (VE-3, validacion
-# hidrologica con casos reales: `SHA1SUMS_congelado.txt` de esa carpeta). Son
-# scripts de PROCESO --el calculo a mano que el verificador independiente
-# hizo sin el programa--, no se importan desde el repositorio y no viajan en
-# la exportacion (`proceso/` lo excluye `.gitattributes`). Editarlos para
-# quitar su `sys.path.insert` invalidaria el sello que los hace evidencia.
-CONGELADOS_FUERA_DEL_BARRIDO = (
-    "proceso/planes_mejora/ve3_estado/verificaciones_del_dueno/hidrologia/"
-    "casos/_calculo/",
-)
+# Evidencia CONGELADA por sha1 antes de correr el programa: una carpeta que
+# lleva su `SHA1SUMS_congelado.txt` guarda un calculo a mano hecho SIN el
+# programa por un verificador independiente. Sus scripts no se importan
+# desde el repositorio y no viajan en la exportacion; editarlos para quitar
+# su `sys.path.insert` invalidaria el sello que los hace evidencia. Se
+# reconoce por el archivo de sellos, sin nombrar ninguna ruta.
+SELLO_DE_EVIDENCIA_CONGELADA = "SHA1SUMS_congelado.txt"
+
+
+def _es_evidencia_congelada(ruta: Path) -> bool:
+    return any((carpeta / SELLO_DE_EVIDENCIA_CONGELADA).exists()
+               for carpeta in (ruta.parent, ruta.parent.parent))
 
 
 def _archivos_python():
     return sorted(
         ruta for ruta in RAIZ.rglob("*.py")
         if not any(parte in FUERA_DEL_BARRIDO for parte in ruta.parts)
-        and not ruta.relative_to(RAIZ).as_posix().startswith(
-            CONGELADOS_FUERA_DEL_BARRIDO))
+        and not _es_evidencia_congelada(ruta))
 
 
 def _arbol(ruta: Path) -> ast.AST:

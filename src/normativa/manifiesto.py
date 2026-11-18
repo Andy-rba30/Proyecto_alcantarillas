@@ -207,7 +207,14 @@ def _linea_del_simbolo(rel: str, simbolos: List[str],
             # el comentario de cabecera y el `def`, y una referencia que
             # aterriza en el vacio no lleva a lo que dice llevar -- que es
             # NOR-MAN-04 en pequeño. Se baja al primer renglon con texto.
-            return _primer_renglon_con_texto(rel, linea_actual, fin)
+            destino = _primer_renglon_con_texto(rel, linea_actual, fin)
+            if not _renglon(rel, destino).strip():
+                # Y SI EL VACIO ES EL FINAL DEL BLOQUE (un renglon en blanco
+                # que cierra una asignacion de una linea, `NUMERAL_LAUSHEY`
+                # de M6 tras T8-08) no hay texto hacia abajo: se sube al
+                # primero desde el inicio del bloque.
+                destino = _primer_renglon_con_texto(rel, inicio, fin)
+            return destino
     return _primer_renglon_con_texto(
         rel, min((inicio for inicio, _ in tramos),
                  key=lambda x: abs(x - linea_actual)), None)
@@ -252,6 +259,11 @@ def _linea_por_mencion(rel: str, simbolos: List[str],
     if not menciones:
         return None
     return min(menciones, key=lambda n: abs(n - linea_actual))
+
+
+def _renglon(rel: str, n: int) -> str:
+    lineas = (RAIZ / rel).read_text(encoding="utf-8").split("\n")
+    return lineas[n - 1] if 1 <= n <= len(lineas) else ""
 
 
 def _primer_renglon_con_texto(rel: str, desde: int,
