@@ -1614,11 +1614,14 @@ _META_CRITERIOS: Dict[str, _Meta] = {
              "y crecer en canto no son intercambiables."),
     "n_manning_cajon": _Meta(
         unidad="- (par n_min, n_max)",
-        nota="Se declara la FILA, no el par: el rango se lee de la fila para "
-             "que el criterio y la tabla no puedan divergir. Desde la "
-             "auditoria de T-3 la de archivo es la del cajon de la Tabla B.1 "
-             "del HDS-5 ('concrete_boxes', [C]); la alternativa, una del "
-             "subgrupo «a. Concreto» de la Tabla N 09 por analogia."),
+        nota="Se declara la FILA, y el rango se lee de la fila para que el "
+             "criterio y la tabla no puedan divergir. Desde la auditoria de "
+             "T-3 la de archivo es la del cajon de la Tabla B.1 del HDS-5 "
+             "('concrete_boxes', [C]); la alternativa, una del subgrupo «a. "
+             "Concreto» de la Tabla N 09 por analogia. Desde T11-10 se "
+             "declara tambien el PAR (n_min, n_max) de la especificacion del "
+             "encofrado de un marco vaciado in situ, dentro del rango del "
+             "num. B.3 del HDS-5 (0.012 a 0.022), que no es una fila."),
     "embocadura_cajon": _Meta(
         unidad="-",
         nota="El valor es una de las claves 'cajon_concreto_*' de "

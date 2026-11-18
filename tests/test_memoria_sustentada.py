@@ -600,6 +600,11 @@ def test_todo_fundamento_declarado_lo_usa_algun_paso(informe):
         # `tests/test_t3_correcciones_auditoria.py` (y la corrida 6 de la
         # linea base, que lo imprime).
         "F4.N_CAJON_TB1",
+        # --- T11-10 --- el del par del encofrado del marco vaciado in situ
+        # (num. B.3 del HDS-5): solo lo emite un marco con el par declarado.
+        # Que el paso existe y lleva su fundamento lo mide
+        # `tests/test_t11_10_n_cajon.py`.
+        "F4.N_CAJON_IN_SITU",
         # `F4.FORMA_HDS5` SALIO DE ESTA LISTA EN C3, que es lo que C2 dejo
         # dicho que tenia que pasar: «salen de esta lista en cuanto C4 y C5
         # escriban los pasos que los imprimen; si en esa sesion siguen aqui,
