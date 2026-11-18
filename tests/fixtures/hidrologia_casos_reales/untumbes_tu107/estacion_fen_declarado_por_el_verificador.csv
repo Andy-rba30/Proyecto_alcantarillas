@@ -1,0 +1,45 @@
+# DATOS DE CASO REAL PUBLICADO — no son datos de este proyecto. Fuente: Ramos Estrada (UNTumbes, 2025), tesis.pdf, la misma serie (Tabla 24, p. 61). Columna fen: DECLARACION DEL VERIFICADOR, no de la tesis: los años que el estudio
+# INDECI-OEA de Piura nombra como FEN dentro del periodo (83, 87, 92, 98; Vol. I PDF 126, imp. 110).
+# OJO: en esta serie el maximo (729.2 mm) esta en 1997 y no en 1998; declarar 1997 es otra variante (ver dossier).
+# ADVERSARIAL: 2001 = 1996 y 2002 = 1989, copiados mes a mes; el programa lo AVISA en el paso de consistencia (ficha VE3-19) y no lo detiene.
+estacion,anio,p24_mm,fen
+Cañaveral,1983,491,si
+Cañaveral,1984,216,no
+Cañaveral,1985,33,no
+Cañaveral,1986,19,no
+Cañaveral,1987,360,si
+Cañaveral,1989,129,no
+Cañaveral,1990,24,no
+Cañaveral,1991,717,no
+Cañaveral,1992,306.3,si
+Cañaveral,1993,104.5,no
+Cañaveral,1994,103.8,no
+Cañaveral,1995,32.1,no
+Cañaveral,1996,63,no
+Cañaveral,1997,729.2,no
+Cañaveral,1998,150,si
+Cañaveral,1999,100.1,no
+Cañaveral,2000,334.8,no
+Cañaveral,2001,63,no
+Cañaveral,2002,129,no
+Cañaveral,2003,64.2,no
+Cañaveral,2004,82.4,no
+Cañaveral,2005,42.5,no
+Cañaveral,2006,226,no
+Cañaveral,2007,151.6,no
+Cañaveral,2008,287.1,no
+Cañaveral,2009,237.6,no
+Cañaveral,2010,185.9,no
+Cañaveral,2011,108.8,no
+Cañaveral,2012,296.8,no
+Cañaveral,2013,167.2,no
+Cañaveral,2014,45.1,no
+Cañaveral,2015,187.3,no
+Cañaveral,2016,80.6,no
+Cañaveral,2017,369.2,no
+Cañaveral,2018,61,no
+Cañaveral,2019,165.2,no
+Cañaveral,2020,68.3,no
+Cañaveral,2021,140.4,no
+Cañaveral,2023,381.3,no
+Cañaveral,2024,93.6,no

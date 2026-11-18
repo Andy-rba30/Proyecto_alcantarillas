@@ -1,0 +1,5 @@
+# DATOS DE CASO REAL PUBLICADO — no son datos de este proyecto. Fuente: Alcantarilla N 19, PDF 138-140 (imp. 118-120): A = 1.25 km2 (1252631.84 m2), L = 2415.58 m, S = 0.211, Kirpich.
+# NO PUBLICADO, VEHICULO DEL VERIFICADOR: cobertura, suelo y S_terreno (la tesis usa C = 0.35 sin fila;
+# bosques/semipermeable con S_terreno = 0.10, «media > 5 %», lee 0.35). Estacion: la serie B, que es la de sus IDF.
+id,area_km2,L_cauce_m,S_cauce_cuenca,S_terreno,cobertura,suelo,estacion,metodo_tc,H_desnivel_m,ajuste_kirpich,CN
+ALC-19,1.25,2415.58,0.211,0.10,bosques_densa_vegetacion,semipermeable,Chachapoyas-B,kirpich,,ninguno,

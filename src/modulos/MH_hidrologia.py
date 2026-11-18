@@ -145,7 +145,8 @@ from src.modelos import (CIFRAS_FINA, CIFRAS_MAGNITUD, LEYENDA_CAUDAL_CALCULADO,
                          PasoDeMemoria, RegistroDeLluvia, SerieDeEstacion,
                          TipoDeVeredicto, Umbral, Veredicto, eleccion, paso)
 from src.normativa import registro as _registro_normativo
-from src.tolerancias import TOL_REL_AREA_ESCRITA_DOS_VECES
+from src.tolerancias import (TOL_ABS_MISMO_MAXIMO_ANUAL_MM,
+                             TOL_REL_AREA_ESCRITA_DOS_VECES)
 
 _REG = _registro_normativo.construir()
 
@@ -1399,6 +1400,50 @@ def precipitacion_de_diseno(serie: SerieDeEstacion, TR: float, *,
              _paso_consistencia(serie_registrada)), tuple(avisos))
 
 
+def maximos_anuales_repetidos(serie: SerieDeEstacion,
+                              ) -> Tuple[Tuple[float, Tuple[int, ...]], ...]:
+    """
+    (valor, años) de cada maximo anual de la serie REGISTRADA que aparece en
+    mas de un año, del mayor al menor valor y con los años en orden (VE3-19).
+
+    Es un dato para el aviso de consistencia (num. 3.3, pag. impresa 21, la
+    consistencia de los datos registrados), no una verificacion: dos maximos anuales iguales son normales, y con un maximo
+    por año el programa no puede distinguir una coincidencia de un año
+    copiado de otro (en la serie de Cañaveral de UNTumbes, 2002 es copia de
+    1989 y 2001 de 1996, y eso solo lo prueban los doce meses, que no
+    entran). No quita ningun año ni lleva numero de corte: «mismo valor» es
+    la tolerancia de representacion `TOL_ABS_MISMO_MAXIMO_ANUAL_MM`.
+    """
+    grupos: List[List[RegistroDeLluvia]] = []
+    for r in sorted(serie.registros, key=lambda r: r.p24_mm, reverse=True):
+        if grupos and math.isclose(r.p24_mm, grupos[-1][0].p24_mm, rel_tol=0,
+                                   abs_tol=TOL_ABS_MISMO_MAXIMO_ANUAL_MM):
+            grupos[-1].append(r)
+        else:
+            grupos.append([r])
+    return tuple((g[0].p24_mm, tuple(sorted(r.anio for r in g)))
+                 for g in grupos if len(g) > 1)
+
+
+def _texto_de_repetidos(repetidos: Sequence[Tuple[float, Tuple[int, ...]]],
+                        ) -> str:
+    """El renglon del aviso de consistencia con los maximos repetidos."""
+    if not repetidos:
+        return ""
+
+    def _anios(anios: Tuple[int, ...]) -> str:
+        textos = [str(a) for a in anios]
+        return ", ".join(textos[:-1]) + " y " + textos[-1]
+
+    lista = "; ".join(f"{valor:.1f} mm ({_anios(anios)})"
+                      for valor, anios in repetidos)
+    return (f" Maximos anuales que se repiten en la serie registrada: {lista}. "
+            "El programa no distingue una coincidencia de un año copiado de "
+            "otro, y no quita ni juzga ninguno: el proyectista tiene que "
+            "contrastar esos años con el registro mensual o diario de origen "
+            "(ficha VE3-19).")
+
+
 def _paso_consistencia(serie: SerieDeEstacion) -> PasoDeMemoria:
     """
     El AVISO DE CONSISTENCIA de la serie, SIN UMBRAL (VE-2, VE1-02 (e); ficha
@@ -1411,7 +1456,10 @@ def _paso_consistencia(serie: SerieDeEstacion) -> PasoDeMemoria:
     vacio: el paso dice que el Manual lo exige, que el programa NO lo hace y
     que el proyectista tiene que declarar que lo hizo, e imprime el minimo,
     la mediana y el maximo de la serie ENTERA de la estacion --la que se
-    registro, no la que entra al ajuste-- sin juzgarlos.
+    registro, no la que entra al ajuste-- sin juzgarlos. Desde VE3-19 (H1
+    de la validacion con casos reales, `docs/validacion_hidrologica.md`)
+    suma un renglon con los maximos anuales que se repiten y sus años
+    (`maximos_anuales_repetidos`), solo cuando los hay, sin juzgarlos.
     """
     cita_33, cita_34 = "MC_HHD.3.3#CONSISTENCIA", "MC_HHD.3.4#CONSISTENCIA"
     registros = serie.registros
@@ -1469,7 +1517,7 @@ def _paso_consistencia(serie: SerieDeEstacion) -> PasoDeMemoria:
             f"{menor.p24_mm:.1f} mm ({menor.anio}) a {mayor.p24_mm:.1f} mm "
             f"({mayor.anio}), con mediana {mediana:.1f} mm y un cociente "
             f"maximo / mediana de {texto_cociente}: el programa no los "
-            "juzga."))
+            "juzga." + _texto_de_repetidos(maximos_anuales_repetidos(serie))))
 
 
 # ===========================================================================

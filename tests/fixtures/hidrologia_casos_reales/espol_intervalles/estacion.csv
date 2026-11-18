@@ -1,0 +1,180 @@
+# DATOS DE CASO REAL PUBLICADO — no son datos de este proyecto. Fuente: Luna Chalan (ESPOL, 2023), via Intervalles (Loja, Ecuador), tesis.pdf, Anexo 2, PDF 94-96 (imp. 89-91).
+# Cuatro estaciones INAMHI: La Argelia M033, Gonzanama M149, Malacatos M143, Catamayo M060; 1964-2013.
+# Columna fen: no aplica al estudio (Ecuador, sierra de Loja); «no» es DECLARACION DEL VERIFICADOR.
+estacion,anio,p24_mm,fen
+La Argelia,1964,34.5,no
+La Argelia,1965,43.3,no
+La Argelia,1966,26.4,no
+La Argelia,1967,50.2,no
+La Argelia,1968,55,no
+La Argelia,1969,54,no
+La Argelia,1970,32.2,no
+La Argelia,1971,28.4,no
+La Argelia,1972,56.2,no
+La Argelia,1973,32,no
+La Argelia,1974,64.6,no
+La Argelia,1975,28.9,no
+La Argelia,1976,59.4,no
+La Argelia,1977,39.9,no
+La Argelia,1978,63.9,no
+La Argelia,1979,31.7,no
+La Argelia,1980,50,no
+La Argelia,1981,39.6,no
+La Argelia,1982,48.2,no
+La Argelia,1983,49.2,no
+La Argelia,1984,65.4,no
+La Argelia,1985,36.6,no
+La Argelia,1986,36.2,no
+La Argelia,1987,50.9,no
+La Argelia,1988,35.1,no
+La Argelia,1989,45.9,no
+La Argelia,1990,27.7,no
+La Argelia,1991,59.2,no
+La Argelia,1992,29.1,no
+La Argelia,1993,59.7,no
+La Argelia,1994,53.2,no
+La Argelia,1995,26.6,no
+La Argelia,1996,45.1,no
+La Argelia,1997,45.3,no
+La Argelia,1998,38.7,no
+La Argelia,1999,34.8,no
+La Argelia,2000,46.1,no
+La Argelia,2001,51.6,no
+La Argelia,2002,31.7,no
+La Argelia,2003,38.4,no
+La Argelia,2004,48.6,no
+La Argelia,2005,36.2,no
+La Argelia,2006,42.6,no
+La Argelia,2007,37.6,no
+La Argelia,2008,41.8,no
+La Argelia,2009,56.6,no
+La Argelia,2010,31.1,no
+La Argelia,2011,35.7,no
+La Argelia,2012,36.2,no
+La Argelia,2013,39.2,no
+Gonzanama,1964,59.4,no
+Gonzanama,1965,89,no
+Gonzanama,1966,63.2,no
+Gonzanama,1967,56.6,no
+Gonzanama,1968,38.3,no
+Gonzanama,1969,64,no
+Gonzanama,1970,47.2,no
+Gonzanama,1971,101.2,no
+Gonzanama,1972,32.7,no
+Gonzanama,1973,50.1,no
+Gonzanama,1975,44.8,no
+Gonzanama,1976,51,no
+Gonzanama,1977,51.6,no
+Gonzanama,1978,70,no
+Gonzanama,1979,45,no
+Gonzanama,1980,52.3,no
+Gonzanama,1981,52.8,no
+Gonzanama,1982,91,no
+Gonzanama,1983,62.9,no
+Gonzanama,1984,77.9,no
+Gonzanama,1985,50.5,no
+Gonzanama,1986,45.5,no
+Gonzanama,1988,53.1,no
+Gonzanama,1989,53.1,no
+Gonzanama,1990,38.8,no
+Gonzanama,1991,76.2,no
+Gonzanama,1992,61.8,no
+Gonzanama,1993,67,no
+Gonzanama,1994,80.2,no
+Gonzanama,1995,52.6,no
+Gonzanama,1996,76,no
+Gonzanama,1997,72.6,no
+Gonzanama,1998,65.7,no
+Gonzanama,1999,67.3,no
+Gonzanama,2000,58.4,no
+Gonzanama,2001,87,no
+Gonzanama,2002,90.5,no
+Gonzanama,2003,27.3,no
+Gonzanama,2004,58.2,no
+Gonzanama,2005,88.5,no
+Gonzanama,2006,121.2,no
+Gonzanama,2007,81.4,no
+Gonzanama,2008,151.1,no
+Gonzanama,2009,160.3,no
+Gonzanama,2010,73.1,no
+Gonzanama,2011,85.4,no
+Gonzanama,2012,78.8,no
+Gonzanama,2013,69.9,no
+Malacatos,1964,46.3,no
+Malacatos,1965,28,no
+Malacatos,1966,31.4,no
+Malacatos,1967,36.2,no
+Malacatos,1968,33.2,no
+Malacatos,1969,65,no
+Malacatos,1970,42,no
+Malacatos,1971,40.7,no
+Malacatos,1972,60.6,no
+Malacatos,1973,49.5,no
+Malacatos,1974,33.5,no
+Malacatos,1975,40.4,no
+Malacatos,1976,41.2,no
+Malacatos,1977,47.8,no
+Malacatos,1978,40.8,no
+Malacatos,1979,60.2,no
+Malacatos,1980,54,no
+Malacatos,1981,31.4,no
+Malacatos,1982,46,no
+Malacatos,1983,48.2,no
+Malacatos,1984,59.1,no
+Malacatos,1985,41.1,no
+Malacatos,1986,32.8,no
+Malacatos,1987,46.5,no
+Malacatos,1988,39.1,no
+Malacatos,1989,56.6,no
+Malacatos,1990,39.3,no
+Malacatos,1991,53.5,no
+Malacatos,1992,24.1,no
+Malacatos,1993,28.3,no
+Malacatos,1994,24,no
+Malacatos,1995,26.6,no
+Malacatos,1996,26.1,no
+Malacatos,1997,27.9,no
+Malacatos,1998,32.7,no
+Malacatos,2000,40.6,no
+Malacatos,2001,37.6,no
+Malacatos,2002,29.4,no
+Malacatos,2003,41.2,no
+Malacatos,2004,50.3,no
+Malacatos,2005,42.7,no
+Malacatos,2006,59,no
+Malacatos,2007,48,no
+Malacatos,2008,52,no
+Malacatos,2009,52.7,no
+Malacatos,2010,75.3,no
+Malacatos,2011,59.1,no
+Malacatos,2012,40.2,no
+Malacatos,2013,59.5,no
+Catamayo,1985,24.2,no
+Catamayo,1986,41.4,no
+Catamayo,1987,19.4,no
+Catamayo,1988,33.6,no
+Catamayo,1989,61.8,no
+Catamayo,1990,36.7,no
+Catamayo,1991,34.7,no
+Catamayo,1992,33.9,no
+Catamayo,1993,41.3,no
+Catamayo,1994,37.7,no
+Catamayo,1995,83.8,no
+Catamayo,1996,57.7,no
+Catamayo,1997,22.8,no
+Catamayo,1998,36.7,no
+Catamayo,1999,22.4,no
+Catamayo,2000,24.7,no
+Catamayo,2001,42.5,no
+Catamayo,2002,29.5,no
+Catamayo,2003,47.3,no
+Catamayo,2004,33.8,no
+Catamayo,2005,28.7,no
+Catamayo,2006,35.6,no
+Catamayo,2007,99.9,no
+Catamayo,2008,32.9,no
+Catamayo,2009,36.9,no
+Catamayo,2010,37.1,no
+Catamayo,2011,34.3,no
+Catamayo,2012,33.8,no
+Catamayo,2013,33.7,no

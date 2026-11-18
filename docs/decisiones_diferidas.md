@@ -8272,3 +8272,29 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   decisión 11 (C11.5.7) y la profundidad de socavación de la Fase 6.
 - **Dónde vive:** `src/modulos/M9_cabezal.py::factor_muro` (la guardia de la decisión 12) y los
   cinco criterios en `src/criterios_adoptados.py`
+
+## VE3-19 · Los máximos anuales repetidos se avisan, sin umbral (H1 de la validación hidrológica con casos reales)
+
+- **Cerrado (`docs/validacion_hidrologica.md`):** el aviso de consistencia de la serie (paso
+  1b.3c, VE-2 (e)) suma un renglón con los máximos anuales que aparecen en más de un año y sus
+  años —en Cañaveral (UNTumbes, Tabla 24, p. 61): 129.0 mm en 1989 y 2002; 63.0 mm en 1996 y
+  2001— y dice que el programa no distingue una coincidencia de un año copiado y que el
+  proyectista tiene que contrastar esos años con el registro mensual o diario de origen. Sólo
+  aparece cuando hay repetidos. No detiene, no quita ningún año, no juzga y no lleva número de
+  corte (`TOL_ABS_MISMO_MAXIMO_ANUAL_MM` es sólo representación). Dos etiquetas de año iguales
+  siguen siendo `DatoInvalidoError` al cargar.
+- **Por qué así:** el dossier de la verificación independiente
+  (`proceso/planes_mejora/ve3_estado/verificaciones_del_dueno/hidrologia/hidrologia_casos_reales.md`,
+  §3.4) halló en UNTumbes dos años copiados mes a mes de otros dos. Con un máximo por año la copia
+  no es demostrable y dos máximos iguales son normales (8 de las 10 series reales del dossier;
+  `tests/test_ve3_19_maximos_repetidos.py` fija el recuento). Ninguna excepción encaja,
+  deduplicar sería corregir una entrada que el módulo sólo valida, y no se sabe cuál es la copia
+  (quitar 2001 y 2002 sube la LN2 a 70 años un 5.6 %).
+- **Abierto: la hoja de ruta no lo recoge.** La Fase 1-bis de la hoja de ruta vigente no dice
+  nada de valores repetidos; es comportamiento nuevo del aviso sin umbral y tiene que entrar
+  junto al de VE-2 (e). No se edita aquí (otra tarea la corrige en paralelo): mientras no lo
+  recoja, quien lea sólo la hoja de ruta no sabrá que la memoria lista esos años.
+- **Qué haría falta:** recogerlo en la hoja de ruta; si el contrato admitiera la serie MENSUAL,
+  una fila idéntica mes a mes a la de otro año sí sería `DatoInvalidoError`, con el par de años.
+- **Dónde vive:** `src/modulos/MH_hidrologia.py::maximos_anuales_repetidos` (el renglón, en
+  `_paso_consistencia`)
