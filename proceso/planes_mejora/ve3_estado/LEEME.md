@@ -42,6 +42,18 @@ cada vez que se integra algo. Fecha de esta versión: 2026-11-17.
 >    («sin reducción» presentado como el lado seguro sin decir que es desplazamiento nulo y
 >    que con PGA 0.50 g no cierra) se REPORTA en una ficha; la hoja de ruta no se edita.
 > 4. Integrar en `main` sólo con autorización expresa del dueño.
+>
+> **Avance de esta sesión (2026-11-18, ~14:30 UTC).** Suite del estado que dejó la sesión
+> cortada (`b3a8831`, clon limpio, `-n 4`): **33 fallos de 8198**. Resueltos en esta rama:
+> línea base y documentos de validación regenerados; guardias de estilo (floats con `==`,
+> tolerancias sin nombre, `sys.path` de la evidencia hidrológica congelada) sin subir cupos;
+> `test_t7_verificacion` fuera del cambio de VE-3.15 (valores previos y muro que cede
+> declarado; ningún dorado cambia); expectativas movidas por la decisión 9 (zapata de 3 m),
+> T11-10 (sesión v3) y VE-3.15 (diez barridos de sensibilidad sin efecto, cabezal de la
+> regla); techo de memoria por punto 109.6 KB. Ficha VE3-20 escrita. Pendiente: anexo de
+> sensibilidad regenerándose, medir `import cli` con la máquina libre, regenerar
+> manifiesto/trazabilidad/índice con el par, suite completa en clon limpio y exportación,
+> sellos, bitácora; VE-3.16 (drenado) en preparación en paralelo.
 
 > **CAMBIO DE SESIÓN (2026-11-18, decisión del dueño).** VE-3 hasta VE-3.14 está en `main`
 > (`5e0fa00`, fast-forward de 81 commits, empujado por la sesión del dueño). **La sesión
