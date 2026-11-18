@@ -1,0 +1,32 @@
+# DATOS DE CASO REAL PUBLICADO — no son datos de este proyecto. Fuente: Tabla 2, p. 13: estacion automatica Sicuani (SENAMHI), 1993-2020, 28 años.
+# Columna fen: el documento NO declara años FEN. «no» es DECLARACION DEL VERIFICADOR para que el archivo cargue;
+# el programa tiene que avisar que la serie no declara ningun año FEN.
+estacion,anio,p24_mm,fen
+Sicuani,1993,30.4,no
+Sicuani,1994,24.5,no
+Sicuani,1995,27,no
+Sicuani,1996,40.6,no
+Sicuani,1997,40.5,no
+Sicuani,1998,28.8,no
+Sicuani,1999,24.8,no
+Sicuani,2000,25.8,no
+Sicuani,2001,36,no
+Sicuani,2002,34.6,no
+Sicuani,2003,30.4,no
+Sicuani,2004,34.1,no
+Sicuani,2005,44.4,no
+Sicuani,2006,29.8,no
+Sicuani,2007,28.8,no
+Sicuani,2008,31.3,no
+Sicuani,2009,20,no
+Sicuani,2010,24.7,no
+Sicuani,2011,34.1,no
+Sicuani,2012,31.6,no
+Sicuani,2013,28.3,no
+Sicuani,2014,23.3,no
+Sicuani,2015,28.5,no
+Sicuani,2016,33.6,no
+Sicuani,2017,23.1,no
+Sicuani,2018,28.2,no
+Sicuani,2019,25.8,no
+Sicuani,2020,34.2,no
