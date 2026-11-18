@@ -205,7 +205,12 @@ CORRIDAS_IMPORTTIME = 3
 # KuQ/(B·D^1.5), TW/D, el tirante de borde y V_erosion, la procedencia con
 # la figura y las cuatro citas de HEC-14 num. 3.1.3 ---. El techo sube a la
 # medida nueva, pegado como los anteriores.
-KB_POR_PUNTO_MAX = 109.5
+# --- cierre de VE-3.15 (2026-11-18) --- 109.56 KB por punto, medidos con
+# este mismo metodo sobre el arbol integrado (VE-3.15, T11-03, T11-10, T8-08
+# y T8-09): +0.08 KB por los textos de las decisiones 9 a 14 del cabezal y
+# del n del encofrado del cajon. El techo sube a la medida nueva, pegado como
+# los anteriores.
+KB_POR_PUNTO_MAX = 109.6
 # Paginas por punto: 14.0 medidas en EXT-8; 16.0 en E-A con los dos pasos
 # del perfil por escalon; 18.7 sobre `5bca7c6` y 20.7 con T-6, 31.7 con
 # T-3, 32.3 con T-9 y 31.0 con T-10 (ver arriba).
