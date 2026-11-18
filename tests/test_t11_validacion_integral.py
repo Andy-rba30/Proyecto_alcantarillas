@@ -313,7 +313,10 @@ def test_cada_metodo_no_evaluable_nombra_una_ficha_que_existe(una, variantes,
     # Hasta VE-3.9 tambien T7C-03 (el cortante de la zapata de C-01 con
     # lecho cohesivo, fuera de 5.7.3.4.1): desde VE-3.9 el peralte crece
     # por su armado hasta salir de esa franja (0.873 m) y ya no se detiene.
-    assert fichas == {"T7B-05", "T7B-06", "VC1-01"}
+    # Y hasta VE-3.14 tambien T7B-05 y T7B-06 (el sismo con agua en el
+    # plano de empuje): desde VE-3.14 se evalua con el peso total bajo el
+    # agua (C11.6.5.3, 'agua_del_relleno_bajo_sismo' [C]) y ya no se detiene.
+    assert fichas == {"VC1-01"}
     for ficha in fichas:
         assert f"## {ficha} · " in texto, ficha
 
@@ -442,12 +445,16 @@ def test_B01_sin_inicio_de_tramo_no_cumple_VB1(variantes):
 def test_las_variantes_que_dejan_un_metodo_sin_evaluar(variantes):
     def fichas(nombre):
         return {(b.punto, b.que) for b in variantes[nombre][2].bloqueos_nuevos}
-    assert fichas("freatico_a_2m") == {("A-01", "T7B-06"), ("A-02", "T7B-06")}
-    assert fichas("drenaje_de_archivo") == {(i, "T7B-05") for i in DISENO_ESPERADO}
+    # CAMBIADO DECLARANDOLO (VE-3.14, H-3): con agua en el plano de empuje
+    # el sismo ya no se detiene (C11.6.5.3, peso total bajo el agua); hasta
+    # VE-3.14 «freatico_a_2m» dejaba T7B-06 en A-01 y A-02, y
+    # «drenaje_de_archivo» T7B-05 en los cuatro puntos.
+    assert fichas("freatico_a_2m") == set()
+    assert fichas("drenaje_de_archivo") == set()
     # Sin ("C-01", "T7C-03") desde VE-3.9: el peralte de la salida de C-01
     # partia de 0.473 m (H_c/10, ya sobre 16 in) con el cortante fuera de
     # 5.7.3.4.1, y hoy crece por su armado hasta 0.873 m, donde se verifica.
-    assert fichas("C01_lecho_cohesivo") == {("C-01", "T7B-06")}
+    assert fichas("C01_lecho_cohesivo") == set()
 
 
 def test_el_caudal_calculado_sin_tratamiento_FEN_detiene_por_el_criterio(variantes):
@@ -540,8 +547,9 @@ def test_la_corrida_titular_es_la_de_las_decisiones_de_archivo(titular):
         "E1-LRFD.est": 0, "E2-LRFD.est": 0, "E3-LRFD.est": 0}
     assert V.zapatas_dimensionadas(titular)["dimensionadas"] == 8
     bloqueos = [(b.punto, b.que) for b in V.todos_los_bloqueos(titular)]
-    assert sorted(bloqueos) == sorted(
-        [("C-01", "VC1-01")] + [(i, "T7B-05") for i in DISENO_ESPERADO] * 2)
+    # CAMBIADO DECLARANDOLO (VE-3.14, H-3): sin los dos T7B-05 por punto
+    # (el sismo de los dos cabezales con el relleno saturado se evalua).
+    assert sorted(bloqueos) == [("C-01", "VC1-01")]
 
 
 def test_el_documento_presenta_primero_la_titular():

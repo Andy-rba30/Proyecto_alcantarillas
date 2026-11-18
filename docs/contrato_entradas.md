@@ -482,7 +482,6 @@ tabla: detienen sólo en una rama que ninguna de las dos bases recorre.
 | `umbral_no_colapso_evento_extremo` | criterio que se declara | Propietario | Ídem |
 | `remanso_derecho_via` | criterio que se declara | Proyectista | V5, y con ella el punto (Familias A y B) |
 | `categoria_refuerzo_aashto` | criterio que se declara | Proyectista · especificación de materiales | Los tres recubrimientos de diseño de la 9.4 de la Fase 9 del proyecto (§3.4) |
-| `drenaje_trasdos` | método diferido con ficha | Proyectista (y los planos) | Con el valor de archivo (`sin_drenaje`), la condición sísmica de la estabilidad de los dos cabezales de cada punto: ficha T7B-05 (equilibrio límite generalizado con el agua del relleno) |
 
 **Condicionales no medidas** — detienen una etapa si falta su dato, pero sólo en una rama
 que **ninguna de las dos bases** recorre, y por eso no salen de la medida; cada una la fija

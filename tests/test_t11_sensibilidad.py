@@ -138,6 +138,9 @@ def test_los_juicios_del_anexo(medidas):
             # evaluan dejan de dimensionar hasta que se declare.
             "nivel_agua_diseno_v7"},
         "MUEVE VEREDICTOS": {
+            # VE-3.14, opcion 13 (la alternativa rechaza el muro que
+            # no cede y mueve los veredictos sismicos del juego).
+            "distribucion_incremento_sismico",
             "eta_importancia_operativa_conducto", "factor_muro_eleccion",
             "gamma_EQ", "fraccion_delta_sobre_phi_trasdos",
             # --- VE-3.5 --- los dos [A] de §3.1 se miden sobre la zapata de
@@ -157,6 +160,9 @@ def test_los_juicios_del_anexo(medidas):
             "talud_terraplen", "terreno_delante_del_cabezal"},
         "MUEVE EL HW": {"n_manning_cajon", "ke_entrada"},
         "LEÍDO, SIN EFECTO MEDIBLE": {
+            # VE-3.14, opciones 9 y 10: mueven el peralte y la pantalla
+            # del cabezal, no un diametro ni un veredicto del juego.
+            "momento_talon_cabezal", "carga_pantalla_cabezal",
             "HW_D_max", "v_max_tmc", "v_max_hdpe", "fraccion_llena_mayor_parte",
             # --- VE-3.11 (H4) --- V7 suma el peso propio del marco: una pared
             # de 0.30 m ya no hace flotar el marco de C-01 (antes lo dejaba
@@ -213,6 +219,9 @@ def test_los_juicios_del_anexo(medidas):
             # paso F8.ACPA y un aviso cuando el relleno es poco.
             "relleno_max_contraste_acpa_m"},
         "NO LO LEE LA CORRIDA": {
+            # VE-3.14 (H-3): el juego no tiene agua en el plano de
+            # empuje bajo sismo.
+            "agua_del_relleno_bajo_sismo",
             "borde_libre_bajo_tw_ahogante", "seccion_receptor",
             "hw_entrada_fuera_de_rango", "coeficiente_uniformidad_temez",
             "criterio_traccion_cabezal_ciclopeo", "demanda_sismica_licuefaccion",

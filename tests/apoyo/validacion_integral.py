@@ -886,15 +886,17 @@ def generar(*, base: Any = None, por_defecto: Any = None,
       f"VE-3.9 el peralte crece por su armado en {zap['peraltes']} de "
       f"{n_cab} cabezales: quedan {zap['zapata']} filas del armado de la "
       f"zapata sin cumplir, y {zap['pantalla']} de la pantalla y el alero, "
-      "cuyo espesor sigue siendo el de la regla. Los peraltes salen gruesos "
-      "porque entre 16 in y el peralte cuyo vuelo queda bajo 3·d_v el "
-      "cortante cae fuera del procedimiento simplificado de AASHTO "
-      "5.7.3.4.1 y el programa no implementa el general (5.7.3.4.2): el "
-      "adoptado es el primero que puede verificar"
-      + f". La condición **sísmica no se evalúa** ({sismicas} bloqueos "
-      "«método no evaluable», ficha T7B-05: con el trasdós sin drenaje el "
-      "relleno está saturado y el empuje sísmico con agua en el relleno pide "
-      "un equilibrio límite generalizado que el programa no implementa). El "
+      "que desde VE-3.14 se dimensionan por su armado. Donde ninguna zapata "
+      "corrida de la grilla cumple la estabilidad dentro del tope, el "
+      "cabezal se declara NO FACTIBLE con estos criterios (VE-3.14) y su "
+      "peralte no se itera: por eso pueden quedar filas del armado de la "
+      "zapata sin cumplir. Desde VE-3.14 la condición **sísmica se evalúa** "
+      "también con el relleno saturado (AASHTO C11.6.5.3: el incremento con "
+      "el peso total bajo el agua, `agua_del_relleno_bajo_sismo` [C]); con "
+      "el trasdós sin drenaje y el k_h sin reducción es la que no cumple"
+      + ("" if not sismicas else
+         f" ({sismicas} bloqueos «método no evaluable» quedan)")
+      + ". El "
       "**peso específico saturado del relleno** es un ensayo del EMS que esta "
       "rama necesita: sin él la estabilidad y el armado de los ocho "
       "cabezales se detienen (§4.2). No es un fallo de la validación: es lo "
@@ -933,12 +935,15 @@ def generar(*, base: Any = None, por_defecto: Any = None,
       "(`docs/validacion_sensibilidad.md` §3.1) mide los dos [A] de los que "
       "dependen —los factores de inclinación y la fila de φ—, que desde "
       "VE-3.5 deciden cuánto crece la zapata más que si pasa. "
-      "Las filas A1 de la pantalla y "
-      "el alero de SALIDA no pasan donde la socavación baja el desplante (la "
-      "pantalla crece y ninguna barra del catálogo alcanza); la variante "
-      "`sin_socavacion_A01` muestra el otro lado. No es un fallo de la "
-      "validación: el dimensionamiento crece el ancho (VE-3.5) y el peralte "
-      "(VE-3.9) de la zapata, y no el espesor de la pantalla.")
+      "Desde VE-3.14 la pantalla y el alero se dimensionan por su armado: "
+      "crecen en "
+      + str(sum(len(p.cabezal.intentos_de_pantalla) for p in base.puntos
+                if p.cabezal is not None))
+      + " cabezales, los de SALIDA, donde la socavación baja el desplante; "
+      "y fuera de AASHTO 5.7.3.4.1 el cortante se verifica con el "
+      "procedimiento general de 5.7.3.4.2, con el acero longitudinal que "
+      "pide. No es un fallo de la validación: es lo que el dimensionamiento "
+      "de VE-3.5, VE-3.9 y VE-3.14 resuelve.")
     A("")
     c01 = {n: _c01_en_el_canal(i) for n, _t, i, _e in var
            if n == VARIANTE_C01_EN_EL_CANAL}

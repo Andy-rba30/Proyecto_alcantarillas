@@ -418,6 +418,10 @@ NO_BARRIBLES: Dict[str, str] = {
 # Por que la corrida no lee una clave. El test exige que estas sean
 # EXACTAMENTE las claves (y bases) que la medida da como no leidas.
 NO_LEIDO_PORQUE: Dict[Tuple[str, str], str] = {
+    ("agua_del_relleno_bajo_sismo", "juego"): (
+        "el juego declara el trasdós drenado y su freático queda bajo las "
+        "zapatas: no hay agua en el plano de empuje bajo sismo, que es lo "
+        "único que lee la elección (VE-3.14, C11.6.5.3)"),
     ("seccion_receptor", "juego"): (
         "el juego declara `TW_m` (vía 1 de la Sec. 1.3), que manda sobre las "
         "vías 3 y 4, las únicas que usan la sección del receptor"),

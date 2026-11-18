@@ -1056,3 +1056,26 @@ VE-3.9 (la huella de `criterios_adoptados.py` y «22 → 21 todavía sin valor»
 regenera sobre el conjunto al integrar. El caso que sí lo tiene, E07 de los ensayos de
 diseño del conducto (Ø 1.35 m adoptado, Ø 0.90 m por la hidráulica, descenso 0.325 m), es
 dato de prueba en `tests/fixtures/ve3_13_gobierno_receptor/`.
+
+## 28. VE-3.14: los defectos del diseño del cabezal (ensayos); ningún número se mueve (2026-11-17)
+
+Regenerada con `sh tests/linea_base_familia_c/regenerar.sh` sobre `c2e467d`. Ninguna corrida
+de la línea base llega al cabezal (sus puntos se detienen antes, por criterio o por dato), de
+modo que los cinco bloques de VE-3.14 (cortante general de 5.7.3.4.2, bucle de la zapata,
+pantalla y alero dimensionados, sismo con agua por C11.6.5.3) y las opciones 9, 10 y 13 no
+mueven ninguna cifra aquí. Lo que se mueve:
+
+- La huella `criterios_sha1` en los cuatro JSON y en las memorias (cuatro criterios nuevos:
+  `agua_del_relleno_bajo_sismo`, `momento_talon_cabezal`, `carga_pantalla_cabezal` y
+  `distribucion_incremento_sismico`, todos de expediente y con el comportamiento de hoy como
+  valor de archivo).
+- `sin_valor_declarados` pierde `dimensionamiento_zapata_cabezal`, que tiene valor de archivo
+  desde VE-3.9 (la línea base comprometida aún lo listaba).
+- El alcance declarado `iteracion_ancho_zapata_cabezal` (texto y símbolo, en el JSON, en la
+  CLI y en las memorias): ya no dice que el ancho «no se itera».
+- La frase final del RESUMEN de la CLI atribuye el no cierre a la causa de cada bloqueo (en
+  estas corridas, criterio sin valor y dato de entrada).
+- La tabla del armado de la memoria suma «V_u [cede]» a la columna del momento (vacía aquí:
+  ninguna corrida arma un cabezal).
+
+**Diámetros, secciones, materiales y HW movidos: ninguno.**

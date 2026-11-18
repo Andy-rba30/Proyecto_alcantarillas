@@ -224,7 +224,7 @@ Alcance declarado: perfil (bandera --alcance; por defecto expediente)
 Fuera del alcance del expediente, por decision declarada:
   - El armado de la SECCION del marco de concreto de la Familia C no se diseña: el expediente llega al dimensionamiento y a la demanda de la losa superior que entrega la Fase 8; el analisis y el diseño del portico quedan para quien lo arme (ficha T5-07; M8_estructural.demanda_marco)
   - El cabezal PARALELO a la via no se calcula: en las tres familias el cabezal es normal al eje del conducto, que es lo que supone la hidraulica (ke y cartas del HDS-5); el paralelo queda como alternativa solo para el marco, diferida (ficha T7A-03; M9_cabezal.predimensionar_aleros)
-  - El ancho de la zapata del cabezal no se itera: la geometria la propone la regla de predimensionamiento (o la declara `cabezal_declarado`) y la estabilidad la juzga como llega; la iteracion espera los parametros reales del EMS (ficha T7B-09; M9_cabezal.predimensionar_cabezal)
+  - El cabezal se dimensiona solo como zapata CORRIDA sobre la grilla de 'dimensionamiento_zapata_cabezal': el ancho por la estabilidad (VE-3.5, con la punta si el talon llega al tope), el peralte por el armado de la zapata (VE-3.9) y la pantalla por su armado (VE-3.14). Si ninguna zapata corrida cumple dentro del tope, el cabezal se declara NO FACTIBLE con estos criterios y no se proponen dentellon, llave de corte, mejoramiento del suelo ni pilotes; una dimension declarada (`cabezal_declarado`) no se itera y la estabilidad la juzga como llega; los parametros son los de prueba hasta el EMS (ficha T7B-09; M9_cabezal.dimensionar_zapata_por_estabilidad)
   - V7 del marco no pesa el concreto del marco (DC = 0, del lado seguro): se revisara cuando llegue la seccion real del canal de la ANA o de la Junta de usuarios (ficha T3-08; M5_verificaciones.v7_flotacion)
   - Las Figuras 3.3 y 3.4 de HEC-14 (tirante de borde a la salida) no estan digitalizadas: con la velocidad tomada al tirante critico el contraste con la Tabla N 11 es un INDICADOR que no concluye; se digitalizaran en un trabajo posterior a la cadena (ficha T8-08; M6_proteccion.proteccion_salida)
   - Cuando las dos ramas de n no coinciden en el regimen (con n maximo gobierna la salida con el TW bajo el critico; con n minimo el tirante normal seria supercritico), la velocidad de salida que llega a la Fase 6 es la critica y no la mayor de la critica y la de erosion: la Fase 6 lo avisa con las dos velocidades y el d50 que daria la alta; la regla de M4 queda para un trabajo posterior a la cadena, junto con las Figuras 3.3 y 3.4 de HEC-14 (ficha T8-09; M6_proteccion._aviso_banda_de_regimen)
@@ -299,7 +299,7 @@ Etapas bloqueadas       : 3
 Diferidas por alcance   : 10 (ver ALCANCE DE LA CORRIDA; no cuentan para el cierre)
 Expediente cerrado      : no
 
-El expediente NO cierra. Mientras un criterio siga sin valor, la etapa que lo invoca se detiene: no se sustituye por un defecto (Sec. 0.7).
+El expediente NO cierra: falta o no vale un dato de entrada (el bloqueo de cada punto nombra el campo); una etapa no tiene solucion con estos datos (limite numerico o diseño no factible; ver el bloqueo).
 
 Advertencia de corredor: el proyecto no tiene nombre y los [S] de esta corrida gobiernan desde src/datos_sitio.py, que es la obra del repositorio (corredor «terraplen de ~5 km de la Fase 0-bis de la hoja de ruta, num. 150»). Si esta memoria es de otra obra, declare sus [S] con --datos-sitio sitio.json (CLI) o en el campo de sitio de la pestaña 1 (GUI), con su trazabilidad y su fecha; datos_sitio.py no se edita
 
