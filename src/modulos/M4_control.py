@@ -309,7 +309,11 @@ hacian siempre con el flujo uniforme de M3 (EXT-M-01, PC-04):
 
     V_salida            control de SALIDA: Q_celda / A(min(D, max(TW, y_c)))
                         -- tirante critico, TW o seccion entera, segun el TW
-                        (pag. impresa 3.18) --, sin n.
+                        (pag. impresa 3.18) --, sin n. Con el TW bajo el
+                        critico, el tirante de BORDE de HEC-14 (Figuras 3.3
+                        y 3.4) en lugar del critico, y la mayor con V_erosion
+                        si con n_min el flujo seria supercritico (T8-08,
+                        T8-09; `tirante_de_borde`).
                         control de ENTRADA: la del tirante normal (pag. 3.24),
                         rama n_min: techo conservador para el d50 de M6.
 
@@ -1821,7 +1825,7 @@ def velocidad_de_salida(*, Q_celda: float, seccion: Seccion, TW: float,
     return _velocidad_en_la_primera_vineta(
         Q_celda=Q_celda, seccion=seccion, TW=TW, critico=critico,
         normal=normal, horizontal=horizontal, texto_critico=texto,
-        y_salida=y_salida)
+        por_horizontal=por_horizontal, y_salida=y_salida)
 
 
 def _velocidad_en_la_primera_vineta(*, Q_celda: float, seccion: Seccion,
@@ -1829,6 +1833,7 @@ def _velocidad_en_la_primera_vineta(*, Q_celda: float, seccion: Seccion,
                                     normal: Union[TiranteNormal,
                                                   SinTiranteNormal],
                                     horizontal: bool, texto_critico: str,
+                                    por_horizontal: str,
                                     y_salida: float) -> VelocidadDeSalida:
     """
     La primera viñeta de HDS-5 3.1.6 (TW bajo el critico) con el tirante de
@@ -1863,7 +1868,7 @@ def _velocidad_en_la_primera_vineta(*, Q_celda: float, seccion: Seccion,
                  f"{borde.y_o:.3f} m con TW/D = {borde.TW_sobre_D:.3f} y "
                  f"{grupo} = {borde.caudal_adimensional:.3f}; V = Q_celda / "
                  f"A(y_o) = Q_celda / {A_o:.{CIFRAS_MAGNITUD}f} m2. No lleva "
-                 f"n de Manning")
+                 f"n de Manning.{por_horizontal}")
         cota_inferior = False
     else:
         V_base = Q_celda / critico.geometria.A

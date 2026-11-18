@@ -16,9 +16,12 @@ Aceptacion del cierre de las fichas T8-08 y T8-09 de
     del maximo).
 
 ROJO PRIMERO: este archivo se escribio y se corrio contra el arbol de
-partida (`6b08e4b`) antes de tocar el codigo: falla entero por
-`AttributeError`/`KeyError` (no existen `M4.tirante_de_borde`, las tablas
-`HEC14.F3_3` / `HEC14.F3_4` ni sus vistas de calculo).
+partida (`6b08e4b`) antes de tocar el codigo, y fallo entero en la
+coleccion (`ImportError`: no existia `tolerancias.TOL_LECTURA_FIGURA_HEC14`,
+ni `M4.tirante_de_borde`, ni las tablas `HEC14.F3_3` / `HEC14.F3_4` con sus
+vistas de calculo). Despues de implementar, sin tocar sus oraculos, se
+corrigieron dos erratas del propio test: `Magnitud.simbolo` (no `.nombre`)
+y la aritmetica a mano de A-02 (A/D² = 0.2844, no 0.2849).
 
 DE DONDE SALE CADA ORACULO, porque ninguno es la salida del codigo:
 

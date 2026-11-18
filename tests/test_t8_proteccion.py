@@ -1446,12 +1446,15 @@ def test_aud9_el_tirante_de_borde_bajo_control_de_salida_se_avisa(corrida_base):
     """
     Hallazgo 9: con control de salida y el TW bajo el critico la velocidad se
     toma al tirante critico, y HEC-14 3.1.3 dice que en el borde es menor:
-    V, Fr y d50 quedan subestimados. Se avisa.
+    V, Fr y d50 quedan subestimados. Se avisa. DESDE EL CIERRE DE T8-08 solo
+    donde las Figuras 3.3 y 3.4 no dan el borde y M4 se quedo en el critico,
+    que M4 dice con `V_salida_cota_inferior` (antes se inferia de y_salida =
+    y_c, que era toda la primera viñeta).
     """
     from dataclasses import replace
     r = _punto(corrida_base, "A-01").resultado.resultado_hidraulico
     salida = replace(r, control_gobernante=ControlGobernante.SALIDA,
-                     y_salida_m=r.y_critico)
+                     y_salida_m=r.y_critico, V_salida_cota_inferior=True)
     assert any("cota inferior" in x for x in M6._aviso_tirante_de_borde(salida))
     assert not M6._aviso_tirante_de_borde(r)     # control de entrada
 

@@ -2543,30 +2543,24 @@ ALCANCE_DECLARADO: Tuple[AlcanceDeclarado, ...] = (
                "seguro): se revisara cuando llegue la seccion real del canal "
                "de la ANA o de la Junta de usuarios"),
         ficha="T3-08", simbolo="M5_verificaciones.v7_flotacion"),
+    # --- T8-08 (cerrada) --- Las Figuras 3.3 y 3.4 de HEC-14 estan
+    # digitalizadas desde el cierre de la ficha; lo que queda declarado es
+    # lo que las figuras no cubren. La entrada de T8-09 (la regla del maximo
+    # en la banda de regimen de M4) salio con su cierre: M4 la aplica.
     AlcanceDeclarado(
         clave="tirante_de_borde_hec14",
-        texto=("Las Figuras 3.3 y 3.4 de HEC-14 (tirante de borde a la "
-               "salida) no estan digitalizadas: con la velocidad tomada al "
-               "tirante critico el contraste con la Tabla N 11 es un "
-               "INDICADOR que no concluye; se digitalizaran en un trabajo "
-               "posterior a la cadena"),
-        ficha="T8-08", simbolo="M6_proteccion.proteccion_salida"),
-    # --- T-11 --- Las dos que faltaban de lo que el dueño dejo fuera
-    # (PRECISIONES_T-11, punto 4 (ii)): la regla de la velocidad de salida en
-    # la banda de regimen de M4 (decision del 2026-11-13: trabajo posterior a
-    # la cadena, junto con las Figuras 3.3 y 3.4) y el escalon de la regla de
-    # E-A en HW/D = 1.2 (medido por la verificacion de T-7, no corregido).
-    AlcanceDeclarado(
-        clave="velocidad_salida_banda_de_regimen",
-        texto=("Cuando las dos ramas de n no coinciden en el regimen (con n "
-               "maximo gobierna la salida con el TW bajo el critico; con n "
-               "minimo el tirante normal seria supercritico), la velocidad "
-               "de salida que llega a la Fase 6 es la critica y no la mayor "
-               "de la critica y la de erosion: la Fase 6 lo avisa con las "
-               "dos velocidades y el d50 que daria la alta; la regla de M4 "
-               "queda para un trabajo posterior a la cadena, junto con las "
-               "Figuras 3.3 y 3.4 de HEC-14"),
-        ficha="T8-09", simbolo="M6_proteccion._aviso_banda_de_regimen"),
+        texto=("Donde las Figuras 3.3 y 3.4 de HEC-14 no dan el tirante de "
+               "borde a la salida (una forma que no es circular ni "
+               "rectangular, un caudal o un TW fuera de su familia de "
+               "curvas, o una lectura que no queda bajo el tirante "
+               "critico), la velocidad de salida bajo control de salida con "
+               "el TW bajo el critico se toma al tirante critico: es una "
+               "cota inferior y el contraste con la Tabla N 11 es un "
+               "INDICADOR que no concluye"),
+        ficha="T8-08", simbolo="M4_control.tirante_de_borde"),
+    # --- T-11 --- El escalon de la regla de E-A en HW/D = 1.2 (medido por
+    # la verificacion de T-7, no corregido), que el dueño dejo fuera
+    # (PRECISIONES_T-11, punto 4 (ii)).
     AlcanceDeclarado(
         clave="escalon_regla_salida_hw_1_2_d",
         texto=("La regla de la carga de control de salida del HDS-5 num. "

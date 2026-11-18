@@ -4482,55 +4482,40 @@ T8-07 a T8-12 son nuevas. Lo que ya no es cierto de la frase de arriba: desde es
 
 ## T8-08 · El tirante de borde no está digitalizado: con la velocidad al crítico el contraste con la Tabla N° 11 no concluye
 
-- **Qué se difirió:** digitalizar las Figuras 3.3 (rectangular) y 3.4 (circular) de HEC-14
-  (págs. impresas 3-5 y 3-6, PDF 36 y 37), que dan el tirante de borde `yo/D` en función de
-  `TW/D` y de `KuQ/D^2.5` (o `KuQ/(B·D^1.5)`). Decisión 2 del dueño: en un prompt aparte.
-- **Por qué importa:** bajo control de salida con el TW bajo el crítico, M4 toma la
-  velocidad de salida al tirante crítico (HDS-5 3.1.6), y HEC-14 3.1.3 dice que el flujo
-  pasa por el crítico aguas arriba de la salida: en el borde el tirante es menor y la
-  velocidad mayor. El hallazgo H2 midió el efecto: A-02 con el barril horizontal sobre
-  grava con flujo permanente salía «sin enrocado» con 1.739 m/s contra 1.80 m/s admisibles,
-  y la Figura 3.4 da para ese caso un borde de ≈ 0.38D y ≈ 2.13 m/s.
-- **Qué se hizo ya:** (1) con esa velocidad el contraste con la Tabla N° 11 **no concluye**
-  (`VelocidadAdmisible.concluyente` False, veredicto INDICADOR, `requerida` None) y la
-  protección se mantiene; (2) el aviso da la magnitud, **leída de la fuente por la sesión y
-  no calculada por el programa**: en la Figura 3.4 con descarga libre (curvas `KuQ/D^2.5` =
-  1.0, 2.0 y 3.0: `yo/D` = 0.323, 0.467 y 0.572, contra `yc/D` = 0.420, 0.604 y 0.743) la
-  velocidad de borde es de 1.35 a 1.43 veces la crítica y el d₅₀ de Laushey, que va con V²,
-  de 1.8 a 2.0 veces; en el ejemplo resuelto impreso de la pág. 3-4 (TW/D de 0.41 a 0.58),
-  de 1.08 a 1.13 veces; (3) la hoya en suelo cohesivo, que va con `V^0.36`, lo avisa también.
-- **Qué NO se hizo, y es la pregunta para el dueño:** el d₅₀ de Laushey en esa condición
-  sigue calculándose con la velocidad crítica. Es una cota inferior declarada, no un número
-  corregido.
-- **Qué haría falta:** transcribir las dos familias de curvas (trece en la Figura 3.4, de
-  0.0 a 6.0) como tabla del registro, con su lectura por imagen declarada y una tolerancia
-  de lectura; un `tirante_de_borde(...)` en M4 que sustituya al crítico en la primera
-  viñeta de `velocidad_de_salida`; y remedir la línea base (los puntos de control de
-  entrada no cambian). Para formas que no son circular ni rectangular la fuente acepta el
-  crítico («not conservative, but is acceptable», pág. 3-3).
-- **Dónde vive:** `src/modulos/M6_proteccion.py::_aviso_tirante_de_borde`
+- **Cerrado (validacion/T8-08, 2026-11-18, trabajo posterior a la cadena, README §8):** las
+  Figuras 3.3 y 3.4 de HEC-14 (págs. impresas 3-5 y 3-6, PDF 36 y 37) son las tablas
+  `HEC14.F3_3` y `HEC14.F3_4` del registro, leídas por imagen con la tolerancia
+  `TOL_LECTURA_FIGURA_HEC14` = 0.01 en yo/D (método y contraste en la nota de las citas
+  `HEC14.F3.3` y `HEC14.F3.4`: los tres anclajes de esta ficha, 0.323 / 0.467 / 0.572, dan
+  0.322 / 0.466 / 0.570, y el ejemplo de la pág. 3-4 se reproduce a ±0.006). En la primera
+  viñeta de `velocidad_de_salida` el área es la del borde (`tirante_de_borde`); el tirante
+  de registro sigue siendo el crítico. El caso del auditor (A-02 horizontal sobre grava,
+  1.739 m/s al crítico) da 2.08 m/s y el contraste concluye.
+- **Abierto:** donde la figura no da lectura —otra forma (la fuente acepta el crítico, «not
+  conservative, but is acceptable»), fuera de la familia de curvas, o una lectura que no
+  queda bajo el crítico (las curvas de trazo discontinuo de la 3.4, que lo contradicen
+  arriba)— la velocidad sigue al crítico, `V_salida_cota_inferior` y el contraste no
+  concluye (`ALCANCE_DECLARADO`, clave `tirante_de_borde_hec14`). La interpolación entre
+  curvas y entre líneas de la retícula es lineal: lectura del proyecto, declarada en el
+  paso 4.3b.
+- **Qué haría falta:** para lo abierto, las curvas de Simons (1970) en otra fuente o una
+  figura de mayor resolución; nada para el resto.
+- **Dónde vive:** `src/modulos/M4_control.py::tirante_de_borde`
 
 ## T8-09 · La velocidad de salida salta en la banda en que n máximo da flujo subcrítico y n mínimo lo daría supercrítico: es de M4 y sólo se avisa
 
-- **Qué se difirió:** corregir `M4_control.velocidad_de_salida` (EXT-3). Está fuera del diff
-  de T-8; la segunda auditoría lo dejó como observación (H14).
-- **Por qué:** el control gobernante se decide con las cargas de la rama de n máximo. Si
-  ahí gobierna la salida con el TW bajo el crítico, la velocidad de salida es la crítica,
-  aunque con n mínimo el tirante normal sería supercrítico y la regla de doble n daría
-  `V_erosion`, mayor. Medido en A-01 bajando la pendiente declarada: con S = 0.0058
-  (control de entrada) 3.160 m/s y d₅₀ de Laushey 0.329 m; con S = 0.0056 (control de
-  salida) 2.412 m/s y 0.191 m, cuando `V_erosion` es 3.114 m/s y daría 0.319 m. Un 3 % de
-  pendiente mueve el d₅₀ un 42 %.
-- **Qué se hizo:** la Fase 6 lo **avisa** con las dos velocidades y el d₅₀ que daría la
-  alta. No se cambió el número: la regla del orquestador para esta pasada era corregir M4
-  sólo si no movía nada, y tomar `max(V_crítica, V_erosion)` mueve la velocidad de salida
-  de todo punto que caiga en la banda (ninguno de la línea base cae: A-01 y A-02 van por
-  control de entrada).
-- **Qué haría falta:** decidir en M4 qué es «la estimación alta» de la velocidad de salida
-  cuando las dos ramas de n no están de acuerdo en el régimen —el HDS-5 no lo trata,
-  porque no usa doble n—; con la regla del máximo, el antes/después del caso medido es
-  d₅₀ 0.191 → 0.319 m.
-- **Dónde vive:** `src/modulos/M6_proteccion.py::_aviso_banda_de_regimen`
+- **Cerrado (validacion/T8-09, 2026-11-18, decisión del dueño: la regla del máximo):** en la
+  primera viñeta, si con n mínimo el tirante normal es supercrítico,
+  `V_salida = max(V_borde o V_crítica, V_erosion)`, y la procedencia nombra las dos. El
+  aviso `_aviso_banda_de_regimen` de M6 se retiró. V3 sigue juzgando la mayor de
+  `V_erosion` y `V_salida` (VE-3.1), sin duplicar nada. Con n máximo también supercrítico
+  la figura no aplica («Horizontal and Mild Slopes») y rige `V_erosion`.
+- **Abierto:** el antes/después que esta ficha escribía (d₅₀ 0.191 → 0.319 m) era con la
+  `V_erosion` anterior a VE-2 (3.114 m/s); hoy es 2.960 m/s (d₅₀ 0.288 m) y, con el borde
+  de T8-08 (3.110 m/s), A-01 con S = 0.0056 sale con d₅₀ 0.318 m: gana el borde. La regla
+  sólo actúa en la primera viñeta; con el TW entre el crítico y la clave no se aplica.
+- **Qué haría falta:** nada para la regla; el HDS-5 no trata la doble n.
+- **Dónde vive:** `src/modulos/M4_control.py::velocidad_de_salida`
 
 ## T8-10 · La nota (5) b de la Tabla 511-06 se lee sólo para la columna «>50», y las filas «arcilla (no coloidal)» de la Tabla N° 11 se clasifican por su nombre: dos lecturas que esperan una fuente
 

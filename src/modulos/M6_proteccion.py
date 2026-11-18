@@ -1596,9 +1596,11 @@ def proteccion_salida(*, V: Magnitud,
     salida, Q entre el area al tirante min(D, max(TW, y_c)); bajo control de
     entrada, la del tirante normal con n_min--. La procedencia la trae el
     numero, y esta funcion la imprime sin reescribirla. Con el TW bajo el
-    critico y el control de salida, HEC-14 3.1.3 dice que en el borde el
-    tirante es menor: esa velocidad es una COTA INFERIOR y se AVISA, con la
-    magnitud que la fuente deja leer.
+    critico y el control de salida, M4 la mide desde T8-08 al tirante de
+    BORDE de HEC-14 (Figuras 3.3 y 3.4) y desde T8-09 toma la mayor de esa y
+    `V_erosion`; solo donde la figura no da el borde se queda en el critico,
+    y esa velocidad es una COTA INFERIOR (`V_salida_cota_inferior`): se
+    AVISA y el contraste con la Tabla Nº 11 no concluye.
 
     LA PROTECCION SE CALCULA Y SE MANTIENE SIEMPRE (decision 6 del dueño,
     2026-11-12): el d50, el espesor y la longitud llevan numero en todos los
@@ -2479,11 +2481,13 @@ def socavacion_salida(*, resultado: ResultadoHidraulico, seccion: Seccion,
             avisos.append(
                 f"Socavacion a la salida: la hoya en suelo cohesivo va con "
                 f"(rho·V²/tau_c)^{beta:g}, es decir con V^{2 * beta:g}, y la "
-                "velocidad de salida se tomo al tirante critico: es una cota "
-                "inferior (HEC-14 num. 3.1.3) y la hoya tambien. Con la "
-                "velocidad de borde de la Figura 3.4 de HEC-14 en descarga "
-                "libre (de 1.35 a 1.43 veces la critica) la profundidad "
-                "seria de 1.11 a 1.14 veces la impresa")
+                "velocidad de salida se tomo al tirante critico porque las "
+                "Figuras 3.3 y 3.4 de HEC-14 no dan aqui el tirante de "
+                "borde: es una cota inferior (HEC-14 num. 3.1.3) y la hoya "
+                "tambien. Como orden de magnitud, en la Figura 3.4 con "
+                "descarga libre la velocidad de borde es de 1.35 a 1.43 "
+                "veces la critica, y con ella la profundidad seria de 1.11 a "
+                "1.14 veces la impresa")
         if longitud_proteccion_m is not None and \
                 longitud_proteccion_m < estimada.longitud - TOL_UMBRAL_NORMATIVO:
             avisos.append(
