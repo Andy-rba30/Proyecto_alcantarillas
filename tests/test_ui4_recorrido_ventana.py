@@ -639,8 +639,13 @@ def test_c7_la_sesion_v3_se_abre_reproduce_y_se_reescribe(r):
         diferencias = v3["diferencias"]
         assert ["expediente", "criterios_sha1"] in diferencias, v3["comparacion"]
         for seccion, clave in diferencias:
+            # CAMBIADO EN EL CIERRE DE VE-3.15, declarando la causa: T11-10
+            # reescribio el CONCEPTO de 'n_manning_cajon' (admite la fila o el
+            # par del encofrado de HDS-5 B.3); el comparador lo ve como una
+            # diferencia del texto del criterio, no de ningun punto ni numero.
             if [seccion, clave] in (["expediente", "criterios_sha1"],
-                                    ["criterios", "sin_valor_declarados[len]"]):
+                                    ["criterios", "sin_valor_declarados[len]"],
+                                    ["criterios", "n_manning_cajon.concepto"]):
                 continue
             assert seccion == "criterios" and clave not in conocidos \
                 and clave in ca.CRITERIOS, v3["comparacion"]

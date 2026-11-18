@@ -496,9 +496,17 @@ def test_con_la_zapata_de_3m_el_cabezal_de_entrada_de_A01_pasa_entero(variantes)
     assert v["E3-LRFD.est.s"] == "cumple"
     salida = _punto(informe, "A-01").cabezal.salida
     assert salida.B == pytest.approx(3.0, abs=ABS_CERO)
-    assert next(d for d in salida.dimensiones
-                if d.nombre == "espesor de la zapata").origen == \
-        ORIGEN_DIMENSION_ARMADO
+    # CAMBIADO DECLARANDOLO (cierre de VE-3.15, decision 9): con el talon por
+    # el metodo exacto el peralte de la REGLA (0.40414 m) ya cumple A1 a A6
+    # de la punta y del talon, de modo que el armado no lo hace crecer y su
+    # origen deja de ser «dimensionada por armado».
+    espesor = next(d for d in salida.dimensiones
+                   if d.nombre == "espesor de la zapata")
+    assert espesor.origen != ORIGEN_DIMENSION_ARMADO
+    assert espesor.valor == pytest.approx(0.40414, abs=ABS_CERO)
+    assert all(estado == "cumple" for codigo, estado in v.items()
+               if codigo.startswith(("A1.", "A2.", "A3.", "A4."))
+               and codigo.endswith((".punta.s", ".talon.s")))
 
 
 def test_ninguna_variante_mueve_un_diametro_que_dimensiona(variantes):
