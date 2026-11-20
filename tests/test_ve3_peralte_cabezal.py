@@ -146,8 +146,10 @@ def test_los_peraltes_que_5734_1_no_cubre_ya_no_se_saltan(juego):
 
 def test_la_memoria_explica_el_peralte(juego):
     cab = _punto(juego).cabezal
+    # --- VE-7 --- el de la zapata de los aleros va con su codigo `.alero`
     pasos = [p for p in cab.pasos
-             if p.fundamento_id == "F9.DIMENSIONADO_PERALTE"]
+             if p.fundamento_id == "F9.DIMENSIONADO_PERALTE"
+             and not p.codigo.endswith(M9.SUFIJO_ALERO)]
     assert [p.codigo for p in pasos] == ["9.3.p.s"]
     p = pasos[0]
     assert p.por_que

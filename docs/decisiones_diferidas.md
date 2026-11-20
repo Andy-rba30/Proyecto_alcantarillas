@@ -8842,8 +8842,10 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   misma zapata; las de los dos aleros son la misma; (2) la zapata del alero parte de la
   del cabezal (se desplanta con él, T-7a) y sólo crece; (3) un `ancho_zapata_m`
   declarado se hereda y no se itera; (4) E4/E5 del alero quedan diferidas como las del
-  cabezal, sin repetir su paso; (5) el peralte es el del cabezal y no se itera (su A8 lo
-  cubre); (6) sin el criterio del paso no se dimensiona: el vacío ya bloquea el cabezal.
+  cabezal, sin repetir su paso; (5) el peralte parte del del cabezal y crece por el
+  armado del talón con la misma regla, re-verificando la estabilidad
+  (`dimensionar_peralte_del_alero`): sólo crece, y el A8 del cabezal lo cubre; (6) sin
+  el criterio del paso no se dimensiona: el vacío ya bloquea el cabezal.
 - **Abierto:** (a) las franjas intermedias no se verifican: con el relleno que sube
   detrás de ellas su empuje puede crecer, y no se demostró que la del arranque rija
   siempre; (b) con factores de forma declarados, la L de la Tabla 10.6.3.1.2a-3 sigue

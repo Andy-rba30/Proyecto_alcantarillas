@@ -13943,31 +13943,182 @@ def dimensionar_zapata_del_alero(entorno: EntornoDelCabezal, *,
         avisos=avisos)
 
 
-def con_zapata_del_alero(g: GeometriaCabezal, ancho: float, *,
+DIMENSION_PERALTE_ZAPATA_ALEROS = "espesor de la zapata de los aleros"
+
+
+def incumplidas_del_armado_de_la_zapata_del_alero(
+        entorno: EntornoDelCabezal) -> Optional[Tuple[str, ...]]:
+    """
+    --- VE-7 --- Las filas A1 a A4 y A6 del talon de la zapata de los aleros
+    que no cumplen, o None si el armado no se puede evaluar (crecer el
+    peralte no lo arregla: el servicio registra el `Bloqueo` al armar la
+    geometria final). Vacia sin aleros de voladizo.
+    """
+    if not alero_verificable_como_muro(entorno):
+        return ()
+    try:
+        piezas = armar_elemento(entorno, ELEMENTO_ZAPATA_ALEROS)
+    except ErrorProyecto:
+        return None
+    return tuple(v.codigo for p in piezas for v in p.verificaciones
+                 if not v.cumple
+                 and (v.codigo or "").split(".")[0]
+                 in FILAS_DEL_ARMADO_DE_LA_ZAPATA)
+
+
+@dataclass(frozen=True)
+class DimensionadoDePeralteDelAlero:
+    """
+    --- VE-7 --- Lo que `dimensionar_peralte_del_alero` entrega para UN
+    cabezal: el peralte adoptado de la zapata de los aleros, si su armado
+    cumple, los intentos (texto), el paso de memoria y los avisos.
+    """
+
+    extremo: str
+    espesor_partida: float
+    espesor: float
+    cumple: bool
+    intentos: Tuple[str, ...]
+    paso: PasoDeMemoria
+    avisos: Tuple[str, ...] = ()
+
+
+def dimensionar_peralte_del_alero(entorno: EntornoDelCabezal, *,
+                                  declarado: bool = False
+                                  ) -> Optional[DimensionadoDePeralteDelAlero]:
+    """
+    --- VE-7 (ficha VE7-01) --- El peralte de la zapata de los aleros cuyo
+    talon no se puede armar (A1 a A4 y A6, AASHTO LRFD 5.6.3.2, 5.7.3.3,
+    5.6.3.3, 5.10.3.2 y 5.6.7), con la MISMA regla que el de la zapata del
+    cabezal (`dimensionar_peralte_por_armado`): e_k = e_0 + k·paso
+    ('dimensionamiento_zapata_cabezal' [A]), el primero con el que el
+    talon cumple, con tope fisico (la zapata tiene que dejar fuste: e_k <
+    H_c de la franja). La estabilidad de la franja se re-verifica con cada
+    peralte: si una fila que cumplia deja de cumplir, se detiene en el
+    anterior y lo dice. e_0 es el del alero (el de la zapata del cabezal).
+
+    None si no hay nada que dimensionar (cumple, no se puede evaluar, sin
+    aleros de voladizo) o si el peralte de la zapata del cabezal se DECLARO
+    (`declarado`): el alero lo hereda y no se itera.
+    """
+    if declarado or not alero_verificable_como_muro(entorno):
+        return None
+    inc = incumplidas_del_armado_de_la_zapata_del_alero(entorno)
+    if not inc:
+        return None
+    paso_m, _fraccion = _regla_de_dimensionamiento()
+    ext = entorno.extremo
+    al = entorno.geometria.aleros
+    e0 = al.espesor_zapata
+    franja = franja_del_arranque_del_alero(entorno).geometria
+    tope = franja.H + franja.espesor_zapata
+    base = set(_intento(ext, al.ancho_zapata, _estabilidad_evaluable_del_alero(
+        entorno)).incumplidas)
+    trazas = [f"{e0:.3f} m: no cumplen " + ", ".join(inc)]
+    adoptado, cumple, detenido = e0, False, ""
+    k = 0
+    while True:
+        k += 1
+        e = e0 + k * paso_m
+        if not e < tope - TOL_UMBRAL_NORMATIVO:
+            detenido = (f"el peralte llego al tope fisico (la altura de la "
+                        f"franja, {tope:.3f} m)")
+            break
+        prueba = _reemplazar(entorno, geometria=_reemplazar(
+            entorno.geometria, aleros=_reemplazar(al, espesor_zapata=e)))
+        inc = incumplidas_del_armado_de_la_zapata_del_alero(prueba)
+        if inc is None:
+            trazas.append(f"{e:.3f} m: armado no evaluable")
+            detenido = "el armado del talon dejo de ser evaluable"
+            break
+        nuevas = sorted(set(_intento(
+            ext, al.ancho_zapata, _estabilidad_evaluable_del_alero(
+                prueba)).incumplidas) - base)
+        if nuevas:
+            trazas.append(f"{e:.3f} m: la estabilidad deja de cumplir ("
+                          + ", ".join(nuevas) + ")")
+            detenido = "al engrosarla la estabilidad de la franja deja de cumplir"
+            break
+        adoptado = e
+        if inc:
+            trazas.append(f"{e:.3f} m: no cumplen " + ", ".join(inc))
+            continue
+        trazas.append(f"{e:.3f} m: cumple")
+        cumple = True
+        break
+    p = paso(
+        "F9.DIMENSIONADO_PERALTE", codigo=f"9.3.e.{ext[0]}{SUFIJO_ALERO}",
+        que=(f"Peralte de la zapata de los aleros del cabezal de {ext}, "
+             "dimensionado por el armado de su talon"),
+        formula=("e_k = e_0 + k·paso, k = 0, 1, 2, ...: el primer e_k con el "
+                 "que la flexion, el cortante sin estribos, el acero minimo, "
+                 "el espaciamiento y la fisuracion del talon cumplen, con e_k "
+                 "menor que la altura de la franja; la estabilidad de la "
+                 "franja se re-verifica con cada peralte"),
+        sustitucion=(
+            Magnitud("e_0", e0, "m", "peralte de la zapata del cabezal, que "
+                     "el alero hereda"),
+            Magnitud("paso", paso_m, "m",
+                     f"criterio '{CRITERIO_DIMENSIONAMIENTO_ZAPATA}' [A], el "
+                     "mismo de la zapata del cabezal"),
+            Magnitud("H_c", tope, "m", "altura total de la franja del "
+                     "arranque: tope fisico"),
+        ),
+        resultado=Magnitud(
+            "e_z", adoptado, "m",
+            "dimensionado por armado" if cumple else
+            "el mayor peralte probado: el armado del talon NO cumple"),
+        nota_del_proyecto="Intentos: " + " -> ".join(trazas) + ".")
+    avisos = () if cumple else (
+        f"Aleros del cabezal de {ext} de {entorno.id_punto}: el "
+        f"dimensionamiento del peralte de su zapata se detuvo en "
+        f"{adoptado:.3f} m porque {detenido}: el talon no cumple su armado",)
+    return DimensionadoDePeralteDelAlero(
+        extremo=ext, espesor_partida=e0, espesor=adoptado, cumple=cumple,
+        intentos=tuple(trazas), paso=p, avisos=avisos)
+
+
+def con_zapata_del_alero(g: GeometriaCabezal, ancho: Optional[float] = None,
+                         *, espesor: Optional[float] = None,
                          origen: str = ORIGEN_DIMENSION_ESTABILIDAD,
                          regla: str = "") -> GeometriaCabezal:
     """
     --- VE-7 --- La geometria del cabezal con la zapata de los aleros de
-    `ancho` (lo demas no se mueve: el alero no entra en la estabilidad ni en
-    el armado del cabezal) y su dimension, con su origen.
+    `ancho` (dimensionada por estabilidad, con `origen`) y/o de `espesor`
+    (dimensionado por el armado de su talon), y sus dimensiones. Lo demas
+    no se mueve: el alero no entra en la estabilidad ni en el armado del
+    cabezal.
     """
-    dim = DimensionDeCabezal(
-        nombre=DIMENSION_ZAPATA_ALEROS, valor=ancho, unidad="m",
-        origen=origen,
-        regla=regla or ("el menor de la grilla B_cabezal + k·paso con el que "
-                        "la franja del arranque de los aleros cumple E1 a E3 "
-                        "como muro en voladizo; crece el talon"),
-        criterio=CRITERIO_DIMENSIONAMIENTO_ZAPATA)
-    dims = tuple(d for d in g.dimensiones
-                 if d.nombre != DIMENSION_ZAPATA_ALEROS) + (dim,)
-    return _reemplazar(g, aleros=_reemplazar(g.aleros, ancho_zapata=ancho),
+    nuevas, cambios = [], {}
+    if ancho is not None:
+        cambios["ancho_zapata"] = ancho
+        nuevas.append(DimensionDeCabezal(
+            nombre=DIMENSION_ZAPATA_ALEROS, valor=ancho, unidad="m",
+            origen=origen,
+            regla=regla or ("el menor de la grilla B_cabezal + k·paso con el "
+                            "que la franja del arranque de los aleros cumple "
+                            "E1 a E3 como muro en voladizo; crece el talon"),
+            criterio=CRITERIO_DIMENSIONAMIENTO_ZAPATA))
+    if espesor is not None:
+        cambios["espesor_zapata"] = espesor
+        nuevas.append(DimensionDeCabezal(
+            nombre=DIMENSION_PERALTE_ZAPATA_ALEROS, valor=espesor, unidad="m",
+            origen=ORIGEN_DIMENSION_ARMADO,
+            regla=("el menor de la grilla e_z,cabezal + k·paso con el que el "
+                   "armado del talon de la zapata de los aleros cumple"),
+            criterio=CRITERIO_DIMENSIONAMIENTO_ZAPATA))
+    nombres = {d.nombre for d in nuevas}
+    dims = tuple(d for d in g.dimensiones if d.nombre not in nombres) \
+        + tuple(nuevas)
+    return _reemplazar(g, aleros=_reemplazar(g.aleros, **cambios),
                        dimensiones=dims)
 
 
 def integrar_estabilidad_de_aleros(
         cabezal: CabezalDelPunto,
         estabilidades: Sequence[EstabilidadDelCabezal],
-        dimensionados: Sequence[DimensionadoDeZapataDelAlero] = ()
+        dimensionados: Sequence[DimensionadoDeZapataDelAlero] = (),
+        peraltes: Sequence[DimensionadoDePeralteDelAlero] = ()
         ) -> CabezalDelPunto:
     """
     --- VE-7 --- El cabezal con la estabilidad de sus aleros: las filas E1
@@ -13998,6 +14149,11 @@ def integrar_estabilidad_de_aleros(
                    "franja del arranque de los aleros cumple E1 a E3; SIN la "
                    f"condicion {', '.join(faltan)}, que no se pudo evaluar "
                    "(ver su bloqueo)"))
+    for d in peraltes:
+        avisos.extend(a for a in d.avisos if a not in avisos)
+        if abs(d.espesor - d.espesor_partida) > TOL_UMBRAL_NORMATIVO:
+            geometrias[d.extremo] = con_zapata_del_alero(
+                geometrias[d.extremo], espesor=d.espesor)
     for e in estabilidades:
         avisos.extend(a for a in e.avisos if a not in avisos)
     for g in cabezal.geometrias:
@@ -14016,6 +14172,7 @@ def integrar_estabilidad_de_aleros(
         verificaciones=cabezal.verificaciones + tuple(
             v for e in estabilidades for v in e.verificaciones + e.globales),
         pasos=(cabezal.pasos + tuple(d.paso for d in dimensionados)
+               + tuple(d.paso for d in peraltes)
                + tuple(p for e in estabilidades for p in e.pasos)),
         avisos=tuple(avisos), estabilidad_aleros=estabilidades,
         intentos_de_zapata_aleros=tuple(i for d in dimensionados

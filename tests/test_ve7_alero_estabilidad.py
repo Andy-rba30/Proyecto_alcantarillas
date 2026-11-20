@@ -396,6 +396,38 @@ def test_dorado_a_mano_del_momento_del_talon_del_alero(tanteo):
     assert resistencia[0].M_u_cedente == pytest.approx(M_u, rel=REL)
 
 
+def test_el_peralte_de_la_zapata_del_alero_crece_por_el_armado_del_talon(
+        tanteo):
+    """
+    Con una zapata de los aleros delgada (0.20 m, de prueba) el talon no se
+    arma; el peralte crece con el paso del cabezal hasta el primero de la
+    grilla con el que A1 a A4 y A6 del talon cumplen, y el anterior no.
+    Con el de 0.37 m del tanteo ya cumple: no hay nada que dimensionar.
+    """
+    assert not M9.incumplidas_del_armado_de_la_zapata_del_alero(
+        _con_aleros(tanteo))
+    assert M9.dimensionar_peralte_del_alero(_con_aleros(tanteo)) is None
+    delgada = _con_aleros(tanteo, replace(ALEROS, espesor_zapata=0.20))
+    assert M9.incumplidas_del_armado_de_la_zapata_del_alero(delgada)
+    d = M9.dimensionar_peralte_del_alero(delgada)
+    assert d.cumple and d.espesor > 0.20
+    paso_m = ca.valor("dimensionamiento_zapata_cabezal")["paso_m"]
+    k = (d.espesor - 0.20) / paso_m
+    assert k == pytest.approx(round(k), abs=TOL)
+    con = _con_aleros(tanteo, replace(ALEROS, espesor_zapata=d.espesor))
+    sin = _con_aleros(tanteo, replace(ALEROS,
+                                      espesor_zapata=d.espesor - paso_m))
+    assert not M9.incumplidas_del_armado_de_la_zapata_del_alero(con)
+    assert M9.incumplidas_del_armado_de_la_zapata_del_alero(sin)
+    assert d.paso.codigo == "9.3.e.e.alero"
+    assert M9.dimensionar_peralte_del_alero(delgada, declarado=True) is None
+    g = M9.con_zapata_del_alero(delgada.geometria, espesor=d.espesor)
+    assert g.aleros.espesor_zapata == pytest.approx(d.espesor, abs=TOL)
+    assert g.aleros.ancho_zapata == pytest.approx(1.20, abs=TOL)
+    assert any(x.nombre == M9.DIMENSION_PERALTE_ZAPATA_ALEROS
+               for x in g.dimensiones)
+
+
 def test_el_aviso_del_alero_sin_verificar_sale_solo_si_no_se_verifico(tanteo):
     entorno = _con_aleros(tanteo)
     sin = M9.armado_del_cabezal(entorno)

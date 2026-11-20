@@ -191,6 +191,7 @@ from src.modulos.M9_cabezal import (CONDICIONES_DE_ESTABILIDAD,
                                     validar_suelo_fundacion)
 # --- VE-7 (ficha VE7-01) --- los aleros como muros en voladizo.
 from src.modulos.M9_cabezal import (alero_verificable_como_muro,
+                                    dimensionar_peralte_del_alero,
                                     dimensionar_zapata_del_alero,
                                     estabilidad_del_alero,
                                     integrar_estabilidad_de_aleros)
@@ -3537,6 +3538,9 @@ ETAPA_DIMENSIONAMIENTO_PANTALLA = ("dimensionamiento de la pantalla de los "
 # «estabilidad», por la misma razon.
 ETAPA_DIMENSIONAMIENTO_ZAPATA_ALEROS = ("dimensionamiento de la zapata de "
                                         "los aleros (VE-7)")
+ETAPA_DIMENSIONAMIENTO_PERALTE_ALEROS = ("dimensionamiento del peralte de la "
+                                         "zapata de los aleros por su armado "
+                                         "(VE-7)")
 
 
 def etapa_de_estabilidad_del_alero(extremo: str, condicion: str) -> str:
@@ -3803,7 +3807,7 @@ def _fase_9_aleros(informe: InformePunto, entornos, declarados,
     dos condiciones (el armado avisa si no).
     """
     declarados = declarados or {}
-    nuevos, dimensionados, estabilidades = [], [], []
+    nuevos, dimensionados, peraltes, estabilidades = [], [], [], []
     verificados = {}
     for entorno in entornos:
         if not alero_verificable_como_muro(entorno):
@@ -3821,6 +3825,19 @@ def _fase_9_aleros(informe: InformePunto, entornos, declarados,
             g = entorno.geometria
             entorno = replace(entorno, geometria=replace(
                 g, aleros=replace(g.aleros, ancho_zapata=dim.ancho)))
+        # y el peralte de esa zapata, por el armado de su talon (el de la
+        # zapata del cabezal declarado lo hereda y no se itera)
+        peralte = None if vacio else _etapa(
+            informe.bloqueos, FASE_CABEZAL,
+            ETAPA_DIMENSIONAMIENTO_PERALTE_ALEROS,
+            lambda e=entorno, d="espesor_zapata_m" in (
+                declarados.get(ext) or {}): dimensionar_peralte_del_alero(
+                e, declarado=d))
+        if peralte is not None:
+            peraltes.append(peralte)
+            g = entorno.geometria
+            entorno = replace(entorno, geometria=replace(
+                g, aleros=replace(g.aleros, espesor_zapata=peralte.espesor)))
         propias = []
         for condicion in CONDICIONES_DE_ESTABILIDAD:
             resultado = _etapa(
@@ -3832,9 +3849,9 @@ def _fase_9_aleros(informe: InformePunto, entornos, declarados,
         estabilidades.extend(propias)
         verificados[ext] = len(propias) == len(CONDICIONES_DE_ESTABILIDAD)
         nuevos.append(entorno)
-    if estabilidades or dimensionados:
+    if estabilidades or dimensionados or peraltes:
         informe.cabezal = integrar_estabilidad_de_aleros(
-            informe.cabezal, estabilidades, dimensionados)
+            informe.cabezal, estabilidades, dimensionados, peraltes)
         geometrias = {g.extremo: g for g in informe.cabezal.geometrias}
         nuevos = [replace(e, geometria=geometrias[e.extremo])
                   for e in nuevos]
