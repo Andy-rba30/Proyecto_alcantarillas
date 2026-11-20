@@ -5762,6 +5762,10 @@ marca del régimen para T-7c.
   tirante y la velocidad sobre la vía; el reparto por debajo del caudal de diseño y el
   coeficiente fuera de los ejes de la figura, que se detienen con «método no evaluable».
   Y que el Propietario declare el periodo de retorno y el caudal unitario admisible.
+- **VE-5 fixve4:** cada raíz del tanteo se comprueba (la carga de M4 salta: «método no
+  evaluable»); C_r en SI con `K_CD_DESBORDE_SI`; el tirante hidráulico del tramo único
+  queda declarado (en_contra de `HDS5_3ED.3.1.5#UN_TRAMO`); el pre-vuelo pide también
+  `TR_evento_extremo` (`servicio.CRITERIOS_PREVIOS_DE_LA_CLAVE`).
 - **Dónde vive:** `src/modulos/M5_verificaciones.py::v8_evento_extremo`
 
 ## T7B-03 · El cabezal se calcula como muro de semigravedad en voladizo, por metro y en la sección llena: es hipótesis del proyecto
