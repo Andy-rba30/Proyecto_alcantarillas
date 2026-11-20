@@ -27,7 +27,7 @@ Fase 6, la 7, la 8, la 9 y la 10 quedaban en el cuadro de «no ejercitados».
 INF-5.1.10 (que el prompt T-10 llama INF-5.1.9) pedia ver el paso del
 control gobernante con su cita correcta en una corrida que DIMENSIONE.
 
-DESDE T-10 SON DOS CORRIDAS (TRES DESDE T-11, CUATRO DESDE VE-7), con DATOS DE PRUEBA que se
+DESDE T-10 SON DOS CORRIDAS (TRES DESDE T-11, CINCO DESDE VE-7), con DATOS DE PRUEBA que se
 leen de `tests/fixtures/corridas_de_referencia/` (ver
 `CORRIDAS_DE_REFERENCIA`; ningun valor es del proyecto). Las dos de T-10 ya
 EXISTIAN en el repositorio: `test_t10_memoria` comprueba que son los mismos
@@ -72,7 +72,11 @@ Ninguna de las tres es una segunda copia que pueda divergir:
      declarada y el armado de un marco sobre suelo deficiente-- a
      `--alcance expediente`. Su LEEME dice punto por punto que ejercita.
 
-Las cuatro corren con el estado de declaraciones VACIO y lo reponen al salir
+  5. `regimenes_alternos` (VE-7, dictamen Fable (i-c)): el juego de T-11 con
+     el caudal declarado y los regimenes ALTERNOS de los criterios que valen
+     para toda la corrida, mas tres puntos dedicados. Su LEEME lo detalla.
+
+Las cinco corren con el estado de declaraciones VACIO y lo reponen al salir
 (`correr_referencia`). La razon es la de siempre: la suite declara criterios
 de prueba en `conftest.py`, y un indice que dijera una cosa generado desde la
 CLI y otra bajo pytest seria un documento sin referencia.
@@ -245,6 +249,17 @@ CORRIDAS_DE_REFERENCIA: Tuple[CorridaDeReferencia, ...] = (
                 "por el racional modificado (cuenca sintetica de 55.9 km2) y "
                 "no cabe; C-01 es el marco de T-11 con el n del encofrado "
                 "in situ.")),
+    # --- VE-7, lote C (dictamen Fable, abierto (i-c)) --- La QUINTA: los
+    # regimenes alternos de los criterios que valen para toda la corrida.
+    CorridaDeReferencia(
+        nombre="regimenes_alternos", alcance="expediente",
+        rotulo=("DATOS DE PRUEBA, NO DEL PROYECTO, NO ES UN DISEÑO VÁLIDO: el "
+                "juego de la validacion integral de T-11 con el caudal "
+                "declarado y los regimenes ALTERNOS de los criterios de toda "
+                "la corrida (remanso por perfil, desborde admitido, la fila "
+                "del marco por analogia, selva alta), mas tres puntos "
+                "dedicados: la caida recta de HEC-14, el relleno somero y el "
+                "piso de la carga de entrada. Ver su LEEME.md.")),
 )
 
 # El sello, en una linea que `leer_sello` reconoce. Los tres campos van
@@ -823,7 +838,7 @@ def indice_de_formulas(corridas: Any, sello: Sello) -> str:
     A("")
     A("## 1. Las corridas de referencia")
     A("")
-    A("Cuatro corridas con DATOS DE PRUEBA de")
+    A("Cinco corridas con DATOS DE PRUEBA de")
     A("`tests/fixtures/corridas_de_referencia/` (ver `CORRIDAS_DE_REFERENCIA`")
     A("en `src/indice_formulas.py`): la de la guía de perfil, que dimensiona")
     A("los cuatro puntos; la de punta a punta de T-7b/T-7c, que lleva a A-01")
@@ -831,7 +846,10 @@ def indice_de_formulas(corridas: Any, sello: Sello) -> str:
     A("calculado, que lleva la Fase 1-bis al índice; y la de VE-7, escrita")
     A("para recorrer las ramas que las otras tres no alcanzan (el TMC y el")
     A("HDPE hasta la Fase 8, el cabezal ciclópeo, el filtro, la socavación y")
-    A("el racional modificado). Ningún valor de entrada es del proyecto.")
+    A("el racional modificado); y la de los regímenes alternos de los")
+    A("criterios de toda la corrida (remanso por perfil, desborde, selva")
+    A("alta) con tres puntos dedicados. Ningún valor de entrada es del")
+    A("proyecto, y las dos de VE-7 no son un diseño válido.")
     A("")
     for corrida, informe in corridas:
         L.extend(_resumen_de_la_corrida(corrida, informe))

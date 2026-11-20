@@ -1,0 +1,34 @@
+{
+ "remanso_derecho_via": "perfil_de_remanso_paso_a_paso",
+ "TR_evento_extremo": 500.0,
+ "umbral_no_colapso_evento_extremo": "desborde_admitido_con_terraplen_protegido",
+ "phi_relleno_trasdos": 34.0,
+ "c_phi_fundacion": {
+  "cohesivo": false,
+  "c_kpa": 0.0,
+  "phi_grados": 32.0,
+  "gamma_kn_m3": 18.0
+ },
+ "peso_especifico_saturado_relleno_kn_m3": 20.0,
+ "factor_muro_eleccion": "reduccion_por_desplazamiento",
+ "regimen_resistencia_elementos_cabezal": "cedente",
+ "categoria_refuerzo_aashto": "A",
+ "clase_exposicion_fisuracion_cabezal": "clase_2",
+ "exposicion_quimica_ems": {
+  "so4_suelo_pct": 0.05,
+  "so4_agua_ppm": 100.0,
+  "tabla_4_2": {
+   "baja_permeabilidad": false,
+   "congelamiento_deshielo": false,
+   "cloruros": false
+  }
+ },
+ "homogeneidad_serie_fen": "serie_completa",
+ "sobreelevacion_admisible_remanso_m": 0.1,
+ "caudal_unitario_admisible_desborde_m2s": 1.0,
+ "n_manning_cajon": "concreto_afinado",
+ "Mw_licuefaccion": 8.0,
+ "incremento_acero_por_despiece": 0.1,
+ "clase_concreto_losa_entrega": "E",
+ "carga_viva_tubo_concreto_somero": "largo_del_neumatico"
+}
