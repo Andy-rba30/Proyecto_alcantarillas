@@ -506,6 +506,11 @@ def test_el_prevuelo_anuncia_la_cresta_solo_con_el_umbral_del_desborde():
         return {f.id_punto for f in anticipo.datos_faltantes_por_punto(
             CSV_EJEMPLO, externos, servicio.ALCANCE_EXPEDIENTE)
             if f.dato == clave}
+    # --- VE-5 fixve4 (hallazgo 7) --- con el umbral declarado y el TR
+    # vacio, V8 se detiene antes en el TR: la cresta todavia no falta.
+    ca.establecer_valor_dinamico(UMBRAL, DESBORDE)
+    assert ca.CRITERIOS["TR_evento_extremo"].valor is None
+    assert not faltas()
     ca.establecer_valor_dinamico("TR_evento_extremo", 500.0)
     ca.establecer_valor_dinamico(UMBRAL, "sin_desborde_de_la_plataforma")
     assert not faltas()

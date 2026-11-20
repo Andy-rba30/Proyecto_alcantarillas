@@ -673,6 +673,11 @@ def datos_faltantes_por_punto(ruta_csv: Any, externos: Any,
                 declarado = ca.criterio_efectivo(criterio).valor
                 if declarado is None:
                     continue
+                # --- VE-5 fixve4 --- y los que la verificacion lee antes.
+                if any(ca.criterio_efectivo(previo).valor is None
+                       for previo in servicio.CRITERIOS_PREVIOS_DE_LA_CLAVE
+                       .get(clave, ())):
+                    continue
                 # Las de V5 las piden SUS metodos (H2; VE-4c: el ancho, el
                 # embalse a nivel y el perfil de remanso).
                 metodos = servicio.METODO_QUE_EXIGE_LA_CLAVE.get(clave)
