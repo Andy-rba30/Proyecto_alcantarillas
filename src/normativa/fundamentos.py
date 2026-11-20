@@ -3778,6 +3778,34 @@ LONGITUD_ENTRE_CABEZALES = _fundamento(
         "que los cabezales dejan."),
 )
 
+# --- VE-6 (integrador, item 22 del censo; fichas T6-01 y T7A-06) --- La
+# pasada de refinamiento del control de salida con la longitud entre
+# cabezales. Es el paso 3.3.5 del HDS-5 llevado a la carga: encajada la
+# seccion, la longitud del barril queda cerrada y se compara con la
+# aproximada con que corrio el diseño. El refinamiento NO sustituye al
+# diseño (la fuente no da tolerancia y no se itera): se imprime y se avisa.
+REFINAMIENTO_LONGITUD = _fundamento(
+    id="F9.REFINAMIENTO_LONGITUD",
+    fase=F9,
+    que_paso=("Control de salida de la seccion adoptada rehecho con la "
+              "longitud entre cabezales"),
+    por_que=(
+        "El diseño hidraulico arranca con una longitud aproximada porque la "
+        "seccion todavia no existe; encajada la seccion y dimensionados los "
+        "cabezales, la longitud del barril queda cerrada, y la fuente pide "
+        "que quede cerca de la aproximada sin dar tolerancia. La carga del "
+        "control de salida depende de la longitud (friccion y caida) y del "
+        "tirante en el receptor, que cambia con la cota de la salida: se "
+        "rehace una vez con la longitud entre cabezales y se imprime al "
+        "lado de la del diseño, que no se sustituye."),
+    verbo=Verbo.OBLIGA,
+    citas=("HDS5_3ED.3.3.5#ENCAJE", "HDS5_3ED.3.1.4#LONGITUD"),
+    que_pasa_si_no_se_hace=(
+        "Si la longitud entre cabezales diera una carga mayor que la del "
+        "diseño, el borde libre y el resguardo se habrian juzgado con la "
+        "menor sin que la memoria lo dijera."),
+)
+
 
 # ===========================================================================
 # --- T-7b --- V5 y V8 con metodo, y la estabilidad del cabezal (Fase 9)

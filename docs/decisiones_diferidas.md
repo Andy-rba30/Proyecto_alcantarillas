@@ -4283,6 +4283,9 @@ una manera que conviene poder discutir.
   expediente donde `5bca7c6` medía 63.7, y 87.6 KB a perfil donde medía
   76.8; el techo `KB_POR_PUNTO_MAX` sólo mide expediente y quedó pegado a la
   medida) lo reconcilia T-10, que es quien rehace la memoria.
+- **VE-6 (ítem 22 del censo):** el control de salida de la sección adoptada se REHACE una vez
+  con la longitud entre cabezales, se imprime (paso 9.0.6) y se avisa si la carga sube o el
+  control cambia; el diseño no se sustituye. Ficha VE6-22.
 - **Dónde vive:** `src/modulos/M7_geometria.py::longitud_a_la_clave`
 
 ## T6-02 · M7 acota la pendiente del cauce a la banda de T-2 y V10 juzga la que quedó: V10 sólo se incumple con una pendiente declarada
@@ -5737,6 +5740,8 @@ sobre el árbol corregido, y cada una dice qué cambió.
   decía la FASE A (1.6 cm en A-01, con S = 0.006), y no se itera. El control de salida
   sigue con la aproximada (T6-01 sigue abierta en esa mitad).
 - **Qué haría falta:** `L` por sección en MD, o declarar `longitud_m` por punto.
+- **VE-6 (ítem 22 del censo):** la mitad del control de salida queda cerrada con la pasada de
+  refinamiento de la ficha VE6-22; la coronación de salida sigue sin iterarse.
 - **Dónde vive:** `src/modulos/M9_cabezal.py::longitud_entre_cabezales`
 
 ## T7A-07 · La aceptación de T-7a se escribió después del código; el rojo se midió contra la base
@@ -8967,3 +8972,40 @@ generados (`indice_formulas.md`, línea base) no se regeneran aquí: los regener
 - **Abierto:** sin `NORMAS_DIR` (repositorio privado) los tests que abren un PDF se saltan allí.
 - **Qué haría falta:** un secreto con acceso al repositorio de normas, si el dueño lo quiere en CI.
 - **Dónde vive:** `tests/test_ve5_gui.py::test_48_la_integracion_continua_corre_la_suite_bajo_un_servidor_x`
+
+# Parte VE-6 — El integrador del censo: ítems 22 y 34 y el cabezal paralelo (T7A-03)
+
+VE-6 (2026-11-20, rama `claude/ve6-integrador`, base `3ce07b5` con VE-5 integrado) cierra lo que el
+plan de lotes del censo (`proceso/planes_mejora/ve3_estado/CENSO_PENDIENTES_FABLE_2026-11-20.md`,
+§7) dejó al integrador. La sesión no tuvo a mano la herramienta para consultar a Fable: las
+decisiones ambiguas las tomó ella, y cada ficha dice cuál, por qué y con qué cita.
+
+## VE6-22 · El control de salida se rehace con la longitud entre cabezales: pasada de refinamiento con aviso
+
+- **Cerrado (ítem 22 del censo; fichas T6-01 y T7A-06; decisión del dueño del 2026-11-20,
+  «longitud entre cabezales con pasada de refinamiento y aviso»):** tras la Fase 9 del punto,
+  `servicio._fase_9_refinamiento` toma la longitud entre cabezales del paso 9.0.5 y pide a M4
+  (`refinar_con_longitud_entre_cabezales`) el control de la MISMA sección, material, caudal y
+  pendiente del diseño con L = L_cab y con el TW que la Sec. 1.3 da con la solera de salida de esa
+  longitud (`servicio._tw_de_la_seccion_1_3`, la misma vía del diseño: declarado, `cota_TW`,
+  Manning en el receptor, escenarios o el criterio). La entrada queda anclada en la cota de entrada
+  del punto y la salida en cota_entrada − S·L_cab: es EXACTAMENTE lo que daría declarar
+  `longitud_m` = L_cab, y el test lo fija contra esa otra corrida entera. El paso 9.0.6
+  (`F9.REFINAMIENTO_LONGITUD`, citas `HDS5_3ED.3.3.5#ENCAJE` y `HDS5_3ED.3.1.4#LONGITUD`) imprime
+  las dos cargas; el aviso sale SÓLO si la carga gobernante sube o el control cambia (con la carga
+  del diseño igual o mayor, el diseño quedó del lado de la carga mayor), y nombra el remedio:
+  declarar `longitud_m` por punto. Si el TW o el control no se pueden rehacer, se avisa con el
+  motivo y el punto no se bloquea (ya está verificado con la aproximada). Sin criterio nuevo: no hay
+  número que elegir.
+- **Decisión de la sesión (qué, por qué, cita):** no se itera ni se sustituye. El HDS-5 manda
+  arrancar con una longitud aproximada (núm. 3.1.4, pág. impresa 3.9) y, encajada la sección, que
+  la longitud «should be close to the approximate length» (núm. 3.3.5, pág. impresa 3.25) sin
+  tolerancia; L_cab depende de la coronación y ésta de la sección, y el punto fijo sobre un catálogo
+  discreto puede no converger. Con A-01 del fixture (entrada gobierna, 1.042 m) la carga no cambia;
+  el TW por cota baja S·ΔL (3.2 cm con ΔL = 5.38 m, S = 0.006).
+- **Abierto:** V1, V4 y el tamizado de 7.A siguen juzgados con la carga del diseño; cuando la
+  refinada es mayor, sólo se avisa. La coronación de salida sigue fijada con la cota de salida de la
+  aproximada (ficha T7A-06).
+- **Qué haría falta:** declarar `longitud_m` = L_cab en el punto avisado (gana y se verifica
+  entero); o, si el dueño lo pide, una segunda pasada completa de MD con L_cab.
+- **Dónde vive:** `src/modulos/M4_control.py::refinar_con_longitud_entre_cabezales`
