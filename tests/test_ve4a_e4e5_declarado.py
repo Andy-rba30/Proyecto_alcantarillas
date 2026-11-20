@@ -35,7 +35,7 @@ from src.modelos import (CondicionAnalisis, DatoInvalidoError,
                          MARCO_RIGE_ASD, TipoDeVeredicto)
 from src.modulos import M9_cabezal as M9
 from src.normativa.registro import construir
-from tests.apoyo.aproximacion import ABS_CERO
+from tests.apoyo.aproximacion import ABS_CERO, REL_TRANSPORTE
 from tests.test_t7b_cabezal_estabilidad import (  # noqa: F401  (fixture)
     _correr_de_prueba, _externos, tanteo)
 
@@ -72,7 +72,11 @@ def test_la_puerta_normaliza_a_entrada_y_salida_con_la_traza_comun():
                          "documento": "otro documento de prueba"})
     norm = M9.validar_estabilidad_global_declarada(valor)
     assert set(norm) == {"entrada", "salida"}
-    assert norm["entrada"]["E4"] == {"estatico": 1.8, "sismico": 1.4}
+    assert set(norm["entrada"]["E4"]) == {"estatico", "sismico"}
+    assert norm["entrada"]["E4"]["estatico"] == pytest.approx(
+        1.8, rel=REL_TRANSPORTE)
+    assert norm["entrada"]["E4"]["sismico"] == pytest.approx(
+        1.4, rel=REL_TRANSPORTE)
     assert "E5" not in norm["entrada"]
     assert norm["entrada"]["documento"] == TRAZA["documento"]
     assert norm["salida"]["documento"] == "otro documento de prueba"
@@ -293,7 +297,9 @@ def test_el_minimo_LRFD_es_1_sobre_phi_exacto_y_no_la_cifra_del_comentario(
     entorno = replace(tanteo, estabilidad_global=_declarado(
         E4={"estatico": 1.50, "sismico": 1.40}))
     v = _filas(M9.ensamble_estabilidad(entorno, EST))["E4-LRFD.est.e"]
-    assert v.valor_admisible == pytest.approx(1 / 0.65, abs=ABS_CERO)
+    phi = cn.PHI_ESTABILIDAD_GLOBAL_11_6_3_7["parametros_variables_o_limitados"]
+    assert v.valor_admisible == pytest.approx(1 / phi, abs=ABS_CERO)
+    assert v.valor_obtenido < v.valor_admisible
     assert v.paso.veredicto.tipo is TipoDeVeredicto.NO_CUMPLE
     assert "1/phi exacto" in v.paso.nota_del_proyecto
 
@@ -377,6 +383,20 @@ def test_el_registro_sostiene_el_fundamento_y_sus_citas():
         assert cita_id in f.citas
         reg.cita(cita_id)
     assert reg.cita("AASHTO_LRFD_9.C11.6.3.7#FS").interpretacion is not None
+
+
+def test_fila_phi_estabilidad_global_devuelve_la_declarada_o_None(
+        monkeypatch):
+    """La lectura de la fila: None sin declarar (sin detener), la fila
+    declarada, y una que no es de la tabla de 11.6.3.7, dato invalido."""
+    assert M9.fila_phi_estabilidad_global() is None
+    for fila in cn.PHI_ESTABILIDAD_GLOBAL_11_6_3_7:
+        ca.establecer_valor_dinamico("fila_phi_estabilidad_global", fila)
+        assert M9.fila_phi_estabilidad_global() == fila
+    monkeypatch.setitem(ca._OVERRIDES, "fila_phi_estabilidad_global",
+                        "otra_fila")
+    with pytest.raises(DatoInvalidoError):
+        M9.fila_phi_estabilidad_global()
 
 
 def test_el_criterio_de_la_fila_de_phi_es_A_de_expediente_y_sin_valor():

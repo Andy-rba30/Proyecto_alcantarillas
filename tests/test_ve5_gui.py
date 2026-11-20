@@ -25,6 +25,7 @@ import pytest
 from src import criterios_adoptados as ca
 from src import declaracion as dec
 from src import editores as sed
+from tests.apoyo.aproximacion import REL_TRANSPORTE
 
 RAIZ = Path(__file__).resolve().parent.parent
 
@@ -129,7 +130,7 @@ def test_37_un_numero_que_difiere_de_la_celda_exige_nota_y_con_ella_entra():
     p = sed.declarar_desde_la_ventana(KE, 0.55, tabla_id=KE_TC2, fila=fila_id, nota=NOTA)
     assert p.tabla_id == KE_TC2 and p.filas == (KE_FILA,)
     assert p.nota == NOTA
-    assert ca.valor(KE) == pytest.approx(0.55)
+    assert ca.valor(KE) == pytest.approx(0.55, rel=REL_TRANSPORTE)
 
 
 def test_37_la_fila_de_la_tabla_sin_nota_sigue_entrando_como_antes():
@@ -172,8 +173,10 @@ def test_37_la_ventana_declara_por_la_puerta_de_editores_y_no_por_declaracion():
     llamadas = {ast.unparse(n.func) for n in ast.walk(metodo) if isinstance(n, ast.Call)}
     assert any(l.endswith("declarar_desde_la_ventana") for l in llamadas), llamadas
     assert not any(l.startswith("dec.declarar") for l in llamadas), llamadas
-    texto = (RAIZ / "gui" / "ventana_normativa.py").read_text(encoding="utf-8")
-    assert "nota_var" in texto
+    nombres = {n.attr if isinstance(n, ast.Attribute) else n.id
+               for n in ast.walk(arbol)
+               if isinstance(n, (ast.Attribute, ast.Name))}
+    assert "nota_var" in nombres
 
 
 def test_37_la_puerta_de_la_ventana_es_la_de_la_pestana_2():

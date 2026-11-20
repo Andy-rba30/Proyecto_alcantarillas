@@ -282,7 +282,12 @@ SIN_VENTANA_EN_LA_VENTANA = frozenset({
     "metodo_transicion_hds5", "peralte_min_zapata_armada_m",
     "peso_especifico_concreto_kn_m3", "peso_especifico_saturado_relleno_kn_m3",
     "procedimiento_flexion_corte_aashto_sec5", "profundidad_cimentacion_min_cabezal_m",
-    "resguardo_HW_subrasante", "suelo_agresivo_acero_lrfd"})
+    "resguardo_HW_subrasante", "suelo_agresivo_acero_lrfd",
+    # --- VE-4d --- los dos del desborde admitido de V8: el caudal unitario
+    # admisible (sin valor: lo da el diseño de la proteccion) y la Figura
+    # 3.11 digitalizada (una lectura de figura, sin ventana).
+    "caudal_unitario_admisible_desborde_m2s",
+    "coeficientes_desborde_plataforma"})
 # Y de ellos, los que la puerta de la CLI (`barrido.verificar_valores`, la de
 # `cli.py --barrido`) SI deja barrer con el valor de su archivo: la divergencia
 # ventana/CLI, MEDIDA, que UI3-01 deja al dueño. La CLI no se cambia.
@@ -294,7 +299,10 @@ SIN_VENTANA_QUE_LA_CLI_BARRE = frozenset({
     "geometria_control_salida", "metodo_transicion_hds5", "peralte_min_zapata_armada_m",
     "peso_especifico_concreto_kn_m3", "procedimiento_flexion_corte_aashto_sec5",
     "profundidad_cimentacion_min_cabezal_m", "resguardo_HW_subrasante",
-    "suelo_agresivo_acero_lrfd"})
+    "suelo_agresivo_acero_lrfd",
+    # --- VE-4d --- la CLI barre la Figura 3.11 con su propio valor de archivo
+    # (un dict con campos: la puerta solo comprueba la forma).
+    "coeficientes_desborde_plataforma"})
 
 
 def test_a_la_regla_vive_en_src_y_la_ventana_solo_la_pinta(app, monkeypatch):

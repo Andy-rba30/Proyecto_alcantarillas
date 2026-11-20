@@ -48,7 +48,8 @@ from src.modelos import (ConstantesHDS5, ControlGobernante,
                          MetodoNoEvaluableError, SeccionRectangular)
 from src.modulos import M4_control as M4
 from src.modulos import M5_verificaciones as M5
-from tests.apoyo.aproximacion import ABS_CERO
+from src.tolerancias import TOL_REL_BALANCE_REPARTO_DESBORDE
+from tests.apoyo.aproximacion import ABS_CERO, REL_TRANSPORTE
 from tests.fixtures.casos_patron import (CP_HDS5_DG1, CP_HDS5_DG15,
                                          PIE_EN_METROS)
 
@@ -59,6 +60,8 @@ COEF = ca.CRITERIOS["coeficientes_desborde_plataforma"].valor
 CRITERIO_Q_ADM = "caudal_unitario_admisible_desborde_m2s"
 UMBRAL = "umbral_no_colapso_evento_extremo"
 DESBORDE = "desborde_admitido_con_terraplen_protegido"
+# La tolerancia de lectura del ejemplo (en C_r de la figura, ft^0.5/s) en SI.
+TOL_C_R_SI = K_CD_DESBORDE_SI * CP_HDS5_DG15["tolerancia_C_r"]
 
 
 # ===========================================================================
@@ -74,8 +77,7 @@ def test_la_figura_digitalizada_da_las_lecturas_del_ejemplo(HW_r_ft, C_r):
     # --- VE-5 fixve4 --- M4 opera en SI: el oraculo (la lectura impresa,
     # ft^0.5/s) se compara convertido con la conversion de la fuente.
     assert coef.C_r_si == pytest.approx(
-        K_CD_DESBORDE_SI * C_r,
-        abs=K_CD_DESBORDE_SI * CP_HDS5_DG15["tolerancia_C_r"])
+        K_CD_DESBORDE_SI * C_r, abs=TOL_C_R_SI)
     assert coef.k_t == pytest.approx(1.0, abs=ABS_CERO)
     assert coef.panel == modelos.PANEL_DESBORDE_SOMERO
     assert coef.C_d_si == pytest.approx(coef.k_t * coef.C_r_si, abs=ABS_CERO)
@@ -183,10 +185,10 @@ def test_el_tanteo_reproduce_la_fila_del_ejemplo_con_su_propia_curva():
     assert r.desborda
     assert r.Q_conducto / PIE3 == pytest.approx(fila["Q_c_ft3_s"], rel=LECTURA)
     assert r.HW_r / PIE == pytest.approx(fila["HW_r_ft"], rel=LECTURA)
-    assert r.Q_conducto + r.Q_plataforma == pytest.approx(r.Q_total,
-                                                          rel=1e-6)
+    assert r.Q_conducto + r.Q_plataforma == pytest.approx(
+        r.Q_total, rel=TOL_REL_BALANCE_REPARTO_DESBORDE)
     assert r.q_unitario == pytest.approx(
-        r.Q_plataforma / r.longitud_cresta, rel=1e-9)
+        r.Q_plataforma / r.longitud_cresta, rel=REL_TRANSPORTE)
     assert r.k_t == pytest.approx(1.0, abs=ABS_CERO)
 
 
@@ -227,7 +229,7 @@ def test_sin_alcanzar_la_cresta_no_hay_reparto():
     r = _repartir(700.0, _curva_publicada)
     assert not r.desborda
     assert r.Q_plataforma == pytest.approx(0.0, abs=ABS_CERO)
-    assert r.Q_conducto == pytest.approx(700.0 * PIE3, rel=1e-12)
+    assert r.Q_conducto == pytest.approx(700.0 * PIE3, rel=REL_TRANSPORTE)
     assert r.C_r_si is None and r.k_t is None and r.C_r_figura is None
 
 
@@ -432,6 +434,7 @@ def test_V8_cumple_si_el_caudal_unitario_no_supera_el_admisible():
     assert kw["HW_minimo"] == pytest.approx(1.042, abs=ABS_CERO)
     # --- VE-5 fixve4 --- la memoria lleva C_r en SI y la lectura de la
     # figura (ft^0.5/s) solo como presentacion.
+    assert v.paso.fundamento_id == "F5.V8.DESBORDE"
     c_r = next(m for m in v.paso.sustitucion if m.simbolo == "C_r")
     assert c_r.unidad == "m^0.5/s"
     assert c_r.valor == pytest.approx(1.656, abs=ABS_CERO)

@@ -542,6 +542,14 @@ def test_todo_fundamento_declarado_lo_usa_algun_paso(informe):
         # del cauce, sin valor ni dato en la corrida. Lo mide
         # tests/test_ve4c_v5_remanso.py, pieza a pieza y de punta a punta.
         "F5.V5_PERFIL",
+        # --- VE-4d --- el paso de V8 con el desborde admitido, por la misma
+        # razon que F5.V8 y ademas su umbral (la opcion
+        # «desborde_admitido_con_terraplen_protegido»), su caudal unitario
+        # admisible y la longitud de la cresta, sin valor ni dato en la
+        # corrida. Lo mide tests/test_ve4d_v8_desborde.py, pieza a pieza
+        # (`test_V8_cumple_si_el_caudal_unitario_no_supera_el_admisible`) y
+        # de punta a punta por `servicio.correr`.
+        "F5.V8.DESBORDE",
         "F9.EMPUJES", "F9.SOBRECARGA", "F9.AGUA", "F9.SISMO",
         "F9.COMBINACIONES", "F9.E1_LRFD", "F9.E2_LRFD", "F9.E3_LRFD",
         "F9.E_ASD", "F9.GLOBAL",
