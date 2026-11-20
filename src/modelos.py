@@ -5439,6 +5439,12 @@ class EmbocaduraDelPunto:
     # receptora de un alivio de cuneta, Familia B). Sale por
     # `InformePunto.avisos()`.
     avisos: Tuple[str, ...] = ()
+    # --- VE-6 (ficha T7A-03) --- La ORIENTACION del muro de cabecera:
+    # 'normal_al_eje' (la de archivo en las tres familias) o
+    # 'paralelo_a_la_via' (solo el marco, cuando 'embocadura_cajon' declara
+    # una fila de la Carta 11 del HDS-5: cabezal esviado respecto del barril,
+    # sin aletas). Ver `M9.embocadura_del_punto`.
+    orientacion: str = "normal_al_eje"
 
 
 @dataclass(frozen=True)

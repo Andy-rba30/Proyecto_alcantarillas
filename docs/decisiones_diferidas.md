@@ -5659,6 +5659,8 @@ sobre el árbol corregido, y cada una dice qué cambió.
   `orientacion_muro_respecto_al_trafico` y con el conflicto #4, y T-7b verifica qué dice
   el HDS-5 núm. 5.4.2 de las embocaduras esviadas. (3) «/ sen α» del encargo: solo
   coincide a 45° sin esviaje.
+- **VE-6:** el abierto (1) queda cerrado para el marco con las filas de la Carta 11 (ficha
+  VE6-T7A03); siguen el aleros-con-barril-esviado de la Carta 12 escala 3 y el (2).
 - **Qué haría falta:** la banda de la Carta 11 y el paso posterior a T-7c; corregir la
   frase del INFORME, que no es de este repositorio.
 - **Dónde vive:** `src/modulos/M9_cabezal.py::predimensionar_aleros`
@@ -9009,3 +9011,24 @@ decisiones ambiguas las tomó ella, y cada ficha dice cuál, por qué y con qué
 - **Qué haría falta:** declarar `longitud_m` = L_cab en el punto avisado (gana y se verifica
   entero); o, si el dueño lo pide, una segunda pasada completa de MD con L_cab.
 - **Dónde vive:** `src/modulos/M4_control.py::refinar_con_longitud_entre_cabezales`
+
+## VE6-T7A03 · El cabezal paralelo a la vía en un marco: lo pide una fila de la Carta 11 del HDS-5
+
+- **Cerrado (T7A-03, abierto (1); decisión del dueño del 2026-11-13):** las cuatro filas de la
+  Carta 11 (Tabla A.1, PDF 197) tienen banda de esviaje del cabezal respecto del barril, leída de
+  su rótulo (`BANDAS_ESVIAJE_CABEZAL_CAJON_A1`). Si un marco declara una en `embocadura_cajon`, su
+  cabezal es RECTO Y PARALELO A LA VÍA (`EmbocaduraDelPunto.orientacion`), sin aleros; la
+  coherencia exige el esviaje del cruce dentro de la banda y el ke «Headwall parallel to
+  embankment» de la Tabla C.2. El muro mide ancho/cos θ + 2·empotramiento y CB1 compara con
+  ancho/cos θ; sin aviso de Δz. Avisa con aleros en `embocadura_cabezal` y con varias celdas
+  (`HDS5_3ED.5.4.2#EVITAR`).
+- **Decisiones de la sesión:** (a) la orientación la elige la FILA declarada, no un criterio nuevo
+  («lo decide el detalle que el proyectista dibuje», justificación de `embocadura_cajon`), y no
+  alcanza a los tubos; (b) con el cabezal paralelo el esviaje de la embocadura es el del barril
+  (nota de `HDS5_3ED.5.4.2#MAXIMO_PRACTICO`) y fuera de banda no se interpola; (c) los dos
+  cabezales van paralelos (`HDS5_3ED.5.4.2#PARALELO`).
+- **Abierto:** la Carta 12 escala 3 (paralelo CON aleros) sin banda; la nota del paso 9.2.2 dice
+  «cabezal NORMAL al eje» y la h_eq la elige el [S] `orientacion_muro_respecto_al_trafico` (ítem
+  28, otra rama); la solera varía S·B·tan θ a lo largo de la cara (milímetros).
+- **Qué haría falta:** los aleros del paralelo y la nota de 9.2.2 al integrar el ítem 28.
+- **Dónde vive:** `src/modulos/M9_cabezal.py::_embocadura_paralela`

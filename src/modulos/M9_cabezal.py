@@ -4028,6 +4028,7 @@ def condicion_normativa_cabezal() -> Tuple[str, ...]:
 
 from src.constantes_normativas import (BANDAS_ALETAS_CAJON_A1,  # noqa: E402
                                        BANDAS_ALETAS_CAJON_C2,
+                                       BANDAS_ESVIAJE_CABEZAL_CAJON_A1,
                                        CAJON_A1_SIN_ALETAS,
                                        CAJON_C2_SIN_ALETAS,
                                        NUMERAL_ZAPATA_CONCRETO_SIMPLE)
@@ -4064,6 +4065,14 @@ CONDICION_RECUBRIMIENTO_ZAPATA = "contra_suelo"
 
 EMBOCADURAS_DEL_CABEZAL = (EMBOCADURA_CABEZAL_CON_ALEROS,
                            EMBOCADURA_CABEZAL_RECTO)
+# --- VE-6 (ficha T7A-03) --- La orientacion del muro de cabecera
+# (`EmbocaduraDelPunto.orientacion`). Normal al eje del conducto es la de
+# archivo en las tres familias (decision del dueño del 2026-11-13); paralelo a
+# la via, solo en el marco y solo cuando 'embocadura_cajon' declara una fila
+# de la Carta 11 del HDS-5 (cabezal esviado respecto del barril, sin aletas).
+ORIENTACION_NORMAL_AL_EJE = "normal_al_eje"
+ORIENTACION_PARALELO_A_LA_VIA = "paralelo_a_la_via"
+CRITERIO_N_CELDAS_CAJON_EMBOCADURA = "n_celdas_cajon"
 EXTREMO_ENTRADA = "entrada"
 EXTREMO_SALIDA = "salida"
 EXTREMOS = (EXTREMO_ENTRADA, EXTREMO_SALIDA)
@@ -4194,6 +4203,20 @@ def embocadura_del_punto(*, esviaje_grados: float,
             "embocadura se calculan su perdida de entrada, su proteccion de "
             "entrada y su cabezal de entrada. Una caja receptora no tiene "
             "fila en las Tablas A.1 y C.2 del HDS-5 (ficha T7A-02)",)
+    # --- VE-6 (ficha T7A-03) --- EL CABEZAL PARALELO A LA VIA, SOLO EN EL
+    # MARCO: lo elige la fila DECLARADA de 'embocadura_cajon' cuando es de la
+    # Carta 11 del HDS-5 («skewed headwall», sin aletas). Es la fila de la
+    # tabla la que dibuja la embocadura (justificacion del criterio: «Eso lo
+    # decide el detalle que el proyectista dibuje»), y con ella el muro es
+    # recto y paralelo a la via, esviado respecto del barril el esviaje del
+    # cruce. 'embocadura_cabezal' sigue rigiendo los tubos.
+    if familia is Familia.C:
+        fila = ca.valor_si_declarado(CRITERIO_EMBOCADURA_CAJON)
+        if fila in BANDAS_ESVIAJE_CABEZAL_CAJON_A1:
+            return _embocadura_paralela(
+                fila=fila, tipo_criterio=tipo,
+                esviaje_grados=float(esviaje_grados), id_punto=id_punto,
+                avisos=avisos)
     if tipo == EMBOCADURA_CABEZAL_RECTO:
         return EmbocaduraDelPunto(
             tipo=tipo, angulo_aletas=None,
@@ -4226,6 +4249,76 @@ def embocadura_del_punto(*, esviaje_grados: float,
         criterio_angulo=CRITERIO_ANGULO_ALETAS, avisos=avisos)
 
 
+def _embocadura_paralela(*, fila: str, tipo_criterio: str,
+                         esviaje_grados: float, id_punto: Optional[str],
+                         avisos: Tuple[str, ...]) -> EmbocaduraDelPunto:
+    """
+    --- VE-6 (ficha T7A-03) --- La embocadura del marco con el cabezal
+    PARALELO A LA VIA que pide una fila de la Carta 11: cabezal recto (sin
+    aletas: los rotulos de la Carta 11 no nombran aletas, y su ke es el de
+    «Headwall parallel to embankment (no wingwalls)» de la Tabla C.2),
+    esviado respecto del barril el esviaje del cruce. Dos avisos que la
+    fuente sostiene: con 'embocadura_cabezal' = con aleros, que el marco no
+    los lleva (la fila declarada manda en el marco); y con mas de una celda,
+    que el HDS-5 recomienda evitar el esviaje de la embocadura en los
+    barriles multiples (num. 5.4.2, pag. impresa 5.14, cita
+    `HDS5_3ED.5.4.2#EVITAR`).
+    """
+    extra = []
+    if tipo_criterio == EMBOCADURA_CABEZAL_CON_ALEROS:
+        extra.append(
+            f"Embocadura de {id_punto}: el marco lleva el cabezal PARALELO A "
+            f"LA VIA y SIN aleros que pide la fila declarada de "
+            f"'{CRITERIO_EMBOCADURA_CAJON}' ({fila}, Carta 11 del HDS-5: "
+            f"cabezal esviado respecto del barril); "
+            f"'{CRITERIO_EMBOCADURA_CABEZAL}' = {tipo_criterio} sigue rigiendo "
+            "los tubos (ficha T7A-03)")
+    celdas = ca.valor(CRITERIO_N_CELDAS_CAJON_EMBOCADURA)
+    if isinstance(celdas, int) and celdas > 1:
+        extra.append(
+            f"Embocadura de {id_punto}: cabezal paralelo a la via (esviado "
+            f"{esviaje_grados:g} grados respecto del barril) en un marco de "
+            f"{celdas} celdas. El HDS-5 recomienda evitar el esviaje de la "
+            "embocadura en los barriles multiples (num. 5.4.2, pag. impresa "
+            "5.14: «Inlet skew should be avoided ... for multiple barrel "
+            "culverts»); con el terraplen alabeado el cabezal normal al eje "
+            "es el de archivo (ficha T7A-03)")
+    return EmbocaduraDelPunto(
+        tipo=EMBOCADURA_CABEZAL_RECTO, angulo_aletas=None,
+        regla=(f"cabezal recto PARALELO A LA VIA, esviado "
+               f"{esviaje_grados:g} grados respecto del barril: fila "
+               f"declarada de '{CRITERIO_EMBOCADURA_CAJON}' = {fila} (Carta "
+               "11 del HDS-5, «skewed headwall»)"),
+        esviaje_grados=esviaje_grados,
+        criterio_tipo=CRITERIO_EMBOCADURA_CAJON,
+        criterio_angulo="", avisos=tuple(avisos) + tuple(extra),
+        orientacion=ORIENTACION_PARALELO_A_LA_VIA)
+
+
+def es_paralelo_a_la_via(embocadura: EmbocaduraDelPunto) -> bool:
+    """--- VE-6 (ficha T7A-03) --- El muro de cabecera va paralelo a la via."""
+    return embocadura.orientacion == ORIENTACION_PARALELO_A_LA_VIA
+
+
+def factor_cara_del_muro(embocadura: EmbocaduraDelPunto) -> float:
+    """
+    --- VE-6 (ficha T7A-03) --- Cuanto mide, a lo largo del muro, un ancho
+    normal al eje del conducto: 1 con el muro normal al eje; 1/cos(theta)
+    con el muro paralelo a la via, que corta al barril esviado theta en
+    oblicuo (la misma proyeccion que `M7.factor_esviaje` aplica a la
+    longitud).
+    """
+    if not es_paralelo_a_la_via(embocadura):
+        return 1.0
+    coseno = math.cos(math.radians(embocadura.esviaje_grados))
+    if not coseno > TOL_UMBRAL_NORMATIVO:
+        raise LimiteNumericoError(
+            "esviaje_grados", valor=embocadura.esviaje_grados,
+            motivo="con el cabezal paralelo a la via el muro corta al barril "
+                   "en oblicuo, y a 90 grados de esviaje no lo corta nunca")
+    return 1.0 / coseno
+
+
 def filas_hds5_del_cajon(embocadura: EmbocaduraDelPunto
                          ) -> Tuple[frozenset, frozenset]:
     """
@@ -4239,6 +4332,15 @@ def filas_hds5_del_cajon(embocadura: EmbocaduraDelPunto
     el barril. Con un TUBO no se llama: la Tabla C.2 agrupa «Headwall or
     headwall and wingwalls» y el angulo no elige fila.
     """
+    if es_paralelo_a_la_via(embocadura):
+        # --- VE-6 (ficha T7A-03) --- las filas de la Carta 11 cuyo rotulo
+        # contiene el esviaje del cruce, y el ke del cabezal paralelo al
+        # terraplen sin aletas de la Tabla C.2.
+        theta = embocadura.esviaje_grados
+        a1 = frozenset(k for k, bandas in
+                       BANDAS_ESVIAJE_CABEZAL_CAJON_A1.items()
+                       if any(_en_banda(theta, b) for b in bandas))
+        return a1, CAJON_C2_SIN_ALETAS
     if embocadura.angulo_aletas is None:
         return CAJON_A1_SIN_ALETAS, CAJON_C2_SIN_ALETAS
     angulo = embocadura.angulo_aletas
@@ -4250,6 +4352,9 @@ def filas_hds5_del_cajon(embocadura: EmbocaduraDelPunto
 
 
 def _describir_embocadura(embocadura: EmbocaduraDelPunto) -> str:
+    if es_paralelo_a_la_via(embocadura):
+        return (f"cabezal recto paralelo a la via, esviado "
+                f"{embocadura.esviaje_grados:g} grados respecto del barril")
     if embocadura.angulo_aletas is None:
         return "cabezal recto (sin aleros)"
     return (f"cabezal con aleros a {embocadura.angulo_aletas:g} grados con "
@@ -4772,7 +4877,9 @@ def predimensionar_cabezal(*, extremo: ExtremoDelConducto,
     `cabezal_del_punto` lo avisa. Los dos aleros resultan de longitudes
     distintas (`predimensionar_aleros`). La alternativa -- un cabezal
     paralelo a la via, esviado respecto del barril (Carta 11 del HDS-5) --
-    queda diferida (ficha T7A-03). La estabilidad de lo propuesto NO se
+    existe desde VE-6 SOLO PARA EL MARCO (ficha T7A-03): sin aleros, con
+    L_c = ancho exterior/cos(theta) + 2·empotramiento, y la corona sigue al
+    talud. La estabilidad de lo propuesto NO se
     juzga aqui (T-7b): esta funcion propone, y
     `verificar_compatibilidad_cabezal` comprueba que lo propuesto -- o lo
     declarado -- remate al conducto.
@@ -5030,11 +5137,21 @@ def predimensionar_cabezal(*, extremo: ExtremoDelConducto,
 
     # 6. Longitud del muro
     L_decl = "longitud_m" in declaradas
+    # --- VE-6 (ficha T7A-03) --- con el muro paralelo a la via la boca se
+    # corta en oblicuo y mide ancho/cos(theta) a lo largo del muro.
+    factor_cara = factor_cara_del_muro(embocadura)
+    boca = extremo.ancho_exterior * factor_cara
     L_c = (declaradas["longitud_m"] if L_decl else
-           extremo.ancho_exterior + 2 * reglas["empotramiento_lateral_m"])
+           boca + 2 * reglas["empotramiento_lateral_m"])
     dims.append(_dim("longitud del muro (L_c)", L_c,
-                     f"ancho exterior del conducto ({extremo.ancho_exterior:.3f}"
-                     " m) + 2·empotramiento (regla 'empotramiento_lateral_m')",
+                     (f"ancho exterior del conducto ({extremo.ancho_exterior:.3f}"
+                      " m) + 2·empotramiento (regla 'empotramiento_lateral_m')"
+                      if not es_paralelo_a_la_via(embocadura) else
+                      f"ancho exterior del conducto ({extremo.ancho_exterior:.3f}"
+                      f" m) / cos({embocadura.esviaje_grados:g}) = "
+                      f"{boca:.3f} m, la boca cortada en oblicuo por el muro "
+                      "paralelo a la via, + 2·empotramiento (regla "
+                      "'empotramiento_lateral_m')"),
                      CRITERIO_GEOMETRIA, L_decl))
 
     # 7. Aleros: h0 = coronacion - pie (ver `predimensionar_aleros`)
@@ -5166,7 +5283,9 @@ def _verificacion_cb(*, codigo: str, extremo: str, que: str, formula: str,
 
 
 def verificar_compatibilidad_cabezal(*, geometria: GeometriaCabezal,
-                                     extremo: ExtremoDelConducto
+                                     extremo: ExtremoDelConducto,
+                                     embocadura: Optional[EmbocaduraDelPunto]
+                                     = None
                                      ) -> Tuple[Verificacion, ...]:
     """
     Lo que la ficha de 'predimensionamiento_cabezal' llevaba como
@@ -5196,15 +5315,26 @@ def verificar_compatibilidad_cabezal(*, geometria: GeometriaCabezal,
     reglas = _reglas()
     ext = extremo.extremo
     v = []
+    # --- VE-6 (ficha T7A-03) --- con el muro paralelo a la via, la boca que
+    # tiene que contener mide ancho/cos(theta) a lo largo de el.
+    paralelo = embocadura is not None and es_paralelo_a_la_via(embocadura)
+    boca = extremo.ancho_exterior * (factor_cara_del_muro(embocadura)
+                                     if paralelo else 1)
     kp, kv = _verificacion_cb(
             codigo="CB1", extremo=ext,
             que="Longitud del muro frente al ancho exterior del conducto",
-            formula="L_c >= ancho exterior del conducto",
-            obtenido=geometria.longitud, admisible=extremo.ancho_exterior,
+            formula=("L_c >= ancho exterior del conducto / cos(esviaje) "
+                     "(muro paralelo a la via)" if paralelo else
+                     "L_c >= ancho exterior del conducto"),
+            obtenido=geometria.longitud, admisible=boca,
             mayor_o_igual=True,
             sustitucion=(Magnitud("ancho_exterior", extremo.ancho_exterior,
                                   "m", "seccion adoptada (Fase 4) con su "
-                                  "pared y sus celdas", cifras=CIFRAS_MAGNITUD),),
+                                  "pared y sus celdas", cifras=CIFRAS_MAGNITUD),)
+            + ((Magnitud("esviaje", embocadura.esviaje_grados, "grados",
+                         "el muro paralelo a la via corta al barril en "
+                         "oblicuo", cifras=CIFRAS_MAGNITUD),)
+               if paralelo else ()),
             resultado=Magnitud("L_c", geometria.longitud, "m",
                                "longitud del muro de cabecera",
                                cifras=CIFRAS_MAGNITUD),
@@ -5780,7 +5910,7 @@ def cabezal_del_punto(*, punto, resultado, geometria, embocadura,
         if tipo is None:
             tipos_por_regla.append(g)
         verificaciones.extend(verificar_compatibilidad_cabezal(
-            geometria=g, extremo=extremo))
+            geometria=g, extremo=extremo, embocadura=embocadura))
         pasos.extend(_pasos_del_extremo(geometria=g, extremo=extremo,
                                         embocadura=embocadura, talud=talud))
     bordillo = reglas["bordillo_m"]
@@ -5839,7 +5969,7 @@ def cabezal_del_punto(*, punto, resultado, geometria, embocadura,
             f"{_desplante_minimo():.2f} m de E.050 Art. 26.2 (por "
             "analogia), no el de AASHTO 10.6.1.2 bajo la socavacion")
     theta = embocadura.esviaje_grados
-    if theta > TOL_UMBRAL_NORMATIVO:
+    if theta > TOL_UMBRAL_NORMATIVO and not es_paralelo_a_la_via(embocadura):
         seno = math.sin(math.radians(theta))
         partes = ", ".join(
             f"{g.extremo}: {g.longitud:.2f}·{seno:.3f}/{talud:g} = "
@@ -5856,8 +5986,9 @@ def cabezal_del_punto(*, punto, resultado, geometria, embocadura,
             f"largo se acorta declarando un alfa menor de ese lado en "
             f"`cabezal_declarado` (`{CAMPO_ANGULO_ALERO_LARGO}`, aleros "
             "asimetricos). El cabezal normal al eje es el de archivo en las "
-            "tres familias; el paralelo a la via, solo para el marco (Carta "
-            "11 del HDS-5), esta diferido (ficha T7A-03)")
+            "tres familias; el paralelo a la via, solo para el marco, sale "
+            "declarando en 'embocadura_cajon' una fila de la Carta 11 del "
+            "HDS-5 (ficha T7A-03)")
     asimetricos = [g for g in geometrias if g.aleros is not None
                    and abs(g.aleros.angulo_largo_grados - g.aleros.angulo_grados)
                    > TOL_UMBRAL_NORMATIVO]
