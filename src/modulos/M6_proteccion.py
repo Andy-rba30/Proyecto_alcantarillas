@@ -144,7 +144,7 @@ contraste con la Tabla Nº 11 no concluye.
 from __future__ import annotations
 
 import math
-from typing import Dict, List, NamedTuple, Optional, Tuple
+from typing import Any, Callable, Dict, List, NamedTuple, Optional, Tuple
 
 from src import criterios_adoptados as ca
 from src.constantes_fisicas import G, RHO_AGUA
@@ -2563,3 +2563,59 @@ def socavacion_salida(*, resultado: ResultadoHidraulico, seccion: Seccion,
         motivo_no_estimada="" if estimada is not None else motivo,
         pasos=tuple(pasos), avisos=tuple(avisos), referencia=referencia,
         cota_referencia=cota_ref, cota_fondo_de_la_hoya=cota_hoya)
+
+
+# --- VE-5 (ficha T8-11) --- Los datos de la Fase 6 que entran sin techo
+# fisico, cada uno con donde se lee: la clave del JSON de datos externos, o el
+# campo del objeto del suelo del lecho (`servicio` los entrega por `dato`).
+# Las claves son las del criterio que da sus techos.
+CRITERIO_TECHOS_DE_TRANSCRIPCION = "techos_de_transcripcion_fase_6"
+DATOS_CON_TECHO_DE_TRANSCRIPCION: Tuple[Tuple[str, Optional[str], str], ...] = (
+    ("duracion_caudal_pico_min", None, "min"),
+    ("profundidad_socavacion_estimada_m", None, "m"),
+    ("D84_m", "material_lecho_salida", "m"),
+    ("Sv_Pa", "material_lecho_salida", "Pa"),
+)
+
+
+def avisos_de_transcripcion(dato: Callable[[str], Any]) -> List[str]:
+    """
+    Los datos de la Fase 6 del punto que pasan su techo de transcripcion.
+    No hay numeral que los fije: HEC-14 (FHWA-HIF-12-026) Cap. 5, pags.
+    impresas 5-1 a 5-7, no limita la duracion, Sv ni D84; el techo es el
+    del criterio opcional 'techos_de_transcripcion_fase_6' [A]. Sin el
+    criterio declarado no hay ninguno. Un AVISO, nunca un rechazo: el dato
+    sigue entrando tal cual y ningun resultado cambia (ficha T8-11).
+
+    El criterio se valida aqui, su unico consumidor: una clave que no es de
+    `DATOS_CON_TECHO_DE_TRANSCRIPCION` o un techo que no es un real positivo
+    y finito es `DatoInvalidoError`, porque un techo mal escrito que se
+    ignorara en silencio dejaria sin aviso justo lo que se queria vigilar.
+    """
+    techos = ca.valor_si_declarado(CRITERIO_TECHOS_DE_TRANSCRIPCION)
+    if techos is None:
+        return []
+    claves = {clave for clave, _objeto, _unidad in DATOS_CON_TECHO_DE_TRANSCRIPCION}
+    for clave, techo in techos.items():
+        if (clave not in claves or isinstance(techo, bool)
+                or not isinstance(techo, (int, float))
+                or not (math.isfinite(techo) and techo > 0)):
+            raise DatoInvalidoError(
+                CRITERIO_TECHOS_DE_TRANSCRIPCION, valor=f"{clave}: {techo!r}",
+                motivo="cada clave es un dato de la Fase 6 ("
+                       + ", ".join(sorted(claves))
+                       + ") con un techo real, positivo y finito")
+    avisos: List[str] = []
+    for clave, objeto, unidad in DATOS_CON_TECHO_DE_TRANSCRIPCION:
+        if clave not in techos:
+            continue
+        crudo = dato(clave) if objeto is None else getattr(dato(objeto), clave, None)
+        if crudo is None or not crudo > techos[clave]:
+            continue
+        donde = clave if objeto is None else f"{objeto}.{clave}"
+        avisos.append(
+            f"{donde} = {crudo:g} {unidad} pasa el techo de transcripcion "
+            f"declarado ({techos[clave]:g} {unidad}, criterio "
+            f"'{CRITERIO_TECHOS_DE_TRANSCRIPCION}' [A]): revise la unidad del "
+            "dato. Entra tal cual; ningun resultado cambia por este aviso")
+    return avisos

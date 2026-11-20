@@ -6504,8 +6504,8 @@ def modo_de(resolucion: Resolucion) -> ModoDeResolucion:
 
 class Poblacion(str, Enum):
     """
-    Las CUATRO poblaciones que el repositorio mantiene separadas y que el
-    usuario ve como una sola cosa -- "los datos que hay que llenar".
+    Las CINCO poblaciones (cuatro hasta VE-5) que el repositorio mantiene
+    separadas y que el usuario ve como una sola cosa -- "los datos que hay que llenar".
 
     Estan separadas por buenas razones (una es del CSV y varia punto a punto,
     otra es del corredor, la tercera es lo que el proyectista decidio donde la
@@ -6519,11 +6519,21 @@ class Poblacion(str, Enum):
     no estaban en ningun censo, y la ayuda de la GUI las mostraba como «sin
     ficha». Se censan como poblacion propia y no como columnas porque no lo
     son: no viven en el CSV y no varian necesariamente punto a punto.
+
+    `DATO_EXTERNO_OPCIONAL` llego en VE-5 (ficha T4-09) y es la QUINTA: los
+    seis ensayos de durabilidad que entran por el mismo JSON
+    (`servicio.CLAVES_DE_DURABILIDAD`) y que NO son de `CLAVES_EXTERNAS`
+    porque ninguna etapa los exige --- sin ellos la matriz no actua y la
+    memoria lo dice ---. Censados como `DATO_EXTERNO`, el pre-vuelo los habria
+    leido como datos que faltan; fuera del censo, la ayuda del JSON no los
+    nombraba. Poblacion propia: estan en el censo y nadie los cuenta como
+    falta.
     """
     COLUMNA_CSV = "columna_csv"
     DATO_SITIO = "dato_sitio"
     CRITERIO = "criterio"
     DATO_EXTERNO = "dato_externo"
+    DATO_EXTERNO_OPCIONAL = "dato_externo_opcional"
 
 
 @dataclass(frozen=True)

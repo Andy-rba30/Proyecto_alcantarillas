@@ -45,7 +45,10 @@ def test_las_cuatro_poblaciones_estan_censadas_completas():
     assert claves(Poblacion.DATO_EXTERNO) == set(ve._EXTERNOS)
     assert claves(Poblacion.DATO_SITIO) == set(ds.DATOS_SITIO)
     assert claves(Poblacion.CRITERIO) == set(ca.CRITERIOS)
+    # VE-5 (ficha T4-09): la quinta, los ensayos opcionales del JSON.
+    assert claves(Poblacion.DATO_EXTERNO_OPCIONAL) == set(ve._ENSAYOS)
     assert len(ve.VARIABLES) == (len(COLUMNAS) + len(ve._EXTERNOS)
+                                 + len(ve._ENSAYOS)
                                  + len(ds.DATOS_SITIO) + len(ca.CRITERIOS))
 
 
@@ -485,5 +488,5 @@ def test_el_reporte_marca_el_dominio_fisico_como_no_normativo():
 
 
 def test_una_clave_que_no_es_variable_de_entrada_no_se_inventa():
-    with pytest.raises(KeyError, match="cuatro poblaciones"):
+    with pytest.raises(KeyError, match="cinco poblaciones"):
         ve.variable("no_existe")

@@ -1060,6 +1060,11 @@ _POR_QUE_NO_DECLARABLE: Dict[Poblacion, str] = {
         "de --datos-externos (pestaña 1), para toda la corrida o punto a "
         "punto, y el informe registra de donde salio. No es un criterio y "
         "esta ventana no lo declara",
+    Poblacion.DATO_EXTERNO_OPCIONAL:
+        "es un ensayo opcional del expediente (durabilidad, del EMS o del "
+        "estudio de campo): entra por el JSON de --datos-externos, para el "
+        "sitio entero o por calicata, y sin el la matriz no actua. No es un "
+        "criterio y esta ventana no lo declara",
 }
 
 

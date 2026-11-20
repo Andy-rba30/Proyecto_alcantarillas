@@ -318,7 +318,9 @@ def test_pc10_import_cli_no_carga_weasyprint_ni_scipy_ni_el_censo():
     assert antes == {"weasyprint": False, "scipy": False, "censo": False}, antes
     assert despues["censo_despues"] is True
     from src import variables_entrada as ve
+    # VE-5 (ficha T4-09): mas la quinta poblacion, los ensayos opcionales.
     assert despues["n"] == len(ve.VARIABLES) == len(ca.CRITERIOS) + len(ve._EXTERNOS) \
+        + len(ve._ENSAYOS) \
         + len(__import__("src.datos_sitio", fromlist=["DATOS_SITIO"]).DATOS_SITIO) \
         + len(__import__("src.modulos.M0_carga", fromlist=["COLUMNAS"]).COLUMNAS)
 
