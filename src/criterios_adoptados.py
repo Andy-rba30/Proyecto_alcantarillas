@@ -9107,6 +9107,51 @@ CRITERIOS: Dict[str, Criterio] = {
         ),
     ),
 
+    "relacion_co_poza_enrocado_hec14": Criterio(
+        # --- VE-4g --- NIVEL NO MEDIDO POR CORRIDA: solo se invoca donde el
+        # apron de HEC-14 no llega (marco o conducto de mas de 60 in) y la
+        # poza si; ningun punto de las corridas de referencia cae ahi. Lo
+        # consume M6 (Fase 6), que corre a perfil; lo mide
+        # `tests/test_ve4g_hec14_limites.py`.
+        valor="envolvente",
+        nivel=NIVEL_PERFIL,
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        sensibilidad=("envolvente", "mejor_ajuste"),
+        concepto="Relacion del parametro de tirante del receptor (Co) con "
+                 "que se dimensiona la poza de enrocado de HEC-14",
+        justificacion="La Ec. (10.1) de HEC-14 da la profundidad de la poza "
+                      "de enrocado restando un parametro Co que depende del "
+                      "tirante del receptor, y la fuente da DOS relaciones "
+                      "para el: la envolvente de los ensayos, Ec. (10.2), y "
+                      "el mejor ajuste, Ec. (10.3), que resta 0.6 veces ye "
+                      "mas y da una poza menos profunda y mas corta. Ella "
+                      "misma dice cuando usar cada una: la envolvente cuando "
+                      "la consecuencia de la falla cerca del caudal de diseño "
+                      "es severa y el mejor ajuste cuando la falla de la "
+                      "poza se puede atender con el mantenimiento rutinario "
+                      "(cita HEC14.10.1#CO_ENVOLVENTE). La consecuencia de "
+                      "la falla de la proteccion de una alcantarilla vial es "
+                      "el socavamiento y el colapso del conducto (num. "
+                      "10.1.4), y por eso el archivo trae la envolvente, el "
+                      "lado conservador. El mejor ajuste queda barrible; los "
+                      "valores intermedios de Co que la fuente admite no se "
+                      "ofrecen",
+        fuente="HEC-14 3a ed., num. 10.1.1, Ec. (10.1) a (10.3), pag. "
+               "impresa 10-3 (PDF 204), citas HEC14.10.1#EC_10_1 y "
+               "HEC14.10.1#CO_ENVOLVENTE. La eleccion entre las dos es del "
+               "proyecto: la fuente la condiciona a la consecuencia de la "
+               "falla, que no es un dato",
+        reemplazado_por="El diseño de la proteccion de salida del "
+                        "expediente",
+        resolucion=Libre(
+            que_lo_fija="el dueño del proyecto, segun la consecuencia de la "
+                        "falla de la poza que acepte",
+            dominio="declaracion de la relacion; el conjunto cerrado de "
+                    "valores admisibles viaja en `sensibilidad`",
+        ),
+    ),
+
     "referencia_profundidad_socavacion": Criterio(
         # NIVEL NO MEDIDO POR CORRIDA: solo se invoca con el lecho declarado
         # o la socavacion declarada; lo mide `tests/test_t8_proteccion.py`.

@@ -64,10 +64,20 @@ SOCAVACION (`socavacion_salida`, `hoya_de_socavacion_hec14`)
                             viene; si no, la estimada. Es la funcion que el
                             cabezal por punto (T-7a) consumira.
 
+POZA DE ENROCADO (`poza_de_enrocado_hec14`, desde VE-4g)
+    donde el apron no llega HEC-14 Sec. 10.1: la Tabla 1.1 la da para el
+                            marco y el conducto de mas de 60 in, que la Ec.
+                            (10.4) no cubre. Profundidad por la Ec. (10.1)
+                            con Co de la (10.2) o (10.3) (criterio [A]
+                            'relacion_co_poza_enrocado_hec14'), longitud y
+                            ancho de la Sec. 10.1 y velocidad a su salida
+                            contra la admisible de la Tabla Nº 11. Se
+                            reviste con la piedra que rige (Laushey); la
+                            regla de la proteccion forma la envolvente con
+                            ella. Varios barriles: ni el apron ni la poza.
+
 LO QUE ESTE MODULO NO HACE, dicho para que no se lea de mas: no dimensiona
-la poza de enrocado de HEC-14 Sec. 10.1 (pide elegir el D50 entre las piedras
-disponibles en la zona, que es dato del proyecto), ni los disipadores
-internos de su Capitulo 7, ni el aliviadero escalonado de la Lámina Nº 04 del
+los disipadores internos de su Capitulo 7, ni el aliviadero escalonado de la Lámina Nº 04 del
 Manual (la medida que el num. 4.1.1.3.7 c) da para REDUCIR la velocidad); no
 digitaliza la Figura 10.3 (atenuacion de la velocidad con el TW sobre la
 clave), no diseña el filtro granular (HEC 11 no esta en el repositorio de normas) y
@@ -146,6 +156,8 @@ from __future__ import annotations
 import math
 from typing import Dict, List, NamedTuple, Optional, Tuple
 
+from scipy.optimize import brentq
+
 from src import criterios_adoptados as ca
 from src.constantes_fisicas import G, RHO_AGUA
 from src.constantes_normativas import (
@@ -163,15 +175,33 @@ from src.constantes_normativas import (
     HEC14_SOCAVACION_T_REFERENCIA_MIN, HEC14_TABLA_10_1, HEC14_TAU_C_ALFA_U_SI,
     HEC14_TAU_C_ANGULO_BASE_GRADOS, HEC14_TAU_C_COEFICIENTE,
     HEC14_TAU_C_GRADOS_POR_IP, LAUSHEY_K, HEC14_ESPESOR_MIN_EN_D50,
+    HEC14_POZA_ABOCINADO_POR_LONGITUD, HEC14_POZA_CO,
+    HEC14_POZA_COEFICIENTE_HS, HEC14_POZA_D50_SOBRE_YE_MIN,
+    HEC14_POZA_ESPESOR_TALUD_EN_D50, HEC14_POZA_EXPONENTE_D50,
+    HEC14_POZA_FROUDE_MAX, HEC14_POZA_HS_SOBRE_D50_MIN, HEC14_POZA_LB_EN_HS,
+    HEC14_POZA_LB_MIN_EN_WO, HEC14_POZA_LS_EN_HS, HEC14_POZA_LS_MIN_EN_WO,
+    HEC14_POZA_TALUD_LATERAL_Z, HEC14_POZA_TW_SOBRE_YE_ALTO,
+    HEC14_POZA_TW_SOBRE_YE_BAJO,
+    HEC14_POZA_TW_SOBRE_YO_SIN_PROTECCION_ADICIONAL,
+    HEC14_CAIDA_APROXIMACION_EN_YC, HEC14_CAIDA_BLOQUE_ALTO_EN_YC,
+    HEC14_CAIDA_BLOQUE_ANCHO_EN_YC, HEC14_CAIDA_HO_MAX_M,
+    HEC14_CAIDA_HO_SOBRE_YC_MAX, HEC14_CAIDA_HO_SOBRE_YC_MIN,
+    HEC14_CAIDA_L2_EN_YC, HEC14_CAIDA_L3_MIN_EN_YC, HEC14_CAIDA_LS_DENOMINADOR,
+    HEC14_CAIDA_LS_NUMERADOR, HEC14_CAIDA_L_ORDENADA, HEC14_CAIDA_L_PENDIENTE,
+    HEC14_CAIDA_L_RADICANDO, HEC14_CAIDA_MURO_SOBRE_TW_EN_YC,
+    HEC14_CAIDA_UMBRAL_EN_YC, HEC14_CAIDA_WO_MIN_EN_YC, HEC14_CAIDA_Y3_EN_YC,
+    HEC14_EC_10_6_COEFICIENTE, HEC14_FIGURA_10_3,
     REGIMENES_DE_FLUJO_T11, TERRENO_T11_ROTULO, V_MAX_NO_REVESTIDOS)
 from src.modelos import (
     CIFRAS_FACTOR, CIFRAS_FINA, CIFRAS_MAGNITUD, ApronHEC14, ClaseHEC14,
     ControlGobernante, TIPO_LECHO_COHESIVO,
-    DatoFaltanteError, DatoInvalidoError, EleccionDeProyecto, FroudeSalida,
+    DatoFaltanteError, DatoInvalidoError, EleccionDeProyecto,
+    EstructuraDeCaida, FroudeSalida,
     HoyaDeSocavacion, LimiteNumericoError, Magnitud, MaterialLecho,
     MetodoNoEvaluableError, MOTIVO_METODO_NO_EVALUABLE_HEC14,
     ORIGEN_SOCAVACION_DECLARADA,
     ORIGEN_SOCAVACION_ESTIMADA, ORIGEN_SOCAVACION_SIN_DATO, PasoDeMemoria,
+    PozaDeEnrocado, ProteccionTWAlto,
     ProteccionEntrada, ProteccionSalida, RequisitoDeFiltro,
     ResultadoHidraulico, Seccion, SeccionCircular, SeccionRectangular,
     SocavacionSalida, TIPO_LECHO_NO_COHESIVO, TIPOS_DE_LECHO, TipoDeVeredicto,
@@ -237,6 +267,18 @@ ADVERTENCIA_ALCANCE_ENVOLVENTE = (
     "los mayores de lo adoptado y de la Tabla 10.1 de HEC-14. La geometria "
     "de la proteccion se cierra en el expediente tecnico"
 )
+# --- VE-4g --- La tercera advertencia cuando la POZA de enrocado de HEC-14
+# Sec. 10.1 entra donde el apron no llega y rige la envolvente con ella.
+ADVERTENCIA_ALCANCE_POZA = (
+    "Alcance: rige la ENVOLVENTE del Manual MTC (num. 4.1.1.3.7 c), d50 de "
+    "Laushey) y de la POZA DE ENROCADO de HEC-14 Sec. 10.1, que la Tabla 1.1 "
+    "de esa fuente da donde el apron de la Sec. 10.2 no llega (marco o "
+    "conducto de mas de 60 in). La piedra es la mayor de las dos, y el "
+    "espesor y la longitud los mayores de lo adoptado y de la poza; la "
+    "profundidad, el ancho y la velocidad a su salida estan en los pasos "
+    "6.5p y 6.6p. La geometria de la proteccion se cierra en el expediente "
+    "tecnico"
+)
 ADVERTENCIAS_PROTECCION_SALIDA: Tuple[str, ...] = (
     ADVERTENCIA_NO_ES_DISENO,
     ADVERTENCIA_FALTA_FILTRO,
@@ -246,6 +288,11 @@ ADVERTENCIAS_PROTECCION_SALIDA_ENVOLVENTE: Tuple[str, ...] = (
     ADVERTENCIA_NO_ES_DISENO,
     ADVERTENCIA_FALTA_FILTRO,
     ADVERTENCIA_ALCANCE_ENVOLVENTE,
+)
+ADVERTENCIAS_PROTECCION_SALIDA_POZA: Tuple[str, ...] = (
+    ADVERTENCIA_NO_ES_DISENO,
+    ADVERTENCIA_FALTA_FILTRO,
+    ADVERTENCIA_ALCANCE_POZA,
 )
 
 # ---------------------------------------------------------------------------
@@ -793,9 +840,9 @@ def apron_hec14(*, Q_celda: float, seccion: Seccion, TW: float,
     if not isinstance(seccion, SeccionCircular):
         raise MetodoNoEvaluableError(
             que,
-            procedimiento="un disipador o una proteccion dimensionados para "
-                          "seccion rectangular (HEC-14, Sec. 10.1 o 10.3), "
-                          "que este programa no implementa",
+            procedimiento="la poza de enrocado de HEC-14 (Sec. 10.1), que "
+                          "vale para marcos y que la Fase 6 evalua en su "
+                          "lugar (`poza_de_enrocado_hec14`)",
             motivo="la Ec. (10.4) es la que la fuente recomienda «for "
                    "circular culverts» y el conducto es un marco",
             rotulo=MOTIVO_METODO_NO_EVALUABLE_HEC14)
@@ -811,8 +858,9 @@ def apron_hec14(*, Q_celda: float, seccion: Seccion, TW: float,
     if D > HEC14_APRON_ALTURA_MAX_M + TOL_UMBRAL_NORMATIVO:
         raise MetodoNoEvaluableError(
             que,
-            procedimiento="un disipador diseñado por HEC-14 (Caps. 7 a 10), "
-                          "que este programa no implementa",
+            procedimiento="la poza de enrocado de HEC-14 (Sec. 10.1), sin "
+                          "limite de altura en la Tabla 1.1, que la Fase 6 "
+                          "evalua en su lugar (`poza_de_enrocado_hec14`)",
             motivo=f"el conducto mide {D:.3f} m de alto y la Tabla 1.1 de "
                    "HEC-14 limita el apron de enrocado a conductos de hasta "
                    f"1500 mm (60 in = {HEC14_APRON_ALTURA_MAX_M:.3f} m, que "
@@ -833,8 +881,9 @@ def apron_hec14(*, Q_celda: float, seccion: Seccion, TW: float,
         raise MetodoNoEvaluableError(
             que,
             procedimiento="la Figura 10.3 de HEC-14 (atenuacion de la "
-                          "velocidad aguas abajo) con la Sec. 10.3, que este "
-                          "programa no tiene digitalizada",
+                          "velocidad aguas abajo) con la Ec. (10.6) de la "
+                          "Sec. 10.3, que la Fase 6 evalua en su lugar "
+                          "(`proteccion_tw_alto_hec14`)",
             motivo=f"el tirante del receptor (TW = {TW:.3f} m) supera el "
                    f"rango aceptable de la ecuacion, hasta "
                    f"{HEC14_APRON_TW_SOBRE_D_MAX:g} veces {nombre_D}",
@@ -986,6 +1035,563 @@ def apron_hec14(*, Q_celda: float, seccion: Seccion, TW: float,
     return ApronHEC14(**comunes, clase=clase, D50_clase=D50_clase,
                       longitud=longitud, espesor=espesor, ancho_final=ancho,
                       pasos=(paso_d50, paso_geom))
+
+
+# ---------------------------------------------------------------------------
+# --- VE-5 (lote m6) --- Figura 10.3 y Ec. (10.6) de HEC-14: el TW alto
+# ---------------------------------------------------------------------------
+
+_QUE_FIGURA_10_3 = "atenuacion de la velocidad (HEC-14 Figura 10.3)"
+
+
+def atenuacion_figura_10_3(L_sobre_De: float) -> float:
+    """
+    VL/Vo de la curva de diseño de la Figura 10.3 de HEC-14 (num. 10.1.3,
+    pag. impresa 10-4) en L/De, interpolada en log-log entre los puntos de
+    `HEC14_FIGURA_10_3` (leidos por imagen; los cuatro que la fuente imprime
+    en sus ejemplos, tal cual). Hasta L/De = 1 vale 1. Mas alla del ultimo
+    punto (L/De = 60) la figura no da nada: `MetodoNoEvaluableError`.
+    """
+    _exigir_no_negativo("L/De", L_sobre_De, "distancia en diametros "
+                        "equivalentes")
+    x0, f0 = HEC14_FIGURA_10_3[0]
+    if not L_sobre_De > x0:
+        return f0
+    for (xa, fa), (xb, fb) in zip(HEC14_FIGURA_10_3, HEC14_FIGURA_10_3[1:]):
+        if not L_sobre_De > xb + TOL_UMBRAL_NORMATIVO:
+            t = math.log(L_sobre_De / xa) / math.log(xb / xa)
+            return math.exp(math.log(fa) + t * math.log(fb / fa))
+    x_max, f_min = HEC14_FIGURA_10_3[-1]
+    raise MetodoNoEvaluableError(
+        _QUE_FIGURA_10_3,
+        procedimiento="una medida de la atenuacion mas alla de la figura",
+        motivo=f"L/De = {L_sobre_De:.1f} queda fuera de la Figura 10.3, que "
+               f"llega a L/De = {x_max:g} (VL/Vo = {f_min:g})",
+        rotulo=MOTIVO_METODO_NO_EVALUABLE_HEC14)
+
+
+def distancia_figura_10_3(V_sobre_Vo: float) -> float:
+    """
+    La inversa de `atenuacion_figura_10_3`: el L/De en que la velocidad del
+    eje baja a `V_sobre_Vo` veces la de salida («The calculations above
+    continue until VL ≤ Vallow», pag. 10-8). Con 1 o mas, 0. Bajo el ultimo
+    punto de la figura (0.10), `MetodoNoEvaluableError`.
+    """
+    _exigir_positivo("VL/Vo", V_sobre_Vo, "fraccion de la velocidad de salida")
+    if not V_sobre_Vo < HEC14_FIGURA_10_3[0][1]:
+        return 0.0
+    for (xa, fa), (xb, fb) in zip(HEC14_FIGURA_10_3, HEC14_FIGURA_10_3[1:]):
+        if not V_sobre_Vo < fb - TOL_UMBRAL_NORMATIVO:
+            t = math.log(V_sobre_Vo / fa) / math.log(fb / fa)
+            return math.exp(math.log(xa) + t * math.log(xb / xa))
+    x_max, f_min = HEC14_FIGURA_10_3[-1]
+    raise MetodoNoEvaluableError(
+        _QUE_FIGURA_10_3,
+        procedimiento="una medida de la atenuacion mas alla de la figura",
+        motivo=f"la velocidad tendria que bajar a {V_sobre_Vo:.3f} veces la "
+               f"de salida y la Figura 10.3 llega a {f_min:g} (L/De = "
+               f"{x_max:g})",
+        rotulo=MOTIVO_METODO_NO_EVALUABLE_HEC14)
+
+
+def d50_ec_10_6(*, V: float) -> float:
+    """
+    D50 = 0.692/(S - 1)·V^2/(2g), Ec. (10.6) de HEC-14 Sec. 10.3 (Searcy,
+    1967), con S = 2.65 (la de la Ec. 10.4).
+    """
+    _exigir_positivo("V", V, "velocidad, m/s")
+    return (HEC14_EC_10_6_COEFICIENTE
+            / (HEC14_APRON_GRAVEDAD_ESPECIFICA_PIEDRA - 1) * V ** 2 / (2 * G))
+
+
+def diametro_equivalente(area: float) -> float:
+    """De = 2·(A/pi)^0.5 = (4·A/pi)^0.5: la nota de la Figura 10.3."""
+    _exigir_positivo("A", area, "area de borde, m2")
+    return 2 * math.sqrt(area / math.pi)
+
+
+def proteccion_tw_alto_hec14(*, V: Magnitud, Q_celda: float, TW: float,
+                             V_admisible: Optional[float]
+                             ) -> ProteccionTWAlto:
+    """
+    La proteccion de salida con el tirante del receptor sobre 1.0·D, donde
+    la Ec. (10.4) no vale: «Figure 10.3 should be used to determine the
+    velocity downstream of the culvert. The guidance in Section 10.3 may be
+    used for sizing the riprap. The apron length is determined based on the
+    allowable velocity and the location at which it occurs based on Figure
+    10.3» (HEC-14 Sec. 10.2, pag. impresa 10-18).
+
+        De = (4·A/pi)^0.5,  A = Q_celda / Vo        (area de borde)
+        L  = De · (L/De en que VL/Vo = Vallow/Vo)   (Figura 10.3)
+        D50 = 0.692/(S - 1)·Vo^2/(2g)               (Ec. 10.6, en la boca)
+
+    El espesor, que la Sec. 10.3 no da, es 2·D50: LECTURA DEL PROYECTO
+    sobre el piso que HEC-14 pone al enrocado en la poza y en el apron
+    (`HEC14_ESPESOR_MIN_EN_D50`). Sin `V_admisible` no hay longitud:
+    `DatoFaltanteError` del terreno del receptor (la Fase 6 lo avisa).
+    """
+    _exigir_velocidad(V, "proteccion_tw_alto_hec14")
+    _exigir_positivo("Q_celda", Q_celda, "caudal de un barril, m3/s")
+    _exigir_no_negativo("TW", TW, "tirante del receptor, m")
+    if V_admisible is None:
+        raise DatoFaltanteError(
+            DATO_TERRENO_RECEPTOR,
+            detalle="con el tirante del receptor sobre la clave la longitud "
+                    "de la proteccion es hasta donde la velocidad baja a la "
+                    "admisible del cauce (HEC-14 Sec. 10.2 y Figura 10.3), y "
+                    "sin el terreno del receptor (Tabla Nº 11) no hay "
+                    "admisible")
+    _exigir_positivo("V_admisible", V_admisible, "velocidad admisible, m/s")
+    De = diametro_equivalente(Q_celda / V.valor)
+    L = De * distancia_figura_10_3(V_admisible / V.valor)
+    D50 = d50_ec_10_6(V=V.valor)
+    espesor = HEC14_ESPESOR_MIN_EN_D50 * D50
+    paso_tw = paso(
+        "F6.TW_ALTO",
+        codigo="6.5t",
+        que="Proteccion de salida con el tirante del receptor sobre la "
+            "clave (Figura 10.3 y Ec. 10.6 de HEC-14)",
+        formula="De = (4 A / pi)^0.5;  L = De * (L/De)[VL/Vo = Vallow/Vo];  "
+                "D50 = 0.692 / (S - 1) * Vo^2 / (2 g)",
+        formula_cita_id="HEC14.10.1.3#FIGURA_10_3",
+        citas_textuales=("HEC14.10.2#TW_ALTO", "HEC14.10.1.3#FIGURA_10_3",
+                         "HEC14.10.3#EC_10_6", "HEC14.10.1#HASTA_VALLOW"),
+        sustitucion=(
+            Magnitud("Vo", V.valor, "m/s", V.procedencia,
+                     cifras=CIFRAS_MAGNITUD),
+            Magnitud("A", Q_celda / V.valor, "m2", "area de borde por "
+                     "continuidad, Q_celda / Vo", cifras=CIFRAS_FINA),
+            Magnitud("De", De, "m", "diametro equivalente del area de borde",
+                     cifras=CIFRAS_MAGNITUD),
+            Magnitud("TW", TW, "m", "tirante del receptor, sobre la clave",
+                     cifras=CIFRAS_MAGNITUD),
+            Magnitud("Vallow", V_admisible, "m/s", "admisible del terreno "
+                     "del receptor, Tabla Nº 11 del Manual",
+                     cifras=CIFRAS_FACTOR),
+            Magnitud("S", HEC14_APRON_GRAVEDAD_ESPECIFICA_PIEDRA, "-",
+                     "gravedad especifica de la piedra, la de la Ec. (10.4)",
+                     cifras=CIFRAS_FACTOR)),
+        resultado=Magnitud("L", L, "m",
+                           f"longitud de la proteccion desde la boca; piedra "
+                           f"D50 = {D50:.3f} m en la boca, espesor "
+                           f"{espesor:.3f} m", cifras=CIFRAS_MAGNITUD),
+        veredicto=Veredicto(
+            tipo=TipoDeVeredicto.SIN_VEREDICTO,
+            explicacion="dimensionamiento [C]: la Figura 10.3 da la "
+                        "atenuacion y la proteccion llega hasta VL = Vallow"),
+        nota_del_proyecto=(
+            "LECTURA DEL PROYECTO: el espesor, que la Sec. 10.3 no da, es "
+            f"{HEC14_ESPESOR_MIN_EN_D50:g} veces el D50, el piso que HEC-14 "
+            "pone al enrocado de la poza y del apron. La Figura 10.3 esta "
+            "leida por imagen (tolerancia 0.015 en VL/Vo)."))
+    return ProteccionTWAlto(De=De, Vo=V.valor, V_admisible=V_admisible,
+                            D50=D50, longitud=L, espesor=espesor,
+                            pasos=(paso_tw,))
+
+
+# ---------------------------------------------------------------------------
+# --- VE-4g --- Poza de enrocado de HEC-14 (Sec. 10.1)
+# ---------------------------------------------------------------------------
+
+CRITERIO_RELACION_CO = "relacion_co_poza_enrocado_hec14"
+
+
+def parametro_co_poza(tw_sobre_ye: float, relacion: str) -> float:
+    """
+    El parametro del tirante del receptor de la Ec. (10.1) de HEC-14 (num.
+    10.1.1, pag. impresa 10-3): Ec. (10.2), envolvente, o (10.3), mejor
+    ajuste, por tramos de TW/ye con los bordes en 0.75 y 1.0. Las dos son
+    continuas en sus bordes, de modo que el lado en que cae el borde no
+    cambia el numero. CUAL rige es el criterio [A]
+    'relacion_co_poza_enrocado_hec14'.
+    """
+    _exigir_no_negativo("TW/ye", tw_sobre_ye, "relacion del tirante del "
+                        "receptor con el tirante equivalente")
+    _exigir_texto_de(CRITERIO_RELACION_CO, relacion, HEC14_POZA_CO,
+                     "es una de las relaciones de HEC-14: "
+                     + ", ".join(HEC14_POZA_CO))
+    bajo, pendiente, ordenada, alto = HEC14_POZA_CO[relacion]
+    if tw_sobre_ye < HEC14_POZA_TW_SOBRE_YE_BAJO:
+        return bajo
+    if tw_sobre_ye > HEC14_POZA_TW_SOBRE_YE_ALTO:
+        return alto
+    return pendiente * tw_sobre_ye + ordenada
+
+
+def salida_critica_de_la_poza(*, Q: float, ancho_fondo: float,
+                              z: float = HEC14_POZA_TALUD_LATERAL_Z
+                              ) -> Tuple[float, float, float]:
+    """
+    Paso 4 del procedimiento de la poza (HEC-14 num. 10.1.5, pag. impresa
+    10-5): el tirante critico en la salida de la poza, yB = yc, por la Ec.
+    (7.14) en la seccion trapecial de fondo WB y taludes z:1,
+
+        Q^2/g = Ac^3/Tc = [yc·(WB + z·yc)]^3 / (WB + 2·z·yc)
+
+    y la velocidad VB = Vc = Q/Ac. Devuelve (yc, Ac, Vc). El tirante de la
+    seccion rectangular del mismo fondo, (q^2/g)^(1/3), es cota superior de
+    yc (el trapecio tiene mas area a igual tirante) y cierra el intervalo
+    de Brent.
+    """
+    _exigir_positivo("Q", Q, "caudal que sale de la poza, m3/s")
+    _exigir_positivo("WB", ancho_fondo, "ancho de la poza en su salida, m")
+    _exigir_no_negativo("z", z, "talud lateral de la poza, H:V")
+    objetivo = Q ** 2 / G
+
+    def exceso(y: float) -> float:
+        area = y * (ancho_fondo + z * y)
+        return area * area * area / (ancho_fondo + 2 * z * y) - objetivo
+
+    y_rect = math.cbrt(objetivo / ancho_fondo ** 2)
+    yc = brentq(exceso, y_rect * TOL_UMBRAL_NORMATIVO, y_rect)
+    area = yc * (ancho_fondo + z * yc)
+    return yc, area, Q / area
+
+
+def _ancho_para_la_velocidad(Q: float, V_objetivo: float, ancho_desde: float,
+                             z: float) -> float:
+    """El ancho de salida de la poza con el que Vc = V_objetivo (paso 4)."""
+    def exceso(ancho: float) -> float:
+        return salida_critica_de_la_poza(Q=Q, ancho_fondo=ancho, z=z)[2] \
+            - V_objetivo
+    hasta = ancho_desde
+    # Vc baja sin cota con el ancho (q = Q/WB -> 0): doblando se cruza el
+    # objetivo en un numero finito de pasos salvo que la aritmetica desborde.
+    while exceso(hasta) > 0:
+        if not math.isfinite(hasta * 2):
+            raise LimiteNumericoError(
+                "WB", valor=hasta,
+                motivo=f"no se encontro el ancho de poza en que la velocidad "
+                       f"critica baja a {V_objetivo!r} m/s con Q = {Q!r} "
+                       "m3/s: la pareja caudal-velocidad admisible no cabe")
+        ancho_desde, hasta = hasta, hasta * 2
+    return brentq(exceso, ancho_desde, hasta)
+
+
+def poza_de_enrocado_hec14(*, V: Magnitud, Q_celda: float, seccion: Seccion,
+                           TW: float, y_salida: Optional[float],
+                           d50_piedra: float, origen_piedra: str,
+                           V_admisible: Optional[float] = None,
+                           numero_celdas: int = 1) -> PozaDeEnrocado:
+    """
+    Poza de enrocado (riprap basin) de HEC-14 Sec. 10.1, por el procedimiento
+    del num. 10.1.5 (pags. impresas 10-1 a 10-5), con los cuatro ejemplos
+    resueltos de las pags. 10-6 a 10-16 como oraculo.
+
+      Paso 1  ye y Fr por continuidad con la velocidad de salida que M4 da
+              (`froude_salida`: ye = A/B en un marco, (A/2)^0.5 en un tubo).
+      Paso 2  Co por la Ec. (10.2) o (10.3) (criterio [A]
+              'relacion_co_poza_enrocado_hec14') y
+                  hs/ye = 0.86·(D50/ye)^(-0.55)·Fr - Co         Ec. (10.1)
+              con hs/D50 >= 2 y D50/ye >= 0.1. Si la piedra que el proyecto
+              pone (`d50_piedra`) da hs/D50 < 2, la poza se dimensiona con la
+              piedra de hs/D50 = 2 EXACTO y se reviste con la que se pone
+              («A basin sized for smaller riprap may be lined with larger
+              riprap»). Si la piedra queda bajo 0.1·ye, se sube a 0.1·ye. Si
+              ni la piedra de 0.1·ye llega a hs/D50 = 2, la ecuacion no se
+              extrapola: `MetodoNoEvaluableError`.
+      Paso 3  Ls = max(10·hs, 3·Wo); LB = max(15·hs, 4·Wo); LA = LB - Ls;
+              WB = Wo + (2/3)·LB. Wo es el ancho del conducto en la boca: B
+              en un marco, D en un tubo.
+      Paso 4  yc y Vc en la salida, Ec. (7.14) con z = 2 (Figura 10.2),
+              contra `V_admisible`. Si la supera, el apron se alarga con el
+              mismo abocinado hasta Vc = Vallow, como el ejemplo de la fuente
+              (`extendida`). Sin `V_admisible` no se contrasta, y se avisa.
+      Paso 5  TW/yo > 0.75 pide proteccion aguas abajo por la Figura 10.3:
+              `proteccion_adicional`, con aviso.
+
+    Espesores (num. 10.1.4 y Figura 10.1): 2·D50 en el piso y los lados,
+    3·D50 en el talud de la salida del conducto, con la piedra que reviste.
+
+    LIMITES (`MetodoNoEvaluableError`, rotulo de HEC-14): varios barriles
+    (los ensayos son de un conducto, num. 10.1.1), Froude de 3 o mas (Tabla
+    1.1) y la hoya que no llega a 2·D50 con ninguna piedra del rango.
+    """
+    _exigir_velocidad(V, "poza_de_enrocado_hec14")
+    _exigir_positivo("Q_celda", Q_celda, "caudal de un barril, m3/s")
+    _exigir_no_negativo("TW", TW, "tirante del receptor, m")
+    _exigir_positivo("d50_piedra", d50_piedra, "piedra de la poza, m")
+    if y_salida is not None:
+        _exigir_positivo("y_salida", y_salida, "tirante de borde, m")
+    if V_admisible is not None:
+        _exigir_positivo("V_admisible", V_admisible,
+                         "velocidad admisible a la salida de la poza, m/s")
+    que = "poza de enrocado (HEC-14 Sec. 10.1)"
+    if numero_celdas != 1:
+        raise MetodoNoEvaluableError(
+            que,
+            procedimiento="un diseño de la proteccion para la descarga "
+                          "conjunta de los barriles, que ninguna fuente del "
+                          "repositorio de normas da",
+            motivo=f"los ensayos de la poza son de UN conducto (num. "
+                   f"10.1.1) y el cruce tiene {numero_celdas} barriles",
+            rotulo=MOTIVO_METODO_NO_EVALUABLE_HEC14)
+    froude = froude_salida(V=V, Q_celda=Q_celda, seccion=seccion,
+                           y_salida=y_salida)
+    ye, Fr = froude.y_equivalente, froude.Fr
+    if not Fr < HEC14_POZA_FROUDE_MAX:
+        raise MetodoNoEvaluableError(
+            que,
+            procedimiento="un disipador de HEC-14 para Froude alto (Caps. 7 "
+                          "a 9), fuera del alcance de este programa",
+            motivo=f"el numero de Froude de la salida es {Fr:.2f} y la "
+                   f"Tabla 1.1 de HEC-14 limita la poza a Fr < "
+                   f"{HEC14_POZA_FROUDE_MAX:g}",
+            rotulo=MOTIVO_METODO_NO_EVALUABLE_HEC14)
+    relacion = ca.valor(CRITERIO_RELACION_CO)
+    Co = parametro_co_poza(TW / ye, relacion)
+    termino = HEC14_POZA_COEFICIENTE_HS * Fr
+
+    def hs_sobre_ye(x: float) -> float:
+        return termino * x ** HEC14_POZA_EXPONENTE_D50 - Co
+
+    def holgura(x: float) -> float:
+        """hs/ye - 2·D50/ye: no negativa <=> hs/D50 >= 2."""
+        return hs_sobre_ye(x) - HEC14_POZA_HS_SOBRE_D50_MIN * x
+
+    D50_minimo = HEC14_POZA_D50_SOBRE_YE_MIN * ye
+    piedra_subida = d50_piedra < D50_minimo - TOL_UMBRAL_NORMATIVO
+    D50_piedra = D50_minimo if piedra_subida else d50_piedra
+    x_piedra = D50_piedra / ye
+    dimensionada_con_menor = holgura(x_piedra) < -TOL_UMBRAL_NORMATIVO
+    if not dimensionada_con_menor:
+        x_dim = x_piedra
+    else:
+        x_min = HEC14_POZA_D50_SOBRE_YE_MIN
+        if holgura(x_min) < -TOL_UMBRAL_NORMATIVO:
+            raise MetodoNoEvaluableError(
+                que,
+                procedimiento="otra proteccion: con este tirante del receptor "
+                              "y esta velocidad la Ec. (10.1) no da una poza "
+                              "dentro del rango de sus ensayos",
+                motivo=f"ni la piedra menor del rango de los ensayos (D50/ye "
+                       f"= {HEC14_POZA_D50_SOBRE_YE_MIN:g}, D50 = "
+                       f"{D50_minimo:.3f} m) deja la hoya en hs/D50 >= "
+                       f"{HEC14_POZA_HS_SOBRE_D50_MIN:g} (Fr = {Fr:.2f}, TW/ye "
+                       f"= {TW / ye:.2f}, Co = {Co:.2f}): la fuente descarto "
+                       "los ensayos de hs/D50 < 2",
+                rotulo=MOTIVO_METODO_NO_EVALUABLE_HEC14)
+        x_dim = brentq(holgura, x_min, x_piedra)
+    D50_dim = x_dim * ye
+    hs = hs_sobre_ye(x_dim) * ye
+
+    Wo = seccion.B if isinstance(seccion, SeccionRectangular) else seccion.D
+    Ls = max(HEC14_POZA_LS_EN_HS * hs, HEC14_POZA_LS_MIN_EN_WO * Wo)
+    LB0 = max(HEC14_POZA_LB_EN_HS * hs, HEC14_POZA_LB_MIN_EN_WO * Wo)
+    WB0 = Wo + HEC14_POZA_ABOCINADO_POR_LONGITUD * LB0
+    yc, Ac, Vc = salida_critica_de_la_poza(Q=Q_celda, ancho_fondo=WB0)
+    avisos: List[str] = []
+    LB, WB = LB0, WB0
+    extendida = (V_admisible is not None
+                 and Vc > V_admisible + TOL_UMBRAL_NORMATIVO)
+    if extendida:
+        Vc0 = Vc
+        WB = _ancho_para_la_velocidad(Q_celda, V_admisible, WB0,
+                                      HEC14_POZA_TALUD_LATERAL_Z)
+        LB = (WB - Wo) / HEC14_POZA_ABOCINADO_POR_LONGITUD
+        yc, Ac, Vc = salida_critica_de_la_poza(Q=Q_celda, ancho_fondo=WB)
+        avisos.append(
+            f"Poza de enrocado: con LB = {LB0:.2f} m la velocidad en la "
+            f"salida ({Vc0:.2f} m/s) supera la admisible ({V_admisible:.2f} "
+            f"m/s); se extiende el apron con el mismo abocinado hasta LB = "
+            f"{LB:.2f} m (WB = {WB:.2f} m), como el ejemplo de la fuente: «"
+            + _literal("HEC14.10.1#EXTENDER") + "»")
+    elif V_admisible is None:
+        avisos.append(
+            f"Poza de enrocado: sin la velocidad admisible del cauce (dato "
+            f"de sitio '{DATO_TERRENO_RECEPTOR}' y "
+            f"'{DATO_REGIMEN_FLUJO}') el paso 4 no se contrasta: la "
+            f"velocidad en la salida de la poza es {Vc:.2f} m/s y no se sabe "
+            "si el cauce la resiste")
+    LA = LB - Ls
+    espesor = HEC14_ESPESOR_MIN_EN_D50 * D50_piedra
+    espesor_talud = HEC14_POZA_ESPESOR_TALUD_EN_D50 * D50_piedra
+    proteccion_adicional = (
+        None if y_salida is None else
+        TW / y_salida > (HEC14_POZA_TW_SOBRE_YO_SIN_PROTECCION_ADICIONAL
+                         + TOL_UMBRAL_NORMATIVO))
+    if piedra_subida:
+        avisos.append(
+            f"Poza de enrocado: la piedra ({origen_piedra}, {d50_piedra:.3f} "
+            f"m) queda bajo el limite de los ensayos, D50/ye = "
+            f"{HEC14_POZA_D50_SOBRE_YE_MIN:g}; la poza se reviste con "
+            f"D50 = {D50_piedra:.3f} m. «" + _literal("HEC14.10.1.5#RANGO")
+            + "»")
+    if dimensionada_con_menor:
+        avisos.append(
+            f"Poza de enrocado: con la piedra que se pone ({D50_piedra:.3f} "
+            f"m) la hoya no llega a hs/D50 = "
+            f"{HEC14_POZA_HS_SOBRE_D50_MIN:g}; la poza se dimensiona con la "
+            f"piedra de hs/D50 = {HEC14_POZA_HS_SOBRE_D50_MIN:g} "
+            f"({D50_dim:.3f} m) y se reviste con la que se pone: «"
+            + _literal("HEC14.10.1#MAYOR_REVISTE") + "»")
+    hasta = D50_adicional = None
+    if proteccion_adicional is None:
+        avisos.append(
+            "Poza de enrocado: sin el tirante de borde (yo) no se decide el "
+            "paso 5, la proteccion adicional aguas abajo")
+    elif proteccion_adicional:
+        base = (f"Poza de enrocado: TW/yo = {TW / y_salida:.2f} supera "
+                f"{HEC14_POZA_TW_SOBRE_YO_SIN_PROTECCION_ADICIONAL:g}: con "
+                "el tirante del receptor alto la corriente atraviesa la poza "
+                "y la fuente pide proteccion aguas abajo, con la atenuacion "
+                "de la velocidad de su Figura 10.3")
+        if V_admisible is None:
+            avisos.append(base + "; sin la velocidad admisible del cauce su "
+                          "extension NO se dimensiona")
+        else:
+            De = diametro_equivalente(Q_celda / V.valor)
+            try:
+                hasta = De * distancia_figura_10_3(V_admisible / V.valor)
+            except MetodoNoEvaluableError as error:
+                avisos.append(base + f"; su extension NO se dimensiona -- "
+                              f"{error.motivo}")
+            else:
+                if hasta > LB + TOL_UMBRAL_NORMATIVO:
+                    D50_adicional = d50_ec_10_6(
+                        V=V.valor * atenuacion_figura_10_3(LB / De))
+                    avisos.append(
+                        base + f": la proteccion llega hasta {hasta:.2f} m "
+                        f"de la boca ({hasta - LB:.2f} m pasada la poza), "
+                        f"con piedra de al menos {D50_adicional:.3f} m en la "
+                        "salida de la poza (Ec. 10.6)")
+                else:
+                    avisos.append(
+                        base + f": la velocidad del eje baja a la admisible "
+                        f"a {hasta:.2f} m de la boca, dentro de la poza "
+                        f"({LB:.2f} m)")
+
+    elecciones = (EleccionDeProyecto(
+        que_se_adopto="relacion del parametro Co de la poza",
+        valor=relacion,
+        entre=tuple(ca.CRITERIOS[CRITERIO_RELACION_CO].sensibilidad),
+        de_donde=f"el criterio adoptado '{CRITERIO_RELACION_CO}' [A]",
+        por_que="la fuente da la envolvente y el mejor ajuste y recomienda "
+                "uno u otro segun la consecuencia de la falla",
+        clave_criterio=CRITERIO_RELACION_CO),)
+    paso_hs = paso(
+        "F6.POZA",
+        codigo="6.5p",
+        que="Profundidad de la poza de enrocado de HEC-14",
+        formula="hs / ye = 0.86 * (D50 / ye)^-0.55 * Fr - Co",
+        formula_cita_id="HEC14.10.1#EC_10_1",
+        citas_textuales=("HEC14.10.1#EC_10_1", "HEC14.10.1#CO_ENVOLVENTE",
+                         "HEC14.10.1.5#RANGO", "HEC14.1#T1_1_POZA",
+                         "HEC14.10.1.1#ENSAYOS")
+        + (("HEC14.10.1#MAYOR_REVISTE",) if dimensionada_con_menor else ()),
+        sustitucion=(
+            Magnitud("ye", ye, "m", "tirante equivalente de borde, paso 6.3 "
+                     "(continuidad con la velocidad de salida)",
+                     cifras=CIFRAS_FINA),
+            Magnitud("Fr", Fr, "-", "Froude de HEC-14 en la salida, paso 6.3",
+                     cifras=CIFRAS_MAGNITUD),
+            Magnitud("TW", TW, "m", "tirante del cuerpo receptor del punto",
+                     cifras=CIFRAS_MAGNITUD),
+            Magnitud("Co", Co, "-", f"Ec. (10.2)/(10.3), relacion «{relacion}» "
+                     f"con TW/ye = {TW / ye:.3f}", cifras=CIFRAS_FACTOR),
+            Magnitud("D50", D50_dim, "m",
+                     (f"la piedra de hs/D50 = "
+                      f"{HEC14_POZA_HS_SOBRE_D50_MIN:g} exacto: la que se "
+                      f"pone ({origen_piedra}, {D50_piedra:.3f} m) da una "
+                      "hoya menor que dos veces su tamaño")
+                     if dimensionada_con_menor else
+                     f"la piedra que se pone: {origen_piedra}"
+                     + (f", subida a {HEC14_POZA_D50_SOBRE_YE_MIN:g}·ye"
+                        if piedra_subida else ""),
+                     cifras=CIFRAS_MAGNITUD)),
+        resultado=Magnitud("hs", hs, "m",
+                           f"profundidad de la poza bajo la solera de salida; "
+                           f"hs/D50 = {hs / D50_dim:.2f}; reviste D50 = "
+                           f"{D50_piedra:.3f} m, espesor {espesor:.3f} m "
+                           f"(talud {espesor_talud:.3f} m)",
+                           cifras=CIFRAS_MAGNITUD),
+        veredicto=Veredicto(
+            tipo=TipoDeVeredicto.SIN_VEREDICTO,
+            explicacion="dimensionamiento [C] de la alternativa que la "
+                        "Tabla 1.1 de HEC-14 da donde el apron no llega"),
+        elecciones=elecciones,
+        nota_del_proyecto=(
+            "LECTURA DEL PROYECTO: la piedra que se pone es la que la regla "
+            "de la proteccion de salida deja rigiendo (Laushey, o la que se "
+            "declare). La fuente pide elegirla entre las disponibles en la "
+            "zona, que no es un dato del programa."))
+
+    sustitucion_salida = [
+        Magnitud("hs", hs, "m", "paso 6.5p", cifras=CIFRAS_MAGNITUD),
+        Magnitud("Wo", Wo, "m", "ancho del conducto en la boca (B del marco "
+                 "o D del tubo)", cifras=CIFRAS_MAGNITUD),
+        Magnitud("Ls", Ls, "m", f"max({HEC14_POZA_LS_EN_HS:g}·hs, "
+                 f"{HEC14_POZA_LS_MIN_EN_WO:g}·Wo)", cifras=CIFRAS_MAGNITUD),
+        Magnitud("LB", LB0, "m", f"max({HEC14_POZA_LB_EN_HS:g}·hs, "
+                 f"{HEC14_POZA_LB_MIN_EN_WO:g}·Wo)", cifras=CIFRAS_MAGNITUD),
+        Magnitud("WB", WB0, "m", "Wo + (2/3)·LB (abocinado 3:1)",
+                 cifras=CIFRAS_MAGNITUD),
+        Magnitud("z", HEC14_POZA_TALUD_LATERAL_Z, "-",
+                 "talud lateral de la poza, Figura 10.2", cifras=CIFRAS_FACTOR),
+        Magnitud("Q", Q_celda, "m3/s", "caudal del barril",
+                 cifras=CIFRAS_FINA)]
+    if extendida:
+        sustitucion_salida.append(Magnitud(
+            "LB extendida", LB, "m", "alargada con el mismo abocinado hasta "
+            "que Vc = Vallow", cifras=CIFRAS_MAGNITUD))
+    umbral = None
+    if V_admisible is None:
+        veredicto = Veredicto(
+            tipo=TipoDeVeredicto.SIN_VEREDICTO,
+            explicacion="sin la velocidad admisible del cauce el paso 4 no "
+                        "se contrasta")
+    else:
+        margen = V_admisible - Vc
+        cumple = not margen < -TOL_UMBRAL_NORMATIVO
+        veredicto = Veredicto(
+            tipo=TipoDeVeredicto.CUMPLE if cumple else TipoDeVeredicto.INDICADOR,
+            margen=margen, unidad="m/s",
+            explicacion=(f"la velocidad en la salida de la poza ({Vc:.2f} m/s)"
+                         f" no supera la admisible ({V_admisible:.2f} m/s)"
+                         + (", con el apron extendido" if extendida else "")))
+        umbral = Umbral(
+            descripcion="velocidad admisible a la salida de la poza",
+            valor=V_admisible, unidad="m/s",
+            cita_id="HEC14.10.1.5#SALIDA",
+            caracter="PERMISO: la fuente deja tomarla como la normal del "
+                     "cauce o la de un criterio de estabilidad, la mayor",
+            aplicacion="LECTURA DEL PROYECTO: se toma la de la Tabla Nº 11 "
+                       "del Manual para el terreno declarado del receptor (un "
+                       "criterio de estabilidad), sin la normal del cauce: "
+                       "lado conservador")
+    paso_salida = paso(
+        "F6.POZA_SALIDA",
+        codigo="6.6p",
+        que="Longitud, ancho y velocidad a la salida de la poza de enrocado",
+        formula="Ls = max(10 hs, 3 Wo);  LB = max(15 hs, 4 Wo);  "
+                "WB = Wo + (2/3) LB;  Q^2/g = [yc (WB + z yc)]^3 / "
+                "(WB + 2 z yc);  Vc = Q / Ac",
+        formula_cita_id="HEC14.10.1#LONGITUDES",
+        citas_textuales=("HEC14.10.1#LONGITUDES", "HEC14.10.1.2#ABOCINADO",
+                         "HEC14.10.1.5#SALIDA", "HEC14.10.1.5#PASO_5")
+        + (("HEC14.10.1#EXTENDER",) if extendida else ()),
+        sustitucion=tuple(sustitucion_salida),
+        resultado=Magnitud("Vc", Vc, "m/s",
+                           f"velocidad en la salida de la poza; yc = "
+                           f"{yc:.3f} m, Ac = {Ac:.3f} m2; longitud total LB "
+                           f"= {LB:.2f} m (poza {Ls:.2f} m + apron "
+                           f"{LA:.2f} m), ancho final WB = {WB:.2f} m",
+                           cifras=CIFRAS_MAGNITUD),
+        umbral=umbral,
+        veredicto=veredicto)
+    return PozaDeEnrocado(
+        y_equivalente=ye, Fr=Fr, TW=TW, Co=Co, relacion_co=relacion,
+        D50_minimo=D50_minimo, D50_piedra=D50_piedra,
+        D50_dimensionamiento=D50_dim,
+        dimensionada_con_menor=dimensionada_con_menor,
+        piedra_subida=piedra_subida, hs=hs, Wo=Wo, longitud_poza=Ls,
+        longitud_apron=LA, longitud_total=LB, longitud_sin_extender=LB0,
+        ancho_final=WB, espesor=espesor, espesor_talud=espesor_talud,
+        yc_salida=yc, V_salida_poza=Vc, V_admisible=V_admisible,
+        extendida=extendida, proteccion_adicional=proteccion_adicional,
+        pasos=(paso_hs, paso_salida), avisos=tuple(avisos),
+        proteccion_adicional_hasta=hasta,
+        D50_proteccion_adicional=D50_adicional)
 
 
 # ---------------------------------------------------------------------------
@@ -1446,9 +2052,200 @@ class _LoQueRige(NamedTuple):
     rige_la_envolvente: bool
 
 
+def _avisos_de_la_poza(poza: PozaDeEnrocado, *, d50: float, espesor: float,
+                       longitud: float) -> Tuple[str, ...]:
+    """
+    --- VE-4g --- Lo que rige contra lo que la poza de enrocado de HEC-14
+    pide, con la regla «manual»: avisa donde lo adoptado es MENOS.
+    """
+    cortos = []
+    if d50 < poza.D50_piedra - TOL_UMBRAL_NORMATIVO:
+        cortos.append(f"la piedra ({d50:.3f} m contra {poza.D50_piedra:.3f} "
+                      "m, el limite de los ensayos)")
+    if espesor < poza.espesor - TOL_UMBRAL_NORMATIVO:
+        cortos.append(f"el espesor ({espesor:.3f} m contra "
+                      f"{poza.espesor:.3f} m)")
+    if longitud < poza.longitud_total - TOL_UMBRAL_NORMATIVO:
+        cortos.append(f"la longitud ({longitud:.2f} m contra "
+                      f"{poza.longitud_total:.2f} m)")
+    if not cortos:
+        return ()
+    return (f"Proteccion de salida: con la regla '{CRITERIO_REGLA}' en "
+            f"«{REGLA_MANUAL}» lo adoptado queda corto frente a la poza de "
+            "enrocado de HEC-14 (Sec. 10.1, profundidad "
+            f"{poza.hs:.2f} m) en " + " y en ".join(cortos),)
+
+
+def _avisos_del_tw_alto(tw: ProteccionTWAlto, *, d50: float, espesor: float,
+                        longitud: float) -> Tuple[str, ...]:
+    """--- VE-5 (lote m6) --- Con «manual»: avisa donde lo adoptado es menos."""
+    cortos = []
+    if d50 < tw.D50 - TOL_UMBRAL_NORMATIVO:
+        cortos.append(f"la piedra ({d50:.3f} m contra {tw.D50:.3f} m)")
+    if espesor < tw.espesor - TOL_UMBRAL_NORMATIVO:
+        cortos.append(f"el espesor ({espesor:.3f} m contra "
+                      f"{tw.espesor:.3f} m)")
+    if longitud < tw.longitud - TOL_UMBRAL_NORMATIVO:
+        cortos.append(f"la longitud ({longitud:.2f} m contra "
+                      f"{tw.longitud:.2f} m)")
+    if not cortos:
+        return ()
+    return (f"Proteccion de salida: con la regla '{CRITERIO_REGLA}' en "
+            f"«{REGLA_MANUAL}» lo adoptado queda corto frente a la proteccion "
+            "con el tirante del receptor alto (HEC-14 Figura 10.3 y Ec. "
+            "10.6) en " + " y en ".join(cortos),)
+
+
+def _regla_con_el_tw_alto(*, regla: str, d50_laushey: float,
+                          mult_espesor: float, longitud_adoptada: float,
+                          tw_alto: ProteccionTWAlto) -> _LoQueRige:
+    """
+    --- VE-5 (lote m6) --- La envolvente con la proteccion del TW alto:
+    piedra = max(Laushey, Ec. 10.6); espesor = max(k·d50, 2·D50 de la Ec.
+    10.6); longitud = max(adoptada, la de la Figura 10.3).
+    """
+    rige_hec = tw_alto.D50 > d50_laushey + TOL_UMBRAL_NORMATIVO
+    d50 = tw_alto.D50 if rige_hec else d50_laushey
+    e_multiplo = mult_espesor * d50
+    espesor = max(e_multiplo, tw_alto.espesor)
+    longitud = max(longitud_adoptada, tw_alto.longitud)
+    paso_regla = paso(
+        "F6.GEOMETRIA_ADOPTADA",
+        codigo="6.6c",
+        que="Piedra, espesor y longitud que rigen por la regla declarada "
+            "(envolvente del Manual y de la proteccion con el TW alto)",
+        formula="d50 = max(d50 Laushey, D50 Ec. 10.6);  e = max(k * d50, "
+                "2 * D50 Ec. 10.6);  L = max(L adoptada, L Figura 10.3)",
+        citas_textuales=("MC_HHD.4.1.1.3.7c", "HEC14.10.3#EC_10_6",
+                         "HEC14.10.1.3#FIGURA_10_3"),
+        sustitucion=(
+            Magnitud("d50 Laushey", d50_laushey, "m", "paso 6.1",
+                     cifras=CIFRAS_MAGNITUD),
+            Magnitud("D50 Ec. 10.6", tw_alto.D50, "m", "paso 6.5t",
+                     cifras=CIFRAS_MAGNITUD),
+            Magnitud("k * d50", e_multiplo, "m",
+                     f"criterio '{CRITERIO_ESPESOR}' [A] (k = "
+                     f"{mult_espesor:g}) sobre la piedra que rige",
+                     cifras=CIFRAS_MAGNITUD),
+            Magnitud("e HEC-14", tw_alto.espesor, "m", "paso 6.5t",
+                     cifras=CIFRAS_MAGNITUD),
+            Magnitud("L adoptada", longitud_adoptada, "m",
+                     f"criterio '{CRITERIO_LONGITUD}' [A]",
+                     cifras=CIFRAS_MAGNITUD),
+            Magnitud("L Figura 10.3", tw_alto.longitud, "m", "paso 6.5t",
+                     cifras=CIFRAS_MAGNITUD)),
+        resultado=Magnitud("e", espesor, "m",
+                           f"espesor que rige; piedra d50 = {d50:.3f} m; "
+                           f"longitud L = {longitud:.2f} m",
+                           cifras=CIFRAS_MAGNITUD),
+        veredicto=Veredicto(
+            tipo=TipoDeVeredicto.SIN_VEREDICTO,
+            explicacion="envolvente del Manual y de HEC-14 con el TW alto: "
+                        "en cada magnitud rige el mayor"),
+        elecciones=(EleccionDeProyecto(
+            que_se_adopto="regla de la piedra, el espesor y la longitud de "
+                          "la proteccion de salida",
+            valor=regla,
+            entre=tuple(ca.CRITERIOS[CRITERIO_REGLA].sensibilidad),
+            de_donde=f"el criterio adoptado '{CRITERIO_REGLA}' [A]",
+            por_que="decision del dueño del proyecto (2026-11-12): la "
+                    "envolvente es el lado conservador",
+            clave_criterio=CRITERIO_REGLA),))
+    aviso = (f"Proteccion de salida: el tirante del receptor supera la "
+             f"clave y rige la envolvente con HEC-14 Figura 10.3 y Ec. 10.6 "
+             f"('{CRITERIO_REGLA}'): piedra d50 {d50_laushey:.3f} -> "
+             f"{d50:.3f} m, espesor {mult_espesor * d50_laushey:.3f} -> "
+             f"{espesor:.3f} m, longitud {longitud_adoptada:.2f} -> "
+             f"{longitud:.2f} m (hasta que la velocidad del eje baja a "
+             f"{tw_alto.V_admisible:.2f} m/s)")
+    return _LoQueRige(d50, espesor, longitud, None, paso_regla, (aviso,), True)
+
+
+def _regla_con_la_poza(*, regla: str, d50_laushey: float, mult_espesor: float,
+                       longitud_adoptada: float,
+                       poza: PozaDeEnrocado) -> _LoQueRige:
+    """
+    --- VE-4g --- La envolvente cuando el apron no es evaluable y la poza de
+    enrocado de HEC-14 Sec. 10.1 si (marco, conducto de mas de 60 in):
+        piedra    d50 = max(d50 de Laushey, la que reviste la poza)
+        espesor   max(k·d50, 2·D50 de la poza)
+        longitud  max(longitud adoptada, LB de la poza)
+    La poza se reviste con la piedra de Laushey salvo que quede bajo el
+    limite de los ensayos (0.1·ye), y entonces con ese limite.
+    """
+    rige_poza = poza.D50_piedra > d50_laushey + TOL_UMBRAL_NORMATIVO
+    d50 = poza.D50_piedra if rige_poza else d50_laushey
+    e_multiplo = mult_espesor * d50
+    espesor = max(e_multiplo, poza.espesor)
+    longitud = max(longitud_adoptada, poza.longitud_total)
+    paso_regla = paso(
+        "F6.GEOMETRIA_ADOPTADA",
+        codigo="6.6c",
+        que="Piedra, espesor y longitud que rigen por la regla declarada "
+            "(envolvente del Manual y de la poza de enrocado de HEC-14)",
+        formula="d50 = max(d50 Laushey, D50 poza);  e = max(k * d50, "
+                "2 * D50 poza);  L = max(L adoptada, LB poza)",
+        citas_textuales=("MC_HHD.4.1.1.3.7c", "HEC14.10.1#EC_10_1",
+                         "HEC14.10.1#DOS_D50", "HEC14.10.1#LONGITUDES"),
+        sustitucion=(
+            Magnitud("d50 Laushey", d50_laushey, "m", "paso 6.1",
+                     cifras=CIFRAS_MAGNITUD),
+            Magnitud("D50 poza", poza.D50_piedra, "m",
+                     "la que reviste la poza, paso 6.5p",
+                     cifras=CIFRAS_MAGNITUD),
+            Magnitud("k * d50", e_multiplo, "m",
+                     f"espesor por el criterio '{CRITERIO_ESPESOR}' [A] "
+                     f"(k = {mult_espesor:g}) sobre la piedra que rige",
+                     cifras=CIFRAS_MAGNITUD),
+            Magnitud("e poza", poza.espesor, "m",
+                     f"{HEC14_ESPESOR_MIN_EN_D50:g}·D50 en el piso y los "
+                     "lados de la poza (num. 10.1.4)", cifras=CIFRAS_MAGNITUD),
+            Magnitud("L adoptada", longitud_adoptada, "m",
+                     f"criterio '{CRITERIO_LONGITUD}' [A]",
+                     cifras=CIFRAS_MAGNITUD),
+            Magnitud("LB poza", poza.longitud_total, "m",
+                     "longitud total de la poza, paso 6.6p",
+                     cifras=CIFRAS_MAGNITUD)),
+        resultado=Magnitud("e", espesor, "m",
+                           f"espesor que rige; piedra d50 = {d50:.3f} m; "
+                           f"longitud L = {longitud:.2f} m",
+                           cifras=CIFRAS_MAGNITUD),
+        veredicto=Veredicto(
+            tipo=TipoDeVeredicto.SIN_VEREDICTO,
+            explicacion="envolvente de lo que da el Manual (Laushey y lo "
+                        "adoptado) y de la poza de enrocado de HEC-14: en "
+                        "cada magnitud rige el mayor"),
+        elecciones=(EleccionDeProyecto(
+            que_se_adopto="regla de la piedra, el espesor y la longitud de "
+                          "la proteccion de salida",
+            valor=regla,
+            entre=tuple(ca.CRITERIOS[CRITERIO_REGLA].sensibilidad),
+            de_donde=f"el criterio adoptado '{CRITERIO_REGLA}' [A]",
+            por_que="decision del dueño del proyecto (2026-11-12): la "
+                    "envolvente es el lado conservador; donde el apron no "
+                    "llega, la envolvente se forma con la poza",
+            clave_criterio=CRITERIO_REGLA),),
+        nota_del_proyecto=(
+            f"La poza se excava {poza.hs:.2f} m bajo la solera de salida y "
+            f"se abre a {poza.ancho_final:.2f} m; en el talud de la salida "
+            f"del conducto el espesor sube a {poza.espesor_talud:.3f} m "
+            "(num. 10.1.4)."))
+    aviso = (f"Proteccion de salida: el apron de HEC-14 no llega a este "
+             f"conducto y rige la envolvente con la poza de enrocado de "
+             f"HEC-14 Sec. 10.1 ('{CRITERIO_REGLA}'): piedra d50 "
+             f"{d50_laushey:.3f} -> {d50:.3f} m, espesor "
+             f"{mult_espesor * d50_laushey:.3f} -> {espesor:.3f} m, longitud "
+             f"{longitud_adoptada:.2f} -> {longitud:.2f} m; profundidad de "
+             f"la poza {poza.hs:.2f} m bajo la solera de salida")
+    return _LoQueRige(d50, espesor, longitud, None, paso_regla, (aviso,), True)
+
+
 def _regla_de_la_proteccion(*, regla: str, d50_laushey: float,
                             mult_espesor: float, longitud_adoptada: float,
-                            apron: Optional[ApronHEC14]) -> _LoQueRige:
+                            apron: Optional[ApronHEC14],
+                            poza: Optional[PozaDeEnrocado] = None,
+                            tw_alto: Optional[ProteccionTWAlto] = None
+                            ) -> _LoQueRige:
     """
     La regla de 'regla_espesor_longitud_proteccion_salida': que piedra, que
     espesor y que longitud RIGEN.
@@ -1482,8 +2279,22 @@ def _regla_de_la_proteccion(*, regla: str, d50_laushey: float,
     if regla == REGLA_MANUAL:
         clase = (None if apron is None else
                  clase_hec14_de_la_piedra(d50=d50_laushey, D=apron.D))
+        avisos_poza = (() if poza is None else _avisos_de_la_poza(
+            poza, d50=d50_laushey, espesor=espesor_adoptado,
+            longitud=longitud_adoptada))
+        avisos_tw = (() if tw_alto is None else _avisos_del_tw_alto(
+            tw_alto, d50=d50_laushey, espesor=espesor_adoptado,
+            longitud=longitud_adoptada))
         return _LoQueRige(d50_laushey, espesor_adoptado, longitud_adoptada,
-                          clase, None, (), False)
+                          clase, None, avisos_poza + avisos_tw, False)
+    if apron is None and tw_alto is not None:
+        return _regla_con_el_tw_alto(
+            regla=regla, d50_laushey=d50_laushey, mult_espesor=mult_espesor,
+            longitud_adoptada=longitud_adoptada, tw_alto=tw_alto)
+    if apron is None and poza is not None:
+        return _regla_con_la_poza(
+            regla=regla, d50_laushey=d50_laushey, mult_espesor=mult_espesor,
+            longitud_adoptada=longitud_adoptada, poza=poza)
     if apron is None:
         return _LoQueRige(
             d50_laushey, espesor_adoptado, longitud_adoptada, None, None,
@@ -1574,6 +2385,69 @@ def _regla_de_la_proteccion(*, regla: str, d50_laushey: float,
              f"{longitud_adoptada:.2f} -> {longitud:.2f} m ({de_la_tabla})")
     return _LoQueRige(d50, espesor, longitud, clase, paso_regla,
                       (aviso,) + fuera, True)
+
+
+def _remite_a_la_poza(seccion: Seccion, resultado: ResultadoHidraulico
+                      ) -> bool:
+    """
+    --- VE-4g --- Si el apron de la Sec. 10.2 falla por un limite para el que
+    la Tabla 1.1 de HEC-14 ofrece la POZA de la Sec. 10.1: el marco (la Ec.
+    10.4 es «for circular culverts»), el conducto de mas de 60 in (nota 8,
+    que solo cuelga del apron) y varios barriles (que la poza tampoco cubre:
+    se intenta para que el aviso lo diga). El TW sobre 1.0·D de un tubo no
+    remite a la poza: la Sec. 10.2 lo manda a su Figura 10.3.
+    """
+    return (not isinstance(seccion, SeccionCircular)
+            or seccion.altura > HEC14_APRON_ALTURA_MAX_M + TOL_UMBRAL_NORMATIVO
+            or resultado.numero_celdas != 1)
+
+
+def _tw_alto_de_la_fase(*, V: Magnitud, resultado: ResultadoHidraulico,
+                        V_admisible: Optional[float],
+                        avisos: List[str]) -> Optional[ProteccionTWAlto]:
+    """
+    --- VE-5 (lote m6) --- El TW sobre 1.0·D de un tubo de hasta 60 in, un
+    barril: la Figura 10.3 y la Ec. (10.6), como la Sec. 10.2 manda. Lo que
+    no se pueda evaluar (sin admisible, o mas alla de la figura) es AVISO, y
+    rige Laushey con lo adoptado.
+    """
+    try:
+        return proteccion_tw_alto_hec14(
+            V=V, Q_celda=resultado.Q_celda_m3s, TW=resultado.TW_m,
+            V_admisible=V_admisible)
+    except (MetodoNoEvaluableError, DatoFaltanteError) as error:
+        detalle = (f"{error.motivo}. Hace falta: {error.procedimiento}"
+                   if isinstance(error, MetodoNoEvaluableError)
+                   else f"falta '{error.campo}' ({error.detalle})")
+        avisos.append(
+            f"Proteccion de salida: la proteccion con el tirante del "
+            f"receptor alto (HEC-14 Figura 10.3 y Ec. 10.6) NO se evaluo -- "
+            f"{detalle}. Rige el d50 de Laushey")
+        return None
+
+
+def _poza_de_la_fase(*, V: Magnitud, resultado: ResultadoHidraulico,
+                     seccion: Seccion, d50_laushey: float,
+                     V_admisible: Optional[float],
+                     avisos: List[str]) -> Optional[PozaDeEnrocado]:
+    """
+    --- VE-4g --- La poza de la Fase 6, revestida con la piedra de Laushey
+    (la que el Manual pone). Dentro de la Fase 6 un `MetodoNoEvaluableError`
+    NO viaja como `Bloqueo`: se convierte en aviso y rige Laushey con lo
+    adoptado (CLAUDE.md, «Excepciones»).
+    """
+    try:
+        return poza_de_enrocado_hec14(
+            V=V, Q_celda=resultado.Q_celda_m3s, seccion=seccion,
+            TW=resultado.TW_m, y_salida=resultado.y_salida_m,
+            d50_piedra=d50_laushey, origen_piedra="Laushey, paso 6.1",
+            V_admisible=V_admisible, numero_celdas=resultado.numero_celdas)
+    except MetodoNoEvaluableError as error:
+        avisos.append(
+            f"Proteccion de salida: la poza de enrocado de HEC-14 (Sec. "
+            f"10.1) NO se evaluo tampoco -- {error.motivo}. Hace falta: "
+            f"{error.procedimiento}. Rige el d50 de Laushey")
+        return None
 
 
 def proteccion_salida(*, V: Magnitud,
@@ -1680,7 +2554,7 @@ def proteccion_salida(*, V: Magnitud,
     if admisible is not None:
         pasos.append(admisible.paso)
 
-    apron = None
+    apron = poza = tw_alto = None
     if resultado is not None and seccion is not None:
         faltan = [nombre for nombre, valor in (
             ("el tirante del receptor (TW)", resultado.TW_m),
@@ -1701,8 +2575,20 @@ def proteccion_salida(*, V: Magnitud,
             except MetodoNoEvaluableError as error:
                 avisos.append(
                     f"Proteccion de salida: el apron de HEC-14 NO se evaluo "
-                    f"-- {error.motivo}. Hace falta: {error.procedimiento}. "
-                    "Rige el d50 de Laushey")
+                    f"-- {error.motivo}. Hace falta: {error.procedimiento}")
+                if not _remite_a_la_poza(seccion, resultado):
+                    tw_alto = _tw_alto_de_la_fase(
+                        V=V, resultado=resultado,
+                        V_admisible=(None if admisible is None
+                                     else admisible.V_admisible),
+                        avisos=avisos)
+                else:
+                    poza = _poza_de_la_fase(
+                        V=V, resultado=resultado, seccion=seccion,
+                        d50_laushey=laushey_d50(V=V.valor),
+                        V_admisible=(None if admisible is None
+                                     else admisible.V_admisible),
+                        avisos=avisos)
     if apron is not None and not apron.regimen_determinado:
         avisos.append(
             "Proteccion de salida: regimen no determinado para el apron de "
@@ -1712,9 +2598,15 @@ def proteccion_salida(*, V: Magnitud,
             "seria mayor")
     rige = _regla_de_la_proteccion(
         regla=regla, d50_laushey=d50_laushey, mult_espesor=mult_espesor,
-        longitud_adoptada=longitud_adoptada, apron=apron)
+        longitud_adoptada=longitud_adoptada, apron=apron, poza=poza,
+        tw_alto=tw_alto)
     if apron is not None:
         pasos.extend(apron.pasos)
+    if tw_alto is not None:
+        pasos.extend(tw_alto.pasos)
+    if poza is not None:
+        pasos.extend(poza.pasos)
+        avisos.extend(poza.avisos)
     if rige.clase is not None:
         pasos.append(rige.clase.paso)
     if rige.paso is not None:
@@ -1754,7 +2646,9 @@ def proteccion_salida(*, V: Magnitud,
         V=V.valor,
         criterio_espesor=CRITERIO_ESPESOR,
         criterio_longitud=CRITERIO_LONGITUD,
-        advertencias=(ADVERTENCIAS_PROTECCION_SALIDA_ENVOLVENTE
+        advertencias=(ADVERTENCIAS_PROTECCION_SALIDA_POZA
+                      if rige.rige_la_envolvente and poza is not None
+                      else ADVERTENCIAS_PROTECCION_SALIDA_ENVOLVENTE
                       if rige.rige_la_envolvente
                       else ADVERTENCIAS_PROTECCION_SALIDA),
         numeral=NUMERAL_LAUSHEY,
@@ -1763,6 +2657,7 @@ def proteccion_salida(*, V: Magnitud,
         clase_de_la_piedra=rige.clase, regla_espesor_longitud=regla,
         espesor_adoptado=espesor_adoptado, longitud_adoptada=longitud_adoptada,
         d50_laushey=d50_laushey, rige_la_envolvente=rige.rige_la_envolvente,
+        poza=poza, tw_alto=tw_alto,
     )
 
 
@@ -2331,6 +3226,279 @@ def _nota_de_sensibilidad(dimension: str, valor: float, theta: float, t: float,
             f"(×{factor:.3f}).")
 
 
+# ---------------------------------------------------------------------------
+# --- VE-5 (lote m6) --- Estructura de caida recta de HEC-14 (num. 11.1.3)
+# ---------------------------------------------------------------------------
+
+def _longitud_de_caida(cota: float, yc: float) -> float:
+    """Ec. (11.12) con `ho`, o (11.14) con `h2`: (-0.406 + (3.195 - 4.368·x/yc)^0.5)·yc."""
+    return (HEC14_CAIDA_L_ORDENADA + math.sqrt(
+        HEC14_CAIDA_L_RADICANDO - HEC14_CAIDA_L_PENDIENTE * cota / yc)) * yc
+
+
+def caida_recta_hec14(*, Q: float, ancho_vertedero: float, desnivel_h: float,
+                      tirante_aguas_abajo: float,
+                      aproximacion_supercritica: bool = False
+                      ) -> EstructuraDeCaida:
+    """
+    Estructura de caida recta con estanque de bloques y umbral, HEC-14 num.
+    11.1.3 (pags. impresas 11-5 a 11-8), con los dos ejemplos resueltos de
+    las pags. 11-9 a 11-11 como oraculo. Las cotas se miden desde la cresta,
+    negativas hacia abajo, como en la fuente.
+
+        q  = Q / Wo;  yc = (q^2/g)^(1/3)                         Ec. (11.5)
+        y3 = 2.15·yc                                             Ec. (11.7)
+        h2 = -(h - yo)                                           Ec. (11.8)
+        ho = h2 - y3                                             Ec. (11.9)
+        Lf = (-0.406 + (3.195 - 4.368·ho/yc)^0.5)·yc             Ec. (11.12)
+        Lt = (-0.406 + (3.195 - 4.368·h2/yc)^0.5)·yc             Ec. (11.14)
+        Ls = (0.691 + 0.228·(Lt/yc)^2 - ho/yc)·yc
+             / (0.185 + 0.456·Lt/yc)                             Ec. (11.13)
+        L1 = (Lf + Ls)/2;  L2 = 0.8·yc;  L3 = 1.75·yc (el minimo)
+        LB = L1 + L2 + L3                                        Ec. (11.10)
+
+    y los bloques (0.8·yc de alto, 0.4·yc de ancho y separacion), el umbral
+    (0.4·yc), el muro sobre el receptor en la salida (0.85·yc) y la
+    aproximacion revestida aguas arriba de la cresta (3·yc).
+
+    `desnivel_h` es la cresta sobre el lecho del receptor (en la salida de
+    una alcantarilla, la solera de salida sobre el lecho) y
+    `tirante_aguas_abajo` el tirante normal del receptor, yo.
+
+    LIMITES (`MetodoNoEvaluableError`, rotulo de HEC-14), en este orden: la
+    llegada supercritica (paso 2; la rejilla del num. 11.1.2 no se
+    implementa), el receptor que no queda bajo la cresta (sin lamina
+    aireada), Wo de 1.5·yc o menos, |ho| de 15 ft (4.572 m) o mas, y |ho|/yc
+    fuera de 1 a 15.
+    """
+    _exigir_positivo("Q", Q, "caudal que cae, m3/s")
+    _exigir_positivo("Wo", ancho_vertedero, "ancho del vertedero, m")
+    _exigir_positivo("h", desnivel_h, "desnivel de la cresta sobre el lecho, m")
+    _exigir_no_negativo("yo", tirante_aguas_abajo,
+                        "tirante normal del receptor, m")
+    que = "estructura de caida recta (HEC-14 num. 11.1.3)"
+    if aproximacion_supercritica:
+        raise MetodoNoEvaluableError(
+            que,
+            procedimiento="la rejilla de HEC-14 (num. 11.1.2) u otro "
+                          "disipador para la llegada supercritica, fuera del "
+                          "alcance de este programa",
+            motivo="el flujo llega supercritico a la caida y la fuente pide "
+                   "verificar condiciones subcriticas (paso 2)",
+            rotulo=MOTIVO_METODO_NO_EVALUABLE_HEC14)
+    q = Q / ancho_vertedero
+    yc = math.cbrt(q * q / G)
+    y3 = HEC14_CAIDA_Y3_EN_YC * yc
+    h2 = -(desnivel_h - tirante_aguas_abajo)
+    if not h2 < -TOL_UMBRAL_NORMATIVO:
+        raise MetodoNoEvaluableError(
+            que,
+            procedimiento="otra estructura: el receptor no deja caer la "
+                          "lamina",
+            motivo=f"el tirante del receptor ({tirante_aguas_abajo:.3f} m) no "
+                   f"queda bajo la cresta (desnivel {desnivel_h:.3f} m): la "
+                   "estructura pide la lamina aireada, con el receptor bajo "
+                   "la cresta (Ec. 11.8)",
+            rotulo=MOTIVO_METODO_NO_EVALUABLE_HEC14)
+    if not ancho_vertedero > HEC14_CAIDA_WO_MIN_EN_YC * yc + TOL_UMBRAL_NORMATIVO:
+        raise MetodoNoEvaluableError(
+            que,
+            procedimiento="un vertedero mas ancho, con su transicion",
+            motivo=f"el vertedero ({ancho_vertedero:.3f} m) no supera "
+                   f"{HEC14_CAIDA_WO_MIN_EN_YC:g}·yc = "
+                   f"{HEC14_CAIDA_WO_MIN_EN_YC * yc:.3f} m (num. 11.1.3, "
+                   "condicion 3)",
+            rotulo=MOTIVO_METODO_NO_EVALUABLE_HEC14)
+    ho = h2 - y3
+    if not -ho < HEC14_CAIDA_HO_MAX_M - TOL_UMBRAL_NORMATIVO:
+        raise MetodoNoEvaluableError(
+            que,
+            procedimiento="varias caidas escalonadas u otro disipador, que "
+                          "este programa no dimensiona",
+            motivo=f"la caida total de la cresta al piso del estanque es "
+                   f"{-ho:.3f} m y la fuente limita el diseño a menos de 15 "
+                   f"ft = {HEC14_CAIDA_HO_MAX_M:.3f} m (num. 11.1.3, "
+                   "condicion 1)",
+            rotulo=MOTIVO_METODO_NO_EVALUABLE_HEC14)
+    relativa = -ho / yc
+    if not (HEC14_CAIDA_HO_SOBRE_YC_MIN - TOL_UMBRAL_NORMATIVO < relativa
+            < HEC14_CAIDA_HO_SOBRE_YC_MAX + TOL_UMBRAL_NORMATIVO):
+        raise MetodoNoEvaluableError(
+            que,
+            procedimiento="otro disipador para esta caida relativa",
+            motivo=f"la caida relativa |ho|/yc es {relativa:.2f} y la fuente "
+                   f"limita el diseño a entre "
+                   f"{HEC14_CAIDA_HO_SOBRE_YC_MIN:g} y "
+                   f"{HEC14_CAIDA_HO_SOBRE_YC_MAX:g} (num. 11.1.3, "
+                   "condicion 2)",
+            rotulo=MOTIVO_METODO_NO_EVALUABLE_HEC14)
+    depresion = -ho - desnivel_h
+    Lf = _longitud_de_caida(ho, yc)
+    Lt = _longitud_de_caida(h2, yc)
+    a, b = HEC14_CAIDA_LS_NUMERADOR
+    c, d = HEC14_CAIDA_LS_DENOMINADOR
+    Ls = (a + b * (Lt / yc) ** 2 - ho / yc) * yc / (c + d * Lt / yc)
+    L1 = (Lf + Ls) / 2
+    L2 = HEC14_CAIDA_L2_EN_YC * yc
+    L3 = HEC14_CAIDA_L3_MIN_EN_YC * yc
+    LB = L1 + L2 + L3
+    avisos: List[str] = []
+    if depresion < -TOL_UMBRAL_NORMATIVO:
+        avisos.append(
+            f"Caida recta: el piso del estanque (y3 = {y3:.3f} m bajo el "
+            f"nivel del receptor) queda {-depresion:.3f} m SOBRE el lecho: el "
+            "receptor da mas agua que la que el estanque pide (TW > y3), el "
+            "resalto se ahoga y la fuente advierte que puede hacer falta "
+            "alargar el estanque")
+    paso_cotas = paso(
+        "F6.CAIDA",
+        codigo="6.15",
+        que="Cotas de la estructura de caida recta de HEC-14 (desde la "
+            "cresta, negativas hacia abajo)",
+        formula="yc = (q^2/g)^(1/3);  y3 = 2.15 yc;  h2 = -(h - yo);  "
+                "ho = h2 - y3",
+        formula_cita_id="HEC14.11.1.3#Y3",
+        citas_textuales=("HEC14.11.1.3#Y3", "HEC14.11.1.3#LIMITES",
+                         "HEC14.11.1.3#SALIDA_COLGADA",
+                         "HEC14.11.1.3#SUBCRITICO",
+                         "HEC14.11.1.3#ANCHO_APROXIMACION"),
+        sustitucion=(
+            Magnitud("Q", Q, "m3/s", "caudal del cruce", cifras=CIFRAS_FINA),
+            Magnitud("Wo", ancho_vertedero, "m",
+                     "ancho del vertedero: el de los barriles en la salida "
+                     "(lectura del proyecto, cita "
+                     "HEC14.11.1.3#ANCHO_APROXIMACION)",
+                     cifras=CIFRAS_MAGNITUD),
+            Magnitud("h", desnivel_h, "m",
+                     "desnivel de la cresta (solera de salida) sobre el "
+                     "lecho del receptor", cifras=CIFRAS_MAGNITUD),
+            Magnitud("yo", tirante_aguas_abajo, "m",
+                     "tirante del receptor (Sec. 1.3)",
+                     cifras=CIFRAS_MAGNITUD),
+            Magnitud("yc", yc, "m", f"tirante critico sobre la cresta, q = "
+                     f"{q:.3f} m2/s", cifras=CIFRAS_MAGNITUD),
+            Magnitud("y3", y3, "m", "agua sobre el piso del estanque",
+                     cifras=CIFRAS_MAGNITUD),
+            Magnitud("h2", h2, "m", "nivel del receptor bajo la cresta",
+                     cifras=CIFRAS_MAGNITUD)),
+        resultado=Magnitud("ho", ho, "m",
+                           f"piso del estanque bajo la cresta; el piso baja "
+                           f"{depresion:.3f} m bajo el lecho; |ho|/yc = "
+                           f"{relativa:.2f}", cifras=CIFRAS_MAGNITUD),
+        veredicto=Veredicto(
+            tipo=TipoDeVeredicto.SIN_VEREDICTO,
+            explicacion="dimensionamiento [C] dentro de los limites de la "
+                        "fuente: caida de menos de 15 ft, |ho|/yc entre 1 y "
+                        "15 y Wo mayor que 1.5·yc"))
+    paso_estanque = paso(
+        "F6.CAIDA_ESTANQUE",
+        codigo="6.16",
+        que="Longitud, bloques, umbral, muros y aproximacion de la "
+            "estructura de caida recta",
+        formula="LB = (Lf + Ls)/2 + 0.8 yc + 1.75 yc;  bloques 0.8 yc x "
+                "0.4 yc;  umbral 0.4 yc;  muro 0.85 yc sobre el TW;  "
+                "aproximacion 3 yc",
+        formula_cita_id="HEC14.11.1.3#LONGITUD",
+        citas_textuales=("HEC14.11.1.3#LONGITUD", "HEC14.11.1.3#BLOQUES"),
+        sustitucion=(
+            Magnitud("Lf", Lf, "m", "Ec. (11.12)", cifras=CIFRAS_MAGNITUD),
+            Magnitud("Lt", Lt, "m", "Ec. (11.14)", cifras=CIFRAS_MAGNITUD),
+            Magnitud("Ls", Ls, "m", "Ec. (11.13)", cifras=CIFRAS_MAGNITUD),
+            Magnitud("L1", L1, "m", "Ec. (11.11)", cifras=CIFRAS_MAGNITUD),
+            Magnitud("L2", L2, "m", "Ec. (11.15)", cifras=CIFRAS_MAGNITUD),
+            Magnitud("L3", L3, "m", "Ec. (11.16), el minimo",
+                     cifras=CIFRAS_MAGNITUD)),
+        resultado=Magnitud(
+            "LB", LB, "m",
+            f"longitud del estanque; bloques de "
+            f"{HEC14_CAIDA_BLOQUE_ALTO_EN_YC * yc:.3f} m de alto y "
+            f"{HEC14_CAIDA_BLOQUE_ANCHO_EN_YC * yc:.3f} m de ancho y "
+            f"separacion; umbral de {HEC14_CAIDA_UMBRAL_EN_YC * yc:.3f} m; "
+            f"muro {HEC14_CAIDA_MURO_SOBRE_TW_EN_YC * yc:.3f} m sobre el "
+            f"receptor; aproximacion revestida "
+            f"{HEC14_CAIDA_APROXIMACION_EN_YC * yc:.2f} m",
+            cifras=CIFRAS_MAGNITUD),
+        veredicto=Veredicto(
+            tipo=TipoDeVeredicto.SIN_VEREDICTO,
+            explicacion="proporciones de la fuente en el tirante critico"))
+    return EstructuraDeCaida(
+        Q=Q, ancho_vertedero=ancho_vertedero, q=q, yc=yc,
+        desnivel_h=desnivel_h, tirante_aguas_abajo=tirante_aguas_abajo,
+        y3=y3, h2=h2, ho=ho, depresion_piso=depresion, Lf=Lf, Lt=Lt, Ls=Ls,
+        L1=L1, L2=L2, L3=L3, longitud=LB,
+        altura_bloques=HEC14_CAIDA_BLOQUE_ALTO_EN_YC * yc,
+        ancho_bloques=HEC14_CAIDA_BLOQUE_ANCHO_EN_YC * yc,
+        altura_umbral=HEC14_CAIDA_UMBRAL_EN_YC * yc,
+        muro_sobre_tw=HEC14_CAIDA_MURO_SOBRE_TW_EN_YC * yc,
+        longitud_aproximacion=HEC14_CAIDA_APROXIMACION_EN_YC * yc,
+        pasos=(paso_cotas, paso_estanque), avisos=tuple(avisos))
+
+
+_CAIDA = "Salida colgada, caida recta de HEC-14 (Cap. 11)"
+
+
+def _caida_de_la_fase(*, resultado: ResultadoHidraulico, seccion: Seccion,
+                      altura_caida_m: Optional[float],
+                      pendiente_maxima_gobierna: bool,
+                      avisos: List[str]) -> Optional[EstructuraDeCaida]:
+    """
+    --- VE-5 (lote m6) --- Si la salida queda colgada de modo que la Fase 6
+    no la cierra con la hoya del Cap. 5, la estructura de caida recta del
+    Cap. 11 de HEC-14 (decision del dueño: dentro del alcance). Dos
+    disparadores:
+
+      * la pendiente MAXIMA gobierna (`M7.pendiente_adoptada`, origen
+        «maxima»): el conducto queda mas tendido que su cauce y el desnivel
+        queda en la salida (ficha T6-02);
+      * la caida pasa la ultima fila de la Tabla 5.2 (4 alturas del
+        conducto), donde la hoya no se extrapola.
+
+    El vertedero es el ancho total de los barriles en la salida (n·B o n·D,
+    `Interpretacion` de la cita HEC14.11.1.3#ANCHO_APROXIMACION); yo es el TW
+    del punto; la llegada es supercritica si el tirante normal del barril
+    queda bajo el critico (la regla de `flujo_supercritico`). Dentro de la
+    Fase 6 un `MetodoNoEvaluableError` se vuelve AVISO.
+    """
+    if altura_caida_m is None or not altura_caida_m > TOL_UMBRAL_NORMATIVO:
+        return None
+    Hd = altura_caida_m / seccion.altura
+    fuera_de_tabla = Hd > HEC14_SOCAVACION_CH[-1][0] + TOL_UMBRAL_NORMATIVO
+    if not (pendiente_maxima_gobierna or fuera_de_tabla):
+        return None
+    por_que = ("gobierna la pendiente maxima del conducto y el desnivel del "
+               "cauce queda en la salida (ficha T6-02)"
+               if pendiente_maxima_gobierna else
+               f"la salida queda {Hd:.2f} alturas del conducto sobre el lecho "
+               f"y la Tabla 5.2 de HEC-14 llega a "
+               f"{HEC14_SOCAVACION_CH[-1][0]:g}")
+    if resultado.TW_m is None:
+        avisos.append(f"{_CAIDA}: {por_que}, y NO se evaluo -- el "
+                      "resultado hidraulico no trae el tirante del receptor")
+        return None
+    ancho = resultado.numero_celdas * (
+        seccion.B if isinstance(seccion, SeccionRectangular) else seccion.D)
+    llegada_supercritica = bool(flujo_supercritico(resultado.y_normal,
+                                                   resultado.y_critico))
+    try:
+        caida = caida_recta_hec14(
+            Q=resultado.Q, ancho_vertedero=ancho, desnivel_h=altura_caida_m,
+            tirante_aguas_abajo=resultado.TW_m,
+            aproximacion_supercritica=llegada_supercritica)
+    except MetodoNoEvaluableError as error:
+        avisos.append(
+            f"{_CAIDA}: {por_que}, y la estructura NO se evaluo -- "
+            f"{error.motivo}. Hace falta: {error.procedimiento}")
+        return None
+    avisos.append(
+        f"{_CAIDA}: {por_que}. La salida se cierra con una estructura de "
+        f"caida recta de {caida.longitud:.2f} m de estanque, "
+        f"con el piso {caida.depresion_piso:.2f} m bajo el lecho, bloques de "
+        f"{caida.altura_bloques:.2f} m y umbral de {caida.altura_umbral:.2f} m "
+        "(pasos 6.15 y 6.16)")
+    avisos.extend(caida.avisos)
+    return caida
+
+
 def socavacion_salida(*, resultado: ResultadoHidraulico, seccion: Seccion,
                       altura_caida_m: Optional[float] = None,
                       material: Optional[MaterialLecho] = None,
@@ -2339,7 +3507,8 @@ def socavacion_salida(*, resultado: ResultadoHidraulico, seccion: Seccion,
                       longitud_proteccion_m: Optional[float] = None,
                       proteccion_requerida: Optional[bool] = None,
                       cota_fondo_receptor: Optional[float] = None,
-                      cota_solera_salida: Optional[float] = None
+                      cota_solera_salida: Optional[float] = None,
+                      pendiente_maxima_gobierna: bool = False
                       ) -> SocavacionSalida:
     """
     La profundidad de socavacion a la salida que la Fase 6 ENTREGA AL
@@ -2557,9 +3726,15 @@ def socavacion_salida(*, resultado: ResultadoHidraulico, seccion: Seccion,
                         "para el desplante y la Figura 10.1 de la poza, otro "
                         "metodo, la mide desde la solera de salida",
                 clave_criterio=CRITERIO_REFERENCIA),)))
+    caida = _caida_de_la_fase(
+        resultado=resultado, seccion=seccion, altura_caida_m=altura_caida_m,
+        pendiente_maxima_gobierna=pendiente_maxima_gobierna, avisos=avisos)
+    if caida is not None:
+        pasos.extend(caida.pasos)
     return SocavacionSalida(
         profundidad_para_desplante=profundidad, origen=origen,
         estimada=estimada, declarada_m=declarada_m,
         motivo_no_estimada="" if estimada is not None else motivo,
         pasos=tuple(pasos), avisos=tuple(avisos), referencia=referencia,
-        cota_referencia=cota_ref, cota_fondo_de_la_hoya=cota_hoya)
+        cota_referencia=cota_ref, cota_fondo_de_la_hoya=cota_hoya,
+        caida=caida)

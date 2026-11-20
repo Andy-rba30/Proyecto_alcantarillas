@@ -3012,6 +3012,13 @@ class ProteccionSalida:
     # «manual» y cuando HEC-14 no es evaluable en el punto).
     d50_laushey: Optional[float] = None
     rige_la_envolvente: bool = False
+    # --- VE-4g --- La poza de enrocado de HEC-14 Sec. 10.1, donde el apron
+    # no llega (marco, conducto de mas de 60 in). None si el apron se evaluo
+    # o si la poza tampoco es evaluable (varios barriles, Froude de 3 o mas).
+    poza: Optional["PozaDeEnrocado"] = None
+    # --- VE-5 (lote m6) --- Con el TW sobre 1.0·D de un tubo de hasta 60
+    # in: la Figura 10.3 y la Ec. (10.6). None en otro caso.
+    tw_alto: Optional["ProteccionTWAlto"] = None
 
 
 # ---------------------------------------------------------------------------
@@ -3104,6 +3111,118 @@ class ClaseHEC14:
     espesor: Optional[float] = None       # m
     ancho_final: Optional[float] = None   # m
     paso: Optional["PasoDeMemoria"] = None
+
+
+@dataclass(frozen=True)
+class PozaDeEnrocado:
+    """
+    --- VE-4g --- La poza de enrocado (riprap basin) de HEC-14 Sec. 10.1:
+    la hoya PRE-FORMADA y revestida que la Tabla 1.1 da donde el apron de la
+    Sec. 10.2 no llega (marco, conducto de mas de 60 in). La dimensiona el
+    procedimiento del num. 10.1.5 (`M6.poza_de_enrocado_hec14`).
+
+    DOS PIEDRAS, y no se confunden: `D50_dimensionamiento` es con la que se
+    resuelve la Ec. (10.1) y `D50_piedra` la que REVISTE la poza. Son la
+    misma salvo que la piedra disponible de hs/D50 < 2: entonces la poza se
+    dimensiona con la piedra de hs/D50 = 2 exacto y se reviste con la mayor
+    («A basin sized for smaller riprap may be lined with larger riprap»,
+    `dimensionada_con_menor`). Bajo D50/ye = 0.1, el limite de los ensayos,
+    la piedra se sube a 0.1·ye (`piedra_subida`).
+    """
+
+    y_equivalente: float                  # m - ye (num. 10.1.1)
+    Fr: float                             # Vo/(g·ye)^0.5
+    TW: float                             # m
+    Co: float                             # Ec. (10.2) o (10.3)
+    relacion_co: str                      # 'envolvente' o 'mejor_ajuste'
+    D50_minimo: float                     # m - 0.1·ye
+    D50_piedra: float                     # m - la que reviste
+    D50_dimensionamiento: float           # m - con la que se resuelve hs
+    dimensionada_con_menor: bool
+    piedra_subida: bool
+    hs: float                             # m - profundidad de la poza
+    Wo: float                             # m - ancho del conducto en la boca
+    longitud_poza: float                  # m - Ls
+    longitud_apron: float                 # m - LA = LB - Ls
+    longitud_total: float                 # m - LB (extendida si hizo falta)
+    longitud_sin_extender: float          # m - LB del paso 3
+    ancho_final: float                    # m - WB = Wo + (2/3)·LB
+    espesor: float                        # m - 2·D50 en piso y lados
+    espesor_talud: float                  # m - 3·D50 en el talud de salida
+    yc_salida: float                      # m - tirante critico en la salida
+    V_salida_poza: float                  # m/s - Vc en la salida
+    V_admisible: Optional[float] = None   # m/s - Vallow; None sin el dato
+    extendida: bool = False               # el apron se alargo hasta Vallow
+    # Paso 5: TW/yo > 0.75 pide proteccion aguas abajo (Figura 10.3); None
+    # si falta el tirante de borde yo.
+    proteccion_adicional: Optional[bool] = None
+    pasos: Tuple["PasoDeMemoria", ...] = ()
+    avisos: Tuple[str, ...] = ()
+    # --- VE-5 (lote m6) --- Con `proteccion_adicional` y la admisible, la
+    # Figura 10.3: hasta donde llega la proteccion (m desde la boca) y la
+    # piedra en la salida de la poza (Ec. 10.6). None si no aplica.
+    proteccion_adicional_hasta: Optional[float] = None
+    D50_proteccion_adicional: Optional[float] = None
+
+
+@dataclass(frozen=True)
+class ProteccionTWAlto:
+    """
+    --- VE-5 (lote m6) --- La proteccion de salida con el tirante del
+    receptor sobre 1.0·D, donde la Ec. (10.4) no vale: la Sec. 10.2 de
+    HEC-14 manda a la Figura 10.3 (atenuacion de la velocidad en el eje) y
+    a la Ec. (10.6) de la Sec. 10.3 para la piedra. La dimensiona
+    `M6.proteccion_tw_alto_hec14`.
+    """
+
+    De: float                             # m - diametro equivalente de borde
+    Vo: float                             # m/s - velocidad de salida
+    V_admisible: float                    # m/s
+    D50: float                            # m - Ec. (10.6) con Vo, en la boca
+    longitud: float                       # m - hasta VL = Vallow
+    espesor: float                        # m - 2·D50 (lectura del proyecto)
+    pasos: Tuple["PasoDeMemoria", ...] = ()
+
+
+@dataclass(frozen=True)
+class EstructuraDeCaida:
+    """
+    --- VE-5 (lote m6) --- La estructura de caida recta de HEC-14 num.
+    11.1.3 (estanque de bloques y umbral del St. Anthony Falls) para la
+    salida que queda colgada sobre el lecho: cuando gobierna la pendiente
+    maxima del conducto o cuando la caida supera la Tabla 5.2. La dimensiona
+    `M6.caida_recta_hec14`.
+
+    LAS COTAS VERTICALES SE MIDEN DESDE LA CRESTA y son NEGATIVAS hacia
+    abajo, como las escribe la fuente: `h2` es el nivel del receptor y `ho`
+    el piso del estanque. `depresion_piso` = -ho - h: cuanto baja el piso
+    bajo el lecho del receptor (negativo si queda por encima).
+    """
+
+    Q: float                              # m3/s
+    ancho_vertedero: float                # m - Wo
+    q: float                              # m2/s - Q/Wo
+    yc: float                             # m - Ec. (11.5)
+    desnivel_h: float                     # m - cresta sobre el lecho
+    tirante_aguas_abajo: float            # m - yo del receptor
+    y3: float                             # m - Ec. (11.7)
+    h2: float                             # m - Ec. (11.8), negativo
+    ho: float                             # m - Ec. (11.9), negativo
+    depresion_piso: float                 # m
+    Lf: float                             # m - Ec. (11.12)
+    Lt: float                             # m - Ec. (11.14)
+    Ls: float                             # m - Ec. (11.13)
+    L1: float                             # m - Ec. (11.11)
+    L2: float                             # m - Ec. (11.15)
+    L3: float                             # m - Ec. (11.16), el minimo
+    longitud: float                       # m - LB, Ec. (11.10)
+    altura_bloques: float                 # m
+    ancho_bloques: float                  # m - ancho y separacion
+    altura_umbral: float                  # m
+    muro_sobre_tw: float                  # m
+    longitud_aproximacion: float          # m - revestida aguas arriba
+    pasos: Tuple["PasoDeMemoria", ...] = ()
+    avisos: Tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -3228,6 +3347,11 @@ class SocavacionSalida:
     referencia: Optional[str] = None
     cota_referencia: Optional[float] = None       # msnm
     cota_fondo_de_la_hoya: Optional[float] = None  # msnm
+    # --- VE-5 (lote m6) --- La estructura de caida recta de HEC-14 Cap. 11
+    # cuando la salida queda colgada (pendiente maxima del conducto, o caida
+    # mas alla de la Tabla 5.2). None si no hace falta o no es evaluable
+    # (lo dice un aviso).
+    caida: Optional["EstructuraDeCaida"] = None
 
 
 @dataclass(frozen=True)

@@ -1759,6 +1759,11 @@ _META_CRITERIOS: Dict[str, _Meta] = {
         unidad="-",
         nota="Categoria: rige lo adoptado («manual») o la envolvente con "
              "HEC-14 Tabla 10.1 («envolvente_hec14»)"),
+    # --- VE-4g --- la relacion del parametro Co de la poza de enrocado.
+    "relacion_co_poza_enrocado_hec14": _Meta(
+        unidad="-",
+        nota="Categoria: Co de la Ec. (10.1) de HEC-14 por la envolvente "
+             "(Ec. 10.2) o por el mejor ajuste (Ec. 10.3)"),
     "referencia_profundidad_socavacion": _Meta(
         unidad="-",
         nota="Categoria: cota desde la que se mide la profundidad de "

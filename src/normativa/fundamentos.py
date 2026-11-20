@@ -1065,6 +1065,142 @@ GEOMETRIA_ADOPTADA = _fundamento(
         "un numero que no se puede construir."),
 )
 
+# --- VE-4g --- La poza de enrocado de HEC-14 Sec. 10.1.
+POZA = _fundamento(
+    id="F6.POZA",
+    fase=F6,
+    que_paso=("Profundidad de la poza de enrocado de HEC-14 y piedra con "
+              "que se dimensiona, por la Ec. (10.1)"),
+    por_que=(
+        "El apron de la Ec. (10.4) solo cubre un conducto circular de hasta "
+        "60 pulgadas de alto. Para un marco o un conducto mas alto, la "
+        "misma tabla de disipadores de HEC-14 ofrece la poza de enrocado: "
+        "una hoya pre-formada y revestida a la profundidad a la que la "
+        "descarga socavaria un colchon grueso de piedra, que disipa la "
+        "energia con un resalto dentro de ella. Su ecuacion vale para "
+        "marcos y para tubos --el tirante equivalente existe para eso-- y "
+        "se ajusto a ensayos con piedras de al menos una decima del tirante "
+        "y hoyas de al menos dos veces la piedra; fuera de esos limites no "
+        "se extrapola. Si la piedra disponible es mayor que la que deja "
+        "hs/D50 = 2, la fuente permite dimensionar la poza con la menor y "
+        "revestirla con la mayor. La relacion del tirante del receptor que "
+        "rige --envolvente o mejor ajuste-- la recomienda segun la "
+        "consecuencia de la falla, y el proyecto la declara."),
+    verbo=Verbo.RECOMIENDA,
+    citas=("HEC14.1#T1_1_POZA", "HEC14.10.1#EC_10_1",
+           "HEC14.10.1#CO_ENVOLVENTE", "HEC14.10.1.5#RANGO",
+           "HEC14.10.1#MAYOR_REVISTE", "HEC14.10.1.1#ENSAYOS",
+           "HEC14.10.1.1#YE", "HEC14.10.1#DOS_D50", "HEC14.10.1.4#TALUD"),
+    que_pasa_si_no_se_hace=(
+        "Un marco o un conducto de mas de 60 pulgadas quedaria protegido "
+        "solo por la formula de velocidad del Manual, sin la medida que "
+        "HEC-14 da para el."),
+)
+
+POZA_SALIDA = _fundamento(
+    id="F6.POZA_SALIDA",
+    fase=F6,
+    que_paso=("Longitud y ancho de la poza de enrocado y velocidad a su "
+              "salida contra la admisible"),
+    por_que=(
+        "La poza solo protege si la corriente sale de ella a una velocidad "
+        "que el cauce resiste. HEC-14 le da una longitud ligada a la "
+        "profundidad de la hoya, con un minimo en anchos del conducto, la "
+        "abre en planta a razon de 1:3 y comprueba que el tirante critico "
+        "a la salida, con los taludes laterales de la poza, deje una "
+        "velocidad no mayor que la admisible. Si la supera, su propio "
+        "ejemplo alarga el apron con el mismo abocinado hasta bajarla. Con "
+        "el tirante del receptor alto la corriente atraviesa la poza y "
+        "hace falta proteccion aguas abajo, que la fuente estima con la "
+        "atenuacion de la velocidad de su Figura 10.3."),
+    verbo=Verbo.RECOMIENDA,
+    citas=("HEC14.10.1#LONGITUDES", "HEC14.10.1.2#ABOCINADO",
+           "HEC14.10.1.5#SALIDA", "HEC14.10.1#EXTENDER",
+           "HEC14.10.1.5#PASO_5", "MC_HHD.4.1.1.3.6#T11"),
+    que_pasa_si_no_se_hace=(
+        "La poza podria entregar al cauce una corriente mas rapida que la "
+        "que el terreno resiste, y la erosion solo se correria aguas "
+        "abajo."),
+)
+
+# --- VE-5 (lote m6) --- La Figura 10.3 de HEC-14: el tirante alto.
+TW_ALTO = _fundamento(
+    id="F6.TW_ALTO",
+    fase=F6,
+    que_paso=("Proteccion aguas abajo con el tirante del receptor alto: "
+              "atenuacion de la velocidad por la Figura 10.3 de HEC-14 y "
+              "piedra por la Ec. (10.6)"),
+    por_que=(
+        "Con el receptor alto la corriente que sale del conducto no se "
+        "abre ni cae: su nucleo rapido atraviesa el agua quieta y se atenua "
+        "despacio aguas abajo. La ecuacion del apron deja de valer con el "
+        "tirante sobre la clave, y la fuente manda a medir esa atenuacion "
+        "con su Figura 10.3 --la velocidad en el eje en funcion de la "
+        "distancia medida en diametros equivalentes-- y a dimensionar la "
+        "piedra con la ecuacion que recomienda aguas abajo de los "
+        "disipadores. La proteccion llega hasta donde la velocidad baja a la "
+        "admisible del cauce."),
+    verbo=Verbo.RECOMIENDA,
+    citas=("HEC14.10.2#TW_ALTO", "HEC14.10.1.3#FIGURA_10_3",
+           "HEC14.10.3#EC_10_6", "HEC14.10.1#HASTA_VALLOW",
+           "HEC14.10.1.5#PASO_5"),
+    que_pasa_si_no_se_hace=(
+        "Con el receptor alto la salida quedaria sin longitud de proteccion "
+        "y la erosion se correria aguas abajo de lo revestido."),
+)
+
+# --- VE-5 (lote m6) --- La estructura de caida recta de HEC-14 Cap. 11.
+CAIDA = _fundamento(
+    id="F6.CAIDA",
+    fase=F6,
+    que_paso=("Cotas de la estructura de caida recta de HEC-14 en la salida "
+              "colgada: tirante critico, nivel del receptor y piso del "
+              "estanque"),
+    por_que=(
+        "Cuando la solera de salida queda colgada sobre el lecho --porque el "
+        "conducto no puede seguir la pendiente de su cauce, o porque la "
+        "caida pasa la ultima fila de la tabla de socavacion--, el chorro "
+        "cae al cauce con una energia que la hoya local no describe. HEC-14 "
+        "da para una caida a la salida de una alcantarilla la estructura de "
+        "caida recta: un vertedero seguido de un estanque con bloques y "
+        "umbral, cuyas medidas salen del tirante critico sobre la cresta. "
+        "El estanque necesita bastante agua sobre su piso para que el "
+        "resalto quede dentro, y por eso el piso se baja bajo el lecho "
+        "cuando el receptor no la da; y la lamina tiene que caer aireada, "
+        "con el nivel del receptor bajo la cresta. La fuente limita el "
+        "diseño a caidas de hasta 15 pies, a caidas relativas entre 1 y 15 "
+        "tirantes criticos, a un vertedero de mas de 1.5 tirantes criticos "
+        "y a la llegada subcritica."),
+    verbo=Verbo.RECOMIENDA,
+    citas=("HEC14.11.1.3#SALIDA_COLGADA", "HEC14.11.1.3#LIMITES",
+           "HEC14.11.1.3#SUBCRITICO", "HEC14.11.1.3#Y3",
+           "HEC14.11.1.3#ANCHO_APROXIMACION"),
+    que_pasa_si_no_se_hace=(
+        "La salida colgada quedaria sin medida que disipe la caida, y el "
+        "desnivel que el conducto no sigue se lo llevaria el cauce."),
+)
+
+CAIDA_ESTANQUE = _fundamento(
+    id="F6.CAIDA_ESTANQUE",
+    fase=F6,
+    que_paso=("Longitud del estanque, bloques, umbral, muros y aproximacion "
+              "revestida de la estructura de caida recta"),
+    por_que=(
+        "El estanque tiene que contener el punto donde cae la lamina, el "
+        "tramo hasta los bloques y el resalto que los bloques y el umbral "
+        "fuerzan; HEC-14 da cada tramo con una ecuacion en el tirante "
+        "critico, y con ellas un estanque mas corto que el de una losa lisa. "
+        "Los bloques, el umbral, la altura de los muros sobre el receptor y "
+        "el tramo revestido aguas arriba de la cresta, donde el flujo se "
+        "acelera, salen de la misma fuente como proporciones del tirante "
+        "critico."),
+    verbo=Verbo.RECOMIENDA,
+    citas=("HEC14.11.1.3#LONGITUD", "HEC14.11.1.3#BLOQUES"),
+    que_pasa_si_no_se_hace=(
+        "La caida tendria cotas y no un estanque que construir: la lamina "
+        "podria caer fuera de el y el resalto escaparse al cauce."),
+)
+
 FILTRO_ENROCADO = _fundamento(
     id="F6.FILTRO",
     fase=F6,

@@ -3551,7 +3551,13 @@ def _fase_6_socavacion(informe: InformePunto,
                                   else proteccion.requerida),
             cota_fondo_receptor=informe.punto_de_calculo.cota_fondo_receptor,
             cota_solera_salida=(None if geometria is None
-                                else geometria.cota_salida)))
+                                else geometria.cota_salida),
+            # --- VE-5 (lote m6) --- con la pendiente MAXIMA el desnivel del
+            # cauce queda en la salida (ficha T6-02): la Fase 6 lo cierra con
+            # la caida recta de HEC-14 Cap. 11.
+            pendiente_maxima_gobierna=(
+                informe.pendiente is not None
+                and informe.pendiente.origen is OrigenPendiente.MAXIMA)))
 
 
 def _fase_7(informe: InformePunto,
