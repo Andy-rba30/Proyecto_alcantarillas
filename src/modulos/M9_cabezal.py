@@ -11957,7 +11957,8 @@ def diseno_flexion_corte(*, momento: Optional[float] = None,
                          sufijo: str = "",
                          id_punto: Optional[str] = None,
                          contraste_e060: Optional[Tuple[float, float]] = None,
-                         momento_servicio: Optional[float] = None
+                         momento_servicio: Optional[float] = None,
+                         contra_el_suelo: bool = False
                          ) -> ArmadoDeSeccion:
     """
     Diseño por flexion y corte de UNA seccion del cabezal, por metro de
@@ -12014,6 +12015,11 @@ def diseno_flexion_corte(*, momento: Optional[float] = None,
     Lo que NO hace: no cruza marcos (las resistencias de E.060 solo se
     comparan con cargas de E.060), no dimensiona estribos y no cambia el
     espesor: si ninguna barra del catalogo alcanza, A1 no cumple y lo dice.
+
+    --- VE-5 (m8) --- `contra_el_suelo` arma la cara con el recubrimiento
+    del concreto vaciado contra el suelo (la fila de la cara inferior de la
+    zapata); lo usa la losa inferior del portico del marco
+    (`M8.disenar_portico`), que reutiliza esta funcion.
     """
     ca.valor(CRITERIO_FLEXION_CORTE)
     if espesor is None:
@@ -12108,7 +12114,9 @@ def diseno_flexion_corte(*, momento: Optional[float] = None,
             activo = activo or nombre == catalogo["minima_principal"]
             if not activo:
                 continue
-            condicion = _condicion_de_recubrimiento(clave, diametro, catalogo)
+            condicion = (CONDICION_RECUBRIMIENTO_ZAPATA if contra_el_suelo
+                         else _condicion_de_recubrimiento(clave, diametro,
+                                                          catalogo))
             rec, origen_rec, aviso_rec = recubrimiento_para_armar(
                 condicion=condicion)
             d = espesor - (rec + diametro / 2) / MILIMETROS_POR_METRO

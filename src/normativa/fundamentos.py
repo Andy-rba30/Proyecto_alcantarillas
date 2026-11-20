@@ -2890,7 +2890,11 @@ CARGA_VIVA_ENTERRADA = _fundamento(
         "camion y del tandem de diseño. El incremento por carga dinamica de "
         "lo enterrado decrece con la profundidad y se anula a 8 pies. Con "
         "mas de 8 pies de relleno que ademas superan la luz, la carga viva "
-        "se puede despreciar."),
+        "se puede despreciar. Con menos de 2 pies el rectangulo no vale para "
+        "el tubo de concreto ni para el cajon: el eje se reparte en una "
+        "franja equivalente cuyo ancho crece con la luz, el cajon a la "
+        "profundidad que tiene y el tubo de concreto a la de 1 pie; con "
+        "menos de 1 pie un tubo redondo exige metodos mas completos."),
     verbo=Verbo.OBLIGA,
     citas=("AASHTO_LRFD_9.3.6.1.2.6a#RELLENO",      # EXIGENCIA
            "AASHTO_LRFD_9.3.6.1.2.6a#EJES",
@@ -2898,6 +2902,14 @@ CARGA_VIVA_ENTERRADA = _fundamento(
            "AASHTO_LRFD_9.3.6.1.2.6a#DESPRECIABLE",
            "AASHTO_LRFD_9.3.6.1.2.6a#VARIOS_VANOS",
            "AASHTO_LRFD_9.3.6.1.2.6a#CONCRETO_SOMERO",
+           # VE-4f: el relleno somero (franja de 4.6.2.10).
+           "AASHTO_LRFD_9.3.6.1.2.6a#UN_PIE",
+           "AASHTO_LRFD_9.3.6.1.2.6a#MENOS_DE_UN_PIE",
+           "AASHTO_LRFD_9.4.6.2.10.1",
+           "AASHTO_LRFD_9.4.6.2.10.2#UN_CARRIL",
+           "AASHTO_LRFD_9.4.6.2.10.2#FRANJA",
+           "AASHTO_LRFD_9.C4.6.2.10.2#E_SPAN",
+           "AASHTO_LRFD_9.12.11.2.1#SOMERO",
            "AASHTO_LRFD_9.T3.6.1.2.6a-1",
            "AASHTO_LRFD_9.3.6.1.2.6b#PL",
            "AASHTO_LRFD_9.C3.6.1.2.6b",
@@ -2912,6 +2924,29 @@ CARGA_VIVA_ENTERRADA = _fundamento(
         "que pasaba hasta T-5: el rotulo HL-93 aparecia en la memoria y la "
         "carga viva nunca entraba al tubo (INF-3.3.5). Con un metro de "
         "relleno la rueda distribuida es del orden del propio relleno."),
+)
+
+COBERTURA_CONDUCTO = _fundamento(
+    id="F8.COBERTURA",
+    fase=F8,
+    que_paso=("Cobertura minima del conducto redondo cuando el relleno queda "
+              "por debajo del dominio de la rueda distribuida"),
+    por_que=(
+        "Por debajo de 2 pies de relleno en el tubo de concreto, o de 1 pie "
+        "en el flexible, la carga viva ya no se reparte como a mayor "
+        "profundidad y la norma de diseño pide antes otra cosa: que el "
+        "conducto tenga la cobertura minima de su tabla, por material y por "
+        "condicion de pavimento. Un tubo que no la alcanza no se verifica "
+        "con otra carga: incumple. Solo con la cobertura cumplida tiene "
+        "sentido repartir la rueda en la franja del relleno somero."),
+    verbo=Verbo.OBLIGA,
+    citas=("AASHTO_LRFD_9.12.6.6.3#COBERTURA",          # EXIGENCIA
+           "AASHTO_LRFD_9.T12.6.6.3-1",
+           "AASHTO_LRFD_9.3.6.1.2.6a#MENOS_DE_UN_PIE"),
+    que_pasa_si_no_se_hace=(
+        "El tubo sin la cobertura minima salia «metodo no evaluable» y, a "
+        "nivel de perfil, se adoptaba con la Fase 8 diferida: el "
+        "incumplimiento solo aparecia despues, en G1 de la Fase 7."),
 )
 
 CARGA_TIERRA = _fundamento(
@@ -3197,15 +3232,60 @@ MARCO_DEMANDA = _fundamento(
         "diseñan como elementos de concreto armado con las cargas de la "
         "Seccion 12 --el relleno con su factor de interaccion, que tiene "
         "tope con relleno compactado a los costados, y la rueda distribuida "
-        "a traves del relleno--. La hoja de ruta deja el diseño de la "
-        "seccion del marco fuera del alcance de este programa: aqui se "
-        "calcula la demanda que ese diseño tiene que cubrir."),
+        "a traves del relleno--. Aqui se calcula la demanda de referencia "
+        "de la losa superior; el portico entero se analiza y se arma en el "
+        "paso de su analisis."),
     verbo=Verbo.OBLIGA,
     citas=("AASHTO_LRFD_9.12.11.2.2.1",               # EXIGENCIA
            "AASHTO_LRFD_9.12.11.2.1#LL"),
     que_pasa_si_no_se_hace=(
         "El marco llega al expediente sin la carga con que hay que "
         "diseñarlo, y la memoria dice «diferido» sin decir que se difiere."),
+)
+
+
+PORTICO_MARCO = _fundamento(
+    id="F8.PORTICO",
+    fase=F8,
+    que_paso=("Marco de concreto: analisis del portico cerrado y armado de "
+              "sus losas, paredes y tabiques"),
+    por_que=(
+        "El marco de concreto vaciado en sitio no es un producto de "
+        "catalogo: cada seccion de sus losas y paredes se diseña para las "
+        "cargas factoradas de la tabla de combinaciones en el estado limite "
+        "de resistencia, y se controla la fisuracion en servicio. Las "
+        "cargas son el peso propio, el relleno con su factor de "
+        "interaccion, el empuje lateral del suelo y el de la sobrecarga "
+        "viva, el agua interior y la carga viva repartida con el mismo ancho "
+        "en la losa superior, las paredes y la losa inferior. Tres "
+        "combinaciones envuelven los efectos que gobiernan --vertical "
+        "maximo con horizontal maximo y con horizontal minimo, y vertical "
+        "minimo con horizontal maximo--, cada una con y sin la sobrecarga "
+        "lateral. El empuje del relleno que no se deja desplazar es el de "
+        "reposo, y la reduccion del empuje a la mitad que la norma permite "
+        "para el momento positivo de la losa superior se usa solo ahi. Las "
+        "secciones se arman con el refuerzo minimo de flexion y el de "
+        "retraccion y temperatura, y el cortante se verifica con las "
+        "disposiciones generales del concreto."),
+    verbo=Verbo.OBLIGA,
+    citas=("AASHTO_LRFD_9.12.11.5.1",                 # EXIGENCIA
+           "AASHTO_LRFD_9.12.11.2.1#CARGAS",
+           "AASHTO_LRFD_9.12.11.2.3",
+           "AASHTO_LRFD_9.C12.11.2.1#COMBINACIONES",
+           "AASHTO_LRFD_9.3.11.5.2#K0",
+           "AASHTO_LRFD_9.3.11.7",
+           "AASHTO_LRFD_9.3.11.6.4#APLICA",
+           "AASHTO_LRFD_9.T3.11.6.4-1",
+           "AASHTO_LRFD_9.T12.5.5-1#CAJON_IN_SITU",
+           "AASHTO_LRFD_9.12.5.5",
+           "AASHTO_LRFD_9.12.11.4",
+           "AASHTO_LRFD_9.12.11.5.3.1",
+           "AASHTO_LRFD_9.12.11.5.1#CORTANTE",
+           "AASHTO_LRFD_9.5.12.7.3"),
+    que_pasa_si_no_se_hace=(
+        "La Familia C sale sin acero: el expediente llegaba al "
+        "dimensionamiento hidraulico del marco y a una demanda de "
+        "referencia, y quien construyera el marco no tenia con que armarlo."),
 )
 
 

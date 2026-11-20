@@ -695,7 +695,8 @@ def test_h2_guardia_el_valor_de_archivo_de_todos_los_criterios_sigue_pasando():
     # 158 desde VE-4e: 'nivel_agua_relleno_sin_drenaje_bajo_sismo'.
     # 159 desde VE-5-m6: 'relacion_co_poza_enrocado_hec14'.
     # 162 desde VE-5-met: los tres criterios de los metrados de la Fase 11.
-    assert len(ca.CRITERIOS) == 162 and barridos > 100, (len(ca.CRITERIOS),
+    # 163 desde VE-5-m8 (VE-4f): 'carga_viva_tubo_concreto_somero' (ficha VE4F-01).
+    assert len(ca.CRITERIOS) == 163 and barridos > 100, (len(ca.CRITERIOS),
                                                           barridos)
 
 

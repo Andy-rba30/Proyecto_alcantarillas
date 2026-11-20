@@ -214,7 +214,10 @@ from src.modulos.M2_material import (CRITERIO_CALIBRE_TMC,
                                  CRITERIO_D_MAX_NORMA,
                                  CRITERIO_SECCIONES_CAJON, espesor_pared,
                                  materiales_candidatos, siguiente_seccion)
+from src.modulos.M2_material import material_con_plancha_tmc
 from src.modulos.M3_hidraulica import resolver_manning
+from src.modulos.M8_estructural import CODIGO_AREA as CODIGO_AREA_FASE_8
+from src.modulos.M8_estructural import plancha_requerida_tmc
 from src.modulos.M4_control import caudal_por_celda, resolver_control
 from src.tolerancias import TOL_UMBRAL_NORMATIVO
 
@@ -788,6 +791,10 @@ def disenar_material(punto: PuntoCritico, material: Material, *,
     # caudal de la celda. `test_ext2_multicelda_transicion` espia las tres
     # piezas: ninguna puede ver el Q total.
     Q_barril = _caudal_por_barril(Q, material)
+    # --- VE-5 (m8), item 23 (ficha T5-03) --- el material del catalogo; un
+    # escalon de TMC puede volver a verificarse con la plancha que pide la
+    # Fase 8, y el siguiente parte otra vez de este.
+    material_del_catalogo = material
     seccion = siguiente_seccion(material)    # primer escalon del catalogo
     ultimo_motivo = "el catalogo no ofrecio ninguna seccion"
     ultimo_por_fase_8 = False
@@ -843,6 +850,20 @@ def disenar_material(punto: PuntoCritico, material: Material, *,
                         "en la memoria"
                     )
 
+                nueva_plancha = (
+                    _plancha_que_pide_la_fase_8(punto, material, seccion,
+                                                verificaciones)
+                    if all(v.cumple for v in verificaciones) else None)
+                if nueva_plancha is not None:
+                    _registrar(registrar, material, seccion, aceptado=False,
+                               motivo=_motivo_otra_plancha(seccion,
+                                                           nueva_plancha),
+                               verificaciones=verificaciones,
+                               resultado=resultado)
+                    material = material_con_plancha_tmc(material,
+                                                        nueva_plancha)
+                    visitadas.pop()
+                    continue
                 if all(v.cumple for v in verificaciones):
                     _registrar(registrar, material, seccion, aceptado=True,
                                motivo="", verificaciones=verificaciones,
@@ -901,10 +922,36 @@ def disenar_material(punto: PuntoCritico, material: Material, *,
                        resultado=resultado)
             raise
 
+        material = material_del_catalogo
         seccion = siguiente_seccion(material, seccion)
 
     return None, _motivo_descarte(material, ultimo_motivo,
                                   por_fase_8=ultimo_por_fase_8)
+
+
+def _plancha_que_pide_la_fase_8(punto: PuntoCritico, material: Material,
+                                seccion: Seccion,
+                                verificaciones: Sequence[Verificacion]
+                                ) -> Optional[str]:
+    """
+    --- VE-5 (m8), item 23 (ficha T5-03) --- Si el escalon de TMC que cumple
+    la Fase 5 lo cumple con una plancha MAS GRUESA que la del material, esa
+    plancha (`M8.plancha_requerida_tmc`); si no, None. Solo cuando la Fase 8
+    del TMC corrio (su F8.AREA esta en la tabla): a nivel de perfil con el
+    metodo diferido no hay plancha elegida.
+    """
+    if material.tipo is not TipoMaterial.TMC or not any(
+            v.codigo == CODIGO_AREA_FASE_8 for v in verificaciones):
+        return None
+    return plancha_requerida_tmc(punto=punto, material=material,
+                                 seccion=seccion)
+
+
+def _motivo_otra_plancha(seccion: Seccion, plancha: str) -> str:
+    return (f"{seccion.etiqueta()}: cumple la Fase 5 con la plancha {plancha}"
+            ", mas gruesa que la de la geometria; el escalon se vuelve a "
+            "verificar con ella (la clave fisica, V7 y la Fase 8 la usan; "
+            "ficha T5-03)")
 
 
 def _mismo_escalon(a: Seccion, b: Seccion) -> bool:

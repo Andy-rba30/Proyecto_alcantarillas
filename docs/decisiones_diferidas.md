@@ -4732,9 +4732,15 @@ se corrigieron donde las auditorías las desmintieron (cada una lo dice).
   dice si otra fabricación tabulada lo haría; la progresión sube de plancha —y
   con ella de costura— dentro de la tabla, pero **no cambia sola la
   fabricación**, que es una elección declarada.
-- **Qué haría falta:** que la plancha elegida viaje a `M2.espesor_pared` (el
-  catálogo la consultaría en vez de la adoptada) y la resistencia de costura
-  empernada del producto que se especifique.
+- **Cerrado por VE-5 (m8, ítem 23 del censo):** la plancha elegida vuelve a la
+  geometría. `Material.plancha_tmc` y `M2.material_con_plancha_tmc` llevan la
+  plancha y el espesor de pared con ella; la Fase 8 parte de la del material; y
+  MD, cuando un escalón de TMC cumple la Fase 5 con una plancha más gruesa
+  (`M8.plancha_requerida_tmc`), lo vuelve a verificar con ella (la traza lo
+  anota) y adopta el punto con esa plancha; el escalón siguiente parte de la
+  adoptada. El aviso «Declare la plancha requerida» queda para la llamada suelta.
+- **Qué haría falta:** la resistencia de costura empernada del producto que se
+  especifique.
 - **Dónde vive:** `src/modulos/M8_estructural.py::verificar_tmc`
 
 ## T5-04 · El TMC rige por LRFD y A796 es solo contraste: el expediente de referencia «VARIOS» se reproduce, y su H-20 no es el HL-93
@@ -4833,22 +4839,26 @@ se corrigieron donde las auditorías las desmintieron (cada una lo dice).
 
 ## T5-07 · Del marco se calcula la demanda, y el pórtico se difiere
 
-- **Qué se difirió:** el análisis y el diseño del pórtico (momentos en losa y
-  muros, acero; AASHTO LRFD Sección 5 y 12.11.3 a 12.11.5) y el empuje lateral
-  del relleno sobre los muros.
-- **Por qué:** la v8 manda el «diseño completo por AASHTO LRFD Sección 5» del
-  marco y no lo lleva al script. Lo que T-5 calcula es la DEMANDA de la losa
-  superior: F_e = 1 + 0.20 H/B_c con el tope de 1.15 del relleno compactado
-  (12.11.2.2.1; el EG-2013 exige compactarlo), la carga viva de 3.6.1.2.6 y
-  M_ref = w_u L²/8 en kN·m/m, la cota superior del momento positivo como viga
-  simplemente apoyada. El peso propio de la losa no entra (necesita su canto y
-  el peso del concreto, que son del diseño diferido); el empuje lateral necesita
-  el coeficiente de empuje del suelo del conducto, que el proyecto no declara.
-  La sección del marco la define T-3; mientras sus criterios de cajón no se
-  declaren, el marco se detiene antes, en `CriterioPendienteError`.
-- **Qué haría falta:** el diseño del pórtico con sus criterios (canto,
-  recubrimiento, f'c, el ángulo de fricción del relleno del conducto).
-- **Dónde vive:** `src/modulos/M8_estructural.py::demanda_marco`
+- **Cerrado en lo principal (VE-5, lote m8, ítem 1 del censo):** el pórtico del marco
+  se analiza y se arma a expediente (etapa `servicio.ETAPA_PORTICO_MARCO`): rigidez
+  directa exacta de una o varias celdas, contrastada con la solución cerrada y con MnDOT
+  LRFD BDM §12.5 (Tabla 12.5.2, dentro del 3.5 %); cargas de 12.11.2 con el empuje en
+  REPOSO (3.11.5.2, `phi_relleno_trasdos`), LS por analogía con la Tabla 3.11.6.4-1, agua
+  interior y la carga viva movida por la losa; las tres combinaciones de C12.11.2.1 con y
+  sin LS, y el 50 % de 3.11.7 sólo en el positivo de la losa superior (decisiones del
+  dueño); armado de cada cara traccionada con `M9.diseno_flexion_corte` y los φ del cajón
+  vaciado in situ (Tabla 12.5.5-1). Sus verificaciones cuentan en el punto. El empuje
+  lateral queda cerrado. Las lecturas del proyecto están en el docstring del símbolo.
+- **Abierto:** lo que lista `M8.DIFERIDO_PORTICO`. El principal: los cantos separados
+  existen en `GeometriaPortico` pero no en la geometría del programa (M2/M5/M7 forman la
+  clave con `espesor_pared_cajon`), y el pórtico no itera el canto: con 0.20 m y el
+  recubrimiento de la cota más exigente la losa de A-01 no cumple A1. Los pasos del armado
+  llevan los fundamentos F9.ARM_* (rótulo «Fase 9»). Decisiones pendientes de Fable (sin
+  subagentes en la sesión): reutilizar para el marco `phi_relleno_trasdos` y los criterios
+  de material, recubrimiento y exposición del cabezal; la altura de la Tabla 3.11.6.4-1.
+- **Qué haría falta:** separar los cantos en la geometría del programa y dimensionar la
+  losa por su armado, como el peralte del cabezal (VE-3.9).
+- **Dónde vive:** `src/modulos/M8_estructural.py::disenar_portico`
 
 ## T5-08 · El caso de la auditoría de T-4 deja de dimensionarse con la fabricación de archivo: cambio declarado y aprobado por el dueño
 
@@ -5154,7 +5164,10 @@ Doce fichas; las cinco últimas son de la auditoría.
   fuerza el cambio.
 - **Qué haría falta:** que la demanda de la losa (y el cabezal por punto, T-7a) lean la
   geometría de aquí cuando se toquen; el cálculo estructural del pórtico en el
-  expediente, que hará del espesor un resultado y no una adopción.
+  expediente, que hará del espesor un resultado y no una adopción. **Desde VE-5 (m8)**
+  el pórtico se calcula (`M8.disenar_portico`, ficha T5-07) con su propia
+  `GeometriaPortico`, que separa los cantos de losa, pared y tabique; la de aquí sigue con
+  uno solo y el pórtico lo toma de `espesor_pared`, de modo que los números coinciden.
 - **Dónde vive:** `src/modelos.py::GeometriaMarco`
 
 ## T3-07 · Con la embocadura del cajón declarada, R4 ya no frena una fila de cajón para el ke del TUBO; la frena el consumidor
@@ -5207,8 +5220,9 @@ Doce fichas; las cinco últimas son de la auditoría.
   admite el marco sin relleno (MTC 4.1.1.3.4 a), Lámina N° 03, AASHTO LRFD 12.6.6.3,
   pág. impresa 12-22). `TamizadoRasante.cobertura_como_aviso`: bloquea la clave bajo la
   subrasante y el resguardo; la cobertura adoptada da INDICADOR. G1 del tubo no cambia.
-- **Abierto:** con relleno < 2 ft la Fase 8 del marco no es evaluable (AASHTO 3.6.1.2.6a)
-  y la losa para carga directa no se diseña. En C-01, con sumersión completa, V7 (DC = 0)
+- **Abierto:** con relleno < 2 ft la Fase 8 del marco no era evaluable (AASHTO 3.6.1.2.6a);
+  desde VE-4f lo es (la franja de 4.6.2.10.2, ficha VE4F-01), y la losa para carga directa
+  se diseña con el pórtico (ítem 1 del censo, ficha T5-07). En C-01, con sumersión completa, V7 (DC = 0)
   rechaza antes el escalón, y el caso de la auditoría (rasante 38.40 / subrasante 38.25)
   termina con V4 y V7 en el primero y la clave sobre la subrasante en el segundo.
 - **Qué haría falta:** el diseño de la losa para carga vehicular directa (expediente) y
@@ -8196,16 +8210,15 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
 
 ## VE3-11 · El hueco 1.0 ≤ H < 2.0 ft del tubo de concreto no se implementa
 
-- **Qué se difirió:** AASHTO LRFD 3.6.1.2.6a manda el tubo de concreto con menos de 2.0 ft de
-  relleno a la franja de la losa del cajón (Eq. 4.6.2.10.2-1) diseñado «for a depth of 1.0
-  ft». Hoy un relleno bajo 0.6096 m sigue saliendo `MetodoNoEvaluableError` (un relleno de
-  0.60 m cae 9.6 mm bajo el umbral).
-- **Por qué:** aplicarlo a un tubo circular por el método indirecto exige tres lecturas que la
-  norma no escribe: cómo E se combina con E_span, qué parte de la franja cae sobre el tubo y
-  cómo esa carga se vuelve la W_L del método indirecto (que 12.10.4.3 define con la huella,
-  W_L = P_L·min(l_w, B_c)). Sería un [N→]/[A], una decisión, no una transcripción.
-- **Qué haría falta:** una decisión del dueño sobre las tres lecturas o la revisión de un
-  ingeniero estructural; el B_FLL bajo 2 ft ya está transcrito.
+- **Cerrado por VE-4f (ficha VE4F-01):** el tubo de concreto con 1.0 ft o más y menos de
+  2.0 ft hasta la rasante reparte el eje en la franja de la Eq. 4.6.2.10.2-1 a la
+  profundidad de diseño de 1.0 ft y lee el B_FLL de la fila «< 2.0 ft». De las tres
+  lecturas que esta ficha nombraba, dos se resolvieron con la fuente (E a lo largo del
+  tubo; lo que cae sobre el tubo es lo que de cada eje cae en B_c) y la tercera, el largo
+  A TRAVÉS del tubo, es el criterio [A] `carga_viva_tubo_concreto_somero`, sin valor.
+- **Por qué:** la fuente da el camino (3.6.1.2.6a, Eq. 4.6.2.10.2-1, B_FLL «< 2.0 ft»); lo
+  único que calla es una elección, y se dejó como [A] sin valor en vez de inventarla.
+- **Qué haría falta:** declarar `carga_viva_tubo_concreto_somero` (ficha VE4F-01).
 - **Dónde vive:** `src/modulos/M8_estructural.py::verificar_concreto`
 
 ## VE3-12 · El cortante fuera de 5.7.3.4.1 se verifica con el procedimiento general de 5.7.3.4.2 (VE-3.14, bloque 1; H-2 de los ensayos)
@@ -8569,3 +8582,27 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
 - **Dónde vive:** `src/modulos/M12_metrados.py`; `servicio._fase_11_metrados` y
   `_fase_11_compatibilidad`; `M11_reporte.bloque_metrados_proyecto` y `_bloque_metrado`;
   `cli._fase_11_json`, `_totales_metrado_json` y `_lineas_metrados`; panel de la pestaña 4.
+## VE4F-01 · La carga viva con relleno somero: la franja de 4.6.2.10.2, la cobertura mínima y un [A] sin valor (VE-4f)
+
+- **Cerrado:** por debajo del dominio de la rueda distribuida de AASHTO LRFD 3.6.1.2.6a la
+  Fase 8 ya no se detiene entera. (1) El MARCO con menos de 2.0 ft reparte un eje en la
+  franja de 4.6.2.10.2 (12.11.2.1 y 4.6.2.10.1): E = 96 + 1.44 S, E_span = L_T + LLDF H,
+  un carril con su m, con la profundidad que tiene; contrastado con MnDOT, LRFD Bridge
+  Design Manual §12.6 (cajón de 16 ft bajo 1 ft: E = 119.04 in, E_span = 23.8 in, 2.52 y
+  1.97 ksf), sin la carga de carril que MnDOT suma y la 9.ª ed. no manda. (2) El TUBO DE
+  CONCRETO con 1.0 a 2.0 ft se diseña «for a depth of 1.0 ft» (IM con D_E = 1.0 ft, o la
+  cubierta si es menor), con E a lo largo del tubo, lo que de cada eje cae sobre B_c como
+  W_L y el B_FLL de la fila «< 2.0 ft»; no hay contraste ACPA (la franja ya reparte a lo
+  largo del tubo). (3) Un conducto REDONDO bajo el dominio se juzga antes contra la
+  cobertura mínima de la Tabla 12.6.6.3-1 (F8.COBERTURA, medida hasta la rasante porque la
+  fuente cuenta la base): sin ella INCUMPLE y el escalón se rechaza, no es «no evaluable».
+- **Abierto:** el largo del área cargada A TRAVÉS del tubo de concreto somero no lo fija la
+  fuente: `carga_viva_tubo_concreto_somero` [A] sin valor (L_T, la cota superior que
+  C4.6.2.10.2 permite, recomendada; o L_T + LLDF·1.0 ft). Difiere sólo con el tándem sobre
+  tubos de B_c entre 1.22 y 1.82 m. Sigue sin método (`MetodoNoEvaluableError`): el tubo de
+  concreto bajo pavimento rígido entre 9 y 12 in («more comprehensive methods») y el
+  flexible con 1.0 ft o menos que cumple la cobertura (sólo justo en 1.0 ft).
+- **Qué haría falta:** la decisión del dueño sobre el criterio; los métodos completos para
+  el tubo con menos de 1.0 ft. Con el pórtico (ficha T5-07) la presión de la franja se
+  aplica al marco como carga concentrada sobre la losa.
+- **Dónde vive:** `src/modulos/M8_estructural.py::_carga_viva_en_la_franja`

@@ -8579,6 +8579,74 @@ CRITERIOS: Dict[str, Criterio] = {
         ),
     ),
 
+    # --- VE-4f --- EL TUBO DE CONCRETO CON 1.0 A 2.0 FT HASTA LA RASANTE.
+    # AASHTO LRFD 3.6.1.2.6a manda repartir la carga viva «in accordance with
+    # Eq. 4.6.2.10.2-1» (el ancho E de la franja, A LO LARGO del tubo) y
+    # diseñar «for a depth of 1.0 ft»; NO dice que largo tiene el area
+    # cargada A TRAVES del tubo, que es lo que decide cuanto del tandem cae
+    # sobre el. Las dos lecturas que la fuente sostiene difieren solo con el
+    # tandem sobre tubos de B_c entre s_a = 4 ft (1.22 m) y s_a + E_span
+    # (1.82 m) --los de 1.05 a 1.50 m del catalogo--, y ahi en un 0 a 38 %
+    # de W_L. Es una eleccion: sin valor (CLAUDE.md, «NO lo inventes»), con
+    # la lectura recomendada en la ficha VE4F-01. NIVEL: de perfil por su
+    # consumidor (M8, Fase 5); ninguna corrida de referencia lleva un tubo
+    # de concreto somero, y lo mide `tests/test_ve4f_relleno_bajo.py`, que
+    # corre la Fase 5 de un punto somero a perfil.
+    "carga_viva_tubo_concreto_somero": Criterio(
+        valor=None,
+        nivel=NIVEL_PERFIL,
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        sensibilidad=("largo_del_neumatico", "e_span_a_un_pie"),
+        concepto="Largo del area cargada A TRAVES del tubo de concreto con "
+                 "1.0 ft o mas y menos de 2.0 ft de relleno hasta la "
+                 "rasante (AASHTO LRFD 3.6.1.2.6a con la franja de "
+                 "4.6.2.10.2): el del neumatico, sin reparto por el relleno, "
+                 "o el de la Eq. 4.6.2.10.2-2 a la profundidad de diseño de "
+                 "1.0 ft",
+        justificacion="Decide cuanto de los ejes cae sobre un tubo de "
+                      "concreto con poco relleno, y con ello la carga viva "
+                      "del metodo indirecto. La norma de diseño reparte el "
+                      "eje a lo largo del tubo en el ancho de la franja de "
+                      "las alcantarillas cajon y manda diseñar a 1.0 ft de "
+                      "profundidad, pero no dice que largo tiene el area "
+                      "cargada a traves del tubo. Las dos respuestas que la "
+                      "fuente sostiene: el largo del neumatico, que es "
+                      "despreciar el aumento por el relleno como el "
+                      "comentario de la franja admite del lado conservador, "
+                      "y el largo de la Eq. 4.6.2.10.2-2 a 1.0 ft. El camion "
+                      "carga igual con las dos (todo su eje cae sobre "
+                      "cualquier tubo del catalogo); el tandem difiere cuando "
+                      "el tubo es mas ancho que la separacion de sus ejes y "
+                      "mas angosto que esa separacion mas el largo del area: "
+                      "con el largo del neumatico el segundo eje entra antes "
+                      "y entero, y la carga es mayor o igual. Sin valor de "
+                      "archivo: la eleccion es del dueño del proyecto o del "
+                      "ingeniero estructural (ficha VE4F-01, que recomienda "
+                      "el largo del neumatico por ser la cota superior)",
+        fuente="AASHTO LRFD 9a ed.: Art. 3.6.1.2.6a, pag. impresa 3-26 (citas "
+               "AASHTO_LRFD_9.3.6.1.2.6a#CONCRETO_SOMERO y #UN_PIE: la Eq. "
+               "4.6.2.10.2-1 y la profundidad de diseño de 1.0 ft); Art. "
+               "4.6.2.10.2, pag. impresa 4-65 (cita "
+               "AASHTO_LRFD_9.4.6.2.10.2#FRANJA, Eqs. 4.6.2.10.2-1 y -2 "
+               "leidas renderizadas); y su comentario C4.6.2.10.2, misma "
+               "pagina (cita AASHTO_LRFD_9.C4.6.2.10.2#E_SPAN, PERMISO: el "
+               "aumento del largo «may be conservatively neglected»). LA "
+               "ELECCION NO ESTA EN NINGUNA NORMA: la fuente da el ancho a lo "
+               "largo del tubo y calla el largo a traves de el",
+        reemplazado_por="Una disposicion de AASHTO (o del Manual de Puentes) "
+                        "que diga el largo del area cargada sobre un tubo "
+                        "de concreto con menos de 2.0 ft, o la decision del "
+                        "expediente",
+        resolucion=Libre(
+            que_lo_fija="el dueño del proyecto o el ingeniero estructural "
+                        "(ficha VE4F-01)",
+            dominio="las dos lecturas de `sensibilidad`: "
+                    "'largo_del_neumatico' (L_T, la cota superior) o "
+                    "'e_span_a_un_pie' (L_T + 1.15 x 1.0 ft)",
+        ),
+    ),
+
     # --- T-5 (cierre) --- EL PERFIL DEL HDPE ES UN DATO DEL FABRICANTE, y sin
     # el no hay veredicto sobre un producto real. La FASE A verificaba el
     # HDPE con el perfil MINIMO de la Tabla A12-11 y daba «cumple» o «no
@@ -9373,7 +9441,13 @@ CRITERIOS: Dict[str, Criterio] = {
             # (punto 2 de su brief), que generaliza M8 a la seccion; C5 deja
             # la clave puesta y el defecto declarado en §15.8 y en el
             # docstring de `M5.v7_flotacion`, que es su consumidor.
-            "cajon": {"EV": "EV_porticos_rigidos"},
+            #
+            # --- VE-5 (m8) --- Y EL EMPUJE DEL PORTICO, EN REPOSO: las
+            # paredes de un marco cerrado no se desplazan lo que el empuje
+            # activo pide, y el dueño adopto el de reposo de 3.11.5.2 (censo
+            # del 2026-11-20, decision 3), que es la fila «EH: En reposo»
+            # (1.35/0.90). La lee `M8.disenar_portico`.
+            "cajon": {"EV": "EV_porticos_rigidos", "EH": "EH_en_reposo"},
 
             # TMC. Es estructura flexible enterrada, y de las tres subfilas
             # flexibles le toca la de "Entre otros" (1.95/0.90): no es
