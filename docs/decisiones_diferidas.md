@@ -8750,9 +8750,9 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   por sacar la resultante de la base y decide con las demás; C8 cita `MP.2.8.1.1.14.1#EXC`
   (el numeral de los dos casos: su texto no tiene cita propia, vive en `P_SEIS_TEXTO`).
 - **Abierto:** (a) no procede mientras k_v = 0; con k_v ≠ 0, C8 debe afectar W con
-  (1 − k_v); (b) a media altura, con `traccion_admisible_e060`, C8 informa; (c) firmar
-  `E060.22.10.2.2#VOLADIZO` cuando haya PDF y pasar a ella la cita principal de C7 (hoy
-  en la nota de `E060.22.10.2#CICLOPEO`); (d) C7 no se evalúa bajo sismo (E.060 9.2.3 no
+  (1 − k_v); (b) a media altura, con `traccion_admisible_e060`, C8 informa; (c) la cita
+  `E060.22.10.2.2#VOLADIZO` existe desde VE-7, sin firma (ficha VE7C-01): firmarla con el
+  PDF y pasar a ella la cita principal de C7; (d) C7 no se evalúa bajo sismo (E.060 9.2.3 no
   combina CS con CE): la punta bajo Evento Extremo I queda cubierta sólo por E2.
 - **Qué haría falta:** el PDF de E.060 para (c).
 - **Dónde vive:** `src/modulos/M9_cabezal.py::_verificar_cuerpo_bajo_sismo`
@@ -9189,3 +9189,28 @@ cambios están aplicados en estas fichas.
 - **Qué haría falta:** la monotonía de V2/V2b/V7 con D; iterar 7.A con 7.B; aplicar la regla del
   escalón más bajo también a la rama «no cabe»; la decisión del dueño sobre la fila NF.
 - **Dónde vive:** `src/modulos/MD.py::_escalon_sin_cobertura`
+
+
+# Parte LXIII — Lo que VE-7 (lote C) dejó escrito: registro, memoria, CLI y la cuarta corrida
+
+VE-7, lote C (2026-11-20, rama `claude/ve7-lote-c`, sobre `cb15e32`), implementa los ítems C1 a C6
+del triaje VE-7. Decisión del consultor Fable (triaje VE-7, 2026-11-20): Fable decidió QUÉ hacer;
+estas fichas dicen cómo se hizo y lo que quedó. Los documentos generados (manifiestos,
+`trazabilidad.csv`, `indice_formulas.md`) no se regeneran aquí: los sella el integrador.
+
+## VE7C-01 · `E060.22.10.2.2#VOLADIZO` con cita propia, sin firma y censada (C1; VE6M9-01 (c))
+
+- **Cerrado (decisión del consultor Fable, triaje VE-7, 2026-11-20):** el registro tiene la cita
+  `E060.22.10.2.2#VOLADIZO` (pág. 195, EXIGENCIA: «será necesario») con el `Verbatim` «En
+  elementos en voladizo con una longitud mayor a la mitad de su peralte, será necesario
+  verificar las resistencias en flexión y corte», el mismo que T-7a transcribió en la nota de
+  `E060.22.10.2#CICLOPEO` (firmada). `F9.CICLOPEO` la cita. Test:
+  `tests/test_ve7_lote_c_voladizo.py`.
+- **Abierto:** la cita NO lleva firma: la sesión no tenía `NORMAS_DIR`. Está en
+  `CITAS_SIN_FIRMA_A_PROPOSITO` por una segunda razón, distinta de la paginación sin medir
+  (`SIN_FIRMA_POR_SESION_SIN_PDF`, que exige que el `Verbatim` sea literalmente el de la nota
+  de origen firmada y en su misma página); pendiente de revisión Fable. La cita principal de
+  C7 en M9 sigue siendo `E060.22.10.2#CICLOPEO` (la cambia el integrador).
+- **Qué haría falta:** correr T2 con `NORMAS_DIR`, firmar la cita y sacarla del censo; pasar
+  a ella la cita principal de C7 en M9; regenerar los manifiestos y `trazabilidad.csv`.
+- **Dónde vive:** `src/normativa/citas.py::E060_22_10_2_2_VOLADIZO`

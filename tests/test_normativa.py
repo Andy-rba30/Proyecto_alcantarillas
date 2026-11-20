@@ -645,7 +645,20 @@ CITAS_SIN_FIRMA_A_PROPOSITO = (
     # --- T-5 --- la quinta, misma razon: el num. 7.7 (ensayo de compresion)
     # con que M8 obtiene el area efectiva del perfil del HDPE.
     "AASHTO_M294_TRAD.7.7",
+    # --- VE-7, lote C (C1; decision del consultor Fable, triaje VE-7,
+    # 2026-11-20) --- la SEGUNDA razon, distinta de las seis de arriba: la
+    # fuente SI tiene paginacion medida, pero la sesion que dio de alta la
+    # cita no tenia `NORMAS_DIR`, y su Verbatim es la frase que ya estaba
+    # transcrita en la nota de otra cita FIRMADA contra la misma pagina. Se
+    # firma cuando T2 la compare con su PDF (pendiente de revision Fable).
+    "E060.22.10.2.2#VOLADIZO",
 )
+
+# Las censadas por la segunda razon, con la cita firmada cuya nota llevaba
+# ya su Verbatim. Son las unicas exentas de la condicion `SinDeterminar`.
+SIN_FIRMA_POR_SESION_SIN_PDF = {
+    "E060.22.10.2.2#VOLADIZO": "E060.22.10.2#CICLOPEO",
+}
 
 
 def test_las_citas_sin_firma_son_exactamente_las_censadas(reg):
@@ -659,6 +672,17 @@ def test_las_citas_sin_firma_son_exactamente_las_censadas(reg):
     for id_ in CITAS_SIN_FIRMA_A_PROPOSITO:
         cita = reg.cita(id_)
         fuente = reg.fuente(cita.fuente_id)
+        if id_ in SIN_FIRMA_POR_SESION_SIN_PDF:
+            origen = reg.cita(SIN_FIRMA_POR_SESION_SIN_PDF[id_])
+            assert origen.verificado is not None, (
+                f"{id_}: la cita de origen {origen.id} tampoco esta firmada")
+            assert cita.texto_literal.texto in (origen.nota or ""), (
+                f"{id_}: su Verbatim no es el que la nota de {origen.id} "
+                "ya transcribia: seria una transcripcion nueva sin leer")
+            assert cita.pagina_pdf == origen.pagina_pdf, id_
+            assert "NORMAS_DIR" in (cita.nota or ""), id_
+            assert "SIN FIRMA A PROPOSITO" in (cita.nota or ""), id_
+            continue
         assert isinstance(fuente.paginacion, SinDeterminar), (
             f"{id_}: su fuente {fuente.id} ya tiene paginacion medida, de modo "
             "que la cita se puede firmar: firmala y sacala del censo")

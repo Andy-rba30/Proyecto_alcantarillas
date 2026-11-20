@@ -4528,7 +4528,8 @@ CICLOPEO_CABEZAL = _fundamento(
         "excentricidad minima y barras alrededor de las aberturas de sus "
         "muros."),
     verbo=Verbo.OBLIGA,
-    citas=("E060.22.10.2#CICLOPEO", "E060.22.10.2.3#PHI",
+    citas=("E060.22.10.2#CICLOPEO", "E060.22.10.2.2#VOLADIZO",
+           "E060.22.10.2.3#PHI",
            "E060.22.5.3#TRACCION", "E060.22.5.4#CORTANTE",
            "E060.22.4.7#JUNTAS", "E060.22.6.3#TERCIO",
            "E060.22.6.3#EXCENTRICIDAD", "E060.22.6.6.5#ABERTURAS",

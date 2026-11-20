@@ -12946,6 +12946,39 @@ E060_22_10_2_CICLOPEO = _cita(
           "gravedad."),
 )
 
+# --- VE-7, lote C (C1; ficha VE6M9-01, abierto (c); decision del consultor
+# Fable, triaje VE-7, 2026-11-20) --- El 22.10.2.2 con cita propia. El
+# Verbatim es la frase que ya estaba transcrita en la nota de la anterior
+# (T-7a la leyo en la pagina 195 al firmar aquella): no es una segunda
+# transcripcion, es la misma, movida a un campo que T2 comprueba. SIN FIRMA:
+# esta sesion no tenia `NORMAS_DIR` y no abrio el PDF.
+E060_22_10_2_2_VOLADIZO = _cita(
+    verificada=False,
+    id="E060.22.10.2.2#VOLADIZO",
+    fuente_id="E060",
+    numeral="22.10.2.2",
+    titulo_numeral="Limitaciones",
+    pagina_impresa="195",
+    pagina_pdf=195,
+    texto_literal=Verbatim(
+        texto=("En elementos en voladizo con una longitud mayor a la mitad "
+               "de su peralte, será necesario verificar las resistencias en "
+               "flexión y corte"),
+        pagina_pdf=195),
+    caracter=Caracter.EXIGENCIA,
+    jerarquia_numeral=("22.10 CONCRETO CICLOPEO",),
+    nota=("SIN FIRMA A PROPOSITO (VE-7, lote C): el texto es el que T-7a "
+          "transcribio en la nota de E060.22.10.2#CICLOPEO, firmada contra "
+          "la misma pagina; la sesion que dio de alta esta cita no tenia "
+          "NORMAS_DIR y no la firma sin abrir el PDF. T2 compara el Verbatim "
+          "con la pagina 195 en toda corrida que enlace el repositorio de "
+          "normas; con ese resultado verde, la cita se firma y sale del "
+          "censo (pendiente de revision Fable). «Será necesario» es "
+          "EXIGENCIA: el voladizo de ciclopeo mas largo que la mitad de su "
+          "peralte se verifica en flexion y corte (C7 de M9, la punta y el "
+          "talon de la zapata del cabezal de gravedad)."),
+)
+
 # ===========================================================================
 # --- T-7b --- (cadena T) · V5 con metodo y la estabilidad del cabezal
 # ===========================================================================
