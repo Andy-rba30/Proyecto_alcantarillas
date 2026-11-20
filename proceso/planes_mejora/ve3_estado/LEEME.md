@@ -389,6 +389,21 @@ decisiones 9–14 siguen pendientes del dueño (con la recomendación corregida 
    la edición 2013 o posterior).
 5. Integrar en `main` con autorización del dueño.
 
+## Objetivo del dueño (2026-11-20): que no quede NADA implementable pendiente
+
+«La idea es terminar todo; si surge algo nuevo, terminarlo también.» Plan en curso:
+- VE-4a a VE-4f en curso (arriba) y **VE-4g** (`claude/ve4g-hec14-limites`): HEC-14 con varios
+  barriles y conductos de más de 1.524 m, y el resto de los límites de M6.
+- Después de integrar VE-4a y VE-4e (tocan M9): el **muro que no cede** (11.6.5.4) y el
+  **cabezal paralelo a la vía en un marco** (T7A-03).
+- **Censo completo de pendientes** por un consultor Fable (sólo lectura): fichas abiertas,
+  «no evaluable» del código, criterios sin valor, fuentes ausentes, hoja de ruta. Clasifica
+  en (A) implementable ya, (B) necesita decisión del dueño, (C) necesita datos externos,
+  (D) fuera de alcance; con norma verificada y lotes paralelos. Su informe se copia aquí
+  al llegar y se lanzan los (A)/(B).
+- Lo que no se puede cerrar con código (EMS, datos reales, revisión de experto, ejemplares de
+  norma) queda listado, con la app lista para recibirlo.
+
 ## Apuntado para después de VE-4 (dueño, 2026-11-20): límites de cobertura de la app
 
 Lo que la app hoy no evalúa y se detiene diciéndolo (sin inventar un número). Prioridad según
