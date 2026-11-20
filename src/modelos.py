@@ -7674,6 +7674,12 @@ class EntornoDelCabezal:
     suelo: Optional[dict] = None
     origen_freatico: str = ""
     cota_agua_diseno: Optional[float] = None
+    # --- VE-4a --- El resultado DECLARADO de E4 y E5 para ESTE cabezal, del
+    # dato externo `estabilidad_global_declarada` ya validado y normalizado
+    # (`M9.validar_estabilidad_global_declarada`): {"E4": {"estatico": FS,
+    # "sismico": FS}, "E5": {...}, "documento", "fecha", "metodo" y, si
+    # viene, "programa"}. None (o vacio): E4 y E5 siguen diferidas.
+    estabilidad_global: Optional[dict] = None
 
 
 @dataclass(frozen=True)
@@ -7688,6 +7694,15 @@ class EstabilidadDelCabezal:
     `pendientes` son las filas que NO se evaluaron con su motivo (E4 y E5,
     la estabilidad global y la del talud, diferidas al expediente con el
     EMS): se imprimen, no se callan y no cuentan como cumplidas.
+
+    --- VE-4a --- `globales` son las filas E4 y E5 de los dos marcos cuando
+    el FS se DECLARO (`EntornoDelCabezal.estabilidad_global`): el programa
+    no lo calcula, lo contrasta. Van aparte de `verificaciones` a proposito:
+    `cumple` -- lo que el dimensionamiento de la zapata itera -- es de E1 a
+    E3, y el ancho de la zapata no mueve un FS que el programa no calcula.
+    `M9.integrar_estabilidad` las suma a las del cabezal, que es la via por
+    la que el informe cuenta incumplidas e indicadores. Lo declarado sale de
+    `pendientes`.
     """
 
     id_punto: str
@@ -7718,6 +7733,7 @@ class EstabilidadDelCabezal:
     K_AE_contraste: Optional[float] = None
     regimen: str = ""
     K0: Optional[float] = None
+    globales: Tuple["Verificacion", ...] = ()
 
     def del_marco(self, marco: str) -> Tuple["Verificacion", ...]:
         return tuple(v for v in self.verificaciones

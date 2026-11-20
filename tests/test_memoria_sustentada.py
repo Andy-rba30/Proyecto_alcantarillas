@@ -540,6 +540,12 @@ def test_todo_fundamento_declarado_lo_usa_algun_paso(informe):
         "F9.EMPUJES", "F9.SOBRECARGA", "F9.AGUA", "F9.SISMO",
         "F9.COMBINACIONES", "F9.E1_LRFD", "F9.E2_LRFD", "F9.E3_LRFD",
         "F9.E_ASD", "F9.GLOBAL",
+        # --- VE-4a --- E4 y E5 con el FS DECLARADO del analisis externo:
+        # cuelga del mismo ensamble y ademas de un dato del punto
+        # (`estabilidad_global_declarada`) que esta corrida no trae. Que se
+        # emite lo mide tests/test_ve4a_e4e5_declarado.py, pieza a pieza y
+        # de punta a punta por `servicio.correr`.
+        "F9.GLOBAL_DECLARADA",
         # --- T-7c --- EL ARMADO DEL CABEZAL Y SU ALTERNATIVA CICLOPEA. Los
         # diez cuelgan de lo mismo que los del ensamble de estabilidad: un
         # punto DIMENSIONADO a nivel de expediente con el angulo del relleno

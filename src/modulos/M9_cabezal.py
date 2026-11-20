@@ -5899,7 +5899,8 @@ from src.constantes_normativas import (  # noqa: E402
     NUMERAL_EXCENTRICIDAD_ESTATICA_AASHTO, NUMERAL_PHI_EVENTO_EXTREMO,
     NUMERAL_PHI_MUROS, NUMERAL_PHI_ZAPATAS, PHI_EVENTO_EXTREMO_11_5_8,
     PHI_MUROS_T11_5_7_1, PHI_ZAPATAS_T10_5_5_2_2_1,
-    TALUD_QUEBRADO_DISTANCIA_VECES_H)
+    TALUD_QUEBRADO_DISTANCIA_VECES_H, FS_NOMBRE_DE_LA_CONDICION,
+    NUMERAL_PHI_ESTABILIDAD_GLOBAL, PHI_ESTABILIDAD_GLOBAL_11_6_3_7)
 from src.modelos import (  # noqa: E402
     CARGA_DC, CARGA_EH, CARGA_EQ, CARGA_EV, CARGA_LS, CARGA_WA,
     ELEMENTO_ALEROS, ELEMENTO_PANTALLA, ELEMENTO_ZAPATA, MARCO_ASD,
@@ -5911,6 +5912,8 @@ from src.modelos import (  # noqa: E402
 
 CRITERIO_MARCO = "marco_estabilidad_cabezal"
 CRITERIO_FILA_PHI = "fila_phi_estabilidad_cabezal"
+# --- VE-4a --- la fila de phi de 11.6.3.7 para el FS declarado de E4 y E5.
+CRITERIO_FILA_PHI_GLOBAL = "fila_phi_estabilidad_global"
 CRITERIO_DRENAJE = "drenaje_trasdos"
 # --- VE-3.14 (H-3) --- el agua del relleno bajo sismo (C11.6.5.3).
 CRITERIO_AGUA_SISMO = "agua_del_relleno_bajo_sismo"
@@ -6117,6 +6120,139 @@ def suelo_de_fundacion(suelo_del_punto: Optional[dict] = None, *,
     return (validar_suelo_fundacion(declarado, campo=CRITERIO_SUELO_FUNDACION,
                                     id_punto=id_punto),
             f"criterio de corredor '{CRITERIO_SUELO_FUNDACION}', del EMS")
+
+
+# ---------------------------------------------------------------------------
+# --- VE-4a --- La puerta del dato externo `estabilidad_global_declarada`
+# ---------------------------------------------------------------------------
+# E4 y E5 (estabilidad global del muro y del talud) no las calcula este
+# programa: las calcula el estudio de suelos con la estratigrafia y un
+# programa de equilibrio limite (ficha T7B-07). Lo que entra es su RESULTADO,
+# por punto y por cabezal, con la traza del documento que lo sostiene, y el
+# ensamble lo contrasta en los dos marcos (`_filas_globales_declaradas`).
+DATO_ESTABILIDAD_GLOBAL = "estabilidad_global_declarada"
+CODIGOS_GLOBALES = (FS_CODIGO["estabilidad_global"], FS_CODIGO["talud"])
+CLAVE_FS_DE_CODIGO = {FS_CODIGO[k]: k for k in ("estabilidad_global",
+                                                 "talud")}
+CONDICIONES_GLOBALES = (CondicionAnalisis.ESTATICO.value,
+                        CondicionAnalisis.SISMICO.value)
+CAMPOS_TRAZA_GLOBAL = ("documento", "fecha", "metodo")
+CAMPOS_TRAZA_GLOBAL_OPCIONALES = ("programa",)
+
+
+def validar_estabilidad_global_declarada(valor: Any, *,
+                                         id_punto: Optional[str] = None
+                                         ) -> dict:
+    """
+    Forma y dominio de `estabilidad_global_declarada` (dato externo
+    opcional, SOLO por punto), y su forma normalizada {"entrada": {...},
+    "salida": {...}}; un extremo sin factores queda vacio.
+
+    Por extremo, "E4" y/o "E5", cada uno con los DOS factores de seguridad
+    del analisis externo, {"estatico": FS, "sismico": FS} (finitos y mayores
+    que cero: medio analisis no es un analisis), y la TRAZA del documento que
+    los sostiene: `documento`, `fecha` y `metodo` obligatorios, `programa`
+    opcional, en el nivel superior -- valen para los dos extremos -- o dentro
+    del extremo, que gana. Un FS en el nivel superior se rechaza: es de la
+    seccion analizada de UN cabezal. Una clave desconocida, un texto donde va
+    un numero o un FS sin su documento se rechazan: un resultado sin fuente
+    es exactamente lo que la memoria no puede imprimir como declarado.
+    """
+    campo = DATO_ESTABILIDAD_GLOBAL
+    traza_admitida = CAMPOS_TRAZA_GLOBAL + CAMPOS_TRAZA_GLOBAL_OPCIONALES
+    if not isinstance(valor, dict) or not valor:
+        raise DatoInvalidoError(
+            campo, valor=valor, id_punto=id_punto,
+            motivo="se espera un objeto con 'entrada' y/o 'salida', cada uno "
+                   "con 'E4' y/o 'E5' = {'estatico': FS, 'sismico': FS}, y la "
+                   "traza: " + ", ".join(CAMPOS_TRAZA_GLOBAL))
+
+    def _traza(bloque: dict, donde: str) -> dict:
+        limpio = {}
+        for k in traza_admitida:
+            if k not in bloque:
+                continue
+            x = bloque[k]
+            if not isinstance(x, str) or not x.strip():
+                raise DatoInvalidoError(
+                    f"{campo}.{donde}.{k}", valor=x, id_punto=id_punto,
+                    motivo="se espera un texto no vacio: la traza del "
+                           "documento del analisis externo")
+            limpio[k] = x.strip()
+        return limpio
+
+    comunes = {k: v for k, v in valor.items() if k not in EXTREMOS}
+    sobran = [k for k in comunes if k not in traza_admitida]
+    if sobran:
+        raise DatoInvalidoError(
+            campo, valor=sorted(sobran), id_punto=id_punto,
+            motivo=("un factor de seguridad es de la seccion analizada de UN "
+                    "cabezal: va dentro de 'entrada' o 'salida'"
+                    if set(sobran) & set(CODIGOS_GLOBALES) else
+                    "campos no reconocidos. Arriba solo van "
+                    + ", ".join(EXTREMOS + traza_admitida)))
+    base = _traza(comunes, "comun")
+    normalizado = {}
+    for extremo in EXTREMOS:
+        bloque = valor.get(extremo, {})
+        if not isinstance(bloque, dict):
+            raise DatoInvalidoError(
+                f"{campo}.{extremo}", valor=bloque, id_punto=id_punto,
+                motivo="se espera un objeto con 'E4' y/o 'E5'")
+        desconocidas = [k for k in bloque
+                        if k not in traza_admitida + CODIGOS_GLOBALES]
+        if desconocidas:
+            raise DatoInvalidoError(
+                f"{campo}.{extremo}", valor=sorted(desconocidas),
+                id_punto=id_punto,
+                motivo="campos no reconocidos. Admitidos: "
+                       + ", ".join(CODIGOS_GLOBALES + traza_admitida))
+        factores = {}
+        for codigo in CODIGOS_GLOBALES:
+            if codigo not in bloque:
+                continue
+            par = bloque[codigo]
+            if not isinstance(par, dict) or set(par) != set(
+                    CONDICIONES_GLOBALES):
+                raise DatoInvalidoError(
+                    f"{campo}.{extremo}.{codigo}", valor=par,
+                    id_punto=id_punto,
+                    motivo="se esperan los dos factores de seguridad del "
+                           "analisis, " + " y ".join(CONDICIONES_GLOBALES)
+                           + ", y nada mas: medio analisis no es un "
+                             "analisis")
+            for condicion in CONDICIONES_GLOBALES:
+                x = par[condicion]
+                if not (_finito(x) and x > 0):
+                    raise DatoInvalidoError(
+                        f"{campo}.{extremo}.{codigo}.{condicion}", valor=x,
+                        id_punto=id_punto,
+                        motivo="se espera un factor de seguridad: numero "
+                               "finito y mayor que cero")
+            factores[codigo] = {c: float(par[c]) for c in CONDICIONES_GLOBALES}
+        if not factores:
+            if bloque:
+                raise DatoInvalidoError(
+                    f"{campo}.{extremo}", valor=sorted(bloque),
+                    id_punto=id_punto,
+                    motivo="el bloque no declara ningun factor de seguridad "
+                           "(E4 o E5)")
+            normalizado[extremo] = {}
+            continue
+        traza = dict(base)
+        traza.update(_traza(bloque, extremo))
+        faltan = [k for k in CAMPOS_TRAZA_GLOBAL if k not in traza]
+        if faltan:
+            raise DatoInvalidoError(
+                f"{campo}.{extremo}", valor=sorted(traza), id_punto=id_punto,
+                motivo="un factor de seguridad sin su fuente no entra: "
+                       "faltan " + ", ".join(faltan))
+        normalizado[extremo] = dict(factores, **traza)
+    if not any(normalizado.values()):
+        raise DatoInvalidoError(
+            campo, valor=valor, id_punto=id_punto,
+            motivo="el objeto no declara ningun factor de seguridad")
+    return normalizado
 
 
 # ---------------------------------------------------------------------------
@@ -8520,6 +8656,257 @@ PENDIENTES_E4_E5 = (
 )
 
 
+# ---------------------------------------------------------------------------
+# --- VE-4a --- E4 y E5 con el FS DECLARADO (ficha T7B-07)
+# ---------------------------------------------------------------------------
+# El ensamble NO calcula la estabilidad global ni la del talud: cuando el
+# punto declara el resultado del analisis externo
+# (`EntornoDelCabezal.estabilidad_global`), lo contrasta en los dos marcos
+# que no se cruzan, y lo declarado sale de `pendientes`:
+#
+#   ASD   FS >= el minimo de E.050 (39.13.6 b para E4, Art. 30.3 para E5),
+#         por analogia [N→]: la tabla de Sec. 9.3 de la hoja de ruta.
+#   LRFD  FS >= 1/phi: phi de 11.6.3.7 en la condicion estatica (la fila es
+#         'fila_phi_estabilidad_global' [A], sin valor de archivo) y 0.9 de
+#         11.5.8 bajo sismo. El puente FS = 1/phi es el comentario
+#         C11.6.3.7, con la lectura del proyecto declarada en su cita.
+#
+# Las filas van en `EstabilidadDelCabezal.globales` y no en `verificaciones`:
+# el dimensionamiento de la zapata itera sobre E1 a E3 y el ancho no mueve
+# un FS que el programa no calcula.
+NOMBRE_DE_LA_GLOBAL = {"E4": "estabilidad global del muro",
+                       "E5": "estabilidad del talud que soporta al cabezal"}
+CITA_ASD_DE_LA_GLOBAL = {"E4": "E050.39.13.6", "E5": "E050.30.3"}
+NUMERAL_DE_LA_GLOBAL = {"E4": "AASHTO LRFD 11.6.3.7; E.050 39.13.6 b",
+                        "E5": "AASHTO LRFD 11.6.3.7; E.050 Art. 30.3"}
+
+
+def fila_phi_estabilidad_global() -> Optional[str]:
+    """
+    La fila de phi de AASHTO 11.6.3.7 que el proyectista declaro
+    ('fila_phi_estabilidad_global' [A], SIN valor de archivo), o None si no
+    la declaro: la fila estatica del marco LRFD lo dice como «no decidida»
+    (el patron de `clase_de_exposicion`). Una fila que no es de la tabla se
+    rechaza.
+    """
+    try:
+        fila = ca.valor(CRITERIO_FILA_PHI_GLOBAL)
+    except CriterioPendienteError:
+        return None
+    if fila not in PHI_ESTABILIDAD_GLOBAL_11_6_3_7:
+        raise DatoInvalidoError(
+            CRITERIO_FILA_PHI_GLOBAL, valor=fila,
+            motivo="se espera una de: "
+                   + ", ".join(PHI_ESTABILIDAD_GLOBAL_11_6_3_7))
+    return fila
+
+
+def _traza_de_la_global(declarada: dict) -> str:
+    """De donde sale el FS declarado, en una frase para la memoria."""
+    texto = (f"«{declarada['documento']}» ({declarada['fecha']}), metodo "
+             f"{declarada['metodo']}")
+    if declarada.get("programa"):
+        texto += f", programa {declarada['programa']}"
+    return texto
+
+
+def _fila_global_declarada(*, entorno: EntornoDelCabezal,
+                           condicion: CondicionAnalisis, codigo: str,
+                           marco: str, fs: float, traza: str, decide: bool,
+                           sufijo: str) -> Verificacion:
+    """
+    UNA fila E4 o E5 de UN marco con el FS declarado: el paso dice de que
+    documento sale el FS y que el programa no lo calcula; el umbral, de que
+    numeral sale el minimo. Si el marco no decide ('marco_estabilidad_
+    cabezal'), un incumplimiento sale como INDICADOR.
+    """
+    clave = CLAVE_FS_DE_CODIGO[codigo]
+    ext = entorno.extremo
+    nombre = NOMBRE_DE_LA_GLOBAL[codigo]
+    procedencia = (f"DECLARADO en {traza} (dato externo "
+                   f"`{DATO_ESTABILIDAD_GLOBAL}` del punto): resultado de un "
+                   "analisis externo de equilibrio limite; no lo calcula "
+                   "este programa")
+    fs_mag = _m("FS", fs, "-", procedencia)
+    nota = (f"El factor de seguridad NO lo calcula este programa: es el "
+            f"resultado declarado del analisis externo ({traza}), y aqui "
+            "solo se contrasta con el minimo de cada marco. ")
+    no_decidida = None
+    criterio = None
+    if marco == MARCO_ASD:
+        admisible = fs_requerido(verificacion=clave, condicion=condicion)
+        cita = CITA_ASD_DE_LA_GLOBAL[codigo]
+        formula = "FS_declarado  >=  FS minimo de E.050"
+        sustitucion = (fs_mag,)
+        descripcion = ("factor de seguridad minimo de E.050, "
+                       + FS_NOMBRE_DE_LA_CONDICION[clave][condicion.value])
+        aplicacion = ("EXIGENCIA de E.050 para edificaciones; el proyecto la "
+                      "aplica al cabezal por analogia")
+        numeral = f"{NUMERAL_9_3_ASD}; {FS_NUMERAL[clave]}"
+        citas = ("AASHTO_LRFD_9.11.6.3.7#GLOBAL",)
+        nota += ("Marco ASD (E.050, por analogia [N→]): la fila de la tabla "
+                 "de Sec. 9.3.")
+    else:
+        citas = ("AASHTO_LRFD_9.C11.6.3.7#FS",
+                 "AASHTO_LRFD_9.11.6.3.7#GLOBAL")
+        formula = ("FS_declarado  >=  1/phi  (C11.6.3.7: phi es en esencia el "
+                   "inverso del FS objetivo del programa de taludes)")
+        if condicion is CondicionAnalisis.SISMICO:
+            phi = PHI_EVENTO_EXTREMO_11_5_8["estabilidad_global"]
+            cita = "AASHTO_LRFD_9.11.5.8#GLOBAL"
+            origen_phi = (f"{NUMERAL_PHI_EVENTO_EXTREMO}: estabilidad global "
+                          "del muro con sismo")
+            aplicacion = ("EXIGENCIA de la fuente para muros, aplicada al "
+                          "cabezal por la hipotesis de modelacion")
+            numeral = f"{NUMERAL_9_3_LRFD}; {NUMERAL_PHI_EVENTO_EXTREMO}"
+        else:
+            fila = fila_phi_estabilidad_global()
+            criterio = CRITERIO_FILA_PHI_GLOBAL
+            cita = "AASHTO_LRFD_9.11.6.3.7#PHI"
+            numeral = f"{NUMERAL_9_3_LRFD}; {NUMERAL_PHI_ESTABILIDAD_GLOBAL}"
+            if fila is not None:
+                phi = PHI_ESTABILIDAD_GLOBAL_11_6_3_7[fila]
+                origen_phi = (f"{NUMERAL_PHI_ESTABILIDAD_GLOBAL}, fila "
+                              f"'{fila}' ('{CRITERIO_FILA_PHI_GLOBAL}' [A])")
+                aplicacion = (f"RECOMENDACION de la fuente con la fila que "
+                              f"declaro el proyectista "
+                              f"('{CRITERIO_FILA_PHI_GLOBAL}' = '{fila}')")
+            else:
+                # Sin la fila declarada se imprime la mas exigente (el
+                # menor phi) y la fila solo decide si las dos dan lo mismo.
+                phi = min(PHI_ESTABILIDAD_GLOBAL_11_6_3_7.values())
+                phi_otra = max(PHI_ESTABILIDAD_GLOBAL_11_6_3_7.values())
+                origen_phi = (f"{NUMERAL_PHI_ESTABILIDAD_GLOBAL}: fila NO "
+                              f"DECIDIDA ('{CRITERIO_FILA_PHI_GLOBAL}' sin "
+                              "valor); se imprime la mas exigente")
+                aplicacion = (f"RECOMENDACION de la fuente con la fila NO "
+                              f"DECIDIDA ('{CRITERIO_FILA_PHI_GLOBAL}' sin "
+                              "valor: la declara el proyectista)")
+                no_decidida = 1 / phi_otra
+        admisible = 1 / phi
+        sustitucion = (fs_mag, _m("phi", phi, "-", origen_phi))
+        descripcion = ("inverso del factor de resistencia de la estabilidad "
+                       "global, 1/phi")
+        nota += ("Marco LRFD (AASHTO 11.6.3.7): el comentario C11.6.3.7 dice "
+                 "que el factor de resistencia es en esencia el inverso del "
+                 "FS que el programa de taludes debe alcanzar; el proyecto "
+                 "toma 1/phi exacto (lectura declarada en la cita "
+                 "AASHTO_LRFD_9.C11.6.3.7#FS). Que el analisis use la "
+                 "combinacion de cargas que la fuente pide lo sostiene su "
+                 "documento, no este programa.")
+        if no_decidida is not None:
+            cumple_otra = fs >= no_decidida - TOL_UMBRAL_NORMATIVO
+            nota += (f" Fila de phi no decidida: con phi = {phi_otra:g} el "
+                     f"minimo es {no_decidida:.3f} "
+                     f"({'cumple' if cumple_otra else 'NO cumple'}); con phi "
+                     f"= {phi:g}, {admisible:.3f}.")
+    cumple = fs >= admisible - TOL_UMBRAL_NORMATIVO
+    falla = (f"el factor de seguridad declarado no alcanza el minimo de "
+             f"{nombre}")
+    if cumple:
+        tipo, texto = TipoDeVeredicto.CUMPLE, "cumple"
+    elif not decide:
+        tipo, texto = TipoDeVeredicto.INDICADOR, (
+            falla + ". Este marco NO rige "
+            f"('{CRITERIO_MARCO}' [A]): se informa y no detiene el punto")
+    elif no_decidida is not None and fs >= no_decidida - TOL_UMBRAL_NORMATIVO:
+        tipo, texto = TipoDeVeredicto.INDICADOR, (
+            "no decidida: con la fila de parametros bien definidos cumple y "
+            "con la de parametros variables o limitados no; declarar "
+            f"'{CRITERIO_FILA_PHI_GLOBAL}'")
+    else:
+        tipo, texto = TipoDeVeredicto.NO_CUMPLE, (
+            falla + ": revisar el analisis con el geotecnista (geometria del "
+            "terraplen, mejora del suelo o del desplante)")
+    p = paso(
+        "F9.GLOBAL_DECLARADA", codigo=f"{codigo}-{marco}.{sufijo}",
+        que=(f"{codigo} ({marco}), {nombre}, con el FS declarado del "
+             f"analisis externo: cabezal de {ext}, condicion "
+             f"{condicion.value}"),
+        formula=formula, sustitucion=sustitucion,
+        resultado=_m("FS", fs, "-", procedencia),
+        citas_textuales=(cita,) + citas,
+        umbral=Umbral(descripcion=descripcion, valor=admisible, unidad="-",
+                      cita_id=cita, caracter=_caracter_de(cita),
+                      aplicacion=aplicacion,
+                      criterio_aplicado=criterio),
+        veredicto=Veredicto(tipo=tipo, margen=fs - admisible, unidad="-",
+                            explicacion=texto),
+        nota_del_proyecto=nota)
+    return Verificacion(
+        cumple=tipo is not TipoDeVeredicto.NO_CUMPLE,
+        numeral=f"{numeral}, cabezal de {ext}", valor_obtenido=fs,
+        valor_admisible=admisible,
+        criterio_aplicado=criterio or CRITERIO_MARCO,
+        codigo=f"{codigo}-{marco}.{sufijo}", paso=p)
+
+
+def _filas_globales_declaradas(entorno: EntornoDelCabezal,
+                               condicion: CondicionAnalisis, regla: str,
+                               sufijo: str) -> Tuple[Verificacion, ...]:
+    """Las filas E4 y E5 de los dos marcos que el punto declaro."""
+    declarada = entorno.estabilidad_global or {}
+    filas = []
+    for codigo in CODIGOS_GLOBALES:
+        if codigo not in declarada:
+            continue
+        for marco in (MARCO_LRFD, MARCO_ASD):
+            filas.append(_fila_global_declarada(
+                entorno=entorno, condicion=condicion, codigo=codigo,
+                marco=marco, fs=declarada[codigo][condicion.value],
+                traza=_traza_de_la_global(declarada),
+                decide=_decide(marco, regla), sufijo=sufijo))
+    return tuple(sorted(filas, key=lambda v: v.codigo))
+
+
+def _paso_y_aviso_de_las_diferidas(entorno: EntornoDelCabezal,
+                                   origen_suelo: str,
+                                   pendientes: tuple):
+    """
+    El paso F9.GLOBAL y el aviso de lo que sigue diferido. Con E4 y E5
+    pendientes, los textos de siempre (hasta VE-4a, los unicos); con una
+    sola declarada, los de la otra.
+    """
+    codigos = [c for c, _ in pendientes]
+    dos = len(codigos) == len(CODIGOS_GLOBALES)
+    if dos:
+        que = (f"E4 y E5, estabilidad global y del talud: cabezal de "
+               f"{entorno.extremo}")
+        estado = "diferidas al expediente con el EMS"
+        nota = ("No son un cumplimiento: el cabezal queda verificado en E1 "
+                "a E3 y PENDIENTE en estas dos, que necesitan la "
+                "estratigrafia completa y un analisis de superficies de "
+                "falla.")
+        aviso = (f"Cabezal de {entorno.extremo} de {entorno.id_punto}: E4 y "
+                 "E5 (estabilidad global del muro y del talud) NO se "
+                 "evaluan; quedan diferidas al expediente con el estudio de "
+                 "suelos (AASHTO LRFD 11.6.3.7; E.050 39.13.6 b y Art. 30.3)")
+    else:
+        codigo = codigos[0]
+        otro = next(c for c in CODIGOS_GLOBALES if c != codigo)
+        que = (f"{codigo}, {NOMBRE_DE_LA_GLOBAL[codigo]}: cabezal de "
+               f"{entorno.extremo}")
+        estado = "diferida al expediente con el EMS"
+        nota = (f"No es un cumplimiento: el cabezal queda verificado en E1 "
+                f"a E3 y con el FS declarado en {otro}, y PENDIENTE en esta, "
+                "que necesita la estratigrafia completa y un analisis de "
+                "superficies de falla.")
+        aviso = (f"Cabezal de {entorno.extremo} de {entorno.id_punto}: "
+                 f"{codigo} ({NOMBRE_DE_LA_GLOBAL[codigo]}) NO se evalua; "
+                 "queda diferida al expediente con el estudio de suelos "
+                 f"({NUMERAL_DE_LA_GLOBAL[codigo]}); {otro} se contrasta "
+                 "con el FS declarado del analisis externo")
+    p = paso(
+        "F9.GLOBAL", codigo=f"9.3.g.{entorno.extremo[0]}", que=que,
+        formula="FS de equilibrio limite >= FS minimo (no evaluado)",
+        sustitucion=(Magnitud("suelo de fundacion", origen_suelo, "",
+                              "lo que si se uso en E1 a E3"),),
+        resultado=Magnitud(", ".join(codigos), estado, "",
+                           "; ".join(m for _, m in pendientes)),
+        nota_del_proyecto=nota)
+    return p, aviso
+
+
 def ensamble_estabilidad(entorno: EntornoDelCabezal,
                          condicion: CondicionAnalisis
                          ) -> EstabilidadDelCabezal:
@@ -8542,7 +8929,10 @@ def ensamble_estabilidad(entorno: EntornoDelCabezal,
     al trafico ([S] sin leer) o, bajo sismo, Mononobe-Okabe fuera de su
     dominio de validez (`MetodoNoEvaluableError`).
 
-    E4 y E5 no se evaluan: viajan en `pendientes`, con su motivo.
+    E4 y E5 no se CALCULAN: viajan en `pendientes`, con su motivo, salvo
+    que el punto declare su factor de seguridad del analisis externo
+    (`entorno.estabilidad_global`, VE-4a): entonces se contrastan en los dos
+    marcos y van en `globales` (`_filas_globales_declaradas`).
     """
     if condicion not in CONDICIONES_DE_ESTABILIDAD:
         raise DatoInvalidoError("condicion", valor=condicion,
@@ -8576,27 +8966,17 @@ def ensamble_estabilidad(entorno: EntornoDelCabezal,
     avisos = _avisos_de_sensibilidad(entorno, datos, suelo, combos,
                                      condicion, regla, sufijo,
                                      verificaciones)
+    # --- VE-4a --- E4 y E5: lo DECLARADO se contrasta (`globales`) y sale
+    # de `pendientes`; lo que no, sigue diferido con su paso y su aviso.
+    declarada = entorno.estabilidad_global or {}
+    pendientes = tuple(p for p in PENDIENTES_E4_E5 if p[0] not in declarada)
+    globales = _filas_globales_declaradas(entorno, condicion, regla, sufijo)
     if condicion is CondicionAnalisis.ESTATICO:
-        pasos.append(paso(
-            "F9.GLOBAL", codigo=f"9.3.g.{entorno.extremo[0]}",
-            que=f"E4 y E5, estabilidad global y del talud: cabezal de "
-                f"{entorno.extremo}",
-            formula="FS de equilibrio limite >= FS minimo (no evaluado)",
-            sustitucion=(Magnitud("suelo de fundacion", origen_suelo, "",
-                                  "lo que si se uso en E1 a E3"),),
-            resultado=Magnitud("E4, E5", "diferidas al expediente con el "
-                               "EMS", "", "; ".join(m for _, m in
-                                                   PENDIENTES_E4_E5)),
-            nota_del_proyecto=(
-                "No son un cumplimiento: el cabezal queda verificado en E1 "
-                "a E3 y PENDIENTE en estas dos, que necesitan la "
-                "estratigrafia completa y un analisis de superficies de "
-                "falla.")))
-        avisos.append(
-            f"Cabezal de {entorno.extremo} de {entorno.id_punto}: E4 y E5 "
-            "(estabilidad global del muro y del talud) NO se evaluan; "
-            "quedan diferidas al expediente con el estudio de suelos "
-            "(AASHTO LRFD 11.6.3.7; E.050 39.13.6 b y Art. 30.3)")
+        if pendientes:
+            paso_global, aviso_global = _paso_y_aviso_de_las_diferidas(
+                entorno, origen_suelo, pendientes)
+            pasos.append(paso_global)
+            avisos.append(aviso_global)
         if datos["drenaje"] == DRENAJE_SIN:
             # VE-3.16: el valor de archivo es 'drenado'; este aviso es el
             # del caso declarado. Hasta VE-3.16 decia ademas que la
@@ -8627,7 +9007,7 @@ def ensamble_estabilidad(entorno: EntornoDelCabezal,
         solicitaciones=solicitaciones_por_elemento(entorno, cargas, combos,
                                                    datos),
         pasos=tuple(pasos), avisos=tuple(avisos),
-        pendientes=PENDIENTES_E4_E5, K_A=datos["K_A"], K_AE=datos["K_AE"],
+        pendientes=pendientes, K_A=datos["K_A"], K_AE=datos["K_AE"],
         i_grados=datos["angulos"]["i"], delta_grados=datos["angulos"]["delta"],
         altura_empuje=datos["h"], h_eq=datos["h_eq"], k_h=datos["k_h"],
         metodo_empuje=datos["metodo_empuje"],
@@ -8635,7 +9015,7 @@ def ensamble_estabilidad(entorno: EntornoDelCabezal,
                        == METODO_EMPUJE_CUNA else None),
         K_AE_contraste=(datos["K_AE_formula"] if datos["metodo_empuje"]
                         == METODO_EMPUJE_CUNA else None),
-        regimen=datos["regimen"], K0=datos["K0"])
+        regimen=datos["regimen"], K0=datos["K0"], globales=globales)
 
 
 def _sin_parar(calculo):
@@ -8744,7 +9124,8 @@ def _avisos_de_sensibilidad(entorno, datos, suelo, combos, condicion, regla,
 def datos_del_cabezal_del_punto(*, punto, cabezal: CabezalDelPunto,
                                 geometria, socavacion=None,
                                 suelo_del_punto: Optional[dict] = None,
-                                resultado=None
+                                resultado=None,
+                                estabilidad_global: Optional[dict] = None
                                 ) -> Tuple[EntornoDelCabezal, EntornoDelCabezal]:
     """
     Los dos `EntornoDelCabezal` de un punto (entrada y salida), leidos de lo
@@ -8767,6 +9148,10 @@ def datos_del_cabezal_del_punto(*, punto, cabezal: CabezalDelPunto,
     Con `resultado` (el `ResultadoPunto` de la Fase 4) el entorno lleva
     tambien el nivel del agua de diseño contra cada cabezal, el mismo de
     `extremos_del_conducto`: solo lo lee el aviso del desembalse rapido.
+    --- VE-4a --- Con `estabilidad_global` (el dato externo
+    `estabilidad_global_declarada` del punto, ya validado y normalizado) cada
+    entorno lleva el bloque de SU extremo: el FS declarado de E4 y E5 que el
+    ensamble contrasta. Sin el, E4 y E5 siguen diferidas.
     """
     reglas = _reglas()
     nf = punto.NF_profundidad_m
@@ -8817,7 +9202,9 @@ def datos_del_cabezal_del_punto(*, punto, cabezal: CabezalDelPunto,
             cota_fondo_hoya=(None if es_entrada or socavacion is None
                              else socavacion.cota_fondo_de_la_hoya),
             suelo=suelo_del_punto,
-            cota_agua_diseno=agua_de.get(g.extremo)))
+            cota_agua_diseno=agua_de.get(g.extremo),
+            estabilidad_global=(estabilidad_global or {}).get(g.extremo)
+            or None))
     return tuple(entornos)
 
 
@@ -8826,7 +9213,8 @@ def integrar_estabilidad(cabezal: CabezalDelPunto,
                          ) -> CabezalDelPunto:
     """
     El `CabezalDelPunto` con la estabilidad de sus cabezales incorporada:
-    las verificaciones E1 a E3 se suman a las CB (la via por la que
+    las verificaciones E1 a E3 -- y las E4 y E5 con FS declarado (VE-4a,
+    `EstabilidadDelCabezal.globales`) -- se suman a las CB (la via por la que
     `InformePunto` cuenta incumplidas e indicadores), los pasos y los avisos
     a los suyos, y los objetos enteros quedan en `estabilidad`.
     """
@@ -8853,7 +9241,7 @@ def integrar_estabilidad(cabezal: CabezalDelPunto,
     return _replace(
         cabezal,
         verificaciones=cabezal.verificaciones + tuple(
-            v for e in estabilidades for v in e.verificaciones),
+            v for e in estabilidades for v in e.verificaciones + e.globales),
         pasos=cabezal.pasos + tuple(p for e in estabilidades
                                     for p in e.pasos),
         avisos=tuple(avisos), estabilidad=estabilidades)

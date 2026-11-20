@@ -5872,6 +5872,18 @@ marca del régimen para T-7c.
 - **Qué haría falta:** el EMS y el análisis externo; el programa solo podría registrar
   su resultado como dato declarado.
 - **Dónde vive:** `src/modulos/M9_cabezal.py::PENDIENTES_E4_E5`
+- **Cerrado en parte en VE-4a (decisión del dueño, 2026-11-20):** el resultado del
+  análisis externo ya se registra como dato declarado. El punto declara, por cabezal, el FS
+  estático y el sísmico de E4 y/o de E5 con el documento, la fecha y el método que los
+  sostienen (`estabilidad_global_declarada` de `--datos-externos`, sólo por punto; puerta
+  `M9.validar_estabilidad_global_declarada`), y el ensamble los **contrasta** en los dos
+  marcos: el ASD contra el FS de E.050 (1.50 / 1.25, 39.13.6 b y Art. 30.3, por analogía) y
+  el LRFD contra 1/φ (φ de AASHTO 11.6.3.7 en estática, la fila es el [A]
+  `fila_phi_estabilidad_global` sin valor de archivo; 0.9 de 11.5.8 bajo sismo). Lo
+  declarado sale de `pendientes`; lo no declarado sigue diferido con su paso y su aviso, y
+  sin el dato nada cambia. El programa sigue sin **calcular** E4 ni E5 (no tiene la
+  estratigrafía ni un programa de equilibrio límite) y la memoria lo dice en cada paso
+  (`F9.GLOBAL_DECLARADA`). Ficha VE4A-01.
 
 ## T7B-08 · Las solicitaciones por elemento para T-7c son las de la sección de arranque, con tres aproximaciones declaradas
 
@@ -8348,3 +8360,34 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
 - **Qué haría falta:** cargas WA por condición (estática y sísmica) en el ensamble, y la lectura
   del nivel medio de un relleno sin drenar bajo sismo verificada contra C11.6.5.3.
 - **Dónde vive:** `src/modulos/M9_cabezal.py::cargas_del_cabezal`
+
+## VE4A-01 · E4 y E5 con el FS declarado del EMS: tres lecturas del proyecto y una fila sin valor (VE-4a, decisión del dueño del 2026-11-20)
+
+- **Cerrado:** el dato `estabilidad_global_declarada` (por punto y por cabezal: `E4` y/o `E5`,
+  cada uno con `estatico` y `sismico`, y la traza `documento`, `fecha`, `metodo` y,
+  opcional, `programa`) entra por `--datos-externos` como `suelo_fundacion`, fuera de
+  `CLAVES_EXTERNAS` porque ninguna etapa lo exige, y es la única clave del cabezal que no
+  admite `globales`. El ensamble emite cuatro filas por cabezal y condición
+  (`E4-LRFD`, `E4-ASD`, `E5-LRFD`, `E5-ASD`) en `EstabilidadDelCabezal.globales`, aparte de
+  `verificaciones`: el dimensionamiento de la zapata itera sobre E1 a E3 y el ancho no mueve
+  un FS que el programa no calcula. `integrar_estabilidad` las suma a las del cabezal, que es
+  por donde el informe cuenta incumplidas e indicadores.
+- **Abierto (lecturas del proyecto, declaradas en la `Interpretacion` de la cita
+  `AASHTO_LRFD_9.C11.6.3.7#FS`):** (1) el puente entre el FS del programa de taludes y el
+  marco LRFD es el comentario C11.6.3.7 («essentially the inverse of the FS that should be
+  targeted»), y el proyecto toma **1/φ exacto** (1.333 y 1.538), no las cifras redondeadas
+  del comentario (1.3 y 1.5), que quedan por debajo; (2) la misma lectura se extiende al φ =
+  0.9 del evento extremo (11.5.8), que el comentario no cubre; (3) la combinación de cargas
+  con que el analista obtuvo el FS (Resistencia I en la 9a edición; Servicio I en el
+  2.4.5.3.1 del Manual de Puentes, que no da cifra de φ) la sostiene su documento, no el
+  programa. Y `fila_phi_estabilidad_global` no tiene valor de archivo: sin declararla, la
+  fila LRFD estática decide sólo si las dos filas dan lo mismo y sale INDICADOR «no
+  decidida» entre 1.333 y 1.538 (el patrón de la fila A6 del armado).
+- **Qué haría falta:** que el dueño confirme las tres lecturas o elija otra (por ejemplo,
+  las cifras redondeadas del comentario); declarar `fila_phi_estabilidad_global` con el EMS
+  real; y corregir la hoja de ruta, cuya §9.3 y la nota de la Fase 9 siguen diciendo que E4
+  y E5 «se imprimen como diferidas al expediente con el EMS» sin el camino del FS declarado
+  (texto propuesto en el informe de VE-4a). `metodo_estabilidad_global` y las funciones
+  sueltas `verificar_estabilidad_global` / `verificar_talud` quedan como estaban: el método
+  viaja ahora en la traza del dato declarado.
+- **Dónde vive:** `src/modulos/M9_cabezal.py::validar_estabilidad_global_declarada`
