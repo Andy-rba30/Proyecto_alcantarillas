@@ -4197,6 +4197,9 @@ CITA_PERALTE_ZAPATA_ARMADA = "E060.15.7#PERALTE"
 CITA_ZAPATA_CONCRETO_SIMPLE = "E060.22.7.4#ZAPATA"
 CITA_CICLOPEO_LIMITES = "E060.22.10.2#CICLOPEO"
 CITA_CONVENCION_ALEROS = "HDS5_3ED.SIMBOLOS#THETA_W"
+# --- VE-7 (lote A, A8) --- la cita cuya nota nombra las vigas de borde del
+# cajon (C12.11.2.1): el borde libre esviado del marco con cabezal paralelo.
+CITA_BORDE_LIBRE_ESVIADO = "AASHTO_LRFD_9.12.11.2.1#SOMERO"
 
 # Las dimensiones que el proyectista puede declarar por punto en
 # `--datos-externos` (clave `cabezal_declarado`), en m. La validacion de
@@ -4385,6 +4388,17 @@ def _embocadura_paralela(*, fila: str, tipo_criterio: str,
             f"cabezal esviado respecto del barril); "
             f"'{CRITERIO_EMBOCADURA_CABEZAL}' = {tipo_criterio} sigue rigiendo "
             "los tubos (ficha T7A-03)")
+    # --- VE-7 (lote A, A8; triaje VE-7 de Fable) --- el extremo del marco
+    # cortado en oblicuo deja un borde libre esviado de la losa que el
+    # programa no verifica: el comentario C12.11.2.1 lo resuelve con vigas
+    # de borde (nota de la cita `AASHTO_LRFD_9.12.11.2.1#SOMERO`).
+    extra.append(
+        f"Embocadura de {id_punto}: con el cabezal paralelo a la via el "
+        f"extremo del marco se corta esviado {esviaje_grados:g} grados y el "
+        "borde libre esviado de la losa NO se verifica; las vigas de borde "
+        "del comentario C12.11.2.1 de AASHTO LRFD (nota de "
+        f"`{CITA_BORDE_LIBRE_ESVIADO}`) son detalle del proyectista "
+        "(ficha VE7A-08)")
     celdas = ca.valor(CRITERIO_N_CELDAS_CAJON_EMBOCADURA)
     if isinstance(celdas, int) and celdas > 1:
         extra.append(

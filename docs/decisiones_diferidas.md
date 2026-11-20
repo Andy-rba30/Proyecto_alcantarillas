@@ -9156,7 +9156,7 @@ cambios están aplicados en estas fichas.
   tubos); con cabezal paralelo el esviaje de la embocadura es el del barril (nota de
   `#MAXIMO_PRACTICO`), sin interpolar fuera de banda; los dos cabezales van paralelos (`#PARALELO`).
 - **Abierto:** (1) Cerrado en VE7A-02 (embocadura del marco por punto). (2) El extremo oblicuo del marco no se
-  verifica en M8 (sin numeral atribuido). (3) Carta 12 escala 3 (paralelo con aleros) sin banda; la
+  verifica en M8 (sin numeral atribuido); desde VE7A-08 se avisa. (3) Carta 12 escala 3 (paralelo con aleros) sin banda; la
   h_eq por orientación, cerrada en VE7A-07. (4) Cerrado en VE7A-01.
 - **Qué haría falta:** el extremo oblicuo en M8; los aleros
   del paralelo.
@@ -9300,3 +9300,15 @@ el test; lo que la sesión tuvo que decidir sin dictamen va rotulado «pendiente
 - **Abierto:** nada más de esta ficha.
 - **Qué haría falta:** nada; declarar la orientación del punto quita la envolvente.
 - **Dónde vive:** `src/modulos/M9_cabezal.py::h_eq_del_cabezal`
+
+## VE7A-08 · El cabezal paralelo avisa el borde libre esviado de la losa del marco (VE6-T7A03 (2))
+
+- **Cerrado:** `M9._embocadura_paralela` suma un aviso del punto: con el cabezal paralelo a la vía
+  el extremo del marco se corta esviado y el borde libre esviado de la losa NO se verifica; las
+  vigas de borde del comentario C12.11.2.1 son detalle del proyectista. El aviso nombra la cita
+  cuya nota las recoge (`AASHTO_LRFD_9.12.11.2.1#SOMERO`, `CITA_BORDE_LIBRE_ESVIADO`).
+- **Decisión del consultor Fable (triaje VE-7, 2026-11-20):** un aviso, no una verificación: el
+  comentario no da un procedimiento con número que el programa pueda aplicar.
+- **Abierto:** el borde esviado sigue sin verificarse en M8.
+- **Qué haría falta:** un procedimiento de la fuente para la viga de borde del marco esviado.
+- **Dónde vive:** `src/modulos/M9_cabezal.py::_embocadura_paralela`

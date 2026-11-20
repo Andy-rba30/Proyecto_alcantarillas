@@ -183,6 +183,25 @@ def test_un_corredor_con_un_marco_carta_10_y_otro_carta_11_corre_entero(
     assert CARTA_10 in c02.coherencia_embocadura
 
 
+def test_A8_el_cabezal_paralelo_avisa_el_borde_libre_esviado_de_la_losa():
+    """La embocadura paralela a la via avisa que el borde libre esviado de
+    la losa no se verifica y nombra las vigas de borde de C12.11.2.1, que
+    estan en la nota de la cita del registro (`#SOMERO`)."""
+    from src.normativa import registro
+    nota = registro.construir().cita("AASHTO_LRFD_9.12.11.2.1#SOMERO").nota
+    assert "C12.11.2.1" in nota and "vigas de borde" in nota
+    with declarados({"embocadura_cajon": CARTA_11_30,
+                     "ke_entrada_cajon": ESCUADRA}):
+        e = M9.embocadura_del_punto(esviaje_grados=30.0, familia=Familia.C,
+                                    id_punto="C-01")
+    avisos = [a for a in e.avisos if "borde libre esviado" in a]
+    assert len(avisos) == 1
+    assert "C12.11.2.1" in avisos[0] and "12.11.2.1#SOMERO" in avisos[0]
+    # el cabezal normal al eje no lo lleva
+    assert not any("borde libre esviado" in a
+                   for a in _normal_sin_aletas().avisos)
+
+
 def test_el_valor_de_proyecto_queda_restaurado_aunque_el_punto_falle(
         corredor_de_dos_marcos, monkeypatch):
     csv, externos = corredor_de_dos_marcos
