@@ -275,6 +275,7 @@ import numbers
 from typing import Any, Optional, Tuple, Union
 
 from src import criterios_adoptados as ca
+from src import datos_sitio as ds
 from src.constantes_normativas import (ALCANCE_NORMA_PRODUCTO, CARTAS_CAJON_TA1,
                                    FILAS_MANNING_CONCRETO,HDS5_INLET, H_RELLENO_MIN, MANNING,
                                    MANNING_CAJON_HDS5,
@@ -296,6 +297,8 @@ from src.dominios import MILIMETROS_POR_METRO, PPM_POR_PORCIENTO
 # --- VE-2 (g) --- las series designadas [N] y el ingles convertido de M 170M.
 from src.constantes_normativas import (DIAMETROS_DESIGNADOS_MM,
                                    EQUIVALENTE_INGLES_M170M)
+# --- VE-5 (catlic, T4-06) --- la recomendacion de selva alta.
+from src.constantes_normativas import DIAMETRO_MIN_TMC_SELVA_ALTA_RECOMENDADO
 from src.constantes_fisicas import PULGADA_EN_MM
 from src.modelos import (CIFRAS_FACTOR, CIFRAS_FINA, ConstantesHDS5,
                      DatoFaltanteError, DatoInvalidoError,
@@ -1054,8 +1057,11 @@ def siguiente_diametro(material: MaterialLike,
     tope, _clave, _rotulo = tope_de_diametro(tipo)
 
     if D is None:
-        _exigir_escalon_designado(tipo, inicio)
-        return inicio
+        primero = _primer_escalon_sobre_el_piso(
+            inicio, paso, tope, piso_de_selva_alta(tipo))
+        if primero is not None:
+            _exigir_escalon_designado(tipo, primero)
+        return primero
 
     pasos = (D - inicio) / paso
     n = round(pasos)
@@ -1073,6 +1079,125 @@ def siguiente_diametro(material: MaterialLike,
         return None
     _exigir_escalon_designado(tipo, siguiente)
     return siguiente
+
+
+# ---------------------------------------------------------------------------
+# --- VE-5 (lote catlic, ficha T4-06) --- La rama de selva alta
+# ---------------------------------------------------------------------------
+# La hoja de ruta (Sec. 3.1) manda «programar la rama y declararla inactiva»;
+# hasta VE-5 no existia porque ningun dato decia en que region esta la obra.
+# El dato es el [S] de corredor 'region_natural'; con COSTA (la obra del
+# repositorio) la rama no actua.
+DATO_REGION_NATURAL = "region_natural"
+CITA_SELVA_ALTA = "MC_HHD.4.1.1.3.7a"
+FUNDAMENTO_SELVA_ALTA = "F3.SELVA_ALTA_TMC"
+
+
+def piso_de_selva_alta(material: MaterialLike) -> Optional[float]:
+    """
+    El diametro minimo que el Manual RECOMIENDA para el TMC en selva alta, o
+    None si la recomendacion no alcanza a este material o a esta obra.
+
+    Manual de Hidrologia, Hidraulica y Drenaje, num. 4.1.1.3.7 a), pag.
+    impresa 79 (PDF 82), cita `MC_HHD.4.1.1.3.7a`, caracter RECOMENDACION:
+    «Se recomienda utilizar, en zonas de selva alta, con las características
+    físicas y geomorfológicos indicadas en el párrafo anterior, como diámetro
+    mínimo alcantarillas TMC Ф 48”». Solo TMC: el concreto y el HDPE no
+    reciben piso. Solo SELVA ALTA, leida del [S] de corredor
+    'region_natural' (se lee siempre que el material es TMC, para que la
+    memoria diga que la rama se miro).
+
+    QUE HACE CON LA RECOMENDACION, Y POR QUE NO LA LLAMA EXIGENCIA. La hoja
+    de ruta (Sec. 3.1) manda programar la rama; el proyecto la aplica como
+    PISO DEL CATALOGO del TMC --el lado seguro frente al flujo de barros que
+    el numeral describe--, y la memoria la imprime con el verbo de la fuente,
+    «recomienda» (`F3.SELVA_ALTA_TMC`), no como un rechazo normativo. Las
+    cuatro caracteristicas del parrafo anterior se presumen para todos los
+    cruces de un corredor declarado de selva alta: verificarlas cauce por
+    cauce es de la trazabilidad del dato (ver 'region_natural').
+
+    EL PISO ES 48 in = `DIAMETRO_MIN_TMC_SELVA_ALTA_RECOMENDADO` (1.22 m), Y
+    EL DESIGNADO DE 1200 mm DE M 36 QUEDA POR DEBAJO: la serie del TMC es
+    metrica (AASHTO M 36 Table 6) y ninguna fuente del repositorio equipara
+    el 1200 mm del acero corrugado con el «Ф 48”» del Manual; la
+    equivalencia que si existe (M 170M Table 6) es del tubo de concreto. Se
+    toma el primer escalon de la serie que no baja de 48 in, del lado seguro
+    (decision pendiente de Fable, ficha T4-06).
+    """
+    if _tipo_material(material) is not TipoMaterial.TMC:
+        return None
+    if ds.valor(DATO_REGION_NATURAL) != ds.REGION_SELVA_ALTA:
+        return None
+    return DIAMETRO_MIN_TMC_SELVA_ALTA_RECOMENDADO
+
+
+def _primer_escalon_sobre_el_piso(inicio: float, paso_serie: float,
+                                  tope: float,
+                                  piso: Optional[float]) -> Optional[float]:
+    """
+    El primer escalon de la serie (Sec. 3.2) que no baja de `piso`; sin piso,
+    el inicio de la serie. None si ese escalon supera el `tope` del material
+    --MD lo lee como «el catalogo no ofrecio ninguna seccion»--.
+    """
+    if piso is None:
+        return inicio
+    if not paso_serie > 0:
+        raise DatoInvalidoError(
+            CRITERIO_DIAMETROS, valor=paso_serie,
+            motivo="el paso de la progresion tiene que ser positivo para "
+                   "llegar al piso de selva alta")
+    k = 0
+    D = inicio
+    while D < piso - TOL_UMBRAL_NORMATIVO:
+        k += 1
+        D = _escalon_de_la_serie(inicio, paso_serie, k)
+    return None if D > tope + TOL_UMBRAL_NORMATIVO else D
+
+
+def _pasos_de_selva_alta(material: MaterialLike) -> Tuple[PasoDeMemoria, ...]:
+    """
+    La traza de la rama de selva alta: un paso solo cuando ACTUA (TMC en un
+    corredor de selva alta), con el verbo de la fuente. num. 4.1.1.3.7 a).
+    """
+    piso = piso_de_selva_alta(material)
+    if piso is None:
+        return ()
+    prog = _progresion()
+    tope, _clave, _rotulo = tope_de_diametro(material)
+    primero = _primer_escalon_sobre_el_piso(prog["inicio"], prog["paso"],
+                                            tope, piso)
+    return (paso(
+        "F3.SELVA_ALTA_TMC",
+        codigo="3.2",
+        que="Diametro minimo del TMC en selva alta (recomendacion del "
+            "Manual)",
+        formula="D_inicio = primer escalon de la serie con D >= Ф 48 in",
+        formula_cita_id=CITA_SELVA_ALTA,
+        citas_textuales=(CITA_SELVA_ALTA,),
+        sustitucion=(
+            Magnitud("region_natural", ds.REGION_SELVA_ALTA, "",
+                     "dato de sitio [S] de corredor", cifras=None),
+            Magnitud("D_min_recomendado", piso, "m",
+                     "48 in convertidas por el proyecto (el Manual escribe "
+                     "«Ф 48”»)", cifras=CIFRAS_FACTOR)),
+        resultado=Magnitud(
+            "D_inicio", "ninguno bajo el tope" if primero is None else primero,
+            "" if primero is None else "m",
+            "primer escalon del TMC que el catalogo ofrece",
+            cifras=None if primero is None else CIFRAS_FACTOR),
+        veredicto=Veredicto(tipo=TipoDeVeredicto.SIN_VEREDICTO,
+                            explicacion="recomendacion aplicada como piso del "
+                                        "catalogo, no verificacion"),
+        nota_del_proyecto=(
+            "El Manual RECOMIENDA este diametro; no lo exige. La hoja de ruta "
+            "(Sec. 3.1) manda programar la rama, y el proyecto la aplica como "
+            "piso del catalogo del TMC, el lado seguro frente al flujo de "
+            "barros del numeral. El designado de 1200 mm de AASHTO M 36 queda "
+            "por debajo de 48 in (1219.2 mm) y no se toma por el «Ф 48”»: el "
+            "primer escalon es el siguiente de la serie. Las cuatro "
+            "caracteristicas del parrafo anterior se presumen para todos los "
+            "cruces del corredor."),
+    ),)
 
 
 def _escalon_de_la_serie(inicio, paso, k: int) -> float:
@@ -1748,7 +1873,7 @@ def catalogo(material: MaterialLike,
         pasos=(_pasos_del_marco() if forma is FormaSeccion.RECTANGULAR
                else _pasos_del_tubo_de_concreto(n_min, n_max)
                if tipo is TipoMaterial.CONCRETO_REFORZADO
-               else ()),
+               else _pasos_de_selva_alta(tipo)),
         D_max_criterio=D_max_criterio,
     )
 

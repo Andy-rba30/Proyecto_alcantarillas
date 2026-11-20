@@ -57,8 +57,11 @@ Lo que este modulo NO decide
   `servicio.py`, fijado por AST).
 * La pendiente de la cuneta y el ancho tributario: datos del trazo
   (`S_cuneta`, `ancho_tributario_m`), que el CSV no trae.
-* La seccion trapezoidal (fila «>3000 mm/año» de la Tabla Nº 34) ni la
-  rectangular: solo la triangular, que el num. 4.1.2.1 prefiere.
+* La seccion rectangular. La TRAPEZOIDAL (fila «>3000 mm/año» de la Tabla
+  Nº 34, nota «*»: fondo minimo 0.30) se calcula desde VE-5 (lote catlic,
+  ficha T9-01) cuando 'seccion_cuneta' declara `ancho_fondo_m` > 0, y se
+  contrasta con el minimo de esa fila; con fondo 0 es la triangular que el
+  num. 4.1.2.1 prefiere.
 * El sentido del flujo en la cuneta: no es dato, y ningun texto lo supone.
 
 Cual gobierna
@@ -96,6 +99,8 @@ from __future__ import annotations
 import math
 from typing import Optional, Sequence, Tuple
 
+from scipy.optimize import brentq
+
 from src import criterios_adoptados as ca
 from src.constantes_normativas import (CUNETA_STRICKLER_T32,
                                        CUNETA_T32_ROTULO, CUNETA_T33_ROTULO,
@@ -106,6 +111,10 @@ from src.constantes_normativas import (CUNETA_STRICKLER_T32,
                                        NUMERAL_PENDIENTE_DRENAJE_LONGITUDINAL,
                                        PENDIENTE_DRENAJE_LONGITUDINAL,
                                        PENDIENTE_MIN_CUNETA_DG2018)
+# --- VE-5 (catlic, T9-01) --- el minimo de la seccion trapezoidal (Tabla Nº 34).
+from src.constantes_normativas import (CUNETA_DIMENSIONES_MINIMAS_T34,
+                                       CUNETA_FILA_TRAPEZOIDAL_T34,
+                                       CUNETA_FONDO_MIN_TRAPEZOIDAL_T34)
 from src.dominios import METROS_POR_KM
 from src.modelos import (CAPACIDAD_CUNETA_LLENA, CAPACIDAD_VELOCIDAD_LIMITE,
                          CIFRAS_FACTOR, CIFRAS_FINA, CIFRAS_MAGNITUD,
@@ -120,7 +129,7 @@ from src.modelos import (CODIGO_VB2, METODO_APORTE_AREA,   # --- T-9 (correccion
                          METODO_APORTE_TRAMO, AporteDelAlivio, ExtremoDeTramo,
                          Familia)
 from src.normativa.citas import MC_HHD_CUNETA as _cita_cuneta
-from src.tolerancias import TOL_UMBRAL_NORMATIVO
+from src.tolerancias import TOL_BRENT, TOL_UMBRAL_NORMATIVO
 
 # LA PAGINA SE LEE DEL REGISTRO, no se repite: NOR-HID-02 se cerro en S12
 # corrigiendo la cita (MC_HHD_CUNETA, pag. impresa 179) y este texto -- el
@@ -253,6 +262,70 @@ def geometria_triangular(*, y: float, Z1: float, Z2: float
     return A, P, A / P
 
 
+def geometria_cuneta(*, y: float, Z1: float, Z2: float, b: float
+                     ) -> Tuple[float, float, float]:
+    """
+    --- VE-5 (catlic, T9-01) --- (A, P, Rh) de la cuneta de taludes 1:Z1 y
+    1:Z2 (V:H) con fondo `b` y tirante y: la triangular de la Figura Nº 27
+    con b = 0, y la TRAPEZOIDAL de la nota «*» de la Tabla Nº 34 (num.
+    4.1.2.1 c), pag. impresa 178) con b > 0:
+
+        A  = b · y + (Z1 + Z2) · y² / 2
+        P  = b + y · (√(1 + Z1²) + √(1 + Z2²))
+        Rh = A / P
+    """
+    if not b > 0:
+        return geometria_triangular(y=y, Z1=Z1, Z2=Z2)
+    A = b * y + (Z1 + Z2) * y ** 2 / 2
+    P = b + y * (math.sqrt(1 + Z1 ** 2) + math.sqrt(1 + Z2 ** 2))
+    return A, P, A / P
+
+
+def _fondo_declarado(seccion: dict, id_punto: Optional[str]) -> float:
+    """
+    El fondo de la cuneta (VE-5, T9-01): 0 es la triangular. Con fondo, la
+    nota «*» de la Tabla Nº 34 pide al menos 0.30 m y la fila «>3000 mm/año»
+    sus minimos de profundidad y ancho (`_exigir_minimo_trapezoidal`). El
+    campo es obligatorio, como en la puerta del criterio: sin el, no se sabe
+    que seccion se declaro y no se le supone una.
+    """
+    b = seccion.get("ancho_fondo_m")
+    if isinstance(b, bool) or not isinstance(b, (int, float)) \
+            or not (math.isfinite(b) and b >= 0
+                    and b < seccion["ancho_m"]):
+        raise DatoInvalidoError(
+            f"{CRITERIO_SECCION_CUNETA}.ancho_fondo_m", valor=b,
+            id_punto=id_punto,
+            motivo="el fondo de la cuneta tiene que ser finito, no negativo "
+                   "(0 = triangular) y menor que el ancho")
+    return float(b)
+
+
+def _exigir_minimo_trapezoidal(d: float, a: float, b: float,
+                               id_punto: Optional[str]) -> None:
+    """
+    Una cuneta con fondo es la seccion TRAPEZOIDAL de la Tabla Nº 34 (num.
+    4.1.2.1 c), pag. impresa 178, PDF 181), fila «Muy lluviosa (>3000
+    mm/año)»: profundidad 0.30*, ancho 1.20, «* Sección Trapezoidal con un
+    ancho mínimo de fondo de 0.30». La tabla lo EXIGE («las dimensiones
+    mínimas serán»): por debajo es `DatoInvalidoError`, con el par culpable.
+    Es la unica fila que la fuente da para una seccion con fondo.
+    """
+    d_min, a_min = CUNETA_DIMENSIONES_MINIMAS_T34[CUNETA_FILA_TRAPEZOIDAL_T34]
+    b_min = CUNETA_FONDO_MIN_TRAPEZOIDAL_T34
+    for campo, valor, minimo in (("ancho_fondo_m", b, b_min),
+                                 ("profundidad_m", d, d_min),
+                                 ("ancho_m", a, a_min)):
+        if not valor >= minimo - TOL_UMBRAL_NORMATIVO:
+            raise DatoInvalidoError(
+                f"{CRITERIO_SECCION_CUNETA}.{campo}", valor=valor,
+                id_punto=id_punto,
+                motivo=f"la cuneta con fondo (ancho_fondo_m = {b:g} m) es la "
+                       f"seccion trapezoidal de la Tabla Nº 34, fila «Muy "
+                       f"lluviosa (>3000 mm/año)», cuyo minimo de {campo} es "
+                       f"{minimo:g} m (nota «*»: fondo minimo 0.30)")
+
+
 def _seccion_declarada(id_punto: Optional[str]) -> dict:
     seccion = ca.valor(CRITERIO_SECCION_CUNETA)
     if not isinstance(seccion, dict):
@@ -298,7 +371,7 @@ def _lectura_declarada(id_punto: Optional[str]) -> str:
 
 
 def caudal_a_velocidad(*, v: float, n: float, S: float, Z1: float,
-                       Z2: float) -> Tuple[float, float]:
+                       Z2: float, b: float = 0.0) -> Tuple[float, float]:
     """
     (tirante, caudal) con que la velocidad de Manning en la seccion
     triangular es `v`: ecuaciones (4.2) y (4.5) del num. 4.1.2.1 a),
@@ -307,11 +380,28 @@ def caudal_a_velocidad(*, v: float, n: float, S: float, Z1: float,
 
     y, como en el triangulo Rh = c · y con c = (Z1 + Z2) / (2 · (√(1 + Z1²) +
     √(1 + Z2²))), el tirante es Rh_v / c y el caudal A(y_v) · v.
+
+    --- VE-5 (T9-01) --- Con fondo b > 0 (trapezoidal) Rh no es lineal en y:
+    el tirante se resuelve con brentq sobre Rh(y) = Rh_v. Como Rh < y en el
+    trapecio, la raiz esta por encima de Rh_v, y el techo se dobla hasta
+    encerrarla (Rh crece sin cota con el tirante).
     """
     Rh_v = (n * v / (K_MANNING_SI * math.sqrt(S))) ** (3 / 2)  # literal-ok: exponente de las ecuaciones (4.2) y (4.5) del num. 4.1.2.1 a)
-    c = (Z1 + Z2) / (2 * (math.sqrt(1 + Z1 ** 2) + math.sqrt(1 + Z2 ** 2)))
-    y_v = Rh_v / c
-    A_v, _P, _R = geometria_triangular(y=y_v, Z1=Z1, Z2=Z2)
+    if not b > 0:
+        c = (Z1 + Z2) / (2 * (math.sqrt(1 + Z1 ** 2) + math.sqrt(1 + Z2 ** 2)))
+        y_v = Rh_v / c
+        A_v, _P, _R = geometria_triangular(y=y_v, Z1=Z1, Z2=Z2)
+        return y_v, A_v * v
+
+    def exceso(y: float) -> float:
+        return geometria_cuneta(y=y, Z1=Z1, Z2=Z2, b=b)[2] - Rh_v
+
+    y_lo = Rh_v
+    y_hi = 2 * Rh_v
+    while not exceso(y_hi) > 0:
+        y_hi *= 2
+    y_v = brentq(exceso, y_lo, y_hi, xtol=TOL_BRENT)
+    A_v, _P, _R = geometria_cuneta(y=y_v, Z1=Z1, Z2=Z2, b=b)
     return y_v, A_v * v
 
 
@@ -408,7 +498,14 @@ def capacidad_cuneta(*, S_cuneta: float,
     a = float(seccion["ancho_m"])
     Z2 = float(seccion["talud_exterior_HV"])
     borde = float(seccion["borde_libre_m"])
-    Z1 = a / d
+    b = _fondo_declarado(seccion, id_punto)
+    if b > 0:
+        _exigir_minimo_trapezoidal(d, a, b, id_punto)
+    # El ancho se mide del borde de la rasante a la vertical del vertice
+    # (Figura Nº 27); con fondo, a la vertical del pie del talud exterior: el
+    # talud interior cubre a − b. Lectura del proyecto (VE-5, T9-01), la
+    # unica con la que las cuatro filas de la Tabla Nº 34 dan Z1 de 2.5 a 3.
+    Z1 = (a - b) / d
     aviso_talud = aviso_de_talud_interior(Z1, id_punto)
     y_u = d - borde
     K = CUNETA_STRICKLER_T32[fila_32]
@@ -418,11 +515,12 @@ def capacidad_cuneta(*, S_cuneta: float,
     v_lim = v_min if lectura == LECTURA_EXTREMO_INFERIOR else v_max
     v_otra = v_max if lectura == LECTURA_EXTREMO_INFERIOR else v_min
 
-    A, _P, Rh = geometria_triangular(y=y_u, Z1=Z1, Z2=Z2)
+    A, _P, Rh = geometria_cuneta(y=y_u, Z1=Z1, Z2=Z2, b=b)
     Q_llena = (K_MANNING_SI / n) * A * Rh ** (2 / 3) * S ** (1 / 2)  # literal-ok: exponentes de Manning, ecuacion (117) del num. 4.1.2.1 a)
     V_llena = Q_llena / A
-    y_v, Q_v = caudal_a_velocidad(v=v_lim, n=n, S=S, Z1=Z1, Z2=Z2)
-    _y_otra, Q_v_otra = caudal_a_velocidad(v=v_otra, n=n, S=S, Z1=Z1, Z2=Z2)
+    y_v, Q_v = caudal_a_velocidad(v=v_lim, n=n, S=S, Z1=Z1, Z2=Z2, b=b)
+    _y_otra, Q_v_otra = caudal_a_velocidad(v=v_otra, n=n, S=S, Z1=Z1, Z2=Z2,
+                                           b=b)
     Q_adm = min(Q_llena, Q_v)
     Q_adm_otra = min(Q_llena, Q_v_otra)
     if not (math.isfinite(Q_adm) and Q_adm > 0):
@@ -440,8 +538,16 @@ def capacidad_cuneta(*, S_cuneta: float,
     if aviso_talud:
         avisos.append(aviso_talud)
     notas = [
-        f"Talud interior Z1 = a / d = {a:g} / {d:g} = {Z1:.3f} (Figura Nº 27: "
-        "el ancho se mide del borde de la rasante a la vertical del vertice).",
+        (f"Talud interior Z1 = a / d = {a:g} / {d:g} = {Z1:.3f} (Figura Nº 27: "
+         "el ancho se mide del borde de la rasante a la vertical del vertice)."
+         if not b > 0 else
+         f"Seccion TRAPEZOIDAL con fondo b = {b:g} m (Tabla Nº 34, fila «Muy "
+         f"lluviosa (>3000 mm/año)», nota «*»: fondo minimo "
+         f"{CUNETA_FONDO_MIN_TRAPEZOIDAL_T34:g}). Talud interior Z1 = (a − b) "
+         f"/ d = ({a:g} − {b:g}) / {d:g} = {Z1:.3f}: LECTURA DEL PROYECTO, el "
+         "ancho se mide del borde de la rasante a la vertical del pie del "
+         "talud exterior (con ella la fila da Z1 = 3, como la triangular de "
+         "1600 a <3000 mm/año); la fuente no dibuja la seccion trapezoidal."),
         "A, P y Rh salen de la geometria declarada; las ecuaciones (4.1), "
         "(4.3), (4.4) y (4.6) del ejemplo del Manual no se usan porque no "
         "reproducen la seccion que nombran.",
@@ -482,8 +588,8 @@ def capacidad_cuneta(*, S_cuneta: float,
         "F10.CAPACIDAD", codigo=CODIGO_CAPACIDAD,
         que="Capacidad admisible de la cuneta: el menor del caudal con la "
             "cuneta llena y del que produce la velocidad limite admisible",
-        formula=("y_u = d − bl ; A = (Z1 + Z2)·y²/2 ; P = y·(√(1+Z1²) + "
-                 "√(1+Z2²)) ; Q_llena = (K_M/n)·A·Rh^(2/3)·S^(1/2) ; "
+        formula=("y_u = d − bl ; A = b·y + (Z1 + Z2)·y²/2 ; P = b + "
+                 "y·(√(1+Z1²) + √(1+Z2²)) ; Q_llena = (K_M/n)·A·Rh^(2/3)·S^(1/2) ; "
                  "Rh_v = (n·v_lim/√S)^(3/2) ; Q_v = A(y_v)·v_lim ; "
                  "Q_adm = min(Q_llena, Q_v)"),
         formula_cita_id="MC_HHD.4.1.2.1a#MANNING",
@@ -497,7 +603,10 @@ def capacidad_cuneta(*, S_cuneta: float,
                      "[A], profundidad", cifras=CIFRAS_MAGNITUD),
             Magnitud("a", a, "m", f"criterio adoptado '{CRITERIO_SECCION_CUNETA}' "
                      "[A], ancho", cifras=CIFRAS_MAGNITUD),
-            Magnitud("Z1", Z1, "H:V", "a / d", cifras=CIFRAS_MAGNITUD),
+            Magnitud("b", b, "m", f"criterio adoptado "
+                     f"'{CRITERIO_SECCION_CUNETA}' [A], ancho de fondo "
+                     "(0 = triangular)", cifras=CIFRAS_MAGNITUD),
+            Magnitud("Z1", Z1, "H:V", "(a − b) / d", cifras=CIFRAS_MAGNITUD),
             Magnitud("Z2", Z2, "H:V", f"criterio adoptado "
                      f"'{CRITERIO_SECCION_CUNETA}' [A], talud exterior",
                      cifras=CIFRAS_MAGNITUD),
@@ -579,7 +688,7 @@ def capacidad_cuneta(*, S_cuneta: float,
         n=n, v_limite_m_s=v_lim, S=S, area_llena_m2=A, radio_llena_m=Rh,
         Q_llena_m3s=Q_llena, V_llena_m_s=V_llena, Q_velocidad_m3s=Q_v,
         Q_admisible_m3s=Q_adm, gobierna=gobierna, pasos=(paso_capacidad,),
-        avisos=tuple(avisos))
+        avisos=tuple(avisos), ancho_fondo_m=b)
 
 
 def verificar_aporte(*, capacidad: Optional[CapacidadCuneta],

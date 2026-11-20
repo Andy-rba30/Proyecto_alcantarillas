@@ -127,6 +127,8 @@ from src.normativa import registro as _registro_normativo
 # y de ahi en adelante van corridos en uno, pero la fuente es la hoja de ruta.
 
 _FASE_DE_MODULO: Dict[str, str] = {
+    # VE-5 (catlic): la Fase 0-bis, la licuefaccion declarada del EMS.
+    "ML_licuefaccion": "Fase 0-bis - Licuefaccion",
     "M0_carga": "Fase 1 - Datos de entrada",
     "M1_clasificacion": "Fase 2 - Clasificacion y periodo de retorno",
     # T-1: la Fase 1-bis, que calcula el caudal de diseño. Su numero va
@@ -1458,6 +1460,12 @@ _META_SITIO: Dict[str, _Meta] = {
         nota="Declarada en el triage de T2: `COND-CLASE-DE-VIA` y "
              "`COND-DMIN-ALTO-VOLUMEN` resolvian a esta clave y la clave no "
              "existia en ningun archivo."),
+    # VE-5 (catlic, T4-06): decide si rige la recomendacion de TMC de 48"
+    # del num. 4.1.1.3.7 a); la lee `M2.siguiente_diametro`.
+    "region_natural": _Meta(unidad="-"),
+    # VE-5 (catlic, Fase 0-bis): decide si AASHTO 10.5.4.2 exige evaluar la
+    # licuefaccion; la lee `ML_licuefaccion`.
+    "zona_sismica_aashto": _Meta(unidad="-"),
     "existe_informacion_secundaria_tramo": _Meta(
         unidad="-",
         fase_declarada="Fase 1 - Datos de entrada (num. 4.2 del Manual de "
@@ -1488,11 +1496,9 @@ _META_CRITERIOS: Dict[str, _Meta] = {
     # primera condicion de uso de h_o sobre la fraccion llena que el perfil
     # de la lamina mide. La consume M4 (`CRITERIO_FRACCION_LLENA`).
     "fraccion_llena_mayor_parte": _Meta(unidad="-"),
-    "Mw_licuefaccion": _Meta(
-        unidad="-", fase_declarada="Fase 0-bis - licuefaccion"),
+    "Mw_licuefaccion": _Meta(unidad="-"),   # VE-5: la consume ML_licuefaccion
     "N_cq_N_gammaq_meyerhof": _Meta(unidad="-"),
-    "PERFIL_SUELO_PRESUNTO": _Meta(
-        unidad="-", fase_declarada="Fase 0-bis - licuefaccion"),
+    "PERFIL_SUELO_PRESUNTO": _Meta(unidad="-"),   # VE-5: la consume ML_licuefaccion
     "TR_evento_extremo": _Meta(unidad="años"),
     "acceso_mantenimiento_v2b": _Meta(
         unidad="-",
@@ -1633,8 +1639,7 @@ _META_CRITERIOS: Dict[str, _Meta] = {
     "junta_arranque_cabezal_ciclopeo": _Meta(unidad="-"),
     "espesor_min_zapata_concreto_simple_m": _Meta(unidad="m"),
     "categoria_refuerzo_aashto": _Meta(unidad="-"),
-    "clase_sitio": _Meta(
-        unidad="-", fase_declarada="Fase 0-bis - licuefaccion"),
+    "clase_sitio": _Meta(unidad="-"),   # VE-5: la consume ML_licuefaccion
     "clases_producto_por_relleno": _Meta(unidad="-"),
     "cobertura_minima_aashto": _Meta(unidad="m"),
     "cobertura_minima_cajon": _Meta(unidad="m"),
@@ -1645,8 +1650,7 @@ _META_CRITERIOS: Dict[str, _Meta] = {
     # produccion (armado del num. 9.4).
     "cuantia_vertical_cortante_alto_e060_art_11_10_10_3": _Meta(unidad="-"),
     "regimen_cortante_muro_e060_art_11_10_2": _Meta(unidad="-"),
-    "demanda_sismica_licuefaccion": _Meta(
-        unidad="años", fase_declarada="Fase 0-bis - licuefaccion"),
+    "demanda_sismica_licuefaccion": _Meta(unidad="años"),   # VE-5: la consume ML_licuefaccion
     "distribucion_precipitacion_maxima": _Meta(unidad="-"),
     "duracion_minima_lluvia_min": _Meta(unidad="min"),
     "tc_fuera_de_la_poblacion_del_metodo": _Meta(unidad="-"),

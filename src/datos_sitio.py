@@ -132,6 +132,17 @@ FORMAS_DE_SITIO = (FORMA_INT, FORMA_FLOAT, FORMA_STR, FORMA_CATEGORIA)
 SI = "si"
 NO = "no"
 
+# Las regiones naturales del territorio, para el dato 'region_natural' (VE-5,
+# ficha T4-06). Solo SELVA ALTA tiene consecuencia en el calculo: es la que
+# nombra el num. 4.1.1.3.7 a) del Manual de Hidrologia. Las otras tres son el
+# conjunto cerrado que permite declarar cualquier obra del pais.
+REGION_COSTA = "costa"
+REGION_SIERRA = "sierra"
+REGION_SELVA_ALTA = "selva_alta"
+REGION_SELVA_BAJA = "selva_baja"
+REGIONES_NATURALES = (REGION_COSTA, REGION_SIERRA, REGION_SELVA_ALTA,
+                      REGION_SELVA_BAJA)
+
 
 @dataclass(frozen=True)
 class DatoSitio:
@@ -850,6 +861,108 @@ DATOS_SITIO: Dict[str, DatoSitio] = {
             trazabilidad_exigida="el IMDA del estudio de demanda, la clase "
                                  "DG-2018 que le corresponde y la lamina de "
                                  "la seccion tipo que la materializa",
+        ),
+    ),
+
+    # --- VE-5 (lote catlic, ficha T4-06) --- LA ENTRADA QUE LA RAMA DE SELVA
+    # ALTA NECESITABA PRIMERO. Hasta VE-5 la constante
+    # `DIAMETRO_MIN_TMC_SELVA_ALTA_RECOMENDADO` no tenia consumidor porque
+    # ningun dato decia en que region natural esta la obra (ficha T4-06):
+    # activarla por defecto habria sido inventar el dato. Es un HECHO de la
+    # ubicacion --- cambia al mover la obra y no al cambiar de proyectista ---,
+    # y por eso [S] de corredor y no criterio.
+    "region_natural": DatoSitio(
+        valor=REGION_COSTA,
+        concepto="Region natural del corredor, en el sentido con que el "
+                 "Manual de Hidrologia nombra las «zonas de selva alta» del "
+                 "num. 4.1.1.3.7 a): decide si la recomendacion de diametro "
+                 "minimo de TMC de ese numeral alcanza a esta obra",
+        procedimiento="Ubicacion del corredor sobre la region natural del "
+                      "territorio (costa, sierra, selva alta, selva baja). El "
+                      "Manual NOMBRA la selva alta y describe sus cauces "
+                      "tipicos (cuatro caracteristicas fisicas y "
+                      "geomorfologicas, pag. impresa 78) pero no la "
+                      "delimita: la lectura es de gabinete, sobre la "
+                      "ubicacion de la obra",
+        fuente="Manual de Hidrologia, Hidraulica y Drenaje (MTC), num. "
+               "4.1.1.3.7 a), pag. impresa 78-79 (PDF 81-82), cita "
+               "MC_HHD.4.1.1.3.7a: «En zonas de selva alta en donde las "
+               "características físicas y geomorfológicos (típicas) sean:» "
+               "y «Se recomienda utilizar, en zonas de selva alta, ... como "
+               "diámetro mínimo alcantarillas TMC Ф 48”». La hoja de ruta "
+               "v8, Sec. 3.1, escribe para este corredor «no aplica en costa»",
+        trazabilidad=(
+            "Distrito de La Union (Piura), llanura del Bajo Piura: el corredor "
+            "esta en la COSTA, que es la region que la hoja de ruta (Sec. 3.1, "
+            "«no aplica en costa») y la nota de "
+            "constantes_normativas.DIAMETRO_MIN_TMC_SELVA_ALTA_CONDICIONES "
+            "le asignan. La lectura es reproducible hasta el distrito; el "
+            "expediente no registra coordenadas. Con COSTA la rama de selva "
+            "alta de `M2.siguiente_diametro` queda INACTIVA, que es lo que la "
+            "hoja de ruta pide («programar la rama y declararla inactiva»)"),
+        ambito=AMBITO_CORREDOR,
+        # nivel: MEDIDO, no argumentado: lo invoca la corrida `--alcance
+        #        perfil` cuando el TMC es candidato (`M2.siguiente_diametro`,
+        #        primer escalon de la serie). tests/test_ext10_multiobra.py
+        #        lo contrasta en las dos direcciones.
+        nivel=NIVEL_PERFIL,
+        forma=FORMA_CATEGORIA,
+        opciones=REGIONES_NATURALES,
+        resolucion=DeEnsayo(
+            ensayo="ubicacion de gabinete del corredor sobre la region "
+                   "natural del territorio",
+            trazabilidad_exigida="el distrito o las coordenadas del "
+                                 "corredor y la region natural leida; en "
+                                 "SELVA ALTA, ademas, la descripcion de los "
+                                 "cauces frente a las cuatro caracteristicas "
+                                 "del num. 4.1.1.3.7 a)",
+        ),
+    ),
+
+    # --- VE-5 (lote catlic, Fase 0-bis) --- LA ZONA SISMICA DE AASHTO, que
+    # NO es la de E.030 ('ZONA_SISMICA_LA_UNION' es la 4 de E.030, por
+    # distrito): AASHTO asigna la zona por S_D1 (3.10.6, Tabla 3.10.6-1). La
+    # usa la Fase 0-bis para saber si 10.5.4.2 exige evaluar la licuefaccion.
+    # Sin valor: la hoja de ruta (Sec. 9.2, nota VE3-20) dice que no es dato
+    # del proyecto y que la revision de VE-3.15 la ESTIMO en Zona 4 con una
+    # lectura propia de S1 que el EMS tiene que confirmar. Mientras no se
+    # lea, la Fase 0-bis no supone una zona 1 o 2.
+    "zona_sismica_aashto": DatoSitio(
+        valor=None,
+        concepto="Zona sismica de AASHTO LRFD (1 a 4), asignada por S_D1 con "
+                 "la Tabla 3.10.6-1. No es la zona de E.030",
+        procedimiento="S_D1 = F_v · S_1 (Ec. 3.10.4.2-6), con S_1 leido del "
+                      "mapa de aceleraciones espectrales a 1.0 s sobre las "
+                      "coordenadas de la obra y F_v de la clase de sitio; la "
+                      "zona sale de la Tabla 3.10.6-1",
+        fuente="AASHTO LRFD 9a ed., 3.10.6 «Seismic Performance Zones» y "
+               "Tabla 3.10.6-1, pag. impresa 3-108 (PDF 162): «Each bridge "
+               "shall be assigned to one of the four seismic zones in "
+               "accordance with Table 3.10.6-1 using the value of SD1»",
+        trazabilidad=(
+            "NO SE HA HECHO LA LECTURA CONFIRMADA. La revision de VE-3.15 "
+            "estimo S_D1 de 0.63 a 1.13 (Zona 4) con S_1 de 0.47 g leido por "
+            "ella misma del mapa, y Zona 3 aun en roca B "
+            "(proceso/planes_mejora/ve3_estado/verificaciones_del_dueno/"
+            "sismo_cabezal_que_se_pasa.md); depende ademas de la clase de "
+            "sitio, que esta sin medir ('clase_sitio'). Mientras falte, la "
+            "Fase 0-bis no supone zona 1 ni 2 (hoja de ruta, Sec. 9.2, nota "
+            "VE3-20, sobre la exencion de 11.5.4.2)"),
+        ambito=AMBITO_CORREDOR,
+        verificacion_pendiente=(
+            "Leer S_1 del mapa con las coordenadas del corredor, cerrar la "
+            "clase de sitio y declarar la zona"),
+        # nivel: lo consume `ML_licuefaccion` (Fase 0-bis), que la corrida
+        #        de perfil difiere entera (MODULOS_DIFERIDOS_POR_ALCANCE).
+        nivel=NIVEL_EXPEDIENTE,
+        forma=FORMA_INT,
+        positivo=True,
+        resolucion=DeEnsayo(
+            ensayo="lectura de S_1 del mapa de aceleraciones espectrales y "
+                   "clase de sitio medida (AASHTO 3.10.4.2 y 3.10.6)",
+            trazabilidad_exigida="el mapa y la coordenada de la lectura de "
+                                 "S_1, la clase de sitio y el F_v con que se "
+                                 "obtuvo S_D1",
         ),
     ),
 

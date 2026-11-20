@@ -479,6 +479,14 @@ def test_todo_fundamento_declarado_lo_usa_algun_paso(informe):
         "F7.ESVIAJE_MAX", "F7.ESVIAJE", "F7.LONGITUD",
         "F8.RECUBRIMIENTO",  # 9.4 se detiene en 'categoria_refuerzo_aashto'
         "F10.CUNETA",       # falta el dato 'L_hidraulico_m'
+        # --- VE-5 (catlic, T4-06) --- la rama de selva alta del TMC: solo
+        # actua con 'region_natural' = selva_alta, y la obra del repositorio
+        # es de costa. Lo mide tests/test_ve5_catlic.py.
+        "F3.SELVA_ALTA_TMC",
+        # --- VE-5 (catlic) --- la Fase 0-bis: los puntos de esta corrida no
+        # cierran la Fase 2 (sin luz) y no llegan a ella. La mide
+        # tests/test_ML_licuefaccion.py.
+        "F0.LICUEFACCION",
         "F6.LAUSHEY",       # Fase 6 cuelga de un punto dimensionado
         # LOS SIETE DE LA FASE 1-bis QUE SOLO SE EMITEN CUANDO EL CAUDAL SE
         # CALCULA (T-1). Esta corrida trae `Q_m3s` lleno en sus puntos de

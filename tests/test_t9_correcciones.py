@@ -552,7 +552,8 @@ def test_a_la_sensibilidad_de_Z2_que_la_ficha_declara():
     for Z2, Q in ((0.1, 0.46654), (2.0, 0.87089)):
         ca.establecer_valor_dinamico("seccion_cuneta", {
             "profundidad_m": 0.40, "ancho_m": 1.20, "talud_exterior_HV": Z2,
-            "borde_libre_m": 0.0})
+            "borde_libre_m": 0.0,
+                  "ancho_fondo_m": 0.0})
         assert M10.capacidad_cuneta(S_cuneta=0.01).Q_admisible_m3s == \
             pytest.approx(Q, rel=REL_ARITMETICA)
 
@@ -573,7 +574,8 @@ def test_a_el_aviso_de_talud_interior_por_fila_de_la_tabla_304_12(Z1, aviso):
 def test_a_un_talud_interior_mas_empinado_que_1_2_es_dato_invalido(monkeypatch):
     _sustituir_seccion(monkeypatch, {"profundidad_m": 0.50, "ancho_m": 0.75,
                                      "talud_exterior_HV": 1.0,
-                                     "borde_libre_m": 0.0})
+                                     "borde_libre_m": 0.0,
+                  "ancho_fondo_m": 0.0})
     with pytest.raises(DatoInvalidoError) as exc:
         M10.capacidad_cuneta(S_cuneta=0.01)
     assert "304.12" in str(exc.value)
@@ -951,7 +953,8 @@ def test_mut_las_notas_de_la_capacidad_siguen_a_lo_declarado(monkeypatch):
     assert "el otro extremo, 6.00 m/s" in otro.entre[1]
     _sustituir_seccion(monkeypatch, {"profundidad_m": 0.40, "ancho_m": 1.20,
                                      "talud_exterior_HV": 1.0,
-                                     "borde_libre_m": 0.05})
+                                     "borde_libre_m": 0.05,
+                                     "ancho_fondo_m": 0.0})
     assert "Borde libre de 0.05 m" in \
         M10.capacidad_cuneta(S_cuneta=0.01).pasos[0].nota_del_proyecto
 
