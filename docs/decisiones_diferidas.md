@@ -8727,8 +8727,8 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
 - **Por qué:** la Fase 9 rige con AASHTO LRFD 9.ª ed. y su 10.6.3.1.2c son tablas, no
   figuras; la §9.3 de la hoja de ruta sigue nombrando la ecuación del Manual de Puentes
   2.8.1.3.1.2c (Meyerhof): **la hoja de ruta sigue mal** mientras no se corrija.
-- **Qué haría falta:** la geometría del talud por PUNTO (hoy es de corredor, como
-  `terreno_delante_del_cabezal`); y corregir la §9.3 de la hoja de ruta.
+- **Qué haría falta:** corregir la §9.3 de la hoja de ruta (la geometría del talud por punto
+  se cerró en VE7A-06; `terreno_delante_del_cabezal` sigue de corredor).
 - **Dónde vive:** `src/modulos/M9_cabezal.py::coeficiente_rcbc`
 ## VE6M9-01 · El cabezal ciclópeo se verifica bajo sismo (C8) y su zapata como voladizo de concreto simple (C7) (VE-6, ítem 10; T7C-09 (2)(3))
 
@@ -9268,3 +9268,18 @@ el test; lo que la sesión tuvo que decidir sin dictamen va rotulado «pendiente
 - **Abierto:** la cuña sobre la cara de la pantalla del armado no lo usa (sigue detenida).
 - **Qué haría falta:** la revisión de Fable de las cinco decisiones; el GLE en el programa.
 - **Dónde vive:** `src/modulos/M9_cabezal.py::validar_empuje_sismico_declarado`
+
+## VE7A-06 · La geometría del talud de delante del cabezal, por punto (VE5M9-03)
+
+- **Cerrado:** clave `talud_delante_del_cabezal_del_punto` de `--datos-externos`, por punto o en
+  `globales`, con un valor para los dos cabezales o `{"entrada": …, "salida": …}`, en
+  `servicio.CLAVES_DE_CABEZAL` y validada con el validador del [S]
+  (`M9.validar_talud_delante_del_punto` → `validar_talud_delante`). Viaja en
+  `EntornoDelCabezal.talud_delante` (campo nuevo en `src/modelos.py`) y `M9._q_nominal` la usa
+  en lugar del [S] de corredor `talud_delante_del_cabezal`; el paso de E3 dice «geometría del
+  punto». Dos puntos con taludes distintos dan RC_BC distintos (test).
+- **Decisión del consultor Fable (triaje VE-7, 2026-11-20):** gana al corredor, como VE6M9-04.
+- **Abierto:** `terreno_delante_del_cabezal` (si hay talud o no) sigue de corredor: declarar la
+  geometría en un punto no la activa si el corredor dice terreno horizontal.
+- **Qué haría falta:** si el dueño lo pide, `terreno_delante_del_cabezal` por punto.
+- **Dónde vive:** `src/modulos/M9_cabezal.py::validar_talud_delante_del_punto`

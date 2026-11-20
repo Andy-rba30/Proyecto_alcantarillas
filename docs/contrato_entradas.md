@@ -321,7 +321,11 @@ Desde VE-7 (lote A) hay dos claves más en `CLAVES_DE_CABEZAL`, las dos **sólo 
 `embocadura_cajon_del_punto` (`{"carta": …, "ke": …}`, una fila de cajón de la Tabla A.1 y una
 de la C.2 del HDS-5, validadas por `M9.validar_embocadura_cajon_del_punto`), que en un marco pisa
 `embocadura_cajon` y `ke_entrada_cajon` mientras corre ese punto (la coherencia con el cabezal
-se comprueba igual; ficha VE7A-02), y `empuje_sismico_declarado` (ficha VE7A-05).
+se comprueba igual; ficha VE7A-02), y `empuje_sismico_declarado` (ficha VE7A-05). Y una
+tercera, por punto **o en `globales`**, con un valor para los dos cabezales o
+`{"entrada": …, "salida": …}`: `talud_delante_del_cabezal_del_punto` (la geometría
+`{'H_s_m', 'beta_grados', 'b_m'}` del [S] `talud_delante_del_cabezal`, validada con su mismo
+validador), que **gana** sobre la de corredor (ficha VE7A-06).
 
 ### 3.4 Lo que el armado del cabezal necesita (T-7c)
 

@@ -2614,6 +2614,27 @@ def validar_talud_delante(valor: Any, *, id_punto: Optional[str] = None
             "b_m": float(b)}
 
 
+# --- VE-7 (lote A, A6; ficha VE5M9-03) --- LA GEOMETRIA DEL TALUD DE
+# DELANTE, POR PUNTO (o en `globales`), un valor para los dos cabezales o
+# {"entrada": ..., "salida": ...}: gana al [S] de corredor
+# 'talud_delante_del_cabezal', como la sobrecarga del punto (VE6M9-04).
+DATO_TALUD_DELANTE_DEL_PUNTO = "talud_delante_del_cabezal_del_punto"
+
+
+def validar_talud_delante_del_punto(valor: Any, *,
+                                    id_punto: Optional[str] = None) -> dict:
+    """
+    Forma y dominio de `talud_delante_del_cabezal_del_punto`, normalizada a
+    {"entrada": talud | None, "salida": talud | None}; cada talud, con el
+    validador del [S] de corredor (`validar_talud_delante`).
+    """
+    if isinstance(valor, dict) and valor and set(valor) <= set(EXTREMOS):
+        return {e: (validar_talud_delante(valor[e], id_punto=id_punto)
+                    if e in valor else None) for e in EXTREMOS}
+    limpio = validar_talud_delante(valor, id_punto=id_punto)
+    return {e: dict(limpio) for e in EXTREMOS}
+
+
 def capacidad_portante_zapata_en_talud(*, B: float, H_s: float, b: float,
                                        beta_grados: float, gamma: float,
                                        c: float, phi_grados: float,
@@ -8586,8 +8607,12 @@ def _q_nominal(entorno: EntornoDelCabezal, datos: dict, suelo: dict,
         # la geometria del talud ('talud_delante_del_cabezal' [S]): hasta
         # VE-5 pedia los factores de los abacos de Meyerhof del Manual de
         # Puentes (retirados) y les pasaba H_s = 0.
-        talud = validar_talud_delante(ca.valor(CRITERIO_TALUD_DELANTE),
-                                      id_punto=entorno.id_punto)
+        # --- VE-7 (lote A, A6; ficha VE5M9-03) --- la del PUNTO gana a la
+        # de corredor ('talud_delante_del_cabezal_del_punto').
+        del_punto = getattr(entorno, "talud_delante", None)
+        talud = validar_talud_delante(
+            del_punto if del_punto else ca.valor(CRITERIO_TALUD_DELANTE),
+            id_punto=entorno.id_punto)
         D_w_base = max(D_w - D_f, 0.0)
         q_0, det0 = resistencia_portante_nominal(
             suelo=suelo, B_efectivo=B_efectivo, D_f=0.0, D_w=D_w_base,
@@ -8609,7 +8634,9 @@ def _q_nominal(entorno: EntornoDelCabezal, datos: dict, suelo: dict,
                    f"talud (AASHTO 10.6.3.1.2c): RC_BC = "
                    f"{detalle['RC_BC']:.4f} de la Tabla {detalle['tabla']} "
                    f"({detalle['columna']}, B/H_s = {detalle['B_H']:.3f}, "
-                   f"beta = {talud['beta_grados']:g} grados) sobre c·N_cm + "
+                   f"beta = {talud['beta_grados']:g} grados"
+                   + (f"; geometria del punto, '{DATO_TALUD_DELANTE_DEL_PUNTO}'"
+                      if del_punto else "") + ") sobre c·N_cm + "
                    "0.5·gamma·B'·N_gamma_m, sin empotramiento; "
                    + texto_forma), detalle
     q_n, detalle = resistencia_portante_nominal(
@@ -10375,7 +10402,8 @@ def datos_del_cabezal_del_punto(*, punto, cabezal: CabezalDelPunto,
                                 suelo_del_punto: Optional[dict] = None,
                                 resultado=None,
                                 estabilidad_global: Optional[dict] = None,
-                                empuje_sismico: Optional[dict] = None
+                                empuje_sismico: Optional[dict] = None,
+                                talud_delante: Optional[dict] = None
                                 ) -> Tuple[EntornoDelCabezal, EntornoDelCabezal]:
     """
     Los dos `EntornoDelCabezal` de un punto (entrada y salida), leidos de lo
@@ -10456,7 +10484,9 @@ def datos_del_cabezal_del_punto(*, punto, cabezal: CabezalDelPunto,
             estabilidad_global=(estabilidad_global or {}).get(g.extremo)
             or None,
             # --- VE-7 (lote A, A5) --- el P_AE declarado de ESTE cabezal.
-            empuje_sismico=(empuje_sismico or {}).get(g.extremo) or None))
+            empuje_sismico=(empuje_sismico or {}).get(g.extremo) or None,
+            # --- VE-7 (lote A, A6) --- el talud de delante de ESTE cabezal.
+            talud_delante=(talud_delante or {}).get(g.extremo) or None))
     return tuple(entornos)
 
 
@@ -10651,6 +10681,7 @@ def dimensionar_zapata_por_estabilidad(
         motivo_sin_socavacion: str = "",
         suelo_del_punto: Optional[dict] = None,
         empuje_sismico: Optional[dict] = None,
+        talud_delante: Optional[dict] = None,
         anchos_previos: Optional[dict] = None,
         espesores_por_armado: Optional[dict] = None,
         puntas_previas: Optional[dict] = None
@@ -10715,7 +10746,8 @@ def dimensionar_zapata_por_estabilidad(
         entornos = datos_del_cabezal_del_punto(
             punto=punto, cabezal=final, geometria=geometria,
             socavacion=socavacion, suelo_del_punto=suelo_del_punto,
-            resultado=resultado, empuje_sismico=empuje_sismico)
+            resultado=resultado, empuje_sismico=empuje_sismico,
+            talud_delante=talud_delante)
         evaluadas = _estabilidades_evaluables(entornos, candidatos)
         vivos = []
         for e, B in candidatos.items():
@@ -10765,7 +10797,8 @@ def dimensionar_zapata_por_estabilidad(
             entornos = datos_del_cabezal_del_punto(
                 punto=punto, cabezal=prueba, geometria=geometria,
                 socavacion=socavacion, suelo_del_punto=suelo_del_punto,
-                resultado=resultado, empuje_sismico=empuje_sismico)
+                resultado=resultado, empuje_sismico=empuje_sismico,
+            talud_delante=talud_delante)
             evaluadas = _estabilidades_evaluables(entornos, candidatos)
             vivos = []
             for e, B in candidatos.items():
@@ -10976,6 +11009,7 @@ def dimensionar_peralte_por_armado(
         motivo_sin_socavacion: str = "",
         suelo_del_punto: Optional[dict] = None,
         empuje_sismico: Optional[dict] = None,
+        talud_delante: Optional[dict] = None,
         anchos: Optional[dict] = None,
         puntas: Optional[dict] = None,
         no_factibles: Sequence[str] = ()
@@ -11010,7 +11044,8 @@ def dimensionar_peralte_por_armado(
         return {e.extremo: e for e in datos_del_cabezal_del_punto(
             punto=punto, cabezal=cab, geometria=geometria,
             socavacion=socavacion, suelo_del_punto=suelo_del_punto,
-            resultado=resultado, empuje_sismico=empuje_sismico)}
+            resultado=resultado, empuje_sismico=empuje_sismico,
+            talud_delante=talud_delante)}
 
     entornos = entornos_de(cabezal)
     estado = {}
@@ -11073,7 +11108,7 @@ def dimensionar_peralte_por_armado(
             coherencia_embocadura=coherencia_embocadura,
             motivo_sin_socavacion=motivo_sin_socavacion,
             suelo_del_punto=suelo_del_punto, anchos_previos=anchos,
-            empuje_sismico=empuje_sismico,
+            empuje_sismico=empuje_sismico, talud_delante=talud_delante,
             espesores_por_armado=espesores, puntas_previas=puntas)
         if dim is not None:
             redimensionados = {i.extremo for i in dim.intentos}
@@ -11337,6 +11372,7 @@ def dimensionar_pantalla_por_armado(
         motivo_sin_socavacion: str = "",
         suelo_del_punto: Optional[dict] = None,
         empuje_sismico: Optional[dict] = None,
+        talud_delante: Optional[dict] = None,
         anchos: Optional[dict] = None, puntas: Optional[dict] = None,
         espesores_zapata: Optional[dict] = None
         ) -> Optional[DimensionadoDePantalla]:
@@ -11381,7 +11417,8 @@ def dimensionar_pantalla_por_armado(
         return {e.extremo: e for e in datos_del_cabezal_del_punto(
             punto=punto, cabezal=cab, geometria=geometria,
             socavacion=socavacion, suelo_del_punto=suelo_del_punto,
-            resultado=resultado, empuje_sismico=empuje_sismico)}
+            resultado=resultado, empuje_sismico=empuje_sismico,
+            talud_delante=talud_delante)}
 
     entornos = entornos_de(cabezal)
     estado = {}

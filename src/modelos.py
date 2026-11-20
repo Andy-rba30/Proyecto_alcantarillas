@@ -8176,6 +8176,10 @@ class EntornoDelCabezal:
     # "altura_aplicacion_m", "incluye_hidrodinamica", "documento", "fecha",
     # "metodo"}. Solo se consume donde el programa no calcula el empuje.
     empuje_sismico: Optional[dict] = None
+    # --- VE-7 (lote A, A6) --- La geometria del talud de delante de ESTE
+    # cabezal declarada por punto (`talud_delante_del_cabezal_del_punto`),
+    # {"H_s_m", "beta_grados", "b_m"}; None: rige el [S] de corredor.
+    talud_delante: Optional[dict] = None
 
 
 @dataclass(frozen=True)
