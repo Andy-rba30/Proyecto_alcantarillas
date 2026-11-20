@@ -1663,16 +1663,17 @@ def test_sin_talon_el_plano_de_empuje_es_el_trasdos_y_beta_el_del_muro(
     inclinacion, y no hay relleno sobre la zapata.
 
     REESCRITO DECLARANDOLO (correcciones de T-7b, H4): la cuña de tanteo de
-    archivo es la del plano VERTICAL del talon; sobre un trasdos inclinado
-    se detiene con «metodo no evaluable» y dice que regla declarar. Lo que
-    este test fijaba -- el plano y la inclinacion del empuje -- se fija con
-    la formula cerrada, declarando la regla.
+    archivo era la del plano VERTICAL del talon; sobre un trasdos inclinado
+    se detenia con «metodo no evaluable». Lo que este test fijaba -- el
+    plano y la inclinacion del empuje -- se fija con la formula cerrada,
+    declarando la regla. REESCRITO DE NUEVO (VE-5, ficha T7B-06): desde VE-5
+    la cuña va sobre el trasdos inclinado y ya no se detiene; su K_A contra
+    Coulomb con beta lo fija tests/test_ve5_m9_cuna_sismica.py.
     """
     g = _geometria(ancho_talon=0.0, ancho_punta=1.70, beta_grados=5.0)
     entorno = _entorno(geometria=g)
-    with pytest.raises(MetodoNoEvaluableError) as exc:
-        M9.cargas_del_cabezal(entorno, EST)
-    assert "talud_quebrado_2h" in str(exc.value)
+    _cargas, datos = M9.cargas_del_cabezal(entorno, EST)
+    assert datos["metodo_empuje"] == M9.METODO_EMPUJE_CUNA
     ca.establecer_valor_dinamico("regla_pendiente_relleno_trasdos",
                                  "talud_quebrado_2h")
     angulos = M9.angulos_del_empuje(entorno, M9.geometria_del_relleno(entorno))

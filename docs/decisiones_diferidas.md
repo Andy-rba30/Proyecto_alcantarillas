@@ -5863,6 +5863,8 @@ marca del régimen para T-7c.
   A-01). Dorados en `CP_T7B_CUNA`; los oráculos del auditor se reproducen (59.7 y 98.2
   kN/m con k_h 0.50): **con el k_h de archivo la sísmica da cifra**. `factor_muro_eleccion`
   no cambia. Sigue diferido el GLE.
+- **VE-5 (lote M9):** la cuña sobre el trasdós inclinado y fuera del dominio de M-O; ver
+  la ficha VE5M9-02.
 - **Dónde vive:** `src/modulos/M9_cabezal.py::cargas_del_cabezal`
 
 ## T7B-07 · E4 y E5 (estabilidad global del muro y del talud) se imprimen diferidas al expediente
@@ -8422,3 +8424,26 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
 - **Qué haría falta:** la solución de muro rígido de Wood (1973) o un análisis numérico
   aprobado por el Propietario (11.6.5.4), que no están en el repositorio de normas.
 - **Dónde vive:** `src/criterios_adoptados.py::empuje_sismico_muro_que_no_cede`
+
+## VE5M9-02 · La cuña de tanteo sísmica donde M-O no es aceptable y sobre el trasdós inclinado (VE-5, ficha T7B-06)
+
+- **Cerrado:** (1) la cuña de Coulomb/Culmann va sobre un plano de empuje inclinado β
+  (zapata sin talón), con la normal girada β; con el talud uniforme reproduce Coulomb
+  (3.11.5.3-1) y Mononobe-Okabe (A11.3.1-1) con β a cinco decimales. Hasta VE-5 se
+  detenía pidiendo la fórmula cerrada. (2) Con la fórmula cerrada de las reglas
+  `talud_quebrado_2h` o `talud_del_terraplen` fuera del dominio de M-O (φ < i + ψ), el
+  incremento sísmico sale de la cuña de tanteo pseudoestática con la superficie real
+  (C11.6.5.3: «may also be used for situations when the M–O Method is not suitable»):
+  P_AE − P_A de la MISMA cuña, y el estático sigue con la fórmula de la regla
+  (`METODO_INCREMENTO_CUNA`); con la pendiente declarada, la cuña con ese talud sin
+  quiebre. (3) La cuña sin máximo interior ya no se describe como un defecto del método:
+  con la superficie que se quiebra en la plataforma sólo pasa con ψ ≥ φ, y el mensaje
+  dice que es el relleno el que no es estable bajo ese k_h.
+- **Por qué no más:** la fuente da el GLE como método general y la cuña como el de mano;
+  el GLE no se calcula a mano.
+- **Qué haría falta (C):** el GLE de A11.3.3 necesita un programa de estabilidad de
+  taludes, y la puerta para un P_AE declarado por punto (como E4/E5 en VE-4a) no se abrió:
+  no es barata (dato nuevo por punto y cabezal, validación y contrato). La cuña sobre la CARA de la
+  pantalla (`carga_pantalla_cabezal` = `cuna_sobre_la_pantalla`) sigue vertical: con
+  talón el trasdós de la regla es vertical, y un β declarado con talón no la inclina.
+- **Dónde vive:** `src/modulos/M9_cabezal.py::cuna_de_tanteo`

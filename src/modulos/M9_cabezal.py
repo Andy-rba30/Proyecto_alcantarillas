@@ -5969,6 +5969,10 @@ REGLAS_DE_PENDIENTE = (REGLA_CUNA_DE_TANTEO, REGLA_TALUD_QUEBRADO,
 # formula cerrada (Coulomb / Mononobe-Okabe) con una pendiente equivalente.
 METODO_EMPUJE_CUNA = "cuna de tanteo (Culmann) con la superficie real"
 METODO_EMPUJE_FORMULA = "formula cerrada con pendiente equivalente"
+# --- VE-5 (ficha T7B-06) --- el incremento sismico por la cuña de tanteo
+# cuando la formula cerrada de la regla queda fuera del dominio de M-O.
+METODO_INCREMENTO_CUNA = ("cuña de tanteo pseudoestatica (C11.6.5.3): "
+                          "Mononobe-Okabe fuera de su dominio")
 # El regimen del cabezal frente al empuje (correcciones de T-7b, H7).
 CRITERIO_REGIMEN = "regimen_cabezal"
 # --- verificacion de T-7 (punto 9) --- los tres factores del modificador de
@@ -6615,25 +6619,34 @@ def _decide(marco: str, regla: str) -> bool:
 # empuje estatico un 7 a 11 % frente a esta cuña.
 
 def _area_de_la_cuna(*, h: float, subida: float, talud: float,
-                     tan_rho: float) -> float:
+                     tan_rho: float, beta_grados: float = 0.0) -> float:
     """
-    Area de la cuña entre el plano vertical (x = 0, de la base z = 0 a su
-    tope z = h), el plano de falla z = x·tan(rho) y la superficie del relleno:
-    sube desde (0, h) con 1 V : `talud` H y se quiebra, `subida` m mas arriba,
-    en una plataforma horizontal (con `subida` infinita, el talud no se
-    quiebra nunca). Area del poligono por la formula del cordon de zapato.
+    Area de la cuña entre el plano de empuje (de la base (0, 0) a su tope
+    (x_t, h), con x_t = -h·tan(beta): beta sobre la vertical, positiva cuando
+    el muro se aleja del relleno, la convencion de Mononobe-Okabe; con beta
+    = 0, el plano vertical x = 0), el plano de falla z = x·tan(rho) y la
+    superficie del relleno: sube desde el tope del plano con 1 V : `talud` H
+    y se quiebra, `subida` m mas arriba, en una plataforma horizontal (con
+    `subida` infinita, el talud no se quiebra nunca). Area del poligono por
+    la formula del cordon de zapato. --- VE-5 (ficha T7B-06) --- `beta`: la
+    cuña sobre el trasdos inclinado.
     """
     pendiente = 1.0 / talud
-    x_quiebre = subida * talud
+    x_t = -h * math.tan(math.radians(beta_grados))
+    x_quiebre = x_t + subida * talud
+    vertices = [(0.0, 0.0), (x_t, h)]
+    corte = None
     if tan_rho > pendiente:
-        x_corte = h / (tan_rho - pendiente)
+        x_corte = (h - x_t * pendiente) / (tan_rho - pendiente)
         if x_corte <= x_quiebre:
-            return h * x_corte / 2      # triangulo (0,0), (0,h), (x, x·tan)
-    if math.isinf(subida):
-        return math.inf                 # el plano no alcanza el talud
-    tope = h + subida
-    x_corte = tope / tan_rho
-    vertices = ((0.0, 0.0), (x_corte, tope), (x_quiebre, tope), (0.0, h))
+            corte = (x_corte, x_corte * tan_rho)
+    if corte is None:
+        if math.isinf(subida):
+            return math.inf             # el plano no alcanza el talud
+        tope = h + subida
+        vertices.append((x_quiebre, tope))
+        corte = (tope / tan_rho, tope)
+    vertices.append(corte)
     n = len(vertices)
     doble = sum(vertices[k][0] * vertices[(k + 1) % n][1]
                 - vertices[(k + 1) % n][0] * vertices[k][1]
@@ -6644,31 +6657,35 @@ def _area_de_la_cuna(*, h: float, subida: float, talud: float,
 def empuje_de_una_cuna(*, rho_grados: float, h: float, subida: float,
                        talud: float, phi_grados: float, delta_grados: float,
                        gamma: float, k_h: float = 0.0,
-                       k_v: float = 0.0) -> float:
+                       k_v: float = 0.0, beta_grados: float = 0.0) -> float:
     """
-    El empuje, kN/m, que UNA cuña de prueba ejerce sobre el plano vertical
-    del talon, con el plano de falla a `rho_grados` sobre la horizontal y la
-    superficie del relleno de `_area_de_la_cuna`. Equilibrio de la cuña con
-    su peso W, la inercia k_h·W hacia el muro y -k_v·W, la reaccion del plano
-    vertical inclinada delta sobre su normal y la del plano de falla
-    inclinada phi sobre la suya:
+    El empuje, kN/m, que UNA cuña de prueba ejerce sobre el plano de empuje
+    (vertical, o inclinado `beta_grados` sobre la vertical), con el plano de
+    falla a `rho_grados` sobre la horizontal y la superficie del relleno de
+    `_area_de_la_cuna`. Equilibrio de la cuña con su peso W, la inercia
+    k_h·W hacia el muro y -k_v·W, la reaccion del plano de empuje inclinada
+    delta sobre su normal (la normal gira beta con el plano) y la del plano
+    de falla inclinada phi sobre la suya:
 
-        P = W·(1 - k_v)·sen(rho - phi + psi) / [cos(psi)·cos(rho - phi - delta)]
+        P = W·(1 - k_v)·sen(rho - phi + psi)
+            / [cos(psi)·cos(rho - phi - delta - beta)]
         psi = arctan[k_h / (1 - k_v)]
 
     Con k_h = k_v = 0 es la cuña de Coulomb; el maximo sobre rho, con la
-    superficie de talud uniforme, es la ec. 3.11.5.3-1 de AASHTO, y con el
-    relleno horizontal y sismo, Mononobe-Okabe (A11.3.1): los dos dorados
-    analiticos de la funcion.
+    superficie de talud uniforme, es la ec. 3.11.5.3-1 de AASHTO, y con
+    sismo, Mononobe-Okabe (A11.3.1): los dos dorados analiticos de la
+    funcion, tambien con beta (VE-5).
     """
     psi = math.atan2(k_h, 1.0 - k_v)
-    rho, phi, delta = (math.radians(rho_grados), math.radians(phi_grados),
-                       math.radians(delta_grados))
+    rho, phi, delta, beta = (math.radians(rho_grados),
+                             math.radians(phi_grados),
+                             math.radians(delta_grados),
+                             math.radians(beta_grados))
     area = _area_de_la_cuna(h=h, subida=subida, talud=talud,
-                            tan_rho=math.tan(rho))
+                            tan_rho=math.tan(rho), beta_grados=beta_grados)
     W = gamma * area
     return (W * (1.0 - k_v) * math.sin(rho - phi + psi)
-            / (math.cos(psi) * math.cos(rho - phi - delta)))
+            / (math.cos(psi) * math.cos(rho - phi - delta - beta)))
 
 
 def cuna_de_tanteo(*, h: float, subida: float, talud: float,
@@ -6676,7 +6693,8 @@ def cuna_de_tanteo(*, h: float, subida: float, talud: float,
                    k_h: float = 0.0, k_v: float = 0.0,
                    que: str = "empuje del relleno",
                    id_punto: Optional[str] = None,
-                   remedio: str = "") -> Tuple[float, float]:
+                   remedio: str = "",
+                   beta_grados: float = 0.0) -> Tuple[float, float]:
     """
     (P, rho_critico): el MAYOR empuje de las cuñas de prueba sobre el plano
     vertical de altura `h` y el angulo de su plano de falla, en grados
@@ -6685,7 +6703,14 @@ def cuna_de_tanteo(*, h: float, subida: float, talud: float,
     `TRAMOS_CUNA_DE_TANTEO` tramos y se afina el mejor a `TOL_ANGULO_CUNA`.
 
     EL INTERVALO: rho entre phi - psi (por debajo la cuña no empuja) y 90
-    grados; con el talud sin quiebre, ademas, por encima de su pendiente.
+    grados; con el talud sin quiebre, ademas, por encima de su pendiente; y
+    con el plano de empuje inclinado hacia el relleno (beta < 0, VE-5), por
+    debajo de la inclinacion del plano.
+
+    SIN MAXIMO, que con la superficie que se quiebra en la plataforma solo
+    pasa con psi >= phi (k_h/(1 - k_v) >= tan phi): es el RELLENO el que no
+    es estable bajo ese k_h, y no la formula la que falla. Ningun empuje
+    sobre el muro lo describe; lo dice el mensaje.
 
     SE DETIENE, sin cifra (forma MAT-D13):
       * datos fuera de su dominio -> `DatoInvalidoError`;
@@ -6698,7 +6723,7 @@ def cuna_de_tanteo(*, h: float, subida: float, talud: float,
     from scipy.optimize import minimize_scalar   # en el punto de uso (EXT-8)
     for nombre, x in (("h", h), ("talud", talud), ("phi", phi_grados),
                       ("delta", delta_grados), ("gamma", gamma),
-                      ("k_h", k_h), ("k_v", k_v)):
+                      ("k_h", k_h), ("k_v", k_v), ("beta", beta_grados)):
         if not _finito(x):
             raise DatoInvalidoError(nombre, valor=x, id_punto=id_punto,
                                     motivo="la cuña de tanteo necesita un "
@@ -6706,12 +6731,13 @@ def cuna_de_tanteo(*, h: float, subida: float, talud: float,
     recto = math.degrees(math.pi / 2)       # el angulo recto, en grados
     if not (h > 0 and talud > 0 and gamma > 0 and 0 < phi_grados < recto
             and 0 <= delta_grados <= phi_grados and k_h >= 0
-            and 0 <= k_v < 1):
+            and 0 <= k_v < 1 and abs(beta_grados) < recto / 2):
         raise DatoInvalidoError(
             "cuña de tanteo", valor=(h, talud, phi_grados, delta_grados,
-                                     k_h, k_v), id_punto=id_punto,
+                                     k_h, k_v, beta_grados),
+            id_punto=id_punto,
             motivo="altura, talud y peso positivos; 0 < phi < 90; 0 <= delta "
-                   "<= phi; k_h >= 0 y 0 <= k_v < 1")
+                   "<= phi; k_h >= 0, 0 <= k_v < 1 y |beta| < 45")
     if not (subida >= 0 and not math.isnan(subida)):
         raise DatoInvalidoError("subida", valor=subida, id_punto=id_punto,
                                 motivo="lo que el relleno sube sobre el "
@@ -6720,28 +6746,38 @@ def cuna_de_tanteo(*, h: float, subida: float, talud: float,
     bajo = max(phi_grados - psi, 0.0)
     if math.isinf(subida):
         bajo = max(bajo, math.degrees(math.atan2(1.0, talud)))
-    alto = recto
+    alto = recto + min(beta_grados, 0.0)
 
     def P(rho: float) -> float:
         return empuje_de_una_cuna(rho_grados=rho, h=h, subida=subida,
                                   talud=talud, phi_grados=phi_grados,
                                   delta_grados=delta_grados, gamma=gamma,
-                                  k_h=k_h, k_v=k_v)
+                                  k_h=k_h, k_v=k_v, beta_grados=beta_grados)
 
     paso_rho = (alto - bajo) / TRAMOS_CUNA_DE_TANTEO
     malla = [bajo + paso_rho * k for k in range(1, TRAMOS_CUNA_DE_TANTEO)]
     valores = [P(r) for r in malla]
     k_max = max(range(len(malla)), key=lambda k: valores[k])
     if k_max in (0, len(malla) - 1) or not math.isfinite(valores[k_max]):
+        inestable = psi >= phi_grados - TOL_UMBRAL_NORMATIVO
         raise _no_evaluable(
             que, "metodo de equilibrio limite generalizado (GLE, AASHTO "
-            "A11.3.3)",
+            "A11.3.3) con un programa de estabilidad de taludes, o un "
+            "analisis externo",
             "la cuña de tanteo no tiene maximo dentro del intervalo "
             f"admisible ({bajo:.2f} a {alto:.2f} grados): el empuje crece "
-            "hasta el borde, como en un talud sin quiebre mas empinado que "
-            f"phi - psi = {phi_grados - psi:.2f} grados. La fuente pide otro "
-            "metodo; el programa no lo tiene" + (". " + remedio if remedio
-                                                 else ""), id_punto)
+            "hasta el borde"
+            + (f". Con psi = arctan[k_h/(1 - k_v)] = {psi:.2f} >= phi = "
+               f"{phi_grados:.2f} grados el relleno no es estable bajo ese "
+               "k_h: el plano de falla tiende a la horizontal y arrastra un "
+               "relleno sin cota, de modo que no hay empuje sobre el muro "
+               "que describa el caso; es la estabilidad global del "
+               "terraplen (E5) la que lo juzga"
+               if inestable else
+               ", como en un talud sin quiebre mas empinado que phi - psi "
+               f"= {phi_grados - psi:.2f} grados")
+            + ". La fuente pide otro metodo; el programa no lo tiene"
+            + (". " + remedio if remedio else ""), id_punto)
     fino = minimize_scalar(lambda r: -P(r), method="bounded",
                            bounds=(malla[k_max - 1], malla[k_max + 1]),
                            options={"xatol": math.degrees(TOL_ANGULO_CUNA)})
@@ -6909,20 +6945,14 @@ def cargas_del_cabezal(entorno: EntornoDelCabezal,
                 and not relleno["i_declarado"])
     rho_A = None
     if usa_cuna:
-        if ang["beta"] > TOL_UMBRAL_NORMATIVO:
-            raise _no_evaluable(
-                f"empuje del cabezal de {ext}",
-                "cuña de tanteo sobre un plano inclinado",
-                f"el plano de empuje es el trasdos inclinado (beta = "
-                f"{ang['beta']:g} grados, zapata sin talon) y la cuña "
-                "implementada es la del plano vertical del talon; declarar "
-                f"'{CRITERIO_REGLA_PENDIENTE}' = '{REGLA_TALUD_QUEBRADO}' "
-                "usa la formula cerrada", idp)
+        # --- VE-5 (ficha T7B-06) --- sobre el trasdos inclinado (zapata sin
+        # talon) la cuña va sobre ESE plano: hasta VE-5 se detenia aqui.
         P_unitario, rho_A = cuna_de_tanteo(
             h=h, subida=relleno["subida_sobre_plano"],
             talud=relleno["talud"], phi_grados=ang["phi"],
             delta_grados=ang["delta"], gamma=1.0,
-            que=f"empuje estatico del cabezal de {ext}", id_punto=idp)
+            que=f"empuje estatico del cabezal de {ext}", id_punto=idp,
+            beta_grados=ang["beta"])
         K_A = 2 * P_unitario / h ** 2
         metodo = METODO_EMPUJE_CUNA
     else:
@@ -7085,6 +7115,7 @@ def cargas_del_cabezal(entorno: EntornoDelCabezal,
              # empinado) o el reposo (no cedente).
              "empuje_estatico": empuje_estatico, "K_estatico": K_est,
              "P_estatico": P_est, "P_total_sismico": None,
+             "metodo_incremento": None,
              "empuje_sismico_no_cede": None}
 
     # --- EQ ----------------------------------------------------------------
@@ -7141,6 +7172,8 @@ def cargas_del_cabezal(entorno: EntornoDelCabezal,
                     "peso sumergido MAS la presion hidrodinamica." + remedio,
                     idp)
         dominio_MO = ang["phi"] >= ang["i"] + psi - TOL_UMBRAL_NORMATIVO
+        metodo_incremento = (METODO_EMPUJE_CUNA if usa_cuna
+                             else METODO_EMPUJE_FORMULA)
         K_AE_formula = (k_ae_mononobe_okabe(
             phi_grados=ang["phi"], i_grados=ang["i"],
             beta_grados=ang["beta"], delta_grados=ang["delta"], k_h=k_h,
@@ -7155,6 +7188,7 @@ def cargas_del_cabezal(entorno: EntornoDelCabezal,
                 h=h, subida=relleno["subida_sobre_plano"],
                 talud=relleno["talud"], phi_grados=ang["phi"],
                 delta_grados=ang["delta"], gamma=1.0, k_h=k_h, k_v=k_v,
+                beta_grados=ang["beta"],
                 que=f"empuje sismico del cabezal de {ext}", id_punto=idp,
                 remedio=("Lo que lo destraba es una decision del Propietario "
                          "-- admitir el desplazamiento del muro, "
@@ -7166,22 +7200,47 @@ def cargas_del_cabezal(entorno: EntornoDelCabezal,
                          "externo"))
             K_AE = 2 * P_unitario_E / (h ** 2 * (1.0 - k_v))
         elif not dominio_MO:
-            raise _no_evaluable(
-                f"empuje sismico del cabezal de {ext}",
-                "metodo de equilibrio limite generalizado (GLE, AASHTO "
-                "A11.3.3) o analisis de cuña",
-                f"Mononobe-Okabe no es aceptable (AASHTO 11.6.5.3, ec. "
-                f"11.6.5.3-1): phi = {ang['phi']:.2f} grados < i + "
-                f"arctan[k_h/(1 - k_v)] = {ang['i']:.2f} + {psi:.2f} = "
-                f"{ang['i'] + psi:.2f} grados (k_h = {k_h:.3f}). La fuente "
-                "pide otro metodo y desaconseja forzar la ecuacion; el "
-                "programa no lo tiene. Lo que lo destraba es una decision "
-                "del Propietario -- admitir el desplazamiento del muro, "
-                "'factor_muro_eleccion', que reduce k_h a la mitad y exige "
-                "el armado del muro que cede --, un "
-                "relleno de mayor friccion, la cuña de tanteo ('"
-                f"{CRITERIO_REGLA_PENDIENTE}' = '{REGLA_CUNA_DE_TANTEO}') o "
-                "un analisis externo", idp)
+            # --- VE-5 (ficha T7B-06) --- Mononobe-Okabe no es aceptable
+            # (11.6.5.3, ec. 11.6.5.3-1) y la fuente da la cuña de tanteo
+            # para ese caso (C11.6.5.3, «may also be used for situations
+            # when the M–O Method is not suitable»): con la superficie REAL
+            # del relleno, o con la pendiente declarada como talud sin
+            # quiebre si 'pendiente_relleno_trasdos_i' la declara. El
+            # INCREMENTO sale de la misma cuña (P_AE - P_A de la cuña, no
+            # menos el P_A de la formula: dos modelos no se restan) y el
+            # estatico sigue con la formula de la regla. Hasta VE-5 se
+            # detenia aqui.
+            if relleno["i_declarado"]:
+                sub_c = math.inf
+                talud_c = (1.0 / math.tan(math.radians(ang["i"]))
+                           if ang["i"] > TOL_UMBRAL_NORMATIVO else math.inf)
+            else:
+                sub_c, talud_c = relleno["subida_sobre_plano"], relleno["talud"]
+            remedio_c = (
+                f"Mononobe-Okabe tampoco es aceptable (AASHTO 11.6.5.3, ec. "
+                f"11.6.5.3-1: phi = {ang['phi']:.2f} < i + psi = "
+                f"{ang['i']:.2f} + {psi:.2f} grados). Lo que lo destraba es "
+                "una decision del Propietario -- admitir el desplazamiento "
+                f"del muro, '{CRITERIO_FACTOR_MURO}', que reduce k_h a la "
+                "mitad --, un relleno de mayor friccion o un analisis "
+                "externo; la cuña de archivo es "
+                f"'{CRITERIO_REGLA_PENDIENTE}' = '{REGLA_CUNA_DE_TANTEO}'")
+            if math.isinf(talud_c):
+                sub_c, talud_c = 0.0, relleno["talud"]
+            P1_c, _ = cuna_de_tanteo(
+                h=h, subida=sub_c, talud=talud_c, phi_grados=ang["phi"],
+                delta_grados=ang["delta"], gamma=1.0,
+                beta_grados=ang["beta"],
+                que=f"empuje estatico (cuña) del cabezal de {ext}",
+                id_punto=idp, remedio=remedio_c)
+            P1_cE, rho_AE = cuna_de_tanteo(
+                h=h, subida=sub_c, talud=talud_c, phi_grados=ang["phi"],
+                delta_grados=ang["delta"], gamma=1.0, k_h=k_h, k_v=k_v,
+                beta_grados=ang["beta"],
+                que=f"empuje sismico del cabezal de {ext}", id_punto=idp,
+                remedio=remedio_c)
+            K_AE = (K_A + 2 * (P1_cE - P1_c) / h ** 2) / (1.0 - k_v)
+            metodo_incremento = METODO_INCREMENTO_CUNA
         else:
             K_AE = K_AE_formula
         P_AE = empuje_activo_sismico_total(gamma_relleno=gamma, K_AE=K_AE,
@@ -7301,7 +7360,8 @@ def cargas_del_cabezal(entorno: EntornoDelCabezal,
                      P_total_sismico=P_total,
                      empuje_sismico_no_cede=forma_no_cede,
                      fraccion_brazo=fraccion, psi=psi,
-                     K_AE_formula=K_AE_formula, rho_AE=rho_AE)
+                     K_AE_formula=K_AE_formula, rho_AE=rho_AE,
+                     metodo_incremento=metodo_incremento)
     return tuple(cargas), datos
 
 
@@ -8683,7 +8743,12 @@ def _pasos_de_cargas(entorno, condicion, cargas, combos, datos,
                     "2·P_AE/(gamma·h²·(1 - k_v)) (rho = "
                     f"{datos['rho_AE']:.2f} grados; AASHTO C11.6.5.3)"
                     if datos["metodo_empuje"] == METODO_EMPUJE_CUNA else
-                    "Mononobe-Okabe")),
+                    ("(K_A + 2·(P_cuña,E - P_cuña)/h²)/(1 - k_v): el "
+                     "incremento de la cuña de tanteo pseudoestatica "
+                     f"(rho = {datos['rho_AE']:.2f} grados), porque "
+                     "Mononobe-Okabe esta fuera de su dominio (C11.6.5.3)")
+                    if datos.get("metodo_incremento") == METODO_INCREMENTO_CUNA
+                    else "Mononobe-Okabe")),
                 _m("K_AE_formula",
                    (datos["K_AE_formula"] if datos["K_AE_formula"]
                     is not None else "no evaluable"), "-",
@@ -8694,7 +8759,11 @@ def _pasos_de_cargas(entorno, condicion, cargas, combos, datos,
                              f"i + psi = {ang['i'] + datos['psi']:.2f} "
                              "grados (11.6.5.3)")
                     if datos["metodo_empuje"] == METODO_EMPUJE_CUNA else
-                    "el que rige (formula cerrada)")),
+                    ("fuera de su dominio: phi = "
+                     f"{ang['phi']:.2f} < i + psi = "
+                     f"{ang['i'] + datos['psi']:.2f} grados (11.6.5.3)"
+                     if datos["K_AE_formula"] is None else
+                     "el que rige (formula cerrada)"))),
                 _m("K_A", datos["K_A"], "-", "el estatico, misma "
                    "formulacion"),
                 _m("h", datos["h"], "m", "altura del plano de empuje"),
@@ -8738,7 +8807,16 @@ def _pasos_de_cargas(entorno, condicion, cargas, combos, datos,
                     + "; Mononobe-Okabe con la pendiente equivalente queda "
                     "al lado como contraste. "
                     if datos["metodo_empuje"] == METODO_EMPUJE_CUNA else
-                    "Mononobe-Okabe dentro de su dominio: "
+                    ("Mononobe-Okabe con la pendiente de la regla queda "
+                     "FUERA de su dominio (phi = "
+                     f"{ang['phi']:.2f} < i + psi = {ang['i']:.2f} + "
+                     f"{datos['psi']:.2f} grados, 11.6.5.3): el incremento "
+                     "sale de la cuña de tanteo pseudoestatica con la "
+                     "superficie real del relleno, P_AE - P_A de la MISMA "
+                     "cuña, que la fuente da para ese caso (C11.6.5.3); el "
+                     "estatico sigue con la formula de la regla (VE-5). ")
+                    if datos.get("metodo_incremento") == METODO_INCREMENTO_CUNA
+                    else "Mononobe-Okabe dentro de su dominio: "
                     + ("" if datos.get("tratamiento_agua_sismo") else
                        "relleno sin agua en el plano de empuje y ")
                     + f"phi = {ang['phi']:.2f} >= i + psi = "
