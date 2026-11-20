@@ -8792,6 +8792,7 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   para la Fase 0-bis (hoy viaja como `InformePunto.licuefaccion`, su paso y sus avisos);
   y corregir la hoja de ruta (Fase 0-bis y §0.5 dicen que la licuefacción queda fuera del
   script, sin el bloqueo de expediente).
+- **Cerrado por VE-6:** la falta se registra al lado de las demás, no delante (ficha VE6-02).
 - **Dónde vive:** `src/modulos/ML_licuefaccion.py::evaluar_licuefaccion`
 
 
@@ -8946,7 +8947,7 @@ generados (`indice_formulas.md`, línea base) no se regeneran aquí: los regener
 
 # Parte LXII — Lo que VE-6 (pre-vuelo) dejó escrito: el pre-vuelo y la corrida dicen lo mismo
 
-VE-6 (2026-11-20, rama `claude/ve6-prevuelo`, sobre `cc106ce`) corrige las causas que la
+VE-6 (2026-11-20, rama `claude/ve6-prevuelo`, sobre `cc106ce`) corrige las dos causas que la
 integración de VE-5 (lotes met y catlic) dejó en rojo. El subagente Fable no se pudo lanzar
 en la sesión (la herramienta no estaba disponible): las dos decisiones salen del código y de
 las fichas VE5-MET-01 y VE5-CAT-03, que ya las sostenían.
@@ -8973,3 +8974,26 @@ las fichas VE5-MET-01 y VE5-CAT-03, que ya las sostenían.
 - **Qué haría falta:** nada para el pre-vuelo. Si otro módulo llega a leer la entrada
   detrás de otro, se añade a `CONSUMO_DETRAS_DE` (lo fija `tests/test_ve6_prevuelo.py`).
 - **Dónde vive:** `src/servicio.py::consumo_diferido`
+
+## VE6-02 · La licuefacción se registra al lado de las demás faltas, no delante
+
+- **Cerrado:** el `Bloqueo` de la Fase 0-bis (`licuefaccion_ems` sin declarar, ficha
+  VE5-CAT-03) no detiene el dimensionado y así se queda: la corrida sigue y dice también
+  las faltas de las Fases 2 a 11. Lo que estaba mal eran los lectores que tomaban el
+  primer bloqueo del punto por el motivo del dimensionado: la fila del cuadro de
+  compatibilidad (`servicio._fase_11_compatibilidad`, que a expediente decía «detenido en
+  Fase 0-bis» en todo punto sin tamizado, también en un «subir rasante» con delta) y
+  cuatro tests (`tests/test_ve2_correcciones.py`, `tests/test_ve3_vc3_bloquea.py`) que
+  buscaban el primer `DATO_FALTANTE` del bucle de MD. Los dos saltan
+  `servicio.FASES_AL_MARGEN_DEL_DIMENSIONADO` (hoy sólo la Fase 0-bis).
+- **Por qué así:** el riesgo de licuefacción es del terreno de fundación y del terraplén
+  (AASHTO LRFD 10.5.4.2, PDF 1323) y su resultado lo declara el EMS (E.050 38.3): no cambia
+  la sección hidráulica. Anteponerlo escondería las faltas reales del punto y repetiría lo
+  que PF-2 corrigió (cuatro corridas para ver cuatro bloqueos). La falta sigue en los
+  bloqueos y sigue impidiendo cerrar el expediente.
+- **Abierto:** el bloqueo de los techos de transcripción de la Fase 6 (`_etapa` con
+  «techos de transcripcion») tampoco detiene el dimensionado y no está en la tupla; no
+  aparece en el juego.
+- **Qué haría falta:** decidir si ese bloqueo entra en la tupla (una constante para su
+  etapa).
+- **Dónde vive:** `src/servicio.py::FASES_AL_MARGEN_DEL_DIMENSIONADO`

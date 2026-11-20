@@ -910,6 +910,16 @@ CLAVE_LICUEFACCION_EMS = ML.CLAVE_LICUEFACCION_EMS
 CLAVES_DE_LICUEFACCION: Tuple[str, ...] = (CLAVE_LICUEFACCION_EMS,)
 FASE_LICUEFACCION = "Fase 0-bis - Licuefaccion (ML)"
 ETAPA_LICUEFACCION = ML.ETAPA_LICUEFACCION
+# --- VE-6 --- LAS FASES QUE SE REGISTRAN AL LADO DEL DIMENSIONADO, sin
+# detenerlo. La Fase 0-bis es la primera de ellas y la unica hoy: el riesgo
+# de licuefaccion es del terreno de fundacion y del terraplen (AASHTO LRFD
+# 10.5.4.2, PDF 1323; E.050 38.3), no del conducto, y su falta es un
+# `Bloqueo` que impide cerrar el EXPEDIENTE sin anteponerse a las demas
+# faltas del punto: la corrida sigue y dice tambien las de las Fases 2 a 11
+# (ficha VE5-CAT-03, decision de VE-6). Quien busca POR QUE un punto no
+# llego a 7.A --la fila del cuadro de compatibilidad-- salta estas fases;
+# un bloqueo de ellas nunca es el motivo de un punto sin tamizado.
+FASES_AL_MARGEN_DEL_DIMENSIONADO: Tuple[str, ...] = (FASE_LICUEFACCION,)
 # A nivel de perfil la Fase 0-bis declara el condicionante y remite la
 # solucion al expediente (v8, Fase 0-bis, punto 3).
 MENSAJE_LICUEFACCION_DIFERIDA = (
@@ -4623,7 +4633,8 @@ def _fase_11_compatibilidad(informe: InformePunto) -> None:
                   and b.delta_rasante_m is not None), None)
     motivo = next((f"detenido en {b.fase}, {b.etapa}"
                    for b in informe.bloqueos
-                   if not b.diferido_por_alcance), "")
+                   if not b.diferido_por_alcance
+                   and b.fase not in FASES_AL_MARGEN_DEL_DIMENSIONADO), "")
     informe.compatibilidad_rasante = M12.fila_compatibilidad(
         punto=informe.punto, delta_no_factible=delta, seccion=seccion,
         motivo=motivo)

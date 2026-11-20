@@ -75,7 +75,11 @@ SIN_DESNIVEL = (("externo", "C-01", CLAVE, None),)
 def test_sin_el_desnivel_C01_se_detiene_en_los_dos_alcances(alcance):
     c01 = _c01(SIN_DESNIVEL, alcance=alcance)
     assert not c01.dimensionado
-    b = next(b for b in c01.bloqueos if b.tipo is TipoDeBloqueo.DATO_FALTANTE)
+    # --- VE-6 --- A expediente el juego lleva ademas el bloqueo de la Fase
+    # 0-bis (`licuefaccion_ems`, ficha VE5-CAT-03), que se registra al lado
+    # del dimensionado sin anteponerse a sus faltas.
+    b = next(b for b in c01.bloqueos if b.tipo is TipoDeBloqueo.DATO_FALTANTE
+             and b.fase not in servicio.FASES_AL_MARGEN_DEL_DIMENSIONADO)
     assert b.campo == CLAVE
     assert b.etapa == servicio.ETAPA_BUCLE_DE_MD
     assert not b.diferido_por_alcance
