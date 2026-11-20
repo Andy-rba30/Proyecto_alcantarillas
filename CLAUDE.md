@@ -244,7 +244,13 @@ el 0.5 es [N] y cuál de las dos declaraciones aplica a esta obra es [A].
   (`M9.dimensionar_peralte_por_armado`), con el mismo paso y re-verificando la
   estabilidad; el paso y el tope son valor de archivo (0.10 m y 1.5·H_c,
   decisión del dueño) y el tope del peralte es físico. Lo declarado gana y no
-  se itera. Ficha VE3-05.
+  se itera. Ficha VE3-05. Desde VE-6 el ALERO se arma por sus propias
+  secciones (el fuste de su franja en el arranque y en la mitad de su
+  longitud, `M9.entorno_de_la_seccion_del_alero`) y su espesor crece por su
+  propio armado, no copiando el de la pantalla (ficha VE6M9-03); y la
+  orientación del muro frente al tráfico y la distancia al borde de calzada
+  se declaran también por punto (`orientacion_muro_del_punto`,
+  `distancia_borde_calzada_del_punto_m`, ficha VE6M9-04).
 - **Y desde T-7c cada cabezal se ARMA detrás de su estabilidad, con la
   geometría final —la de la regla, la declarada o, desde VE-3.5, la
   dimensionada por estabilidad o por armado— y sin iterarla en el armado** (`servicio._fase_9_armado`: una etapa por las

@@ -31,6 +31,8 @@ from tests.test_t7c_cabezal_armado import _geometria, tanteo  # noqa: F401
 EST = CondicionAnalisis.ESTATICO
 PIE = 0.3048
 TOL = 1e-9
+# Los dorados a mano de abajo llevan seis cifras decimales.
+TOL_DORADO = 1e-6
 ORI = M9.CAMPO_ORIENTACION_DEL_PUNTO
 DIS = M9.CAMPO_DISTANCIA_BORDE_DEL_PUNTO
 
@@ -47,8 +49,8 @@ H_EQ_PARALELO_PEGADO = (5.0 - 1.5 * (ALTURA_FT - 5) / 5) * PIE
 
 
 def test_los_dorados_son_los_de_la_tabla():
-    assert H_EQ_PERPENDICULAR == pytest.approx(1.044000, abs=1e-6)
-    assert H_EQ_PARALELO_PEGADO == pytest.approx(1.261200, abs=1e-6)
+    assert H_EQ_PERPENDICULAR == pytest.approx(1.044000, abs=TOL_DORADO)
+    assert H_EQ_PARALELO_PEGADO == pytest.approx(1.261200, abs=TOL_DORADO)
 
 
 @pytest.mark.parametrize("bruto, esperado", [
@@ -164,9 +166,13 @@ def test_el_servicio_lleva_las_dos_claves_al_cabezal_declarado():
         {"entrada": {"altura_total_m": 2.4}, "salida": {}},
         orientacion={"entrada": "paralelo_al_trafico", "salida": None},
         distancia={"entrada": 0.0, "salida": 1.6})
-    assert fundido == {
-        "entrada": {"altura_total_m": 2.4, ORI: "paralelo_al_trafico",
-                    DIS: 0.0},
-        "salida": {DIS: 1.6}}
+    # el valor se TRANSPORTA (no se calcula): se compara con approx
+    assert fundido["entrada"][ORI] == "paralelo_al_trafico"
+    assert ORI not in fundido["salida"]
+    assert fundido["entrada"]["altura_total_m"] == pytest.approx(
+        2.4, abs=ABS_CERO)
+    assert fundido["entrada"][DIS] == pytest.approx(0.0, abs=ABS_CERO)
+    assert fundido["salida"][DIS] == pytest.approx(1.6, abs=ABS_CERO)
+    assert set(fundido["salida"]) == {DIS}
     assert servicio.fundir_sobrecarga_del_punto(None, orientacion=None,
                                                 distancia=None) is None
