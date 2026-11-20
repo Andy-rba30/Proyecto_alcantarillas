@@ -8180,6 +8180,10 @@ class EntornoDelCabezal:
     # cabezal declarada por punto (`talud_delante_del_cabezal_del_punto`),
     # {"H_s_m", "beta_grados", "b_m"}; None: rige el [S] de corredor.
     talud_delante: Optional[dict] = None
+    # --- VE-7 (lote A, A7) --- el muro de cabecera es PARALELO A LA VIA
+    # (`EmbocaduraDelPunto.orientacion`, una fila de la Carta 11): es
+    # paralelo al trafico, y la sobrecarga viva lo lee.
+    paralelo_a_la_via: bool = False
 
 
 @dataclass(frozen=True)

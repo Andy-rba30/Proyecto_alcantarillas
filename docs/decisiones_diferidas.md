@@ -9157,7 +9157,7 @@ cambios están aplicados en estas fichas.
   `#MAXIMO_PRACTICO`), sin interpolar fuera de banda; los dos cabezales van paralelos (`#PARALELO`).
 - **Abierto:** (1) Cerrado en VE7A-02 (embocadura del marco por punto). (2) El extremo oblicuo del marco no se
   verifica en M8 (sin numeral atribuido). (3) Carta 12 escala 3 (paralelo con aleros) sin banda; la
-  nota del paso 9.2.2 y la h_eq por orientación, con el ítem 28. (4) Cerrado en VE7A-01.
+  h_eq por orientación, cerrada en VE7A-07. (4) Cerrado en VE7A-01.
 - **Qué haría falta:** el extremo oblicuo en M8; los aleros
   del paralelo.
 - **Dónde vive:** `src/modulos/M9_cabezal.py::_embocadura_paralela`
@@ -9283,3 +9283,20 @@ el test; lo que la sesión tuvo que decidir sin dictamen va rotulado «pendiente
   geometría en un punto no la activa si el corredor dice terreno horizontal.
 - **Qué haría falta:** si el dueño lo pide, `terreno_delante_del_cabezal` por punto.
 - **Dónde vive:** `src/modulos/M9_cabezal.py::validar_talud_delante_del_punto`
+
+## VE7A-07 · La h_eq con el cabezal paralelo a la vía (VE6-T7A03 (3))
+
+- **Cerrado:** `EntornoDelCabezal.paralelo_a_la_via` (campo nuevo en `src/modelos.py`, de
+  `CabezalDelPunto.embocadura`). Con el muro paralelo a la vía el muro es paralelo al tráfico:
+  si la orientación vigente es la perpendicular del corredor y el punto no declara
+  `orientacion_muro_del_punto`, `M9.h_eq_del_cabezal` toma la MAYOR de las Tablas 3.11.6.4-1 y
+  -2 (`envolvente_de_h_eq_paralelo`), con aviso que pide `orientacion_muro_del_punto` y
+  `distancia_borde_calzada_del_punto_m`; el paso 9.2.2 lo dice. Con el corredor paralelo, o la
+  orientación del punto, rige su tabla como hasta ahora.
+- **Decisión del consultor Fable (triaje VE-7, 2026-11-20):** la envolvente con aviso, sin deducir
+  la orientación. **Pendiente de revisión Fable:** sin distancia del punto la tabla del muro
+  paralelo se lee con la columna «0.0 ft» (la mayor) y no con la distancia del corredor, que es la
+  de un muro que el corredor declara perpendicular; con la del punto, su columna.
+- **Abierto:** nada más de esta ficha.
+- **Qué haría falta:** nada; declarar la orientación del punto quita la envolvente.
+- **Dónde vive:** `src/modulos/M9_cabezal.py::h_eq_del_cabezal`

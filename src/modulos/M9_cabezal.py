@@ -1309,6 +1309,55 @@ def h_eq_sobrecarga_trasdos(*, altura_muro_total: float,
     return max(SOBRECARGA_TRASDOS_PISO_MP_M, h_eq_aashto)
 
 
+def _embocadura_paralela_del_cabezal(cabezal) -> bool:
+    """Si el cabezal del punto lleva la embocadura paralela a la via (un
+    cabezal sin embocadura -- armado a mano en un banco de pruebas -- no)."""
+    embocadura = getattr(cabezal, "embocadura", None)
+    return embocadura is not None and es_paralelo_a_la_via(embocadura)
+
+
+def envolvente_de_h_eq_paralelo(entorno: EntornoDelCabezal) -> bool:
+    """
+    --- VE-7 (lote A, A7; triaje VE-7 de Fable) --- Si la h_eq de este
+    cabezal es la ENVOLVENTE de las dos tablas de AASHTO 3.11.6.4: el muro
+    es paralelo a la via (`EntornoDelCabezal.paralelo_a_la_via`, una fila de
+    la Carta 11) y por tanto paralelo al trafico, la orientacion vigente es
+    la perpendicular del [S] de corredor y el punto no declara la suya.
+    """
+    if (not getattr(entorno, "paralelo_a_la_via", False)
+            or entorno.geometria.orientacion_trafico is not None):
+        return False
+    return (ds.valor("orientacion_muro_respecto_al_trafico")
+            == ORIENTACION_PERPENDICULAR_AL_TRAFICO)
+
+
+def h_eq_del_cabezal(entorno: EntornoDelCabezal, *,
+                     altura_muro_total: float) -> float:
+    """
+    La h_eq de la sobrecarga viva de ESTE cabezal (`h_eq_sobrecarga_trasdos`
+    con la orientacion y la distancia del punto). --- VE-7 (lote A, A7) ---
+    Con `envolvente_de_h_eq_paralelo`, la MAYOR de las dos tablas: la del
+    estribo perpendicular (3.11.6.4-1) y la del muro paralelo (3.11.6.4-2)
+    con la distancia del punto o, sin ella, la columna «0.0 ft» (la mayor:
+    lado seguro, sin leer la distancia de un corredor que dice
+    perpendicular). El aviso lo da `avisos_de_la_sobrecarga_del_punto`.
+    """
+    g = entorno.geometria
+    if not envolvente_de_h_eq_paralelo(entorno):
+        return h_eq_sobrecarga_trasdos(altura_muro_total=altura_muro_total,
+                                       orientacion=g.orientacion_trafico,
+                                       borde_m=g.distancia_borde_calzada_m)
+    borde = (g.distancia_borde_calzada_m
+             if g.distancia_borde_calzada_m is not None else 0.0)
+    return max(
+        h_eq_sobrecarga_trasdos(
+            altura_muro_total=altura_muro_total,
+            orientacion=ORIENTACION_PERPENDICULAR_AL_TRAFICO),
+        h_eq_sobrecarga_trasdos(
+            altura_muro_total=altura_muro_total,
+            orientacion=ORIENTACION_PARALELO_AL_TRAFICO, borde_m=borde))
+
+
 def _columna_de_borde(borde_m: float) -> bool:
     """
     Cual de las DOS columnas de la Tabla 3.11.6.4-2 aplica. True = la de
@@ -6294,6 +6343,19 @@ def avisos_de_la_sobrecarga_del_punto(entorno: EntornoDelCabezal
             "corredor ('orientacion_muro_respecto_al_trafico'). AASHTO "
             "3.11.6.4 no tiene tabla para el muro oblicuo y el programa no la "
             "deduce del esviaje")
+    if envolvente_de_h_eq_paralelo(entorno):
+        avisos.append(
+            f"{quien}: el cabezal es PARALELO A LA VIA (fila de la Carta 11) "
+            "y por tanto paralelo al trafico, pero la orientacion vigente es "
+            "la perpendicular del corredor y el punto no declara otra: h_eq "
+            "se toma como la MAYOR de las dos tablas de AASHTO 3.11.6.4"
+            + ("" if g.distancia_borde_calzada_m is not None else
+               " (la de muro paralelo con la columna «0.0 ft», la mayor)")
+            + ". Declarar `" + CAMPO_ORIENTACION_DEL_PUNTO + "` = "
+            f"'{ORIENTACION_PARALELO_AL_TRAFICO}' y `"
+            + CAMPO_DISTANCIA_BORDE_DEL_PUNTO + "` para leer la tabla que "
+            "corresponde (ficha VE7A-07)")
+        return avisos
     if g.distancia_borde_calzada_m is not None:
         vigente = g.orientacion_trafico
         if vigente is None:
@@ -6310,8 +6372,17 @@ def avisos_de_la_sobrecarga_del_punto(entorno: EntornoDelCabezal
     return avisos
 
 
-def _texto_de_la_sobrecarga(g: GeometriaCabezal) -> str:
+def _texto_de_la_sobrecarga(g: GeometriaCabezal,
+                            envolvente: bool = False) -> str:
     """De donde salen la orientacion y la distancia de ESTE cabezal."""
+    if envolvente:
+        return ("cabezal PARALELO A LA VIA (Carta 11): el muro es paralelo al "
+                "trafico y el corredor dice perpendicular, sin orientacion "
+                "del punto: la MAYOR de las Tablas 3.11.6.4-1 y -2 (esta, con "
+                + (f"el borde a {g.distancia_borde_calzada_m:g} m, declarado "
+                   "por punto" if g.distancia_borde_calzada_m is not None
+                   else "la columna «0.0 ft», la mayor")
+                + "; ficha VE7A-07)")
     if g.orientacion_trafico is not None:
         texto = (f"'{g.orientacion_trafico}', declarada por punto "
                  f"(`{CAMPO_ORIENTACION_DEL_PUNTO}`)")
@@ -7921,9 +7992,9 @@ def cargas_del_cabezal(entorno: EntornoDelCabezal,
     # --- LS ----------------------------------------------------------------
     # --- VE-6 (ficha T7B-11) --- con la orientacion y la distancia que el
     # punto declara para ESTE cabezal, si las declara.
-    h_eq = h_eq_sobrecarga_trasdos(altura_muro_total=h,
-                                   orientacion=g.orientacion_trafico,
-                                   borde_m=g.distancia_borde_calzada_m)
+    # --- VE-7 (lote A, A7) --- con el cabezal paralelo a la via y el
+    # corredor perpendicular sin orientacion del punto, la envolvente.
+    h_eq = h_eq_del_cabezal(entorno, altura_muro_total=h)
     nombre_K = "K0" if reposo_rige else "K_A"
     cargas.append(CargaDeCabezal(
         C_LS_H, CARGA_LS, "sobrecarga viva, empuje",
@@ -9616,7 +9687,9 @@ def _pasos_de_cargas(entorno, condicion, cargas, combos, datos,
                 _m("h_eq", datos["h_eq"], "m",
                    "max(piso del Manual de Puentes, tabla de AASHTO "
                    "3.11.6.4 por altura h y orientacion del muro: "
-                   + _texto_de_la_sobrecarga(entorno.geometria) + ")"),
+                   + _texto_de_la_sobrecarga(
+                       entorno.geometria,
+                       envolvente_de_h_eq_paralelo(entorno)) + ")"),
                 _m("h", datos["h"], "m", "altura del plano de empuje, con "
                    "zapata"),
                 _m("K_A", datos["K_A"], "-", "el del empuje activo")),
@@ -10486,7 +10559,10 @@ def datos_del_cabezal_del_punto(*, punto, cabezal: CabezalDelPunto,
             # --- VE-7 (lote A, A5) --- el P_AE declarado de ESTE cabezal.
             empuje_sismico=(empuje_sismico or {}).get(g.extremo) or None,
             # --- VE-7 (lote A, A6) --- el talud de delante de ESTE cabezal.
-            talud_delante=(talud_delante or {}).get(g.extremo) or None))
+            talud_delante=(talud_delante or {}).get(g.extremo) or None,
+            # --- VE-7 (lote A, A7) --- el muro paralelo a la via (Carta 11)
+            # es paralelo al trafico: lo lee la sobrecarga viva.
+            paralelo_a_la_via=_embocadura_paralela_del_cabezal(cabezal)))
     return tuple(entornos)
 
 
