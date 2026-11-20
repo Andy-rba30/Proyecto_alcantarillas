@@ -9235,11 +9235,13 @@ cambios están aplicados en estas fichas.
   `ErrorProyecto`, se lee «ninguno» (`_mas_bajo_o_ninguno`): era lo que el bucle hacía antes.
 - **Decisión del consultor Fable (triaje VE-7, 2026-11-20):** registrar y seguir; descartar por
   rasante sólo sin escalón más bajo.
-- **Abierto:** si después del par que no cabe ningún otro cierra y el catálogo se agota, el motivo es
-  el del último escalón («descartado por diámetro requerido»), no «por rasante», y el punto no lleva
-  el delta del par que no cupo.
-- **Qué haría falta:** decidir si un material que tuvo un escalón sin cabida y agotó el catálogo
-  sale por rasante con ese delta.
+- **Revisado por Fable (dictamen del consultor, 2026-11-20): abierto (iii), aplicado.** Si tras un
+  escalón sin cabida (o sin cobertura de G1) que dejó seguir la progresión el catálogo se agota sin
+  cerrar, el material sale POR RASANTE con el escalón de menor delta (`MD._el_de_menor_delta`) y
+  «los escalones más bajos que quedaban no cierran»; `disenar_punto` toma ALGÚN escalón con
+  `sin_cabida`, no sólo el último, y el punto lleva su delta. La traza del tubo no cambia.
+- **Abierto:** ninguno propio; el delta sigue siendo cota inferior para ese escalón (T11-03).
+- **Qué haría falta:** nada más para esta ficha.
 - **Dónde vive:** `src/modulos/MD.py::_mas_bajo_o_ninguno`
 
 ## VE7B-04 · El delta del resguardo bajo control de salida, con el HW de entrada (cierre del abierto de VE6-34)

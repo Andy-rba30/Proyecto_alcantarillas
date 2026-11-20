@@ -1008,6 +1008,10 @@ def disenar_material(punto: PuntoCritico, material: Material, *,
     ultimo_motivo = "el catalogo no ofrecio ninguna seccion"
     ultimo_por_fase_8 = False
     visitadas: List[Seccion] = []
+    # --- dictamen Fable (iii) --- los escalones que no cupieron (o no
+    # tuvieron cobertura) y dejaron seguir la progresion a uno mas bajo: si
+    # el catalogo se agota sin cerrar, el material sale POR RASANTE.
+    sin_cabida_vistos: List[Tuple[Seccion, EscalonSinCabida]] = []
 
     while seccion is not None:
         # GUARDIA DE PROGRESO (EXT-A-03): un escalon ya visitado no se vuelve
@@ -1097,6 +1101,7 @@ def disenar_material(punto: PuntoCritico, material: Material, *,
                             seccion, sin_cobertura,
                             None if es_el_primero else ultimo_motivo)
                     ultimo_motivo = motivo_cob
+                    sin_cabida_vistos.append((seccion, sin_cobertura))
                     ultimo_por_fase_8 = False
                 elif all(v.cumple for v in verificaciones):
                     _registrar(registrar, material, seccion, aceptado=True,
@@ -1181,6 +1186,7 @@ def disenar_material(punto: PuntoCritico, material: Material, *,
                     return None, _motivo_descarte_por_rasante(
                         seccion, sin_cabida,
                         None if es_el_primero else ultimo_motivo)
+                sin_cabida_vistos.append((seccion, sin_cabida))
                 ultimo_motivo = _motivo_escalon_sin_cabida(
                     seccion, sin_cabida, completadas, mas_bajo=mas_bajo)
                 ultimo_por_fase_8 = False
@@ -1196,6 +1202,10 @@ def disenar_material(punto: PuntoCritico, material: Material, *,
         material = material_del_catalogo
         seccion = siguiente_seccion(material, seccion)
 
+    if sin_cabida_vistos:
+        sec_r, sc_r = _el_de_menor_delta(sin_cabida_vistos)
+        return None, (_motivo_descarte_por_rasante(sec_r, sc_r, ultimo_motivo)
+                      + "; los escalones mas bajos que quedaban no cierran")
     return None, _motivo_descarte(material, ultimo_motivo,
                                   por_fase_8=ultimo_por_fase_8)
 
@@ -1502,8 +1512,14 @@ def disenar_punto(punto: PuntoCritico, *, L: float, TW: float,
             return resultado
 
         fallos.append(f"{material.nombre}: {motivo}")
-        if escalones and escalones[-1].sin_cabida is not None:
-            por_rasante.append((material, escalones[-1], tuple(escalones)))
+        # --- dictamen Fable (iii) --- ALGUN escalon sin cabida, no solo el
+        # ultimo: el de menor delta.
+        con_cabida = [(e.seccion, e) for e in escalones
+                      if e.sin_cabida is not None]
+        if con_cabida:
+            por_rasante.append((material, _el_de_menor_delta(
+                [(e, e.sin_cabida) for _s, e in con_cabida])[0],
+                tuple(escalones)))
 
     # Ningun candidato cerro. Antes de declarar el punto NO FACTIBLE hay que
     # poder afirmar que todos se evaluaron de verdad: ver las tres funciones.
@@ -1581,6 +1597,17 @@ def _fallas_persistentes(escalones: Sequence[PasoDiseno]) -> Tuple[str, ...]:
     return tuple(c for c in VERIFICACIONES_QUE_NO_MEJORAN_AL_CRECER
                  if all(any(v.codigo == c and not v.cumple
                             for v in e.verificaciones) for e in evaluados))
+
+
+def _el_de_menor_delta(vistos):
+    """
+    --- dictamen Fable (iii) --- De los pares (x, EscalonSinCabida), el de
+    MENOR `delta_rasante_m` no nulo; si ninguno tiene delta, el primero.
+    """
+    con_delta = [v for v in vistos if v[1].delta_rasante_m is not None]
+    if not con_delta:
+        return vistos[0]
+    return min(con_delta, key=lambda v: v[1].delta_rasante_m)
 
 
 def _resumen_por_rasante(por_rasante: Sequence[Tuple[Material, PasoDiseno,

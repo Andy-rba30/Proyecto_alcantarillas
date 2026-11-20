@@ -229,3 +229,64 @@ def test_b2_si_con_el_hw_de_entrada_el_resguardo_cabe_no_hay_delta(corrida):
                                   [_v("V1", True), _v("V4", False)], r)
     assert delta is None
     assert "longitud" in nota
+
+
+# ===========================================================================
+# Dictamen Fable (iii): el catalogo agotado tras un par que no cabe
+# ===========================================================================
+
+def _c01_con_serie(tmp_path, serie):
+    from tests.apoyo.criterios import declarados
+    from tests.test_canal_discrepancias import DECLARACIONES_DEL_CAJON
+    texto = CSV_EJEMPLO.read_text(encoding="utf-8")
+    fila = "C-01,3+100,C,,,,36.90,39.10,38.95,6.5,30,9.60,36.20,,,ML,,,"
+    csv = tmp_path / "c01.csv"
+    csv.write_text(texto.replace(fila + "\n", fila + "38.30\n"),
+                   encoding="utf-8")
+    externos = cli.cargar_datos_externos(
+        RAIZ / "tests" / "linea_base_familia_c" / "entradas_ampliadas.json",
+        {"luz_m": 2.75})
+    return declarados(dict(DECLARACIONES_DEL_CAJON,
+                           secciones_cajon_normalizadas=serie)), csv, externos
+
+
+def test_iii_el_par_que_no_cabe_y_el_mas_bajo_que_incumple(tmp_path):
+    """Marco [(2 x 2) no cabe, (2 x 1) incumple V1]: el material sale POR
+    RASANTE con el delta del 2 x 2, y el punto lleva ese delta."""
+    from src.modelos import DisenoNoFactibleError
+    ctx, csv, externos = _c01_con_serie(tmp_path, [[2.0, 2.0], [2.0, 1.0]])
+    with ctx:
+        informe = cli.correr(csv, externos, alcance=cli.ALCANCE_PERFIL)
+        c01 = informe.puntos[3]
+        base = c01.punto_de_calculo
+        assert c01.dimensionado, [b.mensaje for b in c01.bloqueos]
+        material = c01.resultado.material
+        r = c01.resultado.resultado_hidraulico
+        primero = MD.siguiente_seccion(material)
+        segundo = MD.siguiente_seccion(material, primero)
+        clave_1 = M5.cota_clave(punto=base, material=material, seccion=primero)
+        clave_2 = M5.cota_clave(punto=base, material=material, seccion=segundo)
+        e_paq = base.cota_rasante - base.cota_subrasante
+        sub = (clave_1 + clave_2) / 2
+        punto = dataclasses.replace(base, cota_subrasante=sub,
+                                    cota_rasante=sub + e_paq)
+
+        def verificar(**kw):
+            if kw["seccion"].altura > segundo.altura:
+                return _verificador_con_cabida(**kw)
+            return [_v("V1", False), _v("V4", True)]
+        escalones = []
+        res, motivo = MD.disenar_material(
+            punto, material, Q=r.Q, S=r.S, L=c01.longitud.valor, TW=r.TW_m,
+            verificar=verificar, registrar=escalones.append)
+        assert res is None
+        assert motivo.startswith(MD.MENSAJE_SIN_CABIDA)
+        assert "los escalones mas bajos que quedaban no cierran" in motivo
+        delta_2x2 = escalones[0].sin_cabida.delta_rasante_m
+        with pytest.raises(DisenoNoFactibleError) as exc:
+            MD.disenar_punto(punto, L=c01.longitud.valor, TW=r.TW_m, Q=r.Q,
+                             S=r.S, verificar=verificar)
+    assert delta_2x2 is not None and delta_2x2 > 0
+    assert exc.value.delta_rasante_m == pytest.approx(delta_2x2,
+                                                      rel=REL_TRANSPORTE)
+    assert MD.MENSAJE_SIN_CABIDA in str(exc.value)
