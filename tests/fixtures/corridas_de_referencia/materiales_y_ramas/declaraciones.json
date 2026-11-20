@@ -1,0 +1,78 @@
+{
+ "remanso_derecho_via": "cota_de_afectacion",
+ "TR_evento_extremo": 500.0,
+ "umbral_no_colapso_evento_extremo": "sin_desborde_de_la_plataforma",
+ "phi_relleno_trasdos": 34.0,
+ "c_phi_fundacion": {
+  "cohesivo": false,
+  "c_kpa": 0.0,
+  "phi_grados": 32.0,
+  "gamma_kn_m3": 18.0
+ },
+ "drenaje_trasdos": "drenado",
+ "factor_muro_eleccion": "sin_reduccion",
+ "D_max_catalogo": {
+  "concreto_reforzado": 0.75
+ },
+ "perfil_hdpe_fabricante": {
+  "300": {
+   "A_mm2_mm": 3.175,
+   "I_mm4_mm": 393.289536,
+   "od_m": 0.37338
+  },
+  "375": {
+   "A_mm2_mm": 4.0216666666666665,
+   "I_mm4_mm": 868.5143919999999,
+   "od_m": 0.4572
+  },
+  "450": {
+   "A_mm2_mm": 4.868333333333333,
+   "I_mm4_mm": 1015.9979679999999,
+   "od_m": 0.5461
+  },
+  "600": {
+   "A_mm2_mm": 6.5616666666666665,
+   "I_mm4_mm": 1900.899424,
+   "od_m": 0.72898
+  },
+  "750": {
+   "A_mm2_mm": 8.255,
+   "I_mm4_mm": 2671.0914319999997,
+   "od_m": 0.9245599999999999
+  },
+  "900": {
+   "A_mm2_mm": 9.525,
+   "I_mm4_mm": 3637.928208,
+   "od_m": 1.0795
+  },
+  "1050": {
+   "A_mm2_mm": 9.927166666666668,
+   "I_mm4_mm": 8898.175752,
+   "od_m": 1.2191999999999998
+  },
+  "1200": {
+   "A_mm2_mm": 10.900833333333335,
+   "I_mm4_mm": 8898.175752,
+   "od_m": 1.397
+  }
+ },
+ "Mw_licuefaccion": 8.0,
+ "homogeneidad_serie_fen": "serie_completa",
+ "incremento_acero_por_despiece": 0.1,
+ "clase_concreto_losa_entrega": "E",
+ "categoria_refuerzo_aashto": "A",
+ "clase_exposicion_fisuracion_cabezal": "clase_2",
+ "exposicion_quimica_ems": {
+  "so4_suelo_pct": 0.15,
+  "so4_agua_ppm": 100.0,
+  "tabla_4_2": {
+   "baja_permeabilidad": false,
+   "congelamiento_deshielo": false,
+   "cloruros": false
+  }
+ },
+ "n_manning_cajon": [
+  0.013,
+  0.016
+ ]
+}

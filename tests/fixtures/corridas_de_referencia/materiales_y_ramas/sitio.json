@@ -1,0 +1,12 @@
+{
+ "orientacion_muro_respecto_al_trafico": {
+  "valor": "paralelo_al_trafico",
+  "trazabilidad": "DATOS DE PRUEBA, NO DEL PROYECTO: valor de prueba de la cuarta corrida de referencia (VE-7)",
+  "fecha": "2026-11-20"
+ },
+ "distancia_borde_calzada_al_trasdos_m": {
+  "valor": 1.6,
+  "trazabilidad": "DATOS DE PRUEBA, NO DEL PROYECTO: valor de prueba de la cuarta corrida de referencia (VE-7)",
+  "fecha": "2026-11-20"
+ }
+}

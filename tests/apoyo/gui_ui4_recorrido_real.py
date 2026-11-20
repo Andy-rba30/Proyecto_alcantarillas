@@ -35,6 +35,10 @@ se anotan):
      la pestaña 2 y «Aplicar» (la nota, solo donde la puerta la exige): el
      detalle con la Fase 8 y el cabezal del punto, y el panel del cabezal
      del proyecto;
+     Desde VE-7 (dictamen Fable, (iv)) el paso 3 es un bucle sobre TODA
+     corrida de referencia con declaraciones --- `expediente_cabezal`,
+     `materiales_y_ramas` y, la ultima, `hidrologia_calculada` ---,
+     retirando por «Quitar» lo declarado para la anterior;
   4. `hidrologia_calculada` a expediente, con los dos CSV de la hidrologia:
      el detalle con el caudal CALCULADO y con la proteccion, la Fase 8 y el
      cabezal del punto; los SEIS exportadores por sus botones (los dos PDF
@@ -103,7 +107,9 @@ BANDERAS_DEL_CICLO = {"luz_m": "3,0"}
 # Los puntos cuyo detalle se lee en la pestaña 3, por corrida.
 DETALLES = {"perfil_guia": ("C-01",),
             "expediente_cabezal": ("A-01",),
-            "hidrologia_calculada": ("A-01", "C-01")}
+            "hidrologia_calculada": ("A-01", "C-01"),
+            # --- VE-7, lote C (dictamen Fable, (iv)) --- la cuarta corrida.
+            "materiales_y_ramas": ("A-01", "A-02", "A-03", "C-01")}
 # Las capturas: geometria (cabe en la pantalla de 1280x1024 que `xvfb-run`
 # levanta por defecto) y nombres de archivo.
 GEOMETRIA_DE_LAS_CAPTURAS = "1280x1000+0+0"
@@ -278,6 +284,12 @@ def _poner_entradas(ventana, raiz, referencia):
                                              relativa(referencia.cuencas))
         hechos["estacion"] = _pulsar_examinar(ventana, raiz, "_elegir_estacion",
                                               relativa(referencia.estacion))
+    else:
+        # --- VE-7 (dictamen Fable, (iv)) --- una corrida sin hidrologia
+        # detras de otra con ella: los dos campos se vacian, como haria el
+        # proyectista, o la ventana correria con las cuencas de la anterior.
+        ventana.cuencas_var.set("")
+        ventana.estacion_var.set("")
     ventana.alcance_var.set(referencia.alcance)
     raiz.update()
     return hechos
@@ -519,31 +531,28 @@ def main(salida: Path, capturas=None) -> int:
                 for i in ventana.tree_criterios_todos.get_children()] == filas_antes}
         r["barrido"] = barrido
 
-        # 3. expediente_cabezal, con sus declaraciones por la pestaña 2.
-        referencia = corrida("expediente_cabezal")
-        r["expediente_cabezal"] = {"examinar": _poner_entradas(ventana, raiz, referencia)}
-        r["expediente_cabezal"]["declaraciones"] = {
-            clave: _declarar_por_la_pestana_2(ventana, raiz, clave, valor)
-            for clave, valor in referencia.declaraciones.items()}
-        _ejecutar(ventana, raiz)
-        r["expediente_cabezal"].update(
-            _lo_de_la_corrida(ventana, raiz, "expediente_cabezal", salida))
-
-        # 4. hidrologia_calculada, con los dos CSV de la hidrologia. Primero
-        #    se retira lo declarado para la corrida anterior, por «Quitar».
-        for clave in list(ca.valores_dinamicos()):
-            _seleccionar_criterio(ventana, raiz, clave)
-            ventana.btn_quitar_declarado.boton.invoke()
-            raiz.update()
-        referencia = corrida("hidrologia_calculada")
-        h = {"retirado_lo_anterior": not ca.valores_dinamicos(),
-             "examinar": _poner_entradas(ventana, raiz, referencia)}
-        h["declaraciones"] = {
-            clave: _declarar_por_la_pestana_2(ventana, raiz, clave, valor)
-            for clave, valor in referencia.declaraciones.items()}
-        _ejecutar(ventana, raiz)
-        h.update(_lo_de_la_corrida(ventana, raiz, "hidrologia_calculada", salida))
-        r["hidrologia_calculada"] = h
+        # 3. TODA corrida de referencia con declaraciones (VE-7, dictamen
+        #    Fable (iv): hasta VE-7 eran dos pasos escritos a mano, para
+        #    `expediente_cabezal` y `hidrologia_calculada`), en su orden y
+        #    con `hidrologia_calculada` la ultima: las capturas y los
+        #    exportadores de abajo leen su informe. Antes de cada una se
+        #    retira por «Quitar» lo declarado para la anterior.
+        con_declaraciones = [c for c in ind.CORRIDAS_DE_REFERENCIA
+                             if c.declaraciones]
+        con_declaraciones.sort(key=lambda c: c.nombre == "hidrologia_calculada")
+        for referencia in con_declaraciones:
+            for clave in list(ca.valores_dinamicos()):
+                _seleccionar_criterio(ventana, raiz, clave)
+                ventana.btn_quitar_declarado.boton.invoke()
+                raiz.update()
+            m = {"retirado_lo_anterior": not ca.valores_dinamicos(),
+                 "examinar": _poner_entradas(ventana, raiz, referencia)}
+            m["declaraciones"] = {
+                clave: _declarar_por_la_pestana_2(ventana, raiz, clave, valor)
+                for clave, valor in referencia.declaraciones.items()}
+            _ejecutar(ventana, raiz)
+            m.update(_lo_de_la_corrida(ventana, raiz, referencia.nombre, salida))
+            r[referencia.nombre] = m
 
         if capturas is not None and ventana.informe is not None:
             raiz.geometry(GEOMETRIA_DE_LAS_CAPTURAS)
@@ -672,8 +681,21 @@ def main(salida: Path, capturas=None) -> int:
             sesion_v3["comparacion"] = comparacion.lineas()[:6]
             # Que difiere, campo a campo (UI-5): con otro archivo de criterios
             # la respuesta correcta es DIFIERE, y solo por su huella.
-            sesion_v3["diferencias"] = [[d.donde, d.campo]
+            # --- VE-7 (dictamen Fable, (v)) --- con los dos valores: la
+            # expectativa de test_c7 admite diferencias por CLASE con causa,
+            # y una clase se reconoce por lo que cambio, no solo por donde.
+            sesion_v3["diferencias"] = [[d.donde, d.campo, str(d.a), str(d.b)]
                                         for d in comparacion.diferencias]
+            # Y los avisos que cambiaron, por punto, en texto: la clase 6 de
+            # la expectativa los reconoce por lo que dicen.
+            hoy = {pj["id"]: pj.get("avisos") or []
+                   for pj in ventana.volcado_de_la_corrida.get("puntos") or []}
+            antes = {pj["id"]: pj.get("avisos") or []
+                     for pj in v3["corridas"][-1]["informe_json"].get("puntos") or []}
+            sesion_v3["avisos_nuevos"] = {
+                pid: sorted(set(hoy[pid]) - set(antes.get(pid, []))) for pid in hoy}
+            sesion_v3["avisos_retirados"] = {
+                pid: sorted(set(antes.get(pid, [])) - set(hoy[pid])) for pid in hoy}
             sesion_v3["no_comparables"] = len(comparacion.no_comparables)
             sesion_v3["puntos_solo_en_uno"] = (len(comparacion.solo_en_a)
                                                + len(comparacion.solo_en_b))

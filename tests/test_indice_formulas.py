@@ -287,11 +287,39 @@ def test_hueco_censado_construye_la_misma_ficha_que_la_traza(monkeypatch):
 def test_los_fundamentos_no_ejercitados_son_el_complemento(pasos,
                                                             texto_en_disco):
     from src.normativa.registro import construir
+    # --- VE-7, lote C (dictamen Fable, (i-a)) --- el §4 tiene dos cuadros:
+    # 4.1, los que entran sin paso propio (eleccion o bloque fijo); 4.2, los
+    # que no tienen ninguna de las tres puertas.
     declarados = {f.id for f in construir().fundamentos}
-    emitidos = {p.fundamento_id for p in pasos}
+    puertas = ind.puertas_de_los_fundamentos(pasos)
+    con_paso = puertas[ind.PUERTA_PASO]
+    con_alguna = set().union(*puertas.values())
     seccion = texto_en_disco.split("## 4. ")[1]
-    listados = set(re.findall(r"^\| `(F[^`]+)` \|", seccion, flags=re.M))
-    assert listados == declarados - emitidos
+    s41, s42 = seccion.split("### 4.2 ")
+    patron = r"^\| `(F[^`]+)` \|"
+    assert set(re.findall(patron, s41, flags=re.M)) == (
+        (declarados & con_alguna) - con_paso)
+    assert set(re.findall(patron, s42, flags=re.M)) == declarados - con_alguna
+
+
+def test_las_tres_puertas_son_las_de_test_memoria_sustentada(informes, pasos):
+    """
+    --- VE-7, lote C (dictamen Fable, (i-a)) --- El indice cuenta las MISMAS
+    tres puertas que `test_memoria_sustentada::test_todo_fundamento_
+    declarado_lo_usa_algun_paso`: lo que aquel recorrido ve por paso y por
+    eleccion lo ve el indice, y el bloque fijo es el mismo conjunto.
+    """
+    from src import constantes_normativas as cn
+    from test_memoria_sustentada import _pasos_de
+    puertas = ind.puertas_de_los_fundamentos(pasos)
+    for informe in informes:
+        suyos = _pasos_de(informe)
+        assert {p.fundamento_id for p in suyos} <= puertas[ind.PUERTA_PASO]
+        assert {e.fundamento_id for p in suyos for e in p.elecciones
+                if e.fundamento_id} <= puertas[ind.PUERTA_ELECCION]
+    assert puertas[ind.PUERTA_BLOQUE_FIJO] == {
+        u["fundamento"] for u in cn.UMBRALES_DE_VERIFICACION}
+    assert "F3.D_MIN" in puertas[ind.PUERTA_BLOQUE_FIJO]
 
 
 # ===========================================================================

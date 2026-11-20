@@ -332,7 +332,7 @@ from src.modulos.M11_reporte import (CriterioBloqueante,  # noqa: F401
 # que es donde se resuelve el nombre: en EXT-9 los tres sitios de la suite
 # que lo hacian sobre `cli` migraron.
 from src.servicio import (ALCANCE_EXPEDIENTE, ALCANCE_PERFIL, DECIMALES_FACTOR,
-                          ETAPA_DURABILIDAD,
+                          ETAPA_DURABILIDAD, ETAPA_LICUEFACCION,
                           FASE_CABEZAL, DatoDeclarado, Informe, InformeCabezal,
                           InformePunto, _fmt, advertencia_de_corredor_de,
                           cargar_datos_externos, cargar_datos_sitio,
@@ -1104,6 +1104,27 @@ def _lineas_durabilidad(informe: InformePunto) -> List[str]:
     return out
 
 
+def _licuefaccion_json(v: Optional[Verificacion]) -> Optional[Dict[str, Any]]:
+    """
+    --- VE-7, lote C (C4; VE5-CAT-03; decision del consultor Fable, triaje
+    VE-7, 2026-11-20) --- La Fase 0-bis del punto (`InformePunto.licuefaccion`):
+    el estado de su `Verificacion` --- el resultado del EMS contrastado, o por
+    que AASHTO 10.5.4.2 no la exige --- y sus avisos. None si la fase no
+    corrio (perfil, punto sin clasificar) o si su etapa se bloqueo: el
+    bloqueo, entonces, esta en la lista del punto. La memoria imprime los
+    mismos textos en su seccion de la Fase 0-bis.
+    """
+    if v is None:
+        return None
+    return {"codigo": v.codigo, "numeral": v.numeral,
+            "estado": v.estado.value, "cumple": v.cumple,
+            "valor_obtenido": _num(v.valor_obtenido),
+            "valor_admisible": _num(v.valor_admisible),
+            "criterio_aplicado": v.criterio_aplicado,
+            "motivo_no_aplica": v.motivo_no_aplica or None,
+            "avisos": list(v.avisos)}
+
+
 def _punto_json(informe: InformePunto) -> Dict[str, Any]:
     punto = informe.punto
     salida: Dict[str, Any] = {
@@ -1138,6 +1159,8 @@ def _punto_json(informe: InformePunto) -> Dict[str, Any]:
         # cuando el calculo se detuvo (el bloqueo dice por que).
         "caudal": (None if informe.caudal is None
                    else _caudal_json(informe.caudal)),
+        # --- VE-7 (C4) --- la Fase 0-bis, con clave propia.
+        "licuefaccion": _licuefaccion_json(informe.licuefaccion),
         "durabilidad": _durabilidad_json(informe.durabilidad),
         "diseno": (None if not informe.dimensionado
                    else _diseno_json(informe.resultado)),
@@ -1584,6 +1607,36 @@ def _lineas_bloqueos(bloqueos: Sequence[Bloqueo]) -> List[str]:
     return out
 
 
+def _lineas_licuefaccion(informe: InformePunto) -> List[str]:
+    """
+    --- VE-7, lote C (dictamen Fable del 2026-11-20, abierto (iii)) --- La
+    Fase 0-bis en el volcado de texto, con los MISMOS textos que la seccion
+    de la memoria y la clave `licuefaccion` del JSON: codigo, numeral,
+    estado y, cuando los hay, el resultado del EMS, lo exigido y el
+    criterio; el motivo de «no aplica» en una segunda linea. Con la etapa
+    bloqueada (no diferida) lo dice y remite a los bloqueos; sin la fase
+    (perfil, punto sin clasificar), nada. Sus avisos salen con los demas.
+    """
+    v = informe.licuefaccion
+    if v is None:
+        if any(b.etapa == ETAPA_LICUEFACCION and not b.diferido_por_alcance
+               for b in informe.bloqueos):
+            return [f"{SANGRIA}Fase 0-bis licuefaccion: no evaluada (ver "
+                    "bloqueos)"]
+        return []
+    linea = f"{SANGRIA}Fase 0-bis {v.codigo} ({v.numeral}): {v.estado.value}"
+    if v.valor_obtenido is not None:
+        linea += f" · EMS: {v.valor_obtenido}"
+    if v.valor_admisible is not None:
+        linea += f" · exige: {v.valor_admisible}"
+    if v.criterio_aplicado:
+        linea += f" · criterio {v.criterio_aplicado}"
+    out = [linea]
+    if v.motivo_no_aplica:
+        out.append(f"{SANGRIA_DETALLE}{v.motivo_no_aplica}")
+    return out
+
+
 def _lineas_punto(informe: InformePunto) -> List[str]:
     punto = informe.punto
     out = ["-" * ANCHO,
@@ -1599,6 +1652,8 @@ def _lineas_punto(informe: InformePunto) -> List[str]:
         out.append(f"{SANGRIA}Fase 2  {c.denominacion.value} "
                    f"(luz {_fmt(c.luz_m)} m, num. {c.verificacion_luz.numeral}) "
                    f"| {tr}")
+
+    out.extend(_lineas_licuefaccion(informe))         # --- VE-7 (dictamen Fable, iii) ---
 
     if informe.caudal is not None:
         c = informe.caudal
@@ -2651,6 +2706,17 @@ def _parser() -> argparse.ArgumentParser:
                    help="compara dos volcados informe_json por identidad de punto "
                         "(src/comparador.py) y termina: 0 iguales, 1 difieren, 2 "
                         "no se pudo leer. No corre el pipeline")
+    # --- VE-7, lote C (C5; VE5GUI-45) --- el estado del expediente, el que
+    # la pestaña 4 de la ventana pinta, tambien por la CLI.
+    p.add_argument("--estado-expediente", action="store_true",
+                   dest="estado_expediente",
+                   help="imprime el estado del expediente con independencia "
+                        "de la corrida --las discrepancias abiertas contra "
+                        "la hoja de ruta y, con --sesion, las corridas "
+                        "embebidas que se pueden comparar, la mas reciente "
+                        "primero-- y termina: 0 aunque haya discrepancias "
+                        "abiertas (es informe, no puerta), o 2 si la sesion "
+                        "no se pudo leer. No corre el pipeline ni lee el CSV")
     p.add_argument("--prevuelo", action="store_true", dest="prevuelo",
                    help="imprime el anticipo entero (criterios vacios que el "
                         "alcance puede invocar, contraste del CSV, lo que el "
@@ -3071,6 +3137,45 @@ def _prevuelo(ruta_csv: Path, externos: DatosExternos, alcance: str,
     return 1 if detiene_la_carga or any(e.detiene for e in estimado) else 0
 
 
+def _imprimir_estado_del_expediente(ruta_sesion: Optional[Path]) -> int:
+    """
+    --- VE-7, lote C (C5; VE5GUI-45; decision del consultor Fable, triaje
+    VE-7, 2026-11-20) --- Lo que `src/estado_del_expediente.py` ofrece, por
+    la CLI: las discrepancias abiertas contra la hoja de ruta (el censo de
+    `Registro.discrepancias_abiertas`, que no depende de ninguna corrida) y,
+    con una sesion, las corridas embebidas que la pestaña 4 ofrece comparar.
+    La sesion se LEE y se valida, pero no se aplica: no hay corrida. Sale
+    con 0 aunque haya discrepancias abiertas: es informe, no puerta
+    (dictamen Fable del 2026-11-20, sin modo estricto); con 2 si la sesion
+    no se pudo leer o no es valida.
+    """
+    from src import estado_del_expediente as _estexp
+    corridas = None
+    if ruta_sesion is not None:
+        try:
+            corridas = cargar_sesion_serializada(ruta_sesion).corridas
+        except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+            print(f"No se pudo leer la sesion: {exc}", file=sys.stderr)
+            return 2
+        except (ValueError, KeyError) as exc:
+            print(f"No se pudo aplicar la sesion: {exc}", file=sys.stderr)
+            return 2
+    abiertas = _estexp.discrepancias_abiertas()
+    lineas = _titulo("Estado del expediente (con independencia de la corrida)")
+    lineas.append(f"Discrepancias abiertas contra la hoja de ruta: "
+                  f"{len(abiertas)}")
+    lineas.extend(f"{SANGRIA}- {d.linea()}" for d in abiertas)
+    if corridas is not None:
+        para_comparar = _estexp.corridas_para_comparar(corridas)
+        lineas.append("")
+        lineas.append("Corridas de la sesion para comparar (la mas reciente "
+                      f"primero): {len(para_comparar)}")
+        lineas.extend(f"{SANGRIA}[{c.indice}] {c.rotulo}"
+                      for c in para_comparar)
+    print("\n".join(lineas))
+    return 0
+
+
 def main(argv: Optional[Sequence[str]] = None) -> int:
     parser = _parser()
     args = parser.parse_args(argv)
@@ -3079,6 +3184,10 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     # lee y el pipeline no corre. El comparador no importa el motor.
     if args.comparar is not None:
         return _comparador.main([str(r) for r in args.comparar])
+
+    # EL ESTADO DEL EXPEDIENTE Y SALIR (VE-7, C5): tampoco corre el pipeline.
+    if args.estado_expediente:
+        return _imprimir_estado_del_expediente(args.sesion)
 
     # LA SESION SERIALIZADA VA PRIMERO (EXT-8, PC-11): repone los criterios
     # con su procedencia y rellena lo que la linea de comandos no trajo. Una

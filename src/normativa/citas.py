@@ -462,14 +462,20 @@ MC_HHD_4_1_1_3_7a = _cita(
                        "físicas y geomorfológicos (típicas) sean:"),
                 pagina_pdf=81),
             cita_id="MC_HHD.4.1.1.3.7a",
-            resuelve=PorExpresion(expresion="region == 'selva_alta'",
-                                  simbolos=("region",)),
+            # --- VE-7, lote C (C3; VE5-CAT-01; decision del consultor
+            # Fable, triaje VE-7, 2026-11-20) --- Hasta VE-7, una
+            # `PorExpresion` sobre un simbolo `region` que nadie entregaba.
+            # Desde VE-5 (lote catlic) la region es el [S] de corredor
+            # 'region_natural', que `M2.piso_de_selva_alta` ya lee: la
+            # condicion se resuelve con el mismo dato.
+            resuelve=PorDatoDeSitio(clave="region_natural"),
             efecto_si_indeterminada=Efecto.EXCLUYE,
             justificacion_de_no_bloquear=(
-                "el corredor esta en costa (La Union, Piura) y la "
-                "recomendacion es expresamente para selva alta: la fila queda "
-                "FUERA, que no es lo mismo que pendiente. Ademas es solo para "
-                "TMC")),
+                "la resuelve el dato de sitio 'region_natural' (La Union, "
+                "Piura: costa) y la recomendacion es expresamente para selva "
+                "alta: fuera de ella la fila queda FUERA, que no es lo mismo "
+                "que pendiente. Ademas es solo para TMC, y con el TMC "
+                "candidato M2 lee el dato y se detiene si no tiene valor")),
     ),
 )
 
@@ -12944,6 +12950,40 @@ E060_22_10_2_CICLOPEO = _cita(
           "'predimensionamiento_cabezal' no lo juzga (es geometria); lo "
           "juzga T-7c, y la memoria lo avisa cuando el tipo sale de "
           "gravedad."),
+)
+
+# --- VE-7, lote C (C1; ficha VE6M9-01, abierto (c); decision del consultor
+# Fable, triaje VE-7, 2026-11-20) --- El 22.10.2.2 con cita propia. El
+# Verbatim es la frase que ya estaba transcrita en la nota de la anterior
+# (T-7a la leyo en la pagina 195 al firmar aquella): no es una segunda
+# transcripcion, es la misma, movida a un campo que T2 comprueba. SIN FIRMA:
+# esta sesion no tenia `NORMAS_DIR` y no abrio el PDF.
+E060_22_10_2_2_VOLADIZO = _cita(
+    verificada=False,
+    id="E060.22.10.2.2#VOLADIZO",
+    fuente_id="E060",
+    numeral="22.10.2.2",
+    titulo_numeral="Limitaciones",
+    pagina_impresa="195",
+    pagina_pdf=195,
+    texto_literal=Verbatim(
+        texto=("En elementos en voladizo con una longitud mayor a la mitad "
+               "de su peralte, será necesario verificar las resistencias en "
+               "flexión y corte"),
+        pagina_pdf=195),
+    caracter=Caracter.EXIGENCIA,
+    jerarquia_numeral=("22.10 CONCRETO CICLOPEO",),
+    nota=("SIN FIRMA A PROPOSITO (VE-7, lote C): el texto es el que T-7a "
+          "transcribio en la nota de E060.22.10.2#CICLOPEO, firmada contra "
+          "la misma pagina; la sesion que dio de alta esta cita no tenia "
+          "NORMAS_DIR y no la firma sin abrir el PDF. T2 compara el Verbatim "
+          "con la pagina 195 en toda corrida que enlace el repositorio de "
+          "normas; con ese resultado verde, la cita se firma y sale del "
+          "censo (dictamen Fable 2026-11-20: aprobada con caducidad (se "
+          "firma en la primera sesión con NORMAS_DIR)). «Será necesario» es "
+          "EXIGENCIA: el voladizo de ciclopeo mas largo que la mitad de su "
+          "peralte se verifica en flexion y corte (C7 de M9, la punta y el "
+          "talon de la zapata del cabezal de gravedad)."),
 )
 
 # ===========================================================================

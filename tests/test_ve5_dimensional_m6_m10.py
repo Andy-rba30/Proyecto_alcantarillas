@@ -48,6 +48,16 @@ UNIDADES_DE_M6_A_M10: Dict[str, Dim] = {
     "N/m/mm": M / (L * T ** 2),         # D-load: fuerza por metro y por mm de diametro
     "m3/s por m": L ** 2 / T,           # caudal por metro de cuneta
     "m3/s por km2": L / T,              # caudal especifico
+    # --- VE-7, lote C (C6) --- las que trae la cuarta corrida de referencia
+    # (el TMC y el HDPE en la Fase 8, el filtro y la hoya de la Fase 6).
+    "mm2/mm": L,                        # area de pared por mm de longitud
+    "mm4/mm": L ** 3,                   # inercia de pared por mm de longitud
+    "mm/N": T ** 2 / M,                 # factor de flexibilidad (D^2/(E*I))
+    "s-1": ADIM / T,                    # permitividad del geotextil
+    "min": T,                           # duracion del caudal pico
+    # --- VE-7 (dictamen Fable, (i-c)) --- la quinta corrida: el s_xe del
+    # cortante del armado (AASHTO 5.7.3.4.2) se imprime en pulgadas.
+    "in": L,
 }
 
 

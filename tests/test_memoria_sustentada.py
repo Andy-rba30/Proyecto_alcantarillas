@@ -85,6 +85,9 @@ def _pasos_de(informe):
         # la clasificacion ni del resultado hidraulico.
         if getattr(punto, "caudal", None) is not None:
             vistos.extend(punto.caudal.pasos)
+        # --- VE-7, lote C (C4) --- la Fase 0-bis cuelga del punto, fuera de
+        # `verificaciones()`: su paso se recoge aqui por su cuenta.
+        _anota(getattr(getattr(punto, "licuefaccion", None), "paso", None))
         for _fase, v in punto.verificaciones():
             _anota(getattr(v, "paso", None))
         for escalon in punto.traza:

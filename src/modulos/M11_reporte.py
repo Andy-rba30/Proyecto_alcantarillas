@@ -1417,6 +1417,20 @@ TITULO_DURABILIDAD = "Durabilidad de los materiales (Sec. 3.3)"
 # comprueba que los dos textos sean el mismo.
 ETAPA_DURABILIDAD = "matriz de durabilidad (Sec. 3.3)"
 TITULO_TRAZA_DURABILIDAD = "Desarrollo de la matriz de durabilidad (Sec. 3.3)"
+# --- VE-7, lote C (C4; VE5-CAT-03; decision del consultor Fable, triaje
+# VE-7, 2026-11-20) --- la Fase 0-bis con seccion propia. La etapa es la de
+# `ML_licuefaccion.ETAPA_LICUEFACCION` (y la de `servicio`); se repite aqui por
+# la misma razon que la de durabilidad, y
+# `tests/test_ve7_lote_c_licuefaccion.py` comprueba que sea el mismo texto.
+TITULO_LICUEFACCION = ("Fase 0-bis: licuefaccion (AASHTO 10.5.4.2; resultado "
+                       "del EMS, E.050 38.3)")
+ETAPA_LICUEFACCION = ("evaluacion de licuefaccion (Fase 0-bis; AASHTO "
+                      "10.5.4.2, E.050 38.3)")
+TITULO_TRAZA_LICUEFACCION = "Desarrollo de la Fase 0-bis"
+TEXTO_LICUEFACCION_BLOQUEADA = (
+    "La Fase 0-bis no se cerro en este punto: el motivo y el dato que la "
+    "destraba estan en la tabla de bloqueos. Mientras siga abierta, el "
+    "expediente no cierra.")
 # --- T-6 --- los pasos de 7.B (pendiente, esviaje, longitud, cota de salida
 # y encaje), que hasta T-6 iban como una frase con los numeros dentro.
 TITULO_TRAZA_GEOMETRIA = "Desarrollo de la geometria del conducto (Sec. 7.B)"
@@ -1463,6 +1477,17 @@ def traza_durabilidad(informe: Any) -> Tuple[Any, ...]:
     """
     dictamen = getattr(informe, "durabilidad", None)
     return () if dictamen is None else tuple(dictamen.pasos)
+
+
+def traza_licuefaccion(informe: Any) -> Tuple[Any, ...]:
+    """
+    --- VE-7, lote C (C4) --- El paso de la Fase 0-bis del punto
+    (`InformePunto.licuefaccion`): vacia si la fase no corrio (perfil, punto
+    sin clasificar) o si su etapa se bloqueo.
+    """
+    v = getattr(informe, "licuefaccion", None)
+    paso = getattr(v, "paso", None)
+    return () if paso is None else (paso,)
 
 
 def traza_espaciamiento(informe: Any) -> Tuple[Any, ...]:
@@ -3188,6 +3213,53 @@ def _bloque_durabilidad(informe: Any) -> str:
     return "".join(partes)
 
 
+def _bloque_licuefaccion(informe: Any) -> str:
+    """
+    --- VE-7, lote C (C4; VE5-CAT-03) --- La Fase 0-bis del punto con
+    seccion propia: el estado de la `Verificacion` que `ML_licuefaccion`
+    emitio --- el resultado del EMS contrastado, o por que 10.5.4.2 no la
+    exige ---, los mismos textos que el JSON publica en la clave
+    `licuefaccion`, sus avisos y su paso.
+
+    Con la etapa BLOQUEADA a expediente la seccion lo dice y remite a la
+    tabla de bloqueos; diferida por el alcance (perfil) no hay seccion: la
+    constancia del diferimiento ya esta en esa tabla. M11 no decide nada:
+    todo viene hecho de la Fase 0-bis.
+    """
+    v = getattr(informe, "licuefaccion", None)
+    if v is None:
+        if not any(getattr(b, "etapa", "") == ETAPA_LICUEFACCION
+                   and not getattr(b, "diferido_por_alcance", False)
+                   for b in getattr(informe, "bloqueos", ())):
+            return ""
+        return (f"<h4>{_esc(TITULO_LICUEFACCION)}</h4>"
+                f'<div class="nota"><p>{_esc(TEXTO_LICUEFACCION_BLOQUEADA)}'
+                "</p></div>")
+    filas = [_fila(["<th>Codigo</th>", "<th>Numeral</th>",
+                    "<th>Estado</th>", "<th>Resultado del EMS</th>",
+                    "<th>Lo que el proyecto exige</th>",
+                    "<th>Criterio</th>"]),
+             _fila([_td(f"<code>{_esc(v.codigo)}</code>"),
+                    _td(_esc(v.numeral)),
+                    _td(f"<b>{_esc(v.estado.value)}</b>"),
+                    _td("&mdash;" if v.valor_obtenido is None
+                        else _esc(v.valor_obtenido)),
+                    _td("&mdash;" if v.valor_admisible is None
+                        else _esc(v.valor_admisible)),
+                    _td("&mdash;" if not v.criterio_aplicado
+                        else f"<code>{_esc(v.criterio_aplicado)}</code>")])]
+    partes = [f"<h4>{_esc(TITULO_LICUEFACCION)}</h4>",
+              '<table class="compacta">' + "".join(filas) + "</table>"]
+    if v.motivo_no_aplica:
+        partes.append(f'<div class="nota"><p>{_esc(v.motivo_no_aplica)}'
+                      "</p></div>")
+    partes.extend(f'<div class="aviso"><p>{_esc(aviso)}</p></div>'
+                  for aviso in v.avisos)
+    partes.append(bloque_pasos(traza_licuefaccion(informe),
+                               TITULO_TRAZA_LICUEFACCION))
+    return "".join(partes)
+
+
 def _pasos_de_clasificacion(informe: Any) -> str:
     """La traza de la Fase 2: denominacion por luz y periodo de retorno."""
     return bloque_pasos(traza_clasificacion(informe),
@@ -3360,6 +3432,7 @@ def memoria_de_punto(informe: Any) -> str:
         _tabla_datos(informe),
         _tabla_clasificacion(informe),
         _pasos_de_clasificacion(informe),
+        _bloque_licuefaccion(informe),                # --- VE-7 (C4) ---
         _bloque_hidrologia(informe),
         _bloque_durabilidad(informe),
         _tabla_iteraciones(informe),
@@ -4077,6 +4150,7 @@ def pasos_del_punto(punto: Any) -> Tuple[Any, ...]:
         _anota(getattr(punto.clasificacion.verificacion_luz, "paso", None))
         _anota(getattr(punto.clasificacion.periodo_retorno, "paso", None))
     vistos.extend(traza_hidrologia(punto))      # Fase 1-bis (T-1)
+    vistos.extend(traza_licuefaccion(punto))    # Fase 0-bis (VE-7, C4)
     for _fase, v in punto.verificaciones():
         _anota(getattr(v, "paso", None))
     for escalon in punto.traza:
@@ -4804,6 +4878,7 @@ def pasos_impresos(informe: Any) -> Tuple[Any, ...]:
     vistos: List[Any] = []
     for punto in informe.puntos:
         vistos.extend(traza_clasificacion(punto))
+        vistos.extend(traza_licuefaccion(punto))          # --- VE-7 (C4) ---
         vistos.extend(traza_hidrologia(punto))
         vistos.extend(traza_durabilidad(punto))
         tw = traza_tw(punto)

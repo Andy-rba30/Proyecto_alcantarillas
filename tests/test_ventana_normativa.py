@@ -486,7 +486,11 @@ def test_una_condicion_que_no_bloquea_deja_elegir_con_su_justificacion():
     la fuente misma dijo que no detienen. Fabricar aqui un bloqueo que la
     fuente no pone seria el error simetrico al de elegir por el usuario.
     """
-    condicion = REGISTRO.condicion("COND-SELVA-ALTA")
+    # --- VE-7, lote C (C3) --- era COND-SELVA-ALTA, que desde VE-7 se
+    # resuelve con el dato de sitio 'region_natural' (con valor: elegible
+    # por el dato, no por la justificacion). La del canal de riego sigue
+    # siendo una expresion indeterminada que EXCLUYE.
+    condicion = REGISTRO.condicion("COND-DMIN-CANAL-RIEGO")
     assert condicion.efecto_si_indeterminada is not Efecto.BLOQUEA
     disponibilidad = vn.disponibilidad_de(condicion)
     assert isinstance(disponibilidad, vn.Elegible)

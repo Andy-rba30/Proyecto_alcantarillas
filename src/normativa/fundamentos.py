@@ -3769,8 +3769,15 @@ LONGITUD_ENTRE_CABEZALES = _fundamento(
         "en el fondo ni en la clave sino en el relleno que cada muro "
         "retiene, contra su cara interior, y la longitud del barril entre "
         "cabezales queda cerrada; el barril atraviesa ademas los dos muros, "
-        "y su longitud de metrado los suma. La fuente pide que quede cerca "
-        "de la aproximada y no da tolerancia: las dos se imprimen."),
+        "y su longitud de metrado los suma. Que quede cerca de la "
+        "aproximada es una recomendacion de la fuente («should»), sin "
+        "tolerancia, y no la juzga este paso: la juzga el refinamiento del "
+        "control de salida con la longitud entre cabezales "
+        "(F9.REFINAMIENTO_LONGITUD). Aqui las dos longitudes se imprimen."),
+    # --- VE-7, lote C (C2; decision del consultor Fable, triaje VE-7,
+    # 2026-11-20) --- OBLIGA se queda: este paso aplica «must be fitted»
+    # (3.3.5#ENCAJE, EXIGENCIA). Lo que el texto corrige es la lectura de
+    # «should be close» como exigencia.
     verbo=Verbo.OBLIGA,
     citas=("HDS5_3ED.3.3.5#ENCAJE", "HDS5_3ED.3.1.4#LONGITUD"),
     que_pasa_si_no_se_hace=(
@@ -4528,7 +4535,8 @@ CICLOPEO_CABEZAL = _fundamento(
         "excentricidad minima y barras alrededor de las aberturas de sus "
         "muros."),
     verbo=Verbo.OBLIGA,
-    citas=("E060.22.10.2#CICLOPEO", "E060.22.10.2.3#PHI",
+    citas=("E060.22.10.2#CICLOPEO", "E060.22.10.2.2#VOLADIZO",
+           "E060.22.10.2.3#PHI",
            "E060.22.5.3#TRACCION", "E060.22.5.4#CORTANTE",
            "E060.22.4.7#JUNTAS", "E060.22.6.3#TERCIO",
            "E060.22.6.3#EXCENTRICIDAD", "E060.22.6.6.5#ABERTURAS",

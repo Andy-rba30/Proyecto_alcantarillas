@@ -27,7 +27,7 @@ Fase 6, la 7, la 8, la 9 y la 10 quedaban en el cuadro de «no ejercitados».
 INF-5.1.10 (que el prompt T-10 llama INF-5.1.9) pedia ver el paso del
 control gobernante con su cita correcta en una corrida que DIMENSIONE.
 
-DESDE T-10 SON DOS CORRIDAS (TRES DESDE T-11), con DATOS DE PRUEBA que se
+DESDE T-10 SON DOS CORRIDAS (TRES DESDE T-11, CINCO DESDE VE-7), con DATOS DE PRUEBA que se
 leen de `tests/fixtures/corridas_de_referencia/` (ver
 `CORRIDAS_DE_REFERENCIA`; ningun valor es del proyecto). Las dos de T-10 ya
 EXISTIAN en el repositorio: `test_t10_memoria` comprueba que son los mismos
@@ -62,7 +62,21 @@ Ninguna de las tres es una segunda copia que pueda divergir:
      sean la materializacion del juego, de modo que no son una copia que
      pueda divergir.
 
-Las tres corren con el estado de declaraciones VACIO y lo reponen al salir
+  4. `materiales_y_ramas` (VE-7, lote C, item C6; ficha VE5GUI-47): datos
+     de PRUEBA escritos para recorrer las ramas que las tres anteriores no
+     alcanzan --el TMC y el HDPE hasta la Fase 8 (el concreto fuera del
+     catalogo por 'D_max_catalogo' y el TMC fuera de A-02 por su pH), el
+     cabezal ciclopeo de gravedad declarado, el filtro y la hoya de
+     socavacion de HEC-14, el metodo racional modificado de una cuenca de
+     55.9 km2, la Fase 0-bis con el EMS declarado, la estabilidad global
+     declarada y el armado de un marco sobre suelo deficiente-- a
+     `--alcance expediente`. Su LEEME dice punto por punto que ejercita.
+
+  5. `regimenes_alternos` (VE-7, dictamen Fable (i-c)): el juego de T-11 con
+     el caudal declarado y los regimenes ALTERNOS de los criterios que valen
+     para toda la corrida, mas tres puntos dedicados. Su LEEME lo detalla.
+
+Las cinco corren con el estado de declaraciones VACIO y lo reponen al salir
 (`correr_referencia`). La razon es la de siempre: la suite declara criterios
 de prueba en `conftest.py`, y un indice que dijera una cosa generado desde la
 CLI y otra bajo pytest seria un documento sin referencia.
@@ -123,6 +137,7 @@ from typing import Any, Dict, Iterator, List, Optional, Tuple
 
 import json
 
+from src import constantes_normativas as _cn
 from src import criterios_adoptados as _ca
 from src import datos_sitio as _ds
 from src import traza_punto as _tp
@@ -220,6 +235,31 @@ CORRIDAS_DE_REFERENCIA: Tuple[CorridaDeReferencia, ...] = (
                 "(`tests/fixtures/hidrologia/`). Con esos caudales ninguno de "
                 "los tres cabe bajo la subrasante y no dimensiona; C-01 "
                 "dimensiona y llega a la Fase 9.")),
+    # --- VE-7, lote C (C6; ficha VE5GUI-47; decision del consultor Fable,
+    # triaje VE-7, 2026-11-20) --- La CUARTA: las ramas sin ejercitar.
+    CorridaDeReferencia(
+        nombre="materiales_y_ramas", alcance="expediente",
+        rotulo=("DATOS DE PRUEBA, NO DEL PROYECTO, NO ES UN DISEÑO VÁLIDO: "
+                "escritos en VE-7 para "
+                "ejercitar las ramas que las otras tres no alcanzan (ver su "
+                "LEEME.md). El concreto queda fuera del catalogo "
+                "('D_max_catalogo' de prueba): A-01 se dimensiona en TMC y "
+                "A-02, con un pH de prueba fuera del intervalo del acero, en "
+                "HDPE con cabezal ciclopeo declarado; A-03 calcula su caudal "
+                "por el racional modificado (cuenca sintetica de 55.9 km2) y "
+                "no cabe; C-01 es el marco de T-11 con el n del encofrado "
+                "in situ.")),
+    # --- VE-7, lote C (dictamen Fable, abierto (i-c)) --- La QUINTA: los
+    # regimenes alternos de los criterios que valen para toda la corrida.
+    CorridaDeReferencia(
+        nombre="regimenes_alternos", alcance="expediente",
+        rotulo=("DATOS DE PRUEBA, NO DEL PROYECTO, NO ES UN DISEÑO VÁLIDO: el "
+                "juego de la validacion integral de T-11 con el caudal "
+                "declarado y los regimenes ALTERNOS de los criterios de toda "
+                "la corrida (remanso por perfil, desborde admitido, la fila "
+                "del marco por analogia, selva alta), mas tres puntos "
+                "dedicados: la caida recta de HEC-14, el relleno somero y el "
+                "piso de la carga de entrada. Ver su LEEME.md.")),
 )
 
 # El sello, en una linea que `leer_sello` reconoce. Los tres campos van
@@ -607,6 +647,11 @@ def _resumen_de_la_corrida(corrida: CorridaDeReferencia,
              f"{informe.dimensionados} ("
              + ", ".join(p.punto.id for p in informe.puntos if p.dimensionado)
              + ").")
+    # --- VE-7, lote C (dictamen Fable, C6.a) --- lo que NO cumple, por
+    # punto y por la raiz de su codigo (antes del primer «.»), sin valores:
+    # una corrida de referencia ejercita formulas y no es un diseño, y el
+    # documento lo tiene que decir donde se lee la corrida.
+    L.append("- " + verificaciones_que_no_cumplen(informe))
     L.append("- Etapas que la corrida no completó (la razón está en el "
              "informe; aquí sólo se nombra la etapa):")
     bloqueos = list(informe.bloqueos())
@@ -617,6 +662,92 @@ def _resumen_de_la_corrida(corrida: CorridaDeReferencia,
         L.append(f"  - {quien}: {_celda(b.fase)} → {_celda(b.etapa)} "
                  f"(`{b.tipo}`).")
     L.append("")
+    return L
+
+
+ROTULO_NO_CUMPLEN = ("Verificaciones que NO cumplen en esta corrida (el "
+                     "índice no es un diseño)")
+
+
+def raices_que_no_cumplen(informe: Any) -> Dict[str, Tuple[str, ...]]:
+    """
+    --- VE-7 (dictamen Fable, C6.a) --- {punto: raices de los codigos de las
+    verificaciones con `cumple is False`}, en el orden de los puntos y de
+    sus verificaciones, sin repetir. La raiz es lo que va antes del primer
+    «.» del codigo (`A7.concreto.e` -> `A7`). Sin valores.
+    """
+    salida: Dict[str, Tuple[str, ...]] = {}
+    for p in informe.puntos:
+        raices: List[str] = []
+        for _fase, v in p.verificaciones():
+            if v.cumple is False:
+                raiz = str(v.codigo or v.numeral).split(".")[0]
+                if raiz not in raices:
+                    raices.append(raiz)
+        if raices:
+            salida[p.punto.id] = tuple(raices)
+    return salida
+
+
+def verificaciones_que_no_cumplen(informe: Any) -> str:
+    """La linea del §1 con `raices_que_no_cumplen`, para toda corrida."""
+    raices = raices_que_no_cumplen(informe)
+    if not raices:
+        return f"{ROTULO_NO_CUMPLEN}: *(ninguna)*."
+    return (f"{ROTULO_NO_CUMPLEN}: "
+            + "; ".join(f"{pid}: {', '.join(r)}" for pid, r in raices.items())
+            + ".")
+
+
+# --- VE-7, lote C (dictamen Fable, abierto (i-a)) --- LAS TRES PUERTAS por
+# las que un fundamento llega a la memoria, las mismas que
+# `tests/test_memoria_sustentada.py::test_todo_fundamento_declarado_lo_usa_
+# algun_paso` cuenta: el PASO que lo nombra, la ELECCION que viaja dentro de
+# un paso (`EleccionDeProyecto.fundamento_id`) y el BLOQUE FIJO de umbrales
+# que M11 imprime siempre (`constantes_normativas.UMBRALES_DE_VERIFICACION`).
+# Hasta VE-7 el indice solo contaba la primera y listaba como «no
+# ejercitados» fundamentos que la memoria si imprime.
+PUERTA_PASO = "paso"
+PUERTA_ELECCION = "eleccion"
+PUERTA_BLOQUE_FIJO = "bloque_fijo"
+
+
+def puertas_de_los_fundamentos(pasos: Tuple[PasoDeMemoria, ...]
+                               ) -> Dict[str, set]:
+    """{puerta: ids de fundamento que entran por ella} sobre `pasos`."""
+    return {
+        PUERTA_PASO: {p.fundamento_id for p in pasos},
+        PUERTA_ELECCION: {e.fundamento_id for p in pasos for e in p.elecciones
+                          if e.fundamento_id},
+        PUERTA_BLOQUE_FIJO: {u["fundamento"]
+                             for u in _cn.UMBRALES_DE_VERIFICACION},
+    }
+
+
+def _como_entra_sin_paso(fundamento_id: str,
+                         pasos: Tuple[PasoDeMemoria, ...]) -> str:
+    for p in pasos:
+        if any(e.fundamento_id == fundamento_id for e in p.elecciones):
+            return f"elección dentro del paso `{p.codigo}`"
+    codigos = [u["codigo"] for u in _cn.UMBRALES_DE_VERIFICACION
+               if u["fundamento"] == fundamento_id]
+    return "bloque fijo de umbrales, " + ", ".join(f"`{c}`" for c in codigos)
+
+
+def _fundamentos_sin_paso_propio(reg: Any, pasos: Tuple[PasoDeMemoria, ...],
+                                 emisores: Dict[str, Tuple[str, ...]]
+                                 ) -> List[str]:
+    puertas = puertas_de_los_fundamentos(pasos)
+    otras = puertas[PUERTA_ELECCION] | puertas[PUERTA_BLOQUE_FIJO]
+    menciones = menciones_del_fundamento()
+    L: List[str] = []
+    for f in sorted(reg.fundamentos, key=lambda x: x.id):
+        if f.id in puertas[PUERTA_PASO] or f.id not in otras:
+            continue
+        modulos = emisores.get(f.id) or menciones.get(f.id) or ()
+        modulo = ", ".join(f"`{m}`" for m in modulos) or "—"
+        L.append(f"| `{f.id}` | {_celda(f.fase)} | {_celda(f.que_paso)} | "
+                 f"{_como_entra_sin_paso(f.id, pasos)} | {modulo} |")
     return L
 
 
@@ -646,7 +777,8 @@ def _huecos(informes: Any) -> Tuple[List[Any], List[Any]]:
 def _fundamentos_no_ejercitados(reg: Any, pasos: Tuple[PasoDeMemoria, ...],
                                 emisores: Dict[str, Tuple[str, ...]]
                                 ) -> List[str]:
-    emitidos = {p.fundamento_id for p in pasos}
+    puertas = puertas_de_los_fundamentos(pasos)
+    emitidos = set().union(*puertas.values())
     menciones = menciones_del_fundamento()
     L: List[str] = []
     for f in sorted(reg.fundamentos, key=lambda x: x.id):
@@ -706,20 +838,33 @@ def indice_de_formulas(corridas: Any, sello: Sello) -> str:
     A("")
     A("## 1. Las corridas de referencia")
     A("")
-    A("Tres corridas con DATOS DE PRUEBA que ya estaban en el repositorio")
-    A("(`tests/fixtures/corridas_de_referencia/`, ver `CORRIDAS_DE_REFERENCIA`")
+    A("Cinco corridas con DATOS DE PRUEBA de")
+    A("`tests/fixtures/corridas_de_referencia/` (ver `CORRIDAS_DE_REFERENCIA`")
     A("en `src/indice_formulas.py`): la de la guía de perfil, que dimensiona")
     A("los cuatro puntos; la de punta a punta de T-7b/T-7c, que lleva a A-01")
-    A("hasta la Fase 9; y la de la validación integral de T-11 con el caudal")
-    A("calculado, que lleva la Fase 1-bis al índice. Ningún valor de entrada")
-    A("es del proyecto.")
+    A("hasta la Fase 9; la de la validación integral de T-11 con el caudal")
+    A("calculado, que lleva la Fase 1-bis al índice; y la de VE-7, escrita")
+    A("para recorrer las ramas que las otras tres no alcanzan (el TMC y el")
+    A("HDPE hasta la Fase 8, el cabezal ciclópeo, el filtro, la socavación y")
+    A("el racional modificado); y la de los regímenes alternos de los")
+    A("criterios de toda la corrida (remanso por perfil, desborde, selva")
+    A("alta) con tres puntos dedicados. Ningún valor de entrada es del")
+    A("proyecto, y las dos de VE-7 no son un diseño válido.")
     A("")
     for corrida, informe in corridas:
         L.extend(_resumen_de_la_corrida(corrida, informe))
+    puertas = puertas_de_los_fundamentos(pasos)
+    declarados = {f.id for f in reg.fundamentos}
+    con_paso = puertas[PUERTA_PASO] & declarados
+    por_eleccion = (puertas[PUERTA_ELECCION] & declarados) - con_paso
+    por_bloque = ((puertas[PUERTA_BLOQUE_FIJO] & declarados) - con_paso
+                  - por_eleccion)
+    sin_puerta = declarados - con_paso - por_eleccion - por_bloque
     A(f"Pasos emitidos: **{len(pasos)}** · fórmulas distintas: "
-      f"**{len(filas)}** · fundamentos ejercitados: "
-      f"**{len({p.fundamento_id for p in pasos})}** de "
-      f"{len(reg.fundamentos)}.")
+      f"**{len(filas)}** · de {len(reg.fundamentos)} fundamentos: con paso "
+      f"**{len(con_paso)}**, por elección **{len(por_eleccion)}**, por el "
+      f"bloque fijo de umbrales **{len(por_bloque)}**, sin ninguna puerta "
+      f"**{len(sin_puerta)}**.")
     A("")
 
     A("## 2. Índice")
@@ -775,10 +920,22 @@ def indice_de_formulas(corridas: Any, sello: Sello) -> str:
 
     A("## 4. Fundamentos que la corrida de referencia no ejercita")
     A("")
-    A("Declarados en `normativa/fundamentos.py` y sin paso en las corridas")
-    A("de referencia, porque sus datos no recorren esa rama (§1). Sus")
-    A("fórmulas no están en el §2 y este cuadro es lo que impide leer el")
-    A("índice como cobertura.")
+    A("### 4.1 Fundamentos que la memoria imprime sin paso propio")
+    A("")
+    A("Llegan a la memoria por otra puerta: como elección dentro de un paso")
+    A("(`EleccionDeProyecto`) o por el bloque fijo de umbrales que M11")
+    A("imprime siempre. No tienen fórmula en el §2.")
+    A("")
+    A("| Fundamento | Fase | Qué | Puerta | Módulo |")
+    A("|---|---|---|---|---|")
+    L.extend(_fundamentos_sin_paso_propio(reg, pasos, emisores))
+    A("")
+    A("### 4.2 Fundamentos sin ninguna puerta en las corridas")
+    A("")
+    A("Declarados en `normativa/fundamentos.py` y sin paso, elección ni")
+    A("bloque fijo en las corridas de referencia, porque sus datos no")
+    A("recorren esa rama (§1). Sus fórmulas no están en el §2 y este cuadro")
+    A("es lo que impide leer el índice como cobertura.")
     A("")
     A("| Fundamento | Fase | Paso | Módulo emisor |")
     A("|---|---|---|---|")
