@@ -6301,6 +6301,8 @@ fichas en su sitio y añadió T7C-11 a T7C-13.
   variable con el talud) y sus solicitaciones de zapata.
 - **Cerrado en VE-6, a medias:** el fuste del alero se arma por secciones (arranque y
   mitad, ficha VE6M9-03); la zapata del alero sigue sin armar ni verificar.
+- **Cerrado en VE-7:** el alero se verifica como muro (E1–E3 de su franja del
+  arranque), su zapata se dimensiona por estabilidad y se arma (ficha VE7-01).
 - **Y lo que el armado tampoco cubre (cierre, H6):** el **vano del conducto** —la
   pantalla de 1.70 m de A-01 es hueco en el ancho del barril, y la sección llena de la
   hipótesis de T-7b son los machones a cada lado—: el refuerzo de borde alrededor de la
@@ -8797,10 +8799,9 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
 - **Revisado por Fable (dictamen del consultor, 2026-11-20):** aprobado con cambios, aplicados: el ancho de la sección de la mitad es la
   altura de su franja; el armado avisa «alero armado, no verificado como muro (E1–E3 de
   11.6), ficha T7C-04».
-- **Abierto:** la zapata del alero y su estabilidad (T7C-04): siguen sin ensamble; con
-  esviaje alto el alero largo (H-13, 13 m) queda armado, no verificado como muro.
-- **Qué haría falta:** el ensamble de estabilidad del alero por franjas (E1–E3 de 11.6) y
-  el armado de su zapata.
+- **Abierto:** la zapata del alero y su estabilidad (T7C-04): CERRADO en VE-7 (ficha
+  VE7-01), con la franja del arranque; las intermedias no se verifican.
+- **Qué haría falta:** lo que dice VE7-01.
 - **Dónde vive:** `src/modulos/M9_cabezal.py::entorno_de_la_seccion_del_alero`
 
 ## VE6M9-04 · La orientación del muro y la distancia al borde de calzada, por punto (VE-6, ítem 28; T7B-11)
@@ -8822,6 +8823,35 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   `fundir_sobrecarga_del_punto`: sólo allí se conoce la orientación vigente.
 - **Qué haría falta:** nada; un muro oblicuo con tabla propia necesitaría una fuente.
 - **Dónde vive:** `src/modulos/M9_cabezal.py::validar_sobrecarga_del_punto`
+
+## VE7-01 · El alero se verifica como muro en voladizo: E1–E3 de su franja del arranque, su zapata dimensionada por estabilidad y armada (VE-7; cierre de T7C-04)
+
+- **Cerrado:** `M9.estabilidad_del_alero` verifica la franja del arranque de los aleros
+  (la geometría de VE6M9-03: fuste del alero, zapata toda talón) con el ensamble del
+  cabezal (`ensamble_estabilidad`, `muro` = alero): las mismas seis filas E1–E3 de AASHTO
+  11.6, combinaciones, criterios y citas, estática y sísmica (11.6.5, régimen vigente),
+  con códigos `.alero`. Si no cumple, `M9.dimensionar_zapata_del_alero` hace crecer el
+  talón con el paso y el tope de `dimensionamiento_zapata_cabezal` [A], desde el ancho
+  de la zapata del cabezal; al tope, NO FACTIBLE con estos criterios. El talón se arma
+  como el de la zapata del cabezal (`ELEMENTO_ZAPATA_ALEROS`, `talon_alero`). El aviso
+  «no verificado como muro» sale sólo si una condición se bloqueó. Memoria, JSON
+  (`estabilidad_aleros`) y metrado (concreto, excavación y acero de esa zapata) lo
+  reflejan. Dorados a mano: `tests/test_ve7_alero_estabilidad.py`.
+- **Decisiones de la sesión** (Fable no consultado; lectura de la fuente, lado seguro):
+  (1) rige la franja del arranque, la de mayor altura retenida con el mismo fuste y la
+  misma zapata; las de los dos aleros son la misma; (2) la zapata del alero parte de la
+  del cabezal (se desplanta con él, T-7a) y sólo crece; (3) un `ancho_zapata_m`
+  declarado se hereda y no se itera; (4) E4/E5 del alero quedan diferidas como las del
+  cabezal, sin repetir su paso; (5) el peralte es el del cabezal y no se itera (su A8 lo
+  cubre); (6) sin el criterio del paso no se dimensiona: el vacío ya bloquea el cabezal.
+- **Abierto:** (a) las franjas intermedias no se verifican: con el relleno que sube
+  detrás de ellas su empuje puede crecer, y no se demostró que la del arranque rija
+  siempre; (b) con factores de forma declarados, la L de la Tabla 10.6.3.1.2a-3 sigue
+  siendo la del cabezal; (c) los aleros del cabezal de gravedad no se verifican como
+  muro; (d) la zapata del alero no tiene ancho declarable propio.
+- **Qué haría falta:** el dictamen de Fable sobre (a) y (b); para (c), el ensamble del
+  muro de gravedad sobre su franja; para (d), una clave propia en `cabezal_declarado`.
+- **Dónde vive:** `src/modulos/M9_cabezal.py::estabilidad_del_alero`
 
 ## VE5-CAT-01 · La rama de selva alta del TMC: [S] `region_natural` y la recomendación como piso del catálogo (cierre de T4-06)
 

@@ -3130,10 +3130,18 @@ def test_el_freatico_se_mide_bajo_el_terreno_del_cruce_y_moja_la_salida(
                                                               abs=TOL_MM)
     # Sin el peso saturado, las dos condiciones de la salida se detienen en
     # el criterio de ensayo; la entrada, seca, se evalua en las dos.
+    # --- VE-7 --- los aleros de la salida, verificados como muro, se
+    # detienen en el mismo criterio (dos etapas mas, las suyas).
     salida_bloqueada = [b for b in a01.bloqueos
-                        if "estabilidad E1-E3" in b.etapa
+                        if "estabilidad E1-E3 del cabezal" in b.etapa
                         and "salida" in b.etapa]
     assert len(salida_bloqueada) == 2
+    aleros_salida = [b for b in a01.bloqueos
+                     if b.etapa.startswith("estabilidad E1-E3 de los aleros")
+                     and "salida" in b.etapa]
+    assert len(aleros_salida) == 2
+    assert {b.criterio for b in aleros_salida} == {
+        "peso_especifico_saturado_relleno_kn_m3"}
     assert {b.criterio for b in salida_bloqueada} == {
         "peso_especifico_saturado_relleno_kn_m3"}
     assert [e.condicion for e in a01.cabezal.estabilidad
@@ -3359,7 +3367,10 @@ def test_sin_el_freatico_la_estabilidad_bloquea_el_cabezal_y_no_la_corrida(
     assert a01.dimensionado and a01.cabezal is not None
     assert a01.cabezal.estabilidad == ()
     bloqueos = [b for b in a01.bloqueos if "estabilidad E1-E3" in b.etapa]
-    assert len(bloqueos) == 4
+    # --- VE-7 --- cuatro del cabezal y cuatro de sus aleros como muro
+    assert len(bloqueos) == 8
+    assert sum("de los aleros" in b.etapa for b in bloqueos) == 4
+    assert a01.cabezal.estabilidad_aleros == ()
     assert all(b.tipo is TipoDeBloqueo.DATO_FALTANTE for b in bloqueos)
     assert all("NF_profundidad_m" in b.mensaje for b in bloqueos)
 

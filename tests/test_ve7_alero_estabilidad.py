@@ -195,6 +195,55 @@ def test_sin_aleros_o_de_gravedad_no_hay_muro_que_verificar(tanteo):
     assert not M9.alero_verificable_como_muro(gravedad)
 
 
+def test_la_franja_del_arranque_es_la_seccion_de_VE6_sin_el_FS_del_cabezal(
+        tanteo):
+    """La franja es `entorno_de_la_seccion_del_alero` en f = 0, sin el FS
+    declarado de E4 y E5, que es del cabezal y no del alero."""
+    entorno = replace(_con_aleros(tanteo),
+                      estabilidad_global={"E4": {"FS": 1.6}})
+    franja = M9.franja_del_arranque_del_alero(entorno)
+    seccion = M9.entorno_de_la_seccion_del_alero(entorno, 0.0)
+    assert franja.geometria == seccion.geometria
+    assert franja.cota_relleno == pytest.approx(seccion.cota_relleno,
+                                                abs=TOL)
+    assert franja.estabilidad_global is None
+    assert franja.geometria.H == pytest.approx(H_FUSTE, abs=TOL)
+    assert franja.geometria.ancho_punta == pytest.approx(0.0, abs=TOL)
+
+
+def test_integrar_la_estabilidad_de_los_aleros_al_cabezal(tanteo):
+    """
+    Las filas del alero se suman a las del cabezal, el paso del dimensionado
+    va primero, la zapata de los aleros cambia en su geometria con su
+    origen, y una sola condicion evaluada se avisa.
+    """
+    from src.modelos import CabezalDelPunto, ORIGEN_DIMENSION_ESTABILIDAD
+    from src.modelos import ORIGEN_DIMENSION_ESTABILIDAD_INCOMPLETA
+    entorno = _con_aleros(tanteo)
+    g = entorno.geometria
+    salida = replace(g, extremo="salida")
+    cabezal = CabezalDelPunto(id_punto="T-00", embocadura=None, entrada=g,
+                              salida=salida, verificaciones=())
+    d = M9.dimensionar_zapata_del_alero(entorno)
+    est = M9.estabilidad_del_alero(
+        _con_aleros(tanteo, replace(ALEROS, ancho_zapata=d.ancho)), EST)
+    c = M9.integrar_estabilidad_de_aleros(cabezal, [est], [d])
+    assert c.estabilidad_aleros == (est,)
+    assert {v.codigo for v in est.verificaciones} <= {
+        v.codigo for v in c.verificaciones}
+    assert c.pasos[0] is d.paso
+    assert c.entrada.aleros.ancho_zapata == pytest.approx(d.ancho, abs=TOL)
+    assert c.salida.aleros.ancho_zapata == pytest.approx(1.20, abs=TOL)
+    dim = next(x for x in c.entrada.dimensiones
+               if x.nombre == M9.DIMENSION_ZAPATA_ALEROS)
+    # solo la estatica se evaluo: el origen lo dice, y un aviso tambien
+    assert dim.origen == ORIGEN_DIMENSION_ESTABILIDAD_INCOMPLETA
+    assert dim.origen != ORIGEN_DIMENSION_ESTABILIDAD
+    assert any("SOLO en la condicion estatico" in a and "Aleros" in a
+               for a in c.avisos)
+    assert c.intentos_de_zapata_aleros == d.intentos
+
+
 # ---------------------------------------------------------------------------
 # 2. La zapata del alero, dimensionada por estabilidad
 # ---------------------------------------------------------------------------
@@ -222,7 +271,8 @@ def test_dorado_a_mano_del_ancho_con_la_condicion_estatica(tanteo,
     d = M9.dimensionar_zapata_del_alero(_con_aleros(tanteo))
     assert d.ancho == pytest.approx(1.40, abs=TOL)
     assert d.cumple and not d.al_tope
-    assert [round(i.B, 3) for i in d.intentos] == [1.20, 1.30, 1.40]
+    assert [i.B for i in d.intentos] == pytest.approx([1.20, 1.30, 1.40],
+                                                      abs=TOL)
     assert [i.cumple for i in d.intentos] == [False, False, True]
     assert d.paso.codigo == "9.3.d.e.alero"
     assert "alero" in d.paso.que
@@ -235,8 +285,8 @@ def test_con_las_dos_condiciones_el_ancho_es_el_primero_que_cumple(tanteo):
     assert d.cumple
     B = d.ancho
     paso_m = ca.valor("dimensionamiento_zapata_cabezal")["paso_m"]
-    assert (B - 1.20) / paso_m == pytest.approx(round((B - 1.20) / paso_m),
-                                                abs=1e-6)
+    k = (B - ALEROS.ancho_zapata) / paso_m
+    assert k == pytest.approx(round(k), abs=TOL)
     con = _con_aleros(tanteo, replace(ALEROS, ancho_zapata=B))
     sin = _con_aleros(tanteo, replace(ALEROS, ancho_zapata=B - paso_m))
     assert all(M9.estabilidad_del_alero(con, c).cumple for c in (EST, SIS))
@@ -260,9 +310,9 @@ def test_al_tope_la_zapata_del_alero_es_no_factible(tanteo):
     entorno = replace(entorno, suelo=dict(entorno.suelo, phi_grados=20.0))
     d = M9.dimensionar_zapata_del_alero(entorno)
     assert not d.cumple and d.al_tope
-    assert d.ancho == pytest.approx(1.0 * H_C, abs=1e-9)
-    assert [round(i.B, 2) for i in d.intentos] == [
-        1.20, 1.40, 1.60, 1.80, 2.00, 2.20, 2.40]
+    assert d.ancho == pytest.approx(1.0 * H_C, abs=TOL)
+    assert [i.B for i in d.intentos] == pytest.approx(
+        [1.20, 1.40, 1.60, 1.80, 2.00, 2.20, 2.40], abs=TOL)
     assert len(d.avisos) == 1
     aviso = d.avisos[0]
     assert "NO FACTIBLE con estos criterios" in aviso and "alero" in aviso
