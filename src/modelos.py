@@ -7353,8 +7353,9 @@ MOTIVO_METODO_NO_EVALUABLE_CABEZAL = (
     "método no evaluable (AASHTO LRFD 11.6, estabilidad del cabezal)")
 
 # Las opciones del criterio 'remanso_derecho_via' (V5), que desde T-7b elige
-# el METODO. «embalse_a_nivel» es la unica implementada; el perfil de remanso
-# paso a paso queda nombrado y diferido (ficha T7B-01).
+# el METODO. Las tres estan implementadas: «embalse_a_nivel» (T-7b),
+# «cota_de_afectacion» (cierre de T-7b) y el perfil de remanso paso a paso
+# (VE-4c, ficha T7B-01).
 METODO_REMANSO_EMBALSE_A_NIVEL = "embalse_a_nivel"
 # --- correcciones de T-7b (H2) --- el criterio de COTA que el HDS-5 num.
 # 2.2.5 si sostiene: la cota del embalse de diseño contra la cota de

@@ -2461,10 +2461,15 @@ def v5_remanso(*, punto: PuntoCritico,
                                    (lo fija la resolucion que aprueba el
                                    derecho de via del tramo) y no tiene valor
                                    por defecto;
-      * metodo «perfil de remanso paso a paso» -> `MetodoNoEvaluableError`:
-                                   esta nombrado y no implementado.
+      * metodo «perfil de remanso paso a paso» -> hasta VE-4c
+                                   `MetodoNoEvaluableError` por no estar
+                                   implementado (CADUCO: desde VE-4c lo
+                                   esta, `_v5_perfil_de_remanso`).
 
-    DOS METODOS IMPLEMENTADOS (correcciones de T-7b, H2):
+    TRES METODOS IMPLEMENTADOS: los dos de abajo (correcciones de T-7b, H2) y,
+    desde VE-4c, «perfil_de_remanso_paso_a_paso» (`_v5_perfil_de_remanso`):
+    hasta donde la obra eleva la lamina del cauce de aproximacion sobre su
+    tirante natural, con la seccion del cauce como dato externo.
 
       * «cota_de_afectacion» (`_v5_cota_de_afectacion`), el que la FUENTE
         sostiene: la cota del embalse de diseño (solera de entrada + HW de
