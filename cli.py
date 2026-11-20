@@ -1103,6 +1103,27 @@ def _lineas_durabilidad(informe: InformePunto) -> List[str]:
     return out
 
 
+def _licuefaccion_json(v: Optional[Verificacion]) -> Optional[Dict[str, Any]]:
+    """
+    --- VE-7, lote C (C4; VE5-CAT-03; decision del consultor Fable, triaje
+    VE-7, 2026-11-20) --- La Fase 0-bis del punto (`InformePunto.licuefaccion`):
+    el estado de su `Verificacion` --- el resultado del EMS contrastado, o por
+    que AASHTO 10.5.4.2 no la exige --- y sus avisos. None si la fase no
+    corrio (perfil, punto sin clasificar) o si su etapa se bloqueo: el
+    bloqueo, entonces, esta en la lista del punto. La memoria imprime los
+    mismos textos en su seccion de la Fase 0-bis.
+    """
+    if v is None:
+        return None
+    return {"codigo": v.codigo, "numeral": v.numeral,
+            "estado": v.estado.value, "cumple": v.cumple,
+            "valor_obtenido": _num(v.valor_obtenido),
+            "valor_admisible": _num(v.valor_admisible),
+            "criterio_aplicado": v.criterio_aplicado,
+            "motivo_no_aplica": v.motivo_no_aplica or None,
+            "avisos": list(v.avisos)}
+
+
 def _punto_json(informe: InformePunto) -> Dict[str, Any]:
     punto = informe.punto
     salida: Dict[str, Any] = {
@@ -1137,6 +1158,8 @@ def _punto_json(informe: InformePunto) -> Dict[str, Any]:
         # cuando el calculo se detuvo (el bloqueo dice por que).
         "caudal": (None if informe.caudal is None
                    else _caudal_json(informe.caudal)),
+        # --- VE-7 (C4) --- la Fase 0-bis, con clave propia.
+        "licuefaccion": _licuefaccion_json(informe.licuefaccion),
         "durabilidad": _durabilidad_json(informe.durabilidad),
         "diseno": (None if not informe.dimensionado
                    else _diseno_json(informe.resultado)),

@@ -9242,3 +9242,23 @@ estas fichas dicen cómo se hizo y lo que quedó. Los documentos generados (mani
   equiparar 1200 mm con Ф 48”) no se tocan aquí.
 - **Qué haría falta:** regenerar los manifiestos en la integración.
 - **Dónde vive:** `src/normativa/citas.py::MC_HHD_4_1_1_3_7a`
+
+## VE7C-04 · La Fase 0-bis con sección propia en la memoria y clave `licuefaccion` en el JSON (C4; VE5-CAT-03)
+
+- **Cerrado (decisión del consultor Fable, triaje VE-7, 2026-11-20):** el JSON del punto lleva
+  `licuefaccion` (`cli._licuefaccion_json`, a partir de `InformePunto.licuefaccion`): código,
+  numeral, estado, `cumple`, resultado del EMS, lo exigido, criterio, motivo de «no aplica» y
+  avisos; `null` si la fase no corrió (perfil, punto sin clasificar) o su etapa se bloqueó. La
+  memoria del punto lleva la sección «Fase 0-bis» detrás de la clasificación
+  (`M11._bloque_licuefaccion`) con esos mismos textos y el paso `F0.LICUEFACCION`; bloqueada a
+  expediente, lo dice y remite a la tabla de bloqueos; a perfil no hay sección (la constancia
+  del diferimiento ya está en esa tabla). `traza_licuefaccion` entra a `pasos_del_punto` y a
+  `pasos_impresos` (y al recorrido gemelo de `test_memoria_sustentada`). Las guardias de T-10
+  se cumplen: todo texto del JSON está en el bloque del punto. Test:
+  `tests/test_ve7_lote_c_licuefaccion.py`.
+- **Abierto:** el volcado de texto de la CLI no tiene línea propia de la Fase 0-bis (sus avisos
+  sí salen); el comparador de corridas (`src/comparador.py`) no compara la clave nueva; la
+  línea base y los documentos generados cambian de forma al regenerarse (clave nueva).
+- **Qué haría falta:** la línea de la CLI y el campo del comparador, si se piden; regenerar la
+  línea base en la integración.
+- **Dónde vive:** `src/modulos/M11_reporte.py::_bloque_licuefaccion`
