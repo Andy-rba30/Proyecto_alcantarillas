@@ -2722,7 +2722,11 @@ CARGA_VIVA_ENTERRADA = _fundamento(
         "camion y del tandem de diseño. El incremento por carga dinamica de "
         "lo enterrado decrece con la profundidad y se anula a 8 pies. Con "
         "mas de 8 pies de relleno que ademas superan la luz, la carga viva "
-        "se puede despreciar."),
+        "se puede despreciar. Con menos de 2 pies el rectangulo no vale para "
+        "el tubo de concreto ni para el cajon: el eje se reparte en una "
+        "franja equivalente cuyo ancho crece con la luz, el cajon a la "
+        "profundidad que tiene y el tubo de concreto a la de 1 pie; con "
+        "menos de 1 pie un tubo redondo exige metodos mas completos."),
     verbo=Verbo.OBLIGA,
     citas=("AASHTO_LRFD_9.3.6.1.2.6a#RELLENO",      # EXIGENCIA
            "AASHTO_LRFD_9.3.6.1.2.6a#EJES",
@@ -2730,6 +2734,14 @@ CARGA_VIVA_ENTERRADA = _fundamento(
            "AASHTO_LRFD_9.3.6.1.2.6a#DESPRECIABLE",
            "AASHTO_LRFD_9.3.6.1.2.6a#VARIOS_VANOS",
            "AASHTO_LRFD_9.3.6.1.2.6a#CONCRETO_SOMERO",
+           # VE-4f: el relleno somero (franja de 4.6.2.10).
+           "AASHTO_LRFD_9.3.6.1.2.6a#UN_PIE",
+           "AASHTO_LRFD_9.3.6.1.2.6a#MENOS_DE_UN_PIE",
+           "AASHTO_LRFD_9.4.6.2.10.1",
+           "AASHTO_LRFD_9.4.6.2.10.2#UN_CARRIL",
+           "AASHTO_LRFD_9.4.6.2.10.2#FRANJA",
+           "AASHTO_LRFD_9.C4.6.2.10.2#E_SPAN",
+           "AASHTO_LRFD_9.12.11.2.1#SOMERO",
            "AASHTO_LRFD_9.T3.6.1.2.6a-1",
            "AASHTO_LRFD_9.3.6.1.2.6b#PL",
            "AASHTO_LRFD_9.C3.6.1.2.6b",
@@ -2744,6 +2756,29 @@ CARGA_VIVA_ENTERRADA = _fundamento(
         "que pasaba hasta T-5: el rotulo HL-93 aparecia en la memoria y la "
         "carga viva nunca entraba al tubo (INF-3.3.5). Con un metro de "
         "relleno la rueda distribuida es del orden del propio relleno."),
+)
+
+COBERTURA_CONDUCTO = _fundamento(
+    id="F8.COBERTURA",
+    fase=F8,
+    que_paso=("Cobertura minima del conducto redondo cuando el relleno queda "
+              "por debajo del dominio de la rueda distribuida"),
+    por_que=(
+        "Por debajo de 2 pies de relleno en el tubo de concreto, o de 1 pie "
+        "en el flexible, la carga viva ya no se reparte como a mayor "
+        "profundidad y la norma de diseño pide antes otra cosa: que el "
+        "conducto tenga la cobertura minima de su tabla, por material y por "
+        "condicion de pavimento. Un tubo que no la alcanza no se verifica "
+        "con otra carga: incumple. Solo con la cobertura cumplida tiene "
+        "sentido repartir la rueda en la franja del relleno somero."),
+    verbo=Verbo.OBLIGA,
+    citas=("AASHTO_LRFD_9.12.6.6.3#COBERTURA",          # EXIGENCIA
+           "AASHTO_LRFD_9.T12.6.6.3-1",
+           "AASHTO_LRFD_9.3.6.1.2.6a#MENOS_DE_UN_PIE"),
+    que_pasa_si_no_se_hace=(
+        "El tubo sin la cobertura minima salia «metodo no evaluable» y, a "
+        "nivel de perfil, se adoptaba con la Fase 8 diferida: el "
+        "incumplimiento solo aparecia despues, en G1 de la Fase 7."),
 )
 
 CARGA_TIERRA = _fundamento(

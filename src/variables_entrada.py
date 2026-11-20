@@ -1845,6 +1845,8 @@ _META_CRITERIOS: Dict[str, _Meta] = {
     "parametros_diseno_hdpe": _Meta(unidad="-, -, -, -, fraccion de D, años"),
     # --- T-5 (cierre) --- Los dos que salieron de las auditorias.
     "carga_viva_bajo_relleno_alto": _Meta(unidad="-"),
+    # --- VE-4f --- El largo del area cargada sobre el tubo de concreto somero.
+    "carga_viva_tubo_concreto_somero": _Meta(unidad="-"),
     "perfil_hdpe_fabricante": _Meta(unidad="mm2/mm, mm4/mm, m (por diametro en mm)"),
     # --- T-3 --- la tolerancia de VC2 (M7, Familia C).
     "desajuste_empalme_canal_m": _Meta(unidad="m"),
