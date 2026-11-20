@@ -321,7 +321,13 @@ Desde VE-7 (lote A) hay dos claves más en `CLAVES_DE_CABEZAL`, las dos **sólo 
 `embocadura_cajon_del_punto` (`{"carta": …, "ke": …}`, una fila de cajón de la Tabla A.1 y una
 de la C.2 del HDS-5, validadas por `M9.validar_embocadura_cajon_del_punto`), que en un marco pisa
 `embocadura_cajon` y `ke_entrada_cajon` mientras corre ese punto (la coherencia con el cabezal
-se comprueba igual; ficha VE7A-02), y `empuje_sismico_declarado` (ficha VE7A-05). Y una
+se comprueba igual; ficha VE7A-02), y `empuje_sismico_declarado` (ficha VE7A-05): por cabezal,
+un objeto o una lista de hasta dos (de `k_h` distinto) con `P_AE_kn_m` — la componente
+**horizontal** del empuje **total** del suelo (estático + sísmico, con la hidrodinámica si
+aplica) sobre el plano vertical del talón de altura h (AASHTO 11.6.5.2.2), **sin** la
+hidrostática, que el programa suma —, `altura_aplicacion_m` (de su resultante), `incluye_hidrodinamica`,
+`k_h`, `k_v` y `altura_plano_m` del análisis, y la traza; sólo se usa donde el programa no
+calcula el empuje y si casan k_h, k_v y el plano (h ≤ `altura_plano_m`). Y una
 tercera, por punto **o en `globales`**, con un valor para los dos cabezales o
 `{"entrada": …, "salida": …}`: `talud_delante_del_cabezal_del_punto` (la geometría
 `{'H_s_m', 'beta_grados', 'b_m'}` del [S] `talud_delante_del_cabezal`, validada con su mismo
