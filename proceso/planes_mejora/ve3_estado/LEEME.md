@@ -12,8 +12,11 @@ cada vez que se integra algo. Fecha de esta versión: 2026-11-20.
 >   principal de C7; dictamen Fable APROBADO CON CAMBIOS, aplicados. Los 158 tests `-m pdf`
 >   pasan con el PDF. Línea base, validación hidrológica/externa/conducto/cabezal y bloques de
 >   la guía regenerados: sin cambios.
-> - **En curso:** regeneración de `validacion_integral` y `sensibilidad`; suite base (sin
->   NORMAS_DIR) con 9 fallos vistos al 63 %, por diagnosticar. Conocido: 6 de
+> - **Avance (~20:45 UTC):** `validacion_integral` regenerada y subida (`4c90c3e`; el juego
+>   declara lo de VE-5/VE-7). Prompt genérico para retomar en `PROMPT_RETOMAR.md`.
+> - **En curso:** regeneración de `sensibilidad` (~1 h de CPU, la frena la suite); suite base
+>   (sin NORMAS_DIR) al 97 % con ~15 fallos vistos, esperando `test_t11_sensibilidad` (su
+>   fixture recalcula el barrido completo). Los fallos van a Fable para que dé la corrección. Conocido: 6 de
 >   `test_manifiesto_citas` caen hasta regenerar el manifiesto (630 citas, decía 629).
 > - **Falta:** corregir la suite (dudas a Fable), suite completa con NORMAS_DIR en worktree
 >   limpio, sellos (índice y manifiesto), bitácora, este LEEME, fast-forward de
