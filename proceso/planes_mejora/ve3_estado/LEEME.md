@@ -383,6 +383,30 @@ decisiones 9–14 siguen pendientes del dueño (con la recomendación corregida 
    la edición 2013 o posterior).
 5. Integrar en `main` con autorización del dueño.
 
+## Apuntado para después de VE-4 (dueño, 2026-11-20): límites de cobertura de la app
+
+Lo que la app hoy no evalúa y se detiene diciéndolo (sin inventar un número). Prioridad según
+si las obras reales caen en esos casos:
+
+1. **Cabezal de muro que no cede** (`regimen_cabezal` = `no_cedente`): las presiones de muro
+   rígido de AASHTO 11.6.5.4 no están implementadas (MetodoNoEvaluable del cabezal).
+2. **Cabezal paralelo a la vía en un marco** (Carta 11 del HDS-5, ficha T7A-03, INF-4.3):
+   fuera del alcance declarado.
+3. **Carga viva con relleno < 2.0 ft** sobre tubo de concreto o marco (≤ 1.0 ft en flexibles):
+   fuera del dominio de AASHTO LRFD 3.6.1.2.6a (MetodoNoEvaluable estructural, M8).
+4. **Socavación con HEC-14** en varios barriles o en conductos de más de 1.524 m de alto
+   (nota 8 de la Tabla 1.1): MetodoNoEvaluable de HEC-14 (M6; rige el d50 de Laushey).
+5. **Datos de producto del fabricante**: perfil del HDPE (`perfil_hdpe_fabricante`), costura
+   empernada del TMC y la Clase IV de concreto por encima de 300 mm (ilegible en el ejemplar
+   de AASHTO M 170M): DatoFaltante que detiene el escalón.
+
+**HY-8:** el dueño recuerda haber comparado la app con HY-8, pero el repositorio no guarda
+esos resultados: `docs/validacion_hy8.md` (generado, último cambio en VE-3.10) sólo trae el
+procedimiento, las entradas y las salidas del programa, y la fila INF-3.2.2 del tracker
+sigue «Cerrado parcial». Para cerrarla: copiar al repo la tabla HY-8 contra la app (HW de
+entrada y de salida, control, velocidad de salida, por punto) con la versión de la app con
+que se corrió; si fue antes de VE-3.15, revisar C-01, cuyos números movieron T8-08 y T8-09.
+
 ## Entorno
 
 Entorno de nube «Proyecto_alcantarillas» (personal, red abierta). Python 3.12 de `uv` con Tk
