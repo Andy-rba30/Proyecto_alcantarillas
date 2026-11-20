@@ -14597,13 +14597,13 @@ def armar_elemento(entorno: EntornoDelCabezal, elemento: str,
         # se puede evaluar ninguna, se detiene con el primer motivo.
         if g.aleros is None:
             return ()
-        primero = None
+        fallida = None
         for fraccion in fracciones_del_alero(entorno)[0]:
             franja = franja_del_alero(entorno, fraccion)
             try:
                 sol_f = solicitaciones_de_resistencia(franja)
-            except ErrorProyecto as exc:
-                primero = primero or exc
+            except ErrorProyecto:
+                fallida = fraccion if fallida is None else fallida
                 continue
             vuelo = sol_f["datos"]["talon"]
             if not (vuelo > TOL_UMBRAL_NORMATIVO
@@ -14621,8 +14621,10 @@ def armar_elemento(entorno: EntornoDelCabezal, elemento: str,
                 contraste_e060=sol_f["e060"].get(SECCION_TALON),
                 momento_servicio=sol_f.get("servicio", {}).get(SECCION_TALON),
                 **comun))
-        if not piezas and primero is not None:
-            raise primero
+        if not piezas and fallida is not None:
+            # ninguna franja evaluable: la primera que fallo se detiene
+            # otra vez, con su propio motivo
+            solicitaciones_de_resistencia(franja_del_alero(entorno, fallida))
     else:
         if g.aleros is None:
             return ()

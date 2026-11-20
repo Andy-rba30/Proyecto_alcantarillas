@@ -547,6 +547,17 @@ def _con_talud(tanteo, aleros=ALEROS, talud=2.0):
     return replace(_con_aleros(tanteo, aleros), talud=talud)
 
 
+def test_el_entorno_con_otra_zapata_de_alero_solo_cambia_el_alero(tanteo):
+    entorno = _con_aleros(tanteo)
+    otro = M9.entorno_con_zapata_de_alero(entorno, ancho_zapata=1.7,
+                                          espesor_zapata=0.5)
+    assert otro.geometria.aleros.ancho_zapata == pytest.approx(1.7, abs=TOL)
+    assert otro.geometria.aleros.espesor_zapata == pytest.approx(0.5,
+                                                                 abs=TOL)
+    assert otro.geometria.B == entorno.geometria.B
+    assert otro.cota_relleno == entorno.cota_relleno
+
+
 def test_el_sufijo_y_las_fracciones_de_las_franjas(tanteo):
     assert [M9.sufijo_de_la_franja(f)
             for f in M9.FRACCIONES_DE_ESTABILIDAD_DEL_ALERO] == [

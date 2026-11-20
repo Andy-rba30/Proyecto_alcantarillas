@@ -3139,7 +3139,9 @@ def test_el_freatico_se_mide_bajo_el_terreno_del_cruce_y_moja_la_salida(
     aleros_salida = [b for b in a01.bloqueos
                      if b.etapa.startswith("estabilidad E1-E3 de los aleros")
                      and "salida" in b.etapa]
-    assert len(aleros_salida) == 2
+    # una por franja del alero (dictamen Fable sobre VE7-01) y condicion
+    assert len(aleros_salida) == 2 * len(
+        M9.FRACCIONES_DE_ESTABILIDAD_DEL_ALERO)
     assert {b.criterio for b in aleros_salida} == {
         "peso_especifico_saturado_relleno_kn_m3"}
     assert {b.criterio for b in salida_bloqueada} == {
@@ -3367,9 +3369,11 @@ def test_sin_el_freatico_la_estabilidad_bloquea_el_cabezal_y_no_la_corrida(
     assert a01.dimensionado and a01.cabezal is not None
     assert a01.cabezal.estabilidad == ()
     bloqueos = [b for b in a01.bloqueos if "estabilidad E1-E3" in b.etapa]
-    # --- VE-7 --- cuatro del cabezal y cuatro de sus aleros como muro
-    assert len(bloqueos) == 8
-    assert sum("de los aleros" in b.etapa for b in bloqueos) == 4
+    # --- VE-7 --- cuatro del cabezal y las de sus aleros como muro: dos
+    # extremos x franjas x dos condiciones
+    franjas = len(M9.FRACCIONES_DE_ESTABILIDAD_DEL_ALERO)
+    assert len(bloqueos) == 4 + 4 * franjas
+    assert sum("de los aleros" in b.etapa for b in bloqueos) == 4 * franjas
     assert a01.cabezal.estabilidad_aleros == ()
     assert all(b.tipo is TipoDeBloqueo.DATO_FALTANTE for b in bloqueos)
     assert all("NF_profundidad_m" in b.mensaje for b in bloqueos)

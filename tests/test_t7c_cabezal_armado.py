@@ -2102,7 +2102,9 @@ def test_A01_sale_de_la_Fase_9_con_sus_dos_cabezales_armados(tmp_path):
         assert {s.clave for s in a.secciones} == {
             SECCION_PANTALLA, SECCION_PUNTA, SECCION_TALON, SECCION_ALERO,
             M9.SECCION_ALERO_MITAD,     # VE-6: el alero, en dos secciones
-            M9.SECCION_TALON_ALERO}     # VE-7: y el talon de su zapata
+            # VE-7: y el talon de su zapata, en cada franja del alero
+            *(M9.clave_del_talon_del_alero(f)
+              for f in M9.FRACCIONES_DE_ESTABILIDAD_DEL_ALERO)}
         assert a.sismico
         for s in a.secciones:
             assert s.barra is not None, (a.extremo, s.clave)
@@ -2239,7 +2241,9 @@ def test_un_elemento_que_no_se_puede_evaluar_es_un_bloqueo_y_los_demas_siguen(
         # --- VE-7 --- y el talon de la zapata de los aleros, que tampoco
         # pasa por el cortante general (zapata: simplificado)
         assert {s.clave for s in a.secciones} == {
-            SECCION_PUNTA, SECCION_TALON, M9.SECCION_TALON_ALERO}
+            SECCION_PUNTA, SECCION_TALON,
+            *(M9.clave_del_talon_del_alero(f)
+              for f in M9.FRACCIONES_DE_ESTABILIDAD_DEL_ALERO)}
         assert a.tabla and all(f.elemento in (ELEMENTO_ZAPATA,
                                               M9.ELEMENTO_ZAPATA_ALEROS)
                                for f in a.tabla)
