@@ -1,0 +1,2 @@
+id,area_km2,L_cauce_m,S_cauce_cuenca,S_terreno,cobertura,suelo,estacion,metodo_tc,H_desnivel_m,ajuste_kirpich,CN
+A-03,55.9,15000,0.02,0.03,pastos_vegetacion_ligera,semipermeable,PRUEBA-SINTETICA,temez,,,75
