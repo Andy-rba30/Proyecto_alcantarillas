@@ -3,7 +3,7 @@
     "csv": "tests/ejemplo_puntos.csv",
     "generado_utc": "<UTC>",
     "csv_sha1": "7ae59002159b228f3681ec0d34a4e8ae65052015",
-    "criterios_sha1": "1aac66fb27115d0d7552b5bb1639419f3654e908",
+    "criterios_sha1": "db9cc6a6be7ae8b2f1b83fa8c6be769d3a2d77fe",
     "corredor_del_proyecto": {
       "valor": "terraplen de ~5 km de la Fase 0-bis de la hoja de ruta, num. 150",
       "origen": "src/datos_sitio.py"
@@ -17,6 +17,20 @@
     "diferidos": [
       {
         "punto": "A-01",
+        "fase": "Fase 0-bis - Licuefaccion (ML)",
+        "etapa": "Fase 0-bis diferida al expediente (alcance perfil)",
+        "tipo": "DiferidoPorAlcance",
+        "criterio": null,
+        "etiqueta": null,
+        "concepto": null,
+        "fuente": null,
+        "campo": null,
+        "delta_rasante_m": null,
+        "diferido_por_alcance": true,
+        "mensaje": "la evaluacion de licuefaccion (AASHTO 10.5.4.2) es el condicionante mayor del proyecto y su resultado lo declara el EMS (E.050 38.3): a nivel de perfil se declara el condicionante y se remite al expediente, donde la Fase 0-bis lo exige. Ensayo: SPT de al menos 15 m con ensayo cada 1 m (E.050 38.4.3). Disponible con --alcance expediente"
+      },
+      {
+        "punto": "A-01",
         "fase": "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)",
         "etapa": "verificacion V5 diferida al expediente (alcance perfil)",
         "tipo": "CriterioPendienteError",
@@ -59,6 +73,20 @@
       },
       {
         "punto": "A-02",
+        "fase": "Fase 0-bis - Licuefaccion (ML)",
+        "etapa": "Fase 0-bis diferida al expediente (alcance perfil)",
+        "tipo": "DiferidoPorAlcance",
+        "criterio": null,
+        "etiqueta": null,
+        "concepto": null,
+        "fuente": null,
+        "campo": null,
+        "delta_rasante_m": null,
+        "diferido_por_alcance": true,
+        "mensaje": "la evaluacion de licuefaccion (AASHTO 10.5.4.2) es el condicionante mayor del proyecto y su resultado lo declara el EMS (E.050 38.3): a nivel de perfil se declara el condicionante y se remite al expediente, donde la Fase 0-bis lo exige. Ensayo: SPT de al menos 15 m con ensayo cada 1 m (E.050 38.4.3). Disponible con --alcance expediente"
+      },
+      {
+        "punto": "A-02",
         "fase": "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)",
         "etapa": "verificacion V5 diferida al expediente (alcance perfil)",
         "tipo": "CriterioPendienteError",
@@ -98,6 +126,20 @@
         "delta_rasante_m": null,
         "diferido_por_alcance": true,
         "mensaje": "la cama de apoyo y relleno lateral (item 4) y la demanda de la losa del marco (12.11.2; el diseño del portico es de expediente por la hoja de ruta) no se ejecutan en alcance de perfil. La clase, el calibre o el perfil del conducto (items 1-2 y 5) SI se verifican: son las filas F8.* de la Fase 5. Disponibles sin cambios con --alcance expediente"
+      },
+      {
+        "punto": "B-01",
+        "fase": "Fase 0-bis - Licuefaccion (ML)",
+        "etapa": "Fase 0-bis diferida al expediente (alcance perfil)",
+        "tipo": "DiferidoPorAlcance",
+        "criterio": null,
+        "etiqueta": null,
+        "concepto": null,
+        "fuente": null,
+        "campo": null,
+        "delta_rasante_m": null,
+        "diferido_por_alcance": true,
+        "mensaje": "la evaluacion de licuefaccion (AASHTO 10.5.4.2) es el condicionante mayor del proyecto y su resultado lo declara el EMS (E.050 38.3): a nivel de perfil se declara el condicionante y se remite al expediente, donde la Fase 0-bis lo exige. Ensayo: SPT de al menos 15 m con ensayo cada 1 m (E.050 38.4.3). Disponible con --alcance expediente"
       },
       {
         "punto": "B-01",
@@ -142,6 +184,20 @@
         "mensaje": "ALCANCE DEL REQUISITO DE LA SEC. 2.3 -- FAMILIA C (cruces de canal y dren). La Sec. 2.3 de la hoja de ruta enuncia, para la Familia C, un requisito que ninguna otra familia tiene: la obra NO PUEDE ALTERAR LA RASANTE HIDRAULICA NI EL BORDE LIBRE DEL CANAL. Son DOS exigencias en una frase, y esta corrida evalua UNA. LO QUE SI SE EVALUA -- el borde libre. La verificacion VC1 compara el nivel que el agua alcanza a la entrada (cota del fondo del canal en el cruce mas la carga HW que gobierna) contra la coronacion del canal menos su borde libre, y emite veredicto con margen en metros. La coronacion es columna del CSV -- `cota_coronacion_canal`, dato de sitio [S] del levantamiento de los cruces -- y el borde libre sale del criterio 'borde_libre_canal_m' [A]. Sin cualquiera de los dos VC1 SE DETIENE: no devuelve «no evaluable» ni da el requisito por cumplido. DE DONDE SALE EL BORDE LIBRE, QUE NO ES UN VALOR NORMATIVO DEL CANAL. El Manual de Hidrologia NO fija borde libre para un canal: barridas sus 225 paginas, «borde libre» aparece en dos apartados y ninguno tiene por objeto un canal -- el num. 4.1.1.3.7 b) es de ALCANTARILLAS y es relativo (>= 25 % de la altura del barril), y el num. 4.1.1.4.1 e) es de BADENES y mide contra la superficie de rodadura --. El proyecto adopta el par 0.30-0.50 m del segundo, en su extremo SUPERIOR, que aqui es el conservador porque el borde libre se resta de la coronacion. Son dos decisiones del proyectista y no una lectura de la fuente: la ANALOGIA (de la calzada de un baden a la coronacion de un canal) y la ELECCION dentro de una banda para la que el Manual no da regla. LO QUE NO SE EVALUA -- la rasante hidraulica. VC1 acota el NIVEL que el agua alcanza; no mide EN CUANTO la obra levanta el pelo de agua del canal respecto del que tendria sin ella. Un punto puede cumplir VC1 con holgura y haber elevado la rasante hidraulica del canal en una fraccion apreciable de su calado. Medirlo exige el tirante normal del canal en la seccion del cruce -- su geometria trapecial (ancho de solera y talud) y su n de Manning, ninguno de los dos columna de la Sec. 1.2 -- y la extension aguas arriba del remanso, que VC1 tampoco acota: mide EN LA SECCION DEL CRUCE, de modo que un tercero situado mas arriba, donde el canal tenga la coronacion mas baja, puede quedar afectado por un remanso que en el cruce cumple. V5 NO SE EVALUA EN ESTA FAMILIA, y no por falta de datos: por no aplicar. Su umbral es el ancho del derecho de via y presupone agua extendiendose lateralmente sobre la plataforma al remansarse contra el terraplen; en un paso de canal el agua sube confinada entre las dos coronaciones. VC1 ocupa su posicion en la tabla de la Fase 5 y mide contra la cota que si gobierna. La sustitucion no pierde alcance -- el umbral de V5 era un ancho, no una longitud aguas arriba -- pero tampoco cierra el hueco entero, y por eso el parrafo anterior existe. QUE SIGNIFICA UN «CUMPLE» EN UN PUNTO DE ESTA FAMILIA: que la obra es admisible como alcantarilla de paso Y que no invade el borde libre adoptado del canal en la seccion del cruce. NO significa que la alteracion de la rasante hidraulica del canal se haya medido. QUE CIERRA ESTA DECLARACION: la geometria de la seccion del canal (ancho de solera y talud) y su n de Manning en cada cruce, para calcular su tirante normal y con el la alteracion; y el borde libre que el propio canal adopto en SU proyecto (ANA o Junta de Usuarios del Bajo Piura), que sustituiria a la analogia con el baden."
       },
       {
+        "punto": "C-01",
+        "fase": "Fase 0-bis - Licuefaccion (ML)",
+        "etapa": "Fase 0-bis diferida al expediente (alcance perfil)",
+        "tipo": "DiferidoPorAlcance",
+        "criterio": null,
+        "etiqueta": null,
+        "concepto": null,
+        "fuente": null,
+        "campo": null,
+        "delta_rasante_m": null,
+        "diferido_por_alcance": true,
+        "mensaje": "la evaluacion de licuefaccion (AASHTO 10.5.4.2) es el condicionante mayor del proyecto y su resultado lo declara el EMS (E.050 38.3): a nivel de perfil se declara el condicionante y se remite al expediente, donde la Fase 0-bis lo exige. Ensayo: SPT de al menos 15 m con ensayo cada 1 m (E.050 38.4.3). Disponible con --alcance expediente"
+      },
+      {
         "punto": null,
         "fase": "Fase 9 - Cabezal y aletas (M9)",
         "etapa": "Fase 9 completa diferida al expediente (alcance perfil)",
@@ -159,13 +215,13 @@
     "declarado": [
       {
         "clave": "armado_seccion_marco",
-        "texto": "El armado de la SECCION del marco de concreto de la Familia C no se diseña: el expediente llega al dimensionamiento y a la demanda de la losa superior que entrega la Fase 8; el analisis y el diseño del portico quedan para quien lo arme",
+        "texto": "El portico del marco de concreto se analiza y se arma con UN canto, el de 'espesor_pared_cajon', en losas, paredes y tabiques, y no se itera: los cantos separados de losa y pared en la geometria del programa, el refuerzo de distribucion y las vigas de borde de la losa con menos de 2.0 ft, el desarrollo y los empalmes y el agua exterior quedan para quien lo arme",
         "ficha": "T5-07",
-        "simbolo": "M8_estructural.demanda_marco"
+        "simbolo": "M8_estructural.disenar_portico"
       },
       {
         "clave": "cabezal_paralelo_a_la_via",
-        "texto": "El cabezal PARALELO a la via no se calcula: en las tres familias el cabezal es normal al eje del conducto, que es lo que supone la hidraulica (ke y cartas del HDS-5); el paralelo queda como alternativa solo para el marco, diferida",
+        "texto": "El cabezal PARALELO a la via solo se calcula en un marco y sin aleros, cuando 'embocadura_cajon' declara una fila de la Carta 11 del HDS-5; en los tubos, y con aleros (Carta 12, escala 3), el cabezal es normal al eje del conducto",
         "ficha": "T7A-03",
         "simbolo": "M9_cabezal.predimensionar_aleros"
       },
@@ -174,12 +230,6 @@
         "texto": "El cabezal se dimensiona solo como zapata CORRIDA sobre la grilla de 'dimensionamiento_zapata_cabezal': el ancho por la estabilidad (VE-3.5, con la punta si el talon llega al tope), el peralte por el armado de la zapata (VE-3.9) y la pantalla por su armado (VE-3.14). Si ninguna zapata corrida cumple dentro del tope, el cabezal se declara NO FACTIBLE con estos criterios y no se proponen dentellon, llave de corte, mejoramiento del suelo ni pilotes; una dimension declarada (`cabezal_declarado`) no se itera y la estabilidad la juzga como llega; los parametros son los de prueba hasta el EMS",
         "ficha": "T7B-09",
         "simbolo": "M9_cabezal.dimensionar_zapata_por_estabilidad"
-      },
-      {
-        "clave": "flotacion_marco_sin_peso_propio",
-        "texto": "V7 del marco no pesa el concreto del marco (DC = 0, del lado seguro): se revisara cuando llegue la seccion real del canal de la ANA o de la Junta de usuarios",
-        "ficha": "T3-08",
-        "simbolo": "M5_verificaciones.v7_flotacion"
       },
       {
         "clave": "tirante_de_borde_hec14",
@@ -374,6 +424,8 @@
           "espesor_m": 0.77,
           "ancho_final_m": 6.300000000000001
         },
+        "poza_hec14": null,
+        "tw_alto_hec14": null,
         "clase_hec14_de_la_piedra": {
           "d50_m": 0.3042217415963143,
           "clase": 4,
@@ -420,7 +472,8 @@
         "cota_referencia_msnm": null,
         "cota_fondo_de_la_hoya_msnm": null,
         "motivo_no_estimada": "falta el suelo del lecho (`material_lecho_salida`, dato del EMS: tipo, y D84 y D16 si no es cohesivo o indice de plasticidad y resistencia al corte saturada si lo es)",
-        "hoya_estimada": null
+        "hoya_estimada": null,
+        "caida_recta_hec14": null
       },
       "geometria": {
         "numeral": "Sec. 7.B",
@@ -552,6 +605,7 @@
           }
         ],
         "demanda_marco": null,
+        "portico": null,
         "cama_apoyo": null,
         "sujecion_relleno_lateral": null,
         "numeral": null,
@@ -609,7 +663,7 @@
         {
           "fase": "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)",
           "codigo": "V2b",
-          "numeral": "HDS-5 3.a ed. (FHWA-HIF-12-026), num. 5.3.3 \"Sedimentation\", pag. impresa 5.11. El numeral NO fija un umbral: nombra dos INDICADORES (\"barrel slope less than the natural channel and roughness greater than the channel are key indicators of potential problems\"). Aqui se evalua el PRIMERO, y como se aplica lo declara el criterio 'regimen_v2b' [A] (umbral duro que detiene el punto, o indicador con aviso que no descarta el diametro); el segundo exige el n de Manning del cauce natural, que no es columna de Sec. 1.2, y queda declarado pendiente. La otra mitad de la fila V2b de la hoja de ruta -- el acceso de mantenimiento en planos -- entra por el criterio 'acceso_mantenimiento_v2b' [A]",
+          "numeral": "HDS-5 3.a ed. (FHWA-HIF-12-026), num. 5.3.3 \"Sedimentation\", pag. impresa 5.11. El numeral NO fija un umbral: nombra dos INDICADORES (\"barrel slope less than the natural channel and roughness greater than the channel are key indicators of potential problems\"). Aqui se evalua el PRIMERO, y como se aplica lo declara el criterio 'regimen_v2b' [A] (umbral duro que detiene el punto, o indicador con aviso que no descarta el diametro); el segundo -- la rugosidad -- se evalua desde VE-5 como INDICADOR que no cambia el veredicto, con el n del cauce de la seccion del cauce de aproximacion declarada, y sin ella no se evalua. La otra mitad de la fila V2b de la hoja de ruta -- el acceso de mantenimiento en planos -- entra por el criterio 'acceso_mantenimiento_v2b' [A]",
           "estado": "cumple",
           "cumple": true,
           "veredicto": "cumple",
@@ -742,6 +796,19 @@
       "verificaciones_no_evaluadas": [],
       "bloqueos": [
         {
+          "fase": "Fase 0-bis - Licuefaccion (ML)",
+          "etapa": "Fase 0-bis diferida al expediente (alcance perfil)",
+          "tipo": "DiferidoPorAlcance",
+          "criterio": null,
+          "etiqueta": null,
+          "concepto": null,
+          "fuente": null,
+          "campo": null,
+          "delta_rasante_m": null,
+          "diferido_por_alcance": true,
+          "mensaje": "la evaluacion de licuefaccion (AASHTO 10.5.4.2) es el condicionante mayor del proyecto y su resultado lo declara el EMS (E.050 38.3): a nivel de perfil se declara el condicionante y se remite al expediente, donde la Fase 0-bis lo exige. Ensayo: SPT de al menos 15 m con ensayo cada 1 m (E.050 38.4.3). Disponible con --alcance expediente"
+        },
+        {
           "fase": "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)",
           "etapa": "verificacion V5 diferida al expediente (alcance perfil)",
           "tipo": "CriterioPendienteError",
@@ -780,7 +847,24 @@
           "diferido_por_alcance": true,
           "mensaje": "la cama de apoyo y relleno lateral (item 4) y la demanda de la losa del marco (12.11.2; el diseño del portico es de expediente por la hoja de ruta) no se ejecutan en alcance de perfil. La clase, el calibre o el perfil del conducto (items 1-2 y 5) SI se verifican: son las filas F8.* de la Fase 5. Disponibles sin cambios con --alcance expediente"
         }
-      ]
+      ],
+      "compatibilidad_rasante": {
+        "estado": "compatible",
+        "seccion": "concreto_reforzado Ø 0.90 m",
+        "cota_rasante_actual": 44.2,
+        "cota_rasante_min": 44.09200153701273,
+        "cota_por_recubrimiento": 43.55480000000001,
+        "cota_por_resguardo": 44.09200153701273,
+        "gobierna": "resguardo",
+        "holgura_m": 0.10799846298727545,
+        "delta_rasante_m": null,
+        "cota_entrada": 42.1,
+        "cota_clave": 43.1,
+        "cota_salida": 41.98678365023396,
+        "provisional": true,
+        "aviso": "fondo de entrada adoptado igual al terreno de plataforma: medir en el cauce",
+        "motivo": ""
+      }
     },
     {
       "id": "A-02",
@@ -960,6 +1044,8 @@
           "espesor_m": 0.4375,
           "ancho_final_m": 5.1
         },
+        "poza_hec14": null,
+        "tw_alto_hec14": null,
         "clase_hec14_de_la_piedra": {
           "d50_m": 0.23653400366864571,
           "clase": 3,
@@ -1006,7 +1092,8 @@
         "cota_referencia_msnm": null,
         "cota_fondo_de_la_hoya_msnm": null,
         "motivo_no_estimada": "falta el suelo del lecho (`material_lecho_salida`, dato del EMS: tipo, y D84 y D16 si no es cohesivo o indice de plasticidad y resistencia al corte saturada si lo es)",
-        "hoya_estimada": null
+        "hoya_estimada": null,
+        "caida_recta_hec14": null
       },
       "geometria": {
         "numeral": "Sec. 7.B",
@@ -1138,6 +1225,7 @@
           }
         ],
         "demanda_marco": null,
+        "portico": null,
         "cama_apoyo": null,
         "sujecion_relleno_lateral": null,
         "numeral": null,
@@ -1195,7 +1283,7 @@
         {
           "fase": "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)",
           "codigo": "V2b",
-          "numeral": "HDS-5 3.a ed. (FHWA-HIF-12-026), num. 5.3.3 \"Sedimentation\", pag. impresa 5.11. El numeral NO fija un umbral: nombra dos INDICADORES (\"barrel slope less than the natural channel and roughness greater than the channel are key indicators of potential problems\"). Aqui se evalua el PRIMERO, y como se aplica lo declara el criterio 'regimen_v2b' [A] (umbral duro que detiene el punto, o indicador con aviso que no descarta el diametro); el segundo exige el n de Manning del cauce natural, que no es columna de Sec. 1.2, y queda declarado pendiente. La otra mitad de la fila V2b de la hoja de ruta -- el acceso de mantenimiento en planos -- entra por el criterio 'acceso_mantenimiento_v2b' [A]",
+          "numeral": "HDS-5 3.a ed. (FHWA-HIF-12-026), num. 5.3.3 \"Sedimentation\", pag. impresa 5.11. El numeral NO fija un umbral: nombra dos INDICADORES (\"barrel slope less than the natural channel and roughness greater than the channel are key indicators of potential problems\"). Aqui se evalua el PRIMERO, y como se aplica lo declara el criterio 'regimen_v2b' [A] (umbral duro que detiene el punto, o indicador con aviso que no descarta el diametro); el segundo -- la rugosidad -- se evalua desde VE-5 como INDICADOR que no cambia el veredicto, con el n del cauce de la seccion del cauce de aproximacion declarada, y sin ella no se evalua. La otra mitad de la fila V2b de la hoja de ruta -- el acceso de mantenimiento en planos -- entra por el criterio 'acceso_mantenimiento_v2b' [A]",
           "estado": "cumple",
           "cumple": true,
           "veredicto": "cumple",
@@ -1328,6 +1416,19 @@
       "verificaciones_no_evaluadas": [],
       "bloqueos": [
         {
+          "fase": "Fase 0-bis - Licuefaccion (ML)",
+          "etapa": "Fase 0-bis diferida al expediente (alcance perfil)",
+          "tipo": "DiferidoPorAlcance",
+          "criterio": null,
+          "etiqueta": null,
+          "concepto": null,
+          "fuente": null,
+          "campo": null,
+          "delta_rasante_m": null,
+          "diferido_por_alcance": true,
+          "mensaje": "la evaluacion de licuefaccion (AASHTO 10.5.4.2) es el condicionante mayor del proyecto y su resultado lo declara el EMS (E.050 38.3): a nivel de perfil se declara el condicionante y se remite al expediente, donde la Fase 0-bis lo exige. Ensayo: SPT de al menos 15 m con ensayo cada 1 m (E.050 38.4.3). Disponible con --alcance expediente"
+        },
+        {
           "fase": "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)",
           "etapa": "verificacion V5 diferida al expediente (alcance perfil)",
           "tipo": "CriterioPendienteError",
@@ -1366,7 +1467,24 @@
           "diferido_por_alcance": true,
           "mensaje": "la cama de apoyo y relleno lateral (item 4) y la demanda de la losa del marco (12.11.2; el diseño del portico es de expediente por la hoja de ruta) no se ejecutan en alcance de perfil. La clase, el calibre o el perfil del conducto (items 1-2 y 5) SI se verifican: son las filas F8.* de la Fase 5. Disponibles sin cambios con --alcance expediente"
         }
-      ]
+      ],
+      "compatibilidad_rasante": {
+        "estado": "compatible",
+        "seccion": "concreto_reforzado Ø 0.90 m",
+        "cota_rasante_actual": 42.0,
+        "cota_rasante_min": 41.37200812840098,
+        "cota_por_recubrimiento": 41.3048,
+        "cota_por_resguardo": 41.37200812840098,
+        "gobierna": "resguardo",
+        "holgura_m": 0.627991871599022,
+        "delta_rasante_m": null,
+        "cota_entrada": 39.85,
+        "cota_clave": 40.85,
+        "cota_salida": 39.70145808247744,
+        "provisional": true,
+        "aviso": "fondo de entrada adoptado igual al terreno de plataforma: medir en el cauce",
+        "motivo": ""
+      }
     },
     {
       "id": "B-01",
@@ -1731,6 +1849,19 @@
       "verificaciones_no_evaluadas": [],
       "bloqueos": [
         {
+          "fase": "Fase 0-bis - Licuefaccion (ML)",
+          "etapa": "Fase 0-bis diferida al expediente (alcance perfil)",
+          "tipo": "DiferidoPorAlcance",
+          "criterio": null,
+          "etiqueta": null,
+          "concepto": null,
+          "fuente": null,
+          "campo": null,
+          "delta_rasante_m": null,
+          "diferido_por_alcance": true,
+          "mensaje": "la evaluacion de licuefaccion (AASHTO 10.5.4.2) es el condicionante mayor del proyecto y su resultado lo declara el EMS (E.050 38.3): a nivel de perfil se declara el condicionante y se remite al expediente, donde la Fase 0-bis lo exige. Ensayo: SPT de al menos 15 m con ensayo cada 1 m (E.050 38.4.3). Disponible con --alcance expediente"
+        },
+        {
           "fase": "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)",
           "etapa": "verificacion V5 diferida al expediente (alcance perfil)",
           "tipo": "CriterioPendienteError",
@@ -1782,7 +1913,24 @@
           "diferido_por_alcance": false,
           "mensaje": "Falta el dato 'L_hidraulico_m'. La longitud por capacidad de la cuneta no esta declarada (`L_hidraulico_m`) y no se puede calcular: faltan los datos del trazo con que la Fase 10 la calcula (S_cuneta, por --datos-externos). Declarar esos datos, o la longitud"
         }
-      ]
+      ],
+      "compatibilidad_rasante": {
+        "estado": "sin tamizado",
+        "seccion": "",
+        "cota_rasante_actual": 40.6,
+        "cota_rasante_min": null,
+        "cota_por_recubrimiento": null,
+        "cota_por_resguardo": null,
+        "gobierna": null,
+        "holgura_m": null,
+        "delta_rasante_m": null,
+        "cota_entrada": null,
+        "cota_clave": null,
+        "cota_salida": null,
+        "provisional": false,
+        "aviso": "",
+        "motivo": "detenido en Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5), material y diametro (bucle de MD)"
+      }
     },
     {
       "id": "C-01",
@@ -1908,6 +2056,19 @@
           "mensaje": "ALCANCE DEL REQUISITO DE LA SEC. 2.3 -- FAMILIA C (cruces de canal y dren). La Sec. 2.3 de la hoja de ruta enuncia, para la Familia C, un requisito que ninguna otra familia tiene: la obra NO PUEDE ALTERAR LA RASANTE HIDRAULICA NI EL BORDE LIBRE DEL CANAL. Son DOS exigencias en una frase, y esta corrida evalua UNA. LO QUE SI SE EVALUA -- el borde libre. La verificacion VC1 compara el nivel que el agua alcanza a la entrada (cota del fondo del canal en el cruce mas la carga HW que gobierna) contra la coronacion del canal menos su borde libre, y emite veredicto con margen en metros. La coronacion es columna del CSV -- `cota_coronacion_canal`, dato de sitio [S] del levantamiento de los cruces -- y el borde libre sale del criterio 'borde_libre_canal_m' [A]. Sin cualquiera de los dos VC1 SE DETIENE: no devuelve «no evaluable» ni da el requisito por cumplido. DE DONDE SALE EL BORDE LIBRE, QUE NO ES UN VALOR NORMATIVO DEL CANAL. El Manual de Hidrologia NO fija borde libre para un canal: barridas sus 225 paginas, «borde libre» aparece en dos apartados y ninguno tiene por objeto un canal -- el num. 4.1.1.3.7 b) es de ALCANTARILLAS y es relativo (>= 25 % de la altura del barril), y el num. 4.1.1.4.1 e) es de BADENES y mide contra la superficie de rodadura --. El proyecto adopta el par 0.30-0.50 m del segundo, en su extremo SUPERIOR, que aqui es el conservador porque el borde libre se resta de la coronacion. Son dos decisiones del proyectista y no una lectura de la fuente: la ANALOGIA (de la calzada de un baden a la coronacion de un canal) y la ELECCION dentro de una banda para la que el Manual no da regla. LO QUE NO SE EVALUA -- la rasante hidraulica. VC1 acota el NIVEL que el agua alcanza; no mide EN CUANTO la obra levanta el pelo de agua del canal respecto del que tendria sin ella. Un punto puede cumplir VC1 con holgura y haber elevado la rasante hidraulica del canal en una fraccion apreciable de su calado. Medirlo exige el tirante normal del canal en la seccion del cruce -- su geometria trapecial (ancho de solera y talud) y su n de Manning, ninguno de los dos columna de la Sec. 1.2 -- y la extension aguas arriba del remanso, que VC1 tampoco acota: mide EN LA SECCION DEL CRUCE, de modo que un tercero situado mas arriba, donde el canal tenga la coronacion mas baja, puede quedar afectado por un remanso que en el cruce cumple. V5 NO SE EVALUA EN ESTA FAMILIA, y no por falta de datos: por no aplicar. Su umbral es el ancho del derecho de via y presupone agua extendiendose lateralmente sobre la plataforma al remansarse contra el terraplen; en un paso de canal el agua sube confinada entre las dos coronaciones. VC1 ocupa su posicion en la tabla de la Fase 5 y mide contra la cota que si gobierna. La sustitucion no pierde alcance -- el umbral de V5 era un ancho, no una longitud aguas arriba -- pero tampoco cierra el hueco entero, y por eso el parrafo anterior existe. QUE SIGNIFICA UN «CUMPLE» EN UN PUNTO DE ESTA FAMILIA: que la obra es admisible como alcantarilla de paso Y que no invade el borde libre adoptado del canal en la seccion del cruce. NO significa que la alteracion de la rasante hidraulica del canal se haya medido. QUE CIERRA ESTA DECLARACION: la geometria de la seccion del canal (ancho de solera y talud) y su n de Manning en cada cruce, para calcular su tirante normal y con el la alteracion; y el borde libre que el propio canal adopto en SU proyecto (ANA o Junta de Usuarios del Bajo Piura), que sustituiria a la analogia con el baden."
         },
         {
+          "fase": "Fase 0-bis - Licuefaccion (ML)",
+          "etapa": "Fase 0-bis diferida al expediente (alcance perfil)",
+          "tipo": "DiferidoPorAlcance",
+          "criterio": null,
+          "etiqueta": null,
+          "concepto": null,
+          "fuente": null,
+          "campo": null,
+          "delta_rasante_m": null,
+          "diferido_por_alcance": true,
+          "mensaje": "la evaluacion de licuefaccion (AASHTO 10.5.4.2) es el condicionante mayor del proyecto y su resultado lo declara el EMS (E.050 38.3): a nivel de perfil se declara el condicionante y se remite al expediente, donde la Fase 0-bis lo exige. Ensayo: SPT de al menos 15 m con ensayo cada 1 m (E.050 38.4.3). Disponible con --alcance expediente"
+        },
+        {
           "fase": "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)",
           "etapa": "material y diametro (bucle de MD)",
           "tipo": "DatoFaltanteError",
@@ -1920,7 +2081,24 @@
           "diferido_por_alcance": false,
           "mensaje": "Falta el dato 'cota_coronacion_canal' en el punto C-01. VC1 mide contra la coronacion del canal y esta fila la deja vacia. Sale del levantamiento topografico del cruce --- seccion transversal del canal con su fondo y sus dos coronaciones --- y NO hay regla declarada que la sustituya: ni el terreno natural ni la rasante son el labio del canal. Sin ella el requisito de la Sec. 2.3 no se puede evaluar, y el programa no lo da por cumplido"
         }
-      ]
+      ],
+      "compatibilidad_rasante": {
+        "estado": "sin tamizado",
+        "seccion": "",
+        "cota_rasante_actual": 39.1,
+        "cota_rasante_min": null,
+        "cota_por_recubrimiento": null,
+        "cota_por_resguardo": null,
+        "gobierna": null,
+        "holgura_m": null,
+        "delta_rasante_m": null,
+        "cota_entrada": null,
+        "cota_clave": null,
+        "cota_salida": null,
+        "provisional": false,
+        "aviso": "",
+        "motivo": "detenido en Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5), material y diametro (bucle de MD)"
+      }
     }
   ],
   "cabezal": {
@@ -1946,14 +2124,28 @@
       }
     ]
   },
+  "metrados": [],
   "datos_sitio": {
-    "usados": [],
+    "usados": [
+      {
+        "clave": "region_natural",
+        "etiqueta": "S",
+        "valor": "costa",
+        "concepto": "Region natural del corredor, en el sentido con que el Manual de Hidrologia nombra las «zonas de selva alta» del num. 4.1.1.3.7 a): decide si la recomendacion de diametro minimo de TMC de ese numeral alcanza a esta obra",
+        "trazabilidad": "Distrito de La Union (Piura), llanura del Bajo Piura: el corredor esta en la COSTA, que es la region que la hoja de ruta (Sec. 3.1, «no aplica en costa») y la nota de constantes_normativas.DIAMETRO_MIN_TMC_SELVA_ALTA_CONDICIONES le asignan. La lectura es reproducible hasta el distrito; el expediente no registra coordenadas. Con COSTA la rama de selva alta de `M2.siguiente_diametro` queda INACTIVA, que es lo que la hoja de ruta pide («programar la rama y declararla inactiva»)",
+        "ambito": "todo el corredor (terraplen de ~5 km de la Fase 0-bis de la hoja de ruta, num. 150)",
+        "origen": "src/datos_sitio.py",
+        "fecha": "",
+        "declarado_en_caliente": false
+      }
+    ],
     "sin_valor_declarados": [
       "carriles_por_sentido",
       "clase_de_via",
       "distancia_borde_calzada_al_trasdos_m",
       "existe_informacion_secundaria_tramo",
-      "orientacion_muro_respecto_al_trafico"
+      "orientacion_muro_respecto_al_trafico",
+      "zona_sismica_aashto"
     ],
     "declarados_en_caliente": [],
     "trazabilidad_incompleta": [
@@ -1964,7 +2156,8 @@
       "clase_de_via",
       "distancia_borde_calzada_al_trasdos_m",
       "existe_informacion_secundaria_tramo",
-      "orientacion_muro_respecto_al_trafico"
+      "orientacion_muro_respecto_al_trafico",
+      "zona_sismica_aashto"
     ]
   },
   "criterios": {
@@ -2222,7 +2415,8 @@
             "EV": "EV_estructura_rigida_enterrada"
           },
           "cajon": {
-            "EV": "EV_porticos_rigidos"
+            "EV": "EV_porticos_rigidos",
+            "EH": "EH_en_reposo"
           },
           "tmc": {
             "EV": "EV_flexibles_entre_otros"
@@ -2499,25 +2693,33 @@
     ],
     "sin_valor_declarados": [
       "Mw_licuefaccion",
-      "N_cq_N_gammaq_meyerhof",
       "TR_evento_extremo",
       "TW_receptor",
       "c_phi_fundacion",
       "capacidad_portante_adm",
+      "carga_viva_tubo_concreto_somero",
       "categoria_refuerzo_aashto",
+      "caudal_unitario_admisible_desborde_m2s",
+      "clase_concreto_losa_entrega",
       "clase_exposicion_fisuracion_cabezal",
       "clase_sitio",
       "edicion_legal_que_rige_el_expediente",
       "edicion_que_rige_el_expediente",
       "exposicion_quimica_ems",
+      "factores_idf_regional",
+      "fila_phi_estabilidad_global",
       "h_eq_bajo_altura_tabulada",
       "h_eq_banda_intermedia_borde",
       "homogeneidad_serie_fen",
+      "incremento_acero_por_despiece",
       "margen_estacional_nf_v7_m",
       "metodo_estabilidad_global",
+      "nivel_agua_relleno_sin_drenaje_bajo_sismo",
       "peso_especifico_saturado_relleno_kn_m3",
       "phi_relleno_trasdos",
       "remanso_derecho_via",
+      "sobreelevacion_admisible_remanso_m",
+      "talud_delante_del_cabezal",
       "umbral_no_colapso_evento_extremo"
     ],
     "declarados_en_caliente": [],
@@ -2554,11 +2756,6 @@
       "umbral_area_quebrada_importante_ha"
     ],
     "sin_consumidor": [
-      "Mw_licuefaccion",
-      "PERFIL_SUELO_PRESUNTO",
-      "capacidad_portante_adm",
-      "clase_sitio",
-      "demanda_sismica_licuefaccion",
       "edicion_legal_que_rige_el_expediente",
       "edicion_que_rige_el_expediente"
     ],
