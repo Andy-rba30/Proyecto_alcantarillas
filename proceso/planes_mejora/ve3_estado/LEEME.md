@@ -12,12 +12,16 @@ cada vez que se integra algo. Fecha de esta versión: 2026-11-20.
 >   principal de C7; dictamen Fable APROBADO CON CAMBIOS, aplicados. Los 158 tests `-m pdf`
 >   pasan con el PDF. Línea base, validación hidrológica/externa/conducto/cabezal y bloques de
 >   la guía regenerados: sin cambios.
-> - **Avance (~20:45 UTC):** `validacion_integral` regenerada y subida (`4c90c3e`; el juego
->   declara lo de VE-5/VE-7). Prompt genérico para retomar en `PROMPT_RETOMAR.md`.
-> - **En curso:** regeneración de `sensibilidad` (~1 h de CPU, la frena la suite); suite base
->   (sin NORMAS_DIR) al 97 % con ~15 fallos vistos, esperando `test_t11_sensibilidad` (su
->   fixture recalcula el barrido completo). Los fallos van a Fable para que dé la corrección. Conocido: 6 de
->   `test_manifiesto_citas` caen hasta regenerar el manifiesto (630 citas, decía 629).
+> - **Avance (~22:30 UTC):** `validacion_integral` y `validacion_sensibilidad` regeneradas y
+>   subidas. La suite base se cortó al 97 % por el tope de 2 h de las tareas de fondo; se relanzó
+>   como diagnóstico (proceso desacoplado, `-v --dist loadfile`, con NORMAS_DIR). Corregidos:
+>   fichas VE7C-01 (campo) y VE7C-06 (tope de 2600: la medición del peralte al docstring de su
+>   test), test A11 por `getsource` (guardia), comparador e14 (la rama de error no itera desde
+>   B12), pre-vuelo VE-6 (quita `licuefaccion_ems`, que el juego declara). Manifiesto,
+>   trazabilidad e índice regenerados con sello PROVISIONAL. `test_linea_base`: sólo entorno
+>   (`python3` = 3.13 sin dependencias): la suite final va con `python3` → 3.12 en el PATH.
+> - **En curso:** el diagnóstico al 99 %, esperando `test_t11_sensibilidad` y
+>   `test_t11_validacion_integral` (fixtures pesadas). Lo de criterio va a Fable.
 > - **Falta:** corregir la suite (dudas a Fable), suite completa con NORMAS_DIR en worktree
 >   limpio, sellos (índice y manifiesto), bitácora, este LEEME, fast-forward de
 >   `claude/laughing-euler-ybme10` y `main`, etiqueta `respaldo-2026-11-20`, limpieza de ramas.
