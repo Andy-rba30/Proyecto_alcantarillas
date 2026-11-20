@@ -1066,6 +1066,11 @@ class Material:
     # falsa de NOR-PRO-01 leida al reves. Vacio = constructor que no pasa por
     # `M2.catalogo` (dobles de prueba): quien lo lea cae al rotulo.
     D_max_criterio: str = ""
+    # --- VE-5 (m8), item 23 (ficha T5-03) --- LA PLANCHA DEL TMC con que se
+    # arma la geometria: vacia = la adoptada ('corrugacion_y_espesor_tmc');
+    # si no, la que la Fase 8 eligio y MD devolvio al material
+    # (`M2.material_con_plancha_tmc`), y entonces `espesor_pared` ya la lleva.
+    plancha_tmc: str = ""
 
     def __post_init__(self) -> None:
         # EL PAR ES UN PAR (PC-01): n_min <= n_max, o la regla de doble n se

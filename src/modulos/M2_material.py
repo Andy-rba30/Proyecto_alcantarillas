@@ -269,6 +269,7 @@ Uso
 
 from __future__ import annotations
 
+import dataclasses
 import math
 import numbers
 from typing import Any, Optional, Tuple, Union
@@ -677,6 +678,52 @@ def _calibre_de_tmc() -> dict:
                    "las Tablas 5, 7 y 9 de ASTM A796: "
                    f"{', '.join(TMC_PLANCHA_CORRUGADA)}")
     return TMC_PLANCHA_CORRUGADA[clave]
+
+
+def plancha_del_material(material: Material) -> str:
+    """
+    --- VE-5 (m8), item 23 --- La plancha del TMC con que esta armada la
+    geometria del material: la que lleva (`Material.plancha_tmc`) o, si no
+    lleva ninguna, la adoptada ('corrugacion_y_espesor_tmc').
+    """
+    if material.tipo is not TipoMaterial.TMC:
+        raise DatoInvalidoError(
+            campo="material", valor=material.tipo.value,
+            motivo="solo el TMC tiene plancha")
+    return material.plancha_tmc or ca.valor(CRITERIO_CALIBRE_TMC)
+
+
+def material_con_plancha_tmc(material: Material, clave: str) -> Material:
+    """
+    --- VE-5 (m8), item 23 (ficha T5-03) --- El TMC con la plancha `clave`:
+    el mismo material con su espesor de pared por diametro recalculado
+    (t = profundidad de la corrugacion + espesor de la plancha, la suma de
+    `espesor_pared_de_tmc`; con un espesor DECLARADO se le suma la
+    diferencia de plancha) y la plancha anotada. Es como la plancha que la
+    Fase 8 elige vuelve a la geometria: con ella se arman la clave fisica de
+    7.A, el volumen de V7 y el relleno de la propia Fase 8.
+
+    La plancha tiene que ser de la MISMA corrugacion: la progresion de la
+    Fase 8 no cambia de corrugacion (`DatoInvalidoError`).
+    """
+    actual = plancha_del_material(material)
+    if clave not in TMC_PLANCHA_CORRUGADA or actual not in TMC_PLANCHA_CORRUGADA:
+        raise DatoInvalidoError(
+            campo=CRITERIO_CALIBRE_TMC, valor=clave,
+            motivo="tiene que ser una de las claves 'corrugacion/espesor' de "
+                   "las Tablas 5, 7 y 9 de ASTM A796")
+    nueva, vieja = TMC_PLANCHA_CORRUGADA[clave], TMC_PLANCHA_CORRUGADA[actual]
+    if nueva["corrugacion"] != vieja["corrugacion"]:
+        raise DatoInvalidoError(
+            campo=CRITERIO_CALIBRE_TMC, valor=clave,
+            motivo=f"la plancha {clave} no es de la corrugacion "
+                   f"{vieja['corrugacion']} del material: la Fase 8 sube de "
+                   "plancha dentro de la corrugacion adoptada")
+    delta = nueva["espesor_m"] - vieja["espesor_m"]
+    espesores = (None if not isinstance(material.espesor_pared, dict) else
+                 {mm: t + delta for mm, t in material.espesor_pared.items()})
+    return dataclasses.replace(material, espesor_pared=espesores,
+                               plancha_tmc=clave)
 
 
 def _diametros_estandar_de_la_corrugacion() -> Tuple[int, ...]:

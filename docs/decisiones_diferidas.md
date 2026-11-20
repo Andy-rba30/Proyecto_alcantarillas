@@ -4707,9 +4707,15 @@ se corrigieron donde las auditorías las desmintieron (cada una lo dice).
   dice si otra fabricación tabulada lo haría; la progresión sube de plancha —y
   con ella de costura— dentro de la tabla, pero **no cambia sola la
   fabricación**, que es una elección declarada.
-- **Qué haría falta:** que la plancha elegida viaje a `M2.espesor_pared` (el
-  catálogo la consultaría en vez de la adoptada) y la resistencia de costura
-  empernada del producto que se especifique.
+- **Cerrado por VE-5 (m8, ítem 23 del censo):** la plancha elegida vuelve a la
+  geometría. `Material.plancha_tmc` y `M2.material_con_plancha_tmc` llevan la
+  plancha y el espesor de pared con ella; la Fase 8 parte de la del material; y
+  MD, cuando un escalón de TMC cumple la Fase 5 con una plancha más gruesa
+  (`M8.plancha_requerida_tmc`), lo vuelve a verificar con ella (la traza lo
+  anota) y adopta el punto con esa plancha; el escalón siguiente parte de la
+  adoptada. El aviso «Declare la plancha requerida» queda para la llamada suelta.
+- **Qué haría falta:** la resistencia de costura empernada del producto que se
+  especifique.
 - **Dónde vive:** `src/modulos/M8_estructural.py::verificar_tmc`
 
 ## T5-04 · El TMC rige por LRFD y A796 es solo contraste: el expediente de referencia «VARIOS» se reproduce, y su H-20 no es el HL-93

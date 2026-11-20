@@ -2316,14 +2316,19 @@ def area_requerida_asd_a796(*, S_m: float, P_kPa: float, r_mm: float,
     return T, f, T * SF / f
 
 
-def _planchas_a_probar(D: float, fabricacion: str, id_punto):
+def _planchas_a_probar(D: float, fabricacion: str, id_punto,
+                       plancha_del_material: str = ""):
     """
     Las planchas de la corrugacion ADOPTADA que la Fase 8 recorre, de menor
     a mayor espesor: desde el mayor de la plancha adoptada y del minimo de la
     Tabla 507-01 del EG-2013, y solo las que la fabricacion declarada puede
     hacer (una remachada necesita su costura en la tabla de A796).
+
+    --- VE-5 (m8), item 23 --- La «adoptada» es la del MATERIAL cuando la
+    lleva (`Material.plancha_tmc`, la que MD le devolvio), y si no la del
+    criterio.
     """
-    clave_adopt = ca.valor(CRITERIO_PLANCHA_TMC)
+    clave_adopt = plancha_del_material or ca.valor(CRITERIO_PLANCHA_TMC)
     if clave_adopt not in _CN.TMC_PLANCHA_CORRUGADA:
         raise DatoInvalidoError(
             campo=CRITERIO_PLANCHA_TMC, valor=clave_adopt, id_punto=id_punto,
@@ -2396,7 +2401,7 @@ def verificar_tmc(*, punto: PuntoCritico, material: Material,
                                 valor=fabricacion, id_punto=punto.id,
                                 motivo="fabricacion no reconocida")
     clave_adopt, adopt, t_min_eg, piso, planchas = _planchas_a_probar(
-        D, fabricacion, punto.id)
+        D, fabricacion, punto.id, material.plancha_tmc)
     t_env_adopt = espesor_pared(material, D)
     e_paq = espesor_del_paquete(punto)
     H_rel0 = _finito_positivo("altura_relleno", altura_relleno, punto.id)
@@ -2729,13 +2734,38 @@ def verificar_tmc(*, punto: PuntoCritico, material: Material,
             "envolvente geometrica de 7.A y de V7 se armo con la adoptada, y "
             "con la requerida la clave sube "
             f"{(plancha['espesor_m'] - adopt['espesor_m']) * MILIMETROS_POR_METRO:.2f}"
-            " mm. Declare la plancha requerida para que la geometria la use")
+            " mm. Declare la plancha requerida para que la geometria la use "
+            "(el bucle de MD ya lo hace: vuelve a verificar el escalon con "
+            "ella, ficha T5-03)")
     return ResultadoEstructural(
         material=TipoMaterial.TMC.value, H_relleno_m=H_rel, e_paquete_m=e_paq,
         H_total_m=aux["H_total"], seleccion=clave if cumple_todo else "",
         relleno_maximo_m=H_max, verificaciones=(v_area, v_costura, v_ff),
         pasos=tuple(pasos), avisos=tuple(avisos),
         diferido=(DIFERIDO_COSTURA_EMPERNADA,))
+
+
+def plancha_requerida_tmc(*, punto: PuntoCritico, material: Material,
+                          seccion: Seccion) -> Optional[str]:
+    """
+    --- VE-5 (m8), item 23 (ficha T5-03) --- La plancha que la Fase 8 elige
+    para este escalon de TMC (AASHTO LRFD 12.7.2, con el minimo de la Tabla
+    507-01 del EG-2013) cuando NO es la del material, o None si es la misma
+    o si nada cumple. Es lo que MD lee para devolver la plancha a la
+    geometria (`M2.material_con_plancha_tmc`) y volver a verificar el
+    escalon con ella.
+    """
+    from src.modulos.M2_material import plancha_del_material
+    from src.modulos.M5_verificaciones import altura_relleno_sobre_clave   # perezoso: M5 importa M8
+    r = verificar_conducto(
+        punto=punto, material=material, seccion=seccion,
+        altura_relleno=altura_relleno_sobre_clave(punto=punto,
+                                                  material=material,
+                                                  seccion=seccion))
+    if not (r.cumple and r.seleccion):
+        return None
+    return (None if r.seleccion == plancha_del_material(material)
+            else r.seleccion)
 
 
 # ---------------------------------------------------------------------------
