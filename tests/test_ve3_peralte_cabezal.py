@@ -34,6 +34,14 @@ cumple. La entrada cumple con el de la regla.
 
 SE ESCRIBIO EN ROJO PRIMERO, contra 6a87006: sin valor de archivo del
 criterio y sin el peralte dimensionado, fallan 1, 2, 3, 5, 6 y 7.
+
+OJO, y esto confundio a VE-7 (ficha VE7C-06): todo el archivo corre con los
+valores PREVIOS a VE-3.15 (`valores_previos_ve3_15`, abajo), y el que hace
+crecer el peralte es 'momento_talon_cabezal' = «peso_entero». Con el valor
+de archivo («exacto») la salida de A-01 conserva el peralte de la regla y
+el bucle no entra, dentro o fuera de pytest; lo fija
+tests/test_ve7_lote_c_cuarta_corrida.py::
+test_ic_el_peralte_sin_puerta_es_por_el_metodo_del_talon.
 """
 
 from __future__ import annotations

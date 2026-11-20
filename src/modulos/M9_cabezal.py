@@ -13341,8 +13341,17 @@ def solicitaciones_de_resistencia(entorno: EntornoDelCabezal) -> dict:
                        posicion y los de la resultante total a h/2
                        (C11.6.5.4). La fuente no da un coeficiente sismico
                        de reposo: no se inventa.
-      talon            ademas, el del peso entero de AASHTO 11.6.1.2: rige
-                       el mayor de ese y el que descuenta la reaccion.
+      talon            lo que diga 'momento_talon_cabezal' (AASHTO
+                       11.6.1.2): con «peso_entero», el peso entero; con
+                       «exacto» (valor de archivo desde VE-3.15), el que
+                       descuenta la reaccion lineal de 10.6.5 de cada
+                       combinacion, y el peso entero SOLO si la resultante
+                       cae fuera de la base; el otro se imprime como
+                       contraste. NO rige el mayor de los dos (este
+                       renglon lo decia hasta VE-7 y era anterior a la
+                       opcion 9; ficha VE7C-06: con «exacto» el talon de la
+                       salida de A-01 del juego pide 3.1 veces menos
+                       momento, en la envolvente, y su peralte no crece).
 
     Y el CONTRASTE con E.060 (solo estatica: 9.2 no combina sismo con
     empuje de suelos): el mayor momento y el mayor cortante de cada seccion
