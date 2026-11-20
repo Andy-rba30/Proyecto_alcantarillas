@@ -21,6 +21,18 @@ cada vez que se integra algo. Fecha de esta versión: 2026-11-20.
 >   previa sobre `ba63b8a` llegó al 55 % sin un fallo antes de detenerla.
 > - **Falta:** sellar con el par medido, fila en la bitácora, y la **autorización expresa del
 >   dueño para integrar en `main`** (la rama va 42 commits por delante y 0 por detrás).
+> - **Autorizado por el dueño (2026-11-20, chat):** integrar en `main` cuando la suite pase.
+> - **VE-4 lanzado (2026-11-20, decisión del dueño: hacer las cinco mejoras diferidas, en
+>   paralelo, con Fable para revisar).** Un agente por mejora, cada uno en su worktree y su
+>   rama, con respaldo cada 20-30 min; base `ec0306a`. Sin regenerar documentos (lo hace el
+>   integrador) y sin editar la hoja de ruta (proponen el texto):
+>   `claude/ve4a-e4e5-declarado` (E4/E5 del cabezal como resultado declarado del EMS, T7B-07),
+>   `claude/ve4b-prevuelo-hidrologia` (estimador del pre-vuelo de la Fase 1-bis, T1-04),
+>   `claude/ve4c-v5-remanso` (V5 `perfil_de_remanso_paso_a_paso`, T7B-01),
+>   `claude/ve4d-v8-desborde` (V8 `desborde_admitido_con_terraplen_protegido`, T7B-02),
+>   `claude/ve4e-agua-por-condicion` (WA estática y sísmica con `sin_drenaje`, VE3-21).
+>   Después: revisión independiente con Fable de cada una, integración en una rama, suite,
+>   sellos y `main`. Si la sesión se corta: cada rama tiene su avance; retomar desde ellas.
 > - **Sigue abierto, para cada obra (no es del programa):** con los valores de archivo el
 >   sismo del cabezal no cierra; se cierra declarando por obra `reduccion_por_desplazamiento`
 >   + `cedente`, con el detalle de juntas, la aceptación escrita del Propietario y el EMS real
