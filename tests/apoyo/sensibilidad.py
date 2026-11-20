@@ -350,6 +350,12 @@ NO_BARRIBLES: Dict[str, str] = {
                           "tiene ventana: el TR del evento extremo lo fija el "
                           "Propietario con el estudio hidrológico"),
     "c_phi_fundacion": _R_ENSAYO,
+    # --- VE-4d --- el desborde admitido de V8, que el juego no declara (su
+    # umbral es «sin_desborde_de_la_plataforma»).
+    "caudal_unitario_admisible_desborde_m2s": _R_SIN_VALOR,
+    "coeficientes_desborde_plataforma": (
+        "la Figura 3.11 del HDS-5 digitalizada (curvas por superficie); "
+        + _R_ANALOGIA + "; y el juego no lo lee (umbral sin desborde)"),
     "capacidad_portante_adm": (_R_SIN_VALOR + "; " + _R_ENSAYO + "; "
                                + _R_SIN_CONSUMIDOR),
     "Mw_licuefaccion": (_R_SIN_VALOR + "; " + _R_ENSAYO + "; "

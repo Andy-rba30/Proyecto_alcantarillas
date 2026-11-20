@@ -486,8 +486,6 @@ tabla: detienen sólo en una rama que ninguna de las dos bases recorre.
 | `cota_afectacion_aguas_arriba_msnm` | entrada del proyecto | Topografía | V5 con el método `cota_de_afectacion`, y con ella el punto (Familias A y B) |
 | `TR_evento_extremo` | criterio que se declara | Propietario (con el estudio hidrológico) | V8, y con ella el punto |
 | `umbral_no_colapso_evento_extremo` | criterio que se declara | Propietario | Ídem |
-| `caudal_unitario_admisible_desborde_m2s` | criterio que se declara | Proyectista (diseño de la protección del terraplén) | V8 con el desborde admitido, y con ella el punto |
-| `longitud_cresta_desborde_m` | entrada del proyecto | Trazo (perfil longitudinal de la vía) | Ídem |
 | `remanso_derecho_via` | criterio que se declara | Proyectista | V5, y con ella el punto (Familias A y B) |
 | `categoria_refuerzo_aashto` | criterio que se declara | Proyectista · especificación de materiales | Los tres recubrimientos de diseño de la 9.4 de la Fase 9 del proyecto (§3.4) |
 
