@@ -14,6 +14,13 @@ cada vez que se integra algo. Fecha de esta versión: 2026-11-20.
 > regeneración de documentos, suite en worktree limpio, sello y fast-forward de `main`.
 > **Si la sesión se corta:** retomar desde esas ramas (su último commit) e integrarlas en este orden:
 > alero → A → B → C → A11.
+> **Avance (2026-11-20, noche):** las cuatro ramas recibieron revisión de Fable; alero y lote A tienen
+> el dictamen aplicado y están integrados en `claude/ve7-integracion` (desde `b6be2af`, 1566 tests de
+> sus áreas en verde). Lote B (dictamen en curso: B10 C por tabla, envolvente seco/sumergido, ▲ NF
+> estacional, ▲ ancho de 5.10.6, ▲ metrado del acero, ▲ cuneta 0.30) y lote C (dictamen en curso:
+> comparador cerrado, línea CLI de 0-bis, 4.1 del índice, quinta corrida, test_c7, caducidad de la
+> cita sin firma) faltan por terminar e integrar. Pendiente en esta rama: 11 fallos de
+> `test_t11_validacion_integral`/`test_t11_sensibilidad` por diagnosticar antes de sellar `main`.
 
 > **ESTADO (2026-11-20, tarde, sesión `claude/laughing-euler-ybme10`): VE-5 y VE-6 integrados.**
 > `main` había sido vaciado (commit `03ab811`, «Repositorio vaciado a pedido del propietario»)
