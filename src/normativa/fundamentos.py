@@ -1686,10 +1686,11 @@ H_C_SUBAREAS = _fundamento(
         "cuenca, el caudal de la cuenca entera es la suma de los caudales de "
         "sus subareas, y eso es lo mismo que la formula con un coeficiente "
         "ponderado por area. Es una consecuencia de la ecuacion del Manual, "
-        "no una regla aparte, y los coeficientes de cada subarea los declara "
-        "el estudio hidrologico."),
+        "no una regla aparte; el coeficiente de cada subarea se lee de su "
+        "tabla como el de la cuenca entera, nunca tecleado."),
     verbo=Verbo.DEFINE,
-    citas=("MC_HHD.3.12.2",),               # DEFINICION -> sostiene DEFINE
+    citas=("MC_HHD.3.12.2",                 # DEFINICION -> sostiene DEFINE
+           "MC_HHD.3.12.2#T08"),
     que_pasa_si_no_se_hace=(
         "La cuenca con subareas tendria que describirse con UNA fila de la "
         "Tabla N 08, la de la cobertura dominante, y el caudal de la "

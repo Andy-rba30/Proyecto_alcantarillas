@@ -239,10 +239,13 @@ COLUMNAS_CUENCAS_OPCIONALES: Tuple[str, ...] = ("H_desnivel_m",
                                                 "c_retardo_izzard",
                                                 "n_manning_superficial",
                                                 "subareas")
-# --- VE-7 lote B, B10 --- La forma de la columna `subareas`: pares
-# «C:area_ha» separados por «;» (docs/contrato_entradas.md §2-bis).
+# --- VE-7 lote B, B10 (dictamen Fable, decision 1) --- La forma de la
+# columna `subareas`: «cobertura/suelo[/S_terreno]:area_ha» separadas por
+# «;»; en una superficie vial, «cobertura:area_ha» (docs/contrato_entradas.md
+# §2-bis). El C NO se teclea: sale de la Tabla N 08 o de la tabla vial.
 SEPARADOR_SUBAREAS = ";"
 SEPARADOR_C_AREA = ":"
+SEPARADOR_COBERTURA = "/"
 COLUMNA_SUBAREAS = "subareas"
 COLUMNAS_ESTACION: Tuple[str, ...] = ("estacion", "anio", "p24_mm", "fen")
 # Como se escribe el hecho «este año fue FEN» en la columna `fen`.
@@ -2373,7 +2376,7 @@ def coeficiente_de_superficie_vial(*, superficie: str, TR: float,
 
 def _paso_c(cuenca: Cuenca, TR: float) -> Tuple[float, PasoDeMemoria]:
     if cuenca.subareas:
-        return _paso_c_por_subareas(cuenca)
+        return _paso_c_por_subareas(cuenca, TR)
     if cuenca.cobertura in SUPERFICIES_VIALES:
         return _paso_c_vial(cuenca, TR)
     S = cuenca.S_terreno
@@ -2415,30 +2418,71 @@ def coeficiente_ponderado(subareas: Sequence[Tuple[float, float]]) -> float:
     `MC_HHD.3.12.2`): con la misma intensidad I y el mismo tiempo de
     concentracion sobre toda la cuenca, Q = 0.278·I·ΣC_i·A_i =
     0.278·C·I·A con C el ponderado por area. Fundamento [C] derivado de esa
-    cita (`FH.C_SUBAREAS`); el WSDOT Hydraulics Manual, Eq. 2-4, escribe la
-    misma modificacion, y su cita queda por registrar.
+    cita (`FH.C_SUBAREAS`).
     """
     return (sum(C * a for C, a in subareas)
             / sum(a for _C, a in subareas))
 
 
-def _paso_c_por_subareas(cuenca: Cuenca) -> Tuple[float, PasoDeMemoria]:
+def _paso_c_por_subareas(cuenca: Cuenca, TR: float
+                         ) -> Tuple[float, PasoDeMemoria]:
     """
-    --- VE-7 lote B, B10 (ficha VE5-MH-01) --- El paso del coeficiente de una
-    cuenca con subareas: imprime cada subarea (su C y su area) y el
-    ponderado por area. Los C los declara el estudio hidrologico en la
-    columna `subareas`; el programa no los lee de la Tabla N 08 ni los
-    ajusta por periodo de retorno.
+    --- VE-7 lote B, B10 (ficha VE5-MH-01; dictamen Fable, decision 1) --- El
+    paso del coeficiente de una cuenca con subareas. Cada C_k se LEE de su
+    tabla, como el de la cuenca entera (`FH.C`: el programa no acepta un
+    coeficiente tecleado): la Tabla N 08 por cobertura, suelo y pendiente
+    del terreno (la de la subarea, o `S_terreno` de la cuenca), o la tabla
+    vial con su incremento por periodo de retorno
+    (`coeficiente_de_superficie_vial`, el mismo de `_paso_c_vial`). Imprime
+    cada subarea (cobertura, suelo, S, columna, C_k, A_k y la laguna del
+    1 %) y el ponderado por area.
     """
-    C = coeficiente_ponderado(cuenca.subareas)
-    sustitucion = []
-    for k, (C_k, A_k) in enumerate(cuenca.subareas, start=1):
-        sustitucion.append(Magnitud(
-            f"C_{k}", C_k, "", f"subarea {k}, columna subareas de "
-                               f"{cuenca.origen}", cifras=CIFRAS_MAGNITUD))
-        sustitucion.append(Magnitud(
-            f"A_{k}", A_k, "ha", f"subarea {k}, columna subareas de "
-                                 f"{cuenca.origen}", cifras=CIFRAS_MAGNITUD))
+    pares, sustitucion, notas = [], [], []
+    hay_vial = False
+    for k, (cobertura, suelo, S_k, A_k) in enumerate(cuenca.subareas,
+                                                      start=1):
+        origen = f"subarea {k}, columna subareas de {cuenca.origen}"
+        if cobertura in SUPERFICIES_VIALES:
+            hay_vial = True
+            C_k, c10, incremento, tomada, topado = \
+                coeficiente_de_superficie_vial(superficie=cobertura, TR=TR,
+                                               id_punto=cuenca.id)
+            sustitucion += [
+                Magnitud(f"superficie_{k}", cobertura, "", origen),
+                Magnitud(f"C10_{k}", c10, "", f"criterio adoptado "
+                         f"'{CRITERIO_C_VIAL}' [C]: fila de la Table 2-2",
+                         cifras=CIFRAS_MAGNITUD),
+                Magnitud(f"incremento_{k}", incremento, "", f"el de la "
+                         f"frecuencia tabulada de {tomada} años para T = "
+                         f"{TR:g}" + ("; topado" if topado else ""),
+                         cifras=CIFRAS_MAGNITUD)]
+        else:
+            S = cuenca.S_terreno if S_k is None else S_k
+            C_k, columna, laguna = coeficiente_de_escorrentia(
+                cobertura=cobertura, suelo=suelo, S=S)
+            sustitucion += [
+                Magnitud(f"cobertura_{k}", cobertura, "", origen),
+                Magnitud(f"suelo_{k}", suelo, "", origen),
+                Magnitud(f"S_{k}", S, "m/m",
+                         origen if S_k is not None else
+                         f"columna S_terreno de {cuenca.origen} (la subarea "
+                         "no declara la suya)", cifras=CIFRAS_FINA),
+                Magnitud(f"columna_{k}", columna, "",
+                         "clase de pendiente de la Tabla N 08 en que cae S")]
+            if laguna:
+                notas.append(f"Subarea {k}: la pendiente es exactamente 1 %, "
+                             "que la tabla no cubre («> 1%» y «< 1%»): se "
+                             "leyo la columna «suave», la de mayor "
+                             "coeficiente.")
+        sustitucion += [
+            Magnitud(f"C_{k}", C_k, "", "celda de la tabla de la subarea",
+                     cifras=CIFRAS_MAGNITUD),
+            Magnitud(f"A_{k}", A_k, "ha", origen, cifras=CIFRAS_MAGNITUD)]
+        pares.append((C_k, A_k))
+    C = coeficiente_ponderado(pares)
+    citas = ("MC_HHD.3.12.2", "MC_HHD.3.12.2#T08") + (
+        ("WSDOT_HM.2-6.2#T2-2", "WSDOT_HM.2-6.2#FRECUENCIA")
+        if hay_vial else ())
     return C, paso(
         "FH.C_SUBAREAS", codigo=CODIGO_C,
         que="Coeficiente de escorrentia C de una cuenca con subareas, "
@@ -2446,20 +2490,19 @@ def _paso_c_por_subareas(cuenca: Cuenca) -> Tuple[float, PasoDeMemoria]:
         formula="C = Σ C_i·A_i / Σ A_i   [superposicion de la ecuacion (28) "
                 "con la misma I y el mismo tc]",
         formula_cita_id="MC_HHD.3.12.2",
-        citas_textuales=("MC_HHD.3.12.2",),
+        citas_textuales=citas,
         sustitucion=tuple(sustitucion),
         resultado=Magnitud("C", C, "", "coeficiente ponderado de la cuenca",
                            cifras=CIFRAS_MAGNITUD),
         veredicto=Veredicto(
             tipo=TipoDeVeredicto.SIN_VEREDICTO,
-            explicacion="ponderacion de datos declarados, no verificacion"),
-        nota_del_proyecto=(
-            "Los coeficientes de cada subarea los declara el estudio "
-            "hidrologico en la columna subareas; el programa no los lee de "
-            "la Tabla N 08. La ponderacion es la del WSDOT Hydraulics "
-            "Manual, Equation 2-4 (pag. impresa 2-8), fuente tecnica [C] "
-            "cuya cita queda por registrar; aqui se sostiene como "
-            "superposicion de la ecuacion (28) del Manual."))
+            explicacion="lectura de tabla y ponderacion, no verificacion"),
+        nota_del_proyecto=" ".join(
+            ["Cada coeficiente sale de su tabla, por cobertura, suelo y "
+             "pendiente (o de la tabla vial con su incremento por periodo "
+             "de retorno); la ponderacion por area es la superposicion de "
+             "la ecuacion (28) del Manual con la misma intensidad y el "
+             "mismo tiempo de concentracion."] + notas))
 
 
 def _paso_c_vial(cuenca: Cuenca, TR: float) -> Tuple[float, PasoDeMemoria]:
@@ -3381,7 +3424,8 @@ def anticipar_caudal(cuenca: Cuenca, serie: SerieDeEstacion, *,
     # El orden de `_caudal_calculado`: area, lluvia, C, Tc, intensidad, K.
     compuerta(lambda: exigir_alcance_del_racional(cuenca.area_km2, cuenca.id))
     lluvia()
-    if cuenca.cobertura in SUPERFICIES_VIALES:
+    if cuenca.cobertura in SUPERFICIES_VIALES or any(
+            s[0] in SUPERFICIES_VIALES for s in cuenca.subareas):
         criterio(CRITERIO_C_VIAL)
     tiempo_de_concentracion_(racional_modificado=False)
     if criterio(CRITERIO_RELACION) == RELACION_IDF_REGIONAL:
@@ -3565,8 +3609,21 @@ def cargar_cuencas(ruta: Any, *, datos: Optional[bytes] = None) -> Dict[str, Cue
                 "id", valor=id_, id_punto=id_,
                 motivo=f"la obra tiene dos filas en '{ruta.name}': una "
                        "cuenca por obra")
-        cobertura = _texto(fila, "cobertura", donde)
-        if cobertura in SUPERFICIES_VIALES:
+        area_km2 = _numero(fila, "area_km2", donde, id_punto=id_)
+        subareas = _subareas(fila, donde, id_, area_km2)
+        if subareas:
+            # --- dictamen Fable (decision 1) --- con subareas la cobertura
+            # y el suelo son los de cada una: los de la fila van vacios.
+            for columna in ("cobertura", "suelo"):
+                if fila.get(columna, ""):
+                    raise DatoInvalidoError(
+                        columna, valor=fila.get(columna), id_punto=id_,
+                        motivo="contradice a otro dato: la fila declara "
+                               "subareas, cada una con su cobertura y su "
+                               f"suelo; la celda va vacia ({donde})")
+            cobertura, suelo = "", ""
+        elif _texto(fila, "cobertura", donde) in SUPERFICIES_VIALES:
+            cobertura = _texto(fila, "cobertura", donde)
             suelo = fila.get("suelo", "")
             if suelo:
                 raise DatoInvalidoError(
@@ -3576,6 +3633,7 @@ def cargar_cuencas(ruta: Any, *, datos: Optional[bytes] = None) -> Dict[str, Cue
                            "plataforma vial, cuyo coeficiente no depende "
                            f"del tipo de suelo; la celda va vacia ({donde})")
         else:
+            cobertura = _texto(fila, "cobertura", donde)
             suelo = _texto(fila, "suelo", donde)
             if (cobertura, suelo) not in TABLA_08_COEFICIENTE_DE_ESCORRENTIA:
                 coeficiente_de_escorrentia(cobertura=cobertura, suelo=suelo,
@@ -3646,23 +3704,25 @@ def cargar_cuencas(ruta: Any, *, datos: Optional[bytes] = None) -> Dict[str, Cue
             ajuste_kirpich=ajuste, CN=CN, origen=donde,
             c_retardo_izzard=de_superficie["c_retardo_izzard"],
             n_manning_superficial=de_superficie["n_manning_superficial"],
-            subareas=_subareas(fila, donde, id_,
-                               _numero(fila, "area_km2", donde,
-                                       id_punto=id_)))
+            subareas=subareas)
     return cuencas
 
 
 def _subareas(fila: Dict[str, str], donde: str, id_: str,
-              area_km2: float) -> Tuple[Tuple[float, float], ...]:
+              area_km2: float
+              ) -> Tuple[Tuple[str, str, Optional[float], float], ...]:
     """
-    --- VE-7 lote B, B10 (ficha VE5-MH-01; decision del consultor Fable,
-    triaje VE-7, 2026-11-20) --- La columna OPCIONAL `subareas` del CSV de
-    cuencas: «C:area_ha;C:area_ha;...», cada subarea con su coeficiente de
-    escorrentia y su area en hectareas. Vacia o ausente, (): C sale de la
-    Tabla N 08 como hasta hoy.
+    --- VE-7 lote B, B10 (ficha VE5-MH-01; dictamen Fable, decision 1) --- La
+    columna OPCIONAL `subareas` del CSV de cuencas:
+    «cobertura/suelo[/S_terreno]:area_ha;...», o «cobertura:area_ha» en una
+    superficie de la plataforma vial (sin suelo, como la columna). Vacia o
+    ausente, (): C sale de la Tabla N 08 como hasta hoy. El coeficiente NO
+    se teclea (`FH.C`): un «0.6:1.2» es una cobertura que no existe.
 
-    Valida y no corrige: cada C es un coeficiente (0 < C <= 1, la fraccion
-    de la lluvia que escurre), cada area es positiva y finita, y la suma de
+    Valida y no corrige, con los MISMOS validadores de las columnas de
+    `cargar_cuencas`: la cobertura y el suelo contra su tabla (o la
+    superficie vial sin suelo), la pendiente opcional finita, positiva y
+    bajo el techo de `S_terreno`, cada area positiva y finita, y la suma de
     las areas es el area de la cuenca --la de `area_km2`, que
     `exigir_areas_coherentes` ata a la columna `area_ha` del CSV de puntos--
     con la tolerancia del area escrita dos veces
@@ -3672,7 +3732,10 @@ def _subareas(fila: Dict[str, str], donde: str, id_: str,
     bruto = fila.get(COLUMNA_SUBAREAS, "")
     if not bruto:
         return ()
-    pares: List[Tuple[float, float]] = []
+    forma = ("cada subarea se escribe «cobertura/suelo[/S_terreno]:area_ha» "
+             "(o «cobertura:area_ha» en una superficie vial) y se separan con "
+             "«;»; el coeficiente no se teclea, sale de su tabla")
+    pares: List[Tuple[str, str, Optional[float], float]] = []
     for trozo in bruto.split(SEPARADOR_SUBAREAS):
         if not trozo.strip():
             continue
@@ -3680,28 +3743,51 @@ def _subareas(fila: Dict[str, str], donde: str, id_: str,
         try:
             if len(partes) != 2:
                 raise ValueError
-            C, area_ha = float(partes[0]), float(partes[1])
+            area_ha = float(partes[1])
         except ValueError:
             raise DatoInvalidoError(
                 COLUMNA_SUBAREAS, valor=bruto, id_punto=id_,
-                motivo=f"cada subarea se escribe «C:area_ha» y se separan "
-                       f"con «;»; «{trozo.strip()}» no tiene esa forma "
+                motivo=f"{forma}; «{trozo.strip()}» no tiene esa forma "
                        f"({donde})") from None
-        if not (math.isfinite(C) and 0 < C <= 1):
-            raise DatoInvalidoError(
-                COLUMNA_SUBAREAS, valor=bruto, id_punto=id_,
-                motivo=f"el coeficiente de escorrentia {C:g} de la subarea "
-                       f"«{trozo.strip()}» no es una fraccion de la lluvia "
-                       f"(0 < C <= 1) ({donde})")
+        campos = [c.strip() for c in partes[0].split(SEPARADOR_COBERTURA)]
+        cobertura = campos[0]
+        if cobertura in SUPERFICIES_VIALES:
+            if len(campos) != 1:
+                raise DatoInvalidoError(
+                    COLUMNA_SUBAREAS, valor=bruto, id_punto=id_,
+                    motivo=f"contradice a otro dato: «{cobertura}» es una "
+                           "superficie de la plataforma vial, cuyo "
+                           "coeficiente no depende del suelo ni de la "
+                           f"pendiente; va sola ({donde})")
+            suelo, S_k = "", None
+        else:
+            if len(campos) not in (2, 3) or not campos[1]:
+                raise DatoInvalidoError(
+                    COLUMNA_SUBAREAS, valor=bruto, id_punto=id_,
+                    motivo=f"{forma}; «{trozo.strip()}» no nombra una "
+                           f"cobertura y un suelo de la Tabla N 08 ({donde})")
+            suelo = campos[1]
+            if (cobertura, suelo) not in TABLA_08_COEFICIENTE_DE_ESCORRENTIA:
+                try:
+                    coeficiente_de_escorrentia(cobertura=cobertura,
+                                               suelo=suelo, S=1)
+                except DatoInvalidoError as exc:
+                    raise DatoInvalidoError(
+                        COLUMNA_SUBAREAS, valor=bruto, id_punto=id_,
+                        motivo=f"«{trozo.strip()}»: {exc} ({donde})") from None
+            S_k = None
+            if len(campos) == 3:
+                S_k = _numero({"S_terreno": campos[2]}, "S_terreno", donde,
+                              techo=S_CAUCE_MAX, id_punto=id_)
         if not (math.isfinite(area_ha) and area_ha > 0):
             raise DatoInvalidoError(
                 COLUMNA_SUBAREAS, valor=bruto, id_punto=id_,
                 motivo=f"el area de la subarea «{trozo.strip()}» tiene que "
                        f"ser un numero finito y positivo, en ha ({donde})")
-        pares.append((C, area_ha))
+        pares.append((cobertura, suelo, S_k, area_ha))
     if not pares:
         return ()
-    suma_ha = sum(a for _C, a in pares)
+    suma_ha = sum(p[-1] for p in pares)
     de_la_cuenca_ha = area_km2 * HECTAREAS_POR_KM2
     if not math.isclose(suma_ha, de_la_cuenca_ha,
                         rel_tol=TOL_REL_AREA_ESCRITA_DOS_VECES):
