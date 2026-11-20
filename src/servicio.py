@@ -1893,6 +1893,12 @@ class InformePunto:
     # FASE_METRADOS en `bloqueos`).
     compatibilidad_rasante: Optional[FilaCompatibilidadRasante] = None
     metrado: Optional[MetradoDelPunto] = None
+    # --- VE-6 (item 22 del censo; fichas T6-01 y T7A-06) --- La pasada de
+    # refinamiento del control de salida con la longitud entre cabezales
+    # (`M4.RefinamientoLongitud`), o None si no corrio (sin cabezal, longitud
+    # declarada o terraplen simetrico). Su paso (9.0.6) y su aviso viajan
+    # tambien en `cabezal`, que es por donde la memoria y `avisos()` los leen.
+    refinamiento_longitud: Optional[Any] = None
 
     @property
     def punto_de_calculo(self) -> PuntoCritico:
@@ -2431,7 +2437,34 @@ def _resolver_tw(informe: InformePunto, externos: DatosExternos,
     """
     punto = informe.punto_de_calculo
     declarado = externos.dato(punto.id, "TW_m")
-    S = _S_del_diseno(informe, externos)      # T-6: la pendiente ADOPTADA
+    resuelto = _etapa(informe.bloqueos, FASE_DISENO,
+                      "tirante en el receptor (TW, Sec. 1.3)",
+                      lambda: _tw_de_la_seccion_1_3(informe, externos,
+                                                    longitud.valor))
+    if resuelto is None:
+        return None
+    informe.tw_sec13 = resuelto
+    origen = (declarado.origen if declarado is not None
+              else f"Sec. 1.3 -- {resuelto.via.value}")
+    return DatoDeclarado("TW_m", resuelto.valor, origen)
+
+
+def _tw_de_la_seccion_1_3(informe: InformePunto, externos: DatosExternos,
+                          longitud: float,
+                          S: Optional[float] = None) -> TWDeterminado:
+    """
+    El TW de la Sec. 1.3 con la cota de fondo de la salida de `longitud`
+    (cota de entrada - S·longitud). Es el cuerpo de `_resolver_tw`, aparte
+    desde VE-6 para que la pasada de refinamiento de la Fase 9
+    (`_fase_9_refinamiento`) lo pida con la longitud entre cabezales por la
+    MISMA via -- declarado, `cota_TW`, Manning en el receptor, escenarios
+    acotados o el criterio 'TW_receptor' -- y no por una resta propia.
+    `S` es la del diseño; sin ella, la de `_S_del_diseno`.
+    """
+    punto = informe.punto_de_calculo
+    declarado = externos.dato(punto.id, "TW_m")
+    if S is None:
+        S = _S_del_diseno(informe, externos)  # T-6: la pendiente ADOPTADA
     # --- T-2 --- (INF-3.2.8) La seccion MEDIDA del receptor, si el
     # expediente la trae: gana sobre el criterio 'seccion_receptor' en las
     # vias 3 y 4, y M3 dice en el paso con cual corrio.
@@ -2457,20 +2490,13 @@ def _resolver_tw(informe: InformePunto, externos: DatosExternos,
         fondo_salida = None
         if declarado_a_mano is None:
             pendiente = S if S is not None else punto.exigir("S_cauce")
-            fondo_salida = cota_salida(punto=punto, longitud=longitud.valor,
+            fondo_salida = cota_salida(punto=punto, longitud=longitud,
                                        S=pendiente)
         return M3.tw_seccion_1_3(punto=punto, cota_fondo_salida=fondo_salida,
                                  tw_declarado=declarado_a_mano,
                                  seccion_medida=seccion_medida)
 
-    resuelto = _etapa(informe.bloqueos, FASE_DISENO,
-                      "tirante en el receptor (TW, Sec. 1.3)", resolver)
-    if resuelto is None:
-        return None
-    informe.tw_sec13 = resuelto
-    origen = (declarado.origen if declarado is not None
-              else f"Sec. 1.3 -- {resuelto.via.value}")
-    return DatoDeclarado("TW_m", resuelto.valor, origen)
+    return resolver()
 
 
 def _piso_del_derecho_de_via() -> Tuple[Optional[float], str]:
@@ -3657,6 +3683,117 @@ def _fase_9(informe: InformePunto,
     _fase_9_armado(informe, entornos)
 
 
+ETAPA_REFINAMIENTO_LONGITUD = ("control de salida con la longitud entre "
+                               "cabezales (VE-6)")
+
+
+def _fase_9_refinamiento(informe: InformePunto,
+                         externos: Optional[DatosExternos] = None) -> None:
+    """
+    --- VE-6 (item 22 del censo; fichas T6-01 y T7A-06) --- LA PASADA DE
+    REFINAMIENTO: con la longitud entre cabezales que la Fase 9 cerro
+    (`CabezalDelPunto.longitud_entre_cabezales`), el control de la seccion
+    adoptada se rehace una vez (`M4.refinar_con_longitud_entre_cabezales`)
+    con el TW que la Sec. 1.3 da con la cota de salida de esa longitud
+    (`_tw_de_la_seccion_1_3`, la MISMA via del diseño). El paso 9.0.6 y, si
+    la carga sube o el control cambia, el aviso, se agregan al cabezal del
+    punto: la memoria y `avisos()` ya los leen de ahi.
+
+    No corre sin cabezal, sin longitud entre cabezales (longitud declarada o
+    terraplen simetrico: el paso 9.0.5 dice por que) o sin diseño aceptado.
+    Si el TW o el control no se pueden rehacer, NO bloquea el punto -- el
+    diseño ya esta verificado con la longitud aproximada --: lo avisa con el
+    motivo.
+    """
+    cabezal = informe.cabezal
+    if (externos is None or cabezal is None
+            or cabezal.longitud_entre_cabezales is None
+            or not informe.dimensionado or informe.longitud is None):
+        return
+    resultado = informe.resultado
+    diseno = resultado.resultado_hidraulico
+    L_cab = cabezal.longitud_entre_cabezales
+    try:
+        tw = _tw_de_la_seccion_1_3(informe, externos,
+                                   L_cab, S=diseno.S)
+        refinado = M4.refinar_con_longitud_entre_cabezales(
+            seccion=resultado.seccion, material=resultado.material,
+            diseno=diseno, L_diseno=informe.longitud.valor,
+            L_cabezales=L_cab, TW_cabezales=tw.valor,
+            id_punto=informe.punto.id)
+    except ErrorProyecto as exc:
+        informe.cabezal = replace(cabezal, avisos=cabezal.avisos + (
+            f"Longitud entre cabezales de {informe.punto.id}: el control de "
+            f"salida no se pudo rehacer con L_cab = {L_cab:.3f} m "
+            f"({type(exc).__name__}: {exc}); el diseño queda con la "
+            "longitud aproximada de 7.B (fichas T6-01 y T7A-06)",))
+        return
+    no_se_cumplirian = _lo_que_no_se_cumpliria(informe, refinado)
+    if no_se_cumplirian:
+        refinado = refinado._replace(aviso=(
+            (refinado.aviso or (
+                f"Longitud entre cabezales de {informe.punto.id}: con L_cab "
+                f"= {L_cab:.3f} m la hidraulica de la seccion adoptada "
+                "cambia (el diseño corrio con la longitud aproximada de 7.B "
+                "y NO se sustituye)"))
+            + ". " + "; ".join(no_se_cumplirian)
+            + ": la corrida no se detiene, y lo dice (hoja de ruta §7.B: "
+              "nunca un resultado silencioso)"))
+    informe.refinamiento_longitud = refinado
+    informe.cabezal = replace(
+        cabezal, pasos=cabezal.pasos + (refinado.paso,),
+        avisos=cabezal.avisos + ((refinado.aviso,) if refinado.aviso
+                                 else ()))
+
+
+def _lo_que_no_se_cumpliria(informe: InformePunto,
+                            refinado: Any) -> List[str]:
+    """
+    --- dictamen Fable (2026-11-20, cambio 1 A) --- Que verificaciones del
+    diseño dejarian de cumplirse con la longitud entre cabezales, dicho en
+    frases para el aviso:
+
+      * V4 juzga una COTA (entrada + HW) contra la subrasante menos el
+        resguardo: su margen, admisible - obtenido, esta en metros, y la
+        carga refinada lo consume entero con Δ = HW(L_cab) - HW(L). Se
+        compara Δ con ese margen, ya calculado por la Fase 5.
+      * V1 juzga el TIRANTE en el barril (y/D), no el HW: comparar Δ con su
+        margen mezclaria dimensiones. Se re-evalua V1 (`M5.v1_borde_libre`)
+        con la hidraulica refinada (`RefinamientoLongitud.
+        resultado_cabezales`), que trae el TW de la longitud entre cabezales.
+
+    Solo cuenta lo que el diseño CUMPLIA. Ninguna de las dos bloquea ni
+    sustituye: alimentan el aviso.
+    """
+    resultado = informe.resultado
+    diseno = {v.codigo: v for v in resultado.verificaciones}
+    frases: List[str] = []
+    v4 = diseno.get("V4")
+    if v4 is not None and v4.cumple:
+        margen = v4.valor_admisible - v4.valor_obtenido
+        delta = refinado.HW_cabezales_m - refinado.HW_diseno_m
+        if delta > margen + TOL_UMBRAL_NORMATIVO:
+            frases.append(
+                f"V4 NO se cumpliria con la longitud entre cabezales: la "
+                f"carga sube {delta:.3f} m y el margen del diseño frente a "
+                f"la subrasante menos el resguardo es {margen:.3f} m")
+    v1 = diseno.get("V1")
+    hidraulica = getattr(refinado, "resultado_cabezales", None)
+    if v1 is not None and v1.cumple and hidraulica is not None:
+        try:
+            v1_cab = M5.v1_borde_libre(
+                D=resultado.seccion.altura, material=resultado.material,
+                punto=informe.punto_de_calculo, resultado=hidraulica)
+        except ErrorProyecto:
+            v1_cab = None
+        if v1_cab is not None and not v1_cab.cumple:
+            frases.append(
+                f"V1 NO se cumpliria con la longitud entre cabezales: y/D = "
+                f"{v1_cab.valor_obtenido:.3f} frente a "
+                f"{v1_cab.valor_admisible:.3f} admisible")
+    return frases
+
+
 def etapa_de_armado(extremo: str, que: str) -> str:
     """--- T-7c --- El rotulo de una etapa del armado de un cabezal."""
     return f"armado del cabezal de {extremo}: {que} (T-7c)"
@@ -4587,6 +4724,9 @@ def correr_punto(punto: PuntoCritico, externos: DatosExternos,
             # la difiere entera `_cabezal_diferido`, una vez por corrida).
             if not _difiere(alcance, "M9_cabezal"):
                 _fase_9(informe, externos)
+                # --- VE-6 --- la pasada de refinamiento del control de
+                # salida con la longitud entre cabezales (item 22).
+                _fase_9_refinamiento(informe, externos)
             # --- VE-5 met --- los metrados leen el cabezal: van detras. Lo
             # decide el dato que consulta tambien el pre-vuelo (VE-6).
             if not consumo_diferido(alcance, "M12_metrados"):

@@ -4283,6 +4283,9 @@ una manera que conviene poder discutir.
   expediente donde `5bca7c6` medía 63.7, y 87.6 KB a perfil donde medía
   76.8; el techo `KB_POR_PUNTO_MAX` sólo mide expediente y quedó pegado a la
   medida) lo reconcilia T-10, que es quien rehace la memoria.
+- **VE-6 (ítem 22 del censo):** el control de salida de la sección adoptada se REHACE una vez
+  con la longitud entre cabezales, se imprime (paso 9.0.6) y se avisa si la carga sube o el
+  control cambia; el diseño no se sustituye. Ficha VE6-22.
 - **Dónde vive:** `src/modulos/M7_geometria.py::longitud_a_la_clave`
 
 ## T6-02 · M7 acota la pendiente del cauce a la banda de T-2 y V10 juzga la que quedó: V10 sólo se incumple con una pendiente declarada
@@ -5639,6 +5642,8 @@ sobre el árbol corregido, y cada una dice qué cambió.
   `orientacion_muro_respecto_al_trafico` y con el conflicto #4, y T-7b verifica qué dice
   el HDS-5 núm. 5.4.2 de las embocaduras esviadas. (3) «/ sen α» del encargo: solo
   coincide a 45° sin esviaje.
+- **VE-6:** el abierto (1) queda cerrado para el marco con las filas de la Carta 11 (ficha
+  VE6-T7A03); siguen el aleros-con-barril-esviado de la Carta 12 escala 3 y el (2).
 - **Qué haría falta:** la banda de la Carta 11 y el paso posterior a T-7c; corregir la
   frase del INFORME, que no es de este repositorio.
 - **Dónde vive:** `src/modulos/M9_cabezal.py::predimensionar_aleros`
@@ -5720,6 +5725,8 @@ sobre el árbol corregido, y cada una dice qué cambió.
   decía la FASE A (1.6 cm en A-01, con S = 0.006), y no se itera. El control de salida
   sigue con la aproximada (T6-01 sigue abierta en esa mitad).
 - **Qué haría falta:** `L` por sección en MD, o declarar `longitud_m` por punto.
+- **VE-6 (ítem 22 del censo):** la mitad del control de salida queda cerrada con la pasada de
+  refinamiento de la ficha VE6-22; la coronación de salida sigue sin iterarse.
 - **Dónde vive:** `src/modulos/M9_cabezal.py::longitud_entre_cabezales`
 
 ## T7A-07 · La aceptación de T-7a se escribió después del código; el rojo se midió contra la base
@@ -6924,6 +6931,8 @@ y un test regenera cada uno.
   crecientes se detiene en el primer escalón que no cabe, como antes. (6) El inválido de
   antes de la Fase 5 que detiene a UN solo material no bloquea ni decide; el `campo` del
   arranque negativo es `D`, no `diametros_normalizados`.
+- **VE-6 (ítem 34):** el abierto (2) queda cerrado bajo control de ENTRADA (ficha VE6-34);
+  bajo control de salida sigue sin darse.
 - **Qué haría falta:** para (1), el tamizado previo de 7.A corrido antes del bucle con la
   sección máxima supuesta, que el servicio no corre; para (6), decisión del dueño, y que M2
   valide el arranque de la progresión.
@@ -8218,6 +8227,8 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   T11-03: el HW depende de la longitud); E06
   (titular por V3), H7 (la progresión sigue tras una falla que sólo empeora) y H8 (cobertura G1
   fuera del bucle).
+- **VE-6 (ítem 34):** H8 (G1 dentro del bucle), H7 con V10 y el delta con V4 bajo control de
+  entrada quedan cerrados (ficha VE6-34); siguen H7 con V2/V2b/V7 y el delta bajo salida.
 - **Qué haría falta:** iterar 7.A con el HW para dar el delta de resguardo.
 - **Dónde vive:** `src/modulos/M5_verificaciones.py::v1_borde_libre`
 
@@ -8295,6 +8306,7 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   zapata queda no factible con los criterios de archivo, y se dice.
 - **Abierto:** la fila NF de los casos en que la zapata no cabe no itera el peralte (H-6); ver
   VE3-17 para las opciones de criterio.
+- **VE-6 (ítem 34):** sigue abierto; la razón y lo que haría falta, en la ficha VE6-34.
 - **Qué haría falta:** la decisión 9 del dueño (ver VE3-17) para que el talón se calcule con el método exacto, y, si se quiere, iterar el peralte también en las filas NF.
 - **Dónde vive:** `src/modulos/M9_cabezal.py::dimensionar_zapata_por_estabilidad`
 
@@ -8939,7 +8951,9 @@ generados (`indice_formulas.md`, línea base) no se regeneran aquí: los regener
 VE-6 (2026-11-20, rama `claude/ve6-prevuelo`, sobre `cc106ce`) corrige las dos causas que la
 integración de VE-5 (lotes met y catlic) dejó en rojo. El subagente Fable no se pudo lanzar
 en la sesión (la herramienta no estaba disponible): las dos decisiones salen del código y de
-las fichas VE5-MET-01 y VE5-CAT-03, que ya las sostenían.
+las fichas VE5-MET-01 y VE5-CAT-03, que ya las sostenían. Después las revisó Fable
+(dictamen del consultor, 2026-11-20): las dos «aprobar con cambios»; los cambios están en
+estas fichas.
 
 ## VE6-01 · El nivel freático en M12 es de expediente y detiene el rubro, no el punto
 
@@ -8986,3 +9000,90 @@ las fichas VE5-MET-01 y VE5-CAT-03, que ya las sostenían.
 - **Qué haría falta:** decidir si ese bloqueo entra en la tupla (una constante para su
   etapa).
 - **Dónde vive:** `src/servicio.py::FASES_AL_MARGEN_DEL_DIMENSIONADO`
+# Parte LXIII — Lo que VE-6 (integrador) dejó escrito: ítems 22 y 34 y el cabezal paralelo (T7A-03)
+
+VE-6 (2026-11-20, rama `claude/ve6-integrador`, base `3ce07b5` con VE-5 integrado) cierra lo que el
+plan de lotes del censo (`proceso/planes_mejora/ve3_estado/CENSO_PENDIENTES_FABLE_2026-11-20.md`,
+§7) dejó al integrador. La sesión no tuvo a mano la herramienta para consultar a Fable: las
+decisiones ambiguas las tomó ella, y cada ficha dice cuál, por qué y con qué cita. Después
+las revisó Fable (dictamen del consultor, 2026-11-20): las tres «aprobar con cambios», y los
+cambios están aplicados en estas fichas.
+
+## VE6-22 · El control de salida se rehace con la longitud entre cabezales: pasada de refinamiento con aviso
+
+- **Cerrado (ítem 22 del censo; fichas T6-01 y T7A-06; decisión del dueño del 2026-11-20,
+  «longitud entre cabezales con pasada de refinamiento y aviso»):** tras la Fase 9 del punto,
+  `servicio._fase_9_refinamiento` toma la longitud entre cabezales del paso 9.0.5 y pide a M4
+  (`refinar_con_longitud_entre_cabezales`) el control de la MISMA sección, material, caudal y
+  pendiente del diseño con L = L_cab y con el TW que la Sec. 1.3 da con la solera de salida de esa
+  longitud (`servicio._tw_de_la_seccion_1_3`, la misma vía del diseño: declarado, `cota_TW`,
+  Manning en el receptor, escenarios o el criterio). La entrada queda anclada en la cota de entrada
+  del punto y la salida en cota_entrada − S·L_cab: es EXACTAMENTE lo que daría declarar
+  `longitud_m` = L_cab, y el test lo fija contra esa otra corrida entera. El paso 9.0.6
+  (`F9.REFINAMIENTO_LONGITUD`, citas `HDS5_3ED.3.3.5#ENCAJE` y `HDS5_3ED.3.1.4#LONGITUD`) imprime
+  las dos cargas; el aviso sale SÓLO si la carga gobernante sube o el control cambia (con la carga
+  del diseño igual o mayor, el diseño quedó del lado de la carga mayor), y nombra el remedio:
+  declarar `longitud_m` por punto. Si el TW o el control no se pueden rehacer, se avisa con el
+  motivo y el punto no se bloquea (ya está verificado con la aproximada). Sin criterio nuevo: no hay
+  número que elegir.
+- **Decisión:** no se itera ni se sustituye: HDS-5 3.1.4 (pág. 3.9) arranca con longitud
+  aproximada y 3.3.5 (pág. 3.25) pide que la final «should be close», sin tolerancia; L_cab
+  depende de la coronación y ésta de la sección. En A-01 la carga no cambia (entrada gobierna).
+- **Dictamen Fable (2026-11-20, aprobado con cambios):** el aviso dice «V4 NO se cumpliría» si
+  Δ = HW(L_cab) − HW(L) supera el margen de V4 del diseño, y «V1 NO se cumpliría» si V1,
+  re-evaluada con la hidráulica refinada, deja de cumplir (V1 juzga y/D, no el HW: comparar Δ
+  con su margen mezclaría dimensiones); `F9.REFINAMIENTO_LONGITUD` pasa a RECOMIENDA («should
+  be close», 3.3.5). `servicio._lo_que_no_se_cumpliria`.
+- **Abierto:** V1, V4 y el tamizado de 7.A siguen juzgados con la carga del diseño; con la
+  refinada sólo se avisa. La coronación de salida sigue fijada con la cota de salida de la
+  aproximada (ficha T7A-06).
+- **Qué haría falta:** declarar `longitud_m` = L_cab en el punto avisado (gana y se verifica
+  entero); o, si el dueño lo pide, una segunda pasada completa de MD con L_cab.
+- **Dónde vive:** `src/modulos/M4_control.py::refinar_con_longitud_entre_cabezales`
+
+## VE6-T7A03 · El cabezal paralelo a la vía en un marco: lo pide una fila de la Carta 11 del HDS-5
+
+- **Cerrado (T7A-03 (1); decisión del dueño del 2026-11-13):** las filas de la Carta 11 (Tabla
+  A.1, PDF 197) tienen banda de esviaje del cabezal respecto del barril, leída del rótulo
+  (`BANDAS_ESVIAJE_CABEZAL_CAJON_A1`). Si un marco declara una en `embocadura_cajon`, su cabezal es
+  RECTO Y PARALELO A LA VÍA, sin aleros (`EmbocaduraDelPunto.orientacion`); la coherencia exige el
+  esviaje en la banda y el ke del borde de esa fila (`KE_C2_POR_FILA_CARTA_11`, dictamen Fable:
+  chaflán 3/4" → escuadra, 0.5; bisel 45° → biselado 0.2 o escuadra; es LECTURA de los rótulos
+  —la A.1 separa «chamfers» de «bevels» y la C.2 da 0.2 a «beveled edges on 3 sides»—, no frase
+  literal). L_c = ancho/cos θ + 2·empotramiento; CB1 contra ancho/cos θ. Avisa con aleros en
+  `embocadura_cabezal` y con varias celdas (`HDS5_3ED.5.4.2#EVITAR`).
+- **Decisiones (aprobadas por Fable):** la orientación la elige la FILA declarada (no alcanza a los
+  tubos); con cabezal paralelo el esviaje de la embocadura es el del barril (nota de
+  `#MAXIMO_PRACTICO`), sin interpolar fuera de banda; los dos cabezales van paralelos (`#PARALELO`).
+- **Abierto:** (1) `embocadura_cajon` es de proyecto y el esviaje es por punto: declarar una fila
+  de la Carta 11 detiene con `DatoInvalidoError` todo marco fuera de banda (con chaflán, todo el que
+  no tenga 15/30/45° exactos): seguro pero restrictivo. (2) El extremo oblicuo del marco no se
+  verifica en M8 (sin numeral atribuido). (3) Carta 12 escala 3 (paralelo con aleros) sin banda; la
+  nota del paso 9.2.2 y la h_eq por orientación, con el ítem 28. (4) Anterior a VE-6: la Carta 10
+  con cabezal normal admite cualquiera de los dos ke sin emparejar el borde.
+- **Qué haría falta:** declaración de la embocadura por punto; el extremo oblicuo en M8; los aleros
+  del paralelo; emparejar el borde de la Carta 10.
+- **Dónde vive:** `src/modulos/M9_cabezal.py::_embocadura_paralela`
+
+## VE6-34 · La progresión del catálogo: G1 dentro del bucle, V10 la detiene y el delta con V4 bajo control de entrada
+
+- **Cerrado (ítem 34; VE3-08 H7/H8/H3 a y T11-03 (2)):** (a) **H8**: el escalón que cumple toda la
+  Fase 5 pasa por la COBERTURA de 7.A antes de adoptarse (`MD._escalon_sin_cobertura`); si la
+  rasante no se la deja, queda rechazado con el delta de G1 (`EscalonSinCabida.por_cobertura`).
+  El material se descarta por rasante sólo si NINGÚN escalón restante es más bajo
+  (`_escalon_restante_mas_bajo`, dictamen Fable): en el tubo la progresión es ascendente y nada
+  cambia; en el marco `M2.progresion_de_cajon` no ordena los pares (B, H) y un par más bajo baja
+  la clave, así que la progresión sigue. Sólo la cobertura: el resguardo ya es V4. (b) **H7 con
+  V10**: V10 incumplida detiene la progresión (juzga `ResultadoHidraulico.S`, igual en todo
+  escalón). (c) **T11-03 (2)**: el escalón que no cabe y sólo incumple V4 da el delta del
+  resguardo bajo control de ENTRADA (cota inferior); bajo SALIDA, no. La hoja de ruta lleva el
+  «Addendum VE-6» en la nota T11-03 de §7.B.
+- **Decisiones (aprobadas por Fable con cambios):** H7 sólo con V10, la única cuya independencia
+  de la sección se demuestra; el delta bajo salida exigiría iterar 7.A con 7.B y no se inventa.
+- **Abierto:** H7 con V2, V2b y V7; el delta de V4 bajo salida; la rama «no cabe» de T11-03 en el
+  marco sigue deteniéndose en el primer par que no cabe aunque quede uno más bajo (abierto (5) de
+  T11-03, anterior a VE-6); la fila NF de VE3-13 sin iterar el peralte (M9 en otra rama; «inflar el
+  peralte no es diseño», decisión de VE-3.14 que sólo el dueño revierte).
+- **Qué haría falta:** la monotonía de V2/V2b/V7 con D; iterar 7.A con 7.B; aplicar la regla del
+  escalón más bajo también a la rama «no cabe»; la decisión del dueño sobre la fila NF.
+- **Dónde vive:** `src/modulos/MD.py::_escalon_sin_cobertura`

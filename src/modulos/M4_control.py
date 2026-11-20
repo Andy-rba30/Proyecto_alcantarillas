@@ -4041,6 +4041,161 @@ def resolver_control(seccion: Seccion, Q: float, S: float, L: float, TW: float,
 
 
 # ===========================================================================
+# --- VE-6 (integrador, item 22 del censo; fichas T6-01 y T7A-06) --- LA
+# PASADA DE REFINAMIENTO DEL CONTROL DE SALIDA CON LA LONGITUD ENTRE CABEZALES
+# ===========================================================================
+
+class RefinamientoLongitud(NamedTuple):
+    """
+    El control de la seccion ADOPTADA rehecho con la longitud entre
+    cabezales (`M9.longitud_entre_cabezales`), al lado del que corrio el
+    diseño con la longitud aproximada de 7.B. No sustituye al diseño: el
+    paso lo imprime y `aviso` (vacio si no hay nada que avisar) dice cuando
+    la longitud entre cabezales da una carga MAYOR o cambia el control.
+    """
+
+    L_diseno_m: float
+    L_cabezales_m: float
+    TW_diseno_m: float
+    TW_cabezales_m: float
+    HW_salida_diseno_m: float
+    HW_salida_cabezales_m: float
+    HW_diseno_m: float
+    HW_cabezales_m: float
+    control_diseno: ControlGobernante
+    control_cabezales: ControlGobernante
+    paso: object
+    aviso: str = ""
+    # --- dictamen Fable (2026-11-20) --- la hidraulica refinada entera, para
+    # que quien llama re-evalue V1 (que juzga el tirante, no el HW).
+    resultado_cabezales: object = None
+
+    @property
+    def delta_HW_m(self) -> float:
+        """HW gobernante con la longitud entre cabezales menos el del diseño."""
+        return self.HW_cabezales_m - self.HW_diseno_m
+
+
+def refinar_con_longitud_entre_cabezales(*, seccion: Seccion,
+                                         material: Material,
+                                         diseno: ResultadoHidraulico,
+                                         L_diseno: float, L_cabezales: float,
+                                         TW_cabezales: float,
+                                         id_punto: str = ""
+                                         ) -> RefinamientoLongitud:
+    """
+    La pasada de refinamiento: `resolver_control` de la MISMA seccion, el
+    mismo material, el mismo caudal y la misma pendiente del diseño
+    (`diseno.Q`, `diseno.S`), con la longitud entre cabezales y el TW que la
+    Sec. 1.3 da con la cota de salida de esa longitud (lo resuelve quien
+    llama: con el TW declarado es el mismo; con una cota de agua del
+    receptor, ese nivel menos la solera de salida, que con la longitud menor
+    queda S·ΔL mas alta).
+
+    ES LO MISMO QUE DECLARAR `longitud_m` = L_cab PARA ESA SECCION: la
+    entrada queda anclada en la cota de entrada del punto y la salida en
+    cota_entrada - S·L_cab, como 7.B hace con una longitud declarada. Lo
+    fija `tests/test_ve6_refinamiento_longitud.py` contra esa otra via.
+
+    POR QUE NO SE ITERA NI SE SUSTITUYE (fichas T6-01 y T7A-06). El HDS-5
+    manda arrancar con una longitud aproximada (num. 3.1.4) y, encajada la
+    seccion, que la longitud «should be close to the approximate length»
+    (num. 3.3.5) sin dar tolerancia. La longitud entre cabezales depende de
+    la coronacion, que depende de la seccion: iterar el diseño hasta el punto
+    fijo sobre un catalogo discreto puede no converger, y el efecto medido es
+    de centimetros. Por eso es una PASADA: se calcula, se imprime con la del
+    diseño y se AVISA si la carga gobernante sube o si el control cambia --
+    V1, V4 y el tamizado de 7.A se juzgaron con la del diseño --, con el
+    remedio: declarar `longitud_m` por punto, que gana y se verifica entera.
+    Con una carga igual o menor el diseño quedo del lado de la carga mayor y
+    no hay nada que avisar.
+    """
+    _validar_positivo("L_cabezales", L_cabezales,
+                      "la longitud entre cabezales debe ser positiva")
+    refinado = resolver_control(seccion=seccion, Q=diseno.Q, S=diseno.S,
+                                L=L_cabezales, TW=TW_cabezales,
+                                material=material)
+    if refinado is None:
+        # La misma seccion, el mismo Q y la misma S que el diseño resolvio:
+        # M3 no puede dejar de encontrar el tirante normal que ya encontro.
+        raise LimiteNumericoError(
+            "L_cabezales", valor=L_cabezales, id_punto=id_punto or None,
+            motivo="el control de la seccion adoptada no se pudo rehacer con "
+                   "la longitud entre cabezales: M3 no encontro el tirante "
+                   "normal que el diseño si encontro")
+    sube = refinado.HW > diseno.HW + TOL_UMBRAL_NORMATIVO
+    cambia = refinado.control_gobernante is not diseno.control_gobernante
+    aviso = ""
+    if sube or cambia:
+        aviso = (
+            f"Longitud entre cabezales de {id_punto}: con L_cab = "
+            f"{L_cabezales:.3f} m (y TW = {TW_cabezales:.3f} m) la carga a la "
+            f"entrada de la seccion adoptada es {refinado.HW:.3f} m bajo "
+            f"control de {refinado.control_gobernante.value}, frente a "
+            f"{diseno.HW:.3f} m bajo control de "
+            f"{diseno.control_gobernante.value} con la longitud aproximada "
+            f"del diseño ({L_diseno:.3f} m; Δ = "
+            f"{refinado.HW - diseno.HW:+.3f} m). V1, V4 y el tamizado de 7.A "
+            "se juzgaron con la carga del diseño, que NO se sustituye (HDS-5 "
+            "num. 3.3.5: la longitud «should be close to the approximate "
+            "length», sin tolerancia; fichas T6-01 y T7A-06). Para verificar "
+            "el punto con esta longitud, declarar `longitud_m` = "
+            f"{L_cabezales:.3f} m por punto")
+    nota = (
+        "Pasada de refinamiento: la MISMA seccion, material, caudal y "
+        "pendiente del diseño, con la longitud entre cabezales del paso "
+        "9.0.5 y el TW de la Sec. 1.3 con la cota de salida de esa longitud "
+        "(cota de entrada - S·L_cab, como con una longitud declarada). NO "
+        "sustituye al diseño: no se itera, porque la longitud entre cabezales "
+        "depende de la coronacion y esta de la seccion. "
+        + ("AVISO: la carga sube o el control cambia; ver los avisos del "
+           "punto." if aviso else
+           "La carga del diseño es igual o mayor y el control no cambia: el "
+           "diseño quedo del lado de la carga mayor."))
+    p = paso(
+        "F9.REFINAMIENTO_LONGITUD", codigo="9.0.6",
+        que=("Control de salida de la seccion adoptada con la longitud "
+             "entre cabezales"),
+        formula=("HW_s = H(L_cab) + max(TW(L_cab), (y_c + D)/2) - S·L_cab;  "
+                 "TW(L_cab) por la Sec. 1.3 con la solera de salida a "
+                 "cota_entrada - S·L_cab;  HW = el del control que gobierna"),
+        sustitucion=(
+            Magnitud("L_cab", L_cabezales, "m",
+                     "longitud entre cabezales del paso 9.0.5",
+                     cifras=CIFRAS_MAGNITUD),
+            Magnitud("L", L_diseno, "m",
+                     "longitud aproximada de 7.B con que corrio el diseño",
+                     cifras=CIFRAS_MAGNITUD),
+            Magnitud("TW(L_cab)", TW_cabezales, "m",
+                     "Sec. 1.3 con la cota de salida de L_cab",
+                     cifras=CIFRAS_MAGNITUD),
+            Magnitud("TW(L)", diseno.TW_m, "m", "el del diseño",
+                     cifras=CIFRAS_MAGNITUD),
+            Magnitud("HW_s(L)", diseno.HW_salida, "m",
+                     "control de salida del diseño (paso 4.3)",
+                     cifras=CIFRAS_MAGNITUD),
+            Magnitud("HW(L)", diseno.HW, "m",
+                     f"gobernante del diseño, control de "
+                     f"{diseno.control_gobernante.value}",
+                     cifras=CIFRAS_MAGNITUD)),
+        resultado=Magnitud(
+            "HW_s(L_cab) / HW(L_cab)",
+            f"{refinado.HW_salida:.3f} / {refinado.HW:.3f}", "m",
+            f"control de salida rehecho / gobernante, control de "
+            f"{refinado.control_gobernante.value}"),
+        nota_del_proyecto=nota)
+    return RefinamientoLongitud(
+        L_diseno_m=L_diseno, L_cabezales_m=L_cabezales,
+        TW_diseno_m=diseno.TW_m, TW_cabezales_m=TW_cabezales,
+        HW_salida_diseno_m=diseno.HW_salida,
+        HW_salida_cabezales_m=refinado.HW_salida,
+        HW_diseno_m=diseno.HW, HW_cabezales_m=refinado.HW,
+        control_diseno=diseno.control_gobernante,
+        control_cabezales=refinado.control_gobernante,
+        paso=p, aviso=aviso, resultado_cabezales=refinado)
+
+
+# ===========================================================================
 # --- VE-4d --- EL DESBORDE DE LA PLATAFORMA (HDS-5 num. 3.1.5): el caudal
 # del evento extremo de V8 repartido entre el conducto y la via
 # ===========================================================================

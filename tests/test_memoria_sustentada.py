@@ -727,6 +727,10 @@ def test_todo_fundamento_declarado_lo_usa_algun_paso(informe):
         # `tests/test_t7a_cabezal_geometria.py` sobre A-01 (ficha T7A-01).
         "F9.EMBOCADURA", "F9.CORONACION", "F9.DESPLANTE", "F9.DIMENSIONES",
         "F9.ALEROS", "F9.LOSA", "F9.LONGITUD",
+        # --- VE-6 --- la pasada de refinamiento con la longitud entre
+        # cabezales cuelga del cabezal del punto, por la misma razon. La
+        # mide `tests/test_ve6_refinamiento_longitud.py` sobre A-01.
+        "F9.REFINAMIENTO_LONGITUD",
         # --- VE-5 met --- Los cinco de la Fase 11, por la misma razon: el
         # metrado lee el cabezal del punto, y aqui ningun punto llega a la
         # Fase 9. Los mide `tests/test_M12_metrados.py` sobre la corrida de

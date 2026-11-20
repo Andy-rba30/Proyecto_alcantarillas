@@ -13038,8 +13038,8 @@ HDS5_5_4_2_PARALELO = _cita(
           "(Charts 11 and 12)». El proyecto adopta lo CONTRARIO por decision "
           "del dueño (2026-11-13): cabezal NORMAL al eje del conducto en las "
           "tres familias, que es lo que suponen el ke y las cartas con que "
-          "se dimensiona; el paralelo a la via queda diferido solo para el "
-          "marco (ficha T7A-03)."),
+          "se dimensiona; el paralelo a la via existe desde VE-6 solo para "
+          "el marco, con una fila de la Carta 11 (ficha T7A-03)."),
 )
 
 HDS5_5_4_2_EVITAR = _cita(

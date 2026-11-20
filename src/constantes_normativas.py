@@ -5611,6 +5611,40 @@ BANDAS_ALETAS_CAJON_C2: "dict[str, Tuple[Tuple[float, float], ...]]" = {
 }
 CAJON_C2_SIN_ALETAS = frozenset({"cajon_sin_aletas_escuadra_3",
                                  "cajon_sin_aletas_redondeado_3"})
+# --- VE-6 (ficha T7A-03) --- LAS FILAS DE LA CARTA 11 («Rect. Box Concrete»,
+# Tabla A.1 del HDS-5, PDF 197) SON DE CABEZAL ESVIADO RESPECTO DEL BARRIL Y
+# SIN ALETAS: el cabezal PARALELO A LA VIA de un barril esviado (HDS-5 num.
+# 5.4.2, pag. impresa 5.13: «headwalls are generally constructed parallel to
+# a roadway centerline», y las diferencias «are incorporated into the inlet
+# control nomographs for box culverts (Charts 11 and 12)»). Con el cabezal
+# paralelo a la via el esviaje de la embocadura es el del barril (nota de la
+# cita `HDS5_3ED.5.4.2#MAXIMO_PRACTICO`). Para cada fila, el intervalo de
+# ESVIAJE DEL CABEZAL respecto del barril que su ROTULO literal imprime:
+# «3/4" chamfers; 45°/30°/15° skewed headwall» (un angulo exacto cada una) y
+# «45° bevels; 10°-45° skewed headw.» (un intervalo). La escala 3 de la
+# Carta 12 («18.4° non-offset wingwall flares 30° skewed barrel») es la
+# misma disposicion CON aletas y no entra aqui (ficha T7A-03, abierto).
+BANDAS_ESVIAJE_CABEZAL_CAJON_A1: "dict[str, Tuple[Tuple[float, float], ...]]" = {
+    "cajon_concreto_chaflan_esviaje_45": ((45.0, 45.0),),
+    "cajon_concreto_chaflan_esviaje_30": ((30.0, 30.0),),
+    "cajon_concreto_chaflan_esviaje_15": ((15.0, 15.0),),
+    "cajon_concreto_bisel_45_esviaje_10_45": ((10.0, 45.0),),
+}
+# --- dictamen Fable (2026-11-20) --- EL BORDE DE LA FILA DE LA CARTA 11
+# EMPAREJA EL KE de la Tabla C.2 («Headwall parallel to embankment (no
+# wingwalls)»). Es LECTURA DE LOS ROTULOS, no una frase literal de la fuente:
+# la Tabla A.1 separa «3/4" chamfers» de «45° bevels», y la C.2 da 0.2 solo a
+# «Rounded on 3 edges ... or beveled edges on 3 sides» y 0.5 a «Square-edged
+# on 3 edges». El chaflan de 3/4" no es un borde redondeado ni biselado en
+# esos terminos: solo la escuadra. El bisel de 45°: la de bordes biselados y
+# tambien la escuadra, que es la conservadora (mas perdida).
+KE_C2_POR_FILA_CARTA_11: "dict[str, frozenset]" = {
+    "cajon_concreto_chaflan_esviaje_45": frozenset({"cajon_sin_aletas_escuadra_3"}),
+    "cajon_concreto_chaflan_esviaje_30": frozenset({"cajon_sin_aletas_escuadra_3"}),
+    "cajon_concreto_chaflan_esviaje_15": frozenset({"cajon_sin_aletas_escuadra_3"}),
+    "cajon_concreto_bisel_45_esviaje_10_45": frozenset(
+        {"cajon_sin_aletas_redondeado_3", "cajon_sin_aletas_escuadra_3"}),
+}
 
 
 # ===========================================================================
