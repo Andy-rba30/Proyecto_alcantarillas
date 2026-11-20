@@ -34,6 +34,8 @@ from src.normativa import registro as _registro
 # (0.812 m): 1 % cubre ese arrastre y no mas.
 REL_EJEMPLO = 1e-2
 REL_FORMULA = 1e-9
+# El ejemplo CU redondea la depresion a una cifra decimal (2.41 -> 2.4 ft).
+REL_EJEMPLO_UNA_CIFRA = 2e-2
 M_POR_FT = 0.3048            # exacto por definicion
 
 
@@ -84,7 +86,7 @@ def test_ejemplo_cu_de_la_caida_recta():
                              desnivel_h=6.0 * ft, tirante_aguas_abajo=3.36 * ft)
     assert c.yc / ft == pytest.approx(2.69, rel=REL_EJEMPLO)
     assert c.ho / ft == pytest.approx(-8.41, rel=REL_EJEMPLO)
-    assert c.depresion_piso / ft == pytest.approx(2.4, rel=2 * REL_EJEMPLO)
+    assert c.depresion_piso / ft == pytest.approx(2.4, rel=REL_EJEMPLO_UNA_CIFRA)
     assert c.Lf / ft == pytest.approx(9.94, rel=REL_EJEMPLO)
     assert c.Lt / ft == pytest.approx(6.26, rel=REL_EJEMPLO)
     assert c.Ls / ft == pytest.approx(10.89, rel=REL_EJEMPLO)

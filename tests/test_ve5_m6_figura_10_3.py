@@ -31,6 +31,8 @@ from src.modulos import M6_proteccion as M6
 
 REL_LECTURA = 2.5e-2   # la figura leida por imagen y los redondeos del ejemplo
 REL_FORMULA = 1e-9
+# La inversa en log-log deshace la directa salvo el redondeo de exp/log.
+REL_INVERSA = 1e-6
 M_POR_FT = 0.3048
 
 
@@ -49,7 +51,7 @@ def test_la_curva_baja_siempre_y_su_inversa_la_deshace():
     fs = [M6.atenuacion_figura_10_3(x) for x in xs]
     assert all(a > b for a, b in zip(fs, fs[1:]))
     for x, f in zip(xs, fs):
-        assert M6.distancia_figura_10_3(f) == pytest.approx(x, rel=1e-6)
+        assert M6.distancia_figura_10_3(f) == pytest.approx(x, rel=REL_INVERSA)
 
 
 def test_mas_alla_de_la_figura_no_se_extrapola():
@@ -103,10 +105,11 @@ def test_el_apron_con_el_tw_alto_se_dimensiona_por_la_figura():
     t = M6.proteccion_tw_alto_hec14(V=_V(2.0), Q_celda=1.0, TW=1.2,
                                     V_admisible=1.0)
     De = (4 * 0.5 / 3.141592653589793) ** 0.5
-    assert t.De == pytest.approx(De, rel=1e-9)
-    assert t.longitud == pytest.approx(12 * De, rel=1e-9)
-    assert t.D50 == pytest.approx(0.692 / 1.65 * 4.0 / (2 * 9.81), rel=1e-9)
-    assert t.espesor == pytest.approx(2 * t.D50, rel=1e-9)
+    assert M6.diametro_equivalente(0.5) == pytest.approx(De, rel=REL_FORMULA)
+    assert t.De == pytest.approx(De, rel=REL_FORMULA)
+    assert t.longitud == pytest.approx(12 * De, rel=REL_FORMULA)
+    assert t.D50 == pytest.approx(0.692 / 1.65 * 4.0 / (2 * 9.81), rel=REL_FORMULA)
+    assert t.espesor == pytest.approx(2 * t.D50, rel=REL_FORMULA)
     assert [x.codigo for x in t.pasos] == ["6.5t"]
 
 
