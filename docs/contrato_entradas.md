@@ -274,6 +274,7 @@ programa **no** puede elegir, y de quién es:
 | Ángulo de fricción del relleno del trasdós | criterio `phi_relleno_trasdos` (ensayo; ventana 30–38°) | **EMS** · especificación del relleno | `CriterioPendienteError`: es lo único de los cuatro ángulos del empuje que detiene, y detiene la estabilidad y el armado de los dos cabezales de cada punto |
 | Suelo de fundación: `cohesivo` (sí/no), `c_kpa`, `phi_grados`, `gamma_kn_m3`; y, si el estudio las entrega, `q_n_kpa` (resistencia portante **nominal**, para el marco LRFD), `q_adm_kpa` (presión **admisible**, para el marco ASD) | clave `suelo_fundacion` de `--datos-externos` (objeto, por punto o global), o el criterio de corredor `c_phi_fundacion` | **EMS** (calicata del cruce) | `CriterioPendienteError` sobre `c_phi_fundacion`. El dato del punto **gana** sobre el de corredor. Un `q_n_kpa` o `q_adm_kpa` del estudio gana sobre el calculado, cada uno en **su** marco |
 | Peso específico saturado del relleno | criterio `peso_especifico_saturado_relleno_kn_m3` (ensayo) | **EMS** | Sólo hace falta si hay agua en el relleno (freático sobre la zapata, o `drenaje_trasdos` = `sin_drenaje` declarado; desde VE-3.16 el valor de archivo es `drenado`): entonces, `CriterioPendienteError` |
+| Resultado de la estabilidad global del muro (E4) y del talud (E5) de cada cabezal: el FS `estatico` y el `sismico`, con `documento`, `fecha` y `metodo` (y, si viene, `programa`) | clave `estabilidad_global_declarada` de `--datos-externos` (objeto, **sólo por punto**: `{"documento": …, "fecha": …, "metodo": …, "entrada": {"E4": {"estatico": 1.6, "sismico": 1.3}}, "salida": {…}}`; la traza vale para los dos extremos o va dentro de cada uno) | **EMS** · análisis externo de equilibrio límite (VE-4a) | Nada se detiene: E4 y E5 siguen **diferidas** al expediente, con su paso y su aviso. Declarado, el programa **no lo calcula**: lo contrasta con el FS de E.050 (ASD) y con 1/φ de AASHTO 11.6.3.7 / 11.5.8 (LRFD; la fila de φ estática es `fila_phi_estabilidad_global` [A], sin valor: sin ella la fila decide sólo si las dos dan lo mismo) |
 | Capacidad portante admisible del terreno de fundación | criterio `capacidad_portante_adm` ([S] pendiente de ensayo, desde VE-3.2) | **EMS** | Hoy ningún módulo la consume: la estabilidad lee `q_adm_kpa` de `suelo_fundacion` o la calcula; la fila existe porque todo [S] del archivo de criterios tiene la suya |
 | Si el trasdós tiene drenaje | criterio `drenaje_trasdos` [A]: `drenado` (archivo desde VE-3.16) o `sin_drenaje` | **Proyectista** (y los planos: filtro y lloraderos, y su mantenimiento) | Rige `drenado` (AASHTO 11.6.6: el relleno «shall be drained»): el agua del relleno queda en el freático natural del punto, también bajo sismo, y la corrida avisa que no se modela el desembalse rápido tras la avenida. Adoptarlo compromete el filtro y los lloraderos en los planos. `sin_drenaje` se declara cuando el drenaje no puede darse: el relleno retenido se calcula lleno de agua hasta su superficie contra el trasdós, nunca por encima del muro, y pide el peso específico saturado del relleno (ficha VE3-21) |
 | Si el muro admite desplazamiento bajo sismo | criterio `factor_muro_eleccion` [A] | **Propietario** | Rige `sin_reduccion` (k_h = k_h0). Desde el cierre de T-7b el empuje sísmico sale de la cuña de tanteo con la superficie real del relleno (`regla_pendiente_relleno_trasdos` = `cuna_de_tanteo`), que da cifra también con k_h0; Mononobe-Okabe con la pendiente equivalente queda como contraste |
@@ -283,8 +284,13 @@ programa **no** puede elegir, y de quién es:
 `suelo_fundacion`, como `cabezal_declarado`, está en `servicio.CLAVES_DE_CABEZAL` y no en
 `CLAVES_EXTERNAS`. Se valida en la puerta (`M9.validar_suelo_fundacion`): los cuatro campos
 obligatorios, φ entre 0 y 45° (el rango de la Tabla 10.6.3.1.2a-1 de AASHTO), γ > 0 y
-ninguna clave desconocida. **La estabilidad global del muro y la del talud (E4, E5) no se
-evalúan**: quedan diferidas al expediente con el estudio de suelos, y el programa lo imprime.
+ninguna clave desconocida. **La estabilidad global del muro y la del talud (E4, E5) no las
+calcula el programa**: quedan diferidas al expediente con el estudio de suelos, y el programa
+lo imprime, salvo que el punto declare su resultado con `estabilidad_global_declarada` (VE-4a,
+también en `CLAVES_DE_CABEZAL`, validada por `M9.validar_estabilidad_global_declarada`: los dos
+FS de cada E declarada, finitos y positivos, y la traza del documento; un FS fuera de
+`entrada`/`salida` o en `globales` se rechaza). Entonces cada cabezal lleva las filas `E4-LRFD`,
+`E4-ASD`, `E5-LRFD` y `E5-ASD` de cada condición, y el paso dice de qué documento sale el FS.
 
 ### 3.4 Lo que el armado del cabezal necesita (T-7c)
 
