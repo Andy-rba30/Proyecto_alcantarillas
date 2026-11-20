@@ -4769,20 +4769,15 @@ se corrigieron donde las auditorías las desmintieron (cada una lo dice).
   puede hacer: con costura remachada, la Tabla 5 de ASTM A796 imprime «. . .»
   donde la combinación no se fabrica (la de 1.32 mm, sin costura tabulada, no
   se ofrece). La clave sube con una plancha más gruesa y el relleno se
-  recalcula con cada una; la envolvente de 7.A y V7 sigue armada con la
-  adoptada, y cuando la elegida es otra el punto lo **avisa** («Declare la
-  plancha requerida…»): son décimas de milímetro de clave (0.76 mm en 1.20 m)
-  y declararla es una línea, mientras que iterar la geometría desde la Fase 8
-  sería un bucle nuevo sobre MD. La empernada no tiene tabla para 68 por 13 en
+  recalcula con cada una (hasta VE-5 m8 la envolvente de 7.A y V7 seguía con
+  la adoptada y el punto sólo lo avisaba: ver abajo). La empernada no tiene tabla para 68 por 13 en
   ninguna fuente del repositorio (A796 Tablas 5 y 7 y AASHTO A12-7 son de
   remaches): declararla detiene la Fase 8 pidiendo la resistencia del
   fabricante. El valor de archivo de `'fabricacion_tmc'` es la remachada
   simple, la costura más débil de las **tabuladas** (decisión del dueño,
-  2026-11-12). **La frase que cerraba esta ficha —«el EG-2013 507.02 nombra
-  pernos y tuercas entre los accesorios sin fijar la fabricación»— la desmintió
-  la auditoría**: el 507.02 a) describe «tubos conformados estructuralmente de
-  planchas», con el «perforado» de las planchas y las normas de sus pernos y
-  tuercas: es tubería **empernada** (cita `EG2013.507.02#EMPERNADA`, con su
+  2026-11-12). **La auditoría desmintió que el 507.02 no fije la
+  fabricación**: su a) describe «tubos conformados estructuralmente de
+  planchas», perforadas, con pernos y tuercas: es tubería **empernada** (cita `EG2013.507.02#EMPERNADA`, con su
   `Interpretacion`). Por eso un `F8.COSTURA` que cumple con la remachada no es
   la costura del producto peruano, y el resultado lo **avisa siempre**
   (`AVISO_COSTURA_DE_OTRA_FABRICACION`, en el paso y en los avisos del punto).
@@ -4791,12 +4786,10 @@ se corrigieron donde las auditorías las desmintieron (cada una lo dice).
   con ella de costura— dentro de la tabla, pero **no cambia sola la
   fabricación**, que es una elección declarada.
 - **Cerrado por VE-5 (m8, ítem 23 del censo):** la plancha elegida vuelve a la
-  geometría. `Material.plancha_tmc` y `M2.material_con_plancha_tmc` llevan la
-  plancha y el espesor de pared con ella; la Fase 8 parte de la del material; y
-  MD, cuando un escalón de TMC cumple la Fase 5 con una plancha más gruesa
-  (`M8.plancha_requerida_tmc`), lo vuelve a verificar con ella (la traza lo
-  anota) y adopta el punto con esa plancha; el escalón siguiente parte de la
-  adoptada. El aviso «Declare la plancha requerida» queda para la llamada suelta.
+  geometría: `Material.plancha_tmc` y `M2.material_con_plancha_tmc` la llevan con
+  su pared, la Fase 8 parte de ella y MD reverifica con la de
+  `M8.plancha_requerida_tmc` el escalón de TMC que la pide, y lo adopta con ella.
+  El aviso «Declare la plancha requerida» queda para la llamada suelta.
 - **Qué haría falta:** la resistencia de costura empernada del producto que se
   especifique.
 - **Dónde vive:** `src/modulos/M8_estructural.py::verificar_tmc`
@@ -8607,51 +8600,33 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
 
 ## VE5-MET-01 · Metrados referidos al EG-2013 y cuadro de compatibilidad rasante-alcantarilla (Fase 11, entregables 8 y 9; ítem 8 del censo)
 
-- **Cerrado:** `src/modulos/M12_metrados.py` mide la geometría FINAL que las fases
-  anteriores entregan, sin rediseñar nada, con la regla de MEDICIÓN de cada Sección del
-  EG-2013 (18 citas nuevas, leídas en la capa de texto, desfase +8): conducto por metro
-  lineal entre las caras exteriores de los cabezales y siguiendo la pendiente (506.14,
-  507.12, 508.11; el marco, en m³ de concreto por 503.12); excavación en m³ en posición
-  original con caras verticales (501.09): la zanja con el ancho de la Sección del tubo
-  (506.06 Bc + 0.60; 507.05 1.5·D; 508.04 2·D) y el fondo bajo la cama mínima de 15 cm
-  (506.07, 508.05), las zapatas con el sobreancho de encofrado hasta 45 cm (501.04),
-  partida 501.C/D según el freático del punto (501.01) y material común cuando la calicata
-  declara un suelo SUCS (un `sucs_fundacion` que no lo es detiene el renglón: puede ser
-  roca); concreto de cabezales y aleros con el vano descontado (503.12), clase de la Tabla
-  503-07 por el f'c del armado (la de concreto reforzado de menor resistencia que lo
-  alcanza; ciclópeo, G); acero por la barra y el espaciamiento propuestos y la Tabla 504-01
-  (504.10); losa de entrega y dentellón; enrocado con el apron de HEC-14 (3D en la boca,
-  abocinado 1:3), sin partida en el EG-2013 (603.10 mide defensas ribereñas por metro
-  lineal: partida especial [A]); geotextil por el área en planta del enrocado (511.13). Sin
-  desperdicio ni esponjamiento: el EG-2013 los pone en el precio (503.13, 504.11). El
-  cuadro de compatibilidad es la salida de 7.A por punto (los dos alcances); los metrados,
-  sólo a expediente (leen el cabezal). Lo que no se mide es un `Bloqueo` de la Fase 11
-  (`servicio.FASE_METRADOS`) y los demás rubros siguen.
-- **Tres criterios nuevos (161):** `sobreancho_excavacion_estructuras_m` [A] opcional
-  (defecto normativo cero, ventana 0–0.45 m de 501.04); `incremento_acero_por_despiece` [A]
-  sin valor (anclajes, ganchos y empalmes del despiece de los planos, que el programa no
-  produce: sin declararlo el acero se detiene); `clase_concreto_losa_entrega` [A] sin valor
-  (la losa de entrega no tiene diseño estructural ni material: T8-03). Decisión pendiente de
-  Fable para los dos sin valor (no se pudo lanzar el subagente): quedan vacíos, que es el
-  lado seguro (detienen su renglón y no inventan una cantidad).
-- **Convenciones geométricas del metrado, declaradas en cada paso:** terreno y fondo
-  lineales entre los pies de los dos cabezales; la zanja corre entre los bordes de los
-  talones; los aleros se miden desde el extremo del cabezal sin descontar el encuentro de
-  las zapatas; la losa ocupa el espacio entre los aleros (cada uno se abre L·sen α); las
-  barras transversales de la zapata recorren su ancho B.
-- **Abierto:** el relleno para estructuras (502.A) y la cama/solado no se metran (la cama
-  está en el precio de 506.15, 507.13 y 508.12; el relleno pide la sección de relleno del
-  plano); el acero del marco, fuera del alcance declarado (`armado_seccion_marco`); la
-  protección de entrada (emboquillado) no tiene geometría; la zanja de varios tubos y el
-  enrocado de varios barriles se detienen como método no evaluable. La memoria resumida
-  (T-12) no lleva todavía la sección de la Fase 11.
+- **Cerrado:** `M12_metrados` mide la geometría FINAL de las fases anteriores, sin
+  rediseñar, con la regla de MEDICIÓN de cada Sección del EG-2013 (18 citas, desfase +8):
+  conducto por metro lineal entre caras exteriores de los cabezales (506.14, 507.12,
+  508.11; el marco en m³, 503.12); excavación en m³ con caras verticales (501.09), zanja
+  con el ancho de la Sección del tubo (506.06, 507.05, 508.04) bajo la cama de 15 cm,
+  sobreancho de encofrado hasta 45 cm (501.04), partida en seco o bajo agua por el NF del
+  punto (501.01); concreto con el vano descontado (503.12) y clase de la Tabla 503-07;
+  acero por la Tabla 504-01 (504.10); losa de entrega, dentellón, enrocado (partida
+  especial [A]: 603.10 no lo mide) y geotextil (511.13). Sin desperdicio ni esponjamiento
+  (503.13, 504.11). El cuadro de compatibilidad (salida de 7.A) va en los dos alcances; los
+  metrados, sólo a expediente. Lo que no se mide es un `Bloqueo` de la Fase 11 y los demás
+  rubros siguen. Criterios: `sobreancho_excavacion_estructuras_m` (opcional, 0–0.45 m),
+  `incremento_acero_por_despiece` y `clase_concreto_losa_entrega` (sin valor: detienen su
+  renglón). Convenciones geométricas: en el paso de cada renglón.
+- **Cerrado por VE-6:** el NF en M12 es de expediente y detiene el rubro, y el signo de
+  dos criterios de metrado (ficha VE6-01).
+- **Abierto:** el relleno (502.A) y la cama no se metran; el acero del marco
+  (`armado_seccion_marco`); el emboquillado sin geometría; la zanja de varios tubos y el
+  enrocado de varios barriles son métodos no evaluables; la memoria resumida sin la Fase
+  11. Decisión pendiente de Fable sobre los dos criterios sin valor (vacíos: lado seguro).
 - **Abierto contra la hoja de ruta:** su Fase 11 ítem 8 dice «EG-2013 Sec. 500
-  (conductos) y 503/504 (cabezales)»: la «Sección 500» no existe (los conductos son las
-  505 a 508 del Capítulo V, como ya corrigió `constantes_normativas`), y omite la 501
-  (excavación), la 511 (geotextil) y la falta de partida del enrocado de salida.
-- **Dónde vive:** `src/modulos/M12_metrados.py`; `servicio._fase_11_metrados` y
-  `_fase_11_compatibilidad`; `M11_reporte.bloque_metrados_proyecto` y `_bloque_metrado`;
-  `cli._fase_11_json`, `_totales_metrado_json` y `_lineas_metrados`; panel de la pestaña 4.
+  (conductos)»: no existe (son las 505 a 508), y omite la 501, la 511 y la falta de partida
+  del enrocado.
+- **Qué haría falta:** la decisión de Fable o del dueño sobre los dos criterios sin valor,
+  la sección de relleno del plano y corregir la Fase 11 de la hoja de ruta.
+- **Dónde vive:** `src/servicio.py::_fase_11_metrados`; `M12_metrados`,
+  `M11_reporte.bloque_metrados_proyecto`, `cli._fase_11_json`, pestaña 4.
 ## VE4F-01 · La carga viva con relleno somero: la franja de 4.6.2.10.2, la cobertura mínima y un [A] sin valor (VE-4f)
 
 - **Cerrado:** por debajo del dominio de la rueda distribuida de AASHTO LRFD 3.6.1.2.6a la
@@ -8967,3 +8942,34 @@ generados (`indice_formulas.md`, línea base) no se regeneran aquí: los regener
 - **Abierto:** sin `NORMAS_DIR` (repositorio privado) los tests que abren un PDF se saltan allí.
 - **Qué haría falta:** un secreto con acceso al repositorio de normas, si el dueño lo quiere en CI.
 - **Dónde vive:** `tests/test_ve5_gui.py::test_48_la_integracion_continua_corre_la_suite_bajo_un_servidor_x`
+
+
+# Parte LXII — Lo que VE-6 (pre-vuelo) dejó escrito: el pre-vuelo y la corrida dicen lo mismo
+
+VE-6 (2026-11-20, rama `claude/ve6-prevuelo`, sobre `cc106ce`) corrige las causas que la
+integración de VE-5 (lotes met y catlic) dejó en rojo. El subagente Fable no se pudo lanzar
+en la sesión (la herramienta no estaba disponible): las dos decisiones salen del código y de
+las fichas VE5-MET-01 y VE5-CAT-03, que ya las sostenían.
+
+## VE6-01 · El nivel freático en M12 es de expediente y detiene el rubro, no el punto
+
+- **Cerrado:** el censo le encuentra `NF_profundidad_m` a M12 (`renglones_excavacion`) y
+  M12 no se difiere entero a perfil (la fila del cuadro de compatibilidad corre en los dos
+  alcances). El pre-vuelo leía `consumido_por` módulo a módulo y anunciaba la columna como
+  dato que DETIENE en todo punto («la exige M12_metrados»); la corrida de perfil no se
+  detenía. Ahora los dos leen `servicio.CONSUMO_DETRAS_DE` (M12 → M9_cabezal) por
+  `servicio.consumo_diferido`: gobierna el salto de los metrados en `correr_punto` y
+  `anticipo._consumidores_de_calculo`. A perfil M12 no exige el NF; a expediente sí.
+- **Por qué así:** los metrados miden el cabezal de la Fase 9, que el perfil difiere. A
+  expediente la falta es un `Bloqueo` de la Fase 11 sólo del rubro de excavación, y no un
+  volumen sin partida: el EG-2013 501.01 separa la excavación en seco de la excavación bajo
+  agua y 501.09 la paga por partida, de modo que un volumen único se asignaría en silencio
+  a la partida en seco. «DETIENE» en el pre-vuelo es eso: detiene una etapa, no el punto.
+  Y VE-5 met extendió `Criterio.no_negativo` (nacido en VE-2, M4) a
+  `sobreancho_excavacion_estructuras_m` e `incremento_acero_por_despiece` sin escribirlo:
+  un sobreancho negativo excavaría dentro de las caras (501.04) y un incremento negativo
+  mediría menos acero que las barras de cada elemento (504.10). Censado en
+  `tests/test_ve2_revision_m3_m4.py` (`CON_SIGNO_DE_METRADO`), sin tope inventado.
+- **Qué haría falta:** nada para el pre-vuelo. Si otro módulo llega a leer la entrada
+  detrás de otro, se añade a `CONSUMO_DETRAS_DE` (lo fija `tests/test_ve6_prevuelo.py`).
+- **Dónde vive:** `src/servicio.py::consumo_diferido`

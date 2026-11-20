@@ -74,6 +74,7 @@ import pytest
 import cli
 from src import criterios_adoptados as ca
 from src import servicio
+from src import variables_entrada as ve
 from src.modelos import (CriterioPendienteError, DatoInvalidoError,
                          DeEnsayo)
 from tests.apoyo.criterios import con_valor, declarados
@@ -232,10 +233,27 @@ def test_m4_la_ficha_del_margen_declara_su_signo():
     assert c.valor is None          # ningun valor de archivo cambia
 
 
+# --- VE-6 --- El campo nacio para este criterio, y extenderlo era «otra
+# decision». VE-5 (lote met) la tomo para dos criterios de metrado, y queda
+# censada aqui con su razon (ficha VE5-MET-01): un sobreancho negativo
+# excavaria DENTRO de las caras de la zapata (EG-2013 501.04 da cero o hasta
+# 45 cm fuera de ellas) y un incremento negativo mediria menos acero que el
+# de las barras dentro de cada elemento (504.10 mide las longitudes del
+# despiece, que solo suman anclajes, ganchos y empalmes). Ninguno tiene
+# tope inventado: el signo, nada mas.
+CON_SIGNO_DE_METRADO = ("incremento_acero_por_despiece",
+                        "sobreancho_excavacion_estructuras_m")
+
+
 def test_m4_ningun_otro_criterio_declara_signo():
-    """El campo nace para este criterio; extenderlo es otra decision."""
+    """El campo nace para este criterio; extenderlo es otra decision, y la
+    unica que se tomo (VE-5 met) esta censada en `CON_SIGNO_DE_METRADO`."""
     con_signo = sorted(k for k, c in ca.CRITERIOS.items() if c.no_negativo)
-    assert con_signo == [CLAVE_MARGEN]
+    assert con_signo == sorted((CLAVE_MARGEN,) + CON_SIGNO_DE_METRADO)
+    for clave in CON_SIGNO_DE_METRADO:
+        c = ca.CRITERIOS[clave]
+        assert c.nivel == ca.NIVEL_EXPEDIENTE, clave
+        assert set(ve.variable(clave).consumido_por) == {"M12_metrados"}, clave
 
 
 def test_m4_un_negativo_no_entra_por_el_archivo():
