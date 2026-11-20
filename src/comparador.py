@@ -255,6 +255,37 @@ def _comparar_por_clave(donde: str, a: Any, b: Any, clave: str,
 # Los puntos
 # ===========================================================================
 
+# --- VE-7, lote C (dictamen Fable, abierto (ii)) --- EL PUNTO, CERRADO. La
+# lista de campos que se comparaban era una enumeracion a mano, y nueve
+# claves del punto (`avisos`, `caudal`, `durabilidad`, `cabezal`,
+# `licuefaccion`, `compatibilidad_rasante`...) quedaban fuera sin que nada lo
+# dijera: dos corridas con avisos distintos salian IGUALES. Desde VE-7 toda
+# clave del punto se compara: las de `CLAVES_DEL_PUNTO_CON_REGLA_PROPIA`
+# con su regla (`id` empareja, `diseno` por metodo, verificaciones y
+# bloqueos por clave, iteraciones en su orden), las demas por valor --
+# primero las de la lista historica, en su orden, y despues el resto,
+# ordenado --. Efecto declarado: una corrida embebida antigua, sin alguna de
+# esas claves, dice DIFIERE nombrandola.
+CLAVES_DEL_PUNTO_CON_REGLA_PROPIA: Tuple[str, ...] = (
+    "id", "diseno", "verificaciones", "bloqueos", "iteraciones")
+CAMPOS_DEL_PUNTO_EN_ORDEN: Tuple[str, ...] = (
+    "familia", "progresiva", "dimensionado", "pendientes_externos",
+    "datos_declarados", "clasificacion", "proteccion_salida",
+    # --- T-8 --- las otras dos piezas de la Fase 6
+    "proteccion_entrada", "socavacion_salida",
+    "geometria", "estructural", "espaciamiento_alivio",
+    # --- T-9 --- el tramo de cuneta de VB1 (su verificacion va con las
+    # demas en `verificaciones`)
+    "tramo_alivio",
+    # --- T-9 (correcciones) --- la capacidad de la cuneta y el aporte de VB2
+    "aporte_alivio",
+    "verificaciones_no_evaluadas")
+# Y la RAIZ: lo que no tiene regla propia se compara por valor (`metrados`,
+# de VE-5 met, no lo miraba nadie).
+CLAVES_RAIZ_CON_REGLA_PROPIA: Tuple[str, ...] = (
+    "generado", EXPEDIENTE, ALCANCE, PUNTOS, CABEZAL, CRITERIOS, DATOS_SITIO)
+
+
 def _metodo(diseno: Optional[Dict[str, Any]]) -> Tuple[Any, ...]:
     return tuple((diseno or {}).get(c) for c in CAMPOS_DE_METODO)
 
@@ -262,18 +293,9 @@ def _metodo(diseno: Optional[Dict[str, Any]]) -> Tuple[Any, ...]:
 def _comparar_punto(id_punto: str, pa: Dict[str, Any], pb: Dict[str, Any],
                     diferencias: List[Diferencia],
                     no_comparables: List[NoComparable]) -> None:
-    for campo in ("familia", "progresiva", "dimensionado", "pendientes_externos",
-                  "datos_declarados", "clasificacion", "proteccion_salida",
-                  # --- T-8 --- las otras dos piezas de la Fase 6
-                  "proteccion_entrada", "socavacion_salida",
-                  "geometria", "estructural", "espaciamiento_alivio",
-                  # --- T-9 --- el tramo de cuneta de VB1 (su verificacion
-                  # va con las demas en `verificaciones`)
-                  "tramo_alivio",
-                  # --- T-9 (correcciones) --- la capacidad de la cuneta y
-                  # el aporte de VB2
-                  "aporte_alivio",
-                  "verificaciones_no_evaluadas"):
+    for campo in CAMPOS_DEL_PUNTO_EN_ORDEN + tuple(sorted(
+            (set(pa) | set(pb)) - set(CAMPOS_DEL_PUNTO_EN_ORDEN)
+            - set(CLAVES_DEL_PUNTO_CON_REGLA_PROPIA), key=str)):
         _comparar_valor(id_punto, campo, pa.get(campo), pb.get(campo), diferencias)
 
     da, db = pa.get("diseno"), pb.get("diseno")
@@ -417,6 +439,10 @@ def comparar(a: Dict[str, Any], b: Dict[str, Any]) -> ComparacionDeInformes:
                             if isinstance(sa.get(k), list) else sa.get(k),
                             sorted(sb.get(k) or [], key=str)
                             if isinstance(sb.get(k), list) else sb.get(k), diferencias)
+
+    # --- VE-7 (dictamen Fable, (ii)) --- el resto de la raiz, por valor.
+    for k in sorted((set(a) | set(b)) - set(CLAVES_RAIZ_CON_REGLA_PROPIA), key=str):
+        _comparar_valor(k, k, a.get(k), b.get(k), diferencias)
 
     return ComparacionDeInformes(
         puntos_comunes=comunes, solo_en_a=solo_a, solo_en_b=solo_b,
