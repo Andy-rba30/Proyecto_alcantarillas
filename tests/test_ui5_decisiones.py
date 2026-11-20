@@ -1259,17 +1259,10 @@ SIN_NADA_QUE_BARRER = {
     # VE-4d: el caudal unitario admisible del desborde de V8, sin valor de
     # archivo y sin ventana (lo da el diseño de la proteccion del terraplen).
     "caudal_unitario_admisible_desborde_m2s",
-<<<<<<< HEAD
     # VE-5 met: lo que agregan los anclajes y empalmes del despiece al acero
     # de los cabezales, sin valor de archivo y sin ventana (ninguna fuente
     # del repositorio la fija: la da el despiece de los planos).
-    "incremento_acero_por_despiece"}
-=======
-    # VE-5 (mh, ficha T1-05): los factores K, m, n de la ecuacion (17), [S]
-    # sin valor de archivo: un dato de un estudio regional no tiene ventana.
-    "factores_idf_regional"}
->>>>>>> claude/ve5-mh
-# VE-3.5 lo habia sumado ('dimensionamiento_zapata_cabezal', sin valor de
+    "incremento_acero_por_despiece"}# VE-3.5 lo habia sumado ('dimensionamiento_zapata_cabezal', sin valor de
 # archivo y sin ventana). Desde VE-3.9 tiene valor de archivo y ventana por
 # campo (decision del dueño), y ya hay que barrer.
 
@@ -1343,31 +1336,12 @@ def test_4_el_barrido_cubre_los_141_y_censa_lo_que_no_barre(candidatos):
     # 158 desde VE-4e: 'nivel_agua_relleno_sin_drenaje_bajo_sismo' (ficha
     # VE3-21), sin valor de archivo y con sus dos opciones barribles.
 <<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
     # 159 desde VE-5-m6: 'relacion_co_poza_enrocado_hec14' (la poza de
     # enrocado de HEC-14 Sec. 10.1, VE-4g).
     # 162 desde VE-5-met: 'sobreancho_excavacion_estructuras_m' (opcional,
     # ventana 0-0.45 m de EG-2013 501.04), 'incremento_acero_por_despiece' y
     # 'clase_concreto_losa_entrega' (los metrados de la Fase 11).
-    assert len(por_clave) == len(ca.CRITERIOS) == 162    assert fuera == FILAS_FUERA_DE_SU_VENTANA
-=======
-    # 159 desde VE-5-m9: 'empuje_sismico_muro_que_no_cede' (ficha T7B-14).
-    # 160 con el item 3 de VE-5-m9 (ficha T7B-04): sale
-    # 'N_cq_N_gammaq_meyerhof' y entran 'talud_delante_del_cabezal' y
-    # 'factores_forma_profundidad_portante'.
-=======
-    # 160 desde VE-5-mh: 'factores_idf_regional' [S] (ficha T1-05), sin valor,
-    # e 'intervalos_de_clase_chi_cuadrado' [A] (ficha T1-01).
->>>>>>> claude/ve5-mh
-    assert len(por_clave) == len(ca.CRITERIOS) == 160
-=======
-    # 159 desde VE-5-gui: 'techos_de_transcripcion_fase_6' (ficha T8-11).
-    assert len(por_clave) == len(ca.CRITERIOS) == 159
->>>>>>> claude/ve5-gui
-    assert fuera == FILAS_FUERA_DE_SU_VENTANA
->>>>>>> claude/ve5-m9
-    assert {k for k, cs in por_clave.items() if not cs} == SIN_NADA_QUE_BARRER
+    assert len(por_clave) == len(ca.CRITERIOS) == 162    assert fuera == FILAS_FUERA_DE_SU_VENTANA    assert len(por_clave) == len(ca.CRITERIOS) == 160    assert {k for k, cs in por_clave.items() if not cs} == SIN_NADA_QUE_BARRER
     # Y el barrido no es de juguete: cada valor de archivo esta, y mas.
     con_valor = sum(1 for c in ca.CRITERIOS.values() if c.valor is not None)
     assert sum(len(cs) for cs in por_clave.values()) > 3 * con_valor

@@ -123,13 +123,9 @@ from src.modulos.M0_carga import (COLUMNA_CAUDAL,
 # punto de calculo, igual que el declarado, y ningun modulo de M1 a M11 sabe
 # de cual de los dos se trata salvo por `InformePunto.caudal`.
 from src.modulos import MH_hidrologia as MH
-<<<<<<< HEAD
 from src.modulos import M12_metrados as M12             # --- VE-5 met ---
-=======
 # --- VE-5 (lote catlic) --- la Fase 0-bis: licuefaccion declarada del EMS.
-from src.modulos import ML_licuefaccion as ML
->>>>>>> claude/ve5-catlic
-from src.modulos.M1_clasificacion import clasificar, exigir_alcance
+from src.modulos import ML_licuefaccion as MLfrom src.modulos.M1_clasificacion import clasificar, exigir_alcance
 from src.modulos.M2_material import matriz_durabilidad
 from src.modulos.M6_proteccion import (avisos_de_transcripcion,
                                        proteccion_entrada, proteccion_salida,
@@ -1812,16 +1808,9 @@ class InformePunto:
     # los datos de expediente de V5 y V8 (el ancho declarado por debajo del
     # piso del DG-2018, la semilongitud tomada como L/2). Sale por `avisos()`.
     avisos_de_expediente: List[str] = field(default_factory=list)
-<<<<<<< HEAD
     # --- VE-5 (catlic) --- la Fase 0-bis del punto (`ML.evaluar_licuefaccion`):
     # no aplica, o el resultado del EMS contrastado. Lo que falta es Bloqueo.
-    licuefaccion: Optional[Verificacion] = None
-=======
-    # --- VE-5 (ficha T8-11) --- los datos de la Fase 6 por encima de su
-    # techo de transcripcion declarado (`M6.avisos_de_transcripcion`).
-    avisos_de_transcripcion: List[str] = field(default_factory=list)
->>>>>>> claude/ve5-gui
-    geometria: Optional[CompatibilidadGeometrica] = None
+    licuefaccion: Optional[Verificacion] = None    geometria: Optional[CompatibilidadGeometrica] = None
     cama_apoyo: Optional[Any] = None
     # --- T-5 --- La Fase 8 del conducto de la seccion aceptada: la clase, la
     # plancha o el perfil elegidos, el relleno maximo, los pasos de carga y

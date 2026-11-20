@@ -84,12 +84,9 @@ from src.constantes_normativas import (  # --- T-7c ---
     PHI_FLEXION_AASHTO)
 from src.constantes_normativas import (  # --- T11-10 ---
     MANNING_CAJON_IN_SITU_HDS5, NUMERAL_MANNING_CAJON_IN_SITU_HDS5)
-<<<<<<< HEAD
 from src.constantes_normativas import (  # --- VE-5 met ---
     SOBREANCHO_MAX_ENCOFRADO_EG2013_M)
-=======
 from src.constantes_normativas import K_CD_DESBORDE_SI  # --- VE-5 fixve4 ---
->>>>>>> claude/ve5-fixve4
 from src.dominios import MILIMETROS_POR_METRO
 from src.normativa import esquema as _esquema
 from src.normativa import registro as _registro_normativo
