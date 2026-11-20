@@ -9359,25 +9359,22 @@ cambios están aplicados en estas fichas.
 
 ## VE7B-10 · El agua exterior del pórtico con el freático sobre la losa inferior (T5-07 (5))
 
-- **Cerrado (VE-7 lote B, B3):** con `NF_profundidad_m` sobre el eje de la losa inferior
-  (`M8._agua_exterior_del_portico`: z_NF = cota_rasante − (cota_terreno − NF), el mismo nivel que V7
-  y el cabezal), el pórtico suma el caso `WA_ext`, la presión hidrostática del agua exterior en las
-  paredes (triangular; trapecial si el nivel pasa la losa superior), y el empuje EH bajo el nivel con
-  el peso SUMERGIDO del relleno, en dos tramos lineales (el diagrama del ensamble de M9: seco, su
-  continuación y el sumergido). Citas del agua del ensamble: `AASHTO_LRFD_9.3.11.3` y
-  `MP.2.4.4.1.3#SUMERGIDO`. Exige `peso_especifico_saturado_relleno_kn_m3` (`CriterioPendienteError`
-  sin él; `DatoInvalidoError` si no supera al agua, como V7). `WA_ext` entra con γ_WA en las
-  combinaciones de horizontal máximo y no en la del agua interior, a la que se opone. La subpresión
-  no cambia la flexión: con la reacción LINEAL del suelo, la carga uniforme sobre la losa inferior la
-  equilibra la misma reacción (lectura declarada en la nota del paso). Con el nivel bajo la losa, los
-  números de antes. Oráculo: pendiente-deflexión del marco cerrado (dentro del 1 %, la deformación
-  axial).
-- **Decisión del consultor Fable (triaje VE-7, 2026-11-20):** WA_ext triangular y EH sumergido, con
-  las citas del ensamble de M9.
-- **Abierto:** (1) **Pendiente de revisión Fable:** con el nivel sobre la losa superior, la carga
-  vertical sobre ella sigue con el relleno seco (F_e·γ_s): F_e·σ′ + γ_w·d puede quedar por encima o
-  por debajo según γ_sat y F_e; no se eligió. (2) Sin `NF_profundidad_m` el agua exterior no se evalúa.
-- **Qué haría falta:** decidir la carga vertical sumergida de la losa superior.
+- **Cerrado (VE-7 lote B, B3):** con el nivel sobre el eje de la losa inferior
+  (`M8._agua_exterior_del_portico`) el pórtico suma `WA_ext` (hidrostático en las paredes) y el EH
+  bajo el nivel con el peso SUMERGIDO, en dos tramos lineales (el diagrama del ensamble de M9), con
+  las citas del agua del ensamble (`AASHTO_LRFD_9.3.11.3`, `MP.2.4.4.1.3#SUMERGIDO`). Exige
+  `peso_especifico_saturado_relleno_kn_m3`. `WA_ext` entra con γ_WA en el horizontal máximo y no en
+  el del agua interior. La subpresión no flexa (reacción lineal; lectura declarada). Con el nivel
+  bajo la losa, los números de antes. Oráculo de pendiente-deflexión (1 %).
+- **Revisado por Fable (dictamen del consultor, 2026-11-20): defectos 1 y 2 y decisión 3,
+  aplicados.** (1) El nivel es el de V7: lectura + `margen_estacional_nf_v7_m` si está declarado
+  (negativo, `DatoInvalidoError`); sin él, la lectura cruda y el aviso «nivel sin ascenso
+  estacional». (2) Un nivel sobre la rasante es `DatoInvalidoError('NF_profundidad_m')`. (3) Con el
+  nivel sobre la losa superior, envolvente seco/sumergido: `EV_sum` = F_e·(σ′_v − σ_v) con γ_EV y
+  `WA_sup` = γ_w·d_w con γ_WA (η donde el EV va al máximo), en combinaciones DUPLICADAS con el
+  sufijo `SUFIJO_SUMERGIDO`; el paso imprime d_w, w_EV,sum y w_WA,sup.
+- **Abierto:** sin `NF_profundidad_m` el agua exterior no se evalúa (la columna la debe el EMS).
+- **Qué haría falta:** la lectura del freático en cada punto de marco.
 - **Dónde vive:** `src/modulos/M8_estructural.py::_agua_exterior_del_portico`
 
 ## VE7B-11 · El pórtico que no cumple dice qué canto declarar, y no se lo auto-adopta (T5-07 (1))
