@@ -9188,11 +9188,11 @@ cambios están aplicados en estas fichas.
 - **Dónde vive:** `src/modulos/MD.py::_escalon_sin_cobertura`
 
 
-# Parte LXIII — Lo que VE-7 (lote C) dejó escrito: registro, memoria, CLI y la cuarta corrida
+# Parte LXIV-C — Lo que VE-7 (lote C) dejó escrito: registro, memoria, CLI y dos corridas nuevas
 
 VE-7, lote C (2026-11-20, rama `claude/ve7-lote-c`, sobre `cb15e32`), implementa los ítems C1 a C6
-del triaje VE-7. Decisión del consultor Fable (triaje VE-7, 2026-11-20): Fable decidió QUÉ hacer;
-estas fichas dicen cómo se hizo y lo que quedó. Los documentos generados (manifiestos,
+del triaje VE-7 y, después, el dictamen Fable sobre el lote (2026-11-20). Decisión del consultor
+Fable (triaje VE-7, 2026-11-20): Fable decidió QUÉ hacer; estas fichas dicen cómo se hizo. Los documentos generados (manifiestos,
 `trazabilidad.csv`, `indice_formulas.md`) no se regeneran aquí: los sella el integrador.
 
 ## VE7C-01 · `E060.22.10.2.2#VOLADIZO` con cita propia, sin firma y censada (C1; VE6M9-01 (c))
@@ -9206,8 +9206,13 @@ estas fichas dicen cómo se hizo y lo que quedó. Los documentos generados (mani
 - **Abierto:** la cita NO lleva firma: la sesión no tenía `NORMAS_DIR`. Está en
   `CITAS_SIN_FIRMA_A_PROPOSITO` por una segunda razón, distinta de la paginación sin medir
   (`SIN_FIRMA_POR_SESION_SIN_PDF`, que exige que el `Verbatim` sea literalmente el de la nota
-  de origen firmada y en su misma página); pendiente de revisión Fable. La cita principal de
-  C7 en M9 sigue siendo `E060.22.10.2#CICLOPEO` (la cambia el integrador).
+  de origen firmada, entrecomillado, de la misma fuente y página). La cita principal de C7
+  en M9 sigue siendo `E060.22.10.2#CICLOPEO` y NO se cambia hasta firmar.
+- **Revisado por Fable (dictamen del consultor, 2026-11-20):** aprobado con cambios, aplicados: la exención caduca (trinquete
+  `MAX_SIN_FIRMA_POR_SESION_SIN_PDF` = 1; con `NORMAS_DIR`,
+  `test_con_el_pdf_enlazado_no_queda_cita_sin_firma_por_sesion` exige firmarla) y no sostiene
+  sola nada (`test_una_cita_sin_firma_por_sesion_no_sostiene_sola_nada`: otro apoyo firmado del
+  verbo, y ningún literal en `src/modulos/`).
 - **Qué haría falta:** correr T2 con `NORMAS_DIR`, firmar la cita y sacarla del censo; pasar
   a ella la cita principal de C7 en M9; regenerar los manifiestos y `trazabilidad.csv`.
 - **Dónde vive:** `src/normativa/citas.py::E060_22_10_2_2_VOLADIZO`
@@ -9254,11 +9259,9 @@ estas fichas dicen cómo se hizo y lo que quedó. Los documentos generados (mani
   `pasos_impresos` (y al recorrido gemelo de `test_memoria_sustentada`). Las guardias de T-10
   se cumplen: todo texto del JSON está en el bloque del punto. Test:
   `tests/test_ve7_lote_c_licuefaccion.py`.
-- **Abierto:** el volcado de texto de la CLI no tiene línea propia de la Fase 0-bis (sus avisos
-  sí salen); el comparador de corridas (`src/comparador.py`) no compara la clave nueva; la
-  línea base y los documentos generados cambian de forma al regenerarse (clave nueva).
-- **Qué haría falta:** la línea de la CLI y el campo del comparador, si se piden; regenerar la
-  línea base en la integración.
+- **Abierto:** la línea base y los documentos generados cambian al regenerarse (clave nueva y
+  línea de la CLI). La línea de la CLI y el comparador: ficha VE7C-08.
+- **Qué haría falta:** regenerar la línea base en la integración.
 - **Dónde vive:** `src/modulos/M11_reporte.py::_bloque_licuefaccion`
 
 ## VE7C-05 · `cli.py --estado-expediente`: las discrepancias abiertas y las corridas para comparar (C5; VE5GUI-45)
@@ -9270,35 +9273,63 @@ estas fichas dicen cómo se hizo y lo que quedó. Los documentos generados (mani
   (`corridas_para_comparar`, índice y rótulo). Como `--comparar`, no corre el pipeline ni lee
   el CSV; la sesión se lee y se valida, pero no se aplica. Sale con 0, o con 2 si la sesión no
   se pudo leer o no es válida. Test por subprocess: `tests/test_ve7_lote_c_estado_expediente.py`.
-- **Abierto:** sale con 0 aunque haya discrepancias abiertas (es un informe, no una puerta,
-  decisión tomada del lado del uso; pendiente de revisión Fable); la comparación de dos
+- **Revisado por Fable (dictamen del consultor, 2026-11-20):** aprobado con cambios, aplicados: sale con 0 aunque haya
+  discrepancias abiertas: es informe, no puerta (dicho en la ayuda y en el docstring; sin modo
+  estricto).
+- **Abierto:** la comparación de dos
   corridas embebidas sigue siendo de la ventana: la CLI compara volcados en disco
   (`--comparar A.json B.json`).
 - **Qué haría falta:** si se pide, `--comparar` con dos índices de corrida de la sesión.
 - **Dónde vive:** `cli.py::_imprimir_estado_del_expediente`
 
-## VE7C-06 · Cuarta corrida de referencia `materiales_y_ramas`: de 39 fundamentos sin paso a 17 (C6; VE5GUI-47)
+## VE7C-06 · Corridas de referencia cuarta y quinta: de 39 fundamentos sin paso a 2 sin ninguna puerta (C6; VE5GUI-47; dictamen Fable (i-a), (i-c), C6)
 
-- **Cerrado (decisión del consultor Fable, triaje VE-7, 2026-11-20):** `CORRIDAS_DE_REFERENCIA`
-  tiene una cuarta, a expediente, con entradas de PRUEBA rotuladas
-  (`tests/fixtures/corridas_de_referencia/materiales_y_ramas/`, su LEEME dice qué ejercita cada
-  dato): el concreto fuera del catálogo (`D_max_catalogo` de prueba) deja A-01 en TMC y A-02 (pH
-  fuera del intervalo del acero) en HDPE con cabezal ciclópeo declarado; A-03 calcula su caudal
-  por el racional modificado. Ejercita 22 fundamentos que ninguna otra emitía: los ocho de la
-  Fase 8 del TMC y del HDPE, `F9.CICLOPEO`, `F6.FILTRO`, `F6.SOCAVACION`, los tres `FH.RM_*`,
-  `F0.LICUEFACCION`, `F11.ACERO`, `F3.DUR.SUELO_FUNDACION`, `F4.HORIZONTAL`,
-  `F4.N_CAJON_IN_SITU`, `F9.ARM_DURABILIDAD`, `F9.DIMENSIONADO_PANTALLA` y
-  `F9.GLOBAL_DECLARADA`. Medido: 39 → 17 de 154. Test: `tests/test_ve7_lote_c_cuarta_corrida.py`.
-- **Abierto:** de los 17, cinco se emiten como ELECCIÓN y no como paso (`F3.D_EXTERIOR`,
-  `F5.V2b.REGIMEN`, `F5.V7_FILA`, `F5.V7_NIVEL`, `FH.FACTOR_P24`): el índice sólo cuenta pasos.
-  `F3.D_MIN` no tiene emisor. Los otros once piden una elección de TODA la corrida contraria a
-  la de referencia (`region_natural` en selva alta saca a A-01 del TMC: medido; `n_manning_cajon`;
-  el remanso por perfil; el desborde de V8; el régimen de V1) o una rama que ningún punto de
-  prueba válido alcanza (piso de HW, caída recta, TW sobre la clave, cobertura somera, peralte
-  por armado). La corrida ejercita fórmulas, no es un diseño: A7 no cumple en A-01 y C-01 (f'c
-  de archivo frente a la exposición de prueba, para conservar `F9.DIMENSIONADO_PANTALLA`), el
-  ciclópeo declarado de A-02 no cumple C2, C3, C7 ni C8, y E1/E3 sísmicas fallan como en las
-  otras corridas (VE3-20); pendiente de revisión Fable.
-- **Qué haría falta:** regenerar y sellar `docs/indice_formulas.md` en la integración; contar
-  las elecciones en el §4 del índice; una quinta corrida si se quieren las ramas de régimen.
+- **Cerrado (decisión del consultor Fable, triaje VE-7 y dictamen, 2026-11-20):** dos corridas
+  nuevas a expediente con datos de PRUEBA rotulados y LEEME. `materiales_y_ramas`: TMC y HDPE
+  hasta la Fase 8, ciclópeo, filtro, socavación, `FH.RM_*` y ocho más (22). `regimenes_alternos`:
+  el juego de T-11 con los regímenes alternos de los criterios de toda la corrida (remanso por
+  perfil, desborde, `concreto_afinado`, selva alta) y tres puntos dedicados (caída recta,
+  relleno somero, piso de HW) (9). El índice cuenta las tres puertas de
+  `test_memoria_sustentada` (paso, elección, bloque fijo; §4.1 y §4.2, cuatro recuentos) y dice
+  por corrida qué NO cumple (`raices_que_no_cumplen`): la corrida no es un diseño. Medido: de
+  154, con paso 145, por elección 6, por bloque fijo 1 (`F3.D_MIN`, que no se retira), sin
+  puerta 2. Tests: `tests/test_ve7_lote_c_cuarta_corrida.py`.
+- **Revisado por Fable (dictamen del consultor, 2026-11-20):** aprobado con cambios, aplicados: la cuarta no cumple A7,
+  E1/E3 (A-01), C2/C3/C7/C8, E1/E3 (A-02) y A2 (Fase 8, heredado del marco de
+  `hidrologia_calculada`), A7, E1/E3 (C-01); la quinta, A2 en C-01. Censado por igualdad.
+- **Abierto:** sin puerta quedan `F6.TW_ALTO` (V1 con `no_cumple` no deja TW sobre la clave) y
+  `F9.DIMENSIONADO_PERALTE`: por `correr_referencia` la zapata de A-01 del juego conserva el
+  peralte de la regla y bajo pytest crece (`test_ve3_peralte_cabezal`); divergencia sin
+  explicar, a revisar con el lote M9. Trinquete `MAX_SIN_EJERCITAR` = 2.
+- **Qué haría falta:** regenerar y sellar `docs/indice_formulas.md`; explicar la divergencia del
+  peralte.
 - **Dónde vive:** `src/indice_formulas.py::CORRIDAS_DE_REFERENCIA`
+
+## VE7C-07 · test_c7: la sesión v3 difiere por clases con causa, no sólo por la huella (dictamen Fable (v))
+
+- **Cerrado (dictamen Fable, 2026-11-20):** la expectativa de `test_c7` pasa a
+  `_diferencia_admitida`, por clase: (1) la huella de criterios; (2) criterios nuevos del
+  archivo, sus recuentos y el concepto de `n_manning_cajon`; (3) el [S] nuevo `region_natural` y
+  sus recuentos; (4) las notas del cabezal; (5) el bloqueo de la Fase 0-bis (VE-5), EXIGIDO en
+  los cuatro puntos; (6) tras el comparador cerrado, `compatibilidad_rasante` y la raíz
+  `metrados` que v3 no tenía, y `avisos[len]` sólo si el único texto nuevo es
+  `AVISO_CIMENTACION_PROVISIONAL` (el recorrido registra los dos valores y los avisos por
+  punto). Invariantes: nada no comparable, ningún punto de un solo lado, nada en diseño,
+  verificaciones, iteraciones ni `dimensionado`. El fixture v3 no se regenera.
+- **Abierto:** otro lote que sume claves o avisos añade una clase: se mide y se registra.
+- **Qué haría falta:** nada, mientras v3 sea la sesión de la versión anterior.
+- **Dónde vive:** `tests/test_ui4_recorrido_ventana.py::_diferencia_admitida`
+
+## VE7C-08 · Comparador cerrado, línea de la Fase 0-bis en la CLI y la ventana sobre las cuatro (dictamen Fable (ii), (iii), (iv))
+
+- **Cerrado (dictamen Fable, 2026-11-20):** (ii) `comparador._comparar_punto` compara toda
+  clave del punto (las de regla propia: `id`, `diseno`, verificaciones, bloqueos, iteraciones;
+  el resto por valor) y `comparar`, toda clave raíz sin regla (`metrados`); una corrida
+  embebida antigua dice DIFIERE nombrando las claves que le faltan
+  (`tests/test_ve7_comparador_cerrado.py`). (iii) `cli._lineas_licuefaccion`: código, numeral,
+  estado, EMS, lo exigido, criterio y el motivo de «no aplica»; «no evaluada (ver bloqueos)» si
+  la etapa se bloqueó. (iv) el recorrido de la ventana es un bucle sobre toda corrida con
+  declaraciones: la cuarta entra por la pestaña 2 (17/17) y su volcado es el de la CLI.
+- **Abierto:** la línea base cambia (`cli_expediente.txt`, JSON): la regenera el integrador.
+- **Qué haría falta:** regenerar la línea base.
+- **Dónde vive:** `src/comparador.py::CLAVES_DEL_PUNTO_CON_REGLA_PROPIA`

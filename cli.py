@@ -2682,8 +2682,9 @@ def _parser() -> argparse.ArgumentParser:
                         "de la corrida --las discrepancias abiertas contra "
                         "la hoja de ruta y, con --sesion, las corridas "
                         "embebidas que se pueden comparar, la mas reciente "
-                        "primero-- y termina: 0, o 2 si la sesion no se pudo "
-                        "leer. No corre el pipeline ni lee el CSV")
+                        "primero-- y termina: 0 aunque haya discrepancias "
+                        "abiertas (es informe, no puerta), o 2 si la sesion "
+                        "no se pudo leer. No corre el pipeline ni lee el CSV")
     p.add_argument("--prevuelo", action="store_true", dest="prevuelo",
                    help="imprime el anticipo entero (criterios vacios que el "
                         "alcance puede invocar, contraste del CSV, lo que el "
@@ -3112,7 +3113,9 @@ def _imprimir_estado_del_expediente(ruta_sesion: Optional[Path]) -> int:
     `Registro.discrepancias_abiertas`, que no depende de ninguna corrida) y,
     con una sesion, las corridas embebidas que la pestaña 4 ofrece comparar.
     La sesion se LEE y se valida, pero no se aplica: no hay corrida. Sale
-    con 0, o con 2 si la sesion no se pudo leer o no es valida.
+    con 0 aunque haya discrepancias abiertas: es informe, no puerta
+    (dictamen Fable del 2026-11-20, sin modo estricto); con 2 si la sesion
+    no se pudo leer o no es valida.
     """
     from src import estado_del_expediente as _estexp
     corridas = None

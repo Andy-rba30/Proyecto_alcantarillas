@@ -22,7 +22,9 @@ los JSON no admiten esta cabecera; vale para los siete archivos.
 | `declaraciones.json` · `exposicion_quimica_ems` (SO₄ 0.15 %), `incremento_acero_por_despiece`, `clase_concreto_losa_entrega` | la fila A7 del armado por durabilidad (`F9.ARM_DURABILIDAD`) y el metrado del acero (`F11.ACERO`) |
 
 La corrida ejercita fórmulas y no es un diseño: varias filas del cabezal no cumplen
-(A7 de A-01 y C-01, el ciclópeo declarado de A-02, las sísmicas E1/E3), y se dejan así.
+(A7 de A-01 y C-01, el ciclópeo declarado de A-02, las sísmicas E1/E3, y en C-01 también
+`A2.losa_inferior_1_{derecha,izquierda}.exterior` de la Fase 8, heredado del marco de
+`hidrologia_calculada`), y se dejan así: el rótulo de la corrida dice «NO ES UN DISEÑO VÁLIDO».
 
 `estacion.csv` es la serie SINTÉTICA de T-1 (copia de la de `hidrologia_calculada`).
 `cuencas.csv` es la cuenca sintética de `tests/fixtures/hidrologia/cuencas_racional_modificado_prueba.csv`
