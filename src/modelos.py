@@ -7898,11 +7898,27 @@ class RepartoDelDesborde:
     HW_r: float = 0.0
     h_t: float = 0.0
     panel: str = ""
-    C_r: Optional[float] = None         # de la Figura 3.11, unidades inglesas
+    # --- VE-5 fixve4 --- C_r EN SI (m^0.5/s), como lo usa la Ec. 3.9; hasta
+    # aqui viajaba en ft^0.5/s, la unidad de la figura.
+    C_r_si: Optional[float] = None
     k_t: Optional[float] = None
-    C_d_si: Optional[float] = None      # = conversion * k_t * C_r
+    C_d_si: Optional[float] = None      # = k_t * C_r_si, m^0.5/s
     q_unitario: float = 0.0             # Q_plataforma / L, m2/s
     avisos: Tuple[str, ...] = ()
+
+    @property
+    def C_r_figura(self) -> Optional[float]:
+        """
+        El C_r como lo lee la Figura 3.11 del HDS-5, en ft^0.5/s:
+        C_r_si / 0.552 (constantes_normativas.K_CD_DESBORDE_SI). Es
+        conversion de PRESENTACION, para que la memoria muestre la lectura
+        de la figura: el calculo entero sigue en SI (como
+        `TamizadoRasante.delta_rasante_cm`).
+        """
+        if self.C_r_si is None:
+            return None
+        from src.constantes_normativas import K_CD_DESBORDE_SI
+        return self.C_r_si / K_CD_DESBORDE_SI
 
 
 @dataclass(frozen=True)
@@ -8190,6 +8206,12 @@ class EstabilidadDelCabezal:
     regimen: str = ""
     K0: Optional[float] = None
     globales: Tuple["Verificacion", ...] = ()
+    # --- VE-5 fixve4 --- (codigo, clave del criterio) de las filas E4/E5
+    # DECLARADAS cuyo veredicto depende de un criterio sin valor (la fila de
+    # phi de 11.6.3.7 con el FS entre 1/0.75 y 1/0.65): no van en
+    # `globales`, vuelven a `pendientes` con su motivo y el servicio las
+    # lleva como `Bloqueo` del punto (`servicio._estabilidades`).
+    pendientes_por_criterio: Tuple[Tuple[str, str], ...] = ()
 
     def del_marco(self, marco: str) -> Tuple["Verificacion", ...]:
         return tuple(v for v in self.verificaciones

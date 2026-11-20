@@ -423,6 +423,8 @@ from src.modulos.M3_hidraulica import (_MomentoDelBarril,
                                        tirante_conjugado_barril)
 from src.tolerancias import (PASOS_PERFIL_LAMINA, TOL_ASINTOTA_PERFIL,
                              TOL_BRENT, TOL_UMBRAL_NORMATIVO)
+from src.tolerancias import (TOL_ABS_TIRANTE_TANTEO_DESBORDE_M,   # --- VE-5 fixve4 ---
+                             TOL_REL_BALANCE_REPARTO_DESBORDE)
 
 NUMERAL_CRITICO = "4.2.1"
 NUMERAL_ENTRADA = "4.2"
@@ -4046,10 +4048,10 @@ def resolver_control(seccion: Seccion, Q: float, S: float, L: float, TW: float,
 class CoeficienteDelVertedero(NamedTuple):
     """El coeficiente de la Ec. 3.9 y de donde salio (Figura 3.11)."""
 
-    C_r: float                  # unidades inglesas, como lo da la figura
+    C_r_si: float               # m^0.5/s: la figura ya convertida (VE-5 fixve4)
     k_t: float
     panel: str                  # PANEL_DESBORDE_PROFUNDO / _SOMERO
-    C_d_si: float               # conversion * k_t * C_r
+    C_d_si: float               # k_t * C_r_si, m^0.5/s
     HW_r_sobre_L_r: float
     h_t_sobre_HW_r: float
 
@@ -4112,13 +4114,17 @@ def coeficiente_de_desborde(*, HW_r: float, ancho_cresta: float, h_t: float,
                             coeficientes) -> CoeficienteDelVertedero:
     """
     C_d = k_t·C_r de la Figura 3.11 del HDS-5 3a ed. (num. 3.1.5, pag.
-    impresa 3.16), en SI: C_d(SI) = 0.552·C_d («[Cd (SI) = 0.552(Cd from
-    Figure 3.11)]», pag. impresa 3.15). Las curvas son el criterio
+    impresa 3.16), en SI. Las curvas son el criterio
     'coeficientes_desborde_plataforma' [C] (la figura digitalizada), que
-    llega como argumento: M4 no lo lee.
+    llega como argumento: M4 no lo lee. --- VE-5 fixve4 --- Las curvas de
+    C_r llegan YA EN SI (m^0.5/s): el criterio las guarda convertidas con
+    la conversion que la fuente imprime, «[Cd (SI) = 0.552(Cd from Figure
+    3.11)]» (pag. impresa 3.15; constantes_normativas.K_CD_DESBORDE_SI).
+    Ningun valor en unidades inglesas entra ni sale de esta funcion.
 
-      * C_r: panel A si HW_r/L_r > 0.15 (abscisa HW_r/L_r), panel B si no
-        (abscisa HW_r, en m en el criterio);
+      * C_r: panel A si HW_r/L_r > 0.15 (abscisa HW_r/L_r, curva
+        'Cr_profundo_si'), panel B si no (abscisa HW_r en m, curva
+        'Cr_somero_si');
       * k_t: panel C con h_t/HW_r; 1 si el agua de aguas abajo no alcanza la
         cresta o si la relacion queda a la izquierda del inicio de la curva
         (vertedero libre: «Submergence occurs as the tailwater begins to
@@ -4137,25 +4143,26 @@ def coeficiente_de_desborde(*, HW_r: float, ancho_cresta: float, h_t: float,
     relacion = HW_r / ancho_cresta
     try:
         limite = float(coeficientes["limite_HWr_sobre_Lr"])
-        conversion = float(coeficientes["conversion_cd_si"])
     except (KeyError, TypeError, ValueError) as exc:
         raise DatoInvalidoError(
             _CAMPO_CURVAS_DESBORDE, valor=coeficientes,
-            motivo="faltan 'limite_HWr_sobre_Lr' o 'conversion_cd_si'") from exc
+            motivo="falta 'limite_HWr_sobre_Lr'") from exc
     if relacion > limite:
         panel = PANEL_DESBORDE_PROFUNDO
-        C_r = _interpolar_en(_curva(coeficientes, "Cr_profundo", superficie),
-                             relacion, "HW_r/L_r")
+        C_r_si = _interpolar_en(
+            _curva(coeficientes, "Cr_profundo_si", superficie),
+            relacion, "HW_r/L_r")
     else:
         panel = PANEL_DESBORDE_SOMERO
-        C_r = _interpolar_en(_curva(coeficientes, "Cr_somero_m", superficie),
-                             HW_r, "HW_r (m)")
+        C_r_si = _interpolar_en(
+            _curva(coeficientes, "Cr_somero_si", superficie),
+            HW_r, "HW_r (m)")
     sumergencia = max(h_t, 0.0) / HW_r
     curva_kt = _curva(coeficientes, "kt", superficie)
     k_t = (1.0 if sumergencia < curva_kt[0][0]
            else _interpolar_en(curva_kt, sumergencia, "h_t/HW_r"))
     return CoeficienteDelVertedero(
-        C_r=C_r, k_t=k_t, panel=panel, C_d_si=conversion * k_t * C_r,
+        C_r_si=C_r_si, k_t=k_t, panel=panel, C_d_si=k_t * C_r_si,
         HW_r_sobre_L_r=relacion, h_t_sobre_HW_r=sumergencia)
 
 
@@ -4197,8 +4204,8 @@ def _dominio_de_HW_r(*, ancho_cresta: float, h_t: float, superficie: str,
     la cresta, el h_t/HW_r del final de la curva de k_t.
     """
     limite = float(coeficientes["limite_HWr_sobre_Lr"])
-    somero = _curva(coeficientes, "Cr_somero_m", superficie)
-    profundo = _curva(coeficientes, "Cr_profundo", superficie)
+    somero = _curva(coeficientes, "Cr_somero_si", superficie)
+    profundo = _curva(coeficientes, "Cr_profundo_si", superficie)
     if somero[-1][0] < limite * ancho_cresta:
         techo = somero[-1][0]
     else:
@@ -4240,6 +4247,24 @@ def repartir_caudal_con_desborde(*, Q_total: float, hidraulica_de,
     (rotulo del evento extremo) si con el caudal minimo ya hay desborde
     --el tanteo no se busca por debajo del caudal de diseño--, o si la
     solucion cae fuera de los ejes de la Figura 3.11.
+
+    --- VE-5 fixve4 --- LA CARGA DE M4 NO ES CONTINUA EN EL CAUDAL: salta
+    donde cambia el control que gobierna o el regimen del barril (medido:
+    O 1.50 m, S = 0.004, L = 30 m, TW = 0.5 m, de 1.061 a 1.126 m entre Q =
+    2.04 y 2.05 m3/s, y de 1.354 a 1.456 m entre 2.97 y 2.98). `brentq` la
+    supone continua y, si el salto cruza el valor buscado, converge al salto
+    y devuelve un Q_c que no cumple la ecuacion. Por eso cada raiz se
+    COMPRUEBA: la del tirante sobre la cresta tiene que dar ese tirante, y
+    la del reparto, un HW_r > 0 y Q_c + Q_o = Q_total
+    (`TOL_ABS_TIRANTE_TANTEO_DESBORDE_M`, `TOL_REL_BALANCE_REPARTO_DESBORDE`).
+    Si no, el balance cae en el salto: no hay caudal del conducto que lo
+    cumpla con esta carga, y es `MetodoNoEvaluableError` («la carga del
+    conducto es discontinua en Q_c ≈ ...»). Y un `LimiteNumericoError` de la
+    carga con un caudal de tanteo (el perfil interno de M4 en el salto) se
+    convierte en el mismo «metodo no evaluable»: no es un dato del
+    expediente que corregir, es que el tanteo recorre una curva que M4 no
+    da entera. Hasta aqui terminaban en `DatoInvalidoError('HW_r')` con un
+    tirante negativo o en `LimiteNumericoError: 'dx'`.
     """
     from scipy.optimize import brentq   # perezoso: ver la nota junto a los imports
     from src.modelos import RepartoDelDesborde
@@ -4252,8 +4277,21 @@ def repartir_caudal_con_desborde(*, Q_total: float, hidraulica_de,
 
     def hidraulica(Q_c: float):
         if Q_c not in calculadas:
-            calculadas[Q_c] = hidraulica_de(Q_c)
+            try:
+                calculadas[Q_c] = hidraulica_de(Q_c)
+            except LimiteNumericoError as exc:
+                raise _no_evaluable_vertedero(
+                    f"la carga del conducto no se pudo calcular con el "
+                    f"caudal de tanteo Q_c = {Q_c:.4f} m3/s ({exc}): el "
+                    "reparto recorre la curva HW(Q_c) de M4 y en ese caudal "
+                    "M4 no la da") from exc
         return calculadas[Q_c]
+
+    def discontinua(Q_c: float, que: str) -> MetodoNoEvaluableError:
+        return _no_evaluable_vertedero(
+            f"la carga del conducto es discontinua en Q_c ≈ {Q_c:.4f} m3/s "
+            f"(salta donde cambia el control o el regimen del barril) y "
+            f"{que}: el tanteo por continuidad no tiene raiz ahi")
 
     def carga(Q_c: float) -> float:
         return max(hidraulica(Q_c).HW, HW_minimo)
@@ -4291,8 +4329,14 @@ def repartir_caudal_con_desborde(*, Q_total: float, hidraulica_de,
             return Q_minimo
         if tirante_sobre_cresta(Q_total) <= h:
             return Q_total
-        return brentq(lambda Q_c: tirante_sobre_cresta(Q_c) - h,
+        raiz = brentq(lambda Q_c: tirante_sobre_cresta(Q_c) - h,
                       Q_minimo, Q_total, xtol=TOL_BRENT)
+        if not (abs(tirante_sobre_cresta(raiz) - h)
+                <= TOL_ABS_TIRANTE_TANTEO_DESBORDE_M):
+            raise discontinua(
+                raiz, f"el agua salta por encima de {h:.3f} m sobre la "
+                      "cresta sin pasar por ese tirante")
+        return raiz
 
     def exceso(Q_c: float) -> float:
         Q_o, _ = caudal_sobre_la_plataforma(
@@ -4315,9 +4359,18 @@ def repartir_caudal_con_desborde(*, Q_total: float, hidraulica_de,
             "cresta, donde la Figura 3.11 ya no da C_r")
     Q_c = brentq(exceso, inferior, superior, xtol=TOL_BRENT)
     HW_r = tirante_sobre_cresta(Q_c)
+    if not HW_r > 0:
+        raise discontinua(
+            Q_c, f"el tanteo termina con el agua {HW_r:.3f} m sobre la "
+                 "cresta, sin desborde")
     Q_o, coef = caudal_sobre_la_plataforma(
         HW_r=HW_r, longitud_cresta=longitud_cresta, ancho_cresta=ancho_cresta,
         h_t=h_t, superficie=superficie, coeficientes=coeficientes)
+    if not (abs(Q_c + Q_o - Q_total)
+            <= TOL_REL_BALANCE_REPARTO_DESBORDE * Q_total):
+        raise discontinua(
+            Q_c, f"ahi el conducto y la plataforma conducen "
+                 f"{Q_c + Q_o:.4f} m3/s, no los {Q_total:.4f} m3/s del evento")
     h = hidraulica(Q_c)
     avisos = list(getattr(h, "avisos", ()))
     if h.HW < HW_minimo - TOL_UMBRAL_NORMATIVO:
@@ -4328,6 +4381,6 @@ def repartir_caudal_con_desborde(*, Q_total: float, hidraulica_de,
     return RepartoDelDesborde(
         Q_conducto=Q_c, Q_plataforma=Q_o, cota_embalse=cota_cresta + HW_r,
         HW_conducto=carga(Q_c), hidraulica=h, desborda=True, HW_r=HW_r,
-        h_t=max(h_t, 0.0), panel=coef.panel, C_r=coef.C_r, k_t=coef.k_t,
+        h_t=max(h_t, 0.0), panel=coef.panel, C_r_si=coef.C_r_si, k_t=coef.k_t,
         C_d_si=coef.C_d_si, q_unitario=Q_o / longitud_cresta,
         avisos=tuple(avisos), **comun)

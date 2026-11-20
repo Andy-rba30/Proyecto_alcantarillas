@@ -332,9 +332,14 @@ def test_n2_la_ficha_del_saturado_declara_su_signo():
 def test_n2_ningun_otro_criterio_declara_positivo():
     # Desde VE-3 (ficha VE2-05) tambien la capacidad portante admisible,
     # que paso a [S] con el mismo campo: el censo crece por decision del
-    # dueño, no en silencio.
+    # dueño, no en silencio. Y desde VE-4d el caudal unitario admisible del
+    # desborde de V8 (ficha T7B-02): un caudal por metro de cresta que la
+    # proteccion del terraplen admite; cero o negativo no es una proteccion
+    # (cualquier desborde lo incumpliria y V8 no distinguiria nada).
     con_signo = sorted(k for k, c in ca.CRITERIOS.items() if c.positivo)
-    assert con_signo == ["capacidad_portante_adm", CLAVE_SATURADO]
+    assert con_signo == ["capacidad_portante_adm",
+                         "caudal_unitario_admisible_desborde_m2s",
+                         CLAVE_SATURADO]
 
 
 @pytest.mark.parametrize("valor", [0, 0.0, -20.0])

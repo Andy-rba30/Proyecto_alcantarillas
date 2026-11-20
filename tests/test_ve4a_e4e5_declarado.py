@@ -35,7 +35,7 @@ from src.modelos import (CondicionAnalisis, DatoInvalidoError,
                          MARCO_RIGE_ASD, TipoDeVeredicto)
 from src.modulos import M9_cabezal as M9
 from src.normativa.registro import construir
-from tests.apoyo.aproximacion import ABS_CERO
+from tests.apoyo.aproximacion import ABS_CERO, REL_TRANSPORTE
 from tests.test_t7b_cabezal_estabilidad import (  # noqa: F401  (fixture)
     _correr_de_prueba, _externos, tanteo)
 
@@ -72,7 +72,11 @@ def test_la_puerta_normaliza_a_entrada_y_salida_con_la_traza_comun():
                          "documento": "otro documento de prueba"})
     norm = M9.validar_estabilidad_global_declarada(valor)
     assert set(norm) == {"entrada", "salida"}
-    assert norm["entrada"]["E4"] == {"estatico": 1.8, "sismico": 1.4}
+    assert set(norm["entrada"]["E4"]) == {"estatico", "sismico"}
+    assert norm["entrada"]["E4"]["estatico"] == pytest.approx(
+        1.8, rel=REL_TRANSPORTE)
+    assert norm["entrada"]["E4"]["sismico"] == pytest.approx(
+        1.4, rel=REL_TRANSPORTE)
     assert "E5" not in norm["entrada"]
     assert norm["entrada"]["documento"] == TRAZA["documento"]
     assert norm["salida"]["documento"] == "otro documento de prueba"
@@ -211,24 +215,93 @@ def test_el_marco_LRFD_estatico_con_la_fila_declarada(tanteo, fila):
 
 @pytest.mark.parametrize("fs, tipo", [
     (1.60, TipoDeVeredicto.CUMPLE),       # >= 1/0.65: cumple con las dos
-    (1.40, TipoDeVeredicto.INDICADOR),    # entre 1/0.75 y 1/0.65
     (1.20, TipoDeVeredicto.NO_CUMPLE),    # < 1/0.75: ninguna fila lo salva
 ])
 def test_sin_la_fila_de_phi_el_LRFD_estatico_solo_decide_si_no_depende_de_ella(
         tanteo, fs, tipo):
     """
-    El patron de la fila A6 del armado: sin la eleccion declarada, la fila
-    decide cuando las dos opciones dan lo mismo y sale INDICADOR «no
-    decidida» cuando no. No se detiene ni se rellena el vacio.
+    Sin la eleccion declarada, la fila LRFD estatica decide cuando las dos
+    opciones dan lo mismo.
     """
     assert ca.CRITERIOS["fila_phi_estabilidad_global"].valor is None
     entorno = replace(tanteo, estabilidad_global=_declarado(
         E4={"estatico": fs, "sismico": 1.40}))
-    v = _filas(M9.ensamble_estabilidad(entorno, EST))["E4-LRFD.est.e"]
+    e = M9.ensamble_estabilidad(entorno, EST)
+    v = _filas(e)["E4-LRFD.est.e"]
     assert v.paso.veredicto.tipo is tipo
     assert v.cumple is (tipo is not TipoDeVeredicto.NO_CUMPLE)
-    if tipo is TipoDeVeredicto.INDICADOR:
-        assert "no decidida" in v.paso.veredicto.explicacion
+    assert e.pendientes_por_criterio == ()
+
+
+def test_sin_la_fila_de_phi_y_el_FS_entre_los_dos_minimos_E4_queda_pendiente(
+        tanteo):
+    """
+    --- VE-5 fixve4 (hallazgo 5 de la revision de la fusion; decision
+    pendiente de Fable) --- Entre 1/0.75 y 1/0.65 el veredicto DEPENDE de la
+    fila sin declarar. Hasta aqui salia INDICADOR «no decidida» con `cumple`
+    True y E4 salia de `pendientes`: el vacio se cerraba con la fila
+    favorable. Ahora la fila LRFD no se emite, E4 vuelve a `pendientes` con
+    el motivo, y el ensamble entrega el criterio que falta para que el
+    servicio lo lleve como `Bloqueo`. E1 a E3 y la fila ASD siguen.
+    """
+    entorno = replace(tanteo, estabilidad_global=_declarado(
+        E4={"estatico": 1.40, "sismico": 1.40}))
+    e = M9.ensamble_estabilidad(entorno, EST)
+    filas = _filas(e)
+    assert "E4-LRFD.est.e" not in filas
+    assert "E4-ASD.est.e" in filas
+    assert e.verificaciones
+    assert e.pendientes_por_criterio == (("E4",
+                                          "fila_phi_estabilidad_global"),)
+    motivo = dict(e.pendientes)["E4"]
+    assert "fila_phi_estabilidad_global" in motivo
+    assert "1.333" in motivo and "1.538" in motivo
+    assert any("PENDIENTE de 'fila_phi_estabilidad_global'" in a
+               for a in e.avisos)
+    # Bajo sismo no hay fila que elegir (11.5.8): E4 se decide.
+    s = M9.ensamble_estabilidad(entorno, SIS)
+    assert "E4-LRFD.sis.e" in _filas(s)
+    assert s.pendientes_por_criterio == ()
+    # Con la fila declarada, decide.
+    ca.establecer_valor_dinamico("fila_phi_estabilidad_global",
+                                 "parametros_bien_definidos")
+    e = M9.ensamble_estabilidad(entorno, EST)
+    assert _filas(e)["E4-LRFD.est.e"].paso.veredicto.tipo is \
+        TipoDeVeredicto.CUMPLE
+    assert e.pendientes_por_criterio == ()
+
+
+def test_con_el_ASD_rigiendo_el_LRFD_entre_los_dos_minimos_solo_informa(
+        tanteo):
+    """Si el marco LRFD no decide, su fila informa y no espera el criterio."""
+    ca.establecer_valor_dinamico("marco_estabilidad_cabezal", MARCO_RIGE_ASD)
+    entorno = replace(tanteo, estabilidad_global=_declarado(
+        E4={"estatico": 1.40, "sismico": 1.40}))
+    e = M9.ensamble_estabilidad(entorno, EST)
+    assert _filas(e)["E4-LRFD.est.e"].paso.veredicto.tipo is \
+        TipoDeVeredicto.INDICADOR
+    assert e.pendientes_por_criterio == ()
+
+
+def test_el_minimo_LRFD_es_1_sobre_phi_exacto_y_no_la_cifra_del_comentario(
+        tanteo):
+    """
+    --- VE-5 fixve4 (hallazgo 6; decision pendiente de Fable) --- C11.6.3.7
+    escribe que phi = 0.65 corresponde «approximately» a FS = 1.5; la
+    desigualdad LRFD de 11.6.3.7 con phi = 0.65 es FS >= 1/0.65 = 1.538. Un
+    FS declarado de 1.50 con la fila de parametros variables NO CUMPLE: el
+    proyecto toma el inverso exacto (lado exigente), y lo dice.
+    """
+    ca.establecer_valor_dinamico("fila_phi_estabilidad_global",
+                                 "parametros_variables_o_limitados")
+    entorno = replace(tanteo, estabilidad_global=_declarado(
+        E4={"estatico": 1.50, "sismico": 1.40}))
+    v = _filas(M9.ensamble_estabilidad(entorno, EST))["E4-LRFD.est.e"]
+    phi = cn.PHI_ESTABILIDAD_GLOBAL_11_6_3_7["parametros_variables_o_limitados"]
+    assert v.valor_admisible == pytest.approx(1 / phi, abs=ABS_CERO)
+    assert v.valor_obtenido < v.valor_admisible
+    assert v.paso.veredicto.tipo is TipoDeVeredicto.NO_CUMPLE
+    assert "1/phi exacto" in v.paso.nota_del_proyecto
 
 
 def test_un_FS_que_no_alcanza_el_minimo_no_cumple_y_lo_dice(tanteo):
@@ -312,6 +385,20 @@ def test_el_registro_sostiene_el_fundamento_y_sus_citas():
     assert reg.cita("AASHTO_LRFD_9.C11.6.3.7#FS").interpretacion is not None
 
 
+def test_fila_phi_estabilidad_global_devuelve_la_declarada_o_None(
+        monkeypatch):
+    """La lectura de la fila: None sin declarar (sin detener), la fila
+    declarada, y una que no es de la tabla de 11.6.3.7, dato invalido."""
+    assert M9.fila_phi_estabilidad_global() is None
+    for fila in cn.PHI_ESTABILIDAD_GLOBAL_11_6_3_7:
+        ca.establecer_valor_dinamico("fila_phi_estabilidad_global", fila)
+        assert M9.fila_phi_estabilidad_global() == fila
+    monkeypatch.setitem(ca._OVERRIDES, "fila_phi_estabilidad_global",
+                        "otra_fila")
+    with pytest.raises(DatoInvalidoError):
+        M9.fila_phi_estabilidad_global()
+
+
 def test_el_criterio_de_la_fila_de_phi_es_A_de_expediente_y_sin_valor():
     c = ca.CRITERIOS["fila_phi_estabilidad_global"]
     assert c.etiqueta == "A" and c.valor is None
@@ -341,6 +428,31 @@ def test_A01_con_E4_E5_declaradas_las_lleva_al_informe_y_al_JSON(tmp_path):
     assert "E4-LRFD.est.e" in est["verificaciones"]
     assert est["pendientes"] == []
     json.dumps(volcado)
+
+
+def test_A01_con_el_FS_entre_los_dos_minimos_bloquea_por_la_fila_de_phi(
+        tmp_path):
+    """--- VE-5 fixve4 --- De punta a punta: el criterio que falta llega al
+    informe como `Bloqueo` (CriterioPendienteError) del punto, con la etapa
+    del contraste y no la de E1-E3, y E4 sale en `pendientes`."""
+    from src.modelos import TipoDeBloqueo
+    clave = servicio.CLAVE_ESTABILIDAD_GLOBAL_DECLARADA
+    fs = {"E4": {"estatico": 1.40, "sismico": 1.40}}
+    declarado = dict(TRAZA, entrada=dict(fs), salida=dict(fs))
+    informe, a01 = _correr_de_prueba(tmp_path, extra_a01={clave: declarado})
+    bloqueos = [b for b in a01.bloqueos
+                if b.criterio == "fila_phi_estabilidad_global"]
+    assert {b.etapa for b in bloqueos} == {
+        servicio.etapa_de_global_declarada(ext, "E4", "estatico")
+        for ext in ("entrada", "salida")}
+    assert all(b.tipo is TipoDeBloqueo.CRITERIO_PENDIENTE for b in bloqueos)
+    assert not any("estabilidad E1-E3" in b.etapa for b in bloqueos)
+    for e in a01.cabezal.estabilidad:
+        if e.condicion is EST:
+            assert "E4" in dict(e.pendientes)
+    todas = {v.codigo for v in a01.cabezal.verificaciones}
+    assert "E4-LRFD.est.e" not in todas and "E4-ASD.est.e" in todas
+    json.dumps(cli.informe_json(informe))
 
 
 def test_la_memoria_del_punto_imprime_el_FS_declarado_con_su_documento(

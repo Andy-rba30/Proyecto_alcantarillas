@@ -70,6 +70,11 @@ VALOR_DE_PRUEBA = {
     # (sólo Familia C). Faltaba desde VE-3.6, que lo sumo a
     # `FAMILIAS_QUE_USAN` sin valor de prueba aqui (KeyError en A y B).
     "desnivel_perfil_canal_m": 1.20,
+    # --- VE-4c --- la seccion del cauce de aproximacion del perfil de
+    # remanso de V5 (Familias A y B: en la C la sustituye VC1). Faltaba desde
+    # VE-4c (KeyError en la C); la del caso patron del USBR.
+    "seccion_cauce_aproximacion": {"b_m": 1.0, "z_HV": 1.5, "S": 0.006,
+                                   "n": 0.035, "altura_total_m": 2.5},
 }
 
 

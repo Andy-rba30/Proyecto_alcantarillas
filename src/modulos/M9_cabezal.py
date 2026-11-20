@@ -9246,9 +9246,10 @@ def fila_phi_estabilidad_global() -> Optional[str]:
     """
     La fila de phi de AASHTO 11.6.3.7 que el proyectista declaro
     ('fila_phi_estabilidad_global' [A], SIN valor de archivo), o None si no
-    la declaro: la fila estatica del marco LRFD lo dice como «no decidida»
-    (el patron de `clase_de_exposicion`). Una fila que no es de la tabla se
-    rechaza.
+    la declaro: la fila estatica del marco LRFD decide sin ella solo si las
+    dos filas dan lo mismo; si no, espera el criterio (VE-5 fixve4:
+    `_fila_global_declarada` levanta `CriterioPendienteError`). Una fila que
+    no es de la tabla se rechaza.
     """
     try:
         fila = ca.valor(CRITERIO_FILA_PHI_GLOBAL)
@@ -9362,6 +9363,18 @@ def _fila_global_declarada(*, entorno: EntornoDelCabezal,
                      f"({'cumple' if cumple_otra else 'NO cumple'}); con phi "
                      f"= {phi:g}, {admisible:.3f}.")
     cumple = fs >= admisible - TOL_UMBRAL_NORMATIVO
+    if (not cumple and decide and no_decidida is not None
+            and fs >= no_decidida - TOL_UMBRAL_NORMATIVO):
+        # --- VE-5 fixve4 (hallazgo 5 de la revision de la fusion) --- Entre
+        # 1/0.75 y 1/0.65 el veredicto DEPENDE de la fila sin declarar, y el
+        # marco LRFD decide: no hay fila que emitir. Hasta aqui salia
+        # INDICADOR «no decidida» con `cumple` True y el codigo salia de
+        # `pendientes`, que es rellenar el vacio con el lado favorable; un
+        # INDICADOR es, por `EstadoDeVerificacion`, el de un [A] DECLARADO.
+        # `ca.valor` levanta `CriterioPendienteError` (y registra el uso):
+        # `_filas_globales_declaradas` la recoge, el codigo vuelve a
+        # `pendientes` y el servicio la lleva como `Bloqueo` del punto.
+        ca.valor(CRITERIO_FILA_PHI_GLOBAL)
     falla = (f"el factor de seguridad declarado no alcanza el minimo de "
              f"{nombre}")
     if cumple:
@@ -9370,11 +9383,6 @@ def _fila_global_declarada(*, entorno: EntornoDelCabezal,
         tipo, texto = TipoDeVeredicto.INDICADOR, (
             falla + ". Este marco NO rige "
             f"('{CRITERIO_MARCO}' [A]): se informa y no detiene el punto")
-    elif no_decidida is not None and fs >= no_decidida - TOL_UMBRAL_NORMATIVO:
-        tipo, texto = TipoDeVeredicto.INDICADOR, (
-            "no decidida: con la fila de parametros bien definidos cumple y "
-            "con la de parametros variables o limitados no; declarar "
-            f"'{CRITERIO_FILA_PHI_GLOBAL}'")
     else:
         tipo, texto = TipoDeVeredicto.NO_CUMPLE, (
             falla + ": revisar el analisis con el geotecnista (geometria del "
@@ -9404,20 +9412,38 @@ def _fila_global_declarada(*, entorno: EntornoDelCabezal,
 
 def _filas_globales_declaradas(entorno: EntornoDelCabezal,
                                condicion: CondicionAnalisis, regla: str,
-                               sufijo: str) -> Tuple[Verificacion, ...]:
-    """Las filas E4 y E5 de los dos marcos que el punto declaro."""
+                               sufijo: str):
+    """
+    Las filas E4 y E5 de los dos marcos que el punto declaro, y -- VE-5
+    fixve4 -- las que NO se pudieron decidir por un criterio sin valor:
+    (filas, ((codigo, clave_del_criterio, motivo), ...)). Una fila que
+    espera su criterio no se emite; la del otro marco, si.
+    """
     declarada = entorno.estabilidad_global or {}
-    filas = []
+    filas, por_criterio = [], []
     for codigo in CODIGOS_GLOBALES:
         if codigo not in declarada:
             continue
+        fs = declarada[codigo][condicion.value]
         for marco in (MARCO_LRFD, MARCO_ASD):
-            filas.append(_fila_global_declarada(
-                entorno=entorno, condicion=condicion, codigo=codigo,
-                marco=marco, fs=declarada[codigo][condicion.value],
-                traza=_traza_de_la_global(declarada),
-                decide=_decide(marco, regla), sufijo=sufijo))
-    return tuple(sorted(filas, key=lambda v: v.codigo))
+            try:
+                filas.append(_fila_global_declarada(
+                    entorno=entorno, condicion=condicion, codigo=codigo,
+                    marco=marco, fs=fs,
+                    traza=_traza_de_la_global(declarada),
+                    decide=_decide(marco, regla), sufijo=sufijo))
+            except CriterioPendienteError as exc:
+                minimos = sorted(1 / phi for phi in
+                                 PHI_ESTABILIDAD_GLOBAL_11_6_3_7.values())
+                por_criterio.append((
+                    codigo, exc.clave,
+                    f"{marco}: el FS declarado ({fs:.3f}) queda entre "
+                    f"{minimos[0]:.3f} (1/phi con parametros bien "
+                    f"definidos) y {minimos[-1]:.3f} (1/phi con parametros "
+                    "variables o limitados) de AASHTO 11.6.3.7, y el "
+                    "veredicto depende de la fila de phi, sin declarar: "
+                    f"declarar '{exc.clave}' con el EMS"))
+    return tuple(sorted(filas, key=lambda v: v.codigo)), tuple(por_criterio)
 
 
 def _paso_y_aviso_de_las_diferidas(entorno: EntornoDelCabezal,
@@ -9522,7 +9548,8 @@ def ensamble_estabilidad(entorno: EntornoDelCabezal,
     # de `pendientes`; lo que no, sigue diferido con su paso y su aviso.
     declarada = entorno.estabilidad_global or {}
     pendientes = tuple(p for p in PENDIENTES_E4_E5 if p[0] not in declarada)
-    globales = _filas_globales_declaradas(entorno, condicion, regla, sufijo)
+    globales, por_criterio = _filas_globales_declaradas(
+        entorno, condicion, regla, sufijo)
     if condicion is CondicionAnalisis.ESTATICO:
         if pendientes:
             paso_global, aviso_global = _paso_y_aviso_de_las_diferidas(
@@ -9557,6 +9584,15 @@ def ensamble_estabilidad(entorno: EntornoDelCabezal,
                 "marco LRFD supone al menos 6.0 in (0.15 m) de material "
                 "granular compactado bajo la zapata (AASHTO 10.6.3.4), que "
                 "tiene que estar en los planos")
+    # --- VE-5 fixve4 --- lo declarado que su criterio sin valor no deja
+    # decidir VUELVE a `pendientes`, con el motivo, y viaja aparte para que
+    # el servicio lo lleve como `Bloqueo` (CriterioPendienteError).
+    for codigo, clave, motivo in por_criterio:
+        pendientes += ((codigo, motivo),)
+        avisos.append(
+            f"Cabezal de {entorno.extremo} de {entorno.id_punto}: {codigo} "
+            f"({NOMBRE_DE_LA_GLOBAL[codigo]}), condicion {condicion.value}, "
+            f"queda PENDIENTE de '{clave}' [A]: {motivo}")
     return EstabilidadDelCabezal(
         id_punto=entorno.id_punto, extremo=entorno.extremo,
         condicion=condicion, regla_de_marco=regla, cargas=cargas,
@@ -9572,7 +9608,9 @@ def ensamble_estabilidad(entorno: EntornoDelCabezal,
                        == METODO_EMPUJE_CUNA else None),
         K_AE_contraste=(datos["K_AE_formula"] if datos["metodo_empuje"]
                         == METODO_EMPUJE_CUNA else None),
-        regimen=datos["regimen"], K0=datos["K0"], globales=globales)
+        regimen=datos["regimen"], K0=datos["K0"], globales=globales,
+        pendientes_por_criterio=tuple((codigo, clave)
+                                      for codigo, clave, _ in por_criterio))
 
 
 def _sin_parar(calculo):

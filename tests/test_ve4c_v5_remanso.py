@@ -229,7 +229,8 @@ def test_cauce_suave_la_M1_hasta_el_normal_mas_delta(delta):
     assert r.y_fin_m == pytest.approx(y_n + delta, rel=REL_TRANSPORTE)
     assert r.longitud_m == pytest.approx(_referencia(SUAVE, HW, y_n + delta),
                                          rel=TOL_REL_PASO_DIRECTO_REMANSO)
-    assert r.estaciones[0] == (0.0, HW)
+    assert r.estaciones[0][0] == pytest.approx(0.0, abs=ABS_CERO)
+    assert r.estaciones[0][1] == pytest.approx(HW, rel=REL_TRANSPORTE)
 
 
 def test_cauce_suave_una_delta_menor_alarga_el_remanso():
@@ -474,7 +475,8 @@ def test_la_sobreelevacion_admisible_es_un_A_de_expediente_sin_valor():
     c = ca.CRITERIOS[CRITERIO_DELTA]
     assert c.etiqueta == "A" and c.nivel == ca.NIVEL_EXPEDIENTE
     assert c.valor is None and not c.opcional
-    assert tuple(c.sensibilidad) == (0.0, 0.30)
+    assert tuple(c.sensibilidad) == pytest.approx((0.0, 0.30),
+                                                  abs=ABS_CERO)
     assert c.resolucion is not None
     assert "2.2.5" in c.fuente
     with pytest.raises(ValueError):

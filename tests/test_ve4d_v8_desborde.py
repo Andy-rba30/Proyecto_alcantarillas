@@ -41,14 +41,15 @@ import pytest
 from src import criterios_adoptados as ca
 from src import modelos
 from src import servicio
-from src.constantes_normativas import HDS5_INLET
+from src.constantes_normativas import HDS5_INLET, K_CD_DESBORDE_SI
 from src.modelos import (ConstantesHDS5, ControlGobernante,
                          CriterioPendienteError, DatoFaltanteError,
                          DatoInvalidoError, EventoExtremoDelPunto,
                          MetodoNoEvaluableError, SeccionRectangular)
 from src.modulos import M4_control as M4
 from src.modulos import M5_verificaciones as M5
-from tests.apoyo.aproximacion import ABS_CERO
+from src.tolerancias import TOL_REL_BALANCE_REPARTO_DESBORDE
+from tests.apoyo.aproximacion import ABS_CERO, REL_TRANSPORTE
 from tests.fixtures.casos_patron import (CP_HDS5_DG1, CP_HDS5_DG15,
                                          PIE_EN_METROS)
 
@@ -59,6 +60,8 @@ COEF = ca.CRITERIOS["coeficientes_desborde_plataforma"].valor
 CRITERIO_Q_ADM = "caudal_unitario_admisible_desborde_m2s"
 UMBRAL = "umbral_no_colapso_evento_extremo"
 DESBORDE = "desborde_admitido_con_terraplen_protegido"
+# La tolerancia de lectura del ejemplo (en C_r de la figura, ft^0.5/s) en SI.
+TOL_C_R_SI = K_CD_DESBORDE_SI * CP_HDS5_DG15["tolerancia_C_r"]
 
 
 # ===========================================================================
@@ -71,11 +74,13 @@ def test_la_figura_digitalizada_da_las_lecturas_del_ejemplo(HW_r_ft, C_r):
         HW_r=HW_r_ft * PIE, ancho_cresta=CP_HDS5_DG15["L_r_ft"] * PIE,
         h_t=0.0, superficie=modelos.SUPERFICIE_CRESTA_GRAVA,
         coeficientes=COEF)
-    assert coef.C_r == pytest.approx(C_r, abs=CP_HDS5_DG15["tolerancia_C_r"])
+    # --- VE-5 fixve4 --- M4 opera en SI: el oraculo (la lectura impresa,
+    # ft^0.5/s) se compara convertido con la conversion de la fuente.
+    assert coef.C_r_si == pytest.approx(
+        K_CD_DESBORDE_SI * C_r, abs=TOL_C_R_SI)
     assert coef.k_t == pytest.approx(1.0, abs=ABS_CERO)
     assert coef.panel == modelos.PANEL_DESBORDE_SOMERO
-    assert coef.C_d_si == pytest.approx(
-        COEF["conversion_cd_si"] * coef.C_r, abs=ABS_CERO)
+    assert coef.C_d_si == pytest.approx(coef.k_t * coef.C_r_si, abs=ABS_CERO)
 
 
 def test_la_ecuacion_3_9_reproduce_la_fila_del_ejemplo():
@@ -86,8 +91,8 @@ def test_la_ecuacion_3_9_reproduce_la_fila_del_ejemplo():
         ancho_cresta=CP_HDS5_DG15["L_r_ft"] * PIE, h_t=0.0,
         superficie=modelos.SUPERFICIE_CRESTA_GRAVA, coeficientes=COEF)
     assert Q_o / PIE3 == pytest.approx(fila["Q_o_ft3_s"], rel=LECTURA)
-    assert coef.C_r == pytest.approx(fila["C_r"],
-                                     abs=CP_HDS5_DG15["tolerancia_C_r"])
+    assert coef.C_r_si / K_CD_DESBORDE_SI == pytest.approx(
+        fila["C_r"], abs=CP_HDS5_DG15["tolerancia_C_r"])
 
 
 def test_el_panel_lo_decide_HW_r_sobre_L_r_y_la_pavimentada_corre_mas():
@@ -103,7 +108,7 @@ def test_el_panel_lo_decide_HW_r_sobre_L_r_y_la_pavimentada_corre_mas():
     assert c(0.30, pav).panel == modelos.PANEL_DESBORDE_SOMERO
     assert c(0.60, pav).panel == modelos.PANEL_DESBORDE_PROFUNDO
     for HW_r in (0.30, 0.60):
-        assert c(HW_r, pav).C_r > c(HW_r, gra).C_r
+        assert c(HW_r, pav).C_r_si > c(HW_r, gra).C_r_si
 
 
 def test_la_sumergencia_reduce_el_coeficiente_y_fuera_de_la_figura_se_detiene():
@@ -180,10 +185,10 @@ def test_el_tanteo_reproduce_la_fila_del_ejemplo_con_su_propia_curva():
     assert r.desborda
     assert r.Q_conducto / PIE3 == pytest.approx(fila["Q_c_ft3_s"], rel=LECTURA)
     assert r.HW_r / PIE == pytest.approx(fila["HW_r_ft"], rel=LECTURA)
-    assert r.Q_conducto + r.Q_plataforma == pytest.approx(r.Q_total,
-                                                          rel=1e-6)
+    assert r.Q_conducto + r.Q_plataforma == pytest.approx(
+        r.Q_total, rel=TOL_REL_BALANCE_REPARTO_DESBORDE)
     assert r.q_unitario == pytest.approx(
-        r.Q_plataforma / r.longitud_cresta, rel=1e-9)
+        r.Q_plataforma / r.longitud_cresta, rel=REL_TRANSPORTE)
     assert r.k_t == pytest.approx(1.0, abs=ABS_CERO)
 
 
@@ -224,8 +229,8 @@ def test_sin_alcanzar_la_cresta_no_hay_reparto():
     r = _repartir(700.0, _curva_publicada)
     assert not r.desborda
     assert r.Q_plataforma == pytest.approx(0.0, abs=ABS_CERO)
-    assert r.Q_conducto == pytest.approx(700.0 * PIE3, rel=1e-12)
-    assert r.C_r is None and r.k_t is None
+    assert r.Q_conducto == pytest.approx(700.0 * PIE3, rel=REL_TRANSPORTE)
+    assert r.C_r_si is None and r.k_t is None and r.C_r_figura is None
 
 
 def test_si_la_carga_de_diseno_ya_desborda_el_tanteo_no_se_busca():
@@ -233,6 +238,113 @@ def test_si_la_carga_de_diseno_ya_desborda_el_tanteo_no_se_busca():
     hay desborde, «metodo no evaluable»."""
     with pytest.raises(MetodoNoEvaluableError):
         _repartir(1000.0, _curva_publicada, Q_min_ft=850.0)
+
+
+# ---------------------------------------------------------------------------
+# --- VE-5 fixve4 (hallazgo 2 de la revision de la fusion) --- La carga de M4
+# NO es continua en el caudal: salta donde cambia el control que gobierna o
+# el regimen del barril. El tanteo de la Ec. 3.9 la suponia continua, y una
+# raiz de `brentq` sobre un salto no es una raiz. MEDIDO antes del arreglo:
+# con la curva sintetica, `DatoInvalidoError('HW_r')` = -0.10; con la carga
+# de M4 del O 1.50 m, `LimiteNumericoError: 'dx'` del perfil interno.
+# ---------------------------------------------------------------------------
+
+def _repartir_con(hidraulica_de, *, cota_cresta, Q_total, Q_minimo,
+                  HW_minimo=0.0, cota_agua_abajo=-10.0):
+    return M4.repartir_caudal_con_desborde(
+        Q_total=Q_total, hidraulica_de=hidraulica_de, cota_entrada=0.0,
+        cota_cresta=cota_cresta, longitud_cresta=30.0, ancho_cresta=10.0,
+        cota_agua_abajo=cota_agua_abajo,
+        superficie=modelos.SUPERFICIE_CRESTA_PAVIMENTADA, coeficientes=COEF,
+        Q_minimo=Q_minimo, HW_minimo=HW_minimo)
+
+
+def _curva_con_salto(Q):
+    """HW = 0.5 + 0.1 Q hasta Q = 4 y 1.2 + 0.1 (Q - 4) desde ahi: sobre una
+    cresta a 1.0 m el tirante salta de -0.10 a +0.20 m (DE PRUEBA)."""
+    HW = 0.5 + 0.1 * Q if Q < 4.0 else 1.2 + 0.1 * (Q - 4.0)
+    return SimpleNamespace(HW=HW, control_gobernante=ControlGobernante.ENTRADA)
+
+
+def _carga_m4_del_tubo_150(Q):
+    """La carga de ESTE programa para un O 1.50 m de concreto, S = 0.004,
+    L = 30 m y TW = 0.5 m, por la misma via que `servicio` arma para V8
+    (lamina libre con M4 entero o barril a presion). MEDIDA: salta de
+    1.061 a 1.126 m entre Q = 2.04 y 2.05, y de 1.354 a 1.456 m entre
+    2.97 y 2.98."""
+    from src.modelos import (REGIMEN_EVENTO_LAMINA_LIBRE,
+                             HidraulicaDelEventoExtremo, SeccionCircular,
+                             TipoMaterial)
+    from src.modulos import M3_hidraulica as M3
+    from src.modulos.M2_material import catalogo
+    material = catalogo(TipoMaterial.CONCRETO_REFORZADO)
+    seccion = SeccionCircular(1.50)
+    S, L, TW = 0.004, 30.0, 0.5
+    Q_celda, _ = M4.caudal_por_celda(Q, material)
+    normal = M3.resolver_manning(seccion=seccion, Q=Q_celda, S=S,
+                                 material=material)
+    if normal is not None:
+        r = M4.resolver_control(seccion=seccion, Q=Q, S=S, L=L, TW=TW,
+                                material=material, normal=normal)
+        if r is not None:
+            return HidraulicaDelEventoExtremo(
+                HW=r.HW, control_gobernante=r.control_gobernante,
+                regimen=REGIMEN_EVENTO_LAMINA_LIBRE, HW_entrada=r.HW_entrada,
+                HW_salida=r.HW_salida, nota="")
+    return M4.hidraulica_a_presion(seccion=seccion, Q=Q, S=S, L=L, TW=TW,
+                                   material=material)
+
+
+def test_la_carga_de_M4_del_tubo_de_prueba_salta_donde_se_midio():
+    """El caso de la revision, fijado: si M4 deja de saltar aqui, los dos
+    tests que siguen dejan de probar lo que dicen."""
+    assert _carga_m4_del_tubo_150(2.05).HW - _carga_m4_del_tubo_150(2.04).HW \
+        > 0.05
+    assert _carga_m4_del_tubo_150(2.98).HW - _carga_m4_del_tubo_150(2.97).HW \
+        > 0.05
+
+
+def test_un_salto_de_la_carga_sobre_la_cresta_es_metodo_no_evaluable():
+    with pytest.raises(MetodoNoEvaluableError) as e:
+        _repartir_con(_curva_con_salto, cota_cresta=1.0, Q_total=6.0,
+                      Q_minimo=2.0)
+    assert str(e.value).startswith(
+        modelos.MOTIVO_METODO_NO_EVALUABLE_EVENTO_EXTREMO)
+    assert "discontinua en Q_c" in str(e.value)
+    assert "4.0" in str(e.value)
+
+
+@pytest.mark.parametrize("cota_cresta", [1.10, 1.40])
+def test_la_carga_de_M4_discontinua_detiene_el_reparto_sin_fallo_numerico(
+        cota_cresta):
+    """Con la cresta a 1.10 m o a 1.40 m sobre la solera, el agua la cruza
+    en uno de los dos saltos medidos: el reparto no tiene raiz y se dice
+    asi, con el rotulo del evento extremo, y no con `LimiteNumericoError`
+    ni con un `HW_r` negativo."""
+    HW_diseno = _carga_m4_del_tubo_150(2.0).HW
+    with pytest.raises(MetodoNoEvaluableError) as e:
+        _repartir_con(_carga_m4_del_tubo_150, cota_cresta=cota_cresta,
+                      Q_total=4.0, Q_minimo=2.0, HW_minimo=HW_diseno)
+    assert str(e.value).startswith(
+        modelos.MOTIVO_METODO_NO_EVALUABLE_EVENTO_EXTREMO)
+    assert "Q_c" in str(e.value)
+
+
+def test_un_fallo_numerico_de_la_carga_dentro_del_tanteo_se_convierte():
+    """Un `LimiteNumericoError` de la carga del conducto con un caudal de
+    tanteo no tumba V8 por una via que no es la del metodo: se convierte."""
+    from src.modelos import LimiteNumericoError
+
+    def carga(Q):
+        if 3.0 < Q < 5.0:
+            raise LimiteNumericoError("dx", valor=-1e-9,
+                                      motivo="perfil de prueba")
+        return SimpleNamespace(HW=0.5 + 0.2 * Q,
+                               control_gobernante=ControlGobernante.ENTRADA)
+    with pytest.raises(MetodoNoEvaluableError) as e:
+        _repartir_con(carga, cota_cresta=1.2, Q_total=6.0, Q_minimo=2.0)
+    assert str(e.value).startswith(
+        modelos.MOTIVO_METODO_NO_EVALUABLE_EVENTO_EXTREMO)
 
 
 # ===========================================================================
@@ -257,7 +369,7 @@ def _reparto_de_prueba(q_unitario, desborda=True):
         desborda=desborda, cota_cresta=44.20, longitud_cresta=30.0,
         ancho_cresta=9.60, HW_r=0.10 if desborda else 0.0,
         panel=modelos.PANEL_DESBORDE_SOMERO if desborda else "",
-        C_r=3.0 if desborda else None, k_t=1.0 if desborda else None,
+        C_r_si=1.656 if desborda else None, k_t=1.0 if desborda else None,
         C_d_si=1.656 if desborda else None,
         q_unitario=q_unitario if desborda else 0.0)
 
@@ -320,6 +432,13 @@ def test_V8_cumple_si_el_caudal_unitario_no_supera_el_admisible():
     assert kw["coeficientes"] == COEF
     assert kw["Q_minimo"] == pytest.approx(1.167, abs=ABS_CERO)
     assert kw["HW_minimo"] == pytest.approx(1.042, abs=ABS_CERO)
+    # --- VE-5 fixve4 --- la memoria lleva C_r en SI y la lectura de la
+    # figura (ft^0.5/s) solo como presentacion.
+    assert v.paso.fundamento_id == "F5.V8.DESBORDE"
+    c_r = next(m for m in v.paso.sustitucion if m.simbolo == "C_r")
+    assert c_r.unidad == "m^0.5/s"
+    assert c_r.valor == pytest.approx(1.656, abs=ABS_CERO)
+    assert "3.000 ft^0.5/s" in c_r.procedencia
     v = _v8(_evento(q_unitario=0.25))
     assert not v.cumple
 
@@ -364,10 +483,33 @@ def test_los_criterios_nuevos_y_su_etiqueta():
     assert q.nivel == ca.NIVEL_EXPEDIENTE
     c = ca.CRITERIOS["coeficientes_desborde_plataforma"]
     assert c.etiqueta == "C" and c.nivel == ca.NIVEL_EXPEDIENTE
-    assert set(c.valor) == {"conversion_cd_si", "limite_HWr_sobre_Lr",
-                            "Cr_profundo", "Cr_somero_m", "kt"}
-    for curva in ("Cr_profundo", "Cr_somero_m", "kt"):
+    # --- VE-5 fixve4 --- sin campo de conversion (es la constante [N]
+    # K_CD_DESBORDE_SI) y con las curvas de C_r en SI.
+    assert set(c.valor) == {"limite_HWr_sobre_Lr", "Cr_profundo_si",
+                            "Cr_somero_si", "kt"}
+    for curva in ("Cr_profundo_si", "Cr_somero_si", "kt"):
         assert set(c.valor[curva]) == set(modelos.SUPERFICIES_CRESTA)
+    leida = ca._FIGURA_3_11_C_R_LEIDA
+    for curva_si, curva in (("Cr_profundo_si", "Cr_profundo"),
+                            ("Cr_somero_si", "Cr_somero_m")):
+        for sup in modelos.SUPERFICIES_CRESTA:
+            for (x_si, y_si), (x, y) in zip(c.valor[curva_si][sup],
+                                            leida[curva][sup]):
+                assert x_si == pytest.approx(x, abs=ABS_CERO)
+                assert y_si == pytest.approx(K_CD_DESBORDE_SI * y,
+                                             abs=ABS_CERO)
+
+
+def test_la_conversion_a_SI_es_la_que_la_fuente_imprime():
+    """«[Cd (SI) = 0.552(Cd from Figure 3.11)]» (pag. impresa 3.15): una
+    constante con su cita, no un campo declarable del criterio."""
+    from src import constantes_normativas as cn
+    from src.normativa.registro import construir
+    assert cn.K_CD_DESBORDE_SI == pytest.approx(0.552, abs=ABS_CERO)
+    cita = construir().cita("HDS5_3ED.3.1.5#CD_SI")
+    assert "0.552" in cita.texto_literal.texto
+    assert "conversion_cd_si" not in ca.CRITERIOS[
+        "coeficientes_desborde_plataforma"].valor
     # El umbral ya no anuncia «no implementado».
     assert "no esta implementado" not in ca.CRITERIOS[UMBRAL].justificacion
 
@@ -399,6 +541,11 @@ def test_el_prevuelo_anuncia_la_cresta_solo_con_el_umbral_del_desborde():
         return {f.id_punto for f in anticipo.datos_faltantes_por_punto(
             CSV_EJEMPLO, externos, servicio.ALCANCE_EXPEDIENTE)
             if f.dato == clave}
+    # --- VE-5 fixve4 (hallazgo 7) --- con el umbral declarado y el TR
+    # vacio, V8 se detiene antes en el TR: la cresta todavia no falta.
+    ca.establecer_valor_dinamico(UMBRAL, DESBORDE)
+    assert ca.CRITERIOS["TR_evento_extremo"].valor is None
+    assert not faltas()
     ca.establecer_valor_dinamico("TR_evento_extremo", 500.0)
     ca.establecer_valor_dinamico(UMBRAL, "sin_desborde_de_la_plataforma")
     assert not faltas()
@@ -513,7 +660,10 @@ def test_la_digitalizacion_de_la_figura_se_repite_sobre_el_pdf():
         f0, f1 = ejes["filas"]
         c0, c1 = ejes["columnas"]
         for superficie, mascara in colores.items():
-            serie = COEF[curva][superficie]
+            # La imagen esta en las unidades de la figura: se contrasta la
+            # TRANSCRIPCION (C_r en ft^0.5/s); el criterio la lleva en SI.
+            serie = (COEF[curva][superficie] if curva == "kt" else
+                     ca._FIGURA_3_11_C_R_LEIDA[curva][superficie])
             # Por columna, la mediana del trazo: (abscisa, ordenada).
             trazo = [(x_de(c), a_valor(f0 + float(np.median(
                 np.where(mascara[f0:f1, c])[0]))))

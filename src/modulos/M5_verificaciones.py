@@ -3950,16 +3950,20 @@ def _v8_con_desborde(*, punto: PuntoCritico, seccion: Seccion,
                      "agua de aguas abajo sobre la cresta (solera de salida "
                      "+ TW_ext - cota de la cresta; 0 si no la alcanza)",
                      cifras=CIFRAS_MAGNITUD),
-            Magnitud("C_r", reparto.C_r, "ft^0.5/s",
+            Magnitud("C_r", reparto.C_r_si, "m^0.5/s",
                      f"Figura 3.11 del HDS-5, panel {reparto.panel}, curva "
                      f"«{superficie}» (criterio '{clave_coeficientes}' [C]; "
-                     f"superficie de '{clave_condicion}' = «{condicion}»)",
+                     f"superficie de '{clave_condicion}' = «{condicion}»), "
+                     "en SI: C_r(SI) = 0.552 · C_r(figura) (HDS-5 num. "
+                     "3.1.5); en la figura, C_r = "
+                     f"{reparto.C_r_figura:.3f} ft^0.5/s",
                      cifras=CIFRAS_FACTOR),
             Magnitud("k_t", reparto.k_t, "-",
                      "Figura 3.11 C del HDS-5, con h_t/HW_r",
                      cifras=CIFRAS_FACTOR),
             Magnitud("C_d", reparto.C_d_si, "m^0.5/s",
-                     "C_d (SI) = 0.552 · k_t · C_r (HDS-5 num. 3.1.5)",
+                     "C_d (SI) = k_t · C_r(SI) (HDS-5 num. 3.1.5, Figura "
+                     "3.11)",
                      cifras=CIFRAS_FACTOR),
         ]
     return Verificacion(
@@ -3976,7 +3980,7 @@ def _v8_con_desborde(*, punto: PuntoCritico, seccion: Seccion,
                 "repartido entre el conducto y la plataforma, y el caudal "
                 "unitario sobre la plataforma frente al admisible",
             formula=("Q_ext = Q_conducto + Q_plataforma, a la misma cota;  "
-                     "Q_plataforma = C_d · L · HW_r^1.5, C_d = 0.552 k_t C_r;"
+                     "Q_plataforma = C_d · L · HW_r^1.5, C_d = k_t C_r (SI);"
                      "  q = Q_plataforma / L  <=  q_adm"),
             formula_cita_id="HDS5_3ED.3.1.5#EC_3_9",
             citas_textuales=("HDS5_3ED.3.1.5#TANTEO",
@@ -4011,7 +4015,10 @@ def _v8_con_desborde(*, punto: PuntoCritico, seccion: Seccion,
                 "admite el desborde y el proyecto juzga el no colapso con "
                 "el caudal unitario sobre la plataforma. La cresta es un "
                 "solo tramo horizontal a la cota de desborde, de la longitud "
-                "declarada (HDS-5 Figura 3.12B). La curva de la Figura 3.11 "
+                "declarada (HDS-5 Figura 3.12B), con HW_r medido sobre esa "
+                "cota y no el tirante hidraulico del columpio que la fuente "
+                "toma con un solo tramo: la longitud declarada tiene que ser "
+                "coherente con ese tirante. La curva de la Figura 3.11 "
                 f"es la de «{superficie}» por la condicion de rodadura "
                 f"«{condicion}»: la figura solo distingue la cresta "
                 "pavimentada de la de grava, y una via no pavimentada se "
