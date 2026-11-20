@@ -192,3 +192,51 @@ def test_con_otra_falla_ademas_de_v4_no_hay_delta(a01):
     delta, _nota = MD._delta_de_7A(_punto_bajo(a01, 1.20), material, seccion,
                                    [_v("V2", False), _v("V4", False)], r)
     assert delta is None
+
+
+# ===========================================================================
+# Dictamen Fable (2026-11-20), cambio 3 A: en el marco la serie (B, H) no se
+# ordena por altura, y un par siguiente MAS BAJO puede dejar la cobertura
+# ===========================================================================
+
+def test_en_el_marco_un_par_siguiente_mas_bajo_sigue_la_progresion(tmp_path):
+    from tests.apoyo.criterios import declarados
+    from tests.test_canal_discrepancias import DECLARACIONES_DEL_CAJON
+    texto = CSV_EJEMPLO.read_text(encoding="utf-8")
+    fila = "C-01,3+100,C,,,,36.90,39.10,38.95,6.5,30,9.60,36.20,,,ML,,,"
+    csv = tmp_path / "c01.csv"
+    csv.write_text(texto.replace(fila + "\n", fila + "38.30\n"),
+                   encoding="utf-8")
+    externos = cli.cargar_datos_externos(
+        RAIZ / "tests" / "linea_base_familia_c" / "entradas_ampliadas.json",
+        {"luz_m": 2.75})
+    serie = [[1.20, 0.90], [1.50, 0.60], [2.00, 1.50]]
+    with declarados(dict(DECLARACIONES_DEL_CAJON,
+                         secciones_cajon_normalizadas=serie)):
+        informe = cli.correr(csv, externos, alcance=cli.ALCANCE_PERFIL)
+        c01 = informe.puntos[3]
+        assert c01.dimensionado, [b.mensaje for b in c01.bloqueos]
+        material = c01.resultado.material
+        r = c01.resultado.resultado_hidraulico
+        base = c01.punto_de_calculo
+        primero = c01.traza[0].seccion
+        assert primero.H == pytest.approx(0.90, rel=REL)
+        segundo = MD.siguiente_seccion(material, primero)
+        assert segundo.H < primero.H                   # el siguiente, mas bajo
+        clave_1 = M5.cota_clave(punto=base, material=material,
+                                seccion=primero)
+        clave_2 = M5.cota_clave(punto=base, material=material,
+                                seccion=segundo)
+        e_paq = base.cota_rasante - base.cota_subrasante
+        sub = (clave_1 + clave_2) / 2      # el primero no cabe; el segundo si
+        punto = dataclasses.replace(base, cota_subrasante=sub,
+                                    cota_rasante=sub + e_paq)
+        escalones = []
+        res, motivo = MD.disenar_material(
+            punto, material, Q=r.Q, S=r.S, L=c01.longitud.valor, TW=r.TW_m,
+            verificar=_todo_cumple, registrar=escalones.append)
+    assert escalones[0].sin_cabida is not None
+    assert escalones[0].sin_cabida.por_cobertura
+    assert "mas bajo" in escalones[0].motivo
+    assert res is not None and res.aceptado, motivo
+    assert res.seccion.H == pytest.approx(0.60, rel=REL)

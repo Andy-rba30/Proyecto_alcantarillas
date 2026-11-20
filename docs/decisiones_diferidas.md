@@ -9045,26 +9045,23 @@ decisiones ambiguas las tomó ella, y cada ficha dice cuál, por qué y con qué
 
 ## VE6-34 · La progresión del catálogo: G1 dentro del bucle, V10 la detiene y el delta con V4 bajo control de entrada
 
-- **Cerrado (ítem 34 del censo; fichas VE3-08 H7/H8/H3 a y T11-03 (2)):** (a) **H8**: el escalón
-  que cumple toda la Fase 5 pasa por la COBERTURA de 7.A antes de adoptarse
-  (`MD._escalon_sin_cobertura`, con `M7.tamizado_rasante`); si la rasante no se la deja, el material
-  se descarta por rasante con el delta de G1 (`EscalonSinCabida.por_cobertura`): un escalón mayor
-  sube la clave y no la mejora. Sólo la cobertura: el resguardo ya es V4. Si el tamizado no se
-  puede calcular, el escalón se adopta como antes. (b) **H7 con V10**: una V10 incumplida detiene
-  la progresión (`VERIFICACIONES_INDEPENDIENTES_DE_LA_SECCION`): juzga `ResultadoHidraulico.S`, la
-  misma en todo escalón. (c) **T11-03 (2)**: el escalón que no cabe y sólo incumple V4 da el delta
-  del resguardo cuando gobierna el control de ENTRADA (su HW no depende de la longitud y el
-  gobernante no baja de él con la rasante nueva: cota inferior para ese escalón); bajo SALIDA, no.
-- **Decisiones de la sesión:** H7 sólo con V10, porque es la única cuya independencia de la sección
-  se demuestra por el código (V2, V2b y V7 dependen de la sección y su monotonía no está probada:
-  detenerlas podría cambiar un diseño). El delta de (c) bajo salida exigiría iterar 7.A con 7.B (el
-  HW de salida cambia con la longitud, en los dos sentidos según gobierne TW o (y_c + D)/2): no se
-  inventa. La nota de T11-03 de la hoja de ruta (§7.B, «sólo se da cuando es geometría pura»)
-  describe el alcance anterior y sigue así mientras el dueño no la actualice.
-- **Abierto:** H7 con V2, V2b y V7; el delta de V4 bajo control de salida; la fila NF de VE3-13
-  sin iterar el peralte (M9: el lote del cabezal está en otra rama, y con una zapata corrida que no
-  cumple dentro del tope «inflar el peralte no es diseño», decisión de VE-3.14 que sólo el dueño
-  revierte).
-- **Qué haría falta:** una demostración (o un barrido) de la monotonía de V2/V2b/V7 con D; iterar
-  7.A con 7.B para el delta bajo salida; la decisión del dueño sobre la fila NF.
+- **Cerrado (ítem 34; VE3-08 H7/H8/H3 a y T11-03 (2)):** (a) **H8**: el escalón que cumple toda la
+  Fase 5 pasa por la COBERTURA de 7.A antes de adoptarse (`MD._escalon_sin_cobertura`); si la
+  rasante no se la deja, queda rechazado con el delta de G1 (`EscalonSinCabida.por_cobertura`).
+  El material se descarta por rasante sólo si NINGÚN escalón restante es más bajo
+  (`_escalon_restante_mas_bajo`, dictamen Fable): en el tubo la progresión es ascendente y nada
+  cambia; en el marco `M2.progresion_de_cajon` no ordena los pares (B, H) y un par más bajo baja
+  la clave, así que la progresión sigue. Sólo la cobertura: el resguardo ya es V4. (b) **H7 con
+  V10**: V10 incumplida detiene la progresión (juzga `ResultadoHidraulico.S`, igual en todo
+  escalón). (c) **T11-03 (2)**: el escalón que no cabe y sólo incumple V4 da el delta del
+  resguardo bajo control de ENTRADA (cota inferior); bajo SALIDA, no. La hoja de ruta lleva el
+  «Addendum VE-6» en la nota T11-03 de §7.B.
+- **Decisiones (aprobadas por Fable con cambios):** H7 sólo con V10, la única cuya independencia
+  de la sección se demuestra; el delta bajo salida exigiría iterar 7.A con 7.B y no se inventa.
+- **Abierto:** H7 con V2, V2b y V7; el delta de V4 bajo salida; la rama «no cabe» de T11-03 en el
+  marco sigue deteniéndose en el primer par que no cabe aunque quede uno más bajo (abierto (5) de
+  T11-03, anterior a VE-6); la fila NF de VE3-13 sin iterar el peralte (M9 en otra rama; «inflar el
+  peralte no es diseño», decisión de VE-3.14 que sólo el dueño revierte).
+- **Qué haría falta:** la monotonía de V2/V2b/V7 con D; iterar 7.A con 7.B; aplicar la regla del
+  escalón más bajo también a la rama «no cabe»; la decisión del dueño sobre la fila NF.
 - **Dónde vive:** `src/modulos/MD.py::_escalon_sin_cobertura`

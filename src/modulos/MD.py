@@ -659,9 +659,12 @@ def _escalon_sin_cobertura(punto: PuntoCritico, material: Material,
     BUCLE. El escalon que cumple TODA la Fase 5 se somete al tamizado de 7.A
     (`M7.tamizado_rasante`, el mismo de G1) antes de adoptarse. Si la rasante
     del CSV no lo alcanza, el escalon no se adopta: con V4 cumplida -- la
-    segunda condicion escrita al reves -- lo que falta es la COBERTURA, y un
-    escalon mayor sube la clave y nunca la mejora. El `EscalonSinCabida`
-    lleva el delta de G1 para ese escalon (`por_cobertura`).
+    segunda condicion escrita al reves -- lo que falta es la COBERTURA. Un
+    escalon de igual o mayor altura no la mejora; uno MAS BAJO si (en el
+    marco la serie no se ordena por altura), y por eso el bucle solo
+    descarta el material si no queda ninguno mas bajo
+    (`_escalon_restante_mas_bajo`). El `EscalonSinCabida` lleva el delta de
+    G1 para ese escalon (`por_cobertura`).
 
     Si el tamizado no se puede calcular, None: el escalon se adopta como
     antes y la Fase 7 dira por que no hay G1 (ningun criterio que antes solo
@@ -798,17 +801,45 @@ def _lugar_sin_cabida(seccion: Seccion, sin_cabida: EscalonSinCabida) -> str:
             f"{sin_cabida.exceso_m:+.3f} m)")
 
 
+def _escalon_restante_mas_bajo(material: Material,
+                               seccion: Seccion) -> Optional[Seccion]:
+    """
+    --- VE-6 (item 34; dictamen Fable 2026-11-20) --- El primer escalon que
+    queda en la progresion del material con MENOS ALTURA que `seccion`, o
+    None. En el tubo la progresion es ascendente y nunca lo hay; en el marco
+    `M2.progresion_de_cajon` no ordena los pares (B, H) -- el orden lo
+    declara el proyectista --, y un par siguiente mas bajo baja la clave y
+    puede dejar la cobertura que el actual no deja. Se recorre con la misma
+    guardia de progreso que el bucle (`_mismo_escalon`).
+    """
+    vistas: List[Seccion] = [seccion]
+    siguiente = siguiente_seccion(material, seccion)
+    while siguiente is not None and not any(
+            _mismo_escalon(siguiente, v) for v in vistas):
+        if siguiente.altura < seccion.altura - TOL_UMBRAL_NORMATIVO:
+            return siguiente
+        vistas.append(siguiente)
+        siguiente = siguiente_seccion(material, siguiente)
+    return None
+
+
 def _motivo_escalon_sin_cabida(seccion: Seccion, sin_cabida: EscalonSinCabida,
-                               completadas: Sequence[Verificacion]) -> str:
+                               completadas: Sequence[Verificacion],
+                               mas_bajo: Optional[Seccion] = None) -> str:
     """
     El motivo, en la traza, del escalon que no cabe. El sujeto es el escalon
     y el hecho es geometrico: no cita la excepcion de M5, que para el bucle
     no es un dato invalido.
     """
     if sin_cabida.por_cobertura:
+        sigue = (f"queda un escalon mas bajo en la progresion "
+                 f"({mas_bajo.etiqueta()}), que baja la clave: la progresion "
+                 "sigue" if mas_bajo is not None else
+                 "ningun escalon restante es mas bajo, y uno de igual o mayor "
+                 "altura no baja la clave: la progresion se detiene")
         return (f"{_lugar_sin_cabida(seccion, sin_cabida)}: cumple toda la "
-                "Fase 5, pero la rasante no le deja la cobertura minima; un "
-                "escalon mayor sube la clave y no la mejora")
+                f"Fase 5, pero la rasante no le deja la cobertura minima; "
+                f"{sigue}")
     if not completadas:
         evaluado = "no se le evaluo nada antes"
     elif all(v.cumple for v in completadas):
@@ -975,17 +1006,27 @@ def disenar_material(punto: PuntoCritico, material: Material, *,
                                            resultado)
                     if all(v.cumple for v in verificaciones) else None)
                 if sin_cobertura is not None:
-                    # --- VE-6 (item 34, H8) --- G1 dentro del bucle.
+                    # --- VE-6 (item 34, H8) --- G1 dentro del bucle. El
+                    # material se descarta por rasante SOLO si ningun
+                    # escalon restante es mas bajo (dictamen Fable: en el
+                    # marco la serie (B, H) no se ordena por altura).
+                    mas_bajo = _escalon_restante_mas_bajo(
+                        material_del_catalogo, seccion)
+                    motivo_cob = _motivo_escalon_sin_cabida(
+                        seccion, sin_cobertura, verificaciones,
+                        mas_bajo=mas_bajo)
                     _registrar(registrar, material, seccion, aceptado=False,
-                               motivo=_motivo_escalon_sin_cabida(
-                                   seccion, sin_cobertura, verificaciones),
+                               motivo=motivo_cob,
                                verificaciones=verificaciones,
                                resultado=resultado, sin_cabida=sin_cobertura)
-                    es_el_primero = not visitadas[:-1]
-                    return None, _motivo_descarte_por_rasante(
-                        seccion, sin_cobertura,
-                        None if es_el_primero else ultimo_motivo)
-                if all(v.cumple for v in verificaciones):
+                    if mas_bajo is None:
+                        es_el_primero = not visitadas[:-1]
+                        return None, _motivo_descarte_por_rasante(
+                            seccion, sin_cobertura,
+                            None if es_el_primero else ultimo_motivo)
+                    ultimo_motivo = motivo_cob
+                    ultimo_por_fase_8 = False
+                elif all(v.cumple for v in verificaciones):
                     _registrar(registrar, material, seccion, aceptado=True,
                                motivo="", verificaciones=verificaciones,
                                resultado=resultado)
@@ -998,29 +1039,33 @@ def disenar_material(punto: PuntoCritico, material: Material, *,
                         aceptado=True,
                     ), ""
 
-                ultimo_motivo = _motivo_incumplimiento(seccion, verificaciones)
-                ultimo_por_fase_8 = all(
-                    (v.codigo or "").startswith(PREFIJO_CODIGO_FASE_8)
-                    for v in verificaciones if not v.cumple)
-                _registrar(registrar, material, seccion, aceptado=False,
-                           motivo=ultimo_motivo,
-                           verificaciones=verificaciones,
-                           resultado=resultado)
-                # --- VE-6 (item 34, H7) --- una falla que no depende de la
-                # seccion detiene la progresion: ningun escalon mayor la
-                # cambia.
-                independientes = [
-                    v.codigo for v in verificaciones if not v.cumple
-                    and v.codigo in VERIFICACIONES_INDEPENDIENTES_DE_LA_SECCION]
-                if independientes:
-                    return None, (
-                        _motivo_descarte(material, ultimo_motivo,
-                                         por_fase_8=False)
-                        + f". La progresion se detiene en {seccion.etiqueta()}: "
-                        f"{', '.join(independientes)} no depende de la "
-                        "seccion (juzga la pendiente con que corre el "
-                        "diseño, la misma en todo escalon), y un escalon "
-                        "mayor no la cumpliria (VE-6)")
+                else:
+                    ultimo_motivo = _motivo_incumplimiento(seccion,
+                                                           verificaciones)
+                    ultimo_por_fase_8 = all(
+                        (v.codigo or "").startswith(PREFIJO_CODIGO_FASE_8)
+                        for v in verificaciones if not v.cumple)
+                    _registrar(registrar, material, seccion, aceptado=False,
+                               motivo=ultimo_motivo,
+                               verificaciones=verificaciones,
+                               resultado=resultado)
+                    # --- VE-6 (item 34, H7) --- una falla que no depende de la
+                    # seccion detiene la progresion: ningun escalon mayor la
+                    # cambia.
+                    independientes = [
+                        v.codigo for v in verificaciones if not v.cumple
+                        and v.codigo
+                        in VERIFICACIONES_INDEPENDIENTES_DE_LA_SECCION]
+                    if independientes:
+                        return None, (
+                            _motivo_descarte(material, ultimo_motivo,
+                                             por_fase_8=False)
+                            + ". La progresion se detiene en "
+                            f"{seccion.etiqueta()}: "
+                            f"{', '.join(independientes)} no depende de la "
+                            "seccion (juzga la pendiente con que corre el "
+                            "diseño, la misma en todo escalon), y ningun "
+                            "otro escalon la cumpliria (VE-6)")
         except ErrorProyecto as exc:
             # El escalon probado queda en la traza ANTES de que la excepcion
             # siga subiendo: un escalon que revento es parte de lo que se
