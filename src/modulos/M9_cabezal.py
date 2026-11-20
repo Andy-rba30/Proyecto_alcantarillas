@@ -9072,15 +9072,6 @@ def ensamble_estabilidad(entorno: EntornoDelCabezal,
                 entorno, origen_suelo, pendientes)
             pasos.append(paso_global)
             avisos.append(aviso_global)
-    # --- VE-5 fixve4 --- lo declarado que su criterio sin valor no deja
-    # decidir VUELVE a `pendientes`, con el motivo, y viaja aparte para que
-    # el servicio lo lleve como `Bloqueo` (CriterioPendienteError).
-    for codigo, clave, motivo in por_criterio:
-        pendientes += ((codigo, motivo),)
-        avisos.append(
-            f"Cabezal de {entorno.extremo} de {entorno.id_punto}: {codigo} "
-            f"({NOMBRE_DE_LA_GLOBAL[codigo]}), condicion {condicion.value}, "
-            f"queda PENDIENTE de '{clave}' [A]: {motivo}")
         if datos["drenaje"] == DRENAJE_SIN:
             # VE-3.16: el valor de archivo es 'drenado'; este aviso es el
             # del caso declarado. Hasta VE-3.16 decia ademas que la
@@ -9109,6 +9100,15 @@ def ensamble_estabilidad(entorno: EntornoDelCabezal,
                 "marco LRFD supone al menos 6.0 in (0.15 m) de material "
                 "granular compactado bajo la zapata (AASHTO 10.6.3.4), que "
                 "tiene que estar en los planos")
+    # --- VE-5 fixve4 --- lo declarado que su criterio sin valor no deja
+    # decidir VUELVE a `pendientes`, con el motivo, y viaja aparte para que
+    # el servicio lo lleve como `Bloqueo` (CriterioPendienteError).
+    for codigo, clave, motivo in por_criterio:
+        pendientes += ((codigo, motivo),)
+        avisos.append(
+            f"Cabezal de {entorno.extremo} de {entorno.id_punto}: {codigo} "
+            f"({NOMBRE_DE_LA_GLOBAL[codigo]}), condicion {condicion.value}, "
+            f"queda PENDIENTE de '{clave}' [A]: {motivo}")
     return EstabilidadDelCabezal(
         id_punto=entorno.id_punto, extremo=entorno.extremo,
         condicion=condicion, regla_de_marco=regla, cargas=cargas,
