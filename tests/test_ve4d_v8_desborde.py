@@ -235,6 +235,113 @@ def test_si_la_carga_de_diseno_ya_desborda_el_tanteo_no_se_busca():
         _repartir(1000.0, _curva_publicada, Q_min_ft=850.0)
 
 
+# ---------------------------------------------------------------------------
+# --- VE-5 fixve4 (hallazgo 2 de la revision de la fusion) --- La carga de M4
+# NO es continua en el caudal: salta donde cambia el control que gobierna o
+# el regimen del barril. El tanteo de la Ec. 3.9 la suponia continua, y una
+# raiz de `brentq` sobre un salto no es una raiz. MEDIDO antes del arreglo:
+# con la curva sintetica, `DatoInvalidoError('HW_r')` = -0.10; con la carga
+# de M4 del O 1.50 m, `LimiteNumericoError: 'dx'` del perfil interno.
+# ---------------------------------------------------------------------------
+
+def _repartir_con(hidraulica_de, *, cota_cresta, Q_total, Q_minimo,
+                  HW_minimo=0.0, cota_agua_abajo=-10.0):
+    return M4.repartir_caudal_con_desborde(
+        Q_total=Q_total, hidraulica_de=hidraulica_de, cota_entrada=0.0,
+        cota_cresta=cota_cresta, longitud_cresta=30.0, ancho_cresta=10.0,
+        cota_agua_abajo=cota_agua_abajo,
+        superficie=modelos.SUPERFICIE_CRESTA_PAVIMENTADA, coeficientes=COEF,
+        Q_minimo=Q_minimo, HW_minimo=HW_minimo)
+
+
+def _curva_con_salto(Q):
+    """HW = 0.5 + 0.1 Q hasta Q = 4 y 1.2 + 0.1 (Q - 4) desde ahi: sobre una
+    cresta a 1.0 m el tirante salta de -0.10 a +0.20 m (DE PRUEBA)."""
+    HW = 0.5 + 0.1 * Q if Q < 4.0 else 1.2 + 0.1 * (Q - 4.0)
+    return SimpleNamespace(HW=HW, control_gobernante=ControlGobernante.ENTRADA)
+
+
+def _carga_m4_del_tubo_150(Q):
+    """La carga de ESTE programa para un O 1.50 m de concreto, S = 0.004,
+    L = 30 m y TW = 0.5 m, por la misma via que `servicio` arma para V8
+    (lamina libre con M4 entero o barril a presion). MEDIDA: salta de
+    1.061 a 1.126 m entre Q = 2.04 y 2.05, y de 1.354 a 1.456 m entre
+    2.97 y 2.98."""
+    from src.modelos import (REGIMEN_EVENTO_LAMINA_LIBRE,
+                             HidraulicaDelEventoExtremo, SeccionCircular,
+                             TipoMaterial)
+    from src.modulos import M3_hidraulica as M3
+    from src.modulos.M2_material import catalogo
+    material = catalogo(TipoMaterial.CONCRETO_REFORZADO)
+    seccion = SeccionCircular(1.50)
+    S, L, TW = 0.004, 30.0, 0.5
+    Q_celda, _ = M4.caudal_por_celda(Q, material)
+    normal = M3.resolver_manning(seccion=seccion, Q=Q_celda, S=S,
+                                 material=material)
+    if normal is not None:
+        r = M4.resolver_control(seccion=seccion, Q=Q, S=S, L=L, TW=TW,
+                                material=material, normal=normal)
+        if r is not None:
+            return HidraulicaDelEventoExtremo(
+                HW=r.HW, control_gobernante=r.control_gobernante,
+                regimen=REGIMEN_EVENTO_LAMINA_LIBRE, HW_entrada=r.HW_entrada,
+                HW_salida=r.HW_salida, nota="")
+    return M4.hidraulica_a_presion(seccion=seccion, Q=Q, S=S, L=L, TW=TW,
+                                   material=material)
+
+
+def test_la_carga_de_M4_del_tubo_de_prueba_salta_donde_se_midio():
+    """El caso de la revision, fijado: si M4 deja de saltar aqui, los dos
+    tests que siguen dejan de probar lo que dicen."""
+    assert _carga_m4_del_tubo_150(2.05).HW - _carga_m4_del_tubo_150(2.04).HW \
+        > 0.05
+    assert _carga_m4_del_tubo_150(2.98).HW - _carga_m4_del_tubo_150(2.97).HW \
+        > 0.05
+
+
+def test_un_salto_de_la_carga_sobre_la_cresta_es_metodo_no_evaluable():
+    with pytest.raises(MetodoNoEvaluableError) as e:
+        _repartir_con(_curva_con_salto, cota_cresta=1.0, Q_total=6.0,
+                      Q_minimo=2.0)
+    assert str(e.value).startswith(
+        modelos.MOTIVO_METODO_NO_EVALUABLE_EVENTO_EXTREMO)
+    assert "discontinua en Q_c" in str(e.value)
+    assert "4.0" in str(e.value)
+
+
+@pytest.mark.parametrize("cota_cresta", [1.10, 1.40])
+def test_la_carga_de_M4_discontinua_detiene_el_reparto_sin_fallo_numerico(
+        cota_cresta):
+    """Con la cresta a 1.10 m o a 1.40 m sobre la solera, el agua la cruza
+    en uno de los dos saltos medidos: el reparto no tiene raiz y se dice
+    asi, con el rotulo del evento extremo, y no con `LimiteNumericoError`
+    ni con un `HW_r` negativo."""
+    HW_diseno = _carga_m4_del_tubo_150(2.0).HW
+    with pytest.raises(MetodoNoEvaluableError) as e:
+        _repartir_con(_carga_m4_del_tubo_150, cota_cresta=cota_cresta,
+                      Q_total=4.0, Q_minimo=2.0, HW_minimo=HW_diseno)
+    assert str(e.value).startswith(
+        modelos.MOTIVO_METODO_NO_EVALUABLE_EVENTO_EXTREMO)
+    assert "Q_c" in str(e.value)
+
+
+def test_un_fallo_numerico_de_la_carga_dentro_del_tanteo_se_convierte():
+    """Un `LimiteNumericoError` de la carga del conducto con un caudal de
+    tanteo no tumba V8 por una via que no es la del metodo: se convierte."""
+    from src.modelos import LimiteNumericoError
+
+    def carga(Q):
+        if 3.0 < Q < 5.0:
+            raise LimiteNumericoError("dx", valor=-1e-9,
+                                      motivo="perfil de prueba")
+        return SimpleNamespace(HW=0.5 + 0.2 * Q,
+                               control_gobernante=ControlGobernante.ENTRADA)
+    with pytest.raises(MetodoNoEvaluableError) as e:
+        _repartir_con(carga, cota_cresta=1.2, Q_total=6.0, Q_minimo=2.0)
+    assert str(e.value).startswith(
+        modelos.MOTIVO_METODO_NO_EVALUABLE_EVENTO_EXTREMO)
+
+
 # ===========================================================================
 # 3. V8 con el umbral del desborde admitido
 # ===========================================================================

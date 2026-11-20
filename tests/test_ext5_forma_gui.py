@@ -101,6 +101,11 @@ SEIS_EXTERNAS = ("luz_m", "TW_m", "longitud_m", "S_conducto",
                  # --- VE-3.6 --- el F del canal que VC3 pide en la Familia
                  # C; este censo se habia quedado sin el desde VE-3.6.
                  "desnivel_perfil_canal_m",
+                 # --- VE-4c --- la seccion del cauce de aproximacion que
+                 # pide el metodo «perfil_de_remanso_paso_a_paso» de V5;
+                 # este censo se habia quedado sin ella en la fusion de
+                 # VE-4 (revision de la fusion, hallazgo 1).
+                 "seccion_cauce_aproximacion",
                  # --- VE-4d --- la cresta del desborde admitido de V8.
                  "longitud_cresta_desborde_m")
 
