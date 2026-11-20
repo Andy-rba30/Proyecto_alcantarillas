@@ -1850,6 +1850,11 @@ _META_CRITERIOS: Dict[str, _Meta] = {
     "procedimiento_flexion_corte_aashto_sec5": _Meta(unidad="-"),
     "punto_aplicacion_incremento_sismico": _Meta(unidad="- (fraccion de H)"),
     "relacion_intensidad_duracion": _Meta(unidad="-"),
+    # VE-5 (mh, ficha T1-01): la regla del k de la prueba chi-cuadrado.
+    "intervalos_de_clase_chi_cuadrado": _Meta(unidad="-"),
+    # VE-5 (mh, ficha T1-05): K, m y n de la ecuacion (17); I en mm/h, T en
+    # años y t en minutos. Lo consume MH con la relacion regional.
+    "factores_idf_regional": _Meta(unidad="- (K en mm/h·min^n/años^m)"),
     "remanso_derecho_via": _Meta(unidad="- (metodo de V5)"),
     # --- VE-4c --- el fin del perfil de remanso de V5 (lo consume M5).
     "sobreelevacion_admisible_remanso_m": _Meta(unidad="m"),

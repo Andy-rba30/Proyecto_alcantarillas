@@ -914,17 +914,18 @@ def test_una_cuenca_plana_y_una_cuneta_tienen_un_tc_evaluable_y_citado(
         paso = next(p for p in caudal.pasos if p.codigo == "1b.4")
         assert paso.formula_cita_id == cita and caudal.tc_min > 0
         assert caudal.Q_m3s > 0
-    # La tabla esta ENTERA en el registro: seis filas, y las dos que no se
-    # implementan dicen por que.
+    # La tabla esta ENTERA en el registro: seis filas. Desde VE-5 (ficha
+    # T1-07) las seis tienen funcion: Izzard y la onda cinematica por punto
+    # fijo tc <-> I (tests/test_ve5_mh.py).
     from src.normativa import registro
     from src.normativa.esquema import NoUsada
     filas = registro.construir().tabla("MC_HHD.T05").filas
     assert len(filas) == 6
-    sin_uso = [f for f in filas if isinstance(f.uso, NoUsada)]
-    assert len(sin_uso) == 2 and all("T1-07" in f.uso.por_que_no for f in sin_uso)
+    assert not [f for f in filas if isinstance(f.uso, NoUsada)]
     assert set(MH.METODOS_TC) == {"kirpich", "california_culverts_practice",
                                   "federal_aviation_administration",
-                                  "retardo_scs", "temez"}
+                                  "retardo_scs", "temez", "izzard",
+                                  "onda_cinematica"}
 
 
 def test_el_coeficiente_de_uniformidad_entra_solo_con_temez_y_por_criterio(
@@ -1031,7 +1032,9 @@ def test_el_csv_de_cuencas_valida_claves_y_dominio(MH, tmp_path):
     # `S_terreno` es columna obligatoria del encabezado.
     assert "S_terreno" in MH.COLUMNAS_CUENCAS
     assert set(MH.COLUMNAS_CUENCAS_OPCIONALES) == {"H_desnivel_m",
-                                                  "ajuste_kirpich", "CN"}
+                                                  "ajuste_kirpich", "CN",
+                                                  "c_retardo_izzard",
+                                                  "n_manning_superficial"}
     with pytest.raises(DatoInvalidoError):        # dos filas para una obra
         MH.cargar_cuencas(_cuencas_con(tmp_path, [base, base]))
     sin_columna = tmp_path / "c.csv"

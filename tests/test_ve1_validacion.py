@@ -698,7 +698,9 @@ def test_h2_guardia_el_valor_de_archivo_de_todos_los_criterios_sigue_pasando():
     # 163 desde VE-5-m8 (VE-4f): 'carga_viva_tubo_concreto_somero' (ficha VE4F-01).
     # 164 desde VE-5-m9: 'empuje_sismico_muro_que_no_cede'.
     # 165 con el item 3 de VE-5-m9 (ficha T7B-04).
-    assert len(ca.CRITERIOS) == 165 and barridos > 100, (len(ca.CRITERIOS),
+    # 167 desde VE-5-mh: 'factores_idf_regional' [S] (ficha T1-05) e
+    # 'intervalos_de_clase_chi_cuadrado' [A] (ficha T1-01).
+    assert len(ca.CRITERIOS) == 167 and barridos > 100, (len(ca.CRITERIOS),
                                                           barridos)
 
 

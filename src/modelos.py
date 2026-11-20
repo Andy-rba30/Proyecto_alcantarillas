@@ -7081,6 +7081,14 @@ class Cuenca:
     # tiene tabla de la que leerlo.
     CN: Optional[float] = None
     origen: str = ""            # archivo y fila, para la memoria
+    # --- VE-5 (mh, ficha T1-07) --- OPCIONALES, y obligatorias solo con su
+    # metodo (van despues de `origen` para no mover el orden posicional):
+    # el coeficiente de retardo de Izzard (adimensional; la Tabla N 05 lo
+    # describe de 0.0070 en pavimento muy liso a 0.06 en pasto denso) y el n
+    # de Manning del flujo superficial de la onda cinematica. Datos del
+    # estudio hidrologico: el programa no los elige ni los lee de una tabla.
+    c_retardo_izzard: Optional[float] = None
+    n_manning_superficial: Optional[float] = None
 
 
 @dataclass(frozen=True)

@@ -4003,6 +4003,21 @@ tres más (`T1-07` a `T1-09`) las dejó la auditoría adversarial de la misma se
 
 ## T1-01 · De las ocho distribuciones del núm. 3.7.1 el programa ajusta tres, y la prueba χ² no se implementa
 
+- **En parte en VE-5 (lote mh, 2026-11-20): la χ² se calcula; las cinco siguen sin
+  evaluarse.** La prueba χ² (núm. 3.7.2 a, ecuación 12; citas `MC_HHD.3.7.2a`,
+  `#INTERVALOS`, `#ALCANCE`) se imprime en el paso de la bondad como **contraste** de
+  Kolmogorov-Smirnov —no detiene ni elige— y sólo para la normal y la log normal, que
+  son las que el numeral dice que verifica. k sale del criterio [A]
+  `intervalos_de_clase_chi_cuadrado` (Sturges, 1 + ⌈log2 n⌉; ventana: ⌈√n⌉), con
+  intervalos de igual amplitud entre el menor y el mayor dato y los extremos abiertos; el
+  valor crítico es el cuantil de `scipy.stats.chi2`. Decisión del dueño: las cinco
+  distribuciones sólo con un estimador que una fuente de `NORMAS_DIR` imprima. Barrido
+  hecho (texto de cada PDF): el Manual de Hidrología imprime sólo la densidad de las cinco
+  (págs. impresas 27 a 30); el Manual de Puentes las nombra (PDF 51) sin estimador;
+  WSDOT, HDS-5, HEC-14, USACE, USBR y DG-2018 no las tratan. Las tesis de
+  `ejemplos_resueltos/casos_reales/` no son fuente (sirven para comparar). Siguen
+  `MetodoNoEvaluableError` con el rótulo de la hidrología.
+
 - **Qué se difirió:** el ajuste de Log Normal 3P, Gamma 2P, Gamma 3P, Log Pearson III y
   Log Gumbel, y la prueba de bondad χ² del núm. 3.7.2 a).
 - **Por qué:** el Manual imprime la densidad de las ocho y sólo de tres dice cómo se
@@ -4098,7 +4113,33 @@ tres más (`T1-07` a `T1-09`) las dejó la auditoría adversarial de la misma se
   (plataforma más talud) no está en el Manual y no se implementa —una fila por obra—,
   y la relación regional I = K·T^m/t^n (ecuación 17) tampoco, porque sus tres factores
   son datos de un estudio regional.
+- **En parte en VE-5 (lote mh, 2026-11-20): la ecuación (17) tiene puerta.** El criterio
+  `relacion_intensidad_duracion` admite una tercera opción, `idf_regional_ec17`, y con
+  ella la intensidad es I = K·T^m / t^n (cita `MC_HHD.3.8.1#EC17`, pág. impresa 38) con
+  t la duración de diseño en minutos (el tc, con la duración mínima) y T el periodo de
+  retorno del caudal. K, m y n son el criterio `factores_idf_regional` [S], **sin valor**
+  (dato de un estudio regional: sin él, `CriterioPendienteError`, y el pre-vuelo lo
+  anticipa); `MH.factores_idf_regional` exige las tres claves y que sean positivos. La
+  serie de la estación se sigue ajustando —la puerta FEN no cambia— y su intensidad por
+  Dick y Peschke se imprime al lado como contraste. Vale también para el punto fijo de
+  Izzard y la onda cinemática.
+- **Sigue abierta la ponderación de C por subáreas**, ya con fuente: ficha VE5-MH-01.
 - **Dónde vive:** `src/normativa/tablas.py::T05`
+
+## VE5-MH-01 · La ponderación de C por subáreas tiene fuente [C] y no se implementa: pide cambiar el contrato
+
+- **Qué se difirió:** el coeficiente de escorrentía ponderado de una cuenca con varias
+  coberturas (plataforma más talud), ΣC·A / ΣA.
+- **Por qué:** el Manual no la trae (ficha T1-05), pero la fuente técnica que el proyecto
+  ya usa para la plataforma sí: WSDOT Hydraulics Manual, Equation 2-4 (pág. impresa 2-8,
+  PDF 44), «When several subareas within a drainage basin have different runoff
+  coefficients, the rational formula can be modified as follows», Q = I·ΣCA / K. Sería
+  [C], no [A]. Lo que falta no es fuente sino forma de entrada: hoy el CSV de cuencas es
+  una fila por obra, con un área que tiene que coincidir con `area_ha`, y varias subáreas
+  por obra cambian el contrato, que decide su dueño.
+- **Qué haría falta:** la forma de las subáreas en `docs/contrato_entradas.md`, la cita de
+  la Eq. 2-4 en el registro y ΣC·A en el paso del coeficiente.
+- **Dónde vive:** `src/modulos/MH_hidrologia.py::_paso_c`
 
 ## T1-06 · `MetodoNoEvaluableError` admite un rótulo propio para la hidrología
 
@@ -4113,7 +4154,22 @@ tres más (`T1-07` a `T1-09`) las dejó la auditoría adversarial de la misma se
   la integración de T-1 (2026-11-12).
 - **Dónde vive:** `src/modelos.py::MOTIVO_METODO_NO_EVALUABLE_HIDROLOGIA`
 
-## T1-07 · De las seis filas de la Tabla Nº 05 se implementan cuatro: Izzard y onda cinemática quedan diferidas
+## T1-07 · De las seis filas de la Tabla Nº 05 se implementan cuatro: Izzard y onda cinemática quedan diferidas — Cerrado (VE-5, lote mh)
+
+- **Cerrado (VE-5, 2026-11-20):** las seis filas tienen función. `metodo_tc` admite
+  `izzard` y `onda_cinematica`, con su dato de superficie en dos columnas opcionales del
+  CSV de cuencas (`c_retardo_izzard`, `n_manning_superficial`: obligatorias con su método,
+  vacías con cualquier otro). El tiempo de concentración sale del **punto fijo tc ↔ I**
+  (`MH._punto_fijo_tc`): sustitución sucesiva desde una lluvia de 24 horas, con la MISMA
+  relación intensidad-duración y la MISMA duración mínima del paso de la intensidad
+  (`MH._intensidad_de_diseno`), hasta `TOL_REL_PUNTO_FIJO_TC` relativo; sin convergencia en
+  `ITERACIONES_MAX_PUNTO_FIJO_TC`, `LimiteNumericoError`. La condición de Izzard «el producto
+  de i por L debe ser ≤ 3800» (cita `MC_HHD.3.9#T05_IZZARD_IL`, exigencia) se exige con la
+  intensidad del punto fijo y fuera de ella el punto no se evalúa. La onda cinemática lee la
+  S de `S_terreno` («pendiente promedio del terreno»: la `Interpretacion` de
+  `MC_HHD.3.9#T05_ONDA`). Los dorados son forma cerrada (onda, con una curva I = a/t^b) y
+  `brentq` (Izzard), en `tests/test_ve5_mh.py`. Sigue sin anticiparse en el pre-vuelo la
+  condición i·L de Izzard, que depende de la intensidad y por tanto del TR (ficha T1-04).
 
 - **Qué se difirió:** las filas «Izzard (1946)» y «Ecuaciones de onda cinemática
   Morgali y Linsley (1965), Aron y Erborge (1973)» de la tabla de fórmulas de tiempo
