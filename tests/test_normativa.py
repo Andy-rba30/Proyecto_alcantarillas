@@ -649,8 +649,9 @@ CITAS_SIN_FIRMA_A_PROPOSITO = (
     # 2026-11-20) --- la SEGUNDA razon, distinta de las seis de arriba: la
     # fuente SI tiene paginacion medida, pero la sesion que dio de alta la
     # cita no tenia `NORMAS_DIR`, y su Verbatim es la frase que ya estaba
-    # transcrita en la nota de otra cita FIRMADA contra la misma pagina. Se
-    # firma cuando T2 la compare con su PDF (pendiente de revision Fable).
+    # transcrita en la nota de otra cita FIRMADA contra la misma pagina.
+    # Dictamen Fable 2026-11-20: aprobada con caducidad (se firma en la
+    # primera sesion con NORMAS_DIR; `test_normativa_pdf` lo exige).
     "E060.22.10.2.2#VOLADIZO",
 )
 
@@ -659,6 +660,10 @@ CITAS_SIN_FIRMA_A_PROPOSITO = (
 SIN_FIRMA_POR_SESION_SIN_PDF = {
     "E060.22.10.2.2#VOLADIZO": "E060.22.10.2#CICLOPEO",
 }
+# Trinquete (dictamen Fable, C1.a): SOLO DECRECE. La exencion caduca: con el
+# PDF enlazado no puede quedar ninguna (`test_normativa_pdf.py::test_con_el_
+# pdf_enlazado_no_queda_cita_sin_firma_por_sesion`).
+MAX_SIN_FIRMA_POR_SESION_SIN_PDF = 1
 
 
 def test_las_citas_sin_firma_son_exactamente_las_censadas(reg):
@@ -676,6 +681,14 @@ def test_las_citas_sin_firma_son_exactamente_las_censadas(reg):
             origen = reg.cita(SIN_FIRMA_POR_SESION_SIN_PDF[id_])
             assert origen.verificado is not None, (
                 f"{id_}: la cita de origen {origen.id} tampoco esta firmada")
+            # --- dictamen Fable, C1.a --- la frase ENTRECOMILLADA en la nota
+            # de origen, de la misma fuente y la misma pagina del Verbatim, y
+            # una fuente con paginacion medida (si no, es la otra razon).
+            assert f"«{cita.texto_literal.texto}»" in (origen.nota or ""), id_
+            assert cita.fuente_id == origen.fuente_id, id_
+            assert cita.texto_literal.pagina_pdf == \
+                origen.texto_literal.pagina_pdf, id_
+            assert not isinstance(fuente.paginacion, SinDeterminar), id_
             assert cita.texto_literal.texto in (origen.nota or ""), (
                 f"{id_}: su Verbatim no es el que la nota de {origen.id} "
                 "ya transcribia: seria una transcripcion nueva sin leer")
@@ -689,6 +702,41 @@ def test_las_citas_sin_firma_son_exactamente_las_censadas(reg):
         assert "SIN FIRMA A PROPOSITO" in (cita.nota or ""), (
             f"{id_}: esta censada como sin firma deliberada y su nota no lo "
             "declara")
+
+
+def test_el_censo_sin_firma_por_sesion_solo_decrece():
+    assert len(SIN_FIRMA_POR_SESION_SIN_PDF) <= MAX_SIN_FIRMA_POR_SESION_SIN_PDF
+    assert set(SIN_FIRMA_POR_SESION_SIN_PDF) <= set(CITAS_SIN_FIRMA_A_PROPOSITO)
+
+
+def test_una_cita_sin_firma_por_sesion_no_sostiene_sola_nada(reg):
+    """
+    Dictamen Fable, C1.b: una cita que nadie leyo en el PDF no puede ser la
+    UNICA que sostenga un verbo ni la cita de una formula o de un umbral.
+    Todo `Fundamento` que la cite tiene otra cita FIRMADA cuyo caracter
+    sostiene su verbo, y su id no aparece como literal en `src/modulos/`
+    (ni `formula_cita_id`, ni `Umbral.cita_id`, ni una constante `CITA_*`).
+    Por eso la cita principal de C7 en M9 se cambia DESPUES de firmar.
+    """
+    from pathlib import Path
+    from src.normativa.esquema import VERBO_COMPATIBLE_CON
+    modulos = Path(__file__).resolve().parents[1] / "src" / "modulos"
+    textos = {r.name: r.read_text(encoding="utf-8")
+              for r in modulos.glob("*.py")}
+    for id_ in SIN_FIRMA_POR_SESION_SIN_PDF:
+        for f in reg.fundamentos:
+            if id_ not in f.citas:
+                continue
+            otras = [reg.cita(c) for c in f.citas if c != id_]
+            assert any(c.verificado is not None
+                       and c.caracter in VERBO_COMPATIBLE_CON[f.verbo]
+                       for c in otras), (
+                f"{f.id}: su verbo «{f.verbo.value}» solo lo sostiene {id_}, "
+                "que no esta firmada")
+        for nombre, texto in textos.items():
+            assert f'"{id_}"' not in texto and f"'{id_}'" not in texto, (
+                f"{id_} aparece como literal en src/modulos/{nombre}: una "
+                "cita sin firmar no se usa en el calculo hasta firmarla")
 
 
 # LA REGLA DURA DE N2: «traducción no oficial» acompaña a TODA cita de la

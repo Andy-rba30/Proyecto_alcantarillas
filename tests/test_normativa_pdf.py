@@ -412,3 +412,15 @@ def test_T1_la_resolucion_del_Manual_de_Puentes_es_la_que_el_ejemplar_imprime(re
     assert normalizar(designador) in texto, (
         f"la resolucion declarada ({f.resolucion}) no esta impresa en el "
         "ejemplar; la ficha no puede citar una RD que el PDF no lleva")
+
+
+# --- VE-7, lote C (dictamen Fable, C1.c) --- LA EXENCION CADUCA. Con el
+# repositorio de normas enlazado, una cita censada «sin firma por sesion sin
+# PDF» ya se pudo comparar con su pagina (T2): hay que firmarla y sacarla del
+# censo. Este test es el que lo exige en la primera sesion con NORMAS_DIR.
+@pytest.mark.pdf
+def test_con_el_pdf_enlazado_no_queda_cita_sin_firma_por_sesion():
+    from tests import test_normativa as tn
+    assert not tn.SIN_FIRMA_POR_SESION_SIN_PDF, (
+        "con NORMAS_DIR enlazado, firma estas citas y sacalas del censo: "
+        f"{sorted(tn.SIN_FIRMA_POR_SESION_SIN_PDF)}")

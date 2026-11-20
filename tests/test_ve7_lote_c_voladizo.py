@@ -55,7 +55,9 @@ def test_C1_la_cita_no_lleva_firma_y_esta_censada_con_su_razon():
     assert tn.SIN_FIRMA_POR_SESION_SIN_PDF[ID] == "E060.22.10.2#CICLOPEO"
     assert "SIN FIRMA A PROPOSITO" in c.nota
     assert "NORMAS_DIR" in c.nota
-    assert "pendiente de revision Fable" in c.nota
+    assert ("dictamen Fable 2026-11-20: aprobada con caducidad (se firma "
+            "en la primera sesión con NORMAS_DIR)") in c.nota
+    assert "pendiente de revision Fable" not in c.nota
 
 
 def test_C1_el_fundamento_del_ciclopeo_la_cita():

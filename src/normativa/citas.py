@@ -12979,7 +12979,8 @@ E060_22_10_2_2_VOLADIZO = _cita(
           "NORMAS_DIR y no la firma sin abrir el PDF. T2 compara el Verbatim "
           "con la pagina 195 en toda corrida que enlace el repositorio de "
           "normas; con ese resultado verde, la cita se firma y sale del "
-          "censo (pendiente de revision Fable). «Será necesario» es "
+          "censo (dictamen Fable 2026-11-20: aprobada con caducidad (se "
+          "firma en la primera sesión con NORMAS_DIR)). «Será necesario» es "
           "EXIGENCIA: el voladizo de ciclopeo mas largo que la mitad de su "
           "peralte se verifica en flexion y corte (C7 de M9, la punta y el "
           "talon de la zapata del cabezal de gravedad)."),
