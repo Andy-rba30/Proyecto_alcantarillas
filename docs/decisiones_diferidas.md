@@ -8324,51 +8324,24 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
 
 ## VE3-21 · El trasdós drenado es el valor de archivo (VE-3.16, decisión del dueño del 2026-11-18)
 
-- **Cerrado:** `drenaje_trasdos` pasa de «sin_drenaje» a «drenado» de archivo. AASHTO LRFD
-  11.6.6 manda drenar el relleno («shall be drained») y sólo admite la hidrostática plena «if
-  drainage cannot be provided»: el archivo tenía la excepción de la norma como regla. Adoptarlo
-  COMPROMETE el filtro y los lloraderos en los planos y su mantenimiento (un lloradero tapado
-  devuelve el caso «sin_drenaje»; C11.6.6 advierte que los lloraderos solos no aseguran el
-  drenaje). La reducción de k_h (`factor_muro_eleccion`) y
-  `regimen_resistencia_elementos_cabezal` no cambian de valor de archivo (VE3-20).
-- **Cerrado con el valor de archivo:** con el relleno drenado el agua del relleno bajo sismo es
-  la del freático del punto, que el proyecto toma como el nivel medio que C11.6.5.3 recomienda
-  («should», comentario): la corrección del nivel
-  medio queda cubierta sin tocar el ensamble. El juego de la validación integral ya no declara
-  el drenaje, y su corrida titular no lee el peso específico saturado del relleno, que pasa a
-  las condicionales no medidas del contrato de entradas (§7).
-- **Cerrado (VE-4e, 2026-11-20), lo que se había diferido:** con «sin_drenaje» declarado el
-  sismo seguía con el relleno lleno hasta su superficie y no con el nivel medio. Hoy el agua del
-  relleno es POR CONDICIÓN en `M9.cargas_del_cabezal`: la estática sigue llenando el relleno
-  retenido hasta su superficie (AASHTO 11.6.6, la hidrostática plena; cita
-  `AASHTO_LRFD_9.11.6.6#DRENAJE`), y la sísmica va con el nivel medio del agua en el tiempo
-  (C11.6.5.3, pág. impresa 11-31, PDF 1500, «The time-averaged mean groundwater elevation
-  should be used when assessing groundwater effects»: comentario, «should»; cita nueva
-  `AASHTO_LRFD_9.C11.6.5.3#NIVEL_MEDIO`, verificada contra el PDF). Todo lo que depende del
-  agua sale del nivel de SU condición: el empuje del agua y la subpresión (WA), el suelo
-  sumergido del empuje estático que la sísmica arrastra, el peso del relleno sobre el talón y
-  su inercia, y el incremento sísmico con el peso total bajo el agua de VE-3.14 (que sólo
-  aplica si el agua del sismo moja el plano de empuje). No hubo que duplicar las cargas: el
-  ensamble ya llamaba a `cargas_del_cabezal` una vez por condición, también el armado.
-- **Lo que la fuente no dice, y es [A] sin valor de archivo:** cuál es el nivel medio de un
-  relleno que NO drena. El criterio `nivel_agua_relleno_sin_drenaje_bajo_sismo` [A] lo
-  declara el proyectista con el EMS, entre `superficie_del_relleno` (el relleno queda lleno en
-  el tiempo: repite el agua de la estática y es lo que el programa hacía hasta VE-4e) y
-  `freatico_natural` (se llena sólo por episodios: el agua del relleno drenado). Sin
-  declararlo la condición sísmica del cabezal se detiene (`CriterioPendienteError`, que viaja
-  como `Bloqueo` del punto) y la estática no. Con `drenado` —el valor de archivo— el criterio
-  no se lee y ningún número cambia (`tests/test_ve4e_agua_por_condicion.py`, sobre el muro de
-  tanteo de T-7b y sobre las dos bases de la validación integral). La variante
-  `sin_drenaje_declarado` de la validación declara `superficie_del_relleno` (sus cifras no
-  cambian) y la nueva `sin_drenaje_sismo_en_el_freatico`, `freatico_natural`.
-- **Cerrado (dueño, 2026-11-20), la hoja de ruta:** su Fase 9 («El agua una sola vez») decía
-  `sin_drenaje` de archivo; hoy dice `drenado`, con su nota «Corregido (`VE3-21`, dueño,
-  2026-11-20)» verificada contra AASHTO 11.6.6 y C11.6.5.3. **Pendiente contra la hoja de ruta
-  desde VE-4e:** esa nota dice todavía que, declarado `sin_drenaje`, «el sismo se evalúa con el
-  relleno lleno hasta su superficie y no con el nivel medio (diferido en la ficha VE3-21)». El
-  código ya no lo hace; mientras la nota no se corrija, quien lea sólo la hoja de ruta creerá
-  que el sismo de un trasdós sin drenaje va siempre con el relleno lleno.
-- **Qué haría falta todavía:** el nivel medio como COTA declarada por punto (un dato del EMS
-  entre el freático natural y la superficie del relleno), si una obra la tuviera medida; hoy la
-  ventana sólo admite los dos extremos, que el ensamble ya calcula.
+- **Cerrado:** `drenaje_trasdos` pasa de «sin_drenaje» a «drenado» de archivo (AASHTO 11.6.6,
+  «shall be drained»). Adoptarlo COMPROMETE el filtro y los lloraderos en planos y su
+  mantenimiento (C11.6.6). Con el relleno drenado el agua bajo sismo es la del freático del
+  punto, el nivel medio que C11.6.5.3 recomienda.
+- **Cerrado (VE-4e, 2026-11-20), lo diferido:** con «sin_drenaje» el sismo iba con el relleno
+  lleno. Hoy el agua es POR CONDICIÓN en `cargas_del_cabezal`: la estática llena el relleno
+  retenido (11.6.6) y la sísmica va con el nivel medio en el tiempo (cita nueva
+  `AASHTO_LRFD_9.C11.6.5.3#NIVEL_MEDIO`, pág. impresa 11-31, PDF 1500, «should»). WA, el suelo
+  sumergido, el peso del relleno sobre el talón y el incremento salen del nivel de SU condición.
+- **Por qué es [A] sin valor:** la fuente no dice cuál es el nivel medio de un relleno que no
+  drena. Lo declara el proyectista con el EMS en `nivel_agua_relleno_sin_drenaje_bajo_sismo`
+  (`superficie_del_relleno`, lo de antes de VE-4e, o `freatico_natural`); sin declararlo la
+  condición sísmica se detiene (`CriterioPendienteError`). Con «drenado» no se lee y ningún
+  número cambia (`tests/test_ve4e_agua_por_condicion.py`; variantes `sin_drenaje_declarado` y
+  `sin_drenaje_sismo_en_el_freatico` de la validación integral).
+- **Abierto contra la hoja de ruta:** su nota «Corregido (`VE3-21`…)» de la Fase 9 dice aún que,
+  declarado `sin_drenaje`, el sismo va con el relleno lleno «(diferido en la ficha VE3-21)».
+  Mientras no se corrija, quien lea sólo la hoja creerá que es así siempre.
+- **Qué haría falta:** el nivel medio como cota declarada por punto (dato del EMS entre el
+  freático y la superficie), si una obra lo tuviera medido.
 - **Dónde vive:** `src/modulos/M9_cabezal.py::cargas_del_cabezal`
