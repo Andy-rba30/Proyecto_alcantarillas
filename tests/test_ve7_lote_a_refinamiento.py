@@ -72,3 +72,20 @@ def test_bajo_salida_con_delta_mayor_que_el_margen_de_v4_no_cierra(
     assert not b.diferido_por_alcance
     # y el aviso sigue
     assert any("V4 NO se cumpliria" in a for a in punto.cabezal.avisos)
+
+
+# ===========================================================================
+# A10 (VE5GUI-46) -- la D de la losa de entrega de M9 con los decimales del
+# rotulo de la seccion (`modelos.cifras_de_dimension`), no tres fijos
+# ===========================================================================
+
+def test_A10_la_d_de_m9_lleva_los_decimales_del_rotulo(a01):
+    from src.modelos import CIFRAS_MAGNITUD, cifras_de_dimension
+    pasos = [p for p in a01.cabezal.pasos if p.codigo.startswith("9.0.4")]
+    assert pasos
+    for p in pasos:
+        D = next(m for m in p.sustitucion if m.simbolo == "D")
+        assert D.cifras == cifras_de_dimension(D.valor)
+    # el diametro de A-01 se rotula con dos decimales: antes eran tres
+    assert cifras_de_dimension(D.valor) != CIFRAS_MAGNITUD
+    assert cifras_de_dimension(1.0668) == 4

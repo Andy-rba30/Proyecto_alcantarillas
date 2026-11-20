@@ -8955,8 +8955,8 @@ generados (`indice_formulas.md`, línea base) no se regeneran aquí: los regener
   (las de forma y las cuatro `D` de M4) los decimales del rótulo: 0.90 sigue «0.90», 1.0668 dice
   «1.0668».
 - **Abierto:** `docs/indice_formulas.md` no se regeneró (lo regenera el integrador; ya estaba
-  desincronizado en la base). Las `D` de M5, M6 y M9 que usan `CIFRAS_MAGNITUD` (3) siguen con tres
-  decimales.
+  desincronizado en la base). Las `D` de M5 y M6 que usan `CIFRAS_MAGNITUD` (3) siguen con tres
+  decimales (la de M9, desde VE7A-10, con los del rótulo).
 - **Qué haría falta:** regenerar el índice; extender `cifras_de_dimension` a esas `D` si el dueño lo
   pide (archivos de otros lotes).
 - **Dónde vive:** `src/modelos.py::cifras_de_dimension`
@@ -9327,3 +9327,15 @@ el test; lo que la sesión tuvo que decidir sin dictamen va rotulado «pendiente
 - **Abierto:** no se itera MD con L_cab (VE6-22).
 - **Qué haría falta:** nada; declarar `longitud_m` lo destraba y verifica el punto entero.
 - **Dónde vive:** `src/servicio.py::_fase_9_refinamiento`
+
+## VE7A-10 · La `D` de M9 con los decimales del rótulo (VE5GUI-46)
+
+- **Cerrado:** la única magnitud `D` de M9 (la altura interior de la sección en el paso 9.0.4 de
+  la losa de entrega) lleva `cifras=modelos.cifras_de_dimension(D)` en lugar de
+  `CIFRAS_MAGNITUD`: 0.90 se escribe «0.90» y 1.0668, «1.0668», como el rótulo de la sección.
+  Presentación: el valor con que se calcula no cambia.
+- **Decisión del consultor Fable (triaje VE-7, 2026-11-20):** extender `cifras_de_dimension` a la
+  `D` de M9; M5 y M6 son de otros lotes.
+- **Abierto:** las `D` de M5 y M6 (VE5GUI-46).
+- **Qué haría falta:** el mismo cambio en M5 y M6.
+- **Dónde vive:** `src/modelos.py::cifras_de_dimension`

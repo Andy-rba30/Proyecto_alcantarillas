@@ -4153,6 +4153,7 @@ from src.modelos import (ORIGEN_DIMENSION_DECLARADA,  # noqa: E402
                          Familia, LimiteNumericoError, PasoDeMemoria,
                          DimensionDeCabezal, EmbocaduraDelPunto,
                          ExtremoDelConducto, LosaDeEntrega, CIFRAS_MAGNITUD,
+                         cifras_de_dimension,
                          FormaSeccion, MetodoLongitud)
 from src.modulos.M2_material import espesor_pared  # noqa: E402
 from src.modulos.M6_proteccion import (EMBOCADURA_CABEZAL_CON_ALEROS,  # noqa: E402
@@ -5981,9 +5982,11 @@ def _pasos_del_extremo(*, geometria: GeometriaCabezal,
             citas_textuales=("MC_HHD.LAMINA_04#DENTELLON",
                              "AASHTO_LRFD_9.12.6.5#DENTELLON"),
             sustitucion=(
+                # --- VE-7 (lote A, A10; ficha VE5GUI-46) --- con los
+                # decimales del rotulo de la seccion, no tres fijos.
                 Magnitud("D", extremo.altura_interior, "m",
                          "altura interior de la seccion adoptada",
-                         cifras=CIFRAS_MAGNITUD),
+                         cifras=cifras_de_dimension(extremo.altura_interior)),
                 Magnitud("terreno", lo.cota_terreno, "msnm",
                          "el pie del muro de este extremo, la misma "
                          "referencia del desplante", cifras=CIFRAS_MAGNITUD)),
