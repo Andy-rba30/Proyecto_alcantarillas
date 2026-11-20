@@ -341,7 +341,10 @@ def test_e10_la_clave_de_una_fila_tecleada_es_esa_fila(_limpio):
     """
     ed = _mod("src.editores")
     e = ed.esquema_de("embocadura_cajon")
-    assert ed.fila_implicita(e, "cajon_concreto_aletas_30_75") == "cajon_concreto_aletas_30_75"
+    # `embocadura_cajon` se lee sobre DOS tablas (A.1 y C.2): desde VE5-GUI
+    # (ficha UI1-02) la fila que el texto nombra viaja calificada con la suya.
+    assert ed.fila_implicita(e, "cajon_concreto_aletas_30_75") == \
+        "HDS5_3ED.TA1#cajon_concreto_aletas_30_75"
     p = ed.declarar("embocadura_cajon", "cajon_concreto_aletas_30_75")
     assert p.modo == "de_tabla" and p.filas == ("cajon_concreto_aletas_30_75",)
     # Un NUMERO no nombra ninguna fila, ni cuando coincide con una sola

@@ -222,7 +222,8 @@ class VentanaBarrido:
         f = panel.interior
         self.fila_var = tk.StringVar(value=FILA_NINGUNA)
         if c.opciones_de_tabla and c.tipo_de_editor != sed.SERIE_DE_CLAVES:
-            ttk.Label(f, text=f"Fila de {c.tabla_id} de la que provienen:").pack(anchor="w")
+            ttk.Label(f, text=f"Fila de {', '.join(c.tablas) or c.tabla_id} de la que "
+                             "provienen:").pack(anchor="w")
             cmb = ttk.Combobox(
                 f, textvariable=self.fila_var, state="readonly", width=110,
                 values=[FILA_NINGUNA] + [ged.rotulo_de_opcion(o)
@@ -322,7 +323,7 @@ class VentanaBarrido:
         if not rotulo or rotulo == FILA_NINGUNA:
             return ""
         opcion = ged.opcion_del_rotulo(self.esquema, rotulo)
-        return "" if opcion is None else opcion.fila
+        return "" if opcion is None else (opcion.referencia or opcion.fila)
 
     # ------------------------------------------------------------------
     # Correr, sondear, cancelar
