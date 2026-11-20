@@ -5983,6 +5983,16 @@ CITAS_DE_ETA = (CITA_ETA, "AASHTO_LRFD_9.1.3.3", "AASHTO_LRFD_9.1.3.4",
 REGIMEN_CEDENTE = "cedente"
 REGIMEN_NO_CEDENTE = "no_cedente"
 REGIMENES_DEL_CABEZAL = (REGIMEN_CEDENTE, REGIMEN_NO_CEDENTE)
+# --- VE-5 (lote M9, ficha T7B-14) --- el empuje sismico total del muro que
+# no cede (ver su ficha en criterios_adoptados) y el empuje estatico que
+# rige en cada caso.
+CRITERIO_EMPUJE_SISMICO_NO_CEDE = "empuje_sismico_muro_que_no_cede"
+NO_CEDE_REPOSO_MAS_INCREMENTO = "reposo_mas_incremento"
+NO_CEDE_MAYOR_DE_REPOSO_Y_TOTAL = "mayor_de_reposo_y_total"
+EMPUJES_SISMICOS_NO_CEDE = (NO_CEDE_REPOSO_MAS_INCREMENTO,
+                            NO_CEDE_MAYOR_DE_REPOSO_Y_TOTAL)
+EMPUJE_ESTATICO_ACTIVO = "activo"
+EMPUJE_ESTATICO_REPOSO = "reposo"
 INCLINACION_APLICAR = "aplicar"
 INCLINACION_OMITIR = "omitir"
 TERRENO_HORIZONTAL = "horizontal"
@@ -6558,11 +6568,11 @@ def _sesgo(K_formula: float, K: float) -> str:
 
 def _regimen() -> str:
     """
-    El regimen del cabezal ('regimen_cabezal' [A]): «cedente» es lo que el
-    ensamble calcula; «no_cedente» lo detiene sin cifra, porque las
-    presiones de un muro que no cede (K0 en resistencia, k_h = 1.0·k_h0 y
-    resultante en h/2 bajo sismo, AASHTO 11.6.5.4 y su comentario) no estan
-    implementadas.
+    El regimen del cabezal ('regimen_cabezal' [A]): «cedente», empuje
+    activo de 11.6.5.3; «no_cedente», las presiones del muro que no cede
+    (reposo K0 en la estatica, k_h = 1.0·k_h0 y resultante en h/2 bajo
+    sismo, AASHTO 11.6.5.4 y su comentario), que hasta VE-5 detenian el
+    ensamble sin cifra y desde VE-5 calcula `cargas_del_cabezal`.
     """
     regimen = ca.valor(CRITERIO_REGIMEN)
     if regimen not in REGIMENES_DEL_CABEZAL:
@@ -6930,6 +6940,27 @@ def cargas_del_cabezal(entorno: EntornoDelCabezal,
     )
     P_A = sum(p for p, _ in partes)
     z_A = (sum(p * z for p, z in partes) / P_A) if P_A > 0 else 0.0
+    # --- VE-5 (ficha T7B-14) --- EL MURO QUE NO CEDE ('regimen_cabezal' =
+    # 'no_cedente'): la estatica con el empuje en REPOSO, K0 de AASHTO
+    # 3.11.5.2-1 sobre el mismo diagrama (suelo sumergido bajo el agua),
+    # todo horizontal -- en reposo no se moviliza la friccion muro-relleno --
+    # y con el factor de la fila «En reposo» de la Tabla 3.4.1-2
+    # (`combinaciones_de_estabilidad`). K0 es de terreno HORIZONTAL: si el
+    # activo con la superficie real da MAS componente horizontal (relleno
+    # empinado), rige el activo, que un muro que no cede no puede tener por
+    # debajo; la misma regla que el armado aplica por seccion (ficha
+    # T7C-02). Con 'cedente', el activo de siempre.
+    regimen = _regimen()
+    K0 = 1.0 - math.sin(math.radians(ang["phi"]))
+    P_0 = K0 / K_A * P_A if K_A > 0 else 0.0
+    reposo_rige = (regimen == REGIMEN_NO_CEDENTE
+                   and P_0 >= P_A * math.cos(inclinacion))
+    if reposo_rige:
+        empuje_estatico = EMPUJE_ESTATICO_REPOSO
+        K_est, P_est, incl_est = K0, P_0, 0.0
+    else:
+        empuje_estatico = EMPUJE_ESTATICO_ACTIVO
+        K_est, P_est, incl_est = K_A, P_A, inclinacion
 
     cargas = []
     # --- DC ----------------------------------------------------------------
@@ -6977,21 +7008,33 @@ def cargas_del_cabezal(entorno: EntornoDelCabezal,
                         f"{alto_talon:.3f}, mas la cuña sobre el talon "
                         f"({cuña:.3f} m2)"))
     # --- EH ----------------------------------------------------------------
-    cargas.append(CargaDeCabezal(
-        C_EH_H, CARGA_EH, "empuje activo, componente horizontal",
-        H=P_A * math.cos(inclinacion), z=z_A, sobre=ELEMENTO_PANTALLA,
-        procedencia="P_A·cos(delta + beta)"))
-    cargas.append(CargaDeCabezal(
-        C_EH_V, CARGA_EH, "empuje activo, componente vertical",
-        V=P_A * math.sin(inclinacion), x=x_plano, sobre=ELEMENTO_ZAPATA,
-        procedencia="P_A·sen(delta + beta), en el plano de empuje"))
+    if reposo_rige:
+        cargas.append(CargaDeCabezal(
+            C_EH_H, CARGA_EH, "empuje en reposo, horizontal (muro que no "
+            "cede)", H=P_0, z=z_A, sobre=ELEMENTO_PANTALLA,
+            procedencia=f"(K0 / K_A)·P_A, K0 = 1 - sen(phi) = {K0:.4f} "
+                        "(AASHTO 3.11.5.2-1), sin friccion muro-relleno"))
+        cargas.append(CargaDeCabezal(
+            C_EH_V, CARGA_EH, "empuje en reposo, sin componente vertical",
+            V=0.0, x=x_plano, sobre=ELEMENTO_ZAPATA,
+            procedencia="en reposo no se moviliza friccion muro-relleno"))
+    else:
+        cargas.append(CargaDeCabezal(
+            C_EH_H, CARGA_EH, "empuje activo, componente horizontal",
+            H=P_A * math.cos(inclinacion), z=z_A, sobre=ELEMENTO_PANTALLA,
+            procedencia="P_A·cos(delta + beta)"))
+        cargas.append(CargaDeCabezal(
+            C_EH_V, CARGA_EH, "empuje activo, componente vertical",
+            V=P_A * math.sin(inclinacion), x=x_plano, sobre=ELEMENTO_ZAPATA,
+            procedencia="P_A·sen(delta + beta), en el plano de empuje"))
     # --- LS ----------------------------------------------------------------
     h_eq = h_eq_sobrecarga_trasdos(altura_muro_total=h)
+    nombre_K = "K0" if reposo_rige else "K_A"
     cargas.append(CargaDeCabezal(
         C_LS_H, CARGA_LS, "sobrecarga viva, empuje",
-        H=K_A * gamma * h_eq * h, z=h / 2, sobre=ELEMENTO_PANTALLA,
-        procedencia=f"K_A·gamma·h_eq·h = {K_A:.4f}·{gamma:g}·{h_eq:.4f}·"
-                    f"{h:.3f}"))
+        H=K_est * gamma * h_eq * h, z=h / 2, sobre=ELEMENTO_PANTALLA,
+        procedencia=f"{nombre_K}·gamma·h_eq·h = {K_est:.4f}·{gamma:g}·"
+                    f"{h_eq:.4f}·{h:.3f}"))
     if talon > TOL_UMBRAL_NORMATIVO:
         cargas.append(CargaDeCabezal(
             C_LS_V, CARGA_LS, "sobrecarga viva, peso sobre el talon",
@@ -7031,17 +7074,28 @@ def cargas_del_cabezal(entorno: EntornoDelCabezal,
              "metodo_empuje": metodo, "K_A_formula": K_A_formula,
              "rho_A": rho_A, "K_AE_formula": None, "rho_AE": None,
              "cota_agua_diseno": entorno.cota_agua_diseno,
-             "regimen": _regimen(), "z_rel": z_rel,
+             "regimen": regimen, "z_rel": z_rel,
              # K0 de AASHTO 3.11.5.2-1, de REFERENCIA para T-7c: la ec. es
              # de muro vertical y terreno horizontal (cita
-             # AASHTO_LRFD_9.3.11.5.2#K0).
-             "K0": 1.0 - math.sin(math.radians(ang["phi"]))}
+             # AASHTO_LRFD_9.3.11.5.2#K0). Desde VE-5 rige la estatica del
+             # muro que no cede cuando da mas que el activo.
+             "K0": K0, "P_0": P_0,
+             # --- VE-5 --- el empuje estatico que RIGE y su componente
+             # horizontal: el activo (cedente, o no cedente con relleno
+             # empinado) o el reposo (no cedente).
+             "empuje_estatico": empuje_estatico, "K_estatico": K_est,
+             "P_estatico": P_est, "P_total_sismico": None,
+             "empuje_sismico_no_cede": None}
 
     # --- EQ ----------------------------------------------------------------
     if condicion is CondicionAnalisis.SISMICO:
         cadena = cadena_sismica()
         if k_h is None:
-            k_h = cadena.k_h
+            # --- VE-5 --- el muro que no cede no admite la reduccion por
+            # desplazamiento: «shall be increased to 1.0kh0» (11.6.5.4),
+            # aunque 'factor_muro_eleccion' la declare para la cadena.
+            k_h = (cadena.k_h0 if regimen == REGIMEN_NO_CEDENTE
+                   else cadena.k_h)
         elif not (_finito(k_h) and k_h >= 0):
             raise DatoInvalidoError("k_h", valor=k_h, id_punto=idp,
                                     motivo="coeficiente sismico horizontal "
@@ -7151,7 +7205,29 @@ def cargas_del_cabezal(entorno: EntornoDelCabezal,
                                  (INCREMENTO_SEGUN_REGIMEN,
                                   INCREMENTO_FRACCION,
                                   INCREMENTO_DISTRIBUCION_ESTATICA))
-        cede = ca.valor(CRITERIO_FACTOR_MURO) == FACTOR_MURO_CON_REDUCCION
+        # --- VE-5 --- con 'regimen_cabezal' = 'no_cedente' el muro no cede
+        # aunque la cadena declare la reduccion: manda el regimen.
+        cede = (regimen == REGIMEN_CEDENTE
+                and ca.valor(CRITERIO_FACTOR_MURO)
+                == FACTOR_MURO_CON_REDUCCION)
+        # --- VE-5 (ficha T7B-14) --- el empuje sismico del muro que no cede
+        # sobre el reposo: el reposo mas el incremento pseudoestatico, o el
+        # mayor del reposo y del total ('empuje_sismico_muro_que_no_cede'
+        # [A]). Todo horizontal, como el reposo. Con el activo rigiendo, el
+        # incremento de siempre (P_AE - P_A) con sus dos componentes.
+        dP_h = dP * math.cos(inclinacion)
+        dP_v = dP * math.sin(inclinacion)
+        P_estatico, P_total = P_A, P_AE
+        forma_no_cede = None
+        if regimen == REGIMEN_NO_CEDENTE:
+            forma_no_cede = _eleccion(CRITERIO_EMPUJE_SISMICO_NO_CEDE,
+                                      EMPUJES_SISMICOS_NO_CEDE)
+        if reposo_rige:
+            if forma_no_cede == NO_CEDE_MAYOR_DE_REPOSO_Y_TOTAL:
+                dP_h = max((P_A + dP) * math.cos(inclinacion) - P_0, 0.0)
+            dP_v = 0.0
+            dP = dP_h
+            P_estatico, P_total = P_0, P_0 + dP_h
         if distribucion == INCREMENTO_DISTRIBUCION_ESTATICA and not cede:
             raise DatoInvalidoError(
                 CRITERIO_DISTRIBUCION_INCREMENTO, valor=distribucion,
@@ -7182,20 +7258,30 @@ def cargas_del_cabezal(entorno: EntornoDelCabezal,
             # en h/2 («a higher resultant location ... of h/2»), y se lee
             # como piso: el incremento sube lo necesario para que la
             # resultante no quede bajo h/2, y si la fraccion de archivo ya
-            # la deja mas alta, se conserva.
-            z_h_medios = (P_AE * h / 2 - P_A * z_A) / dP
+            # la deja mas alta, se conserva. (VE-5: con el estatico que
+            # rige, el reposo del muro que no cede si es el caso.)
+            z_h_medios = (P_total * h / 2 - P_estatico * z_A) / dP
             if z_h_medios > z_dP:
                 z_dP = z_h_medios
                 fraccion = z_dP / h
+        if reposo_rige:
+            proc_h = (("max[P_AE·cos(delta + beta) - P_0, 0] (el mayor del "
+                       "reposo y del total)"
+                       if forma_no_cede == NO_CEDE_MAYOR_DE_REPOSO_Y_TOTAL
+                       else "(P_AE - P_A)·cos(delta + beta), sobre el "
+                            "reposo")
+                      + f" con k_h = 1.0·k_h0, a {fraccion:g}·h")
+            proc_v = ("sin componente vertical: sobre el reposo no se "
+                      "moviliza la friccion muro-relleno")
+        else:
+            proc_h = f"(P_AE - P_A)·cos(delta + beta), a {fraccion:g}·h"
+            proc_v = "(P_AE - P_A)·sen(delta + beta)"
         cargas.append(CargaDeCabezal(
             C_EQ_H, CARGA_EQ, "incremento sismico del empuje, horizontal",
-            H=dP * math.cos(inclinacion), z=z_dP, sobre=ELEMENTO_PANTALLA,
-            procedencia="(P_AE - P_A)·cos(delta + beta), a "
-                        f"{fraccion:g}·h"))
+            H=dP_h, z=z_dP, sobre=ELEMENTO_PANTALLA, procedencia=proc_h))
         cargas.append(CargaDeCabezal(
             C_EQ_V, CARGA_EQ, "incremento sismico del empuje, vertical",
-            V=dP * math.sin(inclinacion), x=x_plano, sobre=ELEMENTO_ZAPATA,
-            procedencia="(P_AE - P_A)·sen(delta + beta)"))
+            V=dP_v, x=x_plano, sobre=ELEMENTO_ZAPATA, procedencia=proc_v))
         z_muro = ((W_pant * z_pant + W_zap * e_z / 2)
                   / (W_pant + W_zap))
         cargas.append(CargaDeCabezal(
@@ -7210,7 +7296,10 @@ def cargas_del_cabezal(entorno: EntornoDelCabezal,
                 procedencia=f"k_h·W_s = {k_h:.3f}·{W_s:.3f}"))
         datos.update(K_AE=K_AE, k_h=k_h, k_v=k_v, P_AE=P_AE,
                      tratamiento_agua_sismo=tratamiento_agua,
-                     z_AE=(P_A * z_A + dP * z_dP) / P_AE,
+                     z_AE=((P_estatico * z_A + dP * z_dP) / P_total
+                           if P_total > 0 else z_A),
+                     P_total_sismico=P_total,
+                     empuje_sismico_no_cede=forma_no_cede,
                      fraccion_brazo=fraccion, psi=psi,
                      K_AE_formula=K_AE_formula, rho_AE=rho_AE)
     return tuple(cargas), datos
@@ -7318,9 +7407,13 @@ def _casos_sismicos(datos: dict) -> Tuple[Tuple[str, float, float, float], ...]:
                                      incremento 0. Inercia 1.
     """
     casos = []
+    # --- VE-5 --- el piso es el empuje estatico que RIGE (el reposo del
+    # muro que no cede, si es el caso) frente al total sismico.
+    P_est = datos.get("P_estatico") or datos["P_A"]
+    P_tot = datos.get("P_total_sismico") or datos["P_AE"]
     for nombre, f_ae, f_ir in P_SEIS_COMBINACIONES:
         con_piso = (nombre == P_SEIS_PISO_ESTATICO
-                    and f_ae * datos["P_AE"] < datos["P_A"])
+                    and f_ae * P_tot < P_est)
         if con_piso:
             casos.append((nombre + " (rige el piso del empuje estatico)",
                           1.0, 0.0, f_ir))
@@ -7369,7 +7462,13 @@ def combinaciones_de_estabilidad(cargas: tuple, datos: dict,
 
     if condicion is CondicionAnalisis.ESTATICO:
         g = factores_de_carga("Resistencia I")
-        maximos, minimos = _resistencia_i_con_eta(g, g["EH"]["max"])
+        # --- VE-5 (ficha T7B-14) --- con el empuje en reposo del muro que
+        # no cede, el gamma_p de la fila «En reposo» de la Tabla 3.4.1-2
+        # (1.35), no el de la activa (1.50).
+        EH_max = (TABLA_GAMMA_P_FILAS[FILA_EH_EN_REPOSO]["max"]
+                  if datos.get("empuje_estatico") == EMPUJE_ESTATICO_REPOSO
+                  else g["EH"]["max"])
+        maximos, minimos = _resistencia_i_con_eta(g, EH_max)
         combos.append(_combinar(
             "Resistencia I (maximos)", MARCO_LRFD, condicion, cargas,
             factores(**maximos), B, "portante"))
@@ -8263,9 +8362,12 @@ def solicitaciones_por_elemento(entorno: EntornoDelCabezal, cargas: tuple,
     por_codigo = {c.codigo: c for c in cargas}
     salida = []
     sismica = datos["K_AE"] is not None
+    reposo = datos.get("empuje_estatico") == EMPUJE_ESTATICO_REPOSO
     marca = dict(regimen=datos["regimen"],
-                 coeficiente_de_empuje="K_AE" if sismica else "K_A",
-                 K_empuje=datos["K_AE"] if sismica else datos["K_A"],
+                 coeficiente_de_empuje=("K_AE" if sismica else
+                                        "K0" if reposo else "K_A"),
+                 K_empuje=(datos["K_AE"] if sismica else
+                           datos["K0"] if reposo else datos["K_A"]),
                  K0=datos["K0"], K0_sobre_K_A=datos["K0"] / datos["K_A"])
     try:
         arranque = empujes_sobre_el_arranque(cargas, datos, e_z,
@@ -8468,8 +8570,27 @@ def _pasos_de_cargas(entorno, condicion, cargas, combos, datos,
                    "archivo; la pendiente equivalente 2H la subestima del 7 "
                    "al 11 % en los cabezales de A-01.")
                 + f" Regimen del cabezal: '{datos['regimen']}' "
-                f"('{CRITERIO_REGIMEN}' [A]): empuje activo de muro que "
-                "cede, la hipotesis de la estabilidad externa (C11.6.5.4)."
+                f"('{CRITERIO_REGIMEN}' [A]): "
+                + (("muro que NO cede (11.6.5.4 y C11.6.5.4): rige el "
+                    f"empuje en REPOSO, K0 = 1 - sen(phi) = {datos['K0']:.4f} "
+                    "(AASHTO 3.11.5.2-1) sobre el mismo diagrama, todo "
+                    "horizontal (sin friccion muro-relleno), con el factor "
+                    "de carga de la fila «En reposo» (1.35); P_0 = "
+                    f"{datos['P_0']:.3f} kN/m frente al activo horizontal "
+                    f"{datos['P_A'] * math.cos(datos['inclinacion']):.3f}. "
+                    "K0 es de terreno horizontal: con un relleno que sube "
+                    "detras es una cota inferior, y por eso rige el activo "
+                    "cuando da mas.")
+                   if datos["empuje_estatico"] == EMPUJE_ESTATICO_REPOSO
+                   else ("muro que NO cede, pero el activo con la superficie "
+                         "real da mas componente horizontal que el reposo "
+                         f"de 3.11.5.2-1 (K0 = {datos['K0']:.4f}, de terreno "
+                         "horizontal; P_0 = "
+                         f"{datos['P_0']:.3f} kN/m): rige el activo, que un "
+                         "muro que no cede no puede tener por debajo."
+                         if datos["regimen"] == REGIMEN_NO_CEDENTE else
+                         "empuje activo de muro que cede, la hipotesis de "
+                         "la estabilidad externa (C11.6.5.4)."))
                 )))
         ls = _carga(cargas, C_LS_H)
         pasos.append(paso(
@@ -8622,9 +8743,23 @@ def _pasos_de_cargas(entorno, condicion, cargas, combos, datos,
                        "relleno sin agua en el plano de empuje y ")
                     + f"phi = {ang['phi']:.2f} >= i + psi = "
                     f"{ang['i']:.2f} + {datos['psi']:.2f} grados. "))
-                + "Regimen del cabezal CEDENTE ('regimen_cabezal' [A]): un "
-                "muro que no cede pediria k_h = 1.0·k_h0 y presiones mayores "
-                "(11.6.5.4). Los dos casos "
+                + (("Regimen del cabezal CEDENTE ('regimen_cabezal' [A]): "
+                    "un muro que no cede pediria k_h = 1.0·k_h0 y presiones "
+                    "mayores (11.6.5.4). ")
+                   if datos["regimen"] == REGIMEN_CEDENTE else
+                   ("Muro que NO cede ('regimen_cabezal' [A]): k_h = "
+                    f"1.0·k_h0 = {datos['k_h']:.3f}, sin la reduccion por "
+                    "desplazamiento (11.6.5.4), y la resultante del estatico "
+                    "mas el sismico no bajo h/2 (C11.6.5.4)"
+                    + (("; sobre el reposo, el incremento es "
+                        + ("lo que el total pseudoestatico supera al reposo"
+                           if datos["empuje_sismico_no_cede"]
+                           == NO_CEDE_MAYOR_DE_REPOSO_Y_TOTAL else
+                           "el pseudoestatico P_AE - P_A, todo horizontal")
+                        + f" ('{CRITERIO_EMPUJE_SISMICO_NO_CEDE}' [A]). ")
+                       if datos["empuje_estatico"] == EMPUJE_ESTATICO_REPOSO
+                       else ". ")))
+                + "Los dos casos "
                 "del 11.6.5.1 se combinan aparte: 100 % P_AE + 50 % P_IR, y "
                 "50 % P_AE (no menos que el empuje estatico) + 100 % P_IR. "
                 "La fraccion f se aplica al INCREMENTO; el empuje estatico "
@@ -9007,17 +9142,8 @@ def ensamble_estabilidad(entorno: EntornoDelCabezal,
                                 motivo="estatico o sismico")
     g = entorno.geometria
     regla = _regla_de_marco()
-    if _regimen() == REGIMEN_NO_CEDENTE:
-        raise _no_evaluable(
-            f"estabilidad del cabezal de {entorno.extremo}",
-            "presiones de un muro que no cede (empuje en reposo K0 en "
-            "resistencia; k_h = 1.0·k_h0 y resultante en h/2 bajo sismo: "
-            "AASHTO 11.6.5.4 y C11.6.5.4)",
-            f"'{CRITERIO_REGIMEN}' = '{REGIMEN_NO_CEDENTE}': el ensamble "
-            "calcula el cabezal que CEDE (empuje activo, 11.6.5.3) y no "
-            "implementa el que no cede; el comentario de la fuente admite "
-            "un analisis numerico aprobado por el Propietario",
-            entorno.id_punto)
+    # --- VE-5 (ficha T7B-14) --- el muro que NO cede ya no se detiene aqui:
+    # `cargas_del_cabezal` calcula sus presiones (11.6.5.4 y C11.6.5.4).
     suelo, origen_suelo = suelo_de_fundacion(entorno.suelo,
                                              id_punto=entorno.id_punto)
     cargas, datos = cargas_del_cabezal(entorno, condicion)
@@ -11257,7 +11383,10 @@ def cargas_en_reposo(cargas: tuple, datos: dict) -> tuple:
                             procedencia="en reposo no se moviliza friccion "
                                         "muro-relleno")
         elif c.codigo == C_LS_H:
-            c = _reemplazar(c, H=c.H * escala,
+            # (VE-5) de los datos y no de la carga, para que sea idempotente
+            # sobre el ensamble del muro que no cede, que ya va en reposo.
+            c = _reemplazar(c, H=K0 * datos["gamma"] * datos["h_eq"]
+                            * datos["h"],
                             descripcion="sobrecarga viva, empuje en reposo",
                             procedencia="K0·gamma·h_eq·h")
         nuevas.append(c)
@@ -11593,6 +11722,19 @@ def solicitaciones_de_resistencia(entorno: EntornoDelCabezal) -> dict:
             "criterio")
 
     cargas, datos = cargas_del_cabezal(entorno, est)
+    if (regimen == REGIMEN_RESISTENCIA_CEDENTE
+            and datos["regimen"] == REGIMEN_NO_CEDENTE):
+        # --- VE-5 (ficha T7B-14) --- las dos declaraciones se contradicen
+        # y la corrida lo dice: el ensamble ya va con el muro que no cede.
+        avisos.append(
+            f"{quien}: el armado se declara del muro que CEDE "
+            f"('{CRITERIO_REGIMEN_RESISTENCIA}' = '{regimen}') y la "
+            f"estabilidad del que NO cede ('{CRITERIO_REGIMEN}' = "
+            f"'{REGIMEN_NO_CEDENTE}'): las solicitaciones «del muro que "
+            "cede» salen del ensamble, que ya va con el empuje en reposo y "
+            "k_h = 1.0·k_h0. Un cabezal que no cede en conjunto no tiene "
+            "elementos que cedan: la declaracion coherente es "
+            f"'{CRITERIO_REGIMEN_RESISTENCIA}' = 'no_cedente_k0'")
     combos = combinaciones_de_estabilidad(cargas, datos, est, g.B)
     lrfd = [c for c in combos if c.marco == MARCO_LRFD]
     cargas0 = cargas_en_reposo(cargas, datos)

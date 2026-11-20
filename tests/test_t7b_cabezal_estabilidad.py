@@ -2851,12 +2851,20 @@ def test_H7_el_regimen_es_un_criterio_y_cedente_es_la_hipotesis_de_archivo():
         assert cita in c.justificacion or cita in c.fuente
 
 
-def test_H7_declarar_no_cedente_detiene_la_estabilidad_sin_cifra(tanteo):
-    with con_valor("regimen_cabezal", "no_cedente",
-                   motivo="el regimen que no esta implementado"):
-        with pytest.raises(MetodoNoEvaluableError) as exc:
-            M9.ensamble_estabilidad(tanteo, EST)
-    assert "11.6.5.4" in str(exc.value)
+def test_H7_declarar_no_cedente_calcula_la_estabilidad_en_reposo(tanteo):
+    """
+    REESCRITO DECLARANDOLO (VE-5, lote M9, ficha T7B-14). Hasta VE-5 el
+    muro que no cede detenia el ensamble con `MetodoNoEvaluableError`; desde
+    VE-5 lo calcula con el empuje en reposo (AASHTO 3.11.5.2-1 y C11.6.5.4).
+    Los dorados a mano estan en tests/test_ve5_m9_no_cedente.py; aqui, que
+    ya no se detiene y que el empuje horizontal es el de K0.
+    """
+    ca.establecer_valor_dinamico("regimen_cabezal", "no_cedente")
+    est = M9.ensamble_estabilidad(tanteo, EST)
+    assert est.regimen == "no_cedente"
+    K0 = 1 - math.sin(math.radians(CP["phi_relleno"]))
+    assert _carga(est, "EH.h").H == pytest.approx(
+        K0 * CP["gamma_relleno"] * CP["h"] ** 2 / 2, abs=TOL)
 
 
 def test_H7_las_solicitaciones_dicen_con_que_coeficiente_salen(tanteo):

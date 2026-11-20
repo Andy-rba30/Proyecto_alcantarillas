@@ -6084,6 +6084,8 @@ marca del régimen para T-7c.
   `regimen_resistencia_elementos_cabezal` [A] = `no_cedente_k0` (decisión del dueño), y
   este criterio no se tocó: la estabilidad externa sigue con el muro que cede. Ver la
   ficha T7C-02.
+- **Cerrado en VE-5 (lote M9, 2026-11-20):** `no_cedente` se calcula; ver la ficha
+  VE5M9-01 al final de este registro.
 - **Dónde vive:** `src/criterios_adoptados.py::regimen_cabezal`
 
 # Parte LI — Lo que T-7c de la cadena T dejó escrito: el armado del cabezal y su alternativa ciclópea
@@ -8396,3 +8398,27 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   sueltas `verificar_estabilidad_global` / `verificar_talud` quedan como estaban: el método
   viaja ahora en la traza del dato declarado.
 - **Dónde vive:** `src/modulos/M9_cabezal.py::validar_estabilidad_global_declarada`
+
+# Parte LXI — Lo que VE-5 (lote M9) dejó escrito: el cabezal
+
+## VE5M9-01 · El muro que no cede se calcula: reposo en la estática, 1.0·k_h0 y h/2 bajo sismo (VE-5, ficha T7B-14)
+
+- **Cerrado:** `regimen_cabezal` = `no_cedente` ya no detiene el ensamble.
+  `M9.cargas_del_cabezal`: (1) estática con el empuje en reposo de 3.11.5.2-1 sobre el
+  mismo diagrama (suelo sumergido bajo el agua), todo horizontal y con el γ_p de la fila
+  «En reposo» (1.35/0.90); K0 es de terreno horizontal, de modo que si el activo con la
+  superficie real da más componente horizontal rige el activo —la regla del armado,
+  ficha T7C-02—; (2) sísmica con k_h = 1.0·k_h0 aunque `factor_muro_eleccion` declare la
+  reducción («shall be increased to 1.0kh0»), la distribución estática del incremento
+  rechazada y la resultante del estático más el sísmico no bajo h/2 (C11.6.5.4).
+  `cargas_en_reposo` es idempotente sobre ese ensamble, y el armado avisa si se declara
+  del muro que cede con el cabezal que no cede. Dorados a mano:
+  `tests/test_ve5_m9_no_cedente.py`.
+- **Abierto (decisión pendiente de Fable):** cómo se suma el reposo al empuje
+  pseudoestático, que es de muro que cede; la fuente no lo dice. Lo declara
+  `empuje_sismico_muro_que_no_cede` [A]: `reposo_mas_incremento` de archivo (lado
+  seguro: más que Mononobe-Okabe, como dice C11.6.5.4) y `mayor_de_reposo_y_total` en la
+  ventana. El agente no pudo consultar a Fable y tomó la conservadora.
+- **Qué haría falta:** la solución de muro rígido de Wood (1973) o un análisis numérico
+  aprobado por el Propietario (11.6.5.4), que no están en el repositorio de normas.
+- **Dónde vive:** `src/criterios_adoptados.py::empuje_sismico_muro_que_no_cede`

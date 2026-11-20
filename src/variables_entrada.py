@@ -1580,6 +1580,7 @@ _META_CRITERIOS: Dict[str, _Meta] = {
     "factores_inclinacion_carga_portante": _Meta(unidad="-"),
     "terreno_delante_del_cabezal": _Meta(unidad="-"),
     "regimen_cabezal": _Meta(unidad="-"),
+    "empuje_sismico_muro_que_no_cede": _Meta(unidad="-"),
     # --- T-7c --- el armado del cabezal (los consume M9, Fase 9).
     "regimen_resistencia_elementos_cabezal": _Meta(unidad="-"),
     "fc_cabezal_mpa": _Meta(unidad="MPa"),

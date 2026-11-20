@@ -11574,10 +11574,13 @@ CRITERIOS: Dict[str, Criterio] = {
         #       resistencia del relleno: empuje ACTIVO (cuña o Coulomb) y,
         #       bajo sismo, el de 11.6.5.3. Es lo que el ensamble calcula.
         #   no_cedente   el muro no puede ceder (estribo con aleros
-        #       estructurales, 11.6.5.4): reposo K0 para la resistencia y
-        #       k_h = 1.0·k_h0 con resultante en h/2 bajo sismo. El
-        #       ensamble NO lo implementa: declararlo detiene la
-        #       estabilidad con «metodo no evaluable».
+        #       estructurales, 11.6.5.4): reposo K0 en la estatica (o el
+        #       activo con la superficie real si da mas, porque K0 es de
+        #       terreno horizontal) y k_h = 1.0·k_h0 con resultante en h/2
+        #       bajo sismo. --- VE-5 (lote M9, ficha T7B-14) --- Hasta VE-5
+        #       el ensamble lo detenia con «metodo no evaluable»; desde VE-5
+        #       lo calcula (`M9.cargas_del_cabezal`), y el empuje sismico
+        #       total lo declara 'empuje_sismico_muro_que_no_cede'.
         sensibilidad=("cedente", "no_cedente"),
         concepto="Si el cabezal se modela como muro que cede (empuje "
                  "activo) o como muro que no cede (empuje en reposo y "
@@ -11608,9 +11611,10 @@ CRITERIOS: Dict[str, Criterio] = {
                       "3.11.5.2 al lado: si T-7c o el proyectista juzgan "
                       "que la pantalla no cede, su armado iria con K0 (en "
                       "A-01, del orden de un tercio a la mitad mas de "
-                      "empuje). «no_cedente» esta en la ventana y detiene "
-                      "la estabilidad: el programa no implementa las "
-                      "presiones de muro rigido",
+                      "empuje). «no_cedente» esta en la ventana y, desde "
+                      "VE-5, se calcula: empuje en reposo en la estatica, "
+                      "con su factor de carga, y k_h = 1.0·k_h0 con la "
+                      "resultante en h/2 bajo sismo (ficha T7B-14)",
         fuente="AASHTO LRFD 9a ed., 11.6.5.4 y C11.6.5.4, pag. impresa "
                "11-32 (PDF 1501; citas AASHTO_LRFD_9.11.6.5.4#NO_CEDENTE, "
                "AASHTO_LRFD_9.C11.6.5.4#CEDENTE y "
@@ -12669,6 +12673,63 @@ CRITERIOS: Dict[str, Criterio] = {
         resolucion=Libre(
             que_lo_fija="el proyectista",
             dominio="una de las tres opciones de la ventana",
+        ),
+    ),
+
+    # --- VE-5 (lote M9, ficha T7B-14) --- El empuje sismico TOTAL del
+    # muro que no cede: la fuente da el k_h (11.6.5.4) y la altura de la
+    # resultante (C11.6.5.4), y no dice como se junta el reposo estatico con
+    # el empuje pseudoestatico de 11.6.5.3. NIVEL: el de la Fase 9
+    # (expediente), su unico consumidor (`M9.cargas_del_cabezal`, condicion
+    # sismica con 'regimen_cabezal' = 'no_cedente'). Sin medida en las
+    # corridas de referencia: solo se lee con el muro que no cede declarado.
+    "empuje_sismico_muro_que_no_cede": Criterio(
+        valor="reposo_mas_incremento",
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        #   reposo_mas_incremento    el empuje en reposo de la estatica MAS
+        #       el incremento pseudoestatico P_AE - P_A (Mononobe-Okabe o la
+        #       cuña de tanteo con k_h = 1.0·k_h0), todo horizontal cuando
+        #       rige el reposo (sin friccion muro-relleno). Lado seguro: el
+        #       total supera al de Mononobe-Okabe, como dice C11.6.5.4.
+        #   mayor_de_reposo_y_total  la lectura literal de 11.6.5.4 (el
+        #       empuje pseudoestatico con 1.0·k_h0), sin bajar del reposo:
+        #       el incremento es lo que el total horizontal supera al
+        #       estatico, y puede ser cero.
+        sensibilidad=("reposo_mas_incremento", "mayor_de_reposo_y_total"),
+        concepto="Como se forma el empuje sismico total de un cabezal que "
+                 "no cede: reposo mas el incremento pseudoestatico, o el "
+                 "mayor del reposo y del total pseudoestatico",
+        justificacion="Decide el empuje sismico de la estabilidad del "
+                      "cabezal declarado no cedente ('regimen_cabezal'). "
+                      "AASHTO 11.6.5.4 (cita AASHTO_LRFD_9.11.6.5.4#"
+                      "NO_CEDENTE) manda calcular el empuje sismico con "
+                      "k_h = 1.0·k_h0 y su comentario (citas "
+                      "AASHTO_LRFD_9.C11.6.5.4#K0 y AASHTO_LRFD_9.C11.6.5.4#"
+                      "H_MEDIOS) liga ese caso con el empuje en reposo en el "
+                      "estado limite de resistencia, dice que las presiones "
+                      "de un muro rigido superan a las de Mononobe-Okabe "
+                      "(Wood, 1973) y pide considerar la resultante en h/2. "
+                      "Ninguna dice como se suma el reposo estatico al "
+                      "empuje pseudoestatico, que es de muro que cede: con "
+                      "phi = 30 y k_h0 = 0.25 el total de Mononobe-Okabe "
+                      "(24.7 kN/m horizontales en el muro de tanteo) queda "
+                      "BAJO el reposo (25.9), y la lectura literal deja el "
+                      "sismo sin incremento. El proyecto adopta el reposo "
+                      "mas el incremento, que respeta las dos frases del "
+                      "comentario (mas que Mononobe-Okabe y no menos que el "
+                      "reposo) y es el lado seguro; la lectura literal queda "
+                      "en la ventana",
+        fuente="AASHTO LRFD 9a ed., 11.6.5.4 y C11.6.5.4, pag. impresa "
+               "11-32 (PDF 1501); 3.11.5.2, pag. impresa 3-120 (PDF 174)",
+        reemplazado_por="Analisis numerico de la interaccion del cabezal con "
+                        "el relleno, aprobado por el Propietario (11.6.5.4), "
+                        "o la solucion de muro rigido de Wood (1973), que no "
+                        "esta en el repositorio de normas",
+        resolucion=Libre(
+            que_lo_fija="el proyectista: ninguna fuente lo fija",
+            dominio="una de las dos opciones de la ventana",
         ),
     ),
 
