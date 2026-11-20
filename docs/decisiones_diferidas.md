@@ -3198,8 +3198,9 @@ símbolo.
   `Bloqueo` se queda para lo que NO se evaluó (una etapa detenida no es una
   verificación), y `EstabilidadCabezal` rechaza la tupla vacía desde EXT-7.
 - **Abierto:** DIFERIDO y SIN_VEREDICTO siguen siendo valores del veredicto
-  sin traducción a estado —no hay `Verificacion` que los produzca— y el
-  segundo indicador del num. 5.3.3 sigue sin evaluarse (PF-4-01, punto 2).
+  sin traducción a estado —no hay `Verificacion` que los produzca—. El
+  segundo indicador del num. 5.3.3 se evalúa desde VE-5 (ficha T2-06), como
+  aviso de la verificación y sin estado propio.
 - **Qué haría falta:** un productor de esos dos valores, si alguna vez lo
   hay, extendería `EstadoDeVerificacion.de_veredicto`.
 - **Dónde vive:** `src/modelos.py::EstadoDeVerificacion`
@@ -3677,6 +3678,15 @@ alternativa sin aplicar porque decidirla es del proyectista.
   el proyectista adopte y declare, porque la fuente no la da. Hasta entonces la ficha
   de `regimen_v2b` lo declara en `verificacion_pendiente` y la memoria lo imprime.
 - **Dónde vive:** `src/normativa/citas.py::HDS5_5_3_3_DEPRESION`
+- **Cerrado (VE-5, lote m45, ítem 19):** el segundo indicador se evalúa como INDICADOR, no
+  veredicto (`M5._indicador_de_rugosidad`): n_max del conducto (la rama de la
+  sedimentación, MAT-D1) frente al n del cauce natural, que entra con la sección del cauce
+  de aproximación del punto (`seccion_cauce_aproximacion`, su campo `n`; sin ella no se
+  evalúa ni se supone). La regla es la literal de la fuente, «roughness greater than the
+  channel» (n_conducto > n_cauce), sin umbral añadido; si se dispara viaja como aviso de
+  V2b (`Verificacion.avisos`) y no cambia `cumple` bajo ningún `regimen_v2b`. Tests:
+  `tests/test_ve5_m45_rugosidad_v2b.py`. Sigue sin evaluarse en la Familia C (la clave es
+  de A y B) y los demás factores del numeral siguen sin cifra.
 
 ## T2-07 · La aceptación de T-2 no se escribió en rojo antes del código: se midió después; 34 de sus 160 tests valen antes y después, y quedan 28 mutantes vivos, censados
 

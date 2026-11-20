@@ -1337,7 +1337,10 @@ _EXTERNOS: Dict[str, _Externo] = {
                  "con el metodo «perfil_de_remanso_paso_a_paso» de "
                  "'remanso_derecho_via' corre sobre ella el perfil de remanso "
                  "desde la boca y mide hasta donde la obra eleva la lamina "
-                 "sobre el tirante natural. Familias A y B",
+                 "sobre el tirante natural. Y, desde VE-5, V2b compara su "
+                 "`n` con el del conducto: el segundo indicador de "
+                 "sedimentacion del HDS-5 num. 5.3.3, como aviso. Familias "
+                 "A y B",
         unidad="objeto (m, H:V, m, -, m/m)",
         resolucion=Libre(
             que_lo_fija="el levantamiento topografico del cauce aguas arriba "
@@ -1349,11 +1352,13 @@ _EXTERNOS: Dict[str, _Externo] = {
                     "dos nulos a la vez); altura_total_m, n y S > 0; S < 1",
         ),
         fase_declarada=_FASE_DE_MODULO["M5_verificaciones"],
-        nota="Solo se lee con 'remanso_derecho_via' = «perfil_de_remanso_"
-             "paso_a_paso» y a nivel de expediente; sin el dato, V5 se "
-             "detiene con DatoFaltanteError. La lee `servicio._datos_de_"
+        nota="V5 solo la exige con 'remanso_derecho_via' = «perfil_de_"
+             "remanso_paso_a_paso» y a nivel de expediente; sin el dato, V5 "
+             "se detiene con DatoFaltanteError. La lee `servicio._datos_de_"
              "expediente` y se la pasa a `M5.v5_remanso`, con el remanso de "
-             "M3 (`M3.remanso_aguas_arriba`)",
+             "M3 (`M3.remanso_aguas_arriba`), y desde VE-5 tambien a "
+             "`M5.v2b_sedimentacion`, que lee su `n` si esta y, si no, no "
+             "evalua el segundo indicador (no se detiene)",
     ),
 
     "Q_evento_extremo_m3s": _Externo(

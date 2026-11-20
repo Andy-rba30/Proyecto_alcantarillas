@@ -2650,7 +2650,9 @@ def _verificador_perfil(informe: InformePunto,
             # de ningun dato de expediente. Lo que difiere el alcance de
             # perfil son las verificaciones que necesitan el expediente, no
             # las que solo necesitan una declaracion del proyectista.
-            lambda: M5.v2b_sedimentacion(punto=punto, resultado=resultado),
+            lambda: M5.v2b_sedimentacion(punto=punto, resultado=resultado,
+                                         material=material,
+                                         expediente=expediente),
             lambda: M5.v3_velocidad_maxima(material=material,
                                            resultado=resultado),
             lambda: M5.v4_carga_entrada(punto=punto, resultado=resultado),

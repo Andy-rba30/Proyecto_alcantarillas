@@ -19,8 +19,8 @@ que declara su Protocol `Verificador`.
                                   (INDICADOR, aplicado con el regimen de
                                   'regimen_v2b' [A]: con aviso desde T-2,
                                   umbral duro hasta entonces; el
-                                  segundo indicador del numeral queda
-                                  declarado pendiente -- ver
+                                  segundo, la rugosidad, desde VE-5 como
+                                  indicador sin veredicto -- ver
                                   `v2b_sedimentacion`)
     V3  Velocidad maxima          concreto: fila de la Tabla N 10 [N]
                                   TMC / HDPE: 'v_max_tmc' / 'v_max_hdpe',
@@ -449,9 +449,10 @@ NUMERAL_V2B = ('HDS-5 3.a ed. (FHWA-HIF-12-026), num. 5.3.3 "Sedimentation", '
                'potential problems"). Aqui se evalua el PRIMERO, y como se '
                "aplica lo declara el criterio 'regimen_v2b' [A] (umbral duro "
                'que detiene el punto, o indicador con aviso que no descarta '
-               'el diametro); el segundo '
-               'exige el n de Manning del cauce natural, que no es columna de '
-               'Sec. 1.2, y queda declarado pendiente. La otra mitad de la '
+               'el diametro); el segundo -- la rugosidad -- se evalua desde '
+               'VE-5 como INDICADOR que no cambia el veredicto, con el n del '
+               'cauce de la seccion del cauce de aproximacion declarada, y '
+               'sin ella no se evalua. La otra mitad de la '
                'fila V2b de la hoja de ruta -- el acceso de mantenimiento en '
                'planos -- entra por el criterio '
                "'acceso_mantenimiento_v2b' [A]")
@@ -1511,8 +1512,74 @@ def v2_velocidad_minima(*, resultado: ResultadoHidraulico) -> Verificacion:
 # V2b - Sedimentacion / colmatacion (HDS-5 3.a ed., num. 5.3.3)
 # ---------------------------------------------------------------------------
 
+def _indicador_de_rugosidad(*, material: Optional[Material],
+                            expediente: Optional[DatosDeExpediente]
+                            ) -> Tuple[Tuple[Magnitud, ...], Tuple[str, ...],
+                                       str]:
+    """
+    --- VE-5 (lote m45, item 19; fichas T2-06 y C10-02) --- EL SEGUNDO
+    INDICADOR del HDS-5 num. 5.3.3 (pag. impresa 5.11, cita
+    `HDS5_3ED.5.3.3#INDICADORES`): «roughness greater than the channel».
+    Compara el n del conducto --el n_max de la regla de doble n, la rama de
+    la sedimentacion (MAT-D1), con la que se resolvio el tirante-- con el n
+    del CAUCE NATURAL, que entra con la seccion del cauce de aproximacion
+    del punto (`seccion_cauce_aproximacion` de --datos-externos, su campo
+    `n`: el levantamiento del cauce aguas arriba del cruce, VE-4c).
+
+    ES UN INDICADOR Y NO UN VEREDICTO (decision adoptada en el censo del
+    item 19): la fuente no da umbral --«are key indicators of potential
+    problems»--, de modo que no cambia `cumple` bajo ningun regimen de
+    'regimen_v2b'; si se dispara (n_conducto > n_cauce) viaja como AVISO de
+    la verificacion. Sin la seccion del cauce el indicador no se evalua y
+    el paso lo dice: el n del cauce no se supone.
+
+    Devuelve (magnitudes para la sustitucion, avisos, frase para la nota).
+    """
+    seccion = (None if expediente is None or expediente.derecho_de_via is None
+               else expediente.derecho_de_via.seccion_cauce)
+    if material is None or seccion is None:
+        falta = ("la seccion del cauce de aproximacion del punto "
+                 "(`seccion_cauce_aproximacion` de --datos-externos, con su "
+                 "n de Manning)" if seccion is None else
+                 "el material del conducto")
+        return ((Magnitud("n_cauce", "no declarado", "",
+                          f"sin {falta}: el segundo indicador no se evalua y "
+                          "el n del cauce no se supone", cifras=None),),
+                (), f"El SEGUNDO -- «roughness greater than the channel» -- "
+                    f"no se evalua en este punto: falta {falta}.")
+    n_conducto = material.n_para_capacidad
+    n_cauce = seccion.n
+    origen = expediente.derecho_de_via.origen_seccion_cauce
+    disparado = n_conducto > n_cauce + TOL_UMBRAL_NORMATIVO
+    magnitudes = (
+        Magnitud("n_conducto", n_conducto, "",
+                 "n de Manning del conducto, el MAXIMO de su rango (la rama "
+                 "de la sedimentacion, la misma de V2)", cifras=CIFRAS_FINA),
+        Magnitud("n_cauce", n_cauce, "",
+                 f"n de Manning del cauce natural, de la {origen}",
+                 cifras=CIFRAS_FINA))
+    if not disparado:
+        return (magnitudes, (),
+                f"El SEGUNDO -- «roughness greater than the channel» -- se "
+                f"evalua como INDICADOR: n_conducto = {n_conducto:g} no "
+                f"supera n_cauce = {n_cauce:g}, y no se dispara.")
+    aviso = (f"V2b, segundo indicador del HDS-5 num. 5.3.3: el conducto es "
+             f"MAS RUGOSO que el cauce natural (n_conducto = {n_conducto:g} "
+             f"> n_cauce = {n_cauce:g}), «key indicator of potential "
+             "problems» de sedimentacion. Es un indicador: no descarta el "
+             "diametro; pide atencion al mantenimiento y a la limpieza")
+    return (magnitudes, (aviso,),
+            f"El SEGUNDO -- «roughness greater than the channel» -- se "
+            f"evalua como INDICADOR y SE DISPARA: n_conducto = "
+            f"{n_conducto:g} > n_cauce = {n_cauce:g}; viaja como aviso y no "
+            f"cambia el veredicto.")
+
+
 def v2b_sedimentacion(*, punto: PuntoCritico,
-                      resultado: ResultadoHidraulico) -> Verificacion:
+                      resultado: ResultadoHidraulico,
+                      material: Optional[Material] = None,
+                      expediente: Optional[DatosDeExpediente] = None
+                      ) -> Verificacion:
     """
     S_conducto >= S_cauce, el indicador de sedimentacion del HDS-5, aplicado
     con el regimen declarado en 'regimen_v2b', mas el acceso de
@@ -1534,6 +1601,11 @@ def v2b_sedimentacion(*, punto: PuntoCritico,
 
         "Culverts which are located on and aligned with the natural channel
         generally do not have a sedimentation problem."
+
+    DESDE VE-5 (item 19) EL SEGUNDO SE EVALUA COMO INDICADOR cuando el
+    punto declara la seccion del cauce de aproximacion (su n de Manning):
+    `_indicador_de_rugosidad`; no cambia el veredicto y, si se dispara,
+    viaja como aviso. Lo que sigue es como estaba hasta entonces.
 
     DE LOS DOS INDICADORES SE EVALUA UNO, Y HAY QUE DECIR CUAL Y POR QUE. El
     primero -- pendiente del barril frente a la del cauce -- son dos numeros
@@ -1598,6 +1670,8 @@ def v2b_sedimentacion(*, punto: PuntoCritico,
     # porque el censo de mutacion (`tests/test_ext11_mutacion.py`) la nombra.
     cumple = resultado.S >= S_cauce - TOL_UMBRAL_NORMATIVO
     disparado = not cumple
+    magnitudes_n, avisos_n, nota_n = _indicador_de_rugosidad(
+        material=material, expediente=expediente)
     aviso = regimen == REGIMEN_V2B_INDICADOR_CON_AVISO
     umbral = _umbral_de(
         "V2b", valor=S_cauce, unidad="m/m",
@@ -1636,6 +1710,7 @@ def v2b_sedimentacion(*, punto: PuntoCritico,
         valor_admisible=S_cauce,
         criterio_aplicado=CRITERIO_ACCESO_MANTENIMIENTO,
         codigo="V2b",
+        avisos=avisos_n,
         paso=paso(
             "F5.V2b",
             codigo="V2b",
@@ -1658,7 +1733,8 @@ def v2b_sedimentacion(*, punto: PuntoCritico,
                 Magnitud("S_cauce", S_cauce, "m/m",
                          "pendiente del CAUCE NATURAL, columna del CSV "
                          "(Sec. 1.5: no es la de la alcantarilla)",
-                         cifras=CIFRAS_FINA)),
+                         cifras=CIFRAS_FINA),
+                *magnitudes_n),
             resultado=Magnitud("S_conducto - S_cauce", margen,
                                "m/m",
                                "diferencia de pendientes: negativa es el "
@@ -1707,11 +1783,11 @@ def v2b_sedimentacion(*, punto: PuntoCritico,
                             "no que pueda entrar",
                     clave_criterio=CRITERIO_ACCESO_MANTENIMIENTO),),
             nota_del_proyecto=(
-                "SE EVALUA UNO DE LOS DOS INDICADORES DEL NUMERAL. El "
-                "segundo -- «roughness greater than the channel» -- exige el "
-                "n de Manning del cauce natural, que no es columna de "
-                "Sec. 1.2 ni lo fija la hoja de ruta. No se aproxima: queda "
-                "declarado como pendiente. Y el caracter de la fuente es "
+                "EL VEREDICTO ES DEL PRIMERO DE LOS DOS INDICADORES DEL "
+                "NUMERAL (la pendiente). " + nota_n + " El n del cauce "
+                "natural no es columna de Sec. 1.2: entra con la seccion "
+                "del cauce de aproximacion y no se aproxima. Y el caracter "
+                "de la fuente es "
                 "INDICADOR («are key indicators of potential problems»), no "
                 "exigencia: como se aplica lo declara el criterio "
                 "'regimen_v2b' [A] -- en esta corrida, "
@@ -4864,7 +4940,8 @@ def verificar(*, punto: PuntoCritico, material: Material,
         lambda: v1_borde_libre(D=D, material=material, punto=punto,
                                resultado=resultado),
         lambda: v2_velocidad_minima(resultado=resultado),
-        lambda: v2b_sedimentacion(punto=punto, resultado=resultado),
+        lambda: v2b_sedimentacion(punto=punto, resultado=resultado,
+                                  material=material, expediente=expediente),
         lambda: v3_velocidad_maxima(material=material, resultado=resultado),
         lambda: v4_carga_entrada(punto=punto, resultado=resultado),
         lambda: v4b_relacion_hw_d(D=D, resultado=resultado, punto=punto),
