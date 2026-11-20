@@ -27,7 +27,7 @@ Fase 6, la 7, la 8, la 9 y la 10 quedaban en el cuadro de «no ejercitados».
 INF-5.1.10 (que el prompt T-10 llama INF-5.1.9) pedia ver el paso del
 control gobernante con su cita correcta en una corrida que DIMENSIONE.
 
-DESDE T-10 SON DOS CORRIDAS (TRES DESDE T-11), con DATOS DE PRUEBA que se
+DESDE T-10 SON DOS CORRIDAS (TRES DESDE T-11, CUATRO DESDE VE-7), con DATOS DE PRUEBA que se
 leen de `tests/fixtures/corridas_de_referencia/` (ver
 `CORRIDAS_DE_REFERENCIA`; ningun valor es del proyecto). Las dos de T-10 ya
 EXISTIAN en el repositorio: `test_t10_memoria` comprueba que son los mismos
@@ -62,7 +62,17 @@ Ninguna de las tres es una segunda copia que pueda divergir:
      sean la materializacion del juego, de modo que no son una copia que
      pueda divergir.
 
-Las tres corren con el estado de declaraciones VACIO y lo reponen al salir
+  4. `materiales_y_ramas` (VE-7, lote C, item C6; ficha VE5GUI-47): datos
+     de PRUEBA escritos para recorrer las ramas que las tres anteriores no
+     alcanzan --el TMC y el HDPE hasta la Fase 8 (el concreto fuera del
+     catalogo por 'D_max_catalogo' y el TMC fuera de A-02 por su pH), el
+     cabezal ciclopeo de gravedad declarado, el filtro y la hoya de
+     socavacion de HEC-14, el metodo racional modificado de una cuenca de
+     55.9 km2, la Fase 0-bis con el EMS declarado, la estabilidad global
+     declarada y el armado de un marco sobre suelo deficiente-- a
+     `--alcance expediente`. Su LEEME dice punto por punto que ejercita.
+
+Las cuatro corren con el estado de declaraciones VACIO y lo reponen al salir
 (`correr_referencia`). La razon es la de siempre: la suite declara criterios
 de prueba en `conftest.py`, y un indice que dijera una cosa generado desde la
 CLI y otra bajo pytest seria un documento sin referencia.
@@ -220,6 +230,19 @@ CORRIDAS_DE_REFERENCIA: Tuple[CorridaDeReferencia, ...] = (
                 "(`tests/fixtures/hidrologia/`). Con esos caudales ninguno de "
                 "los tres cabe bajo la subrasante y no dimensiona; C-01 "
                 "dimensiona y llega a la Fase 9.")),
+    # --- VE-7, lote C (C6; ficha VE5GUI-47; decision del consultor Fable,
+    # triaje VE-7, 2026-11-20) --- La CUARTA: las ramas sin ejercitar.
+    CorridaDeReferencia(
+        nombre="materiales_y_ramas", alcance="expediente",
+        rotulo=("DATOS DE PRUEBA, NO DEL PROYECTO: escritos en VE-7 para "
+                "ejercitar las ramas que las otras tres no alcanzan (ver su "
+                "LEEME.md). El concreto queda fuera del catalogo "
+                "('D_max_catalogo' de prueba): A-01 se dimensiona en TMC y "
+                "A-02, con un pH de prueba fuera del intervalo del acero, en "
+                "HDPE con cabezal ciclopeo declarado; A-03 calcula su caudal "
+                "por el racional modificado (cuenca sintetica de 55.9 km2) y "
+                "no cabe; C-01 es el marco de T-11 con el n del encofrado "
+                "in situ.")),
 )
 
 # El sello, en una linea que `leer_sello` reconoce. Los tres campos van
@@ -706,13 +729,15 @@ def indice_de_formulas(corridas: Any, sello: Sello) -> str:
     A("")
     A("## 1. Las corridas de referencia")
     A("")
-    A("Tres corridas con DATOS DE PRUEBA que ya estaban en el repositorio")
-    A("(`tests/fixtures/corridas_de_referencia/`, ver `CORRIDAS_DE_REFERENCIA`")
+    A("Cuatro corridas con DATOS DE PRUEBA de")
+    A("`tests/fixtures/corridas_de_referencia/` (ver `CORRIDAS_DE_REFERENCIA`")
     A("en `src/indice_formulas.py`): la de la guía de perfil, que dimensiona")
     A("los cuatro puntos; la de punta a punta de T-7b/T-7c, que lleva a A-01")
-    A("hasta la Fase 9; y la de la validación integral de T-11 con el caudal")
-    A("calculado, que lleva la Fase 1-bis al índice. Ningún valor de entrada")
-    A("es del proyecto.")
+    A("hasta la Fase 9; la de la validación integral de T-11 con el caudal")
+    A("calculado, que lleva la Fase 1-bis al índice; y la de VE-7, escrita")
+    A("para recorrer las ramas que las otras tres no alcanzan (el TMC y el")
+    A("HDPE hasta la Fase 8, el cabezal ciclópeo, el filtro, la socavación y")
+    A("el racional modificado). Ningún valor de entrada es del proyecto.")
     A("")
     for corrida, informe in corridas:
         L.extend(_resumen_de_la_corrida(corrida, informe))

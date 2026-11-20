@@ -9031,11 +9031,9 @@ generados (`indice_formulas.md`, línea base) no se regeneran aquí: los regener
   `tests/test_ve5_dimensional_m6_m10.py` les aplica las dos comprobaciones del piloto que no
   necesitan relación escrita: toda unidad tiene dimensión (el mapa del piloto más ocho unidades
   propias de estas fases) y todo umbral es conmensurable con su resultado. Ninguna inconsistencia.
-- **Abierto:** las RELACIONES por paso de M6–M10 (401 pasos, a mano desde su fórmula), y los 32
-  fundamentos que ninguna corrida de referencia ejercita (entre ellos los ocho de la Fase 8 del TMC
-  y del HDPE, `F9.CICLOPEO`, `F6.FILTRO`, `F6.SOCAVACION` y cuatro `FH.*` del método racional): hace
-  falta una cuarta corrida de referencia (fixture) que los recorra, y regenerar el índice.
-- **Qué haría falta:** esa corrida y esas relaciones, en una sesión propia.
+- **Abierto:** las RELACIONES por paso de M6–M10 (401 pasos, a mano desde su fórmula). Los
+  fundamentos sin ejercitar los recorre desde VE-7 la cuarta corrida de referencia (ficha VE7C-06).
+- **Qué haría falta:** esas relaciones, en una sesión propia.
 - **Dónde vive:** `tests/test_ve5_dimensional_m6_m10.py::UNIDADES_DE_M6_A_M10`
 
 ## VE5GUI-48 · La integración continua corre los tests de ventana
@@ -9278,3 +9276,27 @@ estas fichas dicen cómo se hizo y lo que quedó. Los documentos generados (mani
   (`--comparar A.json B.json`).
 - **Qué haría falta:** si se pide, `--comparar` con dos índices de corrida de la sesión.
 - **Dónde vive:** `cli.py::_imprimir_estado_del_expediente`
+
+## VE7C-06 · Cuarta corrida de referencia `materiales_y_ramas`: de 39 fundamentos sin paso a 17 (C6; VE5GUI-47)
+
+- **Cerrado (decisión del consultor Fable, triaje VE-7, 2026-11-20):** `CORRIDAS_DE_REFERENCIA`
+  tiene una cuarta, a expediente, con entradas de PRUEBA rotuladas
+  (`tests/fixtures/corridas_de_referencia/materiales_y_ramas/`, su LEEME dice qué ejercita cada
+  dato): el concreto fuera del catálogo (`D_max_catalogo` de prueba) deja A-01 en TMC y A-02 (pH
+  fuera del intervalo del acero) en HDPE con cabezal ciclópeo declarado; A-03 calcula su caudal
+  por el racional modificado. Ejercita 22 fundamentos que ninguna otra emitía: los ocho de la
+  Fase 8 del TMC y del HDPE, `F9.CICLOPEO`, `F6.FILTRO`, `F6.SOCAVACION`, los tres `FH.RM_*`,
+  `F0.LICUEFACCION`, `F11.ACERO`, `F3.DUR.SUELO_FUNDACION`, `F4.HORIZONTAL`,
+  `F4.N_CAJON_IN_SITU`, `F9.ARM_DURABILIDAD`, `F9.DIMENSIONADO_PANTALLA` y
+  `F9.GLOBAL_DECLARADA`. Medido: 39 → 17 de 154. Test: `tests/test_ve7_lote_c_cuarta_corrida.py`.
+- **Abierto:** de los 17, cinco se emiten como ELECCIÓN y no como paso (`F3.D_EXTERIOR`,
+  `F5.V2b.REGIMEN`, `F5.V7_FILA`, `F5.V7_NIVEL`, `FH.FACTOR_P24`): el índice sólo cuenta pasos.
+  `F3.D_MIN` no tiene emisor. Los otros once piden una elección de TODA la corrida contraria a
+  la de referencia (`region_natural` en selva alta saca a A-01 del TMC: medido; `n_manning_cajon`;
+  el remanso por perfil; el desborde de V8; el régimen de V1) o una rama que ningún punto de
+  prueba válido alcanza (piso de HW, caída recta, TW sobre la clave, cobertura somera, peralte
+  por armado). La fila A7 de A-01 no cumple con el f'c de archivo frente a la exposición de
+  prueba (decidido así para conservar `F9.DIMENSIONADO_PANTALLA`; pendiente de revisión Fable).
+- **Qué haría falta:** regenerar y sellar `docs/indice_formulas.md` en la integración; contar
+  las elecciones en el §4 del índice; una quinta corrida si se quieren las ramas de régimen.
+- **Dónde vive:** `src/indice_formulas.py::CORRIDAS_DE_REFERENCIA`
