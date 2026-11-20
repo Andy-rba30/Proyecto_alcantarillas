@@ -204,11 +204,14 @@ def test_C8_con_el_muro_que_cede_no_toma_la_resultante_a_h_medios(tanteo):
     assert c8.valor_obtenido < C8_MEDIA
 
 
-def test_C8_con_la_traccion_admisible_a_media_altura_informa(tanteo):
+def test_C8_con_la_traccion_admisible_a_media_altura_decide(tanteo):
+    # --- VE-7 (lote A, A3; triaje VE-7 de Fable) --- hasta VE-7 la media
+    # altura informaba con la traccion admisible de E.060; desde VE-7 decide
+    # con cualquier criterio (ficha VE7A-03).
     ca.establecer_valor_dinamico("criterio_traccion_cabezal_ciclopeo",
                                  "traccion_admisible_e060")
     a = M9.verificar_cabezal_ciclopeo(_gravedad())
-    assert _v(a, "C8.media.e").estado is EstadoDeVerificacion.INDICADOR
+    assert _v(a, "C8.media.e").estado is EstadoDeVerificacion.NO_CUMPLE
     # el arranque es una junta de construccion: decide igual (22.4.7)
     assert _v(a, "C8.arranque.e").estado is EstadoDeVerificacion.NO_CUMPLE
 
@@ -242,7 +245,7 @@ def test_C8_el_arranque_decide_aunque_no_haya_junta_ni_tracciones_nulas(
     Con el vaciado monolitico y la traccion admisible de E.060 el arranque
     bajo sismo DECIDE igual, atribuido al criterio de traccion del proyecto
     (E.060 9.2 no combina sismo con empuje: no hay contraste que lo cubra);
-    la media altura sigue informando.
+    la media altura, desde VE-7, tambien decide.
     """
     ca.establecer_valor_dinamico("criterio_traccion_cabezal_ciclopeo",
                                  "traccion_admisible_e060")
@@ -254,7 +257,8 @@ def test_C8_el_arranque_decide_aunque_no_haya_junta_ni_tracciones_nulas(
     assert arranque.paso.umbral.criterio_aplicado == \
         "criterio_traccion_cabezal_ciclopeo"
     assert arranque.paso.umbral.cita_id == "E060.22.6.3#TERCIO"
-    assert _v(a, "C8.media.e").estado is EstadoDeVerificacion.INDICADOR
+    # --- VE-7 (lote A, A3) --- la media altura tambien decide (VE7A-03).
+    assert _v(a, "C8.media.e").estado is EstadoDeVerificacion.NO_CUMPLE
 
 
 def test_C7_avisa_las_combinaciones_sin_presion_y_decide_con_las_demas(

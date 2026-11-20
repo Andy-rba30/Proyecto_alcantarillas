@@ -8345,9 +8345,9 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   ancho ya no se dimensiona solo con la estática. Un ancho dimensionado sin alguna condición
   evaluada se rotula «dimensionada con la estabilidad evaluable (falta una condición)». El mensaje
   ya no recomienda declarar el drenaje cuando está declarado.
-- **Abierto:** con `relleno_muy_abierto` la condición sísmica sigue deteniéndose: la fórmula de
-  Westergaard no está en ninguna fuente del repositorio de normas, y no se inventa.
-- **Qué haría falta:** una fuente en el repositorio de normas para la fórmula de Westergaard, o la decisión de no detener el sismo con relleno muy abierto.
+- **Abierto:** con `relleno_muy_abierto` la condición sísmica se detiene salvo que el punto
+  declare el empuje con la hidrodinámica (VE7A-05): Westergaard no está en el repositorio de normas.
+- **Qué haría falta:** una fuente en el repositorio de normas para la fórmula de Westergaard.
 - **Dónde vive:** `src/modulos/M9_cabezal.py::cargas_del_cabezal`
 
 ## VE3-16 · Lo que la app dice de sí misma: alcance declarado y resumen de la CLI (VE-3.14, bloque 5; H-10, H-11)
@@ -8706,8 +8706,7 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
 - **Por qué no más:** la fuente da el GLE como método general y la cuña como el de mano;
   el GLE no se calcula a mano.
 - **Qué haría falta (C):** el GLE de A11.3.3 necesita un programa de estabilidad de
-  taludes, y la puerta para un P_AE declarado por punto (como E4/E5 en VE-4a) no se abrió:
-  no es barata (dato nuevo por punto y cabezal, validación y contrato). La cuña sobre la CARA de la
+  taludes; la puerta del P_AE declarado por punto se abrió en VE7A-05. La cuña sobre la CARA de la
   pantalla (`carga_pantalla_cabezal` = `cuna_sobre_la_pantalla`) sigue vertical: con
   talón el trasdós de la regla es vertical, y un β declarado con talón no la inclina.
 - **Dónde vive:** `src/modulos/M9_cabezal.py::cuna_de_tanteo`
@@ -8730,8 +8729,8 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
 - **Por qué:** la Fase 9 rige con AASHTO LRFD 9.ª ed. y su 10.6.3.1.2c son tablas, no
   figuras; la §9.3 de la hoja de ruta sigue nombrando la ecuación del Manual de Puentes
   2.8.1.3.1.2c (Meyerhof): **la hoja de ruta sigue mal** mientras no se corrija.
-- **Qué haría falta:** la geometría del talud por PUNTO (hoy es de corredor, como
-  `terreno_delante_del_cabezal`); y corregir la §9.3 de la hoja de ruta.
+- **Qué haría falta:** corregir la §9.3 de la hoja de ruta (la geometría del talud por punto
+  se cerró en VE7A-06; `terreno_delante_del_cabezal` sigue de corredor).
 - **Dónde vive:** `src/modulos/M9_cabezal.py::coeficiente_rcbc`
 ## VE6M9-01 · El cabezal ciclópeo se verifica bajo sismo (C8) y su zapata como voladizo de concreto simple (C7) (VE-6, ítem 10; T7C-09 (2)(3))
 
@@ -8751,8 +8750,7 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   (`criterio_traccion_cabezal_ciclopeo`); C7 avisa las combinaciones de E.060 descartadas
   por sacar la resultante de la base y decide con las demás; C8 cita `MP.2.8.1.1.14.1#EXC`
   (el numeral de los dos casos: su texto no tiene cita propia, vive en `P_SEIS_TEXTO`).
-- **Abierto:** (a) no procede mientras k_v = 0; con k_v ≠ 0, C8 debe afectar W con
-  (1 − k_v); (b) a media altura, con `traccion_admisible_e060`, C8 informa; (c) firmar
+- **Abierto:** (a) y (b) cerrados en VE7A-04 y VE7A-03; (c) firmar
   `E060.22.10.2.2#VOLADIZO` cuando haya PDF y pasar a ella la cita principal de C7 (hoy
   en la nota de `E060.22.10.2#CICLOPEO`); (d) C7 no se evalúa bajo sismo (E.060 9.2.3 no
   combina CS con CE): la punta bajo Evento Extremo I queda cubierta sólo por E2.
@@ -8983,8 +8981,8 @@ generados (`indice_formulas.md`, línea base) no se regeneran aquí: los regener
   (las de forma y las cuatro `D` de M4) los decimales del rótulo: 0.90 sigue «0.90», 1.0668 dice
   «1.0668».
 - **Abierto:** `docs/indice_formulas.md` no se regeneró (lo regenera el integrador; ya estaba
-  desincronizado en la base). Las `D` de M5, M6 y M9 que usan `CIFRAS_MAGNITUD` (3) siguen con tres
-  decimales.
+  desincronizado en la base). Las `D` de M5 y M6 que usan `CIFRAS_MAGNITUD` (3) siguen con tres
+  decimales (la de M9, desde VE7A-10, con los del rótulo).
 - **Qué haría falta:** regenerar el índice; extender `cifras_de_dimension` a esas `D` si el dueño lo
   pide (archivos de otros lotes).
 - **Dónde vive:** `src/modelos.py::cifras_de_dimension`
@@ -9163,7 +9161,7 @@ cambios están aplicados en estas fichas.
   con su margen mezclaría dimensiones); `F9.REFINAMIENTO_LONGITUD` pasa a RECOMIENDA («should
   be close», 3.3.5). `servicio._lo_que_no_se_cumpliria`.
 - **Abierto:** V1, V4 y el tamizado de 7.A siguen juzgados con la carga del diseño; con la
-  refinada sólo se avisa. La coronación de salida sigue fijada con la cota de salida de la
+  refinada se avisa y, desde VE7A-09, el punto se bloquea si V1 o V4 dejarían de cumplirse. La coronación de salida sigue fijada con la cota de salida de la
   aproximada (ficha T7A-06).
 - **Qué haría falta:** declarar `longitud_m` = L_cab en el punto avisado (gana y se verifica
   entero); o, si el dueño lo pide, una segunda pasada completa de MD con L_cab.
@@ -9183,14 +9181,11 @@ cambios están aplicados en estas fichas.
 - **Decisiones (aprobadas por Fable):** la orientación la elige la FILA declarada (no alcanza a los
   tubos); con cabezal paralelo el esviaje de la embocadura es el del barril (nota de
   `#MAXIMO_PRACTICO`), sin interpolar fuera de banda; los dos cabezales van paralelos (`#PARALELO`).
-- **Abierto:** (1) `embocadura_cajon` es de proyecto y el esviaje es por punto: declarar una fila
-  de la Carta 11 detiene con `DatoInvalidoError` todo marco fuera de banda (con chaflán, todo el que
-  no tenga 15/30/45° exactos): seguro pero restrictivo. (2) El extremo oblicuo del marco no se
-  verifica en M8 (sin numeral atribuido). (3) Carta 12 escala 3 (paralelo con aleros) sin banda; la
-  nota del paso 9.2.2 y la h_eq por orientación, con el ítem 28. (4) Anterior a VE-6: la Carta 10
-  con cabezal normal admite cualquiera de los dos ke sin emparejar el borde.
-- **Qué haría falta:** declaración de la embocadura por punto; el extremo oblicuo en M8; los aleros
-  del paralelo; emparejar el borde de la Carta 10.
+- **Abierto:** (1) Cerrado en VE7A-02 (embocadura del marco por punto). (2) El extremo oblicuo del marco no se
+  verifica en M8 (sin numeral atribuido); desde VE7A-08 se avisa. (3) Carta 12 escala 3 (paralelo con aleros) sin banda; la
+  h_eq por orientación, cerrada en VE7A-07. (4) Cerrado en VE7A-01.
+- **Qué haría falta:** el extremo oblicuo en M8; los aleros
+  del paralelo.
 - **Dónde vive:** `src/modulos/M9_cabezal.py::_embocadura_paralela`
 
 ## VE6-34 · La progresión del catálogo: G1 dentro del bucle, V10 la detiene y el delta con V4 bajo control de entrada
@@ -9215,3 +9210,154 @@ cambios están aplicados en estas fichas.
 - **Qué haría falta:** la monotonía de V2/V2b/V7 con D; iterar 7.A con 7.B; aplicar la regla del
   escalón más bajo también a la rama «no cabe»; la decisión del dueño sobre la fila NF.
 - **Dónde vive:** `src/modulos/MD.py::_escalon_sin_cobertura`
+
+# Parte LXIV-A — Lo que VE-7 (lote A) dejó escrito: la embocadura, el sismo del cabezal y la Fase 9
+
+VE-7, lote A (2026-11-20, rama `claude/ve7-lote-a`, base `cb15e32`) implementa lo que el triaje VE-7
+del consultor Fable decidió para el cabezal y su embocadura. Cada ficha dice la decisión, la cita y
+el test; lo que la sesión tuvo que decidir sin dictamen va rotulado «pendiente de revisión Fable».
+
+## VE7A-01 · La Carta 10 con cabezal normal empareja el ke por el borde de su fila (cierra VE6-T7A03 (4))
+
+- **Cerrado:** `KE_C2_POR_FILA_SIN_ALETAS` (constantes, [N] por lectura de rótulos): el chaflán de
+  3/4" y la escala 2 de la Carta 8 («90° and 15° wingwall flares») sólo con la escuadra (ke 0.5);
+  los biseles de 45° y 33.7° con la biselada (0.2) o la escuadra. `M9.filas_hds5_del_cajon` la
+  aplica en la rama sin aletas, como `KE_C2_POR_FILA_CARTA_11` en la del paralelo.
+- **Decisión del consultor Fable (triaje VE-7, 2026-11-20):** es LECTURA de los rótulos, no frase
+  literal: la Tabla A.1 separa «chamfers» de «bevels» y la C.2 da 0.2 sólo a «beveled edges on 3
+  sides». Ningún dorado usaba la Carta 8 e2 con 0.2 (el ejemplo del HDS-5 con 0.2 es el bisel de
+  45°): no hubo declaración que corregir.
+- **Abierto:** nada de esta ficha.
+- **Qué haría falta:** nada; una frase literal de la fuente que empareje borde y fila la sustituiría.
+- **Dónde vive:** `src/constantes_normativas.py::KE_C2_POR_FILA_SIN_ALETAS`
+
+## VE7A-02 · La embocadura del marco se declara por punto (cierra VE6-T7A03 (1))
+
+- **Cerrado:** clave `embocadura_cajon_del_punto` = {`carta`, `ke`}, sólo por punto, validada
+  por `M9.validar_embocadura_cajon_del_punto`. En la Familia C `servicio.correr_punto` pisa
+  `embocadura_cajon` y `ke_entrada_cajon` en caliente (la carta primero) y en `finally` repone lo
+  que había; la coherencia sigue en `verificar_coherencia_embocadura_cajon` y el paso 9.0.0 dice
+  «declarada por punto». En otra familia no se aplica y se avisa.
+- **Revisado por Fable (dictamen del consultor, 2026-11-20):** aprobado con cambios, aplicados: la memoria no puede quedar falsa para el punto.
+  `ContextoCorrida.criterios_por_punto` ({criterio: {id_punto: valor}}, de
+  `servicio.criterios_por_punto`) lleva lo que cada punto pisó; la fila de los dos criterios en
+  `M11.bloque_criterios` y en el JSON (`por_punto`) dice el valor de cada punto al lado del de
+  proyecto. Sin la clave, la memoria no cambia (test byte a byte).
+- **Abierto:** nada de esta ficha; el pre-vuelo no la anuncia (no es una falta).
+- **Qué haría falta:** nada.
+- **Dónde vive:** `src/servicio.py::correr_punto`
+
+## VE7A-03 · C8 a media altura decide con cualquier criterio de tracción (cierra VE6M9-01 (b))
+
+- **Cerrado:** en `M9._verificar_cuerpo_bajo_sismo` las dos secciones de C8 (arranque y media
+  altura) deciden (`decide = True`); la media altura, atribuida a
+  `criterio_traccion_cabezal_ciclopeo`, también con `traccion_admisible_e060`. Un e > t/6 a media
+  altura bajo sismo es una incumplida del cabezal, no un indicador.
+- **Decisión del consultor Fable (triaje VE-7, 2026-11-20):** la razón es la del arranque en el
+  dictamen de VE-6: E.060 9.2 no combina el sismo con el empuje y no hay contraste que cubra la
+  sección. Dos tests de `tests/test_ve5_m9_ciclopeo.py` que fijaban «informa» se reescribieron.
+- **Abierto:** nada de esta ficha.
+- **Qué haría falta:** nada.
+- **Dónde vive:** `src/modulos/M9_cabezal.py::_verificar_cuerpo_bajo_sismo`
+
+## VE7A-04 · C8 con k_v ≠ 0: el peso estabilizante va con (1 − k_v) (cierra VE6M9-01 (a))
+
+- **Cerrado:** C8 lleva el peso estabilizante con (1 − k_v), signo desfavorable; la inercia
+  horizontal sigue con k_h·W entero. Con k_v = 0 nada cambia.
+- **Revisado por Fable (dictamen del consultor, 2026-11-20):** aprobado con cambios, aplicados (abierto (i)): el ensamble E1–E3 también.
+  `cargas_del_cabezal` añade bajo sismo, sólo con |k_v| > 0, `C_EQ_KV` = −k_v·(W_w + W_s) en el
+  centro de gravedad de los pesos; `combinaciones_de_estabilidad` le da 1.0 en las filas de
+  excentricidad, deslizamiento y volteo (los dos casos de 11.6.5.1) y 0 en las de portante. Es
+  genérico (todo muro que use el ensamble). El armado lleva los pesos enteros y lo avisa. Se
+  retiró el aviso de C8. Citas `CITAS_K_V_EN_LOS_PESOS` (A11.3.1, MP 2.8.1.1.14.2.1, 11.6.5.1).
+- **Abierto:** nada de esta ficha (k_v = 0 es el de archivo, prescrito).
+- **Qué haría falta:** nada.
+- **Dónde vive:** `src/modulos/M9_cabezal.py::_verificar_cuerpo_bajo_sismo`
+
+## VE7A-05 · El empuje sísmico declarado por punto y cabezal donde el programa no lo calcula (VE5M9-02, VE3-15)
+
+- **Cerrado:** clave `empuje_sismico_declarado`, sólo por punto; por cabezal un objeto o hasta dos
+  de k_h distinto: `P_AE_kn_m` (componente horizontal del empuje TOTAL del suelo sobre el plano
+  vertical del talón de altura h, 11.6.5.2.2, sin la hidrostática), `altura_aplicacion_m`,
+  `incluye_hidrodinamica`, `k_h`, `k_v`, `altura_plano_m` y la traza. Se consume sólo donde
+  `cargas_del_cabezal` levantaba `MetodoNoEvaluableError` en la cuña SÍSMICA (ψ ≥ φ) o con relleno
+  muy abierto (exige la hidrodinámica); nunca sustituye un empuje calculado (lo avisa).
+- **Revisado por Fable (dictamen del consultor, 2026-11-20):** aprobado con cambios, aplicados: casa por k_h, k_v y plano (h ≤ `altura_plano_m`); si no, el
+  bloqueo dice qué no casa. P_AE menor que el activo se rechaza; con el reposo rigiendo honra
+  `empuje_sismico_muro_que_no_cede`. z del incremento sin techo y con los pisos h/3 y h/2: el
+  momento no baja del declarado. K_AE equivalente sólo se imprime. Citas 11.6.5.3#VALIDEZ,
+  3.11.5.8.1#CUNA (A11.3.3) y #DISTRIBUCION. El armado (abierto (ii)) usa el plano virtual del
+  talón con el declarado de su k_h. Campo `EntornoDelCabezal.empuje_sismico` en `src/modelos.py`.
+- **Abierto:** el GLE en el programa.
+- **Qué haría falta:** nada más del dictamen.
+- **Dónde vive:** `src/modulos/M9_cabezal.py::validar_empuje_sismico_declarado`
+
+## VE7A-06 · La geometría del talud de delante del cabezal, por punto (VE5M9-03)
+
+- **Cerrado:** clave `talud_delante_del_cabezal_del_punto` de `--datos-externos`, por punto o en
+  `globales`, con un valor para los dos cabezales o `{"entrada": …, "salida": …}`, en
+  `servicio.CLAVES_DE_CABEZAL`; cada valor es la geometría del talud (validada con el validador
+  del [S]) o el texto «horizontal». Viaja en `EntornoDelCabezal.talud_delante`.
+- **Revisado por Fable (dictamen del consultor, 2026-11-20):** aprobado con cambios, aplicados (abierto (iii)): el terreno de delante también es del punto.
+  `M9._terreno_delante`: un talud del punto → zapata en talud (RC_BC, 10.6.3.1.2c) aunque el
+  corredor diga horizontal; «horizontal» → 10.6.3.1.2a aunque el corredor diga talud; sin
+  declaración, `terreno_delante_del_cabezal` y su [S]. El paso de E3 dice «terreno delante: del
+  punto». Dos puntos con taludes distintos dan RC_BC distintos.
+- **Abierto:** nada de esta ficha.
+- **Qué haría falta:** nada.
+- **Dónde vive:** `src/modulos/M9_cabezal.py::validar_talud_delante_del_punto`
+
+## VE7A-07 · La h_eq con el cabezal paralelo a la vía (VE6-T7A03 (3))
+
+- **Cerrado:** `EntornoDelCabezal.paralelo_a_la_via` (campo nuevo en `src/modelos.py`, de
+  `CabezalDelPunto.embocadura`). Con el muro paralelo a la vía el muro es paralelo al tráfico:
+  si la orientación vigente es la perpendicular del corredor y el punto no declara
+  `orientacion_muro_del_punto`, `M9.h_eq_del_cabezal` toma la MAYOR de las Tablas 3.11.6.4-1 y
+  -2 (`envolvente_de_h_eq_paralelo`), con aviso que pide `orientacion_muro_del_punto` y
+  `distancia_borde_calzada_del_punto_m`; el paso 9.2.2 lo dice. Con el corredor paralelo, o la
+  orientación del punto, rige su tabla como hasta ahora.
+- **Decisión del consultor Fable (triaje VE-7, 2026-11-20):** la envolvente con aviso, sin deducir
+  la orientación. **Pendiente de revisión Fable:** sin distancia del punto la tabla del muro
+  paralelo se lee con la columna «0.0 ft» (la mayor) y no con la distancia del corredor, que es la
+  de un muro que el corredor declara perpendicular; con la del punto, su columna.
+- **Abierto:** nada más de esta ficha.
+- **Qué haría falta:** nada; declarar la orientación del punto quita la envolvente.
+- **Dónde vive:** `src/modulos/M9_cabezal.py::h_eq_del_cabezal`
+
+## VE7A-08 · El cabezal paralelo avisa el borde libre esviado de la losa del marco (VE6-T7A03 (2))
+
+- **Cerrado:** `M9._embocadura_paralela` suma un aviso del punto: con el cabezal paralelo a la vía
+  el extremo del marco se corta esviado y el borde libre esviado de la losa NO se verifica; las
+  vigas de borde del comentario C12.11.2.1 son detalle del proyectista. El aviso nombra la cita
+  cuya nota las recoge (`AASHTO_LRFD_9.12.11.2.1#SOMERO`, `CITA_BORDE_LIBRE_ESVIADO`).
+- **Decisión del consultor Fable (triaje VE-7, 2026-11-20):** un aviso, no una verificación: el
+  comentario no da un procedimiento con número que el programa pueda aplicar.
+- **Abierto:** el borde esviado sigue sin verificarse en M8.
+- **Qué haría falta:** un procedimiento de la fuente para la viga de borde del marco esviado.
+- **Dónde vive:** `src/modulos/M9_cabezal.py::_embocadura_paralela`
+
+## VE7A-09 · Lo que dejaría de cumplirse con la longitud entre cabezales bloquea el expediente (VE6-22)
+
+- **Cerrado:** en `servicio._fase_9_refinamiento`, si `_lo_que_no_se_cumpliria` no está vacío
+  (V4 con Δ = HW(L_cab) − HW(L) mayor que su margen, o V1 re-evaluada que deja de cumplir), además
+  del aviso hay un `Bloqueo` de la Fase 9 (`FASE_CABEZAL`, `ETAPA_REFINAMIENTO_LONGITUD`, sólo a
+  expediente), `DatoFaltanteError` sobre `longitud_m`, con el remedio «declarar `longitud_m` =
+  L_cab». A-01 no cambia.
+- **Revisado por Fable (dictamen del consultor, 2026-11-20):** aprobado con cambios, aplicados: el aviso termina «el expediente queda bloqueado hasta declarar
+  `longitud_m` (VE7A-09)» y el docstring de `_lo_que_no_se_cumpliria` ya no dice que nada
+  bloquea. El tipo y el campo quedan aprobados.
+- **Abierto:** no se itera MD con L_cab (VE6-22).
+- **Qué haría falta:** nada; declarar `longitud_m` lo destraba y verifica el punto entero.
+- **Dónde vive:** `src/servicio.py::_fase_9_refinamiento`
+
+## VE7A-10 · La `D` de M9 con los decimales del rótulo (VE5GUI-46)
+
+- **Cerrado:** la única magnitud `D` de M9 (la altura interior de la sección en el paso 9.0.4 de
+  la losa de entrega) lleva `cifras=modelos.cifras_de_dimension(D)` en lugar de
+  `CIFRAS_MAGNITUD`: 0.90 se escribe «0.90» y 1.0668, «1.0668», como el rótulo de la sección.
+  Presentación: el valor con que se calcula no cambia.
+- **Decisión del consultor Fable (triaje VE-7, 2026-11-20):** extender `cifras_de_dimension` a la
+  `D` de M9; M5 y M6 son de otros lotes.
+- **Abierto:** las `D` de M5 y M6 (VE5GUI-46).
+- **Qué haría falta:** el mismo cambio en M5 y M6.
+- **Dónde vive:** `src/modelos.py::cifras_de_dimension`

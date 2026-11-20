@@ -49,8 +49,10 @@ def test_a_perfil_m12_no_consume_y_a_expediente_si():
 
 def test_el_salto_de_los_metrados_consulta_el_mismo_dato():
     """El `if` de `correr_punto` que salta los metrados llama a
-    `consumo_diferido` con M12: no hay una segunda regla escrita aparte."""
-    arbol = ast.parse(inspect.getsource(servicio.correr_punto))
+    `consumo_diferido` con M12: no hay una segunda regla escrita aparte.
+    Desde VE-7 (lote A, A2) el pipeline del punto es `_correr_punto`:
+    `correr_punto` lo envuelve con la embocadura declarada por punto."""
+    arbol = ast.parse(inspect.getsource(servicio._correr_punto))
     llamadas = [n for n in ast.walk(arbol) if isinstance(n, ast.If)
                 and any(isinstance(c, ast.Call)
                         and getattr(c.func, "id", "") == "consumo_diferido"

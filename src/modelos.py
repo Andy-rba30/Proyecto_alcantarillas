@@ -4057,6 +4057,12 @@ class ContextoCorrida:
     # la linea base no cambia.
     cuencas_sha1: Optional[str] = None
     estacion_sha1: Optional[str] = None
+    # --- dictamen Fable (VE-7 lote A, A2) --- LOS CRITERIOS QUE UN PUNTO
+    # PISO PARA SI (`embocadura_cajon_del_punto`): {criterio: {id_punto:
+    # valor}}. Sin ellos la tabla de criterios diria, para esos puntos, el
+    # valor de proyecto con que NO corrieron. Vacio por defecto.
+    criterios_por_punto: Mapping[str, Mapping[str, Any]] = \
+        MappingProxyType({})
 
     def __post_init__(self) -> None:
         # `frozen` solo impide REASIGNAR los campos; un dict dentro seguia
@@ -4064,6 +4070,9 @@ class ContextoCorrida:
         # el JSON y el HTML de una corrida ya pasada sin excepcion (auditoria
         # adversarial de EXT-4). Los mapas quedan de solo lectura y las
         # secuencias, tuplas: la foto no se puede retocar, ni a proposito.
+        object.__setattr__(self, "criterios_por_punto", MappingProxyType({
+            k: MappingProxyType(dict(v))
+            for k, v in dict(self.criterios_por_punto).items()}))
         for campo in ("valores_efectivos", "procedencias", "datos_efectivos"):
             valor = getattr(self, campo)
             if not isinstance(valor, MappingProxyType):
@@ -8203,6 +8212,21 @@ class EntornoDelCabezal:
     # "sismico": FS}, "E5": {...}, "documento", "fecha", "metodo" y, si
     # viene, "programa"}. None (o vacio): E4 y E5 siguen diferidas.
     estabilidad_global: Optional[dict] = None
+    # --- VE-7 (lote A, A5) --- El empuje sismico DECLARADO de ESTE cabezal,
+    # del dato externo `empuje_sismico_declarado` validado
+    # (`M9.validar_empuje_sismico_declarado`): {"P_AE_kn_m",
+    # "altura_aplicacion_m", "incluye_hidrodinamica", "documento", "fecha",
+    # "metodo"}. Solo se consume donde el programa no calcula el empuje.
+    empuje_sismico: Optional[dict] = None
+    # --- VE-7 (lote A, A6 y dictamen Fable (iii)) --- El terreno de delante
+    # de ESTE cabezal declarado por punto (`talud_delante_del_cabezal_del_
+    # punto`): la geometria del talud, {"H_s_m", "beta_grados", "b_m"}, o el
+    # texto "horizontal". None: rige el corredor.
+    talud_delante: Optional[Any] = None
+    # --- VE-7 (lote A, A7) --- el muro de cabecera es PARALELO A LA VIA
+    # (`EmbocaduraDelPunto.orientacion`, una fila de la Carta 11): es
+    # paralelo al trafico, y la sobrecarga viva lo lee.
+    paralelo_a_la_via: bool = False
 
 
 @dataclass(frozen=True)

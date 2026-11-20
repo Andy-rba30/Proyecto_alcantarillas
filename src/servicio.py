@@ -164,6 +164,11 @@ from src.modulos.M9_cabezal import (aviso_ambiente_corrosivo,
 from src.modulos.M9_cabezal import (  # --- VE-6 ---
     CAMPO_DISTANCIA_BORDE_DEL_PUNTO, CAMPO_ORIENTACION_DEL_PUNTO,
     EXTREMOS as CAMPOS_EXTREMOS, validar_sobrecarga_del_punto)
+from src.modulos.M9_cabezal import (  # --- VE-7 (lote A, A2) ---
+    DATO_EMBOCADURA_CAJON_DEL_PUNTO, CRITERIO_DE_CAMPO_EMBOCADURA,
+    NOTA_EMBOCADURA_DECLARADA_POR_PUNTO, validar_embocadura_cajon_del_punto,
+    DATO_EMPUJE_SISMICO, validar_empuje_sismico_declarado,
+    DATO_TALUD_DELANTE_DEL_PUNTO, validar_talud_delante_del_punto)
 from src.modulos.M9_cabezal import (cabezal_del_punto,
                                     embocadura_del_punto,
                                     validar_cabezal_declarado,
@@ -932,6 +937,29 @@ CLAVE_ORIENTACION_DEL_PUNTO = CAMPO_ORIENTACION_DEL_PUNTO
 CLAVE_DISTANCIA_BORDE_DEL_PUNTO = CAMPO_DISTANCIA_BORDE_DEL_PUNTO
 CLAVES_DE_CABEZAL += (CLAVE_ORIENTACION_DEL_PUNTO,
                       CLAVE_DISTANCIA_BORDE_DEL_PUNTO)
+# --- VE-7 (lote A, A2; triaje VE-7 de Fable) --- LA EMBOCADURA DEL MARCO
+# DECLARADA POR PUNTO, {"carta": ..., "ke": ...}: SOLO por punto (es del
+# esviaje de ese cruce) y FUERA de `CLAVES_EXTERNAS` (sin ella rigen las de
+# proyecto). La valida `M9.validar_embocadura_cajon_del_punto` al CARGAR y
+# `correr_punto` la aplica en caliente mientras corre ESE punto.
+CLAVE_EMBOCADURA_CAJON_DEL_PUNTO = DATO_EMBOCADURA_CAJON_DEL_PUNTO
+CLAVES_DE_CABEZAL += (CLAVE_EMBOCADURA_CAJON_DEL_PUNTO,)
+CLAVES_SOLO_POR_PUNTO += (CLAVE_EMBOCADURA_CAJON_DEL_PUNTO,)
+# --- VE-7 (lote A, A5; fichas VE5M9-02 y VE3-15) --- EL EMPUJE SISMICO
+# DECLARADO por un analisis externo (GLE de A11.3.3, o con la presion
+# hidrodinamica del relleno muy abierto), por punto y por cabezal, con su
+# traza: el patron de `estabilidad_global_declarada`. SOLO se consume donde
+# el ensamble no puede calcular el empuje. La valida
+# `M9.validar_empuje_sismico_declarado` al CARGAR.
+CLAVE_EMPUJE_SISMICO_DECLARADO = DATO_EMPUJE_SISMICO
+CLAVES_DE_CABEZAL += (CLAVE_EMPUJE_SISMICO_DECLARADO,)
+CLAVES_SOLO_POR_PUNTO += (CLAVE_EMPUJE_SISMICO_DECLARADO,)
+# --- VE-7 (lote A, A6; ficha VE5M9-03) --- LA GEOMETRIA DEL TALUD DE
+# DELANTE DEL CABEZAL, POR PUNTO (o en `globales`) y por extremo si hace
+# falta: gana al [S] de corredor 'talud_delante_del_cabezal'. La valida
+# `M9.validar_talud_delante_del_punto` (el validador del [S]) al CARGAR.
+CLAVE_TALUD_DELANTE_DEL_PUNTO = DATO_TALUD_DELANTE_DEL_PUNTO
+CLAVES_DE_CABEZAL += (CLAVE_TALUD_DELANTE_DEL_PUNTO,)
 
 
 def fundir_sobrecarga_del_punto(declarados: Optional[dict], *,
@@ -1142,6 +1170,21 @@ def _dato_externo(clave: str, bruto: Any, origen: str) -> DatoDeclarado:
         # --- VE-5 (catlic) --- el resultado del EMS, validado en la puerta.
         return DatoDeclarado(
             nombre=clave, valor=ML.validar_licuefaccion_declarada(bruto),
+            origen=origen)
+    if clave == CLAVE_TALUD_DELANTE_DEL_PUNTO:
+        # --- VE-7 (lote A, A6) --- el talud de delante del punto.
+        return DatoDeclarado(
+            nombre=clave, valor=validar_talud_delante_del_punto(bruto),
+            origen=origen)
+    if clave == CLAVE_EMPUJE_SISMICO_DECLARADO:
+        # --- VE-7 (lote A, A5) --- el P_AE del analisis externo.
+        return DatoDeclarado(
+            nombre=clave, valor=validar_empuje_sismico_declarado(bruto),
+            origen=origen)
+    if clave == CLAVE_EMBOCADURA_CAJON_DEL_PUNTO:
+        # --- VE-7 (lote A, A2) --- la carta y el ke del marco del punto.
+        return DatoDeclarado(
+            nombre=clave, valor=validar_embocadura_cajon_del_punto(bruto),
             origen=origen)
     if clave == CLAVE_ESTABILIDAD_GLOBAL_DECLARADA:
         # --- VE-4a --- el FS declarado de E4 y E5, validado en la puerta.
@@ -1978,6 +2021,9 @@ class InformePunto:
     # declarada o terraplen simetrico). Su paso (9.0.6) y su aviso viajan
     # tambien en `cabezal`, que es por donde la memoria y `avisos()` los leen.
     refinamiento_longitud: Optional[Any] = None
+    # --- VE-7 (lote A, A2) --- la embocadura del marco declarada por punto
+    # (`embocadura_cajon_del_punto`, {"carta", "ke"}) con que corrio, o None.
+    embocadura_cajon_del_punto: Optional[dict] = None
 
     @property
     def punto_de_calculo(self) -> PuntoCritico:
@@ -3518,6 +3564,12 @@ def _fase_embocadura(informe: InformePunto) -> bool:
         "coherencia de la embocadura del marco con el cabezal (T-7a)",
         lambda: verificar_coherencia_embocadura_cajon(
             informe.embocadura, id_punto=punto.id))
+    # --- VE-7 (lote A, A2) --- el paso 9.0.0 dice que la embocadura del
+    # marco es la DECLARADA POR PUNTO, y cual.
+    if (informe.coherencia_embocadura is not None
+            and informe.embocadura_cajon_del_punto is not None):
+        informe.coherencia_embocadura += (
+            "; " + NOTA_EMBOCADURA_DECLARADA_POR_PUNTO)
     # `_etapa` devuelve None TAMBIEN cuando no habia nada que comprobar; lo
     # que separa el bloqueo es que haya dejado uno.
     return len(informe.bloqueos) == antes
@@ -3652,6 +3704,12 @@ def _fase_9(informe: InformePunto,
     # --- VE-4a --- el FS declarado de E4 y E5 del punto, si lo hay.
     global_declarada = (None if externos is None else externos.valor(
         informe.punto.id, CLAVE_ESTABILIDAD_GLOBAL_DECLARADA))
+    # --- VE-7 (lote A, A5) --- el empuje sismico declarado, si lo hay.
+    empuje = (None if externos is None else externos.valor(
+        informe.punto.id, CLAVE_EMPUJE_SISMICO_DECLARADO))
+    # --- VE-7 (lote A, A6) --- el talud de delante del punto, si lo hay.
+    talud = (None if externos is None else externos.valor(
+        informe.punto.id, CLAVE_TALUD_DELANTE_DEL_PUNTO))
     entornos = _etapa(
         informe.bloqueos, FASE_CABEZAL,
         "datos de la estabilidad del cabezal (T-7b)",
@@ -3659,7 +3717,8 @@ def _fase_9(informe: InformePunto,
             punto=informe.punto_de_calculo, cabezal=informe.cabezal,
             geometria=informe.geometria, socavacion=informe.socavacion,
             suelo_del_punto=suelo, resultado=informe.resultado,
-            estabilidad_global=global_declarada))
+            estabilidad_global=global_declarada, empuje_sismico=empuje,
+            talud_delante=talud))
     if entornos is None:
         return
     # --- VE-3.5 --- LA GEOMETRIA DE LA REGLA SE EVALUA PRIMERO, y lo que no
@@ -3676,7 +3735,8 @@ def _fase_9(informe: InformePunto,
             cabezal=informe.cabezal, estabilidades=estabilidades,
             socavacion=informe.socavacion, declarados=declarados,
             coherencia_embocadura=informe.coherencia_embocadura,
-            motivo_sin_socavacion=motivo, suelo_del_punto=suelo))
+            motivo_sin_socavacion=motivo, suelo_del_punto=suelo,
+            empuje_sismico=empuje, talud_delante=talud))
     # Los bloqueos de la estabilidad que CUENTAN son los de la geometria
     # final: si el dimensionamiento la cambia, la final se evalua de nuevo y
     # los de la partida se descartan.
@@ -3690,7 +3750,8 @@ def _fase_9(informe: InformePunto,
                 punto=informe.punto_de_calculo, cabezal=informe.cabezal,
                 geometria=informe.geometria, socavacion=informe.socavacion,
                 suelo_del_punto=suelo, resultado=informe.resultado,
-            estabilidad_global=global_declarada))
+            estabilidad_global=global_declarada, empuje_sismico=empuje,
+            talud_delante=talud))
         if entornos is None:
             informe.bloqueos.extend(del_dimensionado)
             return
@@ -3714,6 +3775,7 @@ def _fase_9(informe: InformePunto,
             declarados=declarados,
             coherencia_embocadura=informe.coherencia_embocadura,
             motivo_sin_socavacion=motivo, suelo_del_punto=suelo,
+            empuje_sismico=empuje, talud_delante=talud,
             anchos=None if dimensionado is None else dimensionado.anchos,
             puntas=None if dimensionado is None else dimensionado.puntas,
             no_factibles=(() if dimensionado is None
@@ -3727,7 +3789,8 @@ def _fase_9(informe: InformePunto,
                 punto=informe.punto_de_calculo, cabezal=informe.cabezal,
                 geometria=informe.geometria, socavacion=informe.socavacion,
                 suelo_del_punto=suelo, resultado=informe.resultado,
-            estabilidad_global=global_declarada))
+            estabilidad_global=global_declarada, empuje_sismico=empuje,
+            talud_delante=talud))
         if entornos is None:
             informe.bloqueos.extend(del_dimensionado + del_peralte)
             return
@@ -3750,6 +3813,7 @@ def _fase_9(informe: InformePunto,
             declarados=declarados,
             coherencia_embocadura=informe.coherencia_embocadura,
             motivo_sin_socavacion=motivo, suelo_del_punto=suelo,
+            empuje_sismico=empuje, talud_delante=talud,
             anchos=anchos_finales,
             puntas=(peralte.puntas if peralte is not None
                     else None if dimensionado is None
@@ -3765,7 +3829,8 @@ def _fase_9(informe: InformePunto,
                 punto=informe.punto_de_calculo, cabezal=informe.cabezal,
                 geometria=informe.geometria, socavacion=informe.socavacion,
                 suelo_del_punto=suelo, resultado=informe.resultado,
-            estabilidad_global=global_declarada))
+            estabilidad_global=global_declarada, empuje_sismico=empuje,
+            talud_delante=talud))
         if entornos is None:
             informe.bloqueos.extend(del_dimensionado + del_peralte
                                     + del_pantalla)
@@ -3902,6 +3967,8 @@ def _fase_9_aleros(informe: InformePunto, entornos, declarados,
 
 ETAPA_REFINAMIENTO_LONGITUD = ("control de salida con la longitud entre "
                                "cabezales (VE-6)")
+# --- VE-7 (lote A, A9) --- la clave que el remedio del bloqueo nombra.
+CLAVE_LONGITUD_FINAL = "longitud_m"
 
 
 def _fase_9_refinamiento(informe: InformePunto,
@@ -3954,9 +4021,24 @@ def _fase_9_refinamiento(informe: InformePunto,
                 "cambia (el diseño corrio con la longitud aproximada de 7.B "
                 "y NO se sustituye)"))
             + ". " + "; ".join(no_se_cumplirian)
-            + ": la corrida no se detiene, y lo dice (hoja de ruta §7.B: "
-              "nunca un resultado silencioso)"))
+            + f": el expediente queda bloqueado hasta declarar "
+              f"`{CLAVE_LONGITUD_FINAL}` (VE7A-09)"))
     informe.refinamiento_longitud = refinado
+    if no_se_cumplirian:
+        # --- VE-7 (lote A, A9; triaje VE-7 de Fable, ficha VE6-22) --- lo
+        # que dejaria de cumplirse con la longitud entre cabezales no se
+        # queda en un aviso: el expediente no cierra hasta que el punto
+        # declare la longitud final (HDS-5 3.3.5, «should be close»), y el
+        # remedio es el mismo que el aviso nombra.
+        informe.bloqueos.append(Bloqueo(
+            fase=FASE_CABEZAL, etapa=ETAPA_REFINAMIENTO_LONGITUD,
+            tipo=TipoDeBloqueo.DATO_FALTANTE, campo=CLAVE_LONGITUD_FINAL,
+            mensaje=(f"{informe.punto.id}: con la longitud entre cabezales "
+                     f"L_cab = {L_cab:.3f} m " + "; ".join(no_se_cumplirian)
+                     + f". Remedio: declarar `{CLAVE_LONGITUD_FINAL}` = "
+                       f"{L_cab:.3f} m en el punto (--datos-externos): gana "
+                       "y el punto se verifica entero con ella (ficha "
+                       "VE7A-09)")))
     informe.cabezal = replace(
         cabezal, pasos=cabezal.pasos + (refinado.paso,),
         avisos=cabezal.avisos + ((refinado.aviso,) if refinado.aviso
@@ -3979,8 +4061,10 @@ def _lo_que_no_se_cumpliria(informe: InformePunto,
         con la hidraulica refinada (`RefinamientoLongitud.
         resultado_cabezales`), que trae el TW de la longitud entre cabezales.
 
-    Solo cuenta lo que el diseño CUMPLIA. Ninguna de las dos bloquea ni
-    sustituye: alimentan el aviso.
+    Solo cuenta lo que el diseño CUMPLIA. Ninguna de las dos sustituye a la
+    verificacion del diseño: alimentan el aviso y, desde VE-7 (ficha
+    VE7A-09, dictamen Fable), el `Bloqueo` de la Fase 9 que
+    `_fase_9_refinamiento` levanta con ellas.
     """
     resultado = informe.resultado
     diseno = {v.codigo: v for v in resultado.verificaciones}
@@ -4872,6 +4956,53 @@ def correr_punto(punto: PuntoCritico, externos: DatosExternos,
                  hidrologia: Optional[EntradaHidrologica] = None,
                  tramo: Optional[Any] = None) -> InformePunto:
     """
+    El pipeline de un punto (`_correr_punto`), con la embocadura del marco
+    DECLARADA POR PUNTO si la hay.
+
+    --- VE-7 (lote A, A2; triaje VE-7 de Fable) --- `embocadura_cajon_del_
+    punto` ({"carta", "ke"}) pisa en caliente 'embocadura_cajon' y
+    'ke_entrada_cajon' mientras corre ESTE punto de la Familia C
+    (`ca.establecer_valor_dinamico`, la misma guardia que `--declarar`), y
+    al salir -- tambien con excepcion -- el proceso vuelve a lo que habia: la
+    declaracion en caliente previa, o el archivo (`try/finally`). En otra
+    familia no se aplica (el tubo no lee esas filas) y se avisa.
+    """
+    declarada = externos.valor(punto.id, CLAVE_EMBOCADURA_CAJON_DEL_PUNTO)
+    if declarada is None:
+        return _correr_punto(punto, externos, alcance, hidrologia, tramo)
+    if punto.familia is not Familia.C:
+        informe = _correr_punto(punto, externos, alcance, hidrologia, tramo)
+        informe.avisos_de_expediente.append(
+            f"{punto.id}: '{CLAVE_EMBOCADURA_CAJON_DEL_PUNTO}' es la "
+            "embocadura de un MARCO (Tablas A.1 y C.2 del HDS-5) y el punto "
+            f"es de la Familia {punto.familia.value}: no se aplica")
+        return informe
+    previos = ca.valores_dinamicos()
+    try:
+        for campo in CAMPOS_DE_LA_EMBOCADURA_DEL_PUNTO:
+            ca.establecer_valor_dinamico(CRITERIO_DE_CAMPO_EMBOCADURA[campo],
+                                         declarada[campo])
+        return _correr_punto(punto, externos, alcance, hidrologia, tramo,
+                             embocadura_del_punto=dict(declarada))
+    finally:
+        for criterio in CRITERIO_DE_CAMPO_EMBOCADURA.values():
+            if criterio in previos:
+                ca.establecer_valor_dinamico(criterio, previos[criterio])
+            else:
+                ca.quitar_valor_dinamico(criterio)
+
+
+# El orden en que se aplican: la carta elige la fila del ke (R4).
+CAMPOS_DE_LA_EMBOCADURA_DEL_PUNTO: Tuple[str, ...] = ("carta", "ke")
+
+
+def _correr_punto(punto: PuntoCritico, externos: DatosExternos,
+                  alcance: str = ALCANCE_EXPEDIENTE,
+                  hidrologia: Optional[EntradaHidrologica] = None,
+                  tramo: Optional[Any] = None, *,
+                  embocadura_del_punto: Optional[dict] = None
+                  ) -> InformePunto:
+    """
     El pipeline de un punto, de la Fase 2 a la Fase 10. Cada etapa corre si su
     insumo existe; si no, queda registrada como bloqueo y las que no dependen
     de ella siguen (la Fase 10 no necesita el diametro, por ejemplo).
@@ -4887,7 +5018,8 @@ def correr_punto(punto: PuntoCritico, externos: DatosExternos,
     de la lamina lleva el bloqueo «metodo no evaluable», diferido solo a
     nivel de perfil; con el perfil que M4 emite desde E-A, no se alcanza.
     """
-    informe = InformePunto(punto=punto)
+    informe = InformePunto(punto=punto,
+                           embocadura_cajon_del_punto=embocadura_del_punto)
     # --- T-2 --- La declaracion del acceso de mantenimiento, si la hay: no
     # depende de ninguna fase y se anota antes que nada, para que viaje
     # tambien en el punto que no llega a dimensionarse.
@@ -5229,12 +5361,31 @@ def correr(ruta_csv: Path, externos: DatosExternos,
     informe.contexto = capturar_contexto(
         csv_sha1=sha1_de_bytes(datos_csv),
         cuencas_sha1=None if hidrologia is None else hidrologia.cuencas_sha1,
-        estacion_sha1=None if hidrologia is None else hidrologia.estacion_sha1)
+        estacion_sha1=None if hidrologia is None else hidrologia.estacion_sha1,
+        criterios_por_punto=criterios_por_punto(informe.puntos))
     return informe
 
 
+def criterios_por_punto(puntos) -> Dict[str, Dict[str, Any]]:
+    """
+    --- dictamen Fable (VE-7 lote A, A2) --- {criterio: {id_punto: valor}}
+    de los criterios que cada punto piso para si: hoy, la embocadura del
+    marco declarada por punto, solo donde se APLICO (Familia C).
+    """
+    salida: Dict[str, Dict[str, Any]] = {}
+    for p in puntos:
+        declarada = getattr(p, "embocadura_cajon_del_punto", None)
+        if declarada is None:
+            continue
+        for campo, criterio in CRITERIO_DE_CAMPO_EMBOCADURA.items():
+            salida.setdefault(criterio, {})[p.punto.id] = declarada[campo]
+    return salida
+
+
 def capturar_contexto(*, csv_sha1: str, cuencas_sha1: Optional[str] = None,
-                      estacion_sha1: Optional[str] = None) -> ContextoCorrida:
+                      estacion_sha1: Optional[str] = None,
+                      criterios_por_punto: Optional[dict] = None
+                      ) -> ContextoCorrida:
     """
     La foto del estado del proceso AHORA, como `ContextoCorrida`.
 
@@ -5280,7 +5431,8 @@ def capturar_contexto(*, csv_sha1: str, cuencas_sha1: Optional[str] = None,
         datos_declarados_en_caliente=tuple(ds.datos_declarados_en_caliente()),
         datos_pisados_en_caliente=tuple(ds.datos_pisados_en_caliente()),
         datos_sin_valor=tuple(ds.datos_sin_valor()),
-        cuencas_sha1=cuencas_sha1, estacion_sha1=estacion_sha1)
+        cuencas_sha1=cuencas_sha1, estacion_sha1=estacion_sha1,
+        criterios_por_punto=copy.deepcopy(criterios_por_punto or {}))
 
 
 def _avisar_ids_desconocidos(informe: Informe, externos: DatosExternos) -> None:

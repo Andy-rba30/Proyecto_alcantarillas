@@ -4210,6 +4210,22 @@ def _criterio_efectivo(clave: str, contexto: Any):
     return replace(ca.criterio(clave), valor=contexto.valor_efectivo(clave))
 
 
+def _valor_por_punto(clave: str, contexto: Any) -> str:
+    """
+    --- dictamen Fable (VE-7 lote A, A2) --- Lo que un criterio valio en los
+    puntos que lo pisaron para si (`ContextoCorrida.criterios_por_punto`):
+    «por punto (`embocadura_cajon_del_punto`): C-01 = ...». Vacio si ninguno.
+    """
+    por_punto = getattr(contexto, "criterios_por_punto", None) or {}
+    if clave not in por_punto:
+        return ""
+    return ('<b class="pendiente"> [por punto (<code>'
+            "embocadura_cajon_del_punto</code>): "
+            + "; ".join(f"{_esc(i)} = {_valor_legible(v)}"
+                        for i, v in sorted(por_punto[clave].items()))
+            + "]</b>")
+
+
 def bloque_criterios(contexto: Any, solo_usados: bool = True) -> str:
     """
     El contenido de `criterios_adoptados.reporte_criterios` como HTML: cada
@@ -4245,6 +4261,7 @@ def bloque_criterios(contexto: Any, solo_usados: bool = True) -> str:
                "archivo]</b>" if contexto.declarado_en_caliente(clave) else "")
             + ('<b class="pendiente"> [PROVISIONAL: valor de prueba, '
                "NO verificado]</b>" if c.provisional else "")
+            + _valor_por_punto(clave, contexto)
             + "</dd>",
             _procedencia(clave, contexto),
             _de_donde_sale_el_valor(clave, contexto),
