@@ -294,7 +294,8 @@ from src.modulos.M2_material import (CRITERIO_CALIBRE_TMC,
                                  diametro_designado,
                                  espesor_pared,
                                  numero_de_celdas,
-                                 procedencia_del_espesor)
+                                 procedencia_del_espesor,
+                                 fila_de_pared_leida)
 from src.modulos.M8_estructural import (CRITERIO_FACTORES_CARGA,
                                     CRITERIO_NIVEL_AGUA_V7,
                                     NIVEL_V7_EN_LA_CLAVE, NIVELES_AGUA_V7,
@@ -3783,6 +3784,15 @@ def v7_flotacion(*, punto: PuntoCritico, material: Material,
                          "marco NO coincide con Bc; en una circular si, y esa "
                          "coincidencia es la que oculto el defecto hasta C7",
                          cifras=CIFRAS_MAGNITUD),
+                # --- VE-7, dictamen Fable (defecto 10; ficha VE7B-02) ---
+                *((Magnitud("fila leida", f"{fila[0]} (designado de "
+                            f"{fila[1]})", "mm",
+                            "fila de pared del diametro DESIGNADO: el "
+                            "criterio no trae la del ingles convertido, y "
+                            "los dos son el mismo tubo (AASHTO M 170M num. "
+                            "12.1 y Table 6)"),)
+                  if (fila := fila_de_pared_leida(material, seccion.altura))
+                  else ()),
                 Magnitud("altura_relleno", altura_relleno, "m",
                          "cota de subrasante menos cota de clave FISICA del "
                          "punto: el relleno que de verdad hay encima, no el "

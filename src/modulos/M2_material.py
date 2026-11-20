@@ -945,6 +945,28 @@ _FUENTE_DEL_ESPESOR = {
 }
 
 
+def fila_de_pared_leida(material: Material,
+                        D: float) -> Optional[Tuple[int, int]]:
+    """
+    --- VE-7, dictamen Fable (defecto 10; ficha VE7B-02) --- Si
+    `espesor_pared` leyo la pared de la fila del DESIGNADO porque el criterio
+    no trae la del diametro ingles convertido: (designado en mm, diametro
+    redondeado al mm), p. ej. (1050, 1067). None si leyo la fila del propio
+    diametro, o si el material no tiene tabla por diametro.
+    """
+    if material.forma is FormaSeccion.RECTANGULAR or \
+            not isinstance(material.espesor_pared, dict):
+        return None
+    redondeado = round(D * MILIMETROS_POR_METRO)
+    if redondeado in material.espesor_pared:
+        return None
+    designado = round(diametro_designado(material.tipo, D)
+                      * MILIMETROS_POR_METRO)
+    if designado == redondeado or designado not in material.espesor_pared:
+        return None
+    return designado, redondeado
+
+
 def procedencia_del_espesor(material: Material) -> Tuple[str, str, str]:
     """
     De donde sale el espesor de pared de ese material: (texto para la

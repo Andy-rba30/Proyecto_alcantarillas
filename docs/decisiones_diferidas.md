@@ -9219,9 +9219,10 @@ cambios están aplicados en estas fichas.
   deteniéndose con `DatoFaltanteError`. Con la progresión de archivo no se mueve ningún número.
 - **Decisión del consultor Fable (triaje VE-7, 2026-11-20):** leer la fila del designado cuando no
   existe la del inglés.
-- **Abierto:** la memoria de V7 sigue diciendo «tabla declarada» sin nombrar la fila del designado
-  que se leyó; las seis filas de 2850 a 3600 de la Table 6 siguen ilegibles (VE2-G (3)).
-- **Qué haría falta:** imprimir la fila leída en el paso de V7; otro ejemplar de M 170M.
+- **Revisado por Fable (dictamen del consultor, 2026-11-20): defecto 10, aplicado.** El paso de V7
+  imprime «fila leida: 1050 (designado de 1067)» (`M2.fila_de_pared_leida`).
+- **Abierto:** las seis filas de 2850 a 3600 de la Table 6 siguen ilegibles (VE2-G (3)).
+- **Qué haría falta:** otro ejemplar de M 170M.
 - **Dónde vive:** `src/modulos/M2_material.py::espesor_pared`
 
 ## VE7B-03 · La regla del escalón más bajo vale también en la rama «no cabe» (cierre de T11-03 (5))

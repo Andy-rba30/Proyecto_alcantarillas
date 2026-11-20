@@ -83,3 +83,31 @@ def test_el_arranque_cero_tambien():
 def test_el_arranque_de_archivo_no_cambia():
     assert M2.siguiente_diametro(TipoMaterial.CONCRETO_REFORZADO) == \
         pytest.approx(0.90, rel=REL_TRANSPORTE)
+
+
+# ===========================================================================
+# Dictamen Fable (defecto 10): el paso de V7 dice que fila de pared leyo
+# ===========================================================================
+
+def test_d10_la_fila_leida_del_designado():
+    material = _concreto()
+    assert M2.fila_de_pared_leida(material, 1.0668) == (1050, 1067)
+    assert M2.fila_de_pared_leida(material, 0.90) is None
+
+
+def test_d10_el_paso_de_v7_imprime_la_fila_leida():
+    import cli
+    from pathlib import Path
+    from src.modelos import SeccionCircular
+    from src.modulos import M5_verificaciones as M5
+    raiz = Path(__file__).resolve().parents[1]
+    externos = cli.cargar_datos_externos(None, {"luz_m": 2.75, "TW_m": 0.3})
+    informe = cli.correr(raiz / "tests" / "ejemplo_puntos.csv", externos,
+                         alcance=cli.ALCANCE_PERFIL)
+    a01 = next(p for p in informe.puntos if p.punto.id == "A-01")
+    v = M5.v7_flotacion(punto=a01.punto_de_calculo,
+                        material=a01.resultado.material,
+                        seccion=SeccionCircular(1.0668),
+                        resultado=a01.resultado.resultado_hidraulico)
+    sust = {m.simbolo: m.valor for m in v.paso.sustitucion}
+    assert sust["fila leida"] == "1050 (designado de 1067)"
