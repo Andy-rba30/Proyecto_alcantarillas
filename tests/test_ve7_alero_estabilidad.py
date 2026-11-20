@@ -484,9 +484,17 @@ def test_el_expediente_verifica_y_arma_los_aleros():
                     ORIGEN_DIMENSION_ESTABILIDAD.split(" ")[0])
                 assert g.aleros.ancho_zapata == pytest.approx(dim[0].valor,
                                                               abs=TOL)
-        assert not [b for b in p.bloqueos if "metrado" in b.etapa.lower()
-                    and "acero" in b.mensaje.lower()
-                    and "zapata de los aleros" in b.mensaje]
+        # el metrado del acero mide la zapata de los aleros (sus dos filas);
+        # el incremento por despiece es un vacio del juego: de prueba aqui.
+        from src.modulos import M12_metrados as M12
+        ca.establecer_valor_dinamico("incremento_acero_por_despiece", 0.10)
+        try:
+            acero = M12.renglones_acero_cabezales(cabezal=c)
+        finally:
+            ca.quitar_valor_dinamico("incremento_acero_por_despiece")
+        filas = [m.simbolo for r in acero for m in r.paso.sustitucion]
+        assert any(f.startswith(SECCION_TALON_ALERO + ":") for f in filas)
+        assert any(f.startswith("zapata de los aleros:") for f in filas)
     assert con_aleros
     datos = informe_json(informe)
     assert any("estabilidad_aleros" in (p.get("cabezal") or {})
