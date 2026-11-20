@@ -577,7 +577,8 @@ distinga un problema del expediente de un fallo del programa con un solo except.
   para el dato que falta, con el alcance de T11-03 y de VE-2 A1/N1); y el
   que M3 o M4 levantan ANTES de la Fase 5 cuenta para «detuvo a todos los
   candidatos» —la rama de error de la línea base, el diámetro de arranque
-  negativo, sale como dato inválido sobre `D` y no «no factible»—. Sigue
+  negativo, salía como dato inválido sobre `D` y no «no factible»; desde
+  VE-7 (ficha VE7B-01) lo rechaza M2 sobre `diametros_normalizados`—. Sigue
   fuera el de antes de la Fase 5 que detiene a UN material: no bloquea al
   que cierra ni decide si los demás incumplen (ficha T11-03).
 - **LimiteNumericoError: cada dato cumple su rango y es la ARITMÉTICA la que

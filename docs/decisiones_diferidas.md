@@ -6938,13 +6938,12 @@ y un test regenera cada uno.
   menos. (2) Si el escalón que no cabe incumple sólo V4, el tamizado daría un delta por
   resguardo, que depende del HW: no se informa. (5) Un marco con alturas declaradas no
   crecientes se detiene en el primer escalón que no cabe, como antes. (6) El inválido de
-  antes de la Fase 5 que detiene a UN solo material no bloquea ni decide; el `campo` del
-  arranque negativo es `D`, no `diametros_normalizados`.
+  antes de la Fase 5 que detiene a UN solo material no bloquea ni decide (el `campo` del
+  arranque: cerrado en VE-7, ficha VE7B-01).
 - **VE-6 (ítem 34):** el abierto (2) queda cerrado bajo control de ENTRADA (ficha VE6-34);
   bajo control de salida sigue sin darse.
 - **Qué haría falta:** para (1), el tamizado previo de 7.A corrido antes del bucle con la
-  sección máxima supuesta, que el servicio no corre; para (6), decisión del dueño, y que M2
-  valide el arranque de la progresión.
+  sección máxima supuesta, que el servicio no corre; para (6), decisión del dueño.
 - **Dónde vive:** `src/modulos/MD.py::_resumen_por_rasante`
 
 ## T11-04 · Validación externa: HDS-5 y HEC-14 contra sus ejemplos resueltos; HY-8 sólo como procedimiento, con la tolerancia que el dueño aceptó
@@ -7836,15 +7835,13 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   (VE-1 H2). Tolerancia `TOL_UMBRAL_NORMATIVO` en metros, no de centímetro: 375, 525, 675
   y 825 mm son designados. Un escalón no positivo lo sigue rechazando la hidráulica
   (rama de error de la línea base). Con los valores de archivo ningún número se mueve.
-- **Abierto:** (1) cerrado en VE-5 (abajo). (2) Con la opción inglesa, 'espesor_pared_conducto' necesita las filas 914, 1067…
-  (su clave es el diámetro redondeado al mm, `M2.espesor_pared`); leer la pared de la
-  fila designada sería otra decisión, no tomada. (3) Las seis filas de 2850 a 3600 de la
+- **Abierto:** (1) cerrado en VE-5 (abajo). (2) cerrado en VE-7 (ficha VE7B-02: la pared del
+  inglés es la del designado). (3) Las seis filas de 2850 a 3600 de la
   Table 6 no se transcriben (`Acotada`).
 - **Cerrado (VE-5, ítem 24), (1):** el tope y V9 comparan el designado
   (`M2.diametro_designado`); 108 in entra como 2700 mm. (3) releída por imagen: sigue
   ilegible (2830, iM8, 3333, U38, 3S05 y la última fila).
-- **Qué haría falta:** (2) decidir si la pared del diámetro inglés es la del designado;
-  (3) otro ejemplar de M 170M, no recompuesto.
+- **Qué haría falta:** (3) otro ejemplar de M 170M, no recompuesto.
 - **Dónde vive:** `src/modulos/M2_material.py::_exigir_escalon_designado`
 
 ## VE2-C · V7: el nivel de agua de diseño es una elección [A] del Propietario
@@ -9189,3 +9186,38 @@ cambios están aplicados en estas fichas.
 - **Qué haría falta:** la monotonía de V2/V2b/V7 con D; iterar 7.A con 7.B; aplicar la regla del
   escalón más bajo también a la rama «no cabe»; la decisión del dueño sobre la fila NF.
 - **Dónde vive:** `src/modulos/MD.py::_escalon_sin_cobertura`
+
+# Parte LXIV — Lo que VE-7 (lote B) dejó escrito: la progresión, el pórtico, los metrados y la hidrología
+
+## VE7B-01 · El arranque de la progresión lo valida M2 sobre el criterio (cierre de T11-03 (6))
+
+- **Cerrado (VE-7 lote B, B12):** un `inicio` de 'diametros_normalizados' no positivo lo rechaza
+  `M2.siguiente_diametro` antes de construir ningún escalón, con `DatoInvalidoError` sobre
+  `campo='diametros_normalizados'` (`M2._exigir_arranque_positivo`, forma MAT-D13: `not inicio > 0`).
+  Hasta VE-7 lo rechazaba la sección sobre el dato `D`, que el usuario no escribió. Como el campo es
+  un criterio, `MD.disenar_punto` lo trata por `_exigir_criterios_validos` (bloqueo DATO_INVALIDO con
+  la clave). La puerta del criterio sigue sin acotar el inicio: el consumidor lo hace.
+- **Decisión del consultor Fable (triaje VE-7, 2026-11-20):** validar en M2 con el campo del
+  criterio. Verificado antes: no estaba (la puerta lo dejaba pasar a propósito y M3 lo rechazaba).
+- **Abierto:** la línea base de la rama de error (`tests/linea_base_familia_c/`, corrida 3) cambia
+  de texto («Dato invalido en 'diametros_normalizados'»): el test la fija y la regeneración queda
+  para la integración, porque los archivos de la línea base llevan además la huella de los
+  criterios, que cambia con cada lote. El inválido de antes de la Fase 5 que detiene a UN material
+  sigue sin bloquear ni decidir (T11-03 (6), primera mitad).
+- **Qué haría falta:** regenerar la línea base al integrar (`sh tests/linea_base_familia_c/regenerar.sh`).
+- **Dónde vive:** `src/modulos/M2_material.py::_exigir_arranque_positivo`
+
+## VE7B-02 · La pared del diámetro inglés convertido es la de su designado (cierre de VE2-G (2))
+
+- **Cerrado (VE-7 lote B, B9):** si 'espesor_pared_conducto' no trae la fila del diámetro redondeado
+  al mm (1067 para 1.0668 m), `M2.espesor_pared` lee la del designado de la misma fila de AASHTO
+  M 170M Table 6 (`M2.diametro_designado`: 1050). Fundamento: el núm. 12.1 (`AASHTO_M170M.12.1`,
+  «the designated diameter or the converted English diameter») trata a los dos como el MISMO tubo
+  de la serie. Una fila declarada para el inglés gana; un diámetro sin fila ni designado sigue
+  deteniéndose con `DatoFaltanteError`. Con la progresión de archivo no se mueve ningún número.
+- **Decisión del consultor Fable (triaje VE-7, 2026-11-20):** leer la fila del designado cuando no
+  existe la del inglés.
+- **Abierto:** la memoria de V7 sigue diciendo «tabla declarada» sin nombrar la fila del designado
+  que se leyó; las seis filas de 2850 a 3600 de la Table 6 siguen ilegibles (VE2-G (3)).
+- **Qué haría falta:** imprimir la fila leída en el paso de V7; otro ejemplar de M 170M.
+- **Dónde vive:** `src/modulos/M2_material.py::espesor_pared`

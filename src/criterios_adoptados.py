@@ -14154,8 +14154,10 @@ def _verificar_campos_de_la_progresion(clave: str, c: Criterio) -> None:
     bajaba de 0.90 a 0.75, y un campo de mas se ignoraba en silencio. Hoy
     los tres caminos lo rechazan con `ValueError` y el motivo.
 
-    EL INICIO NO SE ACOTA, a proposito: un inicio negativo lo rechaza la
-    seccion (`DatoInvalidoError` sobre `D`, dentro de `ErrorProyecto`) y la
+    EL INICIO NO SE ACOTA AQUI, a proposito: un inicio no positivo lo
+    rechaza el consumidor, M2 (`M2._exigir_arranque_positivo`, desde VE-7
+    lote B, B12: `DatoInvalidoError` sobre 'diametros_normalizados', dentro
+    de `ErrorProyecto`; hasta VE-7 lo rechazaba la seccion sobre `D`), y la
     linea base lo fija como su rama de error
     (`tests/linea_base_familia_c/regenerar.sh`, corrida 3).
     """

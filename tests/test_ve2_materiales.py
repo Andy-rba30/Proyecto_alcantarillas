@@ -383,18 +383,19 @@ def test_g_el_criterio_tiene_su_ficha_de_perfil_y_lo_lee_el_concreto():
     assert DIAMETRO_DE_DISENO not in ca.criterios_usados()
 
 
-def test_g_guardia_el_inicio_negativo_lo_sigue_rechazando_la_seccion():
+def test_g_guardia_el_inicio_negativo_lo_rechaza_m2_sobre_el_criterio():
     """
-    GUARDIA (vale antes y despues): la rama de error de la linea base
-    (`regenerar.sh`, corrida 3) declara un inicio de -0.90 m, y lo rechaza
-    la hidraulica con «el diametro debe ser positivo» sobre el dato 'D'
-    (`cli_rama_error.txt`). La guardia de (g) no lo intercepta: un escalon
-    no positivo no es un diametro, y la linea base no se mueve.
+    La rama de error de la linea base (`regenerar.sh`, corrida 3) declara un
+    inicio de -0.90 m. Hasta VE-7 lo rechazaba la hidraulica sobre el dato
+    'D'; desde VE-7 (lote B, B12; T11-03 (6)) lo rechaza M2 antes, sobre el
+    criterio 'diametros_normalizados', en los tres materiales. La guardia de
+    (g) sigue sin mirar escalones no positivos.
     """
     with declarados({M2.CRITERIO_DIAMETROS: {"inicio": -0.90, "paso": 0.15}}):
         for tipo in (CONCRETO, TMC, HDPE):
-            assert M2.siguiente_diametro(tipo) == pytest.approx(
-                -0.90, rel=REL_TRANSPORTE)
+            with pytest.raises(DatoInvalidoError) as exc:
+                M2.siguiente_diametro(tipo)
+            assert exc.value.campo == M2.CRITERIO_DIAMETROS
 
 
 def test_las_fichas_ve2_a_y_ve2_g_y_vE1_02_marcada():

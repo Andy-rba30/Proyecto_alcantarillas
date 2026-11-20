@@ -1687,11 +1687,12 @@ def _exigir_datos_validos(invalidos: Sequence[DatoInvalidoError],
       * COMUN A TODOS: a todos los candidatos los detuvo un dato invalido
         del punto, cumplieran o no lo anterior. DESDE EL ABIERTO 4 DE LA
         FICHA T11-03 cuenta tambien el que M3 o M4 levantan ANTES de la
-        Fase 5: el diametro de arranque negativo de la rama de error de la
-        linea base (`--declarar 'diametros_normalizados={"inicio": -0.90,
-        ...}'`) detiene a los tres en M3 sobre 'D', ningun material se
-        evaluo, y el punto salia «no factible». MD no reinterpreta la
-        excepcion: sale con el `campo` que la seccion le puso.
+        Fase 5 sobre un dato del punto, y ningun material se evaluo. (El
+        diametro de arranque negativo de la rama de error de la linea base,
+        que fue el caso que lo motivo, desde VE-7 (B12) lo rechaza M2 sobre
+        el criterio 'diametros_normalizados' y va por
+        `_exigir_criterios_validos`.) MD no reinterpreta la excepcion: sale
+        con el `campo` que le pusieron.
 
     Fuera de esas dos, vale lo de la ficha T4-10 para el dato que falta: el
     material que se detuvo sobre un escalon que YA incumplia, o antes de la

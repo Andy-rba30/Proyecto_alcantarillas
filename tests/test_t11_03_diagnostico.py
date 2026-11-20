@@ -203,7 +203,9 @@ def test_4_el_arranque_negativo_por_la_fase_5_real():
     with declarados({M2.CRITERIO_DIAMETROS: ARRANQUE_NEGATIVO}):
         with pytest.raises(DatoInvalidoError) as exc:
             MD.disenar_punto(_punto(), L=L_CONDUCTO, TW=TW_LIBRE)
-    assert exc.value.campo == "D"
+    # VE-7 lote B, B12 (T11-03 (6)): desde VE-7 el arranque lo valida M2 y
+    # el campo es el criterio que lo declara, no el dato `D` del punto.
+    assert exc.value.campo == M2.CRITERIO_DIAMETROS
     assert exc.value.valor == pytest.approx(ARRANQUE_NEGATIVO["inicio"],
                                             rel=REL_TRANSPORTE)
 
@@ -211,8 +213,9 @@ def test_4_el_arranque_negativo_por_la_fase_5_real():
 def test_4_la_rama_de_error_por_el_servicio_es_un_dato_invalido():
     """
     La corrida 3 de la linea base (perfil, luz 2.75, arranque negativo): los
-    tres puntos de Familia A y B salen con el bloqueo DATO_INVALIDO sobre
-    'D' en el bucle de MD, y ninguno «no factible».
+    tres puntos de Familia A y B salen con el bloqueo DATO_INVALIDO en el
+    bucle de MD, y ninguno «no factible». Desde VE-7 (B12) sobre el
+    criterio 'diametros_normalizados', que M2 valida; hasta VE-7, sobre 'D'.
     """
     with declarados({M2.CRITERIO_DIAMETROS: ARRANQUE_NEGATIVO}):
         externos = cli.cargar_datos_externos(None, {"luz_m": 2.75})
@@ -225,7 +228,7 @@ def test_4_la_rama_de_error_por_el_servicio_es_un_dato_invalido():
         b = next(b for b in punto.bloqueos
                  if b.tipo is TipoDeBloqueo.DATO_INVALIDO
                  and b.etapa == servicio.ETAPA_BUCLE_DE_MD)
-        assert b.campo == "D", id_punto
+        assert b.campo == M2.CRITERIO_DIAMETROS, id_punto
 
 
 # ===========================================================================

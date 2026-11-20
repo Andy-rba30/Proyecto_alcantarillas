@@ -322,7 +322,9 @@ def test_la_ventana_cubre_los_ejes_que_dice_cubrir(recien_generada):
     # (e) LA RAMA DE ERROR, que es la que motivo el ensanche: es la que C1
     # movio sin que nada lo viera. Se comprueban las DOS cadenas -- `campo` y
     # `motivo` --, porque C1 renombro la segunda dejando la primera intacta.
+    # Desde VE-7 (lote B, B12; T11-03 (6)) el arranque negativo lo rechaza
+    # M2 sobre el criterio que lo declara, no la seccion sobre `D`.
     err = lee("cli_rama_error.txt")
-    assert "Dato invalido en 'D'" in err
-    assert "el diametro debe ser positivo" in err
-    assert "el diametro debe ser positivo" in lee("informe_rama_error.json")
+    assert "Dato invalido en 'diametros_normalizados'" in err
+    assert "el arranque de la progresion" in err
+    assert "el arranque de la progresion" in lee("informe_rama_error.json")
