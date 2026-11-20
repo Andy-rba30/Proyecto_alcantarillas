@@ -3,6 +3,18 @@
 Material de proceso, no del entregable. Lo mantiene la sesión orquestadora y se actualiza
 cada vez que se integra algo. Fecha de esta versión: 2026-11-20.
 
+> **VE-7 EN CURSO (2026-11-20, noche).** Decisión del dueño: cerrar TODO lo de código, con las
+> decisiones a cargo de Fable. Triaje de Fable de todo lo abierto (censo + «Abierto» de las fichas
+> VE4–VE6 + sus recomendaciones): 25 ítems a implementar en tres lotes y el resto cerrado como
+> bloqueo declarado o «no procede» con cita. Ramas, desde `cb15e32`, cada una con push de respaldo
+> cada ~20 min: `claude/ve7-alero-estabilidad` (T7C-04), `claude/ve7-lote-a` (cabezal y embocadura,
+> A1–A10), `claude/ve7-lote-b` (conducto, pórtico, metrados, hidrología, B1–B13),
+> `claude/ve7-lote-c` (registro, memoria, CLI, C1–C6). Después: A11 (cita de C7 a
+> `E060.22.10.2.2#VOLADIZO`), integración en esta rama, revisión Fable de las decisiones nuevas,
+> regeneración de documentos, suite en worktree limpio, sello y fast-forward de `main`.
+> **Si la sesión se corta:** retomar desde esas ramas (su último commit) e integrarlas en este orden:
+> alero → A → B → C → A11.
+
 > **ESTADO (2026-11-20, tarde, sesión `claude/laughing-euler-ybme10`): VE-5 y VE-6 integrados.**
 > `main` había sido vaciado (commit `03ab811`, «Repositorio vaciado a pedido del propietario»)
 > y `claude/keen-cray-rhxzmg` traía la fusión de los lotes de VE-5 con marcadores de conflicto
