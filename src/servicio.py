@@ -75,8 +75,7 @@ from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
 from src import criterios_adoptados as ca
 from src import datos_sitio as ds
 from src import declaracion as _declaracion
-from src.constantes_normativas import (CUANTIA_MIN_MURO,
-                                       H_O_HW_SOBRE_D_MIN,
+from src.constantes_normativas import (H_O_HW_SOBRE_D_MIN,
                                        NIVELES_DE_ABRASION, RECUBRIMIENTO)
 # --- T-8 --- las filas y columnas de la Tabla Nº 11 y el techo de un
 # porcentaje: con ellos se valida en la PUERTA lo que el punto declara.
@@ -167,6 +166,7 @@ from src.modulos.M9_cabezal import (cabezal_del_punto,
                                     validar_cabezal_declarado,
                                     verificar_coherencia_embocadura_cajon)
 # --- T-7b --- el ensamble de estabilidad del cabezal y la puerta del suelo.
+from src.modulos.M9_cabezal import DIRECCIONES_CUANTIA_MURO  # --- VE-6 ---
 from src.modulos.M9_cabezal import (ELEMENTOS_ARMADOS,  # --- T-7c ---
                                     TIPO_GRAVEDAD, armar_elemento,
                                     ensamblar_armado, integrar_armado,
@@ -4681,7 +4681,7 @@ def correr_cabezal() -> InformeCabezal:
             lambda c=condicion: recubrimiento_de_diseno(condicion=c))
         if recubrimiento is not None:
             informe.recubrimientos.append(recubrimiento)
-    for direccion in CUANTIA_MIN_MURO:
+    for direccion in DIRECCIONES_CUANTIA_MURO:
         cuantia = _etapa(informe.bloqueos, FASE_CABEZAL,
                          f"cuantia minima {direccion} (9.4, referencia)",
                          lambda d=direccion: cuantia_minima(direccion=d))

@@ -39,7 +39,7 @@ from src.constantes_normativas import (CICLOPEO_FC_MATRIZ_MIN_APLICABLE,
                                    RECUBRIMIENTO_MP_EQUIVALENCIA,
                                    RECUBRIMIENTO_MP_MM,
                                    CICLOPEO_FRACCION_PIEDRA_MAX,
-                                   COMBINACIONES_AASHTO, CUANTIA_MIN_MURO,
+                                   COMBINACIONES_AASHTO,
                                    ESPACIAMIENTO_MAX_ABSOLUTO,
                                    EXPOSICION_ESPECIAL,
                                    F_PGA_CLASES_EN_ROCA,
@@ -124,6 +124,9 @@ from src.constantes_normativas import (  # --- T-7c ---
 from src.tolerancias import TOL_UMBRAL_NORMATIVO
 
 TOL = 1e-12
+# --- VE-6 (ficha T7C-10) --- las cuantias minimas del 14.3.1, del criterio
+# [N→] que sustituyo a la constante del mismo nombre (sin registrar el uso).
+CUANTIA_MIN_MURO = ca.CRITERIOS["cuantia_minima_muro_e060"].valor
 
 # Mil veces el umbral normativo: un incumplimiento que la banda NO debe tapar.
 TOL_MIL_VECES_EL_UMBRAL = 1000 * TOL_UMBRAL_NORMATIVO
@@ -1514,6 +1517,8 @@ def test_el_aumento_por_ambiente_corrosivo_se_declara_y_no_se_calcula():
 ])
 def test_cuantias_minimas_de_referencia_art_14_3_1(direccion, minima):
     assert cuantia_minima(direccion=direccion) == pytest.approx(minima)
+    # CAMBIADO DECLARANDOLO (VE-6, ficha T7C-10): era la constante [N]
+    # `CUANTIA_MIN_MURO`; es el criterio [N→] 'cuantia_minima_muro_e060'.
     assert CUANTIA_MIN_MURO[direccion] == minima
 
 

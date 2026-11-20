@@ -205,7 +205,6 @@ from src.constantes_normativas import (AMBIENTE_CORROSIVO_AUMENTAR,
                                    CICLOPEO_FC_MATRIZ_MIN_APLICABLE,
                                    CICLOPEO_FRACCION_PIEDRA_MAX,
                                    COMBINACIONES_AASHTO,
-                                   CUANTIA_MIN_MURO,
                                    E030_AMBITO_LECTURA,
                                    E030_S5_LECTURA,
                                    E030_S5_TEXTO,
@@ -2222,7 +2221,7 @@ def _gamma_permanente(carga: str, fila_combinacion: dict,
 # `recubrimiento_e060_mm` y `recubrimiento_aashto_mm` (condicion) y
 # `verificar_cuantia` (direccion) -- validan cadenas que NO vienen del
 # expediente: las escribe el propio codigo o las itera desde la misma tabla
-# que se valida (cli.py recorre RECUBRIMIENTO y CUANTIA_MIN_MURO para
+# que se valida (cli.py recorre RECUBRIMIENTO y DIRECCIONES_CUANTIA_MURO para
 # construir la memoria). Un `DatoInvalidoError` ahi disfraza un fallo de
 # PROGRAMA de problema del expediente, que es lo contrario de lo que la
 # taxonomia de CLAUDE.md persigue, y la eleccion estaba fijada por tests pero
@@ -3313,10 +3312,20 @@ def aviso_ambiente_corrosivo() -> str:
     )
 
 
+# --- VE-6 (lote M9, item 29; ficha T7C-10) --- las cuantias minimas de muro
+# de E.060 14.3.1 son el criterio [N→] 'cuantia_minima_muro_e060' (hasta
+# VE-6, la constante [N] `CUANTIA_MIN_MURO`), y estas son sus dos claves.
+CRITERIO_CUANTIA_MIN_MURO = "cuantia_minima_muro_e060"
+DIRECCIONES_CUANTIA_MURO = ("horizontal", "vertical")
+
+
 def cuantia_minima(*, direccion: str) -> float:
     """
     Cuantia minima de refuerzo de muro, E.060 Art. 14.3.1 (pag. 133):
-    horizontal >= 0.0020, vertical >= 0.0015.
+    horizontal >= 0.0020, vertical >= 0.0015. Desde VE-6 la lee del
+    criterio [N→] 'cuantia_minima_muro_e060': E.060 es norma de
+    edificaciones y aplicarla al cabezal de una obra vial es una analogia
+    (ficha T7C-10).
 
     Es un MINIMO OBLIGATORIO, no un dato informativo. Sec. 9.4 lo llama
     "REFERENCIA de cuantias minimas" y el matiz es real pero no significa lo
@@ -3350,13 +3359,20 @@ def cuantia_minima(*, direccion: str) -> float:
     calcula cortante, y por eso los tres quedan declarados como vacios y no
     resueltos en silencio.
     """
-    if direccion not in CUANTIA_MIN_MURO:
+    if direccion not in DIRECCIONES_CUANTIA_MURO:
         raise DatoInvalidoError(
             campo="direccion", valor=direccion,
             motivo="las direcciones del Art. 14.3.1 son "
-                   + ", ".join(sorted(CUANTIA_MIN_MURO)),
+                   + ", ".join(sorted(DIRECCIONES_CUANTIA_MURO)),
         )
-    return CUANTIA_MIN_MURO[direccion]
+    tabla = ca.valor(CRITERIO_CUANTIA_MIN_MURO)
+    rho = tabla.get(direccion) if hasattr(tabla, "get") else None
+    if not (_finito(rho) and rho > 0):
+        raise DatoInvalidoError(
+            campo=CRITERIO_CUANTIA_MIN_MURO, valor=tabla,
+            motivo="se espera un dict con 'horizontal' y 'vertical', cada "
+                   "una una cuantia positiva")
+    return float(rho)
 
 
 def nota_excepcion_refuerzo_minimo() -> str:
@@ -3388,14 +3404,15 @@ def _minimo_de_cuantia_aplicable(*, direccion: str,
                                                               Optional[str]]:
     """
     El minimo que rige en una direccion, y de donde sale: (minimo, numeral,
-    clave del criterio [A] que lo DECIDIO o None si es [N] puro, regimen
+    clave del criterio que lo DECIDIO -- desde VE-6, sin cortante alto, el
+    [N→] 'cuantia_minima_muro_e060'; hasta VE-6 era None, [N] puro --, regimen
     declarado o None si la ficha no se abrio). Con cortante perpendicular el
     numero es el del 14.3.1 y aun asi la clave es la del regimen: lo eligio
     una declaracion, no la norma sola. Es el unico sitio donde se contesta la
     pregunta, para que `verificar_cuantia` y `cuantia_de_diseno` no puedan
     contestarla distinto (EXT-M-05).
 
-    Sin cortante alto: Art. 14.3.1, [N] puro. Con cortante alto, en este
+    Sin cortante alto: Art. 14.3.1, por analogia [N→]. Con cortante alto, en este
     orden y deteniendose en el primer vacio:
 
       1. EN QUE PLANO actua el cortante ('regimen_cortante_muro_e060_art_
@@ -3411,7 +3428,9 @@ def _minimo_de_cuantia_aplicable(*, direccion: str,
     """
     minima = cuantia_minima(direccion=direccion)      # DatoInvalidoError si no es direccion
     if not cortante_alto:
-        return minima, NUMERAL_CUANTIA_MIN, None, None
+        # --- VE-6 (ficha T7C-10) --- ya no es [N] puro: el minimo es el
+        # criterio [N→] 'cuantia_minima_muro_e060', y se atribuye a el.
+        return minima, NUMERAL_CUANTIA_MIN, CRITERIO_CUANTIA_MIN_MURO, None
 
     regimen = ca.valor(CRITERIO_REGIMEN_CORTANTE)     # CriterioPendienteError mientras falte
     if regimen not in REGIMENES_CORTANTE_MURO:
@@ -3470,7 +3489,7 @@ def verificar_cuantia(*, cuantia_provista: float, direccion: str,
         numeral=numeral,
         valor_obtenido=cuantia_provista,
         valor_admisible=minima,
-        criterio_aplicado=criterio,      # None: [N] puro, Art. 14.3.1
+        criterio_aplicado=criterio,      # [N→] del 14.3.1, o el [A] que decidio
         codigo=codigo,
     )
 
@@ -5911,8 +5930,8 @@ def cabezal_del_punto(*, punto, resultado, geometria, embocadura,
             "ese concreto a los muros de contencion de GRAVEDAD y el "
             "22.10.2.2 exige verificar flexion y corte en voladizos mas "
             "largos que la mitad de su peralte (pag. 195): el cabezal no "
-            "se arma, se verifica como concreto ciclopeo (filas C1 a C6 del "
-            "armado), y su zapata queda sin verificar como voladizo")
+            "se arma, se verifica como concreto ciclopeo (filas C1 a C8 del "
+            "armado; su zapata, como voladizo en C7)")
     # Las CB incumplidas NO son avisos: son verificaciones, y salen por
     # `InformePunto.incumplidas` (un aviso repetido se cuenta dos veces).
     return CabezalDelPunto(
@@ -13924,11 +13943,20 @@ def verificar_cabezal_ciclopeo(entorno: EntornoDelCabezal
     que esa cita no lo exige con cargas de servicio), salvo en la junta,
     donde lo sostiene 22.4.7.
 
+      C7  (VE-6) la punta y el talon de la zapata como VOLADIZOS de
+          concreto simple, cuando vuelan mas que la mitad de su peralte
+          (E.060 22.10.2.2), con las cargas de E.060 9.2.5 y las
+          resistencias de 22.5 (`_verificar_zapata_ciclopea`). Decide.
+      C8  (VE-6) el cuerpo bajo SISMO, en el arranque y a media altura: e
+          <= t/6 con el Evento Extremo I sin factorar, en los dos casos de
+          AASHTO 11.6.5.1 (`_verificar_cuerpo_bajo_sismo`). Decide como C2 y
+          C3.
+
     El empuje es el del regimen de resistencia ('regimen_resistencia_
     elementos_cabezal'): en reposo se toma, seccion por seccion, la
-    excentricidad mayor de las dos. Solo condicion ESTATICA: bajo sismo la
-    resultante en la base es la fila E2 de la estabilidad, y las secciones
-    del cuerpo no se evaluan (se avisa).
+    excentricidad mayor de las dos. Bajo sismo la resultante en la BASE es
+    la fila E2 de la estabilidad; el cuerpo, C8. Si la condicion sismica no
+    es evaluable, C8 no sale y se avisa.
     """
     g = entorno.geometria
     est = CondicionAnalisis.ESTATICO
@@ -14202,13 +14230,28 @@ def verificar_cabezal_ciclopeo(entorno: EntornoDelCabezal
                "E060.22.6.3#EXCENTRICIDAD", "E060.22.4.7#JUNTAS"),
         numeral=NUMERAL_9_4_CICLOPEO))
 
-    avisos = [
-        f"{quien}: es de GRAVEDAD en concreto ciclopeo y no se arma. Sus "
-        "secciones se verifican solo en la condicion ESTATICA (bajo sismo "
-        "la resultante en la base es la fila E2 de la estabilidad; las "
-        "secciones del cuerpo no se evaluan), y la zapata no se verifica "
-        "como voladizo de concreto simple (E.060 22.10.2.2 lo pide cuando "
-        "el vuelo supera la mitad del peralte): queda para el expediente",
+    # --- C7: la zapata como voladizo de concreto simple (VE-6, ficha
+    # T7C-09 (3)) ---------------------------------------------------------
+    avisos = []
+    voladizos = _verificar_zapata_ciclopea(
+        entorno, juegos, datos, fc_dis=fc_dis, f_t=f_t, mag=mag, ext=ext)
+    verificaciones.extend(voladizos)
+
+    # --- C8: el cuerpo bajo SISMO (VE-6, ficha T7C-09 (2)) -----------------
+    sismicas, sismico, aviso_sismo = _verificar_cuerpo_bajo_sismo(
+        entorno, regimen=regimen, nulas=nulas, con_junta=con_junta,
+        junta=junta, caracter_proyecto=caracter_proyecto, mag=mag, ext=ext)
+    verificaciones.extend(sismicas)
+    if aviso_sismo:
+        avisos.append(f"{quien}: {aviso_sismo}")
+
+    avisos[:0] = [
+        f"{quien}: es de GRAVEDAD en concreto ciclopeo y no se arma. Bajo "
+        "sismo la base es la fila E2 de la estabilidad y el cuerpo se "
+        "verifica en C8 (Evento Extremo I sin factorar, los dos casos de "
+        "AASHTO 11.6.5.1); la zapata, como voladizo de concreto simple en C7 "
+        "cuando vuela mas que la mitad de su peralte (E.060 22.10.2.2), "
+        "solo con las cargas estaticas de E.060 9.2.5",
         f"{quien}: decide '{criterio}' ('{CRITERIO_TRACCION_CICLOPEO}' "
         "[A]) en C1, C3 y C6; la otra verificacion de traccion informa"
         + (". C2 decide siempre: el arranque es una junta de construccion y "
@@ -14219,21 +14262,310 @@ def verificar_cabezal_ciclopeo(entorno: EntornoDelCabezal
         f"{quien}: el vano del conducto atraviesa el cuerpo: E.060 22.6.6.5 "
         "pide dos barras de 5/8\" alrededor de las aberturas de los muros "
         "de concreto simple, que el programa no dimensiona; las secciones "
-        "C2 y C3 son las de un metro de muro lleno",
+        "C2, C3 y C8 son las de un metro de muro lleno",
     ]
-    vuelo = max(datos["punta"], datos["talon"])
-    if vuelo > g.espesor_zapata / 2 + TOL_UMBRAL_NORMATIVO:
+    for v in voladizos:
         avisos.append(
-            f"{quien}: la zapata vuela {vuelo:.2f} m, mas que la mitad de "
-            f"su peralte ({g.espesor_zapata / 2:.2f} m): E.060 22.10.2.2 "
-            "manda verificar su flexion y su corte, que este programa no "
-            "hace para el concreto ciclopeo")
+            f"{quien}: la zapata vuela mas que la mitad de su peralte "
+            f"({g.espesor_zapata / 2:.2f} m): E.060 22.10.2.2 pide verificar "
+            f"su flexion y su corte como voladizo, y se verifican en la fila "
+            f"{v.codigo}")
     return ArmadoDelCabezal(
         id_punto=entorno.id_punto, extremo=entorno.extremo,
         tipo=TIPO_GRAVEDAD, regimen=regimen, fc_mpa=float(fc_matriz),
         fy_mpa=None, verificaciones=tuple(verificaciones),
         pasos=tuple(v.paso for v in verificaciones), avisos=tuple(avisos),
-        sismico=False, K0=datos["K0"], K_A=datos["K_A"])
+        sismico=sismico, K0=datos["K0"], K_A=datos["K_A"])
+
+
+def _verificar_zapata_ciclopea(entorno: EntornoDelCabezal, juegos: list,
+                               datos: dict, *, fc_dis: float, f_t: float,
+                               mag, ext: str) -> List[Verificacion]:
+    """
+    --- VE-6 (ficha T7C-09 (3)) --- C7: la punta y el talon de la zapata de
+    un cabezal de gravedad en ciclopeo, como VOLADIZOS de concreto simple,
+    cuando vuelan mas que la mitad del peralte de la zapata: E.060 22.10.2.2
+    («En elementos en voladizo con una longitud mayor a la mitad de su
+    peralte, sera necesario verificar las resistencias en flexion y corte»,
+    transcrito en la nota de la cita E060.22.10.2#CICLOPEO, pag. 195).
+
+    En la cara del cuerpo, con las solicitaciones de la zapata que el armado
+    ya calcula (`solicitaciones_de_la_zapata`: presion de contacto LINEAL y
+    subpresion; el talon descontando la reaccion, como en E.060 15.4.1) para
+    las dos combinaciones de E.060 9.2.5 (`_combinaciones_e060`) y cada
+    juego de empujes del regimen (activo; y el reposo con
+    'no_cedente_k0'). Resistencias de E.060 22.5 con phi = 0,5 y f'c <= 10
+    MPa (22.10.2.3), y el peralte reducido en 50 mm porque la zapata se
+    vacia contra el suelo (22.4.8):
+
+        traccion  M_u / S <= phi·0,42·sqrt(f'c),   S = b·h²/6   (22-7, P_u = 0)
+        cortante  V_u <= phi·0,11·sqrt(f'c)·b·h                  (22-9)
+
+    El aprovechamiento es el mayor de los dos cocientes. El cortante se toma
+    EN LA CARA del cuerpo y no a una distancia de ella: lado seguro. Las
+    cargas y la resistencia son las dos de E.060 (los marcos no se cruzan).
+    Solo estatica: E.060 9.2 no combina el sismo con el empuje del suelo.
+    Esta fila DECIDE: es la unica verificacion de la flexion y el corte de
+    la zapata, y la pide la norma (por analogia).
+    """
+    g = entorno.geometria
+    h_r = g.espesor_zapata - REDUCCION_PERALTE_CONTRA_SUELO_M
+    vuelos = (("punta", datos["punta"]), ("talon", datos["talon"]))
+    salida: List[Verificacion] = []
+    for rotulo, vuelo in vuelos:
+        if not vuelo > g.espesor_zapata / 2 + TOL_UMBRAL_NORMATIVO:
+            continue
+        if not h_r > 0:
+            raise LimiteNumericoError(
+                "h", valor=h_r,
+                motivo="el peralte de la zapata reducido en 50 mm (E.060 "
+                       "22.4.8) no es positivo")
+        S = h_r ** 2 / NUCLEO_CENTRAL_DIVISOR
+        V_r = (PHI_CICLOPEO_E060 * CORTANTE_CONCRETO_SIMPLE_E060
+               * math.sqrt(fc_dis) * KPA_POR_MPA * h_r)
+        peor = None
+        fuera = []
+        for nombre, juego, _ in juegos:
+            for combo in _combinaciones_e060(juego, g.B):
+                z = solicitaciones_de_la_zapata(g, juego, combo, datos)
+                if z is None:
+                    fuera.append(f"{combo.nombre}, {nombre}")
+                    continue
+                V, M = z[rotulo]
+                uso = max(abs(M) / S / f_t, abs(V) / V_r)
+                if peor is None or uso > peor[0]:
+                    peor = (uso, abs(M), abs(V), f"{combo.nombre}, {nombre}")
+        if peor is None:
+            # Como el armado de la punta (`solicitaciones_de_resistencia`):
+            # sin presion de contacto no hay voladizo que verificar, y el
+            # cabezal no queda callado -- la etapa del servicio lo vuelve un
+            # `Bloqueo` del punto --.
+            raise MetodoNoEvaluableError(
+                f"C7, la {rotulo} de la zapata del cabezal de "
+                f"{entorno.extremo} como voladizo de concreto simple",
+                "una zapata mas ancha (la resultante tiene que caer dentro "
+                "de la base para que haya presion de contacto que integrar)",
+                "con las cargas de E.060 9.2.5 la resultante cae fuera de la "
+                "base en todas las combinaciones (" + "; ".join(fuera)
+                + "): el cabezal de gravedad vuelca con esas cargas y su "
+                "zapata no tiene reaccion con que verificarse",
+                entorno.id_punto, rotulo=MOTIVO_METODO_NO_EVALUABLE_CABEZAL)
+        uso, M, V, de_donde = peor
+        salida.append(_verificacion_de_armado(
+            fundamento="F9.CICLOPEO", codigo=f"C7.{rotulo}.{ext}",
+            que=f"C7, la {rotulo} de la zapata como voladizo de concreto "
+                f"simple: cabezal de {entorno.extremo}",
+            formula="max[(M_u/S)/(phi·0,42·sqrt(f'c)), V_u/(phi·0,11·"
+                    "sqrt(f'c)·b·h)] <= 1, con S = b·h²/6, phi = 0,5, f'c <= "
+                    "10 MPa y h reducido en 50 mm",
+            sustitucion=(
+                mag("vuelo", vuelo, "m", f"de la {rotulo}, desde la cara "
+                    "del cuerpo"),
+                mag("h", h_r, "m", "peralte de la zapata menos 50 mm "
+                    "(E.060 22.4.8: vaciada contra el suelo)"),
+                mag("M_u", M, "kN·m/m", f"en la cara del cuerpo ({de_donde})"),
+                mag("V_u", V, "kN/m", "en la cara del cuerpo, misma "
+                    "combinacion"),
+                mag("phi·0,42·sqrt(f'c)", f_t, "kPa", "traccion admisible "
+                    "(22-7, 22.10.2.3)"),
+                mag("phi·0,11·sqrt(f'c)·b·h", V_r, "kN/m", "cortante "
+                    "resistente (22-9)"),
+            ),
+            resultado=mag("aprovechamiento", uso, "", "el mayor de los dos "
+                          "cocientes", CIFRAS_FACTOR),
+            descripcion_umbral="aprovechamiento <= 1 en el marco de E.060",
+            admisible=1.0, unidad="", cita="E060.22.5.3#TRACCION",
+            aplicacion="por analogia ([N→]): E.060 22.10.2.2 manda verificar "
+                       "el voladizo de concreto ciclopeo mas largo que la "
+                       "mitad de su peralte, y E.060 es norma de "
+                       "edificaciones",
+            criterio=CRITERIO_CONCRETO_CICLOPEO,
+            cumple=uso <= 1 + TOL_UMBRAL_NORMATIVO, margen=1.0 - uso,
+            decide=True, obtenido=uso,
+            nota=("Las solicitaciones son las del armado (presion de "
+                  "contacto lineal y subpresion; el talon descuenta la "
+                  "reaccion del terreno, como E.060 15.4.1). El cortante se "
+                  "toma en la cara del cuerpo, del lado seguro. Solo con las "
+                  "cargas estaticas: E.060 9.2 no combina el sismo con el "
+                  "empuje del suelo."
+                  + (" Sin presion de contacto (la resultante cae fuera de "
+                     "la base) en: " + "; ".join(fuera) + "; esas "
+                     "combinaciones no entran." if fuera else "")),
+            explicacion_falla=f"la {rotulo} de la zapata no resiste como "
+                              "voladizo de concreto simple: aumentar su "
+                              "peralte o acortar su vuelo",
+            citas=("E060.22.10.2#CICLOPEO", "E060.22.10.2.3#PHI",
+                   "E060.22.5.4#CORTANTE", "E060.22.4.8#PERALTE",
+                   "E060.9.2.5#EMPUJE"),
+            numeral=NUMERAL_9_4_CICLOPEO))
+    return salida
+
+
+def _verificar_cuerpo_bajo_sismo(entorno: EntornoDelCabezal, *, regimen: str,
+                                 nulas: bool, con_junta: bool, junta: str,
+                                 caracter_proyecto: str, mag, ext: str
+                                 ) -> Tuple[List[Verificacion], bool, str]:
+    """
+    --- VE-6 (ficha T7C-09 (2)) --- C8: las secciones del cuerpo de un
+    cabezal de gravedad en ciclopeo bajo SISMO, en el arranque y a media
+    altura, con la misma condicion que C2 y C3 -- la resultante en el tercio
+    central del espesor, e <= t/6 -- y las cargas del Evento Extremo I SIN
+    FACTORAR, que son las de C1 a C3 con el sismo:
+
+        e = [M_H - W·(t/2 - x_W)] / W,
+        M_H = f_EH·M_EH + M_LS + M_WA + f_inc·M_dPAE + f_IR·k_h·W·y_W
+
+    M_EH, M_LS y M_WA son los de C2 y C3 (`acciones_sobre_una_seccion`: el
+    diagrama del plano virtual truncado en la seccion), con el empuje
+    estatico del ensamble sismico; M_dPAE, el del incremento con el diagrama
+    lineal del ensamble (`_incremento_sobre_el_arranque`) por encima de la
+    seccion; k_h·W·y_W es la inercia del cuerpo POR ENCIMA de la seccion
+    en su centro de gravedad (y_W = alto·(t + 2·e_c)/(3·(t + e_c)), el del
+    trapecio). Los factores f son los dos casos de AASHTO 11.6.5.1 (Manual
+    de Puentes 2.8.1.1.14.1, `P_SEIS_COMBINACIONES`, «El resultado mas
+    conservador de estos dos analisis se usara para el diseno del muro»),
+    los mismos que la fila E2 (`_casos_sismicos`), y rige la mayor
+    excentricidad. Con 'no_cedente_k0' el ensamble del armado va con k_h =
+    1.0·k_h0 (11.6.5.4), como el Evento Extremo I de las pantallas armadas.
+    Sin inercia vertical del cuerpo: el ensamble no la aplica a los pesos
+    (k_v solo entra en el empuje).
+
+    En el arranque, con la junta de construccion de archivo, la condicion es
+    la de E.060 22.4.7 y DECIDE siempre; a media altura decide con
+    «tracciones_nulas», como C3. Devuelve (verificaciones, evaluado,
+    aviso): si la condicion sismica no es evaluable (agua en el plano de
+    empuje con relleno muy abierto, una cuña sin maximo...), no hay filas y
+    el aviso dice por que, como el armado de las pantallas.
+    """
+    g = entorno.geometria
+    sis = CondicionAnalisis.SISMICO
+    try:
+        k_h_armado = (cadena_sismica().k_h0
+                      if regimen == REGIMEN_RESISTENCIA_K0 else None)
+        cargas_s, datos_s = cargas_del_cabezal(entorno, sis, k_h=k_h_armado)
+    except ErrorProyecto as motivo:
+        return [], False, (
+            "el cuerpo NO se verifico bajo sismo (C8): la condicion sismica "
+            f"no es evaluable -- {motivo}")
+    casos = _casos_sismicos(datos_s)
+    e_c, e_z = g.espesor_corona, g.espesor_zapata
+    salida: List[Verificacion] = []
+    for codigo, rotulo, z in (("arranque", "arranque del cuerpo", e_z),
+                              ("media", "media altura del cuerpo",
+                               e_z + g.H / 2)):
+        # El diagrama ESTATICO es el de C2 y C3 (el del plano virtual,
+        # truncado en la seccion), con el empuje que el ensamble sismico
+        # trae: el activo, o el reposo del muro que no cede en conjunto.
+        acc = acciones_sobre_una_seccion(
+            entorno, datos_s, z_seccion=z,
+            en_reposo=datos_s.get("empuje_estatico")
+            == EMPUJE_ESTATICO_REPOSO)
+        W, t, x_W = acc["W"], acc["t"], acc["x_W"]
+        if not W > 0:
+            raise LimiteNumericoError(
+                "W", valor=W, motivo="el peso del cuerpo sobre la seccion no "
+                                     "es positivo")
+        alto = g.H - (z - e_z)
+        y_W = alto * (t + 2 * e_c) / (LADOS_DEL_TRIANGULO * (t + e_c))
+        M_PIR = datos_s["k_h"] * W * y_W
+        M_EH, M_LS, M_WA = acc["M_suelo"], acc["M_ls"], acc["M_agua"]
+        por = {c.codigo: c for c in cargas_s}
+        H_EH = por[C_EH_H].H if C_EH_H in por else 0.0
+        H_dP = por[C_EQ_H].H if C_EQ_H in por else 0.0
+        # El incremento, con el diagrama lineal del ensamble
+        # (`_incremento_sobre_el_arranque`) truncado en la seccion.
+        M_dP = _incremento_sobre_el_arranque(H_dP, datos_s, z,
+                                             entorno.id_punto)[1]
+        palanca = W * (t / 2 - x_W)
+        # Con 'no_cedente_k0', como la pantalla armada
+        # (`_pantalla_con_resultante_a_media_altura`): tambien la resultante
+        # del empuje TOTAL del suelo a h/2 (AASHTO C11.6.5.4), un diagrama
+        # uniforme sobre h integrado por encima de la seccion; rige la mayor.
+        h_s = datos_s["h"]
+        encima = max(h_s - z, 0.0)
+        peor = None
+        for nombre, f_eh, f_inc, f_ir in casos:
+            M_tierra = f_eh * M_EH + f_inc * M_dP
+            posicion = "en su posicion"
+            if regimen == REGIMEN_RESISTENCIA_K0 and h_s > 0:
+                M_medios = ((f_eh * H_EH + f_inc * H_dP) * encima ** 2
+                            / (2 * h_s))
+                if M_medios > M_tierra:
+                    M_tierra, posicion = M_medios, ("con la resultante del "
+                                                    "empuje total a h/2 "
+                                                    "(C11.6.5.4)")
+            M_H = M_tierra + M_LS + M_WA + f_ir * M_PIR
+            e = (M_H - palanca) / W
+            if peor is None or abs(e) > abs(peor[1]):
+                peor = (nombre, e, M_H, f_eh, f_inc, f_ir, posicion)
+        nombre, e, M_H, f_eh, f_inc, f_ir, posicion = peor
+        limite = t / NUCLEO_CENTRAL_DIVISOR
+        en_la_junta = codigo == "arranque" and con_junta
+        salida.append(_verificacion_de_armado(
+            fundamento="F9.CICLOPEO", codigo=f"C8.{codigo}.{ext}",
+            que=f"C8, tracciones nulas en el {rotulo} bajo sismo: cabezal de "
+                f"{entorno.extremo}"
+                + (" (junta de construccion, E.060 22.4.7)" if en_la_junta
+                   else ""),
+            formula="e = [f_EH·M_EH + M_LS + M_WA + f_inc·M_dPAE + "
+                    "f_IR·k_h·W·y_W - W·(t/2 - x_W)] / W <= t/6, Evento "
+                    "Extremo I sin factorar, el caso de AASHTO 11.6.5.1 que "
+                    "mas excentrica"
+                    + ("; con el muro que no cede, f_EH·M_EH + f_inc·M_dPAE "
+                       "no baja del de la resultante del empuje total a h/2 "
+                       "(C11.6.5.4)" if regimen == REGIMEN_RESISTENCIA_K0
+                       else ""),
+            sustitucion=(
+                mag("t", t, "m", "espesor del cuerpo en la seccion"),
+                mag("W", W, "kN/m", "peso del concreto por encima"),
+                mag("x_W", x_W, "m", "de su centro de gravedad al trasdos"),
+                mag("y_W", y_W, "m", "de su centro de gravedad a la seccion"),
+                mag("k_h", datos_s["k_h"], "", "coeficiente sismico del "
+                    "ensamble" + (" (1.0·k_h0, 11.6.5.4)" if k_h_armado
+                                  is not None else ""), CIFRAS_FACTOR),
+                mag("k_h·W·y_W", M_PIR, "kN·m/m", "inercia del cuerpo por "
+                    "encima de la seccion, entera"),
+                mag("M_EH", M_EH, "kN·m/m", "empuje estatico del suelo por "
+                    "encima de la seccion"),
+                mag("M_dPAE", M_dP, "kN·m/m", "incremento sismico del "
+                    "empuje por encima de la seccion"),
+                mag("M_LS + M_WA", M_LS + M_WA, "kN·m/m", "sobrecarga viva y "
+                    "agua del relleno, factor 1"),
+            ),
+            resultado=mag("e", abs(e), "m", "excentricidad de la resultante "
+                          f"en la seccion: {nombre}, con f_EH = {f_eh:g}, "
+                          f"f_inc = {f_inc:g} y f_IR = {f_ir:g}; empuje del "
+                          f"suelo {posicion} (M_H = {M_H:.3f} kN·m/m)"),
+            descripcion_umbral="e <= t/6 (tercio central)", admisible=limite,
+            unidad="m",
+            cita="E060.22.4.7#JUNTAS" if en_la_junta else "E060.22.6.3#TERCIO",
+            caracter=None if en_la_junta else caracter_proyecto,
+            aplicacion=("exigencia de E.060 22.4.7, por analogia: el "
+                        "arranque es una junta de construccion "
+                        f"('{CRITERIO_JUNTA_CICLOPEO}' = '{junta}'); decide "
+                        "con cualquier criterio de traccion"
+                        if en_la_junta else
+                        "criterio del proyecto, mas exigente que la fuente "
+                        f"('{CRITERIO_TRACCION_CICLOPEO}' [A])"),
+            criterio=(CRITERIO_JUNTA_CICLOPEO if en_la_junta
+                      else CRITERIO_TRACCION_CICLOPEO),
+            cumple=abs(e) <= limite + TOL_UMBRAL_NORMATIVO,
+            margen=limite - abs(e), decide=nulas or en_la_junta,
+            obtenido=abs(e),
+            nota=("Los dos casos de AASHTO 11.6.5.1 (100 % P_AE con 50 % "
+                  "P_IR; 50 % P_AE, no menos que el estatico, con 100 % P_IR), "
+                  "los de la fila E2, con las cargas sin factorar. La "
+                  "componente vertical del empuje, que estabiliza, no se "
+                  "cuenta; ni la inercia vertical del cuerpo, que el ensamble "
+                  "no aplica a los pesos."),
+            explicacion_falla=("bajo sismo la junta del arranque transmitiria "
+                               "traccion, que E.060 22.4.7 prohibe: aumentar "
+                               "el espesor del cuerpo" if en_la_junta else
+                               "bajo sismo hay traccion en el trasdos del "
+                               "cuerpo: aumentar su espesor"),
+            citas=("AASHTO_LRFD_9.11.6.5.1#EXC",),
+            numeral=NUMERAL_9_4_CICLOPEO))
+    return salida, True, ""
 
 
 def integrar_armado(cabezal: CabezalDelPunto,

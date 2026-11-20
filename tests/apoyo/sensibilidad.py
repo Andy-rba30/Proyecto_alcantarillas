@@ -422,6 +422,9 @@ NO_BARRIBLES: Dict[str, str] = {
     "concreto_ciclopeo_cabezal": (_R_POR_CAMPO + "; ningún cabezal del juego "
                                   "es de gravedad"),
     "espesor_min_zapata_concreto_simple_m": _R_ANALOGIA,
+    # --- VE-6 (ficha T7C-10) --- la constante CUANTIA_MIN_MURO, criterio
+    # [N→] desde VE-6: el valor es el del 14.3.1 aplicado por analogia.
+    "cuantia_minima_muro_e060": _R_ANALOGIA,
     "edicion_que_rige_el_expediente": _R_SIN_VALOR + "; " + _R_SIN_CONSUMIDOR,
     "edicion_legal_que_rige_el_expediente": (_R_SIN_VALOR + "; "
                                              + _R_SIN_CONSUMIDOR),

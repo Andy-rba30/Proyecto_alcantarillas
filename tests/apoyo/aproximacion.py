@@ -40,8 +40,9 @@ son intercambiables.
     Igualdad contra CERO. La tolerancia relativa no existe en el cero (todo
     numero dista de el un 100 %), de modo que la comparacion tiene que ser
     absoluta. Las tres cifras, medidas y no estimadas: la magnitud POSITIVA
-    mas pequeña que el proyecto declara es ``CUANTIA_MIN_MURO['vertical'] =
-    0.0015`` (E.060, cuantia minima del muro), de modo que 1e-12 queda 9.2
+    mas pequeña que el proyecto declara es la vertical del criterio
+    ``cuantia_minima_muro_e060`` = 0.0015 (E.060, cuantia minima del muro;
+    hasta VE-6, ``CUANTIA_MIN_MURO``), de modo que 1e-12 queda 9.2
     ordenes por debajo de lo mas pequeño que hay que distinguir de cero; y
     esta 3.65 ordenes por encima del epsilon del double (2.22e-16), que es la
     holgura que absorbe el ruido de tres o cuatro operaciones encadenadas.

@@ -72,6 +72,10 @@ CLAVE_VERTICAL = "cuantia_vertical_cortante_alto_e060_art_11_10_10_3"
 CUANTIA_H_DE_PRUEBA = 0.0025
 CUANTIA_V_DE_PRUEBA = 0.0030
 MOTIVO_PRUEBA = "valor de prueba de la aceptacion EXT-7, no de proyecto"
+# --- VE-6 (ficha T7C-10) --- las cuantias del 14.3.1 son el criterio [N→]
+# 'cuantia_minima_muro_e060' (hasta VE-6, `CN.CUANTIA_MIN_MURO`). Se leen de
+# la ficha, sin registrar el uso.
+_CUANTIA_MIN_MURO = ca.CRITERIOS["cuantia_minima_muro_e060"].valor
 
 
 @pytest.fixture
@@ -207,7 +211,7 @@ def test_M05_si_el_cortante_es_perpendicular_ni_el_11_10_10_2_ni_el_3_rigen(
             sin_valor(CLAVE_VERTICAL), sin_valor(CLAVE_CORTANTE_ALTO):
         r = M9.cuantia_de_diseno(cuantia_calculada=0.0010,
                                  direccion=direccion, cortante_alto=True)
-    assert r.cuantia_minima == pytest.approx(CN.CUANTIA_MIN_MURO[direccion],
+    assert r.cuantia_minima == pytest.approx(_CUANTIA_MIN_MURO[direccion],
                                              rel=REL_CP9)
     assert r.regimen_cortante == CN.REGIMEN_CORTANTE_PERPENDICULAR
     assert "11.10.1" in r.numeral and "11.12" in r.numeral
@@ -222,17 +226,21 @@ def test_M05_si_el_cortante_es_perpendicular_ni_el_11_10_10_2_ni_el_3_rigen(
         v = M9.verificar_cuantia(cuantia_provista=0.0010, direccion=direccion,
                                  cortante_alto=True)
     assert v.criterio_aplicado == CLAVE_REGIMEN
-    assert v.valor_admisible == pytest.approx(CN.CUANTIA_MIN_MURO[direccion],
+    assert v.valor_admisible == pytest.approx(_CUANTIA_MIN_MURO[direccion],
                                               rel=REL_TRANSPORTE)
 
 
 @pytest.mark.parametrize("direccion", ["vertical", "horizontal"])
 def test_M05_sin_cortante_alto_no_se_lee_ningun_criterio(direccion):
-    """Con cortante_alto=False la ficha del regimen ni se abre."""
+    """
+    Con cortante_alto=False la ficha del regimen ni se abre. (Desde VE-6 el
+    minimo se lee del criterio [N→] 'cuantia_minima_muro_e060': lo que este
+    test fija es que no se abre la del REGIMEN.)
+    """
     ca.reiniciar_usos()
     r = M9.cuantia_de_diseno(cuantia_calculada=0.0031, direccion=direccion,
                              cortante_alto=False)
-    assert r.cuantia_minima == pytest.approx(CN.CUANTIA_MIN_MURO[direccion],
+    assert r.cuantia_minima == pytest.approx(_CUANTIA_MIN_MURO[direccion],
                                              rel=REL_TRANSPORTE)
     assert r.regimen_cortante is None
     assert r.criterio_cortante_alto == "" and r.criterio_regimen_cortante == ""
@@ -259,7 +267,10 @@ def test_M05_verificar_cuantia_se_detiene_igual_que_cuantia_de_diseno(
     v = M9.verificar_cuantia(cuantia_provista=0.0025, direccion=direccion,
                              cortante_alto=False)
     assert isinstance(v, Verificacion) and v.cumple and v.codigo == codigo
-    assert v.criterio_aplicado is None          # [N] puro, Art. 14.3.1
+    # CAMBIADO DECLARANDOLO (VE-6, ficha T7C-10): decia None, «[N] puro».
+    # El minimo del 14.3.1 es desde VE-6 el criterio [N→]
+    # 'cuantia_minima_muro_e060' y la fila se atribuye a el.
+    assert v.criterio_aplicado == "cuantia_minima_muro_e060"
 
 
 def test_M05_verificar_cuantia_en_vertical_con_el_piso_declarado_lo_usa():

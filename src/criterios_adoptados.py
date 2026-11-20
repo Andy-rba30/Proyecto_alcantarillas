@@ -12420,6 +12420,46 @@ CRITERIOS: Dict[str, Criterio] = {
         ),
     ),
 
+    # --- VE-6 (lote M9, item 29 del censo; ficha T7C-10) -------------------
+    "cuantia_minima_muro_e060": Criterio(
+        valor={"horizontal": 0.0020, "vertical": 0.0015},
+        # NIVEL MEDIDO: lo invoca la Fase 9 (`servicio._fase_9`, la etapa
+        # «cuantia minima ... (9.4, referencia)», y `M9.cuantia_de_diseno`
+        # por el armado), que solo corre a `--alcance expediente`.
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="N->",
+        forma=FORMA_DICT_CON_CAMPOS,
+        concepto="Cuantias minimas del refuerzo de muro del cabezal "
+                 "armado, horizontal y vertical (E.060 14.3.1)",
+        justificacion="Decide el piso de cuantia de la pantalla y del alero "
+                      "del cabezal armado (`M9.cuantia_de_diseno`, "
+                      "`M9.verificar_cuantia` y la referencia 9.4 de la "
+                      "memoria): rho_diseno = max(rho_calculado, "
+                      "rho_minimo). La fuente (E.060 14.3.1, pag. 133) fija "
+                      "0,0020 horizontal y 0,0015 vertical para los muros. "
+                      "Hasta VE-6 vivia como constante [N] "
+                      "(`CUANTIA_MIN_MURO`); pasa a [N→] por el mismo "
+                      "argumento que movio el 0,30 m de 22.7.4 en el cierre "
+                      "de T-7c ('espesor_min_zapata_concreto_simple_m'): E.060 "
+                      "es una norma de edificaciones y la excepcion de la "
+                      "§0.2 de la hoja de ruta que la hace regir en el "
+                      "cabezal cubre la durabilidad (Cap. 4 y Art. 7.7), no "
+                      "los minimos estructurales; un minimo de su Cap. 14 "
+                      "aplicado a una obra vial es una analogia. El valor no "
+                      "cambia. El minimo se aplica ENTERO porque el "
+                      "expediente no ejerce la excepcion de 14.8.2 "
+                      "(`M9.nota_excepcion_refuerzo_minimo`)",
+        fuente="E.060, num. 14.3.1, pag. 133, por analogia; la excepcion de "
+               "los muros de contencion en 14.8.2",
+        reemplazado_por="Una norma vial que fije las cuantias minimas de un "
+                        "muro de contencion, o el ejercicio declarado de la "
+                        "excepcion de E.060 14.8.2",
+        resolucion=Libre(
+            que_lo_fija="E.060 14.3.1, aplicado por analogia",
+            dominio="dict con 'horizontal' y 'vertical', cuantias positivas",
+        ),
+    ),
+
     "edicion_que_rige_el_expediente": Criterio(
         valor=None,                 # VACIO: lo declara el proyectista
         # NIVEL NO MEDIBLE POR CORRIDA, y se dice con esas palabras: ningun

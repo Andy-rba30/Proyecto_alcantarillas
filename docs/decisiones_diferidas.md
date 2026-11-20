@@ -6451,6 +6451,8 @@ fichas en su sitio y añadió T7C-11 a T7C-13.
   está probada.
 - **Qué haría falta:** una especificación del Propietario para muros de gravedad en
   ciclópeo, y la verificación de la zapata por 22.7.
+- **Cerrado en VE-6 (2) y (3):** el cuerpo bajo sismo (C8) y la zapata como voladizo (C7);
+  ficha VE6M9-01.
 - **Dónde vive:** `src/modulos/M9_cabezal.py::verificar_cabezal_ciclopeo`
 
 ## T7C-10 · El rótulo por ámbito de E.060: lo que T-7c usa es [N→]; el 0.30 m de 22.7.4 pasa a criterio [N→] en el cierre, y las cuantías de 14.3.1 siguen como constante
@@ -6476,7 +6478,8 @@ fichas en su sitio y añadió T7C-11 a T7C-13.
   sesión de registro aparte, no una línea de este cierre.
 - **Qué haría falta:** una sesión que pase `CUANTIA_MIN_MURO` a un criterio [N→] y
   resincronice el manifiesto y los consumidores.
-- **Dónde vive:** `src/constantes_normativas.py::CUANTIA_MIN_MURO`
+- **Cerrado en VE-6:** es el criterio [N→] `cuantia_minima_muro_e060`; ficha VE6M9-02.
+- **Dónde vive:** `src/criterios_adoptados.py::cuantia_minima_muro_e060`
 
 ## T7C-11 · El modificador de carga η no entra en el cabezal: la fuente lo sostiene, pero el cambio no es acotado
 
@@ -8744,6 +8747,44 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
 - **Qué haría falta:** la geometría del talud por PUNTO (hoy es de corredor, como
   `terreno_delante_del_cabezal`); y corregir la §9.3 de la hoja de ruta.
 - **Dónde vive:** `src/modulos/M9_cabezal.py::coeficiente_rcbc`
+## VE6M9-01 · El cabezal ciclópeo se verifica bajo sismo (C8) y su zapata como voladizo de concreto simple (C7) (VE-6, ítem 10; T7C-09 (2)(3))
+
+- **Cerrado:** `M9.verificar_cabezal_ciclopeo` suma dos filas. **C7** (punta y talón que
+  vuelan más que la mitad del peralte, E.060 22.10.2.2): max[(M_u/S)/(φ·0,42√f'c),
+  V_u/(φ·0,11√f'c·b·h)] ≤ 1, φ = 0,5, f'c ≤ 10 MPa, h − 50 mm (22.4.8), con las
+  solicitaciones del armado (presión lineal, subpresión) y las dos combinaciones de E.060
+  9.2.5 por cada empuje del régimen; decide. **C8** (arranque y media altura): e ≤ t/6 con el
+  Evento Extremo I sin factorar. Dorados a mano: `tests/test_ve5_m9_ciclopeo.py`.
+- **Decisiones de la sesión** (Fable no se pudo consultar: la sesión no tenía la
+  herramienta; se tomó el lado que sostiene la fuente): (1) los dos casos de 11.6.5.1
+  («el resultado más conservador de estos dos análisis se usará para el diseño del
+  muro»), los de E2, y no el 100 % del incremento y de la inercia que suponía el test
+  escrito en VE-5; (2) la inercia del cuerpo en el centroide del trapecio; (3) el diagrama
+  estático es el del plano virtual de C2/C3 (no la cuña sobre la cara); (4) con
+  `no_cedente_k0`, k_h = 1.0·k_h0 y la resultante total no bajo h/2 (C11.6.5.4), como la
+  pantalla armada; (5) la junta del arranque decide siempre (22.4.7), media altura con
+  `tracciones_nulas`; (6) el cortante de C7 en la cara del cuerpo (lado seguro); (7) sin
+  presión de contacto en ninguna combinación de E.060, `MetodoNoEvaluableError` (Bloqueo).
+- **Abierto:** (a) sin inercia vertical del cuerpo (el ensamble no la aplica a pesos); (b)
+  con `traccion_admisible_e060` el sismo a media altura sólo informa: E.060 9.2 no combina
+  sismo con empuje; (c) el texto de 22.10.2.2 vive en la nota de `E060.22.10.2#CICLOPEO`:
+  no se firmó cita propia sin `NORMAS_DIR`.
+- **Qué haría falta:** el PDF de E.060 para firmar la cita de 22.10.2.2.
+- **Dónde vive:** `src/modulos/M9_cabezal.py::_verificar_cuerpo_bajo_sismo`
+
+## VE6M9-02 · Las cuantías mínimas de muro de E.060 14.3.1 pasan a criterio [N→] (VE-6, ítem 29; T7C-10)
+
+- **Cerrado:** la constante [N] `CUANTIA_MIN_MURO` se retiró de `constantes_normativas` y
+  su valor (0,0020 horizontal, 0,0015 vertical) es el criterio [N→]
+  `cuantia_minima_muro_e060` (expediente, sin ventana), por el argumento que movió el 0,30 m
+  de 22.7.4 en el cierre de T-7c. `M9.cuantia_minima` lo lee y valida;
+  `M9.DIRECCIONES_CUANTIA_MURO` sustituye a las claves de la constante en `servicio`; la fila
+  R1/R2 sin cortante alto se atribuye al criterio (`criterio_aplicado`, antes None). El
+  manifiesto, `variables_entrada` y los censos (169 criterios) se resincronizaron.
+- **Por qué:** E.060 es norma de edificaciones; la excepción de la §0.2 de la hoja de ruta
+  cubre la durabilidad, no los mínimos estructurales.
+- **Qué haría falta:** nada; una norma vial con mínimos propios lo sustituiría.
+- **Dónde vive:** `src/criterios_adoptados.py::cuantia_minima_muro_e060`
 ## VE5-CAT-01 · La rama de selva alta del TMC: [S] `region_natural` y la recomendación como piso del catálogo (cierre de T4-06)
 
 - **Cerrado (VE-5, lote catlic, 2026-11-20):** la entrada que faltaba es el [S] de corredor

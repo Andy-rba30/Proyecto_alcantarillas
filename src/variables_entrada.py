@@ -1708,6 +1708,8 @@ _META_CRITERIOS: Dict[str, _Meta] = {
     "clase_exposicion_fisuracion_cabezal": _Meta(unidad="-"),
     "junta_arranque_cabezal_ciclopeo": _Meta(unidad="-"),
     "espesor_min_zapata_concreto_simple_m": _Meta(unidad="m"),
+    # VE-6 (ficha T7C-10): la constante CUANTIA_MIN_MURO, como criterio [N→]
+    "cuantia_minima_muro_e060": _Meta(unidad="-"),
     "categoria_refuerzo_aashto": _Meta(unidad="-"),
     "clase_sitio": _Meta(unidad="-"),   # VE-5: la consume ML_licuefaccion
     "clases_producto_por_relleno": _Meta(unidad="-"),

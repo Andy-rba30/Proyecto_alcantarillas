@@ -1853,13 +1853,20 @@ def test_el_cabezal_ciclopeo_del_dorado(tanteo):
     construccion (E.060 22.4.7, 'junta_arranque_cabezal_ciclopeo' de
     archivo) y C2 toma la mayor de la de servicio y la amplificada de
     E.060, 1.1770 m, calculada a mano en `CP_T7C_CICLOPEO`.
+
+    CAMBIADO DECLARANDOLO (VE-6, ficha T7C-09 (2)(3)): el ciclopeo suma
+    C7 (la punta y el talon como voladizos de concreto simple) y C8 (el
+    cuerpo bajo sismo), y sale con el Evento Extremo I evaluado; sus
+    dorados estan en `tests/test_ve5_m9_ciclopeo.py`. C1 a C6 no cambian.
     """
     a = M9.verificar_cabezal_ciclopeo(_gravedad())
     assert a.tipo == M9.TIPO_GRAVEDAD and a.secciones == () and a.tabla == ()
-    assert a.fy_mpa is None and not a.sismico
+    assert a.fy_mpa is None and a.sismico
     codigos = [v.codigo for v in a.verificaciones]
     assert codigos == ["C1.base.e", "C2.cuerpo.e", "C3.cuerpo.e",
-                       "C4.material.e", "C5.material.e", "C6.cuerpo.e"]
+                       "C4.material.e", "C5.material.e", "C6.cuerpo.e",
+                       "C7.punta.e", "C7.talon.e", "C8.arranque.e",
+                       "C8.media.e"]
     c2, c3, c6 = _v(a, "C2.cuerpo.e"), _v(a, "C3.cuerpo.e"), _v(a,
                                                                 "C6.cuerpo.e")
     assert c2.valor_obtenido == pytest.approx(CPC["junta"]["e_u_reposo"],
@@ -1907,7 +1914,14 @@ def test_con_la_traccion_admisible_de_E060_decide_C6_y_las_nulas_informan(
     assert c2.valor_obtenido == pytest.approx(CPC["arranque"]["e_reposo"],
                                               abs=TOL_FINA)
     assert c2.paso.umbral.cita_id == "E060.22.6.3#TERCIO"
-    assert a.cumple
+    # CAMBIADO DECLARANDOLO (VE-6): fijaba `a.cumple`. Desde VE-6 la punta
+    # de este muro (vuela 0.30 m sobre una zapata de 0.30) se verifica como
+    # voladizo de concreto simple (C7, E.060 22.10.2.2) y no pasa; es lo
+    # UNICO que decide en contra, y C8 en el arranque tambien informa con
+    # el vaciado monolitico.
+    assert {v.codigo for v in a.verificaciones
+            if v.estado is EstadoDeVerificacion.NO_CUMPLE} == {"C7.punta.e"}
+    assert _v(a, "C8.arranque.e").estado is EstadoDeVerificacion.INDICADOR
 
 
 def test_C1_la_base_en_el_tercio_central_con_cargas_de_servicio(tanteo):
@@ -1967,12 +1981,19 @@ def test_C4_y_C5_los_limites_del_material_pueden_fallar(tanteo):
 
 
 def test_el_ciclopeo_dice_lo_que_no_verifica(tanteo):
+    """
+    CAMBIADO DECLARANDOLO (VE-6): decia «solo en la condicion ESTATICA» y
+    que la zapata no se verificaba como voladizo; desde VE-6 el cuerpo se
+    verifica bajo sismo (C8) y la zapata como voladizo (C7), y el aviso dice
+    en que fila y con que cargas.
+    """
     a = M9.verificar_cabezal_ciclopeo(_gravedad())
     texto = " | ".join(a.avisos)
-    assert "solo en la condicion ESTATICA" in texto
+    assert "solo en la condicion ESTATICA" not in texto
+    assert "C8" in texto and "11.6.5.1" in texto
     assert "22.10.2.2" in texto
     # punta 0.30 y talon 0.20 con zapata de 0.30: vuela mas que 0.15
-    assert "vuela" in texto
+    assert "vuela" in texto and "C7.punta.e" in texto
 
 
 def test_armado_del_cabezal_despacha_por_el_tipo_de_T7a(tanteo):
@@ -2153,10 +2174,14 @@ def test_el_tipo_gravedad_declarado_lleva_a_la_alternativa_ciclopea(tmp_path):
     assert a01.dimensionado
     armados = a01.cabezal.armado
     assert armados and all(a.tipo == M9.TIPO_GRAVEDAD for a in armados)
+    # CAMBIADO DECLARANDOLO (VE-6): suma C7 (la zapata como voladizo, solo
+    # el lado que vuela mas que la mitad del peralte) y C8 (el cuerpo bajo
+    # sismo, en el arranque y a media altura).
     for a in armados:
         assert a.secciones == () and a.tabla == ()
-        assert [v.codigo.split(".")[0] for v in a.verificaciones] == [
-            "C1", "C2", "C3", "C4", "C5", "C6"]
+        bases = [v.codigo.split(".")[0] for v in a.verificaciones]
+        assert bases[:6] == ["C1", "C2", "C3", "C4", "C5", "C6"]
+        assert set(bases[6:]) <= {"C7", "C8"}
     codigos = {v.codigo for v in a01.cabezal.verificaciones}
     assert "C2.cuerpo.e" in codigos and "A1.pantalla.e" not in codigos
 
@@ -2671,7 +2696,17 @@ def test_el_agua_entra_con_su_signo_a_las_filas_del_ciclopeo(tanteo):
                                  20.0)
     entorno = _gravedad()
     _, datos = M9.cargas_del_cabezal(entorno, EST)
-    armado = M9.verificar_cabezal_ciclopeo(entorno)
+    # CAMBIADO DECLARANDOLO (VE-6): con el relleno lleno de agua este muro
+    # VUELCA con las cargas de E.060 (la resultante sale de la base en las
+    # cuatro combinaciones), y desde VE-6 la zapata como voladizo (C7) lo
+    # detiene con `MetodoNoEvaluableError`, que el servicio vuelve Bloqueo.
+    # Lo que este test fija -- el agua con su signo en C2, C3 y C6 -- se
+    # mira con C7 apartado; la detencion se fija aqui mismo.
+    with pytest.raises(MetodoNoEvaluableError, match="C7"):
+        M9.verificar_cabezal_ciclopeo(entorno)
+    with pytest.MonkeyPatch.context() as mp:
+        mp.setattr(M9, "_verificar_zapata_ciclopea", lambda *a, **k: [])
+        armado = M9.verificar_cabezal_ciclopeo(entorno)
     f_t = 0.5 * 0.42 * math.sqrt(10.0) * 1000.0         # kPa (22-7, phi 0,5)
     usos, excentricidades, cortantes = [], {}, []
     for z, codigo in ((0.30, "C2.cuerpo.e"), (0.30 + 1.30 / 2,
