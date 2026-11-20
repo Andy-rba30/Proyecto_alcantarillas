@@ -6596,6 +6596,68 @@ CRITERIOS: Dict[str, Criterio] = {
         ),
     ),
 
+    # --- VE-5 (ficha T8-11, H12 de la segunda auditoria de T-8) --- LOS
+    # TECHOS DE TRANSCRIPCION DE LA FASE 6. Cuatro datos del sitio entran sin
+    # techo porque ninguna fuente de `normas/` lo da (HEC-14 Cap. 5 no limita
+    # ni la duracion, ni Sv, ni el tamaño del lecho; releidas las pags. 5-1 a
+    # 5-7), y `dominios.py` no los inventa: acota lo que un dato PUEDE ser.
+    # Un `D84_m` de 5.0 huele a milimetros escritos como metros, y la ficha
+    # pedia un AVISO --- nunca un rechazo, nunca un cambio de resultado --- con
+    # un criterio que diga donde esta el umbral. Ese umbral no lo da ninguna
+    # norma, y por eso el criterio nace SIN VALOR y OPCIONAL: sin declarar no
+    # hay aviso y todo sigue como hasta VE-5; declarado, cada dato por encima
+    # de su techo se avisa en el punto. DECISION PENDIENTE DE FABLE: la sesion
+    # de VE-5 no pudo consultar al consultor y tomo la mas conservadora, que
+    # es no fijar ningun techo de archivo (informe de VE-5, lote «gui»).
+    #
+    # NIVEL MEDIDO: lo invoca la corrida de perfil con los opcionales
+    # declarados de `tests/test_nivel_medido.py` (`servicio.correr_punto` lo
+    # lee en cada punto, antes de la Fase 2, por `M6.avisos_de_transcripcion`).
+    "techos_de_transcripcion_fase_6": Criterio(
+        valor=None,                 # OPCIONAL: sin valor, no hay aviso
+        opcional=True,
+        nivel=NIVEL_PERFIL,
+        etiqueta="A",
+        forma=FORMA_DICT_CON_CAMPOS,
+        concepto="Techo de TRANSCRIPCION de cada dato de sitio de la Fase 6 "
+                 "que entra sin techo fisico: por encima de el, el dato se "
+                 "AVISA como probable error de unidad (milimetros escritos "
+                 "como metros, segundos como minutos), sin rechazarlo ni "
+                 "cambiar ningun resultado. Claves: "
+                 "'duracion_caudal_pico_min' (min), "
+                 "'profundidad_socavacion_estimada_m' (m), 'D84_m' (m) y "
+                 "'Sv_Pa' (Pa), las dos ultimas del objeto "
+                 "'material_lecho_salida'",
+        justificacion="Decide, cuando se declara, a partir de que valor un "
+                      "dato de sitio de la Fase 6 se avisa como probable "
+                      "error de transcripcion. Es opcional y no un vacio: "
+                      "sin declarar, la corrida es la de siempre y la "
+                      "guardia de salida de la hoya (LimiteNumericoError) "
+                      "sigue atrapando lo que desborda. Ninguna norma da un "
+                      "techo para estos datos (HEC-14 Cap. 5, pags. 5-1 a "
+                      "5-7, no los limita), de modo que el umbral es una "
+                      "eleccion del proyectista y solo produce un aviso",
+        fuente="NINGUNA NORMA. HEC-14 (FHWA-HIF-12-026) Cap. 5, pags. "
+               "impresas 5-1 a 5-7, no limita la duracion del caudal pico, "
+               "el esfuerzo cortante Sv ni el tamaño D84 del lecho; "
+               "dominios.py no lleva techo para ellos (ficha T8-11)",
+        sensibilidad=("sin declarar: ningun aviso de transcripcion; la "
+                      "corrida es la de antes de VE-5",
+                      "declarado: un techo positivo por clave, en la unidad "
+                      "de la clave; cada dato del punto por encima de su "
+                      "techo sale como aviso del punto, y ningun numero del "
+                      "calculo cambia"),
+        reemplazado_por="Los techos que el proyectista adopte con su "
+                        "respaldo (el rango del EMS y del estudio "
+                        "hidrologico del corredor)",
+        resolucion=Libre(
+            que_lo_fija="el proyectista, con el rango plausible de cada dato "
+                        "en su corredor; ninguna norma lo fija",
+            dominio="un real positivo y finito por clave, en la unidad de "
+                    "la clave",
+        ),
+    ),
+
     # 'h_relleno_min_concreto_tmc' SE RETIRO. Declaraba 0.30 m [N->] para
     # concreto y TMC "por analogia sobre un vacio verificado": el HDPE es el
     # material menos tolerante a cobertura reducida, luego exigirle a los

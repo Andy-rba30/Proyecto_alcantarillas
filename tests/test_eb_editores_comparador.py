@@ -341,10 +341,12 @@ def test_e10_la_clave_de_una_fila_tecleada_es_esa_fila(_limpio):
     """
     ed = _mod("src.editores")
     e = ed.esquema_de("embocadura_cajon")
-    # `embocadura_cajon` se lee sobre DOS tablas (A.1 y C.2): desde VE5-GUI
-    # (ficha UI1-02) la fila que el texto nombra viaja calificada con la suya.
+    # `embocadura_cajon` se lee sobre DOS tablas (A.1 y C.2). VE5-GUI (ficha
+    # UI1-02) calificaba con su tabla toda fila de un criterio de varias; desde
+    # VE-5 (lote «gui») solo la que se repite entre ellas, y esta no: viaja
+    # corta, como la guardan la pestaña 2 y `tests/test_pf6_cabos.py`.
     assert ed.fila_implicita(e, "cajon_concreto_aletas_30_75") == \
-        "HDS5_3ED.TA1#cajon_concreto_aletas_30_75"
+        "cajon_concreto_aletas_30_75"
     p = ed.declarar("embocadura_cajon", "cajon_concreto_aletas_30_75")
     assert p.modo == "de_tabla" and p.filas == ("cajon_concreto_aletas_30_75",)
     # Un NUMERO no nombra ninguna fila, ni cuando coincide con una sola

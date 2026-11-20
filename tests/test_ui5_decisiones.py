@@ -511,14 +511,16 @@ def test_1_abrir_otra_obra_no_hereda_el_borrador(app, monkeypatch, tmp_path, ges
 
 def test_1_la_ventana_real_conserva_la_frontera_de_la_decision(app, ventana_real):
     """
-    GUARDIA (vale antes y despues): la decision es sobre el CSV, y el JSON de
-    datos externos sigue sin invalidar (EXT-8: el hijo usa las entradas
-    fotografiadas al correr); abrir una sesion y un proyecto nuevo retiran el
-    informe con el motivo de la sesion, no con el del CSV.
+    La decision de UI-5 era sobre el CSV, y el JSON de datos externos seguia
+    sin invalidar (EXT-8). Desde VE-5 (decision del dueño, ficha UI5-01 a)
+    tambien invalida, con su motivo (`MOTIVO_ENTRADA_CAMBIADA`); abrir una
+    sesion y un proyecto nuevo siguen retirando el informe con el motivo de
+    la sesion, no con el de un campo.
     """
     _salida, r = ventana_real
-    assert not r["tras_cambiar_externos"]["informe_es_None"]
-    assert all(e["encendido"] for e in r["tras_cambiar_externos"]["exportadores"].values())
+    assert r["tras_cambiar_externos"]["informe_es_None"]
+    assert _apagados_con(r["tras_cambiar_externos"]["exportadores"],
+                         app.MOTIVO_ENTRADA_CAMBIADA)
     for gesto in ("tras_cargar_sesion", "tras_nuevo_proyecto"):
         assert r[gesto]["informe_es_None"], gesto
         assert _apagados_con(r[gesto]["exportadores"],
@@ -1342,6 +1344,7 @@ def test_4_el_barrido_cubre_los_141_y_censa_lo_que_no_barre(candidatos):
     # VE3-21), sin valor de archivo y con sus dos opciones barribles.
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
     # 159 desde VE-5-m6: 'relacion_co_poza_enrocado_hec14' (la poza de
     # enrocado de HEC-14 Sec. 10.1, VE-4g).
     # 162 desde VE-5-met: 'sobreancho_excavacion_estructuras_m' (opcional,
@@ -1358,6 +1361,10 @@ def test_4_el_barrido_cubre_los_141_y_censa_lo_que_no_barre(candidatos):
     # e 'intervalos_de_clase_chi_cuadrado' [A] (ficha T1-01).
 >>>>>>> claude/ve5-mh
     assert len(por_clave) == len(ca.CRITERIOS) == 160
+=======
+    # 159 desde VE-5-gui: 'techos_de_transcripcion_fase_6' (ficha T8-11).
+    assert len(por_clave) == len(ca.CRITERIOS) == 159
+>>>>>>> claude/ve5-gui
     assert fuera == FILAS_FUERA_DE_SU_VENTANA
 >>>>>>> claude/ve5-m9
     assert {k for k, cs in por_clave.items() if not cs} == SIN_NADA_QUE_BARRER

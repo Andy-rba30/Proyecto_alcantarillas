@@ -103,11 +103,17 @@ SEIS_EXTERNAS = ("luz_m", "TW_m", "longitud_m", "S_conducto",
                  "desnivel_perfil_canal_m",
                  # --- VE-4d --- la cresta del desborde admitido de V8.
                  "longitud_cresta_desborde_m",
+<<<<<<< HEAD
                  # --- VE-4c --- la seccion del cauce de aproximacion (el
                  # perfil de remanso de V5); faltaba aqui desde VE-4c.
                  "seccion_cauce_aproximacion",
                  # --- VE-5 (m45, item 18) --- el arrastre del cauce, V6.
                  "arrastre_de_solidos")
+=======
+                 # --- VE-4c --- la seccion del cauce de aproximacion de V5;
+                 # este censo se habia quedado sin ella (lo midio VE-5).
+                 "seccion_cauce_aproximacion")
+>>>>>>> claude/ve5-gui
 
 
 def _formas_de(clave):

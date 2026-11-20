@@ -1047,10 +1047,12 @@ class Material:
     # imprime bajo «Fases 3 y 4»). Sin este campo habria que abrir un canal
     # nuevo en el reporte, que es de otra sesion.
     #
-    # VACIA EN LA CIRCULAR, y no por olvido: el tubo no elige nada en Fase 3
-    # que no este ya en el bloque de criterios -- su fila de la Tabla N 09 y
-    # su carta de HDS-5 son lectura directa, no adopcion --. SALVO EL TUBO DE
-    # CONCRETO desde VE-2 (a): la COLUMNA de su fila de la Tabla N 09 es el
+    # VACIA EN EL TMC Y EN EL HDPE (VE-5, ficha VE2-A (3): decia «en la
+    # circular», y el tubo de concreto la llena desde VE-2), y no por
+    # olvido: esos tubos no eligen nada en Fase 3 que no este ya en el bloque
+    # de criterios -- su fila de rugosidad y su carta de HDS-5 son lectura
+    # directa, no adopcion --. EL TUBO DE
+    # CONCRETO, desde VE-2 (a), si: la COLUMNA de su fila de la Tabla N 09 es el
     # criterio [A] 'columna_n_manning_concreto', y su eleccion viaja aqui
     # (paso F4.N_CONCRETO de `M2._pasos_del_tubo_de_concreto`). El marco si:
     # cuatro de sus cinco decisiones son criterios declarados por el
@@ -1488,7 +1490,7 @@ class SeccionCircular:
         return (Magnitud("D", self.D, "m",
                          "diametro interior del barril, que en un circulo es "
                          "tambien su altura interior: el «D» de HDS-5",
-                         cifras=CIFRAS_FACTOR),)
+                         cifras=cifras_de_dimension(self.D)),)
 
     def formula_geometria(self) -> str:
         """Las tres de la Sec. 4.1, escritas sobre el angulo mojado."""
@@ -1732,11 +1734,11 @@ class SeccionRectangular:
                      "ancho interior de UNA celda; con N celdas se diseña una "
                      "celda con Q/N (regla #3: el control de entrada y el "
                      "radio hidraulico son POR BARRIL)",
-                     cifras=CIFRAS_FACTOR),
+                     cifras=cifras_de_dimension(self.B)),
             Magnitud("H", self.H, "m",
                      "altura interior del barril: el «D» de HDS-5, que la "
                      "fuente define como *interior height of culvert barrel*",
-                     cifras=CIFRAS_FACTOR),
+                     cifras=cifras_de_dimension(self.H)),
         )
 
     def formula_geometria(self) -> str:
@@ -3689,6 +3691,24 @@ CIFRAS_FACTOR = 2          # el 2 y el 1 no necesitan marca: la regla los exime
 CIFRAS_PORCENTAJE = 1
 
 
+def cifras_de_dimension(valor: float) -> int:
+    """
+    Los decimales con que la memoria escribe una dimension de seccion: los
+    de `texto_de_dimension`, para el campo `cifras` de una `Magnitud`.
+
+    --- VE-5 (ficha VE1-01, abierto) --- hasta VE-5 las magnitudes `D`, `B`
+    y `H` de los pasos de la memoria salian con `CIFRAS_FACTOR` fijo: con la
+    serie de 6 in, el rotulo decia «Ø 1.0668 m» (VE-1, H1) y la sustitucion
+    del mismo paso «D = 1.07 m». Una sola regla para el rotulo y para la
+    sustitucion. Presentacion: no redondea el valor con que se calcula.
+    """
+    from decimal import Decimal
+
+    if not math.isfinite(valor):
+        return CIFRAS_FACTOR
+    return max(CIFRAS_FACTOR, -Decimal(repr(float(valor))).as_tuple().exponent)
+
+
 def texto_de_dimension(valor: float) -> str:
     """
     Una dimension de seccion, en metros, como la ROTULA la memoria: con
@@ -3708,13 +3728,7 @@ def texto_de_dimension(valor: float) -> str:
 
     Un valor no finito se escribe como antes, con `CIFRAS_FACTOR` («nan»).
     """
-    from decimal import Decimal
-
-    if not math.isfinite(valor):
-        return f"{valor:.{CIFRAS_FACTOR}f}"
-    decimales = max(CIFRAS_FACTOR,
-                    -Decimal(repr(float(valor))).as_tuple().exponent)
-    return f"{valor:.{decimales}f}"
+    return f"{valor:.{cifras_de_dimension(valor)}f}"
 
 
 # Alcance de la corrida. Rotulos, no valores de proyecto: con "expediente"
@@ -6674,8 +6688,8 @@ def modo_de(resolucion: Resolucion) -> ModoDeResolucion:
 
 class Poblacion(str, Enum):
     """
-    Las CUATRO poblaciones que el repositorio mantiene separadas y que el
-    usuario ve como una sola cosa -- "los datos que hay que llenar".
+    Las CINCO poblaciones (cuatro hasta VE-5) que el repositorio mantiene
+    separadas y que el usuario ve como una sola cosa -- "los datos que hay que llenar".
 
     Estan separadas por buenas razones (una es del CSV y varia punto a punto,
     otra es del corredor, la tercera es lo que el proyectista decidio donde la
@@ -6689,11 +6703,21 @@ class Poblacion(str, Enum):
     no estaban en ningun censo, y la ayuda de la GUI las mostraba como «sin
     ficha». Se censan como poblacion propia y no como columnas porque no lo
     son: no viven en el CSV y no varian necesariamente punto a punto.
+
+    `DATO_EXTERNO_OPCIONAL` llego en VE-5 (ficha T4-09) y es la QUINTA: los
+    seis ensayos de durabilidad que entran por el mismo JSON
+    (`servicio.CLAVES_DE_DURABILIDAD`) y que NO son de `CLAVES_EXTERNAS`
+    porque ninguna etapa los exige --- sin ellos la matriz no actua y la
+    memoria lo dice ---. Censados como `DATO_EXTERNO`, el pre-vuelo los habria
+    leido como datos que faltan; fuera del censo, la ayuda del JSON no los
+    nombraba. Poblacion propia: estan en el censo y nadie los cuenta como
+    falta.
     """
     COLUMNA_CSV = "columna_csv"
     DATO_SITIO = "dato_sitio"
     CRITERIO = "criterio"
     DATO_EXTERNO = "dato_externo"
+    DATO_EXTERNO_OPCIONAL = "dato_externo_opcional"
 
 
 @dataclass(frozen=True)

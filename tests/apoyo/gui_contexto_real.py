@@ -140,10 +140,13 @@ def main(salida: Path) -> int:
 
         # 4. Cargar sesion invalida y SUSTITUYE. Un externo tecleado antes
         # y ausente en la sesion se repone a vacio.
+        # Desde VE-5 (ficha UI5-01 a) teclear el externo DESPUES de correr ya
+        # invalida con su propio motivo: se teclea ANTES de la corrida, y el
+        # motivo que se mide es el de la sesion.
         ca.establecer_valor_dinamico(CLAVE, 30.0)
-        _correr(ventana, raiz)
         primer_externo = next(iter(ventana.externos_vars))
         ventana.externos_vars[primer_externo].set("7")
+        _correr(ventana, raiz)
         sesion = salida / "sesion_b.json"
         sesion.write_text(json.dumps({
             "formato_version": gapp.FORMATO_SESION, "app_version": "1.0",

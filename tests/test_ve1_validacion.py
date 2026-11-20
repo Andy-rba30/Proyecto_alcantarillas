@@ -695,6 +695,7 @@ def test_h2_guardia_el_valor_de_archivo_de_todos_los_criterios_sigue_pasando():
     # 158 desde VE-4e: 'nivel_agua_relleno_sin_drenaje_bajo_sismo'.
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
     # 159 desde VE-5-m6: 'relacion_co_poza_enrocado_hec14'.
     # 162 desde VE-5-met: los tres criterios de los metrados de la Fase 11.
     assert len(ca.CRITERIOS) == 162 and barridos > 100, (len(ca.CRITERIOS),                                                          barridos)
@@ -706,6 +707,10 @@ def test_h2_guardia_el_valor_de_archivo_de_todos_los_criterios_sigue_pasando():
     # 'intervalos_de_clase_chi_cuadrado' [A] (ficha T1-01).
 >>>>>>> claude/ve5-mh
     assert len(ca.CRITERIOS) == 160 and barridos > 100, (len(ca.CRITERIOS),
+=======
+    # 159 desde VE-5-gui: 'techos_de_transcripcion_fase_6' (ficha T8-11).
+    assert len(ca.CRITERIOS) == 159 and barridos > 100, (len(ca.CRITERIOS),
+>>>>>>> claude/ve5-gui
                                                           barridos)
 >>>>>>> claude/ve5-m9
 

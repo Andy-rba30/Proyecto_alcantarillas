@@ -87,6 +87,9 @@ EXTERNOS_POR_PUNTO = {"C-01": {"Q_m3s": 0.65, "S_conducto": 0.004}}
 OPCIONALES_PARA_MEDIR = {
     "v_max_concreto_eleccion": 6.0,
     "riesgo_admisible_propietario": {"quebrada_importante": {"R": 0.30, "n": 25}},
+    # VE-5 (ficha T8-11): un techo cualquiera; esta corrida no declara datos
+    # de la Fase 6, de modo que no sale ningun aviso y nada se mueve.
+    "techos_de_transcripcion_fase_6": {"D84_m": 4.0},
 }
 
 

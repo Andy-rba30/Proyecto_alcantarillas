@@ -290,6 +290,24 @@ def fichas_de_datos_externos() -> Tuple[FichaDeClaveExterna, ...]:
     return tuple(fichas)
 
 
+def fichas_de_ensayos_opcionales() -> Tuple[FichaDeClaveExterna, ...]:
+    """
+    --- VE-5 (ficha T4-09) --- Los ensayos de durabilidad que el MISMO JSON
+    admite y que ninguna etapa exige (`servicio.CLAVES_DE_DURABILIDAD`), con
+    su ficha del censo (la poblacion `dato_externo_opcional`). Van aparte de
+    `fichas_de_datos_externos` porque no son de `CLAVES_EXTERNAS`: la ayuda
+    los muestra rotulados como opcionales, y el pre-vuelo no los cuenta.
+    """
+    fichas = []
+    for clave in servicio.CLAVES_DE_DURABILIDAD:
+        v = ve.variable(clave)          # KeyError si el censo no la tiene
+        fichas.append(FichaDeClaveExterna(
+            clave=clave, familias=servicio.familias_que_usan(clave),
+            concepto=v.concepto, unidad=v.unidad,
+            de_donde_sale=ve.como_se_lee(v)))
+    return tuple(fichas)
+
+
 # El id de ejemplo del esqueleto. Va entre angulos para que se vea que hay que
 # sustituirlo; si alguien lo deja tal cual, la corrida no se rompe --- lo avisa
 # `servicio._avisar_ids_desconocidos`, que es exactamente lo que tiene que pasar.
@@ -632,6 +650,8 @@ class FichaDeGlosario:
 _ROTULOS_DE_POBLACION: Dict[str, str] = {
     "columna_csv": "columna del CSV",
     "dato_externo": "dato externo (bandera o JSON de --datos-externos)",
+    # VE-5 (ficha T4-09): los ensayos de durabilidad, opcionales.
+    "dato_externo_opcional": "ensayo opcional (JSON de --datos-externos)",
     "dato_sitio": "dato de sitio",
     "criterio": "criterio adoptado",
 }

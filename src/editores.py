@@ -65,6 +65,7 @@ from __future__ import annotations
 
 import math
 import numbers
+import dataclasses
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -128,8 +129,8 @@ class OpcionDeTabla:
     # sobre varias tablas ofrece las filas de todas, y la clave corta de una
     # fila puede repetirse entre ellas (las filas «5», «10» y «20» de las dos
     # tablas de AASHTO 3.11.6.4). `referencia` es lo que el editor guarda y
-    # `declarar` acepta: la clave corta si el criterio tiene una sola tabla
-    # (como hasta VE5-GUI), y «tabla#fila» si tiene varias.
+    # `declarar` acepta: la clave corta, y «tabla#fila» solo si la clave
+    # corta se repite entre las tablas de la ficha (VE-5, lote «gui»).
     tabla_id: str = ""
     referencia: str = ""
 
@@ -236,11 +237,22 @@ def _opciones_de_tabla(clave: str, r: DeTabla, tipo_de_editor: str,
     ficha de `n_manning_cajon` nombra --- solo entraba con nota, como
     adopcion, y no con la procedencia de su fila.
     """
-    varias = len(r.tablas) > 1
     opciones: List[OpcionDeTabla] = []
     for tabla_id in r.tablas:
         opciones.extend(_opciones_de_una_tabla(
-            clave, tabla_id, tipo_de_editor, formas, campos, calificar=varias))
+            clave, tabla_id, tipo_de_editor, formas, campos, calificar=False))
+    # LA REFERENCIA SE CALIFICA SOLO SI HACE FALTA (VE-5, lote «gui»): la
+    # clave corta, como hasta VE5-GUI, salvo que se repita en dos tablas de
+    # la ficha (las filas «5», «10» y «20» de AASHTO 3.11.6.4), y entonces
+    # «tabla#fila». Calificar TODA fila de un criterio de varias tablas
+    # cambiaba la fila que la pestaña 2 guarda (`tests/test_pf6_cabos.py`,
+    # la embocadura de la Tabla A.1) sin ninguna ambiguedad que resolver.
+    # `declarar` acepta las dos formas.
+    cuantas: Dict[str, int] = {}
+    for o in opciones:
+        cuantas[o.fila] = cuantas.get(o.fila, 0) + 1
+    opciones = [dataclasses.replace(o, referencia=f"{o.tabla_id}#{o.fila}")
+                if cuantas[o.fila] > 1 else o for o in opciones]
     return r.tablas[0], tuple(opciones)
 
 
