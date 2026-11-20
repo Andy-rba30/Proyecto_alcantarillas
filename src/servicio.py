@@ -3578,7 +3578,8 @@ def _fase_9(informe: InformePunto,
                     else None if dimensionado is None
                     else dimensionado.puntas),
             espesores_zapata=None if peralte is None else peralte.espesores))
-    if pantalla is not None and pantalla.espesores:
+    if pantalla is not None and (pantalla.espesores
+                                 or pantalla.espesores_aleros):
         informe.cabezal = pantalla.cabezal
         entornos = _etapa(
             informe.bloqueos, FASE_CABEZAL,

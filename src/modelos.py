@@ -8274,8 +8274,11 @@ SECCION_PANTALLA = "pantalla"
 SECCION_PUNTA = "punta"
 SECCION_TALON = "talon"
 SECCION_ALERO = "alero"
+# --- VE-6 (ficha VE6M9-03) --- la segunda seccion del alero, la de la mitad
+# de su longitud: arma el tramo de L/2 a L (la del arranque, el de 0 a L/2).
+SECCION_ALERO_MITAD = "alero_mitad"
 SECCIONES_DEL_ARMADO = (SECCION_PANTALLA, SECCION_PUNTA, SECCION_TALON,
-                        SECCION_ALERO)
+                        SECCION_ALERO, SECCION_ALERO_MITAD)
 
 
 @dataclass(frozen=True)

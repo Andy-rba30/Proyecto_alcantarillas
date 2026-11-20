@@ -4733,7 +4733,8 @@ def predimensionar_cabezal(*, extremo: ExtremoDelConducto,
                            ancho_por_estabilidad: Optional[float] = None,
                            espesor_por_armado: Optional[float] = None,
                            punta_por_estabilidad: Optional[float] = None,
-                           pantalla_por_armado: Optional[float] = None
+                           pantalla_por_armado: Optional[float] = None,
+                           alero_por_armado: Optional[float] = None
                            ) -> GeometriaCabezal:
     """
     La geometria PROPUESTA del cabezal de UN extremo (INF-4.2), con las
@@ -4914,9 +4915,13 @@ def predimensionar_cabezal(*, extremo: ExtremoDelConducto,
     # --- VE-3.14 (H-1 de los ensayos de diseño del cabezal) --- La pantalla
     # de espesor uniforme que el armado hizo crecer
     # (`dimensionar_pantalla_por_armado`): la corona y el arranque crecen
-    # juntos (el alero hereda el espesor de la corona) y la zapata crece lo
+    # juntos (desde VE-6 el alero NO lo hereda) y la zapata crece lo
     # mismo, de modo que la punta y el talon no cambian. Lo declarado gana.
     crecimiento_pantalla = 0.0
+    # --- VE-6 --- el espesor del que PARTE el alero: el de la corona antes
+    # de que el armado de la pantalla la haga crecer (la regla, o la corona
+    # declarada); su propio armado lo hace crecer aparte.
+    e_alero_partida = e_corona
     pantalla_por_arm = (pantalla_por_armado is not None and not ec_decl
                         and not eb_decl and tipo == TIPO_VOLADIZO)
     if pantalla_por_arm:
@@ -4928,8 +4933,8 @@ def predimensionar_cabezal(*, extremo: ExtremoDelConducto,
                 nombre=nombre, valor=pantalla_por_armado, unidad="m",
                 origen=ORIGEN_DIMENSION_ARMADO,
                 regla=(f"el menor de la grilla {e_regla:.3f} m + k·paso con "
-                       "el que el armado de la pantalla y de los aleros "
-                       f"cumple, partiendo de {texto_e}"),
+                       "el que el armado de la pantalla cumple, partiendo de "
+                       f"{texto_e}"),
                 criterio=CRITERIO_DIMENSIONAMIENTO_ZAPATA))
     else:
         dims.append(_dim("espesor de la pantalla en la corona", e_corona,
@@ -5059,21 +5064,25 @@ def predimensionar_cabezal(*, extremo: ExtremoDelConducto,
     # 7. Aleros: h0 = coronacion - pie (ver `predimensionar_aleros`)
     aleros, dims_aleros, _nota = predimensionar_aleros(
         embocadura=embocadura, altura_inicial=coronacion - extremo.cota_pie,
-        espesor=e_corona, ancho_zapata=B, espesor_zapata=e_z, talud=talud,
+        espesor=(alero_por_armado if alero_por_armado is not None
+                 else e_alero_partida),
+        ancho_zapata=B, espesor_zapata=e_z, talud=talud,
         reglas=reglas, declaradas=declaradas,
         de_altura_inicial=de["corona"], de_espesor=de["e_corona"],
         id_punto=id_punto)
-    if pantalla_por_arm:
-        # El alero hereda el espesor de la corona: si la pantalla se
-        # dimensiono por su armado (que arma tambien los aleros), el alero
-        # lo esta, salvo que su espesor se haya declarado.
+    if alero_por_armado is not None:
+        # --- VE-6 (ficha VE6M9-03) --- el alero dimensionado por el armado
+        # de SUS dos secciones (`_dimensionar_aleros`), no por el de la
+        # pantalla; un espesor declarado gana (lo deja `predimensionar_
+        # aleros` con su origen).
         dims_aleros = tuple(
             replace(d, origen=ORIGEN_DIMENSION_ARMADO,
-                    regla="el de la pantalla, dimensionada por el armado de "
-                          "la pantalla y de los aleros",
+                    regla=(f"el menor de la grilla {e_alero_partida:.3f} m + "
+                           "k·paso con el que el armado de las dos secciones "
+                           "del alero (arranque y mitad) cumple"),
                     criterio=CRITERIO_DIMENSIONAMIENTO_ZAPATA)
             if (d.nombre == "espesor de los aleros"
-                and d.origen == ORIGEN_DIMENSION_REGLA) else d
+                and d.origen != ORIGEN_DIMENSION_DECLARADA) else d
             for d in dims_aleros)
     dims.extend(dims_aleros)
 
@@ -5743,7 +5752,8 @@ def cabezal_del_punto(*, punto, resultado, geometria, embocadura,
                       anchos_por_estabilidad: Optional[dict] = None,
                       espesores_por_armado: Optional[dict] = None,
                       puntas_por_estabilidad: Optional[dict] = None,
-                      pantallas_por_armado: Optional[dict] = None
+                      pantallas_por_armado: Optional[dict] = None,
+                      aleros_por_armado: Optional[dict] = None
                       ) -> CabezalDelPunto:
     """
     Los dos cabezales de un punto DIMENSIONADO, con sus aleros, su losa, sus
@@ -5794,7 +5804,8 @@ def cabezal_del_punto(*, punto, resultado, geometria, embocadura,
             punta_por_estabilidad=(puntas_por_estabilidad or {}).get(
                 extremo.extremo),
             pantalla_por_armado=(pantallas_por_armado or {}).get(
-                extremo.extremo))
+                extremo.extremo),
+            alero_por_armado=(aleros_por_armado or {}).get(extremo.extremo))
         geometrias.append(g)
         if tipo is None:
             tipos_por_regla.append(g)
@@ -10635,27 +10646,44 @@ def incorporar_peralte(cabezal: CabezalDelPunto,
 FILAS_DEL_ARMADO_DE_LA_PANTALLA = FILAS_DEL_ARMADO_DE_LA_ZAPATA
 
 
-def incumplidas_del_armado_de_la_pantalla(entorno: EntornoDelCabezal
-                                          ) -> Optional[Tuple[str, ...]]:
-    """
-    --- VE-3.14 --- Los codigos de las filas del armado de la PANTALLA y de
-    los ALEROS (A1 a A4 y A6) que no cumplen con la geometria del `entorno`,
-    o None si el armado no se puede evaluar (crecer el espesor no lo
-    arregla: el servicio registra el `Bloqueo` al armar la geometria final).
-    El cabezal de gravedad no se arma: vacia.
-    """
+def _incumplidas_del_elemento(entorno: EntornoDelCabezal, elemento: str
+                              ) -> Optional[Tuple[str, ...]]:
+    """Las filas A1 a A4 y A6 de UN elemento que no cumplen, o None."""
     if entorno.geometria.tipo == TIPO_GRAVEDAD:
         return ()
     try:
         sol = solicitaciones_de_resistencia(entorno)
-        piezas = (list(armar_elemento(entorno, ELEMENTO_PANTALLA, sol))
-                  + list(armar_elemento(entorno, ELEMENTO_ALEROS, sol)))
+        piezas = list(armar_elemento(entorno, elemento, sol))
     except ErrorProyecto:
         return None
     return tuple(v.codigo for p in piezas for v in p.verificaciones
                  if not v.cumple
                  and (v.codigo or "").split(".")[0]
                  in FILAS_DEL_ARMADO_DE_LA_PANTALLA)
+
+
+def incumplidas_del_armado_de_la_pantalla(entorno: EntornoDelCabezal
+                                          ) -> Optional[Tuple[str, ...]]:
+    """
+    --- VE-3.14 --- Los codigos de las filas del armado de la PANTALLA (A1 a
+    A4 y A6) que no cumplen con la geometria del `entorno`, o None si el
+    armado no se puede evaluar (crecer el espesor no lo arregla: el servicio
+    registra el `Bloqueo` al armar la geometria final). El cabezal de
+    gravedad no se arma: vacia. Hasta VE-6 traia tambien las del alero, que
+    heredaba el espesor de la pantalla; desde VE-6 el alero se dimensiona
+    por las suyas (`incumplidas_del_armado_del_alero`).
+    """
+    return _incumplidas_del_elemento(entorno, ELEMENTO_PANTALLA)
+
+
+def incumplidas_del_armado_del_alero(entorno: EntornoDelCabezal
+                                     ) -> Optional[Tuple[str, ...]]:
+    """
+    --- VE-6 (ficha VE6M9-03) --- Lo mismo para las dos secciones del ALERO
+    (`armar_elemento`, arranque y mitad), con las que su espesor se
+    dimensiona sin copiar el de la pantalla. Vacia sin aleros.
+    """
+    return _incumplidas_del_elemento(entorno, ELEMENTO_ALEROS)
 
 
 @dataclass(frozen=True)
@@ -10667,6 +10695,8 @@ class DimensionadoDePantalla:
     intentos: Tuple[str, ...]
     pasos: Tuple[PasoDeMemoria, ...]
     avisos: Tuple[str, ...]
+    # --- VE-6 --- el espesor de los aleros que su PROPIO armado hizo crecer
+    espesores_aleros: Dict[str, float] = field(default_factory=dict)
 
 
 def dimensionar_pantalla_por_armado(
@@ -10692,10 +10722,18 @@ def dimensionar_pantalla_por_armado(
 
     Un espesor DECLARADO (corona o arranque) gana y no se itera; el cabezal
     de gravedad no se arma. Devuelve None si no hay nada que dimensionar.
+
+    --- VE-6 (ficha VE6M9-03) --- La pantalla crece por SU armado (A1 a A4 y
+    A6 de la pantalla) y, despues, el ALERO por el suyo (sus dos secciones,
+    `incumplidas_del_armado_del_alero`), con el mismo paso y con tope fisico
+    en su altura: hasta VE-6 el alero heredaba el espesor de la pantalla. El
+    espesor del alero no entra en la estabilidad del cabezal ni en su
+    zapata, de modo que su crecimiento no las re-verifica. Un
+    `espesor_aleros_m` declarado gana y no se itera.
     """
     declarados = declarados or {}
 
-    def construir(pantallas):
+    def construir(pantallas, aleros_esp=None):
         return cabezal_del_punto(
             punto=punto, resultado=resultado, geometria=geometria,
             embocadura=embocadura, socavacion=socavacion,
@@ -10705,7 +10743,8 @@ def dimensionar_pantalla_por_armado(
             anchos_por_estabilidad=dict(anchos or {}) or None,
             espesores_por_armado=dict(espesores_zapata or {}) or None,
             puntas_por_estabilidad=dict(puntas or {}) or None,
-            pantallas_por_armado=dict(pantallas) or None)
+            pantallas_por_armado=dict(pantallas) or None,
+            aleros_por_armado=dict(aleros_esp or {}) or None)
 
     def entornos_de(cab):
         return {e.extremo: e for e in datos_del_cabezal_del_punto(
@@ -10725,14 +10764,13 @@ def dimensionar_pantalla_por_armado(
         inc = incumplidas_del_armado_de_la_pantalla(entorno)
         if inc:
             estado[g.extremo] = inc
-    if not estado:
-        return None
     paso_m, _fraccion = _regla_de_dimensionamiento()
     partida = {g.extremo: g for g in cabezal.geometrias}
     # Lo que la estabilidad y el armado de la zapata ya no cumplian con la
     # pantalla de partida (una zapata «no factible», por ejemplo) no detiene
     # el crecimiento: lo detiene lo que DEJA de cumplir al engrosarla.
-    de_partida = _estabilidades_evaluables(list(entornos.values()), estado)
+    de_partida = (_estabilidades_evaluables(list(entornos.values()), estado)
+                  if estado else None)
     base = {e: set(_intento(e, 0.0, de_partida).incumplidas)
             | set(incumplidas_del_armado_de_la_zapata(entornos[e]) or ())
             for e in estado}
@@ -10825,10 +10863,125 @@ def dimensionar_pantalla_por_armado(
                 f"pantalla se detuvo en {actuales[e].espesor_base_muro:.3f} m "
                 f"porque {detenidos[e]}: revisar la geometria o declarar el "
                 "espesor (`cabezal_declarado`)")
+    # --- VE-6 --- y el alero, por su propio armado, sobre la geometria con
+    # la pantalla ya dimensionada.
+    aleros_esp, intentos_al, pasos_al, avisos_al = _dimensionar_aleros(
+        punto=punto, final=final, declarados=declarados,
+        entornos_de=entornos_de,
+        construir=lambda al: construir(pantallas, al), paso_m=paso_m)
+    if not estado and not intentos_al:
+        return None
+    if aleros_esp:
+        final = construir(pantallas, aleros_esp)
     return DimensionadoDePantalla(
         cabezal=final, espesores=pantallas,
-        intentos=tuple(f"{e}: " + " -> ".join(trazas[e]) for e in estado),
-        pasos=tuple(pasos), avisos=tuple(avisos))
+        intentos=tuple(f"{e}: " + " -> ".join(trazas[e]) for e in estado)
+        + intentos_al,
+        pasos=tuple(pasos) + pasos_al, avisos=tuple(avisos) + avisos_al,
+        espesores_aleros=aleros_esp)
+
+
+def _dimensionar_aleros(*, punto, final: CabezalDelPunto, declarados: dict,
+                        entornos_de, construir, paso_m: float
+                        ) -> Tuple[Dict[str, float], Tuple[str, ...],
+                                   Tuple[PasoDeMemoria, ...], Tuple[str, ...]]:
+    """
+    --- VE-6 (ficha VE6M9-03) --- El espesor del ALERO de cada cabezal de
+    voladizo cuyo armado de sus dos secciones no cumple:
+    e_k = e_0 + k·paso, el primero con el que cumplen, con e_k menor que la
+    altura del alero sobre su zapata (tope fisico) y que el ancho de su
+    zapata. Parte del espesor que la geometria trae (el de la regla, o el
+    de la corona declarada); un `espesor_aleros_m` declarado gana y no se
+    itera. Devuelve (espesores, intentos, pasos, avisos).
+    """
+    entornos = entornos_de(final)
+    estado = {}
+    for g in final.geometrias:
+        if g.aleros is None or g.tipo == TIPO_GRAVEDAD:
+            continue
+        if "espesor_aleros_m" in declarados.get(g.extremo, {}):
+            continue
+        entorno = entornos.get(g.extremo)
+        if entorno is None:
+            continue
+        inc = incumplidas_del_armado_del_alero(entorno)
+        if inc:
+            estado[g.extremo] = inc
+    if not estado:
+        return {}, (), (), ()
+    partida = {g.extremo: g.aleros for g in final.geometrias
+               if g.extremo in estado}
+    alto = {g.extremo: g.altura_total - g.aleros.espesor_zapata
+            for g in final.geometrias if g.extremo in estado}
+    trazas = {e: [f"{partida[e].espesor:.3f} m: no cumplen "
+                  + ", ".join(inc)] for e, inc in estado.items()}
+    espesores: Dict[str, float] = {}
+    detenidos = {}
+    vivos = list(estado)
+    while vivos:
+        for e in list(vivos):
+            actual = espesores.get(e, partida[e].espesor)
+            nuevo = actual + paso_m
+            tope = min(alto[e], partida[e].ancho_zapata)
+            if not nuevo < tope - TOL_UMBRAL_NORMATIVO:
+                detenidos[e] = (f"el espesor llego al tope fisico (la altura "
+                                f"del alero sobre su zapata o el ancho de "
+                                f"esta, {tope:.3f} m)")
+                vivos.remove(e)
+            else:
+                espesores[e] = nuevo
+        if not vivos:
+            break
+        entornos = entornos_de(construir(espesores))
+        siguen = []
+        for e in vivos:
+            inc = incumplidas_del_armado_del_alero(entornos[e])
+            if inc is None:
+                trazas[e].append(f"{espesores[e]:.3f} m: armado no evaluable")
+                detenidos[e] = "el armado del alero dejo de ser evaluable"
+            elif inc:
+                trazas[e].append(f"{espesores[e]:.3f} m: no cumplen "
+                                 + ", ".join(inc))
+                siguen.append(e)
+            else:
+                trazas[e].append(f"{espesores[e]:.3f} m: cumple")
+        vivos = siguen
+    pasos, avisos = [], []
+    for e in estado:
+        cumple = e not in detenidos
+        e_final = espesores.get(e, partida[e].espesor)
+        pasos.append(paso(
+            "F9.DIMENSIONADO_PANTALLA", codigo=f"9.3.al.{e[0]}",
+            que=f"Espesor de los aleros del cabezal de {e}, dimensionado por "
+                "el armado de sus dos secciones (arranque y mitad)",
+            formula=("e_k = e_0 + k·paso, k = 0, 1, 2, ...: el primer e_k con "
+                     "el que la flexion, el cortante sin estribos, el acero "
+                     "minimo, el espaciamiento y la fisuracion de las dos "
+                     "secciones del alero cumplen, con e_k menor que su "
+                     "altura y que el ancho de su zapata"),
+            sustitucion=(
+                Magnitud("e_0", partida[e].espesor, "m",
+                         "espesor del alero de la geometria (regla o corona "
+                         "declarada)"),
+                Magnitud("paso", paso_m, "m",
+                         f"criterio '{CRITERIO_DIMENSIONAMIENTO_ZAPATA}' "
+                         "[A], el mismo paso de la zapata"),
+                Magnitud("altura", alto[e], "m", "del alero sobre su "
+                         "zapata, en el arranque: tope fisico"),
+            ),
+            resultado=Magnitud(
+                "e", e_final, "m",
+                "dimensionado por armado" if cumple else
+                "el mayor espesor probado: el armado del alero NO cumple"),
+            nota_del_proyecto="Intentos: " + " -> ".join(trazas[e]) + "."))
+        if not cumple:
+            avisos.append(
+                f"Cabezal de {e} de {punto.id}: el dimensionamiento de los "
+                f"aleros se detuvo en {e_final:.3f} m porque {detenidos[e]}: "
+                "revisar la geometria o declarar el espesor "
+                "(`cabezal_declarado.espesor_aleros_m`)")
+    return (espesores, tuple(f"{e} (aleros): " + " -> ".join(trazas[e])
+                             for e in estado), tuple(pasos), tuple(avisos))
 
 
 def rotular_estabilidad_incompleta(cabezal: CabezalDelPunto,
@@ -10966,6 +11119,7 @@ from src.modelos import (  # noqa: E402
     MINIMOS_MAS_EXIGENTE, MOTIVO_METODO_NO_EVALUABLE_ARMADO,
     REGIMEN_RESISTENCIA_CEDENTE, REGIMEN_RESISTENCIA_K0,
     REGIMENES_DE_RESISTENCIA, REGLAS_DE_MINIMOS, SECCION_ALERO,
+    SECCION_ALERO_MITAD,
     SECCION_PANTALLA, SECCION_PUNTA, SECCION_TALON, SolicitacionDeArmado,
     TRACCION_NULA)
 
@@ -13171,6 +13325,76 @@ def _altura_y_longitud(entorno: EntornoDelCabezal) -> Tuple[float, float]:
     return hm, (g.longitud if g.longitud else hm)
 
 
+# --- VE-6 (lote M9, item 9; fichas VE3-14 H-13, T7B-08 (3), T7C-04 y
+# VE6M9-03) --- EL ALERO SE ARMA POR SUS PROPIAS SECCIONES. Hasta VE-6 llevaba
+# la solicitacion de la pantalla en su arranque, con el espesor de la
+# pantalla. AASHTO LRFD 5 pide cada seccion con SUS cargas factoradas: cada
+# franja vertical del alero es el fuste de un muro en voladizo -- su altura
+# baja con el talud de h0 a H_f --, con su espesor y sobre su zapata. Dos
+# secciones: el arranque (la mas alta del tramo de 0 a L/2) y la mitad (la
+# mas alta del tramo de L/2 a L); con la altura que baja a lo largo del
+# alero, la mas alta de cada tramo es la que rige en el.
+FRACCION_MITAD_ALERO = 1 / 2
+
+
+def entorno_de_la_seccion_del_alero(entorno: EntornoDelCabezal,
+                                    fraccion: float) -> EntornoDelCabezal:
+    """
+    El entorno del FUSTE de la franja del alero a la `fraccion` de su
+    longitud (0 en el arranque, 1 en la punta): un muro en voladizo con
+
+      bajada  Δ = (h0 - H_f)·fraccion, lo que la franja esta mas abajo que
+              el arranque (el alero baja con el talud, `Aleros`)
+      H       H_c - e_zapata del alero - Δ, sobre la zapata del alero
+      fuste   el espesor del alero, uniforme
+      zapata  la del alero (ancho y espesor de `Aleros`), TODA como talon:
+              la franja no tiene punta que armar aqui (la zapata del alero
+              queda fuera, ficha T7C-04) y el plano virtual queda en su
+              extremo -- del lado de mas empuje con el plano virtual; con la
+              cuña sobre la cara del fuste, la de archivo, no cambia nada --
+      relleno la corona y el relleno retenido Δ mas abajo; el borde de la
+              plataforma, el desplante, el freatico y el agua no se mueven:
+              detras de la franja el relleno SUBE hasta la plataforma con el
+              talud del terraplen entero (lado seguro: normal al alero sube
+              menos, con el seno del angulo del alero con el talud)
+
+    La sobrecarga viva, su orientacion y su distancia al borde son las del
+    cabezal (lado seguro: la franja esta mas lejos de la via).
+    """
+    g = entorno.geometria
+    al = g.aleros
+    if al is None:
+        raise DatoInvalidoError(
+            "aleros", valor=None, id_punto=entorno.id_punto,
+            motivo="el cabezal no tiene aleros: no hay seccion de alero")
+    if not (_finito(fraccion) and 0 <= fraccion <= 1):
+        raise DatoInvalidoError(
+            "fraccion", valor=fraccion, id_punto=entorno.id_punto,
+            motivo="la seccion del alero va de su arranque (0) a su punta "
+                   "(1)")
+    bajada = max(al.altura_inicial - al.altura_final, 0.0) * fraccion
+    H = g.altura_total - al.espesor_zapata - bajada
+    talon = al.ancho_zapata - al.espesor
+    if not H > 0:
+        raise DatoInvalidoError(
+            "aleros", valor=H, id_punto=entorno.id_punto,
+            motivo=f"la franja del alero a {fraccion:g}·L no deja fuste "
+                   "sobre su zapata")
+    if not talon >= 0:
+        raise DatoInvalidoError(
+            "aleros", valor=al.espesor, id_punto=entorno.id_punto,
+            motivo=f"el alero ({al.espesor:.3f} m) es mas grueso que su "
+                   f"zapata ({al.ancho_zapata:.3f} m)")
+    seccion = _reemplazar(
+        g, H=H, B=al.ancho_zapata, espesor_zapata=al.espesor_zapata,
+        espesor_corona=al.espesor, espesor_base_muro=al.espesor,
+        ancho_punta=0.0, ancho_talon=talon,
+        cota_coronacion=g.cota_coronacion - bajada, aleros=None, losa=None,
+        dimensiones=())
+    return _reemplazar(entorno, geometria=seccion,
+                       cota_relleno=entorno.cota_relleno - bajada)
+
+
 def armar_elemento(entorno: EntornoDelCabezal, elemento: str,
                    solicitaciones: Optional[dict] = None
                    ) -> Tuple[ArmadoDeSeccion, ...]:
@@ -13183,11 +13407,12 @@ def armar_elemento(entorno: EntornoDelCabezal, elemento: str,
       zapata    la punta (traccion abajo) y el talon (traccion arriba), en
                 la cara de la pantalla (AASHTO 5.12.8.4); la que no tiene
                 vuelo no se arma.
-      aleros    el arranque del alero -- un muro en voladizo de altura
-                variable cuya seccion critica es la mas alta, la del
-                encuentro con el cabezal --, con el espesor del alero y la
-                solicitacion de la pantalla a esa altura. Su zapata y sus
-                secciones intermedias NO se arman (ficha T7C-04).
+      aleros    (VE-6) por sus PROPIAS secciones: el arranque (tramo de 0
+                a L/2) y la mitad de su longitud (tramo de L/2 a L), cada
+                una con las solicitaciones del fuste de su franja
+                (`entorno_de_la_seccion_del_alero`), con el espesor del
+                alero. Sin caida (h0 = H_f), solo el arranque. Su zapata NO
+                se arma (ficha T7C-04).
 
     El servicio la llama una vez por elemento para que lo que un elemento
     no pueda evaluar quede como `Bloqueo` del punto y los otros dos sigan.
@@ -13243,17 +13468,28 @@ def armar_elemento(entorno: EntornoDelCabezal, elemento: str,
     else:
         if g.aleros is None:
             return ()
-        piezas.append(diseno_flexion_corte(
-            solicitaciones=sol["secciones"][SECCION_ALERO],
-            espesor=g.aleros.espesor, elemento=ELEMENTO_ALEROS,
-            clave=SECCION_ALERO,
-            seccion=f"arranque de los aleros del {lugar} (su seccion mas "
-                    "alta)",
-            cara="trasdos (contra el relleno), armadura vertical",
-            ancho_seccion=min(g.aleros.altura_inicial,
-                              max(g.aleros.longitudes)),
-            contraste_e060=sol["e060"].get(SECCION_ALERO),
-            momento_servicio=servicio.get(SECCION_ALERO), **comun))
+        secciones = [(SECCION_ALERO, 0.0,
+                      f"arranque de los aleros del {lugar} (su seccion mas "
+                      "alta; arma el tramo de 0 a L/2)")]
+        if g.aleros.altura_inicial > g.aleros.altura_final \
+                + TOL_UMBRAL_NORMATIVO:
+            secciones.append((
+                SECCION_ALERO_MITAD, FRACCION_MITAD_ALERO,
+                f"mitad de la longitud de los aleros del {lugar} (arma el "
+                "tramo de L/2 a L)"))
+        for clave, fraccion, rotulo in secciones:
+            sol_x = solicitaciones_de_resistencia(
+                entorno_de_la_seccion_del_alero(entorno, fraccion))
+            piezas.append(diseno_flexion_corte(
+                solicitaciones=sol_x["secciones"][SECCION_PANTALLA],
+                espesor=g.aleros.espesor, elemento=ELEMENTO_ALEROS,
+                clave=clave, seccion=rotulo,
+                cara="trasdos (contra el relleno), armadura vertical",
+                ancho_seccion=min(g.aleros.altura_inicial,
+                                  max(g.aleros.longitudes)),
+                contraste_e060=sol_x["e060"].get(SECCION_PANTALLA),
+                momento_servicio=sol_x.get("servicio", {}).get(
+                    SECCION_PANTALLA), **comun))
     return tuple(piezas)
 
 

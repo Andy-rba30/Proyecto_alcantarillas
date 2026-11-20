@@ -80,6 +80,7 @@ from src.constantes_normativas import (
     UNIDAD_M3)
 from src.dominios import MILIMETROS_POR_METRO
 from src.modulos.M9_cabezal import TIPO_GRAVEDAD
+from src.modelos import SECCION_ALERO, SECCION_ALERO_MITAD  # --- VE-6 ---
 from src.modelos import (
     CIFRAS_MAGNITUD, ELEMENTO_ALEROS, ELEMENTO_PANTALLA, ELEMENTO_ZAPATA,
     ESTADO_RASANTE_COMPATIBLE, ESTADO_RASANTE_SIN_TAMIZADO,
@@ -705,6 +706,17 @@ def _geometria_de_la_fila(fila, g) -> Tuple[float, float, int, str]:
         if a_lo_largo:
             return L_al, h, caras, ("largo de los dos aleros, repartidas en "
                                     "su altura media")
+        # --- VE-6 (ficha VE6M9-03) --- el alero se arma por tramos: la
+        # seccion del arranque arma de 0 a L/2 y la de la mitad de L/2 a L;
+        # cada fila se reparte en la mitad de la longitud de los aleros.
+        por_tramos = (pos.startswith(f"{SECCION_ALERO_MITAD}:")
+                      or (pos.startswith(f"{SECCION_ALERO}:")
+                          and g.aleros.altura_inicial
+                          > g.aleros.altura_final + TOL_UMBRAL_NORMATIVO))
+        if por_tramos:
+            return h, L_al / 2, caras, ("altura media de los aleros, "
+                                        "repartidas en la mitad de su "
+                                        "longitud (su tramo)")
         return h, L_al, caras, ("altura media de los aleros, repartidas en "
                                 "su longitud")
     raise DatoInvalidoError(

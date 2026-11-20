@@ -1705,6 +1705,12 @@ def test_los_aleros_se_arman_en_su_arranque_con_su_espesor(tanteo):
     PRECISIONES: los aleros no quedan en silencio. Seccion critica en el
     arranque, con el espesor del alero y la solicitacion de la pantalla; su
     zapata y sus secciones intermedias van diferidas con ficha y aviso.
+
+    CAMBIADO DECLARANDOLO (VE-6, ficha VE6M9-03): fijaba que el alero
+    llevaba la MISMA solicitacion que la pantalla. Desde VE-6 cada seccion
+    del alero -- el arranque y la mitad de su longitud -- lleva la del fuste
+    de su franja, con su espesor y su zapata (dorados en
+    `tests/test_ve6_m9_alero.py`); su zapata sigue diferida (T7C-04).
     """
     aleros = Aleros(angulo_grados=45.0, angulo_largo_grados=45.0,
                     esviaje_grados=0.0, longitud_corto=2.5, longitud_largo=2.5,
@@ -1716,10 +1722,13 @@ def test_los_aleros_se_arman_en_su_arranque_con_su_espesor(tanteo):
     pantalla = a.seccion(SECCION_PANTALLA)
     assert alero.elemento == ELEMENTO_ALEROS
     assert alero.espesor == pytest.approx(0.25, abs=ABS_CERO)
-    assert alero.rige_flexion.M_u == pytest.approx(
-        pantalla.rige_flexion.M_u, abs=ABS_CERO)
     assert alero.d < pantalla.d
-    assert alero.As_resistencia > pantalla.As_resistencia
+    mitad = a.seccion(M9.SECCION_ALERO_MITAD)
+    assert mitad.elemento == ELEMENTO_ALEROS
+    # no mas que el arranque: con este alero el plano virtual de la mitad
+    # alcanza la plataforma y, bajo sismo con la resultante a h/2, iguala
+    assert max(s.M_u for s in mitad.solicitaciones) <= max(
+        s.M_u for s in alero.solicitaciones)
     assert any(f.elemento == ELEMENTO_ALEROS and "horizontal" in f.posicion
                for f in a.tabla)
     assert "T7C-04" in DECISIONES.read_text(encoding="utf-8")
@@ -2086,14 +2095,15 @@ def test_A01_sale_de_la_Fase_9_con_sus_dos_cabezales_armados(tmp_path):
         assert a.tipo == M9.TIPO_VOLADIZO
         assert a.regimen == REGIMEN_RESISTENCIA_K0
         assert {s.clave for s in a.secciones} == {
-            SECCION_PANTALLA, SECCION_PUNTA, SECCION_TALON, SECCION_ALERO}
+            SECCION_PANTALLA, SECCION_PUNTA, SECCION_TALON, SECCION_ALERO,
+            M9.SECCION_ALERO_MITAD}     # VE-6: el alero, en dos secciones
         assert a.sismico
         for s in a.secciones:
             assert s.barra is not None, (a.extremo, s.clave)
             assert s.M_r >= s.rige_flexion.M_u - 1e-9
             assert s.V_r >= s.rige_cortante.V_u - 1e-9
             assert math.isfinite(s.As_adoptado) and s.As_adoptado > 0
-        assert len(a.tabla) == 8
+        assert len(a.tabla) == 9          # VE-6: la mitad del alero
     assert not [b for b in a01.bloqueos if "armado" in b.etapa]
     codigos = {v.codigo for v in a01.cabezal.verificaciones}
     for ext in ("e", "s"):
