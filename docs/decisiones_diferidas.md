@@ -9214,3 +9214,16 @@ estas fichas dicen cómo se hizo y lo que quedó. Los documentos generados (mani
 - **Qué haría falta:** correr T2 con `NORMAS_DIR`, firmar la cita y sacarla del censo; pasar
   a ella la cita principal de C7 en M9; regenerar los manifiestos y `trazabilidad.csv`.
 - **Dónde vive:** `src/normativa/citas.py::E060_22_10_2_2_VOLADIZO`
+
+## VE7C-02 · `F9.LONGITUD`: la cercanía a la longitud aproximada es recomendación y la juzga el refinamiento (C2)
+
+- **Cerrado (decisión del consultor Fable, triaje VE-7, 2026-11-20):** el `por_que` de
+  `F9.LONGITUD` decía «la fuente pide que quede cerca de la aproximada», que bajo el verbo
+  OBLIGA se leía como exigencia. Ahora dice que es recomendación («should», HDS-5 3.3.5) y que
+  la juzga `F9.REFINAMIENTO_LONGITUD` (RECOMIENDA desde VE-6). El verbo no cambia: el paso
+  aplica «must be fitted» (`HDS5_3ED.3.3.5#ENCAJE`, EXIGENCIA). Test:
+  `tests/test_ve7_lote_c_longitud.py`.
+- **Abierto:** cambia el texto de la memoria de los puntos con cabezal (paso 9.0.5) y, por
+  eso, los documentos generados que lo transcriben; ningún número cambia.
+- **Qué haría falta:** regenerar `indice_formulas.md` en la integración.
+- **Dónde vive:** `src/normativa/fundamentos.py::LONGITUD_ENTRE_CABEZALES`
