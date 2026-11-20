@@ -272,7 +272,10 @@ def test_a_el_boton_se_enciende_solo_con_un_criterio_con_ventana_que_no_se_deriv
 # censo y no el predicado reescrito: si un criterio gana o pierde ventana, este
 # test lo dice y la divergencia con la CLI de la ficha UI3-01 se revisa.
 SIN_VENTANA_EN_LA_VENTANA = frozenset({
-    "D_max_norma_producto", "Mw_licuefaccion", "N_cq_N_gammaq_meyerhof",
+    "D_max_norma_producto", "Mw_licuefaccion",
+    # VE-5 (ficha T7B-04): sale 'N_cq_N_gammaq_meyerhof' (retirado) y entra
+    # 'talud_delante_del_cabezal' ([S] sin valor ni ventana).
+    "talud_delante_del_cabezal",
     "PERFIL_SUELO_PRESUNTO", "TR_evento_extremo", "c_phi_fundacion",
     "capacidad_portante_adm", "clase_sitio", "clases_producto_por_relleno",
     "cobertura_minima_aashto", "cortante_alto_muro_e060_art_11_10_10_2",

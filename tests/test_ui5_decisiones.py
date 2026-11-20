@@ -1245,7 +1245,10 @@ FILAS_FUERA_DE_SU_VENTANA = {
 SIN_NADA_QUE_BARRER = {
     "clase_sitio", "riesgo_admisible_propietario", "TW_receptor", "TR_evento_extremo",
     "c_phi_fundacion", "capacidad_portante_adm", "Mw_licuefaccion", "D_max_catalogo",
-    "perfil_hdpe_fabricante", "N_cq_N_gammaq_meyerhof", "metodo_estabilidad_global",
+    "perfil_hdpe_fabricante", "metodo_estabilidad_global",
+    # VE-5 (ficha T7B-04): 'talud_delante_del_cabezal' sustituye a
+    # 'N_cq_N_gammaq_meyerhof' (retirado).
+    "talud_delante_del_cabezal",
     "exposicion_quimica_ems", "peso_especifico_saturado_relleno_kn_m3",
     "edicion_que_rige_el_expediente", "edicion_legal_que_rige_el_expediente",
     # VE-2 (c2): sin valor de archivo y con ventana en prosa (su extremo de
@@ -1331,12 +1334,21 @@ def test_4_el_barrido_cubre_los_141_y_censa_lo_que_no_barre(candidatos):
     # 'coeficientes_desborde_plataforma' (el desborde admitido de V8).
     # 158 desde VE-4e: 'nivel_agua_relleno_sin_drenaje_bajo_sismo' (ficha
     # VE3-21), sin valor de archivo y con sus dos opciones barribles.
+<<<<<<< HEAD
     # 159 desde VE-5-m6: 'relacion_co_poza_enrocado_hec14' (la poza de
     # enrocado de HEC-14 Sec. 10.1, VE-4g).
     # 162 desde VE-5-met: 'sobreancho_excavacion_estructuras_m' (opcional,
     # ventana 0-0.45 m de EG-2013 501.04), 'incremento_acero_por_despiece' y
     # 'clase_concreto_losa_entrega' (los metrados de la Fase 11).
     assert len(por_clave) == len(ca.CRITERIOS) == 162    assert fuera == FILAS_FUERA_DE_SU_VENTANA
+=======
+    # 159 desde VE-5-m9: 'empuje_sismico_muro_que_no_cede' (ficha T7B-14).
+    # 160 con el item 3 de VE-5-m9 (ficha T7B-04): sale
+    # 'N_cq_N_gammaq_meyerhof' y entran 'talud_delante_del_cabezal' y
+    # 'factores_forma_profundidad_portante'.
+    assert len(por_clave) == len(ca.CRITERIOS) == 160
+    assert fuera == FILAS_FUERA_DE_SU_VENTANA
+>>>>>>> claude/ve5-m9
     assert {k for k, cs in por_clave.items() if not cs} == SIN_NADA_QUE_BARRER
     # Y el barrido no es de juguete: cada valor de archivo esta, y mas.
     con_valor = sum(1 for c in ca.CRITERIOS.values() if c.valor is not None)

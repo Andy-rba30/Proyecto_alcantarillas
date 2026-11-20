@@ -693,9 +693,16 @@ def test_h2_guardia_el_valor_de_archivo_de_todos_los_criterios_sigue_pasando():
     # 155 desde VE-4c: 'sobreelevacion_admisible_remanso_m' (ficha T7B-01).
     # 157 desde VE-4d: los dos criterios del desborde admitido de V8.
     # 158 desde VE-4e: 'nivel_agua_relleno_sin_drenaje_bajo_sismo'.
+<<<<<<< HEAD
     # 159 desde VE-5-m6: 'relacion_co_poza_enrocado_hec14'.
     # 162 desde VE-5-met: los tres criterios de los metrados de la Fase 11.
     assert len(ca.CRITERIOS) == 162 and barridos > 100, (len(ca.CRITERIOS),                                                          barridos)
+=======
+    # 159 desde VE-5-m9: 'empuje_sismico_muro_que_no_cede'.
+    # 160 con el item 3 de VE-5-m9 (ficha T7B-04).
+    assert len(ca.CRITERIOS) == 160 and barridos > 100, (len(ca.CRITERIOS),
+                                                          barridos)
+>>>>>>> claude/ve5-m9
 
 
 # --- H3 · la discrepancia de la doble n, en el punto de uso ---------------

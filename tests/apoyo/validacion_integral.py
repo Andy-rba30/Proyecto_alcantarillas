@@ -1245,9 +1245,9 @@ CONDICIONALES_NO_MEDIDAS: Dict[str, str] = {
     "h_eq_bajo_altura_tabulada": (
         "solo con un muro de menos de 5.0 ft (1.524 m), bajo la primera fila "
         "de la tabla de h_eq de AASHTO 3.11.6.4 (`M9._interpolar_h_eq`)"),
-    "N_cq_N_gammaq_meyerhof": (
+    "talud_delante_del_cabezal": (
         "solo con `terreno_delante_del_cabezal` = 'talud_descendente': la "
-        "zapata en talud del Manual de Puentes 2.8.1.3.1.2c"),
+        "zapata en talud de AASHTO 10.6.3.1.2c (RC_BC; VE-5)"),
     "q_n_kpa": (
         "la resistencia portante nominal del EMS (`suelo_fundacion`): solo "
         "con la cimentacion en ROCA (filas A o B declaradas en 'F_pga'), "
