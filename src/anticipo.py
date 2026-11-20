@@ -330,6 +330,11 @@ def lineas_de_diferimientos(diferido: DiferimientosDelAlcance) -> Tuple[str, ...
 #                                    falta (ETAPA_FALTA_*, DETALLE_FALTA_*)
 #   el TW sin ninguna via            servicio.tw_sin_via_de_sec_1_3, el MISMO
 #                                    predicado que `_resolver_tw`
+#   lo que detendria la Fase 1-bis   servicio.anticipar_fase_hidrologia (VE-4b,
+#                                    ficha T1-04): la precedencia de
+#                                    `_fase_hidrologia` y, por dentro,
+#                                    `MH_hidrologia.anticipar_caudal`, con el
+#                                    mensaje de la MISMA excepcion
 #
 # SIGUE SIENDO UNA ESTIMACION, por dos razones medidas y no supuestas
 # (tests/test_pf2_prevuelo.py, la union contra la corrida real): estima de MAS
