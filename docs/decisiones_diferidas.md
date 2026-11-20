@@ -4808,22 +4808,26 @@ se corrigieron donde las auditorías las desmintieron (cada una lo dice).
 
 ## T5-07 · Del marco se calcula la demanda, y el pórtico se difiere
 
-- **Qué se difirió:** el análisis y el diseño del pórtico (momentos en losa y
-  muros, acero; AASHTO LRFD Sección 5 y 12.11.3 a 12.11.5) y el empuje lateral
-  del relleno sobre los muros.
-- **Por qué:** la v8 manda el «diseño completo por AASHTO LRFD Sección 5» del
-  marco y no lo lleva al script. Lo que T-5 calcula es la DEMANDA de la losa
-  superior: F_e = 1 + 0.20 H/B_c con el tope de 1.15 del relleno compactado
-  (12.11.2.2.1; el EG-2013 exige compactarlo), la carga viva de 3.6.1.2.6 y
-  M_ref = w_u L²/8 en kN·m/m, la cota superior del momento positivo como viga
-  simplemente apoyada. El peso propio de la losa no entra (necesita su canto y
-  el peso del concreto, que son del diseño diferido); el empuje lateral necesita
-  el coeficiente de empuje del suelo del conducto, que el proyecto no declara.
-  La sección del marco la define T-3; mientras sus criterios de cajón no se
-  declaren, el marco se detiene antes, en `CriterioPendienteError`.
-- **Qué haría falta:** el diseño del pórtico con sus criterios (canto,
-  recubrimiento, f'c, el ángulo de fricción del relleno del conducto).
-- **Dónde vive:** `src/modulos/M8_estructural.py::demanda_marco`
+- **Cerrado en lo principal (VE-5, lote m8, ítem 1 del censo):** el pórtico del marco
+  se analiza y se arma a expediente (etapa `servicio.ETAPA_PORTICO_MARCO`): rigidez
+  directa exacta de una o varias celdas, contrastada con la solución cerrada y con MnDOT
+  LRFD BDM §12.5 (Tabla 12.5.2, dentro del 3.5 %); cargas de 12.11.2 con el empuje en
+  REPOSO (3.11.5.2, `phi_relleno_trasdos`), LS por analogía con la Tabla 3.11.6.4-1, agua
+  interior y la carga viva movida por la losa; las tres combinaciones de C12.11.2.1 con y
+  sin LS, y el 50 % de 3.11.7 sólo en el positivo de la losa superior (decisiones del
+  dueño); armado de cada cara traccionada con `M9.diseno_flexion_corte` y los φ del cajón
+  vaciado in situ (Tabla 12.5.5-1). Sus verificaciones cuentan en el punto. El empuje
+  lateral queda cerrado. Las lecturas del proyecto están en el docstring del símbolo.
+- **Abierto:** lo que lista `M8.DIFERIDO_PORTICO`. El principal: los cantos separados
+  existen en `GeometriaPortico` pero no en la geometría del programa (M2/M5/M7 forman la
+  clave con `espesor_pared_cajon`), y el pórtico no itera el canto: con 0.20 m y el
+  recubrimiento de la cota más exigente la losa de A-01 no cumple A1. Los pasos del armado
+  llevan los fundamentos F9.ARM_* (rótulo «Fase 9»). Decisiones pendientes de Fable (sin
+  subagentes en la sesión): reutilizar para el marco `phi_relleno_trasdos` y los criterios
+  de material, recubrimiento y exposición del cabezal; la altura de la Tabla 3.11.6.4-1.
+- **Qué haría falta:** separar los cantos en la geometría del programa y dimensionar la
+  losa por su armado, como el peralte del cabezal (VE-3.9).
+- **Dónde vive:** `src/modulos/M8_estructural.py::disenar_portico`
 
 ## T5-08 · El caso de la auditoría de T-4 deja de dimensionarse con la fabricación de archivo: cambio declarado y aprobado por el dueño
 
@@ -5128,7 +5132,10 @@ Doce fichas; las cinco últimas son de la auditoría.
   fuerza el cambio.
 - **Qué haría falta:** que la demanda de la losa (y el cabezal por punto, T-7a) lean la
   geometría de aquí cuando se toquen; el cálculo estructural del pórtico en el
-  expediente, que hará del espesor un resultado y no una adopción.
+  expediente, que hará del espesor un resultado y no una adopción. **Desde VE-5 (m8)**
+  el pórtico se calcula (`M8.disenar_portico`, ficha T5-07) con su propia
+  `GeometriaPortico`, que separa los cantos de losa, pared y tabique; la de aquí sigue con
+  uno solo y el pórtico lo toma de `espesor_pared`, de modo que los números coinciden.
 - **Dónde vive:** `src/modelos.py::GeometriaMarco`
 
 ## T3-07 · Con la embocadura del cajón declarada, R4 ya no frena una fila de cajón para el ke del TUBO; la frena el consumidor

@@ -1169,6 +1169,20 @@ def _estructural_json(informe: InformePunto) -> Dict[str, Any]:
             "w_u_kPa": _num(r.demanda_marco.w_u_kPa),
             "luz_m": _num(r.demanda_marco.luz_m),
             "M_ref_kNm_m": _num(r.demanda_marco.M_u_referencia_kNm_m)}),
+        # --- VE-5 (m8) --- El portico del marco: sus secciones armadas.
+        "portico": (None if r is None or getattr(r, "portico", None) is None
+                    else {
+            "n_celdas": r.portico.geometria.n_celdas,
+            "canto_m": _num(r.portico.geometria.t_losa_superior_m),
+            "cumple": r.portico.cumple,
+            "secciones": [
+                {"seccion": a.seccion, "cara": a.cara,
+                 "M_u_kNm_m": _num(a.rige_flexion.M_u),
+                 "V_u_kN_m": _num(a.rige_cortante.V_u),
+                 "As_adoptado_mm2_m": _num(a.As_adoptado),
+                 "barra": None if a.barra is None else a.barra.texto,
+                 "cumple": all(v.cumple for v in a.verificaciones)}
+                for a in r.portico.armados]}),
         "cama_apoyo": None, "sujecion_relleno_lateral": None, "numeral": None,
         # Lo que no se verifica DEL CONDUCTO DE ESTE PUNTO; la lista de
         # todos los materiales solo cuando el punto trae la cama y no el
@@ -1597,8 +1611,11 @@ def _lineas_punto(informe: InformePunto) -> List[str]:
     # la demanda del marco; los avisos salen con los del punto.
     r = informe.estructural
     if r is not None and r.demanda_marco is not None:
-        out.append(f"{SANGRIA}Fase 8  marco: diseño del portico diferido al "
-                   f"expediente; demanda M_ref = "
+        portico = getattr(r, "portico", None)
+        estado = ("portico no completado (ver bloqueos)" if portico is None
+                  else f"portico armado, {len(portico.armados)} secciones, "
+                  + ("cumple" if portico.cumple else "NO cumple"))
+        out.append(f"{SANGRIA}Fase 8  marco: {estado}; demanda M_ref = "
                    f"{_fmt(r.demanda_marco.M_u_referencia_kNm_m)} kN.m/m")
     elif r is not None:
         maximo = ("-" if r.relleno_maximo_m is None

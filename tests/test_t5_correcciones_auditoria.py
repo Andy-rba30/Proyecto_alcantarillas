@@ -291,15 +291,16 @@ def test_en_el_tmc_de_2_10_m_F1_y_el_vehiculo_son_los_calculados_a_mano(
 
 def test_cada_consumidor_pasa_su_medida_del_efecto():
     """
-    Por AST: las cuatro llamadas de produccion a `carga_viva_enterrada`
-    (concreto, TMC, HDPE y marco) pasan `efecto=`. Sin eso volveria la
+    Por AST: las cinco llamadas de produccion a `carga_viva_enterrada`
+    (concreto, TMC, HDPE, demanda del marco y, desde VE-5, el portico del
+    marco) pasan `efecto=`. Sin eso volveria la
     eleccion por defecto para un conducto cuya carga no es P_L min(l_w, D_i).
     """
     arbol = ast.parse((RAIZ / "src/modulos/M8_estructural.py").read_text(
         encoding="utf-8"))
     llamadas = [n for n in ast.walk(arbol) if isinstance(n, ast.Call)
                 and getattr(n.func, "id", "") == "carga_viva_enterrada"]
-    assert len(llamadas) == 4
+    assert len(llamadas) == 5
     for llamada in llamadas:
         assert "efecto" in {k.arg for k in llamada.keywords}, ast.unparse(llamada)
 

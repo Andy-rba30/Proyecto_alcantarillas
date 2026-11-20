@@ -9391,7 +9391,13 @@ CRITERIOS: Dict[str, Criterio] = {
             # (punto 2 de su brief), que generaliza M8 a la seccion; C5 deja
             # la clave puesta y el defecto declarado en §15.8 y en el
             # docstring de `M5.v7_flotacion`, que es su consumidor.
-            "cajon": {"EV": "EV_porticos_rigidos"},
+            #
+            # --- VE-5 (m8) --- Y EL EMPUJE DEL PORTICO, EN REPOSO: las
+            # paredes de un marco cerrado no se desplazan lo que el empuje
+            # activo pide, y el dueño adopto el de reposo de 3.11.5.2 (censo
+            # del 2026-11-20, decision 3), que es la fila «EH: En reposo»
+            # (1.35/0.90). La lee `M8.disenar_portico`.
+            "cajon": {"EV": "EV_porticos_rigidos", "EH": "EH_en_reposo"},
 
             # TMC. Es estructura flexible enterrada, y de las tres subfilas
             # flexibles le toca la de "Entre otros" (1.95/0.90): no es

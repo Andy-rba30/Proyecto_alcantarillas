@@ -4974,6 +4974,20 @@ M294_FRACCION_CAPACIDAD_COMPRESION = 0.5
 FE_CAJON_MAX_COMPACTADO = 1.15
 FE_CAJON_MAX_SIN_COMPACTAR = 1.40
 
+# ---- [C] El portico del marco: AASHTO LRFD 12.5.5, 12.11 y 3.11.7 (VE-5) --
+# Factores de resistencia de la Tabla 12.5.5-1 (pag. 12-12, PDF 1650; cita
+# AASHTO_LRFD_9.T12.5.5-1#CAJON_IN_SITU), fila «Reinforced Concrete
+# Cast-in-Place Box Structures»: flexion 0.90 y cortante 0.85. El marco del
+# proyecto es vaciado in situ (la §14.1 de docs/ruta_familia_c.md lo
+# adopto), y por eso no la fila del prefabricado (1.00 y 0.90).
+PHI_FLEXION_CAJON_IN_SITU = 0.90
+PHI_CORTE_CAJON_IN_SITU = 0.85
+# 3.11.7 (pag. 3-152, PDF 206; cita AASHTO_LRFD_9.3.11.7): «In lieu of more
+# precise information, a 50 percent reduction may be used». El comentario la
+# dice para «obtain maximum positive moment in top slab of culverts», y el
+# proyecto la toma solo ahi (decision del dueño, censo del 2026-11-20).
+REDUCCION_EMPUJE_3_11_7 = 0.50
+
 # ---- [C] El perfil MINIMO del PE corrugado por diametro designado ---------
 # DERIVADO de la Table A12-11 de AASHTO LRFD (pag. 12-108, tabla
 # AASHTO_LRFD_9.TA12-11) y de la serie de M 294 (AASHTO_M294_TRAD.T7.2.2,

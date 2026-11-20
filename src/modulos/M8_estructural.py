@@ -261,7 +261,8 @@ from typing import Callable, List, Optional, Tuple
 from src import constantes_normativas as _CN
 from src import criterios_adoptados as ca
 from src.constantes_fisicas import (GAMMA_AGUA_KN_M3, KPA_POR_MPA, KSI_EN_MPA,
-                                    N_POR_KN, PSI_EN_KPA, PULGADA_EN_MM)
+                                    N_POR_KN, PIE_EN_METROS, PSI_EN_KPA,
+                                    PULGADA_EN_MM)
 from src.constantes_normativas import (CAMA_RELLENO_LATERAL,
                                    GAMMA_P_NO_APLICA,
                                    NUMERAL_TABLA_GAMMA_P,
@@ -271,7 +272,10 @@ from src.constantes_normativas import (CAMA_RELLENO_LATERAL,
 from src.dominios import MILIMETROS_POR_METRO
 from src.modelos import (CIFRAS_FACTOR, CIFRAS_FINA, CIFRAS_MAGNITUD,
                          CamaApoyoRelleno, CargaVivaEnterrada,
-                         DatoFaltanteError, DatoInvalidoError, DemandaMarco,
+                         CondicionAnalisis, DatoFaltanteError,
+                         DatoInvalidoError, DemandaMarco, DisenoPortico,
+                         EsfuerzoDeSeccion, GeometriaPortico,
+                         SolicitacionDeArmado,
                          EstadoDeVerificacion, FactoresFlotacion,
                          FormaSeccion, LimiteNumericoError, Magnitud,
                          Material, MetodoNoEvaluableError,
@@ -281,7 +285,9 @@ from src.modelos import (CIFRAS_FACTOR, CIFRAS_FINA, CIFRAS_MAGNITUD,
                          SeccionRectangular, TipoDeVeredicto,
                          TipoMaterial, Umbral, Verificacion, Veredicto, paso)
 from src.modulos.M2_material import espesor_pared, numero_de_celdas
-from src.tolerancias import (TOL_BRENT, TOL_UMBRAL_NORMATIVO,
+from src.tolerancias import (DIVISIONES_MIEMBRO_PORTICO,
+                             POSICIONES_CARGA_VIVA_POR_CELDA, TOL_BRENT,
+                             TOL_UMBRAL_NORMATIVO,
                              TRAMOS_BUSQUEDA_RELLENO_MAXIMO)
 
 NUMERAL_8_1_2 = "Fase 8, items 1-2"
@@ -861,14 +867,15 @@ def cama_apoyo_relleno_lateral(material: Material) -> CamaApoyoRelleno:
 # la propia v8 deja fuera («diseño completo por AASHTO LRFD Seccion 5» del
 # marco) y lo que necesita un dato que el proyecto no tiene.
 DIFERIDO_MARCO = (
-    "Diseño del portico del marco (momentos y acero de losa y muros, AASHTO "
-    "LRFD Seccion 5 y 12.11.3 a 12.11.5): diferido al expediente por la hoja "
-    "de ruta (Fase 8, «diseño completo por AASHTO LRFD Seccion 5»). La Fase 8 "
-    "calcula la DEMANDA de la losa superior en kN·m/m (paso F8.MARCO)")
+    "Diseño del portico del marco (momentos y acero de losas y paredes, "
+    "AASHTO LRFD Seccion 5 y 12.11.3 a 12.11.5): desde VE-5 lo hace la etapa "
+    "del portico a nivel de expediente (`disenar_portico`), que la tabla de "
+    "bloqueos nombra si no se pudo completar. La Fase 8 calcula ademas la "
+    "DEMANDA de referencia de la losa superior en kN·m/m (paso F8.MARCO)")
 DIFERIDO_EMPUJE_LATERAL_MARCO = (
-    "Empuje lateral del relleno sobre los muros del marco: necesita el "
-    "coeficiente de empuje del suelo del conducto (angulo de friccion, del "
-    "EMS), que el proyecto no declara; diferido con el diseño del portico")
+    "Empuje lateral del relleno sobre los muros del marco: lo calcula el "
+    "portico en reposo (3.11.5.2) con el angulo de friccion del relleno "
+    "('phi_relleno_trasdos', del EMS); sin el, el portico se detiene")
 DIFERIDO_FLEXION_HDPE = (
     "Deformacion combinada de flexion y empuje del HDPE (AASHTO LRFD "
     "12.12.3.10.2): necesita la geometria del perfil del fabricante --la "
@@ -3360,8 +3367,8 @@ def demanda_marco(*, punto: PuntoCritico, material: Material,
                            cifras=CIFRAS_MAGNITUD))
     p_demanda = paso(
         "F8.MARCO_DEMANDA", codigo="F8.MARCO",
-        que=("Diseño del portico: diferido al expediente, demanda en kN·m/m "
-             "(momento de referencia de la losa superior)"),
+        que=("Demanda de referencia de la losa superior en kN·m/m (el "
+             "portico se analiza y se arma en su etapa, a expediente)"),
         formula="w_u = eta (gamma_EV w_EV + gamma_LL P_L); M_ref = w_u L^2/8",
         citas_textuales=("AASHTO_LRFD_9.12.11.2.1#LL",),
         sustitucion=(Magnitud("w_EV", w_EV, "kPa", "paso F8.EV",
@@ -3471,7 +3478,8 @@ def verificar_conducto(*, punto: PuntoCritico, material: Material,
                        ) -> ResultadoEstructural:
     """
     La Fase 8 del conducto, por material y forma. Para el marco devuelve la
-    DEMANDA, sin verificaciones: el diseño del portico se difiere.
+    DEMANDA, sin verificaciones: el portico lo analiza y lo arma
+    `disenar_portico`, en su propia etapa del servicio (VE-5).
 
     --- VE-4f --- Con el relleno de un conducto REDONDO por debajo del
     dominio de la rueda distribuida, primero F8.COBERTURA (12.6.6.3): si
@@ -3525,3 +3533,1003 @@ def verificaciones_estructurales(*, punto: PuntoCritico, material: Material,
         return ()
     return verificar_conducto(punto=punto, material=material, seccion=seccion,
                               altura_relleno=altura_relleno).verificaciones
+
+
+# ===========================================================================
+# --- VE-5 (m8), item 1 del censo --- EL PORTICO DEL MARCO (ficha T5-07)
+# ===========================================================================
+# Hasta aqui la Fase 8 del marco calculaba la DEMANDA de referencia de la
+# losa superior y el portico se difería («diseño completo por AASHTO LRFD
+# Seccion 5», Fase 8 de la v8). Desde VE-5 se ANALIZA y se ARMA:
+#
+#   1. el portico cerrado de ejes (una o varias celdas) por RIGIDEZ DIRECTA
+#      exacta (`_ModeloPortico`): elementos de barra con deformacion axial y
+#      de flexion, vector de carga consistente con las funciones de Hermite
+#      (exacto para cargas lineales por tramos) y la cartela, si la hay,
+#      como canto creciente junto a cada cara. Contrastado con el ejemplo
+#      resuelto de MnDOT, LRFD Bridge Design Manual §12.5 (cajon de 10 x 10
+#      ft, Tabla 12.5.2) y con la solucion cerrada del marco rectangular
+#      cerrado (tests/test_ve5_portico_marco.py);
+#   2. las cargas de 12.11.2 y Tabla 3.4.1-1: DC (losa superior y paredes;
+#      la losa inferior apoya en el suelo), EV (12.11.2.2.1), EH en REPOSO
+#      (3.11.5.2, decision del dueño), LS (3.11.6.4), WA (agua interior) y
+#      la carga viva HL-93 de 3.6.1.2.6 o de la franja de 4.6.2.10 movida a
+#      lo largo de la losa superior, con la reaccion del suelo lineal bajo la
+#      losa inferior (12.11.2.3);
+#   3. las tres combinaciones de C12.11.2.1 en Resistencia I y Servicio I,
+#      las de horizontal maximo con LS y sin LS, con el eta del conducto
+#      (1.3.2.1) y la reduccion del 50 % de 3.11.7 SOLO en el momento
+#      positivo de la losa superior (decision del dueño);
+#   4. el armado de cada seccion con el del cabezal (`M9.diseno_flexion_corte`:
+#      flexion de 5.6, cortante de 5.7 --que 5.12.7.3 deja en pie--, minimos
+#      de 5.6.3.3 y 5.10.6 con los de E.060, y fisuracion de 5.6.7), con los
+#      factores de resistencia del cajon vaciado in situ (Tabla 12.5.5-1:
+#      0.90 y 0.85).
+#
+# LOS CANTOS. La geometria del portico los separa (`GeometriaPortico`:
+# losas, paredes, tabiques), como decidio el dueño; la del PROGRAMA tiene
+# todavia uno solo, 'espesor_pared_cajon', con el que M2, M5 y M7 forman la
+# clave fisica, el relleno y V7. Hasta que esa geometria los separe, el
+# portico se analiza con ese espesor en los cuatro (ficha T5-07).
+
+CRITERIO_PHI_RELLENO = "phi_relleno_trasdos"
+CARGA_EMPUJE = "EH"
+FILA_EH_DEL_CAJON = "EH"
+ELEMENTO_PORTICO = "portico"
+CODIGO_PASO_PORTICO_CARGAS = "F8.PORTICO_CARGAS"
+CODIGO_PASO_PORTICO_COMBINACIONES = "F8.PORTICO_COMBINACIONES"
+CODIGO_PASO_PORTICO_ANALISIS = "F8.PORTICO_ANALISIS"
+NUMERAL_F8_PORTICO = ("AASHTO LRFD 12.11 (12.11.2, 12.11.4, 12.11.5) y "
+                      "Seccion 5; Tabla 3.4.1-1 del Manual de Puentes")
+
+MIEMBRO_LOSA_SUPERIOR = "losa_superior"
+MIEMBRO_LOSA_INFERIOR = "losa_inferior"
+MIEMBRO_PARED = "pared"
+
+CASO_DC = "DC"
+CASO_EV = "EV"
+CASO_EH = "EH"
+CASO_LS = "LS"
+CASO_WA = "WA"
+CASO_LL = "LL+IM"
+CASOS_PERMANENTES = (CASO_DC, CASO_EV, CASO_EH, CASO_LS, CASO_WA)
+
+ESTADO_RESISTENCIA = "Resistencia I"
+ESTADO_SERVICIO = "Servicio I"
+CARA_INTERIOR = "interior"
+CARA_EXTERIOR = "exterior"
+SECCION_CENTRO = "centro"
+
+# Lo que el resultado del marco dice diferido y el portico, si corre, cierra
+# (`servicio._fase_8` los cambia por `DIFERIDO_PORTICO`).
+DIFERIDOS_QUE_EL_PORTICO_CIERRA = (DIFERIDO_MARCO, DIFERIDO_EMPUJE_LATERAL_MARCO)
+
+DIFERIDO_PORTICO = (
+    "Del portico del marco sigue fuera: (1) los cantos separados de losa y "
+    "pared EN LA GEOMETRIA DEL PROGRAMA (M2, M5 y M7 forman la clave fisica "
+    "con 'espesor_pared_cajon', y el portico se analiza con ese espesor en "
+    "losas, paredes y tabiques); (2) el refuerzo de distribucion de la losa "
+    "superior con menos de 2.0 ft de relleno (9.7.3.2, que 12.11.2.1 manda) "
+    "y las vigas de borde de C12.11.2.1; (3) el acero de las caras que no "
+    "se traccionan en ninguna combinacion (lleva el de 5.10.6, que no se "
+    "tabula); (4) el desarrollo y los empalmes de las barras; (5) el empuje "
+    "del agua EXTERIOR con el nivel freatico sobre la losa inferior; y (6) "
+    "el V_c de la Eq. 5.12.7.3-1 para las losas con 2.0 ft o mas, que la "
+    "fuente PERMITE y el proyecto no toma (rige 5.7)")
+
+
+# ---------------------------------------------------------------------------
+# El modelo: rigidez directa del portico cerrado
+# ---------------------------------------------------------------------------
+
+# Los grados de libertad de un elemento de portico plano: u, v, giro en cada
+# nudo. Con nombre, para que la matriz se lea sin indices sueltos.
+_U1, _V1, _G1, _U2, _V2, _G2 = range(6)                   # literal-ok: 3 grados de libertad por nudo, 2 nudos
+_GDL_POR_NUDO = _U2
+_GDL_ELEMENTO = 2 * _GDL_POR_NUDO
+# Cuadratura de Gauss de tres puntos: exacta para polinomios de grado 5, y
+# el producto de una funcion de Hermite (cubica) por una carga lineal es de
+# grado 4.
+_GAUSS_3 = ((-math.sqrt(3 / 5), 5 / 9), (0.0, 8 / 9),     # literal-ok: puntos y pesos de Gauss-Legendre de 3 puntos
+            (math.sqrt(3 / 5), 5 / 9))                     # literal-ok: puntos y pesos de Gauss-Legendre de 3 puntos
+
+
+def _rigidez_local(EA: float, EI: float, l: float):
+    """Matriz de rigidez de un elemento de portico plano (Euler-Bernoulli,
+    con deformacion axial), ejes locales."""
+    import numpy as np
+    k = np.zeros((_GDL_ELEMENTO, _GDL_ELEMENTO))
+    a = EA / l
+    b, c, d, e = (12 * EI / l ** 3, 6 * EI / l ** 2,      # literal-ok: coeficientes de la viga de Euler-Bernoulli
+                  4 * EI / l, 2 * EI / l)                  # literal-ok: coeficientes de la viga de Euler-Bernoulli
+    k[_U1, _U1] = k[_U2, _U2] = a
+    k[_U1, _U2] = k[_U2, _U1] = -a
+    k[_V1, _V1] = k[_V2, _V2] = b
+    k[_V1, _V2] = k[_V2, _V1] = -b
+    k[_V1, _G1] = k[_G1, _V1] = k[_V1, _G2] = k[_G2, _V1] = c
+    k[_G1, _V2] = k[_V2, _G1] = k[_V2, _G2] = k[_G2, _V2] = -c
+    k[_G1, _G1] = k[_G2, _G2] = d
+    k[_G1, _G2] = k[_G2, _G1] = e
+    return k
+
+
+def _rotacion(c: float, s: float):
+    """Transformacion de ejes globales a locales de un elemento."""
+    import numpy as np
+    t = np.zeros((_GDL_ELEMENTO, _GDL_ELEMENTO))
+    for u, v, g in ((_U1, _V1, _G1), (_U2, _V2, _G2)):
+        t[u, u] = t[v, v] = c
+        t[u, v], t[v, u] = s, -s
+        t[g, g] = 1.0
+    return t
+
+
+def _carga_consistente(l: float, s0: float, s1: float, p0: float, p1: float,
+                       q0: float, q1: float):
+    """
+    Vector de cargas nodales consistente de un elemento de largo l con una
+    carga axial p y transversal q, LINEALES entre s0 y s1 (ejes locales):
+    integral de las funciones de forma (lineales en axial, de Hermite en
+    flexion) por la carga, con Gauss de 3 puntos (exacto). Con el vector
+    consistente los desplazamientos nodales y los esfuerzos en los extremos
+    del elemento son exactos.
+    """
+    import numpy as np
+    F = np.zeros(_GDL_ELEMENTO)
+    h, m = (s1 - s0) / 2, (s1 + s0) / 2
+    for xi, w in _GAUSS_3:
+        x = m + h * xi
+        t = (x - s0) / (s1 - s0)
+        p, q = p0 + (p1 - p0) * t, q0 + (q1 - q0) * t
+        r = x / l
+        N = np.array([1 - r, 1 - 3 * r ** 2 + 2 * r ** 3,          # literal-ok: funciones de forma de Hermite
+                      l * (r - 2 * r ** 2 + r ** 3), r,             # literal-ok: funciones de forma de Hermite
+                      3 * r ** 2 - 2 * r ** 3, l * (r ** 3 - r ** 2)])  # literal-ok: funciones de forma de Hermite
+        F += w * h * N * np.array([p, q, q, p, q, q])
+    return F
+
+
+class _Miembro:
+    """Una losa (de una celda) o una pared del portico, con su orientacion."""
+
+    def __init__(self, nombre: str, tipo: str, nodo_i: str, nodo_j: str,
+                 xi: float, yi: float, xj: float, yj: float, espesor: float,
+                 cara_i: float, cara_j: float, cartela: float):
+        self.nombre, self.tipo = nombre, tipo
+        self.nodo_i, self.nodo_j = nodo_i, nodo_j
+        self.xi, self.yi, self.xj, self.yj = xi, yi, xj, yj
+        self.L = math.hypot(xj - xi, yj - yi)
+        self.c, self.s = (xj - xi) / self.L, (yj - yi) / self.L
+        self.espesor, self.cara_i, self.cara_j = espesor, cara_i, cara_j
+        self.cartela = cartela
+
+    def canto(self, s: float) -> float:
+        """El canto en la abscisa local s: el del miembro mas la cartela a
+        45 grados junto a cada cara (y entera dentro del nudo)."""
+        if not self.cartela > 0:
+            return self.espesor
+        distancia = min(s - self.cara_i, self.L - self.cara_j - s)
+        return self.espesor + max(0.0, min(self.cartela,
+                                           self.cartela - distancia))
+
+
+def _miembros_del_portico(g: GeometriaPortico) -> List[_Miembro]:
+    """
+    Las losas y las paredes en ejes, orientadas para que el momento con
+    signo de viga (positivo traccionando el lado derecho del sentido de
+    avance) sea el que tracciona la CARA INTERIOR de la celda: la losa
+    superior de izquierda a derecha, la inferior de derecha a izquierda, la
+    pared izquierda de abajo arriba y la derecha de arriba abajo. Los
+    tabiques van de abajo arriba: su momento positivo tracciona la cara que
+    mira a la celda de su derecha.
+    """
+    x = g.ejes_x_m
+    h = g.altura_ejes_m
+    N = g.n_celdas
+    t_sup, t_inf = g.t_losa_superior_m, g.t_losa_inferior_m
+    miembros = []
+    for c in range(N):
+        a, b = g.espesor_de_pared(c) / 2, g.espesor_de_pared(c + 1) / 2
+        miembros.append(_Miembro(f"{MIEMBRO_LOSA_SUPERIOR}_{c + 1}",
+                                 MIEMBRO_LOSA_SUPERIOR, f"T{c}", f"T{c + 1}",
+                                 x[c], h, x[c + 1], h, t_sup, a, b,
+                                 g.cartela_m))
+        miembros.append(_Miembro(f"{MIEMBRO_LOSA_INFERIOR}_{c + 1}",
+                                 MIEMBRO_LOSA_INFERIOR, f"B{c + 1}", f"B{c}",
+                                 x[c + 1], 0.0, x[c], 0.0, t_inf, b, a,
+                                 g.cartela_m))
+    for j in range(N + 1):
+        t = g.espesor_de_pared(j)
+        if j == N:
+            miembros.append(_Miembro(f"{MIEMBRO_PARED}_{j}", MIEMBRO_PARED,
+                                     f"T{j}", f"B{j}", x[j], h, x[j], 0.0, t,
+                                     t_sup / 2, t_inf / 2, g.cartela_m))
+        else:
+            miembros.append(_Miembro(f"{MIEMBRO_PARED}_{j}", MIEMBRO_PARED,
+                                     f"B{j}", f"T{j}", x[j], 0.0, x[j], h, t,
+                                     t_inf / 2, t_sup / 2, g.cartela_m))
+    return miembros
+
+
+class _ModeloPortico:
+    """
+    El portico cerrado por rigidez directa, ensamblado y factorizado UNA vez
+    para todos los casos de carga (las posiciones de la carga viva son solo
+    vectores de carga nuevos). Apoyos: articulacion en el nudo inferior
+    izquierdo y rodillo en el inferior derecho (el modelo de MnDOT §12.5):
+    las cargas que se le aplican estan en equilibrio --la reaccion del suelo
+    bajo la losa inferior equilibra lo vertical y el momento--, y los dos
+    apoyos solo fijan el movimiento de cuerpo rigido.
+
+    El modulo de elasticidad no entra: es el mismo en todos los miembros, y
+    los esfuerzos de un portico hiperestatico dependen de las rigideces
+    RELATIVAS. Se toma la unidad.
+    """
+
+    def __init__(self, g: GeometriaPortico):
+        import numpy as np
+        from scipy.sparse import coo_matrix          # perezoso (PC-10), como M4
+        from scipy.sparse.linalg import splu
+        self.g = g
+        self.miembros = {m.nombre: m for m in _miembros_del_portico(g)}
+        self._nudo = {}
+        coords = []
+
+        def nudo(clave, x, y):
+            if clave not in self._nudo:
+                self._nudo[clave] = len(coords)
+                coords.append((x, y))
+            return self._nudo[clave]
+
+        self.elementos = []      # (miembro, i, j, s0, s1, EA, EI)
+        for m in self.miembros.values():
+            ni = nudo(m.nodo_i, m.xi, m.yi)
+            nj = nudo(m.nodo_j, m.xj, m.yj)
+            estaciones = {0.0, m.L, m.L / 2, m.cara_i, m.L - m.cara_j,
+                          m.cara_i + m.cartela, m.L - m.cara_j - m.cartela}
+            estaciones |= {m.L * k / DIVISIONES_MIEMBRO_PORTICO
+                           for k in range(1, DIVISIONES_MIEMBRO_PORTICO)}
+            # Con cartela, la seccion variable se parte mas fino (el canto
+            # de cada elemento es el de su punto medio).
+            if m.cartela > 0:
+                paso_c = m.cartela / DIVISIONES_MIEMBRO_PORTICO
+                for k in range(1, DIVISIONES_MIEMBRO_PORTICO):
+                    estaciones |= {m.cara_i + k * paso_c,
+                                   m.L - m.cara_j - k * paso_c}
+            est = sorted(e for e in estaciones if 0.0 <= e <= m.L)
+            limpias = [est[0]]
+            for e in est[1:]:
+                if e - limpias[-1] > TOL_UMBRAL_NORMATIVO:
+                    limpias.append(e)
+            limpias[-1] = m.L
+            m.estaciones = tuple(limpias)
+            previo = ni
+            for k in range(len(limpias) - 1):
+                s0, s1 = limpias[k], limpias[k + 1]
+                siguiente = (nj if k + 2 == len(limpias) else
+                             nudo((m.nombre, k + 1), m.xi + m.c * s1,
+                                  m.yi + m.s * s1))
+                t = m.canto((s0 + s1) / 2)
+                self.elementos.append(
+                    (m, previo, siguiente, s0, s1, t,
+                     t ** 3 / 12))                         # literal-ok: inercia de la seccion rectangular b h^3/12
+                previo = siguiente
+        n = len(coords) * _GDL_POR_NUDO
+        izq, der = self._nudo["B0"], self._nudo[f"B{g.n_celdas}"]
+        fijos = {_GDL_POR_NUDO * izq + _U1, _GDL_POR_NUDO * izq + _V1,
+                 _GDL_POR_NUDO * der + _V1}
+        self.libres = [i for i in range(n) if i not in fijos]
+        reducido = {gl: k for k, gl in enumerate(self.libres)}
+        filas, columnas, valores = [], [], []
+        for (m, a, b, s0, s1, EA, EI) in self.elementos:
+            t = _rotacion(m.c, m.s)
+            kg = t.T @ _rigidez_local(EA, EI, s1 - s0) @ t
+            dofs = self._gl(a, b)
+            for p_, gp in enumerate(dofs):
+                if gp not in reducido:
+                    continue
+                for q_, gq in enumerate(dofs):
+                    if gq in reducido:
+                        filas.append(reducido[gp])
+                        columnas.append(reducido[gq])
+                        valores.append(kg[p_, q_])
+        m_ = len(self.libres)
+        self.n = n
+        # Matriz dispersa y factorizacion LU dispersa: la densa tardaba
+        # segundos en una maquina compartida, y la del portico es de banda.
+        self._lu = splu(coo_matrix((valores, (filas, columnas)),
+                                   shape=(m_, m_)).tocsc())
+
+    @staticmethod
+    def _gl(a: int, b: int):
+        return ([_GDL_POR_NUDO * a + k for k in (_U1, _V1, _G1)]
+                + [_GDL_POR_NUDO * b + k for k in (_U1, _V1, _G1)])
+
+    def resolver(self, cargas):
+        """
+        Los esfuerzos de un caso de carga: {miembro: {s: (N, V, M)}} en cada
+        estacion, con N positivo en traccion, V el cortante de viga y M
+        positivo traccionando la cara interior. `cargas` son tuplas
+        (miembro, s_a, s_b, qx_a, qx_b, qy_a, qy_b): carga repartida lineal
+        entre las abscisas locales s_a y s_b, en kN/m por metro de marco,
+        con sus componentes en ejes GLOBALES.
+        """
+        import numpy as np
+        F = np.zeros(self.n)
+        locales = []
+        for (m, a, b, s0, s1, EA, EI) in self.elementos:
+            Fl = np.zeros(_GDL_ELEMENTO)
+            for (nombre, sa, sb, qxa, qxb, qya, qyb) in cargas:
+                if nombre != m.nombre:
+                    continue
+                lo, hi = max(sa, s0), min(sb, s1)
+                if not hi > lo + TOL_UMBRAL_NORMATIVO:
+                    continue
+                f_lo, f_hi = (lo - sa) / (sb - sa), (hi - sa) / (sb - sa)
+                qx0, qx1 = qxa + (qxb - qxa) * f_lo, qxa + (qxb - qxa) * f_hi
+                qy0, qy1 = qya + (qyb - qya) * f_lo, qya + (qyb - qya) * f_hi
+                Fl += _carga_consistente(
+                    s1 - s0, lo - s0, hi - s0,
+                    m.c * qx0 + m.s * qy0, m.c * qx1 + m.s * qy1,
+                    -m.s * qx0 + m.c * qy0, -m.s * qx1 + m.c * qy1)
+            F[self._gl(a, b)] += _rotacion(m.c, m.s).T @ Fl
+            locales.append(Fl)
+        u = np.zeros(self.n)
+        u[self.libres] = self._lu.solve(F[self.libres])
+        res = {}
+        for (m, a, b, s0, s1, EA, EI), Fl in zip(self.elementos, locales):
+            ul = _rotacion(m.c, m.s) @ u[self._gl(a, b)]
+            f = _rigidez_local(EA, EI, s1 - s0) @ ul - Fl
+            por_s = res.setdefault(m.nombre, {})
+            por_s.setdefault(s0, (-f[_U1], f[_V1], -f[_G1]))
+            por_s[s1] = (f[_U2], -f[_V2], f[_G2])
+        return res
+
+
+# ---------------------------------------------------------------------------
+# Las secciones de diseño y la geometria del punto
+# ---------------------------------------------------------------------------
+
+def geometria_del_portico(*, material: Material,
+                          seccion: Seccion) -> GeometriaPortico:
+    """
+    La geometria del portico de la seccion adoptada: N celdas de B x H con
+    el espesor que el programa usa para el marco ('espesor_pared_cajon', via
+    `espesor_pared`) en las losas, las paredes y los tabiques, sin cartelas
+    (el catalogo no las lleva). Los cantos separados existen en
+    `GeometriaPortico`; la geometria del programa todavia no los tiene
+    (ficha T5-07).
+    """
+    if not isinstance(seccion, SeccionRectangular):
+        raise DatoInvalidoError(
+            campo="seccion", valor=seccion,
+            motivo="el portico es del marco: hace falta una seccion "
+                   "rectangular")
+    t = espesor_pared(material, seccion.altura)
+    return GeometriaPortico(
+        n_celdas=numero_de_celdas(material), luz_libre_m=seccion.B,
+        altura_libre_m=seccion.H, t_losa_superior_m=t, t_losa_inferior_m=t,
+        t_pared_m=t, t_tabique_m=t)
+
+
+def secciones_del_portico(g: GeometriaPortico):
+    """
+    Las secciones de diseño: (nombre, miembro, s, canto, descripcion, es
+    centro de losa superior, cara exterior contra el suelo). En cada losa,
+    el centro y las dos caras de las paredes; en cada pared, las dos caras
+    de las losas y el centro de la altura libre. Con cartela, las de borde
+    se toman donde la cartela termina (12.11.5.2 lo permite para el acero
+    negativo).
+    """
+    secciones = []
+    for m in _miembros_del_portico(g):
+        if m.tipo == MIEMBRO_PARED:
+            j = int(m.nombre.rsplit("_", 1)[1])
+            sube = not j == g.n_celdas
+            abajo = m.cara_i + m.cartela if sube else m.L - m.cara_j - m.cartela
+            arriba = m.L - m.cara_j - m.cartela if sube else m.cara_i + m.cartela
+            centro = (abajo + arriba) / 2
+            for etiqueta, s in (("superior", arriba), (SECCION_CENTRO, centro),
+                                ("inferior", abajo)):
+                secciones.append((f"{m.nombre}_{etiqueta}", m.nombre, s,
+                                  m.espesor, f"pared {j}, {etiqueta}", False,
+                                  False))
+        else:
+            celda = m.nombre.rsplit("_", 1)[1]
+            superior = m.tipo == MIEMBRO_LOSA_SUPERIOR
+            nombre_losa = "losa superior" if superior else "losa inferior"
+            i_, j_ = (("izquierda", "derecha") if superior
+                      else ("derecha", "izquierda"))
+            for etiqueta, s in ((i_, m.cara_i + m.cartela),
+                                (SECCION_CENTRO, m.L / 2),
+                                (j_, m.L - m.cara_j - m.cartela)):
+                secciones.append((f"{m.nombre}_{etiqueta}", m.nombre, s,
+                                  m.espesor,
+                                  f"{nombre_losa}, celda {celda}, {etiqueta}",
+                                  superior and etiqueta == SECCION_CENTRO,
+                                  not superior))
+    return tuple(secciones)
+
+
+def _esfuerzos(res, secciones) -> dict:
+    """{seccion: (M, |V|, N de compresion)} de un resultado del modelo."""
+    salida = {}
+    for (nombre, miembro, s, *_r) in secciones:
+        por_s = res[miembro]
+        clave = min(por_s, key=lambda x: abs(x - s))
+        N, V, M = por_s[clave]
+        salida[nombre] = (M, abs(V), -N)
+    return salida
+
+
+# ---------------------------------------------------------------------------
+# Las cargas
+# ---------------------------------------------------------------------------
+
+def _en_la_losa(g: GeometriaPortico, tipo: str, x_a: float, x_b: float,
+                q_a: float, q_b: float):
+    """Una carga vertical (global y) lineal entre las abscisas GLOBALES x_a
+    y x_b de la losa superior o inferior, partida por celdas y llevada a las
+    abscisas locales de cada losa."""
+    x = g.ejes_x_m
+    cargas = []
+    for c in range(g.n_celdas):
+        lo, hi = max(x_a, x[c]), min(x_b, x[c + 1])
+        if not hi > lo + TOL_UMBRAL_NORMATIVO:
+            continue
+        q_lo = q_a + (q_b - q_a) * (lo - x_a) / (x_b - x_a)
+        q_hi = q_a + (q_b - q_a) * (hi - x_a) / (x_b - x_a)
+        nombre = f"{tipo}_{c + 1}"
+        if tipo == MIEMBRO_LOSA_SUPERIOR:
+            cargas.append((nombre, lo - x[c], hi - x[c], 0.0, 0.0, q_lo, q_hi))
+        else:
+            cargas.append((nombre, x[c + 1] - hi, x[c + 1] - lo, 0.0, 0.0,
+                           q_hi, q_lo))
+    return cargas
+
+
+def _en_la_pared(g: GeometriaPortico, j: int, y_a: float, y_b: float,
+                 p_a: float, p_b: float):
+    """Una carga horizontal (global x) lineal entre las ordenadas GLOBALES
+    y_a y y_b (0 en el eje de la losa inferior) de la pared j."""
+    h = g.altura_ejes_m
+    nombre = f"{MIEMBRO_PARED}_{j}"
+    if j == g.n_celdas:
+        return [(nombre, h - y_b, h - y_a, p_b, p_a, 0.0, 0.0)]
+    return [(nombre, y_a, y_b, p_a, p_b, 0.0, 0.0)]
+
+
+def _reaccion_del_suelo(g: GeometriaPortico, verticales,
+                        puntuales=()) -> list:
+    """
+    La reaccion del suelo bajo la losa inferior que equilibra las cargas
+    verticales `verticales` (lista de (x_a, x_b, q_a, q_b) en ejes globales,
+    q hacia arriba positivo): LINEAL, con la misma resultante y el mismo
+    momento (uniforme si la carga esta centrada, trapecial si no; 12.11.2.3
+    y su comentario). `puntuales` son cargas concentradas (x, F): el peso de
+    cada pared, que baja por ella hasta la losa inferior.
+    """
+    L = g.ejes_x_m[-1]
+    F = M = 0.0
+    for (x_p, F_p) in puntuales:
+        F += F_p
+        M += F_p * (x_p - L / 2)
+    for (x_a, x_b, q_a, q_b) in verticales:
+        largo = x_b - x_a
+        F_i = (q_a + q_b) / 2 * largo
+        # Centroide del trapecio desde x_a.
+        x_c = (x_a + largo * (q_a + 2 * q_b) / (3 * (q_a + q_b))    # literal-ok: centroide del trapecio
+               if abs(q_a + q_b) > TOL_UMBRAL_NORMATIVO else (x_a + x_b) / 2)
+        F += F_i
+        M += F_i * (x_c - L / 2)
+    q_medio = -F / L
+    pendiente = -12 * M / L ** 3                           # literal-ok: momento de inercia de la distribucion lineal L^3/12
+    return _en_la_losa(g, MIEMBRO_LOSA_INFERIOR, 0.0, L,
+                       q_medio - pendiente * L / 2,
+                       q_medio + pendiente * L / 2)
+
+
+def _k0(id_punto=None) -> Tuple[float, float]:
+    """(phi'_f, k_o = 1 - sen phi'_f) del relleno (3.11.5.2)."""
+    phi = ca.valor(CRITERIO_PHI_RELLENO)
+    if isinstance(phi, bool) or not isinstance(phi, (int, float)) \
+            or not math.isfinite(phi) or not 0 < phi < 90:  # literal-ok: el angulo de friccion esta entre 0 y 90 grados
+        raise DatoInvalidoError(
+            campo=CRITERIO_PHI_RELLENO, valor=phi, id_punto=id_punto,
+            motivo="el angulo de friccion del relleno es un numero entre 0 y "
+                   "90 grados")
+    return float(phi), 1.0 - math.sin(math.radians(phi))
+
+
+def _h_eq_portico(altura_m: float) -> Tuple[float, str]:
+    """
+    La altura de suelo equivalente de la sobrecarga viva sobre las paredes
+    del marco (3.11.6.4): la Tabla 3.11.6.4-1 (estribos perpendiculares al
+    trafico) con la «wall height» desde la rasante hasta la cara inferior
+    de la losa inferior, interpolada, y el piso del Manual de Puentes
+    2.4.2.2 (0.60 m), gobierna el mayor (la regla del cabezal,
+    `M9.h_eq_sobrecarga_trasdos`). Las paredes del marco son perpendiculares
+    al trafico porque la carga viva supone el trafico PARALELO al vano
+    (3.6.1.2.6a): ANALOGIA [N->], la misma que el cabezal declara.
+    """
+    filas = sorted(_CN.H_EQ_ESTRIBO_PERPENDICULAR_FT.values())
+    alturas = [a for a, _h in filas]
+    h_eq_ft = _interpolar(altura_m / PIE_EN_METROS, alturas,
+                          [h for _a, h in filas])
+    h_tabla = h_eq_ft * PIE_EN_METROS
+    piso = _CN.SOBRECARGA_TRASDOS_PISO_MP_M
+    if h_tabla >= piso:
+        return h_tabla, (f"Tabla 3.11.6.4-1 en {altura_m:.2f} m de altura "
+                         "(rasante a la cara inferior de la losa inferior), "
+                         "por analogia con un estribo perpendicular al "
+                         "trafico; mayor que el piso de 0.60 m del Manual de "
+                         "Puentes 2.4.2.2")
+    return piso, ("piso de 0.60 m del Manual de Puentes 2.4.2.2, mayor que "
+                  f"la Tabla 3.11.6.4-1 en {altura_m:.2f} m")
+
+
+def _casos_de_carga(*, punto: PuntoCritico, material: Material,
+                    seccion: Seccion, g: GeometriaPortico, H_rel: float):
+    """
+    Los casos de carga del portico, sin factorar, por metro de marco, y lo
+    que el paso de cargas imprime. Devuelve (casos, candidatos de la carga
+    viva, magnitudes, cv).
+
+      DC  el peso de la losa superior y de las paredes; la losa inferior
+          apoya en el suelo y su peso no flexa el portico (MnDOT §12.5).
+      EV  F_e (gamma_s H_rel + gamma_p e_paq), 12.11.2.2.1.
+      EH  k_o sigma_v en las paredes exteriores, con sigma_v entre los ejes
+          de las losas (3.11.5.2, reposo).
+      LS  k_o gamma_s h_eq, uniforme en las paredes exteriores (3.11.6.4).
+      WA  el agua interior, con el conducto lleno: la presion hidrostatica
+          sobre las paredes de cada celda y su peso sobre la losa inferior.
+    Cada uno con la reaccion del suelo que lo equilibra.
+    """
+    e_paq = espesor_del_paquete(punto)
+    H_total = H_rel + e_paq
+    gamma_s, gamma_p, proc_gamma = pesos_especificos_de_carga(
+        piso_tubo_concreto=False)
+    gamma_c = ca.valor(CRITERIO_PESO_CONCRETO)
+    phi, k0 = _k0(punto.id)
+    x = g.ejes_x_m
+    L, h, N = x[-1], g.altura_ejes_m, g.n_celdas
+    t_sup, t_inf = g.t_losa_superior_m, g.t_losa_inferior_m
+
+    # DC
+    w_sup = gamma_c * t_sup
+    casos = {}
+    dc = _en_la_losa(g, MIEMBRO_LOSA_SUPERIOR, 0.0, L, -w_sup, -w_sup)
+    verticales = [(0.0, L, -w_sup, -w_sup)]
+    paredes = []
+    for j in range(N + 1):
+        w_p = gamma_c * g.espesor_de_pared(j)
+        dc.append((f"{MIEMBRO_PARED}_{j}", 0.0, h, 0.0, 0.0, -w_p, -w_p))
+        paredes.append((x[j], -w_p * h))
+    casos[CASO_DC] = dc + _reaccion_del_suelo(g, verticales, paredes)
+
+    # EV
+    B_c = seccion.ancho_exterior(g.t_pared_m)
+    F_e = min(1 + 0.20 * H_total / B_c,                   # literal-ok: el 0.20 de la Eq. 12.11.2.2.1-2
+              _CN.FE_CAJON_MAX_COMPACTADO)
+    w_ev = F_e * (gamma_s * H_rel + gamma_p * e_paq)
+    casos[CASO_EV] = (_en_la_losa(g, MIEMBRO_LOSA_SUPERIOR, 0.0, L, -w_ev, -w_ev)
+                      + _reaccion_del_suelo(g, [(0.0, L, -w_ev, -w_ev)]))
+
+    # EH: sigma_v lineal bajo el paquete, en los ejes de las losas.
+    def sigma_v(z: float) -> float:
+        return gamma_p * min(z, e_paq) + gamma_s * max(0.0, z - e_paq)
+    z_sup = H_total + t_sup / 2
+    z_inf = H_total + t_sup + g.altura_libre_m + t_inf / 2
+    p_sup, p_inf = k0 * sigma_v(z_sup), k0 * sigma_v(z_inf)
+    casos[CASO_EH] = (_en_la_pared(g, 0, 0.0, h, p_inf, p_sup)
+                      + _en_la_pared(g, N, 0.0, h, -p_inf, -p_sup))
+
+    # LS
+    altura_muro = H_total + t_sup + g.altura_libre_m + t_inf
+    h_eq, origen_heq = _h_eq_portico(altura_muro)
+    p_ls = k0 * gamma_s * h_eq
+    casos[CASO_LS] = (_en_la_pared(g, 0, 0.0, h, p_ls, p_ls)
+                      + _en_la_pared(g, N, 0.0, h, -p_ls, -p_ls))
+
+    # WA: el agua llena cada celda, desde la cara inferior de la losa
+    # superior hasta la cara superior de la inferior.
+    y_fondo, y_techo = t_inf / 2, h - t_sup / 2
+    p_fondo = GAMMA_AGUA_KN_M3 * g.altura_libre_m
+    wa, verticales = [], []
+    for c in range(N):
+        wa += _en_la_pared(g, c, y_fondo, y_techo, -p_fondo, 0.0)
+        wa += _en_la_pared(g, c + 1, y_fondo, y_techo, p_fondo, 0.0)
+        x_a = x[c] + g.espesor_de_pared(c) / 2
+        x_b = x[c + 1] - g.espesor_de_pared(c + 1) / 2
+        wa += _en_la_losa(g, MIEMBRO_LOSA_INFERIOR, x_a, x_b, -p_fondo,
+                          -p_fondo)
+        verticales.append((x_a, x_b, -p_fondo, -p_fondo))
+    casos[CASO_WA] = wa + _reaccion_del_suelo(g, verticales)
+
+    # LL: la carga viva de 3.6.1.2.6 o, con menos de 2.0 ft, la franja de
+    # 4.6.2.10 (`carga_viva_enterrada`). Cada vehiculo es un grupo de areas
+    # cargadas: una sola si sus ejes interactuan (l_w ya incluye s_a), dos a
+    # s_a si no.
+    luz_permiso = (N * seccion.B + (N - 1) * g.t_tabique_m if N > 1 else None)
+    cv = carga_viva_enterrada(
+        H=H_total, D_i=seccion.B, D_E=H_rel, conducto=CONDUCTO_CAJON,
+        id_punto=punto.id, efecto=lambda P_L, _l_w: P_L,
+        efecto_descripcion="P_L, kPa: el portico prueba los dos vehiculos",
+        luz_del_permiso=luz_permiso)
+    separacion = {VEHICULO_CAMION: _CN.SEPARACION_EJES_CAMION_MIN_M,
+                  VEHICULO_TANDEM: _CN.SEPARACION_EJES_TANDEM_M}
+    vehiculos = []
+    if not cv.despreciada:
+        for (nombre, _P, l_w, _w, P_L, _e) in cv.candidatos:
+            s_a = separacion[nombre]
+            ejes = ((0.0,) if l_w + TOL_UMBRAL_NORMATIVO >= s_a
+                    else (0.0, s_a))
+            vehiculos.append((nombre, P_L, l_w, ejes))
+    magnitudes = (
+        Magnitud("gamma_c", gamma_c, "kN/m3", f"'{CRITERIO_PESO_CONCRETO}' "
+                 "[C], AASHTO LRFD Tabla 3.5.1-1", cifras=CIFRAS_FACTOR),
+        Magnitud("t", g.t_losa_superior_m, "m", "canto de losas, paredes y "
+                 "tabiques: 'espesor_pared_cajon', el de la geometria del "
+                 "programa (ficha T5-07)", cifras=CIFRAS_MAGNITUD),
+        Magnitud("w_DC", w_sup, "kPa", "peso de la losa superior; las "
+                 "paredes cargan su peso y la losa inferior apoya en el "
+                 "suelo", cifras=CIFRAS_MAGNITUD),
+        Magnitud("F_e", F_e, "", "1 + 0.20 H/B_c <= 1.15 (12.11.2.2.1)",
+                 cifras=CIFRAS_FACTOR),
+        Magnitud("gamma_s", gamma_s, "kN/m3", proc_gamma, cifras=CIFRAS_FACTOR),
+        Magnitud("w_EV", w_ev, "kPa", "F_e (gamma_s H_rel + gamma_p e_paq)",
+                 cifras=CIFRAS_MAGNITUD),
+        Magnitud("phi_f", phi, "grados", f"'{CRITERIO_PHI_RELLENO}' [A], el "
+                 "relleno del proyecto (el mismo del cabezal)",
+                 cifras=CIFRAS_MAGNITUD),
+        Magnitud("k_o", k0, "", "1 - sen phi_f (Eq. 3.11.5.2-1, reposo: "
+                 "decision del dueño)", cifras=CIFRAS_FACTOR),
+        Magnitud("p_EH,sup", p_sup, "kPa", f"k_o sigma_v en el eje de la "
+                 f"losa superior (z = {z_sup:.3f} m)", cifras=CIFRAS_MAGNITUD),
+        Magnitud("p_EH,inf", p_inf, "kPa", f"k_o sigma_v en el eje de la "
+                 f"losa inferior (z = {z_inf:.3f} m)", cifras=CIFRAS_MAGNITUD),
+        Magnitud("h_eq", h_eq, "m", origen_heq, cifras=CIFRAS_MAGNITUD),
+        Magnitud("p_LS", p_ls, "kPa", "k_o gamma_s h_eq", cifras=CIFRAS_MAGNITUD),
+        Magnitud("p_WA", p_fondo, "kPa", "presion del agua interior en la "
+                 "cara superior de la losa inferior (conducto lleno)",
+                 cifras=CIFRAS_MAGNITUD),
+    ) + tuple(
+        Magnitud(f"P_L del {nombre}", P_L, "kPa",
+                 f"sobre {l_w:.3f} m paralelos al vano, "
+                 f"{len(ejes)} area(s) cargada(s) a {separacion[nombre]:.3f} "
+                 "m; se mueve a lo largo de la losa superior (paso F8.LL)",
+                 cifras=CIFRAS_MAGNITUD)
+        for nombre, P_L, l_w, ejes in vehiculos)
+    return casos, vehiculos, magnitudes, cv, w_ev
+
+
+def _carga_viva_en(g: GeometriaPortico, P_L: float, l_w: float, ejes,
+                   x_centro: float):
+    """Las areas de un vehiculo con el primer eje centrado en x_centro, con
+    la reaccion del suelo que las equilibra."""
+    L = g.ejes_x_m[-1]
+    cargas, verticales = [], []
+    for desfase in ejes:
+        x_a = max(0.0, x_centro + desfase - l_w / 2)
+        x_b = min(L, x_centro + desfase + l_w / 2)
+        if not x_b > x_a + TOL_UMBRAL_NORMATIVO:
+            continue
+        cargas += _en_la_losa(g, MIEMBRO_LOSA_SUPERIOR, x_a, x_b, -P_L, -P_L)
+        verticales.append((x_a, x_b, -P_L, -P_L))
+    if not verticales:
+        return []
+    return cargas + _reaccion_del_suelo(g, verticales)
+
+
+# ---------------------------------------------------------------------------
+# Analisis, combinaciones y armado
+# ---------------------------------------------------------------------------
+
+def analizar_portico(g: GeometriaPortico, casos: dict, vehiculos=()
+                     ) -> Tuple[dict, dict]:
+    """
+    Los esfuerzos sin factorar de cada seccion en cada caso permanente
+    ({caso: {seccion: (M, |V|, N)}}), y la ENVOLVENTE de la carga viva
+    ({seccion: (M max, M min, |V| max)}) moviendo cada vehiculo a lo largo
+    de la losa superior en `POSICIONES_CARGA_VIVA_POR_CELDA` posiciones por
+    celda (AASHTO LRFD 12.11.2; la reaccion del suelo de cada posicion la
+    equilibra).
+    """
+    modelo = _ModeloPortico(g)
+    secciones = secciones_del_portico(g)
+    por_caso = {caso: _esfuerzos(modelo.resolver(cargas), secciones)
+                for caso, cargas in casos.items()}
+    envolvente = {s[0]: (0.0, 0.0, 0.0) for s in secciones}
+    L = g.ejes_x_m[-1]
+    n_pos = POSICIONES_CARGA_VIVA_POR_CELDA * g.n_celdas
+    for (_nombre, P_L, l_w, ejes) in vehiculos:
+        for k in range(n_pos + 1):
+            x_c = L * k / n_pos
+            cargas = _carga_viva_en(g, P_L, l_w, ejes, x_c)
+            if not cargas:
+                continue
+            for sec, (M, V, _N) in _esfuerzos(modelo.resolver(cargas),
+                                              secciones).items():
+                M_mas, M_menos, V_max = envolvente[sec]
+                envolvente[sec] = (max(M_mas, M), min(M_menos, M),
+                                   max(V_max, V))
+    return por_caso, envolvente
+
+
+def _factores_del_portico(material: Material) -> dict:
+    """Los gamma de Resistencia I (Manual de Puentes Tablas 2.4.5.3.1-1/-2)
+    del marco, por carga y extremo, y el eta del conducto."""
+    eleccion = ca.valor(CRITERIO_FACTORES_CARGA)
+    fila_ev = _fila_elegida(eleccion, ELEMENTO_CAJON, CARGA_RELLENO)
+    fila_eh = _fila_elegida(eleccion, ELEMENTO_CAJON, CARGA_EMPUJE)
+    return {
+        "DC": (_gamma_p(FILA_GAMMA_P_DC, EXTREMO_DESESTABILIZANTE),
+               _gamma_p(FILA_GAMMA_P_DC, EXTREMO_ESTABILIZANTE)),
+        "EV": (_gamma_p(fila_ev, EXTREMO_DESESTABILIZANTE),
+               _gamma_p(fila_ev, EXTREMO_ESTABILIZANTE)),
+        "EH": (_gamma_p(fila_eh, EXTREMO_DESESTABILIZANTE),
+               _gamma_p(fila_eh, EXTREMO_ESTABILIZANTE)),
+        "LL": _gamma_ll(),
+        "WA": _gamma_de_la_combinacion(CARGA_AGUA, EXTREMO_DESESTABILIZANTE),
+        "eta": _eta(),
+        "filas": (fila_gamma_p_legible(FILA_GAMMA_P_DC),
+                  fila_gamma_p_legible(fila_ev),
+                  fila_gamma_p_legible(fila_eh)),
+    }
+
+
+def combinaciones_del_portico(f: dict):
+    """
+    Las combinaciones de C12.11.2.1 (tres envolventes, las de horizontal
+    maximo con LS y sin LS), en Resistencia I con el eta de 1.3.2.1 (eta en
+    las cargas de gamma maximo, 1/eta en las de gamma minimo) y en Servicio
+    I. Cada una: (nombre, estado, {caso: factor}, factor de LL, reduce EH
+    en el positivo de la losa superior). En la de horizontal MINIMO el
+    empuje va con su gamma minimo, y en el momento positivo de la losa
+    superior ademas reducido a la mitad (3.11.7).
+    """
+    eta = f["eta"]
+    g_dc, g_ev, g_eh, g_ll, g_wa = f["DC"], f["EV"], f["EH"], f["LL"], f["WA"]
+    combos = []
+    for con_ls in (True, False):
+        sufijo = "con LS" if con_ls else "sin LS"
+        combos.append((f"{ESTADO_RESISTENCIA}, vertical max. y horizontal "
+                       f"max. ({sufijo})", ESTADO_RESISTENCIA,
+                       {CASO_DC: eta * g_dc[0], CASO_EV: eta * g_ev[0],
+                        CASO_EH: eta * g_eh[0],
+                        CASO_LS: eta * g_ll if con_ls else 0.0,
+                        CASO_WA: 0.0}, eta * g_ll, False))
+    combos.append((f"{ESTADO_RESISTENCIA}, vertical max. y horizontal min. "
+                   "(agua interior)", ESTADO_RESISTENCIA,
+                   {CASO_DC: eta * g_dc[0], CASO_EV: eta * g_ev[0],
+                    CASO_EH: g_eh[1] / eta, CASO_LS: 0.0, CASO_WA: g_wa},
+                   eta * g_ll, True))
+    for con_ls in (True, False):
+        sufijo = "con LS" if con_ls else "sin LS"
+        combos.append((f"{ESTADO_RESISTENCIA}, vertical min. y horizontal "
+                       f"max. ({sufijo})", ESTADO_RESISTENCIA,
+                       {CASO_DC: g_dc[1] / eta, CASO_EV: g_ev[1] / eta,
+                        CASO_EH: eta * g_eh[0],
+                        CASO_LS: eta * g_ll if con_ls else 0.0,
+                        CASO_WA: 0.0}, 0.0, False))
+    servicio = {caso: 1.0 for caso in CASOS_PERMANENTES}
+    combos.append((f"{ESTADO_SERVICIO}, vertical max. y horizontal max.",
+                   ESTADO_SERVICIO, dict(servicio, **{CASO_WA: 0.0}), 1.0,
+                   False))
+    combos.append((f"{ESTADO_SERVICIO}, vertical max. y horizontal min. "
+                   "(agua interior)", ESTADO_SERVICIO,
+                   dict(servicio, **{CASO_LS: 0.0}), 1.0, True))
+    combos.append((f"{ESTADO_SERVICIO}, vertical min. y horizontal max.",
+                   ESTADO_SERVICIO, dict(servicio, **{CASO_WA: 0.0}), 0.0,
+                   False))
+    return tuple(combos)
+
+
+def _envolvente_de_la_combinacion(combo, por_caso, ll, secciones):
+    """
+    Los esfuerzos factorados de cada seccion en una combinacion, por SIGNO:
+    {seccion: (M que tracciona la cara interior, M que tracciona la
+    exterior --negativo--, |V|, N)}, con la carga viva en su posicion mas
+    desfavorable para cada uno.
+    """
+    _nombre, _estado, factores, f_ll, reduce = combo
+    salida = {}
+    for (sec, _m, _s, _t, _d, centro_sup, _suelo) in secciones:
+        M = V_perm = N = 0.0
+        for caso, factor in factores.items():
+            m, v, n = por_caso[caso][sec]
+            if caso == CASO_EH and reduce:
+                factor = factor * (_CN.REDUCCION_EMPUJE_3_11_7 if centro_sup
+                                   else 1.0)
+            M += factor * m
+            V_perm += factor * v
+            N += factor * n
+        M_mas, M_menos, V_ll = ll[sec]
+        salida[sec] = (M + f_ll * max(M_mas, 0.0), M + f_ll * min(M_menos, 0.0),
+                       V_perm + f_ll * V_ll, N)
+    return salida
+
+
+def disenar_portico(*, punto: PuntoCritico, material: Material,
+                    seccion: Seccion, altura_relleno: float) -> DisenoPortico:
+    """
+    Analisis y armado del portico del marco (AASHTO LRFD 12.11.5.1: «All
+    sections shall be designed for the applicable factored loads specified
+    in Table 3.4.1-1 at the strength limit state»; 12.11.4: fisuracion de
+    5.6.7; 12.11.5.3.1: minimos de 5.6.3.3 y 5.10.6; 12.11.5.1 y 5.12.7.3:
+    cortante por 5.7).
+
+    Cada seccion de `secciones_del_portico` se arma en la cara que alguna
+    combinacion de resistencia tracciona, con `M9.diseno_flexion_corte` (el
+    armado del cabezal: flexion, cortante sin estribos, minimos de AASHTO y
+    E.060, espaciamiento y fisuracion en Servicio I) y los factores de
+    resistencia del cajon vaciado in situ de la Tabla 12.5.5-1 (0.90 y
+    0.85). Las verificaciones (A1 a A6 por seccion y cara) son las del
+    punto: una que no cumple deja el expediente abierto. No itera el canto:
+    si no cumple, la salida es mas canto (ficha T5-07).
+
+    Se detiene con `CriterioPendienteError` sin el angulo de friccion del
+    relleno ('phi_relleno_trasdos', el k_o del empuje en reposo) y con los
+    criterios del armado del cabezal que falten.
+
+    LECTURAS DEL PROYECTO, declaradas tambien en el paso F8.PORTICO_CARGAS:
+    el peso de la losa inferior no flexa el portico (apoya en el suelo, como
+    en MnDOT §12.5); la reaccion del suelo es lineal bajo la losa inferior;
+    el empuje se toma entre los ejes de las losas; la sobrecarga viva
+    lateral sale de la Tabla 3.11.6.4-1 de estribos con la altura desde la
+    rasante hasta la cara inferior de la losa inferior, por analogia; el
+    agua interior, con el conducto lleno; el relleno es el mismo del cabezal
+    ('phi_relleno_trasdos'), y el material, el recubrimiento y la clase de
+    exposicion del armado son los del cabezal (`M9.diseno_flexion_corte` los
+    lee). La reduccion de 3.11.7 se combina con el gamma minimo y 1/eta, que
+    la fuente permite no combinar: es el lado conservador del positivo.
+    """
+    from src.modulos import M9_cabezal as M9      # perezoso: M9 importa de M2 y M6
+    H_rel = _finito_positivo("altura_relleno", altura_relleno, punto.id)
+    g = geometria_del_portico(material=material, seccion=seccion)
+    casos, vehiculos, mags, cv, w_ev = _casos_de_carga(
+        punto=punto, material=material, seccion=seccion, g=g, H_rel=H_rel)
+    por_caso, ll = analizar_portico(g, casos, vehiculos)
+    secciones = secciones_del_portico(g)
+    f = _factores_del_portico(material)
+    combos = combinaciones_del_portico(f)
+    envolventes = {c[0]: _envolvente_de_la_combinacion(c, por_caso, ll,
+                                                      secciones)
+                   for c in combos}
+    p_cargas = paso(
+        "F8.PORTICO", codigo=CODIGO_PASO_PORTICO_CARGAS,
+        que="Portico del marco: cargas sin factorar por metro de marco",
+        formula=("DC = gamma_c t; EV = F_e (gamma_s H_rel + gamma_p e_paq); "
+                 "EH = k_o sigma_v; LS = k_o gamma_s h_eq; WA = gamma_w y; "
+                 "LL+IM = P_L sobre l_w (paso F8.LL)"),
+        formula_cita_id="AASHTO_LRFD_9.12.11.2.1#CARGAS",
+        citas_textuales=("AASHTO_LRFD_9.12.11.2.3", "AASHTO_LRFD_9.3.11.5.2#K0",
+                         "AASHTO_LRFD_9.3.11.6.4#APLICA",
+                         "AASHTO_LRFD_9.T3.11.6.4-1"),
+        sustitucion=mags,
+        resultado=Magnitud("w_EV", w_ev, "kPa", "presion de tierra sobre la "
+                           "losa superior", cifras=CIFRAS_MAGNITUD),
+        nota_del_proyecto=(
+            "Lecturas del proyecto: la losa inferior apoya en el suelo y su "
+            "peso no flexa el portico (como el ejemplo resuelto de MnDOT "
+            "§12.5); la reaccion del suelo es LINEAL bajo la losa inferior; "
+            "el empuje se toma entre los ejes de las losas; la sobrecarga "
+            "viva lateral con la Tabla 3.11.6.4-1 de estribos, por analogia "
+            "[N->]; y el agua interior con el conducto lleno. El agua "
+            "EXTERIOR no se considera (ficha T5-07)."))
+    nombres_eta = (f"eta = {f['eta']:g} en las cargas de gamma maximo y "
+                   f"1/eta en las de gamma minimo (1.3.2.1)")
+    p_combos = paso(
+        "F8.PORTICO", codigo=CODIGO_PASO_PORTICO_COMBINACIONES,
+        que="Portico del marco: combinaciones de carga (C12.11.2.1)",
+        formula=("Resistencia I: eta gamma_max Q (o gamma_min Q / eta); "
+                 "Servicio I: 1.0 Q; EH reducido al 50 % solo en el momento "
+                 "positivo de la losa superior (3.11.7)"),
+        formula_cita_id="AASHTO_LRFD_9.12.11.5.1",
+        citas_textuales=("AASHTO_LRFD_9.C12.11.2.1#COMBINACIONES",
+                         "AASHTO_LRFD_9.3.11.7", "AASHTO_LRFD_9.T3.4.1-1",
+                         "AASHTO_LRFD_9.T3.4.1-2"),
+        sustitucion=(
+            Magnitud("gamma_DC", f["DC"][0], "", f"{f['filas'][0]}; minimo "
+                     f"{f['DC'][1]:g}", cifras=CIFRAS_FACTOR),
+            Magnitud("gamma_EV", f["EV"][0], "", f"{f['filas'][1]} "
+                     f"('{CRITERIO_FACTORES_CARGA}' [A]); minimo "
+                     f"{f['EV'][1]:g}", cifras=CIFRAS_FACTOR),
+            Magnitud("gamma_EH", f["EH"][0], "", f"{f['filas'][2]} "
+                     f"('{CRITERIO_FACTORES_CARGA}' [A]); minimo "
+                     f"{f['EH'][1]:g}", cifras=CIFRAS_FACTOR),
+            Magnitud("gamma_LL", f["LL"], "", "LL, IM y LS en Resistencia I",
+                     cifras=CIFRAS_FACTOR),
+            Magnitud("gamma_WA", f["WA"], "", "WA en Resistencia I",
+                     cifras=CIFRAS_FACTOR),
+            Magnitud("eta", f["eta"], "", f"'{CRITERIO_ETA_CONDUCTO}' [A]; "
+                     + nombres_eta, cifras=CIFRAS_FACTOR),
+            Magnitud("reduccion", _CN.REDUCCION_EMPUJE_3_11_7, "",
+                     "3.11.7, con el gamma minimo y 1/eta (la fuente permite "
+                     "no combinarlos: combinarlos es el lado conservador "
+                     "del momento positivo)", cifras=CIFRAS_FACTOR)),
+        resultado=Magnitud("eta", f["eta"], "", "modificador de carga",
+                           cifras=CIFRAS_FACTOR),
+        nota_del_proyecto="; ".join(c[0] for c in combos))
+    resistencia = [c for c in combos if c[1] == ESTADO_RESISTENCIA]
+    servicio = [c for c in combos if c[1] == ESTADO_SERVICIO]
+
+    def extremo(sec, signo, lista):
+        return max((max(0.0, signo * envolventes[c[0]][sec][0 if signo > 0
+                                                            else 1])
+                    for c in lista), default=0.0)
+
+    sust_analisis = []
+    for (sec, _m, _s, _t, desc, _c, _su) in secciones:
+        M_mas, M_menos = extremo(sec, 1, resistencia), extremo(sec, -1,
+                                                               resistencia)
+        V_max = max(envolventes[c[0]][sec][2] for c in resistencia)
+        sust_analisis.append(Magnitud(
+            f"M {sec}", M_mas if M_mas >= M_menos else -M_menos, "kN·m/m",
+            f"{desc}: Resistencia I, cara interior {M_mas:.2f}, exterior "
+            f"{M_menos:.2f} kN·m/m; V = {V_max:.2f} kN/m",
+            cifras=CIFRAS_MAGNITUD))
+    centros = [s[0] for s in secciones if s[5]]
+    M_centro = max(extremo(s, 1, resistencia) for s in centros)
+    p_analisis = paso(
+        "F8.PORTICO", codigo=CODIGO_PASO_PORTICO_ANALISIS,
+        que=("Portico del marco: esfuerzos factorados de las secciones "
+             "(rigidez directa, envolvente de la carga viva)"),
+        formula=("K u = F (portico cerrado de ejes; vector de carga "
+                 "consistente; reaccion del suelo lineal)"),
+        formula_cita_id="AASHTO_LRFD_9.12.11.5.1",
+        citas_textuales=("AASHTO_LRFD_9.12.11.2.3",),
+        sustitucion=tuple(sust_analisis),
+        resultado=Magnitud("M_u+", M_centro, "kN·m/m", "momento positivo "
+                           "factorado de la losa superior en el centro",
+                           cifras=CIFRAS_MAGNITUD),
+        nota_del_proyecto=(
+            f"{g.n_celdas} celda(s) de {g.luz_libre_m:.2f} x "
+            f"{g.altura_libre_m:.2f} m; momento positivo = traccion en la "
+            "cara interior de la celda (en un tabique, la que mira a la "
+            "celda de su derecha). Contrastado con MnDOT §12.5 y con la "
+            "solucion cerrada del marco cerrado (tests/test_ve5_portico_"
+            "marco.py)."))
+    armados, verificaciones, pasos_armado, avisos = [], [], [], []
+    for (sec, _m, _s, t, desc, _c, contra_suelo) in secciones:
+        for signo, cara in ((1, CARA_INTERIOR), (-1, CARA_EXTERIOR)):
+            indice = 0 if signo > 0 else 1
+            sols = tuple(
+                SolicitacionDeArmado(
+                    combinacion=c[0], condicion=CondicionAnalisis.ESTATICO,
+                    M_u=max(0.0, signo * envolventes[c[0]][sec][indice]),
+                    V_u=envolventes[c[0]][sec][2],
+                    phi_flexion=_CN.PHI_FLEXION_CAJON_IN_SITU,
+                    phi_corte=_CN.PHI_CORTE_CAJON_IN_SITU,
+                    M_u_cedente=max(0.0, signo * envolventes[c[0]][sec][indice]),
+                    V_u_cedente=envolventes[c[0]][sec][2])
+                for c in resistencia)
+            if not max(s.M_u for s in sols) > TOL_UMBRAL_NORMATIVO:
+                continue
+            M_s = extremo(sec, signo, servicio)
+            a = M9.diseno_flexion_corte(
+                solicitaciones=sols, espesor=t, elemento=ELEMENTO_PORTICO,
+                clave=f"{sec}.{cara}", seccion=desc, cara=cara,
+                es_zapata=True, momento_servicio=M_s,
+                contra_el_suelo=contra_suelo and cara == CARA_EXTERIOR,
+                regimen="portico cerrado (12.11)", id_punto=punto.id)
+            armados.append(a)
+            verificaciones.extend(a.verificaciones)
+            pasos_armado.extend(a.pasos)
+            avisos.extend(a.avisos)
+    return DisenoPortico(
+        geometria=g,
+        casos=tuple((caso, tuple(EsfuerzoDeSeccion(s, m, *por_caso[caso][s])
+                                 for (s, m, *_r) in secciones))
+                    for caso in por_caso),
+        envolventes=tuple(
+            (c[0], c[1], tuple(EsfuerzoDeSeccion(
+                s, m, envolventes[c[0]][s][0]
+                if abs(envolventes[c[0]][s][0]) >= abs(envolventes[c[0]][s][1])
+                else envolventes[c[0]][s][1],
+                envolventes[c[0]][s][2], envolventes[c[0]][s][3])
+                for (s, m, *_r) in secciones))
+            for c in combos),
+        armados=tuple(armados), verificaciones=tuple(verificaciones),
+        pasos=(p_cargas, p_combos, p_analisis) + tuple(pasos_armado),
+        avisos=tuple(dict.fromkeys(avisos)), diferido=(DIFERIDO_PORTICO,))

@@ -1045,7 +1045,13 @@ CENSO_DE_MARCAS = {
     # constantes_normativas (bloque T-5) y criterios_adoptados.
     # 29 -> 30 en VE-4f: el 100 de (1 + IM/100) de la franja de 4.6.2.10.2
     # (`_carga_viva_en_la_franja`).
-    "src/modulos/M8_estructural.py": 30,
+    # 30 -> 58 en VE-5 (m8), el portico del marco: los 6 grados de libertad
+    # del elemento, los puntos y pesos de Gauss de 3 puntos, los
+    # coeficientes 12, 6, 4 de la viga de Euler-Bernoulli, las funciones de
+    # forma de Hermite, el h^3/12 de la inercia, el centroide del trapecio y
+    # el L^3/12 de la distribucion lineal, el 90 del angulo de friccion y el
+    # 0.20 de F_e (12.11.2.2.1-2). Ninguno es un valor de proyecto.
+    "src/modulos/M8_estructural.py": 58,
     # 1 -> 0 en C7, y por eso desaparece del censo: el `pi/4` de la
     # subpresion se fue a `SeccionCircular.area_exterior`. M8 dejo de
     # saber que forma tiene el conducto, que es justo lo que se buscaba.

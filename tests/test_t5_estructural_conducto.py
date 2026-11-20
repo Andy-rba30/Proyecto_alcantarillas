@@ -825,7 +825,9 @@ def test_el_marco_da_la_demanda_de_la_losa_y_difiere_el_portico(a01, H_rel):
     assert d.luz_m == pytest.approx(2.15, rel=REL_TRANSPORTE)
     assert r.verificaciones == () and r.demanda_marco == d
     assert M8.DIFERIDO_MARCO in r.diferido
-    assert "diferido al expediente" in d.pasos[-1].que
+    # Desde VE-5 el portico se analiza y se arma en su etapa
+    # (tests/test_ve5_portico_marco.py): el paso de la demanda lo dice.
+    assert "el portico se analiza y se arma en su etapa" in d.pasos[-1].que
     assert "kN·m/m" in d.pasos[-1].que
 
 

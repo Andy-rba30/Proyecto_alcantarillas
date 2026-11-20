@@ -653,6 +653,12 @@ def test_todo_fundamento_declarado_lo_usa_algun_paso(informe):
         "F8.TMC_AREA", "F8.TMC_COSTURA", "F8.TMC_FF", "F8.TMC_ASD",
         "F8.HDPE_EMPUJE", "F8.HDPE_PANDEO", "F8.HDPE_DEFLEXION",
         "F8.HDPE_FF", "F8.MARCO_DEMANDA",
+        # --- VE-4f y VE-5 (m8) --- La cobertura minima del conducto redondo
+        # bajo el dominio de la rueda distribuida (ningun punto de esta
+        # corrida tiene relleno somero) y el portico del marco (a expediente
+        # y sobre un marco dimensionado). Los mide
+        # `tests/test_ve4f_relleno_bajo.py` y `tests/test_ve5_portico_marco.py`.
+        "F8.COBERTURA", "F8.PORTICO",
         # LOS TRES DE T-3, por la razon de F6.LAUSHEY: 7.B cuelga de un punto
         # dimensionado, y el marco y el paso de canal ademas de un punto de
         # Familia C que dimensione. Que los pasos existen y llevan su

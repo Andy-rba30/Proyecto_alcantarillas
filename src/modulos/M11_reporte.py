@@ -2867,11 +2867,17 @@ def _bloque_estructural(r: Any) -> str:
     if r.demanda_marco is not None:
         d = r.demanda_marco
         cabeza = (
-            "<p>Marco: <b>diseño del portico diferido al expediente</b>. "
-            f"Demanda de referencia de la losa superior M<sub>ref</sub> = "
+            "<p>Marco: "
+            + ("<b>portico analizado y armado</b> (tabla de abajo; sus "
+               "verificaciones A1 a A6 estan en la tabla del punto). "
+               if getattr(r, "portico", None) is not None else
+               "<b>el portico no se completo</b> (ver la tabla de "
+               "bloqueos). ")
+            + f"Demanda de referencia de la losa superior M<sub>ref</sub> = "
             f"{_num(d.M_u_referencia_kNm_m, FMT_2)} kN&middot;m/m "
             f"(w<sub>u</sub> = {_num(d.w_u_kPa, FMT_2)} kPa, L = "
-            f"{_num(d.luz_m, FMT_2)} m, F<sub>e</sub> = {_num(d.F_e)}).</p>")
+            f"{_num(d.luz_m, FMT_2)} m, F<sub>e</sub> = {_num(d.F_e)}).</p>"
+            + _tabla_portico(getattr(r, "portico", None)))
     else:
         maximo = ("&mdash;" if r.relleno_maximo_m is None
                   else f"{_num(r.relleno_maximo_m, FMT_2)} m")
@@ -2883,6 +2889,42 @@ def _bloque_estructural(r: Any) -> str:
             f"{maximo}.</p>")
     return ("<h4>Fase 8 &mdash; Estructural del conducto</h4>" + cabeza
             + avisos + bloque_pasos(r.pasos, "Desarrollo de la Fase 8"))
+
+
+def _tabla_portico(portico: Any) -> str:
+    """
+    --- VE-5 (m8) --- Las secciones armadas del portico del marco, con los
+    numeros que `M8.disenar_portico` emitio (cada una es un
+    `ArmadoDeSeccion` del armado del cabezal). Formatea; no calcula.
+    """
+    if portico is None or not portico.armados:
+        return ""
+    filas = [_fila(["<th>Seccion</th>", "<th>Cara</th>",
+                    "<th>Espesor / d (m)</th>", "<th>Rige la flexion</th>",
+                    "<th>M_u (kN&middot;m/m); V_u (kN/m)</th>",
+                    "<th>As adoptado (mm&sup2;/m), gobierna</th>",
+                    "<th>Barra</th>",
+                    "<th>M_r, V_r (kN&middot;m/m, kN/m)</th>",
+                    "<th>Cumple</th>"])]
+    for a in portico.armados:
+        filas.append(_fila([
+            _td(_esc(a.seccion)), _td(_esc(a.cara)),
+            _td(f"{_num(a.espesor)} / {_num(a.d)}", "num"),
+            _td(_esc(a.rige_flexion.combinacion)),
+            _td(f"{_num(a.rige_flexion.M_u, FMT_2)}; "
+                f"{_num(a.rige_cortante.V_u, FMT_2)}", "num"),
+            _td(f"{_num(a.As_adoptado, FMT_2)}, {_esc(a.gobierna)}"),
+            _td(_esc(a.barra.texto) if a.barra is not None
+                else "sin barra del catalogo"),
+            _td(f"{_num(a.M_r, FMT_2)}, {_num(a.V_r, FMT_2)}", "num"),
+            _td("si" if all(v.cumple for v in a.verificaciones) else "NO")]))
+    g = portico.geometria
+    return (f"<p>Portico de {g.n_celdas} celda(s) de "
+            f"{_num(g.luz_libre_m, FMT_2)} x {_num(g.altura_libre_m, FMT_2)} "
+            f"m, canto {_num(g.t_losa_superior_m)} m (AASHTO LRFD 12.11):</p>"
+            '<table class="compacta">' + "".join(filas) + "</table>"
+            + "".join(f'<div class="nota"><p>{_esc(t)}</p></div>'
+                      for t in portico.diferido))
 
 
 # --- T-10 --- Lo que una etapa sin completar ES, en palabras, al lado del

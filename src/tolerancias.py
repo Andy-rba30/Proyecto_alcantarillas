@@ -264,6 +264,16 @@ TOL_ABS_MISMO_MAXIMO_ANUAL_MM = 1e-9
 # esta obra-- podria escaparsele.
 TRAMOS_BUSQUEDA_RELLENO_MAXIMO = 400
 
+# --- VE-5 (m8) --- La discretizacion del portico del marco
+# (`M8._ModeloPortico`): en cuantos elementos se parte cada losa y cada pared
+# (ademas de las estaciones de las caras, el centro y las cartelas) y cuantas
+# posiciones de la carga viva se prueban por celda. Es resolucion numerica:
+# los esfuerzos en los nodos son exactos (vector de carga consistente con las
+# funciones de Hermite) y solo el MAXIMO entre dos posiciones de la carga
+# viva puede escaparse, del orden de (luz/posiciones)^2 en el momento.
+DIVISIONES_MIEMBRO_PORTICO = 24
+POSICIONES_CARGA_VIVA_POR_CELDA = 24
+
 
 # ---------------------------------------------------------------------------
 # --- T-7b --- La busqueda de la cuña critica (Coulomb / Culmann)

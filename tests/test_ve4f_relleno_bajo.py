@@ -350,3 +350,28 @@ def test_en_la_fase_5_el_escalon_sin_cobertura_se_rechaza(a01):
                                seccion=SeccionCircular(1.35))
     assert [v.codigo for v in vs] == ["F8.COBERTURA"]
     assert not vs[0].cumple
+
+
+def test_el_dominio_la_cobertura_y_la_lectura_tienen_su_puerta(a01):
+    """Las tres funciones publicas de VE-4f: el dominio de la rueda
+    distribuida, la cobertura de la Tabla 12.6.6.3-1 y la lectura del
+    criterio, que sin valor se detiene."""
+    con = _material(TipoMaterial.CONCRETO_REFORZADO)
+    tmc = _material(TipoMaterial.TMC)
+    pie = PIE_EN_METROS
+    assert M8.bajo_el_dominio_de_la_rueda_distribuida(material=con,
+                                                      H_total=1.5 * pie)
+    assert not M8.bajo_el_dominio_de_la_rueda_distribuida(material=con,
+                                                          H_total=2 * pie)
+    assert M8.bajo_el_dominio_de_la_rueda_distribuida(material=tmc,
+                                                      H_total=pie)
+    assert not M8.bajo_el_dominio_de_la_rueda_distribuida(material=tmc,
+                                                          H_total=1.1 * pie)
+    v = M8.verificar_cobertura(punto=a01, material=con,
+                               seccion=SeccionCircular(0.90),
+                               altura_relleno=0.40)
+    assert v.cumple and v.codigo == M8.CODIGO_COBERTURA
+    with pytest.raises(CriterioPendienteError):
+        M8.lectura_del_tubo_de_concreto_somero()
+    with declarados({CRITERIO: E_SPAN}):
+        assert M8.lectura_del_tubo_de_concreto_somero() == E_SPAN
