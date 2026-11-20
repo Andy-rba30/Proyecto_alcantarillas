@@ -30,19 +30,19 @@ El juego declara, sobre criterios que **tienen valor de archivo**, lo que esta t
 
 | Punto | Familia | Dimensiona | Material | Sección | Fase 11 (memoria / resumen) | Bloqueos |
 |---|---|---|---|---|---|---|
-| A-01 | A | sí | Concreto reforzado | Ø 0.90 m | sí / sí | ninguno |
-| A-02 | A | sí | Concreto reforzado | Ø 0.90 m | sí / sí | ninguno |
-| B-01 | B | sí | Concreto reforzado | Ø 0.90 m | sí / sí | ninguno |
-| C-01 | C | sí | Concreto reforzado | marco 1.20 × 0.90 m | sí / sí | metodo diferido con ficha: VC1-01 |
+| A-01 | A | sí | Concreto reforzado | Ø 0.90 m | sí / sí | entrada del proyecto que falta: licuefaccion_ems; criterio que el Propietario o el proyectista debe declarar: incremento_acero_por_despiece; criterio que el Propietario o el proyectista debe declarar: clase_concreto_losa_entrega |
+| A-02 | A | sí | Concreto reforzado | Ø 0.90 m | sí / sí | entrada del proyecto que falta: licuefaccion_ems; criterio que el Propietario o el proyectista debe declarar: incremento_acero_por_despiece; criterio que el Propietario o el proyectista debe declarar: clase_concreto_losa_entrega |
+| B-01 | B | sí | Concreto reforzado | Ø 0.90 m | sí / sí | entrada del proyecto que falta: licuefaccion_ems; criterio que el Propietario o el proyectista debe declarar: incremento_acero_por_despiece; criterio que el Propietario o el proyectista debe declarar: clase_concreto_losa_entrega |
+| C-01 | C | sí | Concreto reforzado | marco 1.20 × 0.90 m | sí / sí | metodo diferido con ficha: VC1-01; entrada del proyecto que falta: licuefaccion_ems; criterio que el Propietario o el proyectista debe declarar: incremento_acero_por_despiece; criterio que el Propietario o el proyectista debe declarar: clase_concreto_losa_entrega |
 
 Verificaciones que no salen «cumple» (conducto y cabezal), por punto. Son RESULTADOS con los datos de prueba:
 
 | Punto | Verificaciones |
 |---|---|
 | A-01 | E1-ASD.sis.e (indicador), E3-ASD.sis.e (indicador), E3-LRFD.sis.e (no cumple), E1-ASD.sis.s (indicador), E1-LRFD.sis.s (no cumple), E3-ASD.sis.s (indicador), E3-LRFD.sis.s (no cumple) |
-| A-02 | E1-ASD.sis.e (indicador), E3-ASD.sis.e (indicador), E3-LRFD.sis.e (no cumple), E1-ASD.sis.s (indicador), E1-LRFD.sis.s (no cumple), E3-ASD.sis.s (indicador), E3-LRFD.sis.s (no cumple), A2.pantalla.s (indicador), A2.alero.s (indicador) |
+| A-02 | E1-ASD.sis.e (indicador), E3-ASD.sis.e (indicador), E3-LRFD.sis.e (no cumple), E1-ASD.sis.s (indicador), E1-LRFD.sis.s (no cumple), E3-ASD.sis.s (indicador), E3-LRFD.sis.s (no cumple), A2.pantalla.s (indicador), A2.alero.s (indicador), A2.alero_mitad.s (indicador) |
 | B-01 | E1-ASD.sis.e (indicador), E3-ASD.sis.e (indicador), E3-LRFD.sis.e (no cumple), E1-ASD.sis.s (indicador), E1-LRFD.sis.s (no cumple), E3-ASD.sis.s (indicador), E3-LRFD.sis.s (no cumple) |
-| C-01 | V2b (indicador), VC2 (indicador), E1-ASD.sis.e (indicador), E3-ASD.sis.e (indicador), E3-LRFD.sis.e (no cumple), E1-ASD.sis.s (indicador), E1-LRFD.sis.s (no cumple), E3-ASD.sis.s (indicador), E3-LRFD.sis.s (no cumple), A2.pantalla.s (indicador), A2.alero.s (indicador) |
+| C-01 | V2b (indicador), VC2 (indicador), E1-ASD.sis.e (indicador), E3-ASD.sis.e (indicador), E3-LRFD.sis.e (no cumple), E1-ASD.sis.s (indicador), E1-LRFD.sis.s (no cumple), E3-ASD.sis.s (indicador), E3-LRFD.sis.s (no cumple), A2.pantalla.s (indicador), A2.alero.s (indicador), A2.alero_mitad.s (indicador), A2.losa_inferior_1_derecha.exterior (no cumple), A2.losa_inferior_1_izquierda.exterior (no cumple) |
 
 Lectura de ingeniería (no la escribe el programa; las cifras sí): con las decisiones de archivo los cuatro puntos dimensionan igual que con el juego —el cabezal no entra al dimensionamiento del conducto—. La zapata de la regla de T-7a no pasa la estabilidad estática del marco LRFD que rige, y desde VE-3.5 **se dimensiona**: crece por el talón con el paso y el tope de `dimensionamiento_zapata_cabezal` (valor de archivo desde VE-3.9, decisión del dueño) en 8 de 8 cabezales, y la estabilidad evaluada cumple en 0 de 8. El talón más largo pedía más **peralte** para armarse, y desde VE-3.9 el peralte crece por su armado en 0 de 8 cabezales: quedan 0 filas del armado de la zapata sin cumplir, y 0 de la pantalla y el alero, que desde VE-3.14 se dimensionan por su armado. Donde ninguna zapata corrida de la grilla cumple la estabilidad dentro del tope, el cabezal se declara NO FACTIBLE con estos criterios (VE-3.14) y su peralte no se itera: por eso pueden quedar filas del armado de la zapata sin cumplir. Desde VE-3.14 la condición **sísmica se evalúa** también con el relleno saturado (AASHTO C11.6.5.3: el incremento con el peso total bajo el agua, `agua_del_relleno_bajo_sismo` [C]); con el trasdós drenado de archivo (VE-3.16) el agua bajo sismo es la del freático del punto, y con el k_h sin reducción (k_h = k_h0, desplazamiento nulo) es la que no cumple. El **peso específico saturado del relleno** es un ensayo del EMS que sólo pide el relleno con agua (`drenaje_trasdos` = 'sin_drenaje' declarado, o el freático sobre la zapata): la titular no lo lee (§4.3). No es un fallo de la validación: es lo que el dimensionamiento de VE-3.5 y VE-3.9 resuelve y lo que deja.
 
@@ -52,10 +52,10 @@ El juego pisa la decisión de la tabla de arriba (muro que admite desplazamiento
 
 | Punto | Familia | Dimensiona | Material | Sección | Fase 11 (memoria / resumen) | Bloqueos |
 |---|---|---|---|---|---|---|
-| A-01 | A | sí | Concreto reforzado | Ø 0.90 m | sí / sí | ninguno |
-| A-02 | A | sí | Concreto reforzado | Ø 0.90 m | sí / sí | ninguno |
-| B-01 | B | sí | Concreto reforzado | Ø 0.90 m | sí / sí | ninguno |
-| C-01 | C | sí | Concreto reforzado | marco 1.20 × 0.90 m | sí / sí | metodo diferido con ficha: VC1-01 |
+| A-01 | A | sí | Concreto reforzado | Ø 0.90 m | sí / sí | entrada del proyecto que falta: licuefaccion_ems; criterio que el Propietario o el proyectista debe declarar: incremento_acero_por_despiece; criterio que el Propietario o el proyectista debe declarar: clase_concreto_losa_entrega |
+| A-02 | A | sí | Concreto reforzado | Ø 0.90 m | sí / sí | entrada del proyecto que falta: licuefaccion_ems; criterio que el Propietario o el proyectista debe declarar: incremento_acero_por_despiece; criterio que el Propietario o el proyectista debe declarar: clase_concreto_losa_entrega |
+| B-01 | B | sí | Concreto reforzado | Ø 0.90 m | sí / sí | entrada del proyecto que falta: licuefaccion_ems; criterio que el Propietario o el proyectista debe declarar: incremento_acero_por_despiece; criterio que el Propietario o el proyectista debe declarar: clase_concreto_losa_entrega |
+| C-01 | C | sí | Concreto reforzado | marco 1.20 × 0.90 m | sí / sí | metodo diferido con ficha: VC1-01; entrada del proyecto que falta: licuefaccion_ems; criterio que el Propietario o el proyectista debe declarar: incremento_acero_por_despiece; criterio que el Propietario o el proyectista debe declarar: clase_concreto_losa_entrega |
 
 Verificaciones que no salen «cumple» (conducto y cabezal), por punto. Son RESULTADOS con los datos de prueba:
 
@@ -64,7 +64,7 @@ Verificaciones que no salen «cumple» (conducto y cabezal), por punto. Son RESU
 | A-01 | E1-ASD.sis.e (indicador), E3-ASD.sis.e (indicador), E1-ASD.sis.s (indicador) |
 | A-02 | E1-ASD.sis.e (indicador), E3-ASD.sis.e (indicador), E1-ASD.sis.s (indicador) |
 | B-01 | E1-ASD.sis.e (indicador), E3-ASD.sis.e (indicador), E1-ASD.sis.s (indicador), E3-ASD.sis.s (indicador) |
-| C-01 | V2b (indicador), VC2 (indicador), E1-ASD.sis.e (indicador), E3-ASD.sis.e (indicador), E1-ASD.sis.s (indicador), E3-ASD.sis.s (indicador) |
+| C-01 | V2b (indicador), VC2 (indicador), E1-ASD.sis.e (indicador), E3-ASD.sis.e (indicador), E1-ASD.sis.s (indicador), E3-ASD.sis.s (indicador), A2.losa_inferior_1_derecha.exterior (no cumple), A2.losa_inferior_1_izquierda.exterior (no cumple) |
 
 Lectura de ingeniería (no la escribe el programa; las cifras sí): las filas E3 (deslizamiento) estática y E1 (capacidad portante) sísmica del marco LRFD no pasan con la zapata que propone la regla de T-7a en ninguno de los cuatro puntos, y desde VE-3.5 la zapata se dimensiona por estabilidad: crece en 8 de 8 cabezales y la estabilidad evaluada cumple en 8; el peralte crece por su armado (VE-3.9) en 0 y quedan 0 filas del armado de la zapata sin cumplir. La variante `zapata_declarada_3m` (§5) muestra una zapata declarada, que no se itera, y el anexo de sensibilidad (`docs/validacion_sensibilidad.md` §3.1) mide los dos [A] de los que dependen —los factores de inclinación y la fila de φ—, que desde VE-3.5 deciden cuánto crece la zapata más que si pasa. Desde VE-3.14 la pantalla y el alero se dimensionan por su armado: crecen en 0 cabezales, los de SALIDA, donde la socavación baja el desplante; y fuera de AASHTO 5.7.3.4.1 el cortante se verifica con el procedimiento general de 5.7.3.4.2, con el acero longitudinal que pide. No es un fallo de la validación: es lo que el dimensionamiento de VE-3.5, VE-3.9 y VE-3.14 resuelve.
 
@@ -97,70 +97,70 @@ Cada fila es una corrida: la base sin esa entrada. **DETIENE** = aparece un bloq
 
 | Entrada quitada | Puerta | Efecto | Detalle |
 |---|---|---|---|
-| NF_profundidad_m (A-01) | celda del CSV | DETIENE | A-01: entrada del proyecto que falta — NF_profundidad_m · 76 veredictos |
-| NF_profundidad_m (A-02) | celda del CSV | DETIENE | A-02: entrada del proyecto que falta — NF_profundidad_m · 76 veredictos |
-| NF_profundidad_m (B-01) | celda del CSV | DETIENE | B-01: entrada del proyecto que falta — NF_profundidad_m · 76 veredictos |
-| NF_profundidad_m (C-01) | celda del CSV | DETIENE | C-01: entrada del proyecto que falta — NF_profundidad_m · 76 veredictos |
+| NF_profundidad_m (A-01) | celda del CSV | DETIENE | A-01: entrada del proyecto que falta — NF_profundidad_m; A-01: metodo diferido con ficha — VE5-MET-01 · 88 veredictos |
+| NF_profundidad_m (A-02) | celda del CSV | DETIENE | A-02: entrada del proyecto que falta — NF_profundidad_m; A-02: metodo diferido con ficha — VE5-MET-01 · 88 veredictos |
+| NF_profundidad_m (B-01) | celda del CSV | DETIENE | B-01: entrada del proyecto que falta — NF_profundidad_m; B-01: metodo diferido con ficha — VE5-MET-01 · 88 veredictos |
+| NF_profundidad_m (C-01) | celda del CSV | DETIENE | C-01: entrada del proyecto que falta — NF_profundidad_m; C-01: metodo diferido con ficha — VE5-MET-01 · 88 veredictos |
 | cota_coronacion_canal (C-01) | celda del CSV | DETIENE | C-01: entrada del proyecto que falta — cota_coronacion_canal · no dimensiona C-01 |
 | TW_m (global) | --datos-externos | NO FACTIBLE | A-01: resultado: ningun material ni seccion cumple — Fase 5; A-02: resultado: ningun material ni seccion cumple — Fase 5; B-01: resultado: ningun material ni seccion cumple — Fase 5 · no dimensiona A-01, A-02, B-01 · 3 avisos nuevos |
 | abrasion (global) | --datos-externos | SIN EFECTO MEDIBLE | — |
 | acceso_mantenimiento_previsto (global) | --datos-externos | SIN EFECTO MEDIBLE | — |
 | ancho_derecho_via_m (global) | --datos-externos | SIN EFECTO MEDIBLE | — |
-| bombeo (global) | --datos-externos | SOLO AVISA | 38 avisos nuevos |
+| bombeo (global) | --datos-externos | SOLO AVISA | 45 avisos nuevos |
 | cloruros_ppm (global) | --datos-externos | SIN EFECTO MEDIBLE | — |
 | luz_m (global) | --datos-externos | DETIENE | A-01: entrada del proyecto que falta — luz_m; A-02: entrada del proyecto que falta — luz_m; B-01: entrada del proyecto que falta — luz_m; C-01: entrada del proyecto que falta — luz_m · no dimensiona A-01, A-02, B-01, C-01 · 1 avisos nuevos |
 | pH (global) | --datos-externos | SIN EFECTO MEDIBLE | — |
-| regimen_flujo_descarga (global) | --datos-externos | SOLO AVISA | 8 avisos nuevos |
+| regimen_flujo_descarga (global) | --datos-externos | SOLO AVISA | 11 avisos nuevos |
 | resistividad_ohm_cm (global) | --datos-externos | SIN EFECTO MEDIBLE | — |
 | sulfatos_agua_ppm (global) | --datos-externos | SIN EFECTO MEDIBLE | — |
 | sulfatos_suelo_ppm (global) | --datos-externos | SIN EFECTO MEDIBLE | — |
-| Q_evento_extremo_m3s (A-01) | --datos-externos | DETIENE | A-01: entrada del proyecto que falta — Q_evento_extremo_m3s · no dimensiona A-01 |
+| Q_evento_extremo_m3s (A-01) | --datos-externos | NO FACTIBLE | A-01: resultado: ningun material ni seccion cumple — Fase 5 · no dimensiona A-01 |
 | TW_evento_extremo_m (A-01) | --datos-externos | DETIENE | A-01: entrada del proyecto que falta — TW_evento_extremo_m · no dimensiona A-01 |
 | cota_afectacion_aguas_arriba_msnm (A-01) | --datos-externos | DETIENE | A-01: entrada del proyecto que falta — cota_afectacion_aguas_arriba_msnm · no dimensiona A-01 |
-| duracion_caudal_pico_min (A-01) | --datos-externos | SOLO AVISA | 7 avisos nuevos |
-| material_lecho_salida (A-01) | --datos-externos | CAMBIA VEREDICTOS | 2 veredictos · 9 avisos nuevos |
+| duracion_caudal_pico_min (A-01) | --datos-externos | SOLO AVISA | 8 avisos nuevos |
+| material_lecho_salida (A-01) | --datos-externos | CAMBIA VEREDICTOS | 2 veredictos · 10 avisos nuevos |
 | tipo_terreno_entrada (A-01) | --datos-externos | SOLO AVISA | 1 avisos nuevos |
 | tipo_terreno_receptor (A-01) | --datos-externos | SOLO AVISA | 1 avisos nuevos |
-| Q_evento_extremo_m3s (A-02) | --datos-externos | DETIENE | A-02: entrada del proyecto que falta — Q_evento_extremo_m3s · no dimensiona A-02 |
+| Q_evento_extremo_m3s (A-02) | --datos-externos | NO FACTIBLE | A-02: resultado: ningun material ni seccion cumple — Fase 5 · no dimensiona A-02 |
 | TW_evento_extremo_m (A-02) | --datos-externos | DETIENE | A-02: entrada del proyecto que falta — TW_evento_extremo_m · no dimensiona A-02 |
 | cota_afectacion_aguas_arriba_msnm (A-02) | --datos-externos | DETIENE | A-02: entrada del proyecto que falta — cota_afectacion_aguas_arriba_msnm · no dimensiona A-02 |
 | profundidad_socavacion_estimada_m (A-02) | --datos-externos | CAMBIA VEREDICTOS | 2 veredictos · 8 avisos nuevos |
 | tipo_terreno_entrada (A-02) | --datos-externos | SOLO AVISA | 1 avisos nuevos |
 | tipo_terreno_receptor (A-02) | --datos-externos | SOLO AVISA | 1 avisos nuevos |
-| Q_evento_extremo_m3s (B-01) | --datos-externos | DETIENE | B-01: entrada del proyecto que falta — Q_evento_extremo_m3s · no dimensiona B-01 |
+| Q_evento_extremo_m3s (B-01) | --datos-externos | DETIENE | B-01: entrada del proyecto que falta — Q_evento_extremo_m3s · no dimensiona B-01 · 1 avisos nuevos |
 | S_cuneta (B-01) | --datos-externos | DETIENE | B-01: entrada del proyecto que falta — L_hidraulico_m · 2 veredictos · 1 avisos nuevos |
 | TW_evento_extremo_m (B-01) | --datos-externos | DETIENE | B-01: entrada del proyecto que falta — TW_evento_extremo_m · no dimensiona B-01 |
 | ancho_tributario_m (B-01) | --datos-externos | SIN EFECTO MEDIBLE | — |
 | cota_afectacion_aguas_arriba_msnm (B-01) | --datos-externos | DETIENE | B-01: entrada del proyecto que falta — cota_afectacion_aguas_arriba_msnm · no dimensiona B-01 |
 | inicio_tramo_cuneta_km (B-01) | --datos-externos | CAMBIA VEREDICTOS | 1 veredictos |
-| material_lecho_salida (B-01) | --datos-externos | CAMBIA VEREDICTOS | 1 veredictos · 7 avisos nuevos |
+| material_lecho_salida (B-01) | --datos-externos | CAMBIA VEREDICTOS | 1 veredictos · 8 avisos nuevos |
 | tipo_terreno_entrada (B-01) | --datos-externos | SOLO AVISA | 1 avisos nuevos |
 | tipo_terreno_receptor (B-01) | --datos-externos | SOLO AVISA | 1 avisos nuevos |
 | Q_evento_extremo_m3s (C-01) | --datos-externos | DETIENE | C-01: entrada del proyecto que falta — Q_evento_extremo_m3s · no dimensiona C-01 |
 | Q_m3s (C-01) | --datos-externos | DETIENE | C-01: entrada del proyecto que falta — Q_m3s · no dimensiona C-01 |
 | S_cauce (C-01) | --datos-externos | DETIENE | C-01: entrada del proyecto que falta — S_cauce · no dimensiona C-01 |
-| S_conducto (C-01) | --datos-externos | CAMBIA VEREDICTOS | 1 veredictos · 10 avisos nuevos |
+| S_conducto (C-01) | --datos-externos | CAMBIA VEREDICTOS | 1 veredictos · 13 avisos nuevos |
 | TW_evento_extremo_m (C-01) | --datos-externos | DETIENE | C-01: entrada del proyecto que falta — TW_evento_extremo_m · no dimensiona C-01 |
-| TW_m (C-01) | --datos-externos | SOLO AVISA | 3 avisos nuevos |
+| TW_m (C-01) | --datos-externos | SOLO AVISA | 5 avisos nuevos |
 | desnivel_perfil_canal_m (C-01) | --datos-externos | DETIENE | C-01: entrada del proyecto que falta — desnivel_perfil_canal_m · no dimensiona C-01 |
 | profundidad_socavacion_estimada_m (C-01) | --datos-externos | CAMBIA VEREDICTOS | 1 veredictos · 7 avisos nuevos |
 | seccion_receptor_medida (C-01) | --datos-externos | SOLO AVISA | 1 avisos nuevos |
 | tipo_terreno_entrada (C-01) | --datos-externos | SOLO AVISA | 1 avisos nuevos |
-| tipo_terreno_receptor (C-01) | --datos-externos | SOLO AVISA | 1 avisos nuevos |
+| tipo_terreno_receptor (C-01) | --datos-externos | SOLO AVISA | 4 avisos nuevos |
 | carriles_por_sentido | --datos-sitio | SIN EFECTO MEDIBLE | — |
 | clase_de_via | --datos-sitio | SIN EFECTO MEDIBLE | — |
-| distancia_borde_calzada_al_trasdos_m | --datos-sitio | DETIENE | A-01: entrada del proyecto que falta — distancia_borde_calzada_al_trasdos_m; A-02: entrada del proyecto que falta — distancia_borde_calzada_al_trasdos_m; B-01: entrada del proyecto que falta — distancia_borde_calzada_al_trasdos_m; C-01: entrada del proyecto que falta — distancia_borde_calzada_al_trasdos_m · 304 veredictos |
+| distancia_borde_calzada_al_trasdos_m | --datos-sitio | DETIENE | A-01: entrada del proyecto que falta — distancia_borde_calzada_al_trasdos_m; A-01: metodo diferido con ficha — VE5-MET-01; A-02: entrada del proyecto que falta — distancia_borde_calzada_al_trasdos_m; A-02: metodo diferido con ficha — VE5-MET-01; B-01: entrada del proyecto que falta — distancia_borde_calzada_al_trasdos_m; B-01: metodo diferido con ficha — VE5-MET-01; C-01: entrada del proyecto que falta — distancia_borde_calzada_al_trasdos_m; C-01: metodo diferido con ficha — VE5-MET-01 · 352 veredictos |
 | existe_informacion_secundaria_tramo | --datos-sitio | SIN EFECTO MEDIBLE | — |
-| orientacion_muro_respecto_al_trafico | --datos-sitio | DETIENE | A-01: entrada del proyecto que falta — orientacion_muro_respecto_al_trafico; A-02: entrada del proyecto que falta — orientacion_muro_respecto_al_trafico; B-01: entrada del proyecto que falta — orientacion_muro_respecto_al_trafico; C-01: entrada del proyecto que falta — orientacion_muro_respecto_al_trafico · 304 veredictos |
+| orientacion_muro_respecto_al_trafico | --datos-sitio | DETIENE | A-01: entrada del proyecto que falta — orientacion_muro_respecto_al_trafico; A-01: metodo diferido con ficha — VE5-MET-01; A-02: entrada del proyecto que falta — orientacion_muro_respecto_al_trafico; A-02: metodo diferido con ficha — VE5-MET-01; B-01: entrada del proyecto que falta — orientacion_muro_respecto_al_trafico; B-01: metodo diferido con ficha — VE5-MET-01; C-01: entrada del proyecto que falta — orientacion_muro_respecto_al_trafico; C-01: metodo diferido con ficha — VE5-MET-01 · 352 veredictos |
 | TR_evento_extremo | --declarar | DETIENE | A-01: criterio que el Propietario o el proyectista debe declarar — TR_evento_extremo; A-02: criterio que el Propietario o el proyectista debe declarar — TR_evento_extremo; B-01: criterio que el Propietario o el proyectista debe declarar — TR_evento_extremo; C-01: criterio que el Propietario o el proyectista debe declarar — TR_evento_extremo · no dimensiona A-01, A-02, B-01, C-01 |
-| c_phi_fundacion | --declarar | DETIENE | A-01: entrada del proyecto que falta — c_phi_fundacion; A-02: entrada del proyecto que falta — c_phi_fundacion; B-01: entrada del proyecto que falta — c_phi_fundacion; C-01: entrada del proyecto que falta — c_phi_fundacion · 96 veredictos · 11 avisos nuevos |
-| categoria_refuerzo_aashto | --declarar | DETIENE | proyecto: criterio que el Propietario o el proyectista debe declarar — categoria_refuerzo_aashto · 16 avisos nuevos |
+| c_phi_fundacion | --declarar | DETIENE | A-01: entrada del proyecto que falta — c_phi_fundacion; A-02: entrada del proyecto que falta — c_phi_fundacion; B-01: entrada del proyecto que falta — c_phi_fundacion; C-01: entrada del proyecto que falta — c_phi_fundacion · 96 veredictos · 13 avisos nuevos |
+| categoria_refuerzo_aashto | --declarar | DETIENE | proyecto: criterio que el Propietario o el proyectista debe declarar — categoria_refuerzo_aashto · 18 avisos nuevos |
 | clase_exposicion_fisuracion_cabezal | --declarar | SIN EFECTO MEDIBLE | — |
-| exposicion_quimica_ems | --declarar | DETIENE | proyecto: entrada del proyecto que falta — exposicion_quimica_ems · 8 veredictos · 24 avisos nuevos |
-| factor_muro_eleccion + regimen_resistencia_elementos_cabezal | --declarar | CAMBIA VEREDICTOS | 18 veredictos · 58 avisos nuevos |
+| exposicion_quimica_ems | --declarar | DETIENE | proyecto: entrada del proyecto que falta — exposicion_quimica_ems · 8 veredictos · 26 avisos nuevos |
+| factor_muro_eleccion + regimen_resistencia_elementos_cabezal | --declarar | CAMBIA VEREDICTOS | 20 veredictos · 73 avisos nuevos |
 | homogeneidad_serie_fen | --declarar | SIN EFECTO MEDIBLE | — |
 | peso_especifico_saturado_relleno_kn_m3 | --declarar | SIN EFECTO MEDIBLE | — |
-| phi_relleno_trasdos | --declarar | DETIENE | A-01: entrada del proyecto que falta — phi_relleno_trasdos; A-02: entrada del proyecto que falta — phi_relleno_trasdos; B-01: entrada del proyecto que falta — phi_relleno_trasdos; C-01: entrada del proyecto que falta — phi_relleno_trasdos · 304 veredictos |
+| phi_relleno_trasdos | --declarar | DETIENE | A-01: entrada del proyecto que falta — phi_relleno_trasdos; A-01: metodo diferido con ficha — VE5-MET-01; A-02: entrada del proyecto que falta — phi_relleno_trasdos; A-02: metodo diferido con ficha — VE5-MET-01; B-01: entrada del proyecto que falta — phi_relleno_trasdos; B-01: metodo diferido con ficha — VE5-MET-01; C-01: entrada del proyecto que falta — phi_relleno_trasdos; C-01: metodo diferido con ficha — VE5-MET-01 · 422 veredictos |
 | remanso_derecho_via | --declarar | DETIENE | A-01: criterio que el Propietario o el proyectista debe declarar — remanso_derecho_via; A-02: criterio que el Propietario o el proyectista debe declarar — remanso_derecho_via; B-01: criterio que el Propietario o el proyectista debe declarar — remanso_derecho_via · no dimensiona A-01, A-02, B-01 |
 | umbral_no_colapso_evento_extremo | --declarar | DETIENE | A-01: criterio que el Propietario o el proyectista debe declarar — umbral_no_colapso_evento_extremo; A-02: criterio que el Propietario o el proyectista debe declarar — umbral_no_colapso_evento_extremo; B-01: criterio que el Propietario o el proyectista debe declarar — umbral_no_colapso_evento_extremo; C-01: criterio que el Propietario o el proyectista debe declarar — umbral_no_colapso_evento_extremo · no dimensiona A-01, A-02, B-01, C-01 |
 | --cuencas y --estacion | --cuencas / --estacion | SIN EFECTO MEDIBLE | — |
@@ -171,15 +171,15 @@ Se corrieron 66 entradas; las 65 que no salen aquí tienen el mismo efecto que e
 
 | Entrada quitada | Puerta | Efecto | Detalle |
 |---|---|---|---|
-| bombeo (global) | --datos-externos | CAMBIA VEREDICTOS | 2 veredictos · 55 avisos nuevos |
+| bombeo (global) | --datos-externos | CAMBIA VEREDICTOS | 3 veredictos · 69 avisos nuevos |
 
 ### 4.3 La lista exacta: lo que detiene una etapa si falta
 
 | Qué falta | Clase | Dónde detiene |
 |---|---|---|
 | `L_hidraulico_m` | entrada del proyecto que falta | B-01: VB1: espaciamiento adoptado por tramo (Sec. 10); B-01: VB1: espaciamiento adoptado por tramo (Sec. 10) (con las decisiones de archivo); B-01: espaciamiento maximo entre alivios; B-01: espaciamiento maximo entre alivios (con las decisiones de archivo); B-01: espaciamiento maximo entre alivios (sin juego) |
-| `NF_profundidad_m` | entrada del proyecto que falta | A-01: armado del cabezal de entrada: solicitaciones de resistencia (T-7c); A-01: armado del cabezal de entrada: solicitaciones de resistencia (T-7c) (con las decisiones de archivo); A-01: armado del cabezal de salida: solicitaciones de resistencia (T-7c); A-01: armado del cabezal de salida: solicitaciones de resistencia (T-7c) (con las decisiones de archivo); A-01: estabilidad E1-E3 del cabezal d… |
-| `Q_evento_extremo_m3s` | entrada del proyecto que falta | A-01: material y diametro (bucle de MD); A-01: material y diametro (bucle de MD) (con las decisiones de archivo); A-02: material y diametro (bucle de MD); A-02: material y diametro (bucle de MD) (con las decisiones de archivo); B-01: material y diametro (bucle de MD); B-01: material y diametro (bucle de MD) (con las decisiones de archivo); C-01: material y diametro (bucle de MD); C-01: material y… |
+| `NF_profundidad_m` | entrada del proyecto que falta / metodo diferido con ficha | A-01: armado del cabezal de entrada: solicitaciones de resistencia (T-7c); A-01: armado del cabezal de entrada: solicitaciones de resistencia (T-7c) (con las decisiones de archivo); A-01: armado del cabezal de salida: solicitaciones de resistencia (T-7c); A-01: armado del cabezal de salida: solicitaciones de resistencia (T-7c) (con las decisiones de archivo); A-01: estabilidad E1-E3 del cabezal d… |
+| `Q_evento_extremo_m3s` | entrada del proyecto que falta | B-01: material y diametro (bucle de MD); B-01: material y diametro (bucle de MD) (con las decisiones de archivo); C-01: material y diametro (bucle de MD); C-01: material y diametro (bucle de MD) (con las decisiones de archivo) |
 | `Q_m3s` | entrada del proyecto que falta | C-01: material y diametro (bucle de MD); C-01: material y diametro (bucle de MD) (con las decisiones de archivo) |
 | `S_cauce` | entrada del proyecto que falta | C-01: material y diametro (bucle de MD); C-01: material y diametro (bucle de MD) (con las decisiones de archivo) |
 | `S_cuneta` | entrada del proyecto que falta | B-01: VB1: espaciamiento adoptado por tramo (Sec. 10); B-01: VB1: espaciamiento adoptado por tramo (Sec. 10) (con las decisiones de archivo); B-01: espaciamiento maximo entre alivios; B-01: espaciamiento maximo entre alivios (con las decisiones de archivo) |
@@ -190,11 +190,11 @@ Se corrieron 66 entradas; las 65 que no salen aquí tienen el mismo efecto que e
 | `cota_afectacion_aguas_arriba_msnm` | entrada del proyecto que falta | A-01: material y diametro (bucle de MD); A-01: material y diametro (bucle de MD) (con las decisiones de archivo); A-02: material y diametro (bucle de MD); A-02: material y diametro (bucle de MD) (con las decisiones de archivo); B-01: material y diametro (bucle de MD); B-01: material y diametro (bucle de MD) (con las decisiones de archivo) |
 | `cota_coronacion_canal` | entrada del proyecto que falta | C-01: material y diametro (bucle de MD); C-01: material y diametro (bucle de MD) (con las decisiones de archivo) |
 | `desnivel_perfil_canal_m` | entrada del proyecto que falta | C-01: material y diametro (bucle de MD); C-01: material y diametro (bucle de MD) (con las decisiones de archivo) |
-| `distancia_borde_calzada_al_trasdos_m` | entrada del proyecto que falta | A-01: armado del cabezal de entrada: solicitaciones de resistencia (T-7c); A-01: armado del cabezal de entrada: solicitaciones de resistencia (T-7c) (con las decisiones de archivo); A-01: armado del cabezal de salida: solicitaciones de resistencia (T-7c); A-01: armado del cabezal de salida: solicitaciones de resistencia (T-7c) (con las decisiones de archivo); A-01: estabilidad E1-E3 del cabezal d… |
+| `distancia_borde_calzada_al_trasdos_m` | entrada del proyecto que falta / metodo diferido con ficha | A-01: armado del cabezal de entrada: solicitaciones de resistencia (T-7c); A-01: armado del cabezal de entrada: solicitaciones de resistencia (T-7c) (con las decisiones de archivo); A-01: armado del cabezal de salida: solicitaciones de resistencia (T-7c); A-01: armado del cabezal de salida: solicitaciones de resistencia (T-7c) (con las decisiones de archivo); A-01: estabilidad E1-E3 del cabezal d… |
 | `exposicion_quimica_ems` | entrada del proyecto que falta | proyecto: aviso de ambiente corrosivo (9.4); proyecto: aviso de ambiente corrosivo (9.4) (con las decisiones de archivo); proyecto: aviso de ambiente corrosivo (9.4) (sin juego); proyecto: recubrimiento de diseno 'contra_suelo' (9.4); proyecto: recubrimiento de diseno 'contra_suelo' (9.4) (con las decisiones de archivo); proyecto: recubrimiento de diseno 'suelo_intemperie_ge_3_4' (9.4); proyecto:… |
 | `luz_m` | entrada del proyecto que falta | A-01: umbral de luz (Sec. 2.1); A-01: umbral de luz (Sec. 2.1) (con las decisiones de archivo); A-01: umbral de luz (Sec. 2.1) (sin juego); A-02: umbral de luz (Sec. 2.1); A-02: umbral de luz (Sec. 2.1) (con las decisiones de archivo); A-02: umbral de luz (Sec. 2.1) (sin juego); B-01: umbral de luz (Sec. 2.1); B-01: umbral de luz (Sec. 2.1) (con las decisiones de archivo); B-01: umbral de luz (Se… |
-| `orientacion_muro_respecto_al_trafico` | entrada del proyecto que falta | A-01: armado del cabezal de entrada: solicitaciones de resistencia (T-7c); A-01: armado del cabezal de entrada: solicitaciones de resistencia (T-7c) (con las decisiones de archivo); A-01: armado del cabezal de salida: solicitaciones de resistencia (T-7c); A-01: armado del cabezal de salida: solicitaciones de resistencia (T-7c) (con las decisiones de archivo); A-01: estabilidad E1-E3 del cabezal d… |
-| `phi_relleno_trasdos` | entrada del proyecto que falta | A-01: armado del cabezal de entrada: solicitaciones de resistencia (T-7c); A-01: armado del cabezal de entrada: solicitaciones de resistencia (T-7c) (con las decisiones de archivo); A-01: armado del cabezal de salida: solicitaciones de resistencia (T-7c); A-01: armado del cabezal de salida: solicitaciones de resistencia (T-7c) (con las decisiones de archivo); A-01: estabilidad E1-E3 del cabezal d… |
+| `orientacion_muro_respecto_al_trafico` | entrada del proyecto que falta / metodo diferido con ficha | A-01: armado del cabezal de entrada: solicitaciones de resistencia (T-7c); A-01: armado del cabezal de entrada: solicitaciones de resistencia (T-7c) (con las decisiones de archivo); A-01: armado del cabezal de salida: solicitaciones de resistencia (T-7c); A-01: armado del cabezal de salida: solicitaciones de resistencia (T-7c) (con las decisiones de archivo); A-01: estabilidad E1-E3 del cabezal d… |
+| `phi_relleno_trasdos` | entrada del proyecto que falta / metodo diferido con ficha | A-01: armado del cabezal de entrada: solicitaciones de resistencia (T-7c); A-01: armado del cabezal de entrada: solicitaciones de resistencia (T-7c) (con las decisiones de archivo); A-01: armado del cabezal de salida: solicitaciones de resistencia (T-7c); A-01: armado del cabezal de salida: solicitaciones de resistencia (T-7c) (con las decisiones de archivo); A-01: estabilidad E1-E3 del cabezal d… |
 | `remanso_derecho_via` | criterio que el Propietario o el proyectista debe declarar | A-01: material y diametro (bucle de MD); A-01: material y diametro (bucle de MD) (con las decisiones de archivo); A-02: material y diametro (bucle de MD); A-02: material y diametro (bucle de MD) (con las decisiones de archivo); B-01: material y diametro (bucle de MD); B-01: material y diametro (bucle de MD) (con las decisiones de archivo) |
 | `umbral_no_colapso_evento_extremo` | criterio que el Propietario o el proyectista debe declarar | A-01: material y diametro (bucle de MD); A-01: material y diametro (bucle de MD) (con las decisiones de archivo); A-02: material y diametro (bucle de MD); A-02: material y diametro (bucle de MD) (con las decisiones de archivo); B-01: material y diametro (bucle de MD); B-01: material y diametro (bucle de MD) (con las decisiones de archivo); C-01: material y diametro (bucle de MD); C-01: material y… |
 
@@ -205,31 +205,35 @@ Cada una está nombrada en `docs/contrato_entradas.md` §7 (lo comprueba el test
 - `clases_producto_por_relleno` — la D-load de las Clases I, III, IV y V de AASHTO M 170M: solo si un tubo de concreto pide mas que la Clase II (T-5).
 - `resistencia_costura_empernada_tmc` — solo si se adopta un TMC con `fabricacion_tmc` = 'anular_empernada' (T-5): ninguna fuente del repositorio tabula esa costura.
 - `ancho_tributario_m` — solo cuando el tramo del alivio no se conoce o el caudal se calcula (T-9).
-- `ancho_derecho_via_m` — solo con `remanso_derecho_via` = 'embalse_a_nivel' (T-7b).
+- `ancho_derecho_via_m` — solo con `remanso_derecho_via` = 'embalse_a_nivel' (T-7b) o 'perfil_de_remanso_paso_a_paso' (VE-4c).
+- `seccion_cauce_aproximacion` — solo con `remanso_derecho_via` = 'perfil_de_remanso_paso_a_paso' (VE-4c): la seccion del cauce de aproximacion sobre la que corre el perfil de remanso de V5.
+- `sobreelevacion_admisible_remanso_m` — solo con `remanso_derecho_via` = 'perfil_de_remanso_paso_a_paso' (VE-4c): donde termina el perfil de remanso de V5.
 - `TW_receptor` — solo si ninguna via de la Sec. 1.3 es recorrible: sin TW declarado, sin `cota_TW`, sin `Q_receptor_m3s`, sin seccion medida y con `seccion_receptor` vacio (`servicio.tw_sin_via_de_sec_1_3`); con la seccion de archivo de `seccion_receptor` nunca se lee.
 - `h_eq_banda_intermedia_borde` — solo con el trasdos a menos de 1.0 ft (0.3048 m) del borde de la calzada, la banda intermedia de AASHTO 3.11.6.4 (`M9.CRITERIO_H_EQ_BANDA_BORDE`).
 - `h_eq_bajo_altura_tabulada` — solo con un muro de menos de 5.0 ft (1.524 m), bajo la primera fila de la tabla de h_eq de AASHTO 3.11.6.4 (`M9._interpolar_h_eq`).
-- `N_cq_N_gammaq_meyerhof` — solo con `terreno_delante_del_cabezal` = 'talud_descendente': la zapata en talud del Manual de Puentes 2.8.1.3.1.2c.
+- `talud_delante_del_cabezal` — solo con `terreno_delante_del_cabezal` = 'talud_descendente': la zapata en talud de AASHTO 10.6.3.1.2c (RC_BC; VE-5).
 - `q_n_kpa` — la resistencia portante nominal del EMS (`suelo_fundacion`): solo con la cimentacion en ROCA (filas A o B declaradas en 'F_pga'), donde la ecuacion de 10.6.3.1.2a no aplica y sin el dato la capacidad portante es «metodo no evaluable».
 - `margen_estacional_nf_v7_m` — solo con `nivel_agua_diseno_v7` = 'nf_del_punto': detiene V7 (el ascenso estacional del freatico sobre la lectura de `NF_profundidad_m`), y con esa alternativa V7 exige ademas el NF del punto y, con el nivel sobre la clave, `peso_especifico_saturado_relleno_kn_m3` (ficha VE2-C).
 - `peso_especifico_saturado_relleno_kn_m3` — solo con agua en el relleno del cabezal: `drenaje_trasdos` = 'sin_drenaje' declarado (el drenaje no puede darse) o el freatico sobre la base de la zapata; con el relleno drenado de archivo (VE-3.16) y el freatico bajo la zapata no se lee. El juego lo declara (20 kN/m³ de prueba) para la variante `sin_drenaje_declarado`.
+- `nivel_agua_relleno_sin_drenaje_bajo_sismo` — solo con `drenaje_trasdos` = 'sin_drenaje' declarado: detiene la condicion sismica de los cabezales (el nivel medio del agua en el tiempo de un relleno sin drenar, C11.6.5.3, que la fuente no da). Las variantes `sin_drenaje_declarado` y `sin_drenaje_sismo_en_el_freatico` declaran sus dos opciones.
 
 ## 5. Variantes: una decisión del juego, del otro lado
 
 | Variante | Qué cambia | Efecto | Resultado | Detalle |
 |---|---|---|---|---|
-| `decisiones_de_archivo` | La decision de ARCHIVO que el juego pisa (el muro que NO cede: `factor_muro_eleccion` = 'sin_reduccion' con el armado en reposo, un solo regimen desde VE-3.15), con el trasdos drenado de archivo (VE-3.16): la corrida TITULAR de §2 | CAMBIA VEREDICTOS | A-01: Ø 0.90 m · A-02: Ø 0.90 m · B-01: Ø 0.90 m · C-01: marco 1.20 × 0.90 m | A-01 E1-LRFD.sis.s: cumple → no cumple; A-01 E3-ASD.sis.s: cumple → indicador; A-01 E3-LRFD.sis.e: cumple → no cumple; A-01 E3-LRFD.sis.s: cumple → no cumple; A-02 A2.alero.s: cumple → indicador; A-02 A2.pantalla.s: cumple → indicador; A-02 E1-LRFD.sis.s: cumple → no cumple; A-02 E3-ASD.sis.s: cumple → indicador; A-02 E3-LRFD.sis.e: cumple → no cumple; A-02 E3-LRFD.sis.s: cumple → no cumple; B-01 E1-LRFD.sis.s: cumple → no cumple; B-01 E3-LRFD.sis.e: cumple → no cumple; B-01 E3-LRFD.sis.s: cumple → no cumple; C-01 A2.alero.s: cumple → indicador; C-01 A2.pantalla.s: cumple → indicador; C-01 E1-LRFD.sis.s: cumple → no cumple; C-01 E3-LRFD.sis.e: cumple → no cumple; C-01 E3-LRFD.sis.s: cumple → no cumple |
+| `decisiones_de_archivo` | La decision de ARCHIVO que el juego pisa (el muro que NO cede: `factor_muro_eleccion` = 'sin_reduccion' con el armado en reposo, un solo regimen desde VE-3.15), con el trasdos drenado de archivo (VE-3.16): la corrida TITULAR de §2 | CAMBIA VEREDICTOS | A-01: Ø 0.90 m · A-02: Ø 0.90 m · B-01: Ø 0.90 m · C-01: marco 1.20 × 0.90 m | A-01 E1-LRFD.sis.s: cumple → no cumple; A-01 E3-ASD.sis.s: cumple → indicador; A-01 E3-LRFD.sis.e: cumple → no cumple; A-01 E3-LRFD.sis.s: cumple → no cumple; A-02 A2.alero.s: cumple → indicador; A-02 A2.alero_mitad.s: cumple → indicador; A-02 A2.pantalla.s: cumple → indicador; A-02 E1-LRFD.sis.s: cumple → no cumple; A-02 E3-ASD.sis.s: cumple → indicador; A-02 E3-LRFD.sis.e: cumple → no cumple; A-02 E3-LRFD.sis.s: cumple → no cumple; B-01 E1-LRFD.sis.s: cumple → no cumple; B-01 E3-LRFD.sis.e: cumple → no cumple; B-01 E3-LRFD.sis.s: cumple → no cumple; C-01 A2.alero.s: cumple → indicador; C-01 A2.alero_mitad.s: cumple → indicador; C-01 A2.pantalla.s: cumple → indicador; C-01 E1-LRFD.sis.s: cumple → no cumple; C-01 E3-LRFD.sis.e: cumple → no cumple; C-01 E3-LRFD.sis.s: cumple → no cumple |
 | `B01_tw_de_la_linea_base` | B-01 con el TW de 1.00 m de la linea base (el caso por defecto que el dueño decidio dejar) | NO FACTIBLE | A-01: Ø 0.90 m · A-02: Ø 0.90 m · B-01: no dimensiona · C-01: marco 1.20 × 0.90 m | B-01: resultado: ningun material ni seccion cumple — Fase 5 |
 | `B01_sin_inicio_de_tramo` | B-01 sin `inicio_tramo_cuneta_km`: el tramo empieza en A-02 (530 m), el caso de la linea base | CAMBIA VEREDICTOS | A-01: Ø 0.90 m · A-02: Ø 0.90 m · B-01: Ø 0.90 m · C-01: marco 1.20 × 0.90 m | B-01 VB1: cumple → no cumple |
 | `freatico_a_2m` | Freatico a 2.0 m (el de T-7b) en los cuatro puntos | SOLO AVISA | A-01: Ø 0.90 m · A-02: Ø 0.90 m · B-01: Ø 0.90 m · C-01: marco 1.20 × 0.90 m | — |
-| `agua_con_cloruros` | Analisis quimico con cloruros (la fila de cloruros de la Tabla 4.2 de E.060), como en el conftest | CAMBIA VEREDICTOS | A-01: Ø 0.90 m · A-02: Ø 0.90 m · B-01: Ø 0.90 m · C-01: marco 1.20 × 0.90 m | A-01 A7.concreto.e: no aplica → no cumple; A-01 A7.concreto.s: no aplica → no cumple; A-02 A7.concreto.e: no aplica → no cumple; A-02 A7.concreto.s: no aplica → no cumple; B-01 A7.concreto.e: no aplica → no cumple; B-01 A7.concreto.s: no aplica → no cumple; C-01 A7.concreto.e: no aplica → no cumple; C-01 A7.concreto.s: no aplica → no cumple |
+| `agua_con_cloruros` | Analisis quimico con cloruros (la fila de cloruros de la Tabla 4.2 de E.060), como en el conftest | CAMBIA VEREDICTOS | A-01: Ø 0.90 m · A-02: Ø 0.90 m · B-01: Ø 0.90 m · C-01: marco 1.20 × 0.90 m | A-01 A7.concreto.e: no aplica → no cumple; A-01 A7.concreto.s: no aplica → no cumple; A-02 A7.concreto.e: no aplica → no cumple; A-02 A7.concreto.s: no aplica → no cumple; B-01 A7.concreto.e: no aplica → no cumple; B-01 A7.concreto.s: no aplica → no cumple; C-01 A2.losa_inferior_1_derecha.exterior: no cumple → cumple; C-01 A2.losa_inferior_1_izquierda.exterior: no cumple → cumple; C-01 A7.concreto.e: no aplica → no cumple; C-01 A7.concreto.s: no aplica → no cumple |
 | `sin_socavacion_A01` | A-01 sin lecho declarado: la hoya no se estima y el desplante de salida queda en el minimo de E.050 | CAMBIA VEREDICTOS | A-01: Ø 0.90 m · A-02: Ø 0.90 m · B-01: Ø 0.90 m · C-01: marco 1.20 × 0.90 m | A-01 CB5.s: cumple → —; A-01 E3-ASD.sis.s: cumple → indicador |
 | `C01_lecho_cohesivo` | C-01 con lecho cohesivo estimado (IP 8, Sv 25 kPa, 60 % de finos) en vez de la socavacion de un estudio | CAMBIA VEREDICTOS | A-01: Ø 0.90 m · A-02: Ø 0.90 m · B-01: Ø 0.90 m · C-01: marco 1.20 × 0.90 m | C-01 E3-ASD.sis.s: indicador → cumple |
 | `C01_sin_desnivel` | C-01 sin el desnivel del perfil del canal (F de VC3): desde VE-3.10 el punto se detiene pidiendo el dato del proyecto del canal | DETIENE | A-01: Ø 0.90 m · A-02: Ø 0.90 m · B-01: Ø 0.90 m · C-01: no dimensiona | C-01: entrada del proyecto que falta — desnivel_perfil_canal_m |
 | `zapata_declarada_3m` | A-01 con la zapata de sus dos cabezales declarada de 3.00 m de ancho (`cabezal_declarado`, la prueba de T-7b) | CAMBIA VEREDICTOS | A-01: Ø 0.90 m · A-02: Ø 0.90 m · B-01: Ø 0.90 m · C-01: marco 1.20 × 0.90 m | A-01 E1-ASD.sis.e: indicador → cumple; A-01 E3-ASD.sis.e: indicador → cumple |
 | `sin_drenaje_declarado` | Trasdos sin drenaje declarado (`drenaje_trasdos` = 'sin_drenaje': el drenaje no puede darse y el relleno se llena de agua) | CAMBIA VEREDICTOS | A-01: Ø 0.90 m · A-02: Ø 0.90 m · B-01: Ø 0.90 m · C-01: marco 1.20 × 0.90 m | A-01 E1-ASD.sis.e: indicador → cumple; A-01 E1-LRFD.sis.s: cumple → no cumple; A-01 E3-ASD.sis.s: cumple → indicador; A-01 E3-LRFD.sis.s: cumple → no cumple; A-02 A5.alero.s: cumple → indicador; A-02 A5.pantalla.s: cumple → indicador; A-02 E1-LRFD.sis.s: cumple → no cumple; A-02 E3-ASD.sis.s: cumple → indicador |
+| `sin_drenaje_sismo_en_el_freatico` | Trasdos sin drenaje declarado y, bajo sismo, el nivel medio del agua en el freatico natural (`nivel_agua_relleno_sin_drenaje_bajo_sismo` = 'freatico_natural', C11.6.5.3): la estatica sigue con el relleno lleno | CAMBIA VEREDICTOS | A-01: Ø 0.90 m · A-02: Ø 0.90 m · B-01: Ø 0.90 m · C-01: marco 1.20 × 0.90 m | A-01 E1-ASD.est.s: cumple → indicador; A-01 E1-ASD.sis.e: indicador → cumple; A-01 E3-ASD.est.e: cumple → indicador; A-01 E3-ASD.est.s: cumple → indicador; A-01 E3-ASD.sis.e: indicador → cumple; A-02 A5.alero.s: cumple → indicador; A-02 A5.pantalla.s: cumple → indicador; A-02 E1-ASD.est.s: cumple → indicador; A-02 E1-ASD.sis.e: indicador → cumple; A-02 E3-ASD.est.s: cumple → indicador; A-02 E3-ASD.sis.e: indicador → cumple; B-01 E1-ASD.sis.e: indicador → cumple; B-01 E1-ASD.sis.s: indicador → cumple; B-01 E3-ASD.sis.e: indicador → cumple; B-01 E3-ASD.sis.s: indicador → cumple; C-01 A5.talon.s: cumple → indicador; C-01 E1-ASD.sis.e: indicador → cumple; C-01 E1-ASD.sis.s: indicador → cumple; C-01 E3-ASD.est.s: cumple → indicador; C-01 E3-ASD.sis.e: indicador → cumple; C-01 E3-ASD.sis.s: indicador → cumple |
 | `caudal_calculado` | A-01, A-02 y B-01 con `Q_m3s` vacio: el caudal lo calcula la Fase 1-bis con las cuencas y la serie sinteticas de T-1, y sin el caudal del evento extremo del juego, que es el de su Q declarado | DETIENE | A-01: no dimensiona · A-02: no dimensiona · B-01: no dimensiona · C-01: marco 1.20 × 0.90 m | A-01: resultado: ningun material ni seccion cumple — Fase 5; A-02: resultado: ningun material ni seccion cumple — Fase 5; B-01: entrada del proyecto que falta — Q_evento_extremo_m3s |
-| `C01_fondo_en_el_canal` | C-01 con la cota de fondo de entrada en el canal (36.30 msnm: la salida queda a 5 mm sobre el fondo del canal, 36.20) en vez de la regla de archivo, que la pone en el terreno del cruce | CAMBIA VEREDICTOS | A-01: Ø 0.90 m · A-02: Ø 0.90 m · B-01: Ø 0.90 m · C-01: marco 1.20 × 0.90 m | C-01 VC2: indicador → cumple |
+| `C01_fondo_en_el_canal` | C-01 con la cota de fondo de entrada en el canal (36.30 msnm: la salida queda a 5 mm sobre el fondo del canal, 36.20) en vez de la regla de archivo, que la pone en el terreno del cruce | CAMBIA VEREDICTOS | A-01: Ø 0.90 m · A-02: Ø 0.90 m · B-01: Ø 0.90 m · C-01: marco 1.20 × 0.90 m | C-01 A2.losa_inferior_1_derecha.exterior: no cumple → cumple; C-01 A2.losa_inferior_1_izquierda.exterior: no cumple → cumple; C-01 VC2: indicador → cumple |
 | `v_max_concreto_3_con_tmc_excluida` | `v_max_concreto_eleccion` = 3.0 m/s (extremo inferior de la Tabla N 10) con `suelo_agresivo_lrfd_sobre_tmc` = 'excluye': el TMC al que A-01 pasaria queda fuera por los sulfatos del juego | DETIENE | A-01: no dimensiona · A-02: Ø 0.90 m · B-01: Ø 0.90 m · C-01: marco 1.20 × 0.90 m | A-01: entrada del proyecto que falta — perfil_hdpe_fabricante |
 | `caudal_calculado_sin_fen` | La variante `caudal_calculado` sin declarar `homogeneidad_serie_fen` (el tratamiento de los años FEN que solo el caudal calculado lee) | DETIENE | A-01: no dimensiona · A-02: no dimensiona · B-01: no dimensiona · C-01: marco 1.20 × 0.90 m | A-01: criterio que el Propietario o el proyectista debe declarar — homogeneidad_serie_fen; A-02: criterio que el Propietario o el proyectista debe declarar — homogeneidad_serie_fen; B-01: criterio que el Propietario o el proyectista debe declarar — homogeneidad_serie_fen; B-01: entrada del proyecto que falta — L_hidraulico_m |
 
@@ -239,36 +243,46 @@ Lectura de ingeniería (no la escribe el programa; las cifras sí): **la cadena 
 
 ## 6. Criterios sin valor de archivo
 
-Ningún criterio se rellenó en `criterios_adoptados.py`: los que el juego necesita entran por `--declarar`. Esta es la lista entera de los que el archivo deja sin valor, con lo que los destraba y si algún módulo los consume: «no (censado)» es un criterio que ninguna corrida invoca (`tests/test_nivel_medido.py::SIN_CONSUMIDOR_Y_SIN_MEDIDA`, 7 en todo el archivo): declararlo no destraba ninguna etapa.
+Ningún criterio se rellenó en `criterios_adoptados.py`: los que el juego necesita entran por `--declarar`. Esta es la lista entera de los que el archivo deja sin valor, con lo que los destraba y si algún módulo los consume: «no (censado)» es un criterio que ninguna corrida invoca (`tests/test_nivel_medido.py::SIN_CONSUMIDOR_Y_SIN_MEDIDA`, 2 en todo el archivo): declararlo no destraba ninguna etapa.
 
 | Criterio | Etiqueta | Nivel | Opcional | Qué es | Consumidor | Lo declara el juego | Fuente / lo que lo destraba |
 |---|---|---|---|---|---|---|---|
-| `clase_sitio` | [S] | expediente | — | ensayo | no (censado) | no | AASHTO LRFD Bridge Design Specifications, 9a ed. |
+| `clase_sitio` | [S] | expediente | — | ensayo | sí | no | AASHTO LRFD Bridge Design Specifications, 9a ed. |
 | `pendiente_relleno_trasdos_i` | [A] | expediente | opcional | decision | sí | no | Seccion transversal del cruce del expediente vial (dato de geometria), o analisis de cuña del relleno quebrado (AASHTO 3.11.5.8.1). |
 | `fraccion_fin_remanso_canal` | [A] | perfil | opcional | decision | sí | no | Adopcion del proyectista: la fuente del metodo (el paso directo, HDS-5 num. |
 | `friccion_muro_suelo_delta` | [A] | expediente | opcional | decision | sí | no | Ensayo de interfase o adopcion declarada con su fuente. |
 | `homogeneidad_serie_fen` | [A] | perfil | — | decision | sí | sí | Manual de Hidrologia, Hidraulica y Drenaje (MTC), num. |
 | `riesgo_admisible_propietario` | [A] | perfil | opcional | decision | sí | no | Manual de Hidrologia, Hidraulica y Drenaje (MTC, RD 20-2011-MTC/14), Tabla N 02 'VALORES MAXIMOS RECOMENDADOS DE RIESGO ADMISIBLE DE OBRAS DE DRENAJE', num. |
+| `factores_idf_regional` | [S] | perfil | — | ensayo | sí | no | PENDIENTE - Estudio regional de curvas intensidad-duracion-frecuencia de la zona del corredor (o curvas IDF de una estacion pluviografica representativa), con los factores de la ecuacion (17) del num. |
 | `v_max_concreto_eleccion` | [A] | perfil | opcional | decision | sí | no | Manual de Hidrologia, Hidraulica y Drenaje (MTC, RD 20-2011-MTC/14), Tabla N 10 'Velocidades maximas admisibles (m/s) en conductos revestidos', num. |
 | `TW_receptor` | [A] | perfil | — | dato del receptor (ANA / Junta) | sí | no | PENDIENTE: ANA / Junta de Usuarios del Bajo Piura |
 | `remanso_derecho_via` | [A] | expediente | — | decision | sí | sí | Fase 5, V5 de la hoja de ruta. |
+| `sobreelevacion_admisible_remanso_m` | [A] | expediente | — | decision | sí | no | Adopcion del proyectista dentro de la ventana que describe el HDS-5 num. |
 | `TR_evento_extremo` | [A] | expediente | — | decision | sí | sí | PENDIENTE - Fase 5, V8 de la hoja de ruta: '[N] verificacion, no diseño', sin numeral que fije el TR ni el umbral |
 | `phi_relleno_trasdos` | [A] | expediente | — | ensayo | sí | sí | PENDIENTE |
 | `c_phi_fundacion` | [S] | expediente | — | ensayo | sí | sí | Estudio de mecanica de suelos (EMS) del expediente: ensayo de corte directo o triaxial, o correlacion con SPT, por calicata. |
-| `capacidad_portante_adm` | [S] | expediente | — | ensayo | no (censado) | no | PENDIENTE |
-| `Mw_licuefaccion` | [A] | expediente | — | ensayo | no (censado) | no | PENDIENTE: desagregacion del peligro sismico o adopcion justificada del sismo de diseno de la subduccion del norte peruano |
+| `capacidad_portante_adm` | [S] | expediente | — | ensayo | sí | no | PENDIENTE |
+| `Mw_licuefaccion` | [A] | expediente | — | ensayo | sí | no | PENDIENTE: desagregacion del peligro sismico o adopcion justificada del sismo de diseno de la subduccion del norte peruano |
 | `D_max_catalogo` | [A] | perfil | opcional | decision | sí | no | NINGUNA NORMA fija la disponibilidad de mercado. |
+| `techos_de_transcripcion_fase_6` | [A] | perfil | opcional | decision | sí | no | NINGUNA NORMA. |
 | `h_eq_bajo_altura_tabulada` | [A] | expediente | — | decision | sí | no | AASHTO LRFD 9a ed. |
 | `h_eq_banda_intermedia_borde` | [A] | expediente | — | decision | sí | no | AASHTO LRFD 9a ed. |
 | `margen_estacional_nf_v7_m` | [A] | perfil | — | decision | sí | no | PENDIENTE - estudio geotecnico: oscilacion estacional del freatico (serie piezometrica, o lectura en la epoca de aguas altas); AASHTO LRFD 9a ed., 12.6.2.3, pag. |
+| `carga_viva_tubo_concreto_somero` | [A] | perfil | — | decision | sí | no | AASHTO LRFD 9a ed.: Art. |
 | `perfil_hdpe_fabricante` | [A] | perfil | opcional | decision | sí | no | AASHTO LRFD 9a ed., Art. |
-| `N_cq_N_gammaq_meyerhof` | [A] | expediente | — | decision | sí | no | PENDIENTE - Manual de Puentes num. |
 | `metodo_estabilidad_global` | [A] | expediente | — | decision | sí | no | PENDIENTE - E.050 Art. |
 | `categoria_refuerzo_aashto` | [A] | expediente | — | decision | sí | sí | PENDIENTE - AASHTO LRFD 9a ed., Tabla 5.10.1-1 y su nota al pie, pag. |
 | `exposicion_quimica_ems` | [S] | expediente | — | ensayo | sí | sí | PENDIENTE - Analisis quimico del EMS (contenido de sulfatos y cloruros en suelo y en agua freatica). |
 | `umbral_no_colapso_evento_extremo` | [A] | expediente | — | decision | sí | sí | Fase 5, V8 de la hoja de ruta, sin numeral. |
 | `peso_especifico_saturado_relleno_kn_m3` | [S] | perfil | — | ensayo | sí | sí | PENDIENTE - ensayo del material de relleno (peso especifico y gravedad especifica de solidos, a la compactacion especificada) |
+| `talud_delante_del_cabezal` | [S] | expediente | — | ensayo | sí | no | Levantamiento topografico del terreno delante del cabezal; AASHTO LRFD 9a ed., 10.6.3.1.2c, pags. |
+| `fila_phi_estabilidad_global` | [A] | expediente | — | decision | sí | no | AASHTO LRFD 9a ed., 11.6.3.7 y C11.6.3.7, pag. |
+| `caudal_unitario_admisible_desborde_m2s` | [A] | expediente | — | decision | sí | no | PENDIENTE - diseño de la proteccion del talud de aguas abajo del terraplen (HDS-5 num. |
 | `clase_exposicion_fisuracion_cabezal` | [A] | expediente | — | decision | sí | sí | AASHTO LRFD 9a ed., 5.6.7 y C5.6.7, pags. |
 | `edicion_que_rige_el_expediente` | [A] | expediente | — | decision | no (censado) | no | Registro normativo: el campo `vigencia` de cada Fuente presente (`fuentes.estado_de_vigencia`) y `fuentes.fuentes_con_eleccion_de_edicion_pendiente_tecnica`, que deriva de el las seis fuentes de arriba; un test exige que esta ficha las nomb |
 | `edicion_legal_que_rige_el_expediente` | [A] | expediente | — | decision | no (censado) | no | Registro normativo: `fuentes.MP.vigencia` (acto aprobatorio RD 041-2016-MTC/14, impreso en las PDF 2 y 3 del ejemplar; derogado por RD 19-2018-MTC/14, El Peruano dispositivo 1730970-1, vigente desde el 15-01-2019, verificado por busqueda we |
+| `nivel_agua_relleno_sin_drenaje_bajo_sismo` | [A] | expediente | — | decision | sí | no | AASHTO LRFD 9a ed., C11.6.5.3, pag. |
+| `sobreancho_excavacion_estructuras_m` | [A] | expediente | opcional | decision | sí | no | EG-2013 501.04, pag. |
+| `incremento_acero_por_despiece` | [A] | expediente | — | decision | sí | no | PENDIENTE - EG-2013 504.10 (pag. |
+| `clase_concreto_losa_entrega` | [A] | expediente | — | decision | sí | no | PENDIENTE - EG-2013 503.04, Tabla 503-07, pag. |
 
