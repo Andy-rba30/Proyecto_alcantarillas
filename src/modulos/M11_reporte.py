@@ -158,6 +158,7 @@ from src.modelos import (ALCANCE_DECLARADO, ALCANCE_EXPEDIENTE, ALCANCE_PERFIL,
                      ControlGobernante, EstadoDeVerificacion, modo_de,
                      MOTIVO_METODO_NO_EVALUABLE, TipoDeVeredicto)
 from src.modelos import ESTADO_RASANTE_COMPATIBLE      # --- VE-5 met ---
+from src.modelos import MURO_ALERO      # --- VE-7 ---
 
 _reg_M11 = _registro_M11.construir()
 
@@ -2320,7 +2321,10 @@ def _bloque_cabezal(informe: Any) -> str:
     # M9 emitio (`EstabilidadDelCabezal`). Las seis filas E1 a E3 de cada
     # condicion estan en la tabla de verificaciones del punto y su
     # desarrollo en los pasos de abajo.
-    for est in getattr(c, "estabilidad", ()):
+    # --- VE-7 (ficha VE7-01) --- y la de los aleros como muro (la franja
+    # del arranque), con la misma tabla y su propio rotulo.
+    for est in (tuple(getattr(c, "estabilidad", ()))
+                + tuple(getattr(c, "estabilidad_aleros", ()))):
         filas = [_fila(["<th>Carga</th>", "<th>Que es</th>",
                         "<th>V (kN/m)</th>", "<th>x (m)</th>",
                         "<th>H (kN/m)</th>", "<th>z (m)</th>",
@@ -2347,7 +2351,11 @@ def _bloque_cabezal(informe: Any) -> str:
                 _td(_num(k.M_volcante, FMT_2), "num"),
                 _td(_num(k.excentricidad_publicable), "num")]))
         partes.append(
-            f"<p><b>Estabilidad del cabezal de {_esc(est.extremo)}, "
+            f"<p><b>Estabilidad del "
+            + ("alero del " if getattr(est, "muro", "") == MURO_ALERO else "")
+            + f"cabezal de {_esc(est.extremo)}"
+            + (" (franja del arranque, como muro en voladizo)"
+               if getattr(est, "muro", "") == MURO_ALERO else "") + ", "
             f"condicion {_esc(est.condicion.value)}</b> (regla de marco "
             f"<code>{_esc(est.regla_de_marco)}</code> [A]; empuje: "
             f"{_esc(getattr(est, 'metodo_empuje', ''))}; regimen "

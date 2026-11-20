@@ -81,6 +81,7 @@ from src.constantes_normativas import (
 from src.dominios import MILIMETROS_POR_METRO
 from src.modulos.M9_cabezal import TIPO_GRAVEDAD
 from src.modelos import SECCION_ALERO, SECCION_ALERO_MITAD  # --- VE-6 ---
+from src.modelos import ELEMENTO_ZAPATA_ALEROS  # --- VE-7 ---
 from src.modelos import (
     CIFRAS_MAGNITUD, ELEMENTO_ALEROS, ELEMENTO_PANTALLA, ELEMENTO_ZAPATA,
     ESTADO_RASANTE_COMPATIBLE, ESTADO_RASANTE_SIN_TAMIZADO,
@@ -735,6 +736,17 @@ def _geometria_de_la_fila(fila, g) -> Tuple[float, float, int, str]:
                                         "longitud (su tramo)")
         return h, L_al, caras, ("altura media de los aleros, repartidas en "
                                 "su longitud")
+    if fila.elemento == ELEMENTO_ZAPATA_ALEROS and g.aleros is not None:
+        # --- VE-7 (ficha VE7-01) --- la zapata de los aleros, como la del
+        # cabezal: las transversales recorren su ancho y se reparten a lo
+        # largo de los dos aleros; las de reparto, al reves.
+        L_al = g.aleros.longitud_corto + g.aleros.longitud_largo
+        B_al = g.aleros.ancho_zapata
+        if a_lo_largo:
+            return L_al, B_al, caras, ("largo de los dos aleros, repartidas "
+                                       "en el ancho de su zapata")
+        return B_al, L_al, caras, ("largo el ancho de la zapata de los "
+                                   "aleros, repartidas en su longitud")
     raise DatoInvalidoError(
         "armado del cabezal", valor=(fila.elemento, fila.posicion),
         motivo="la fila no corresponde a ningun elemento del cabezal que el "

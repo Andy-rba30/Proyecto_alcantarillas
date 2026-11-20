@@ -292,6 +292,7 @@ from src.modelos import (ORIGEN_DIMENSION_DECLARADA,   # --- T-7a ---
                          ORIGEN_DIMENSION_DERIVADA)
 from src.modelos import ALCANCE_DECLARADO               # --- T-10 ---
 from src.modelos import TipoDeBloqueo                   # --- VE-3.14 ---
+from src.modelos import MURO_ALERO                      # --- VE-7 ---
 from src.modulos import M2_material as M2
 from src.modulos import M5_verificaciones as M5
 from src.modulos.M8_estructural import (CODIGO_PASO_HMAX_TIPO4,
@@ -1895,11 +1896,14 @@ def _lineas_cabezal_del_punto(informe: InformePunto) -> List[str]:
     # identifica (coeficientes, altura de empuje) y las resultantes de cada
     # combinacion. Las seis filas E1 a E3 de cada una salen, con su marca,
     # en «Verificaciones»; lo que no se pudo evaluar, en «Bloqueos».
-    for e in c.estabilidad:
+    # --- VE-7 (ficha VE7-01) --- y la de los aleros como muro.
+    for e in tuple(c.estabilidad) + tuple(c.estabilidad_aleros):
         sismo = ("" if e.K_AE is None else
                  f", K_AE = {_fmt(e.K_AE)} con k_h = {_fmt(e.k_h)}")
+        de_que = ("de los aleros (franja del arranque, como muro) "
+                  if e.muro == MURO_ALERO else "")
         out.append(
-            f"{SANGRIA}Fase 9  estabilidad del cabezal de {e.extremo}, "
+            f"{SANGRIA}Fase 9  estabilidad {de_que}del cabezal de {e.extremo}, "
             f"{e.condicion.value} (marco: {e.regla_de_marco}): K_A = "
             f"{_fmt(e.K_A)}{sismo}, i = {_fmt(e.i_grados, 2)} grados, "
             f"delta = {_fmt(e.delta_grados, 2)} grados, h = "
@@ -1953,6 +1957,58 @@ def _lineas_cabezal_del_punto(informe: InformePunto) -> List[str]:
     if not c.armado:
         out.append(f"{SANGRIA_DETALLE}armado: no evaluado (ver Bloqueos)")
     return out
+
+
+def _estabilidad_json(e) -> Dict[str, Any]:
+    """
+    --- T-7b --- El ensamble de estabilidad de UN cabezal (o, desde VE-7,
+    de sus aleros como muro: `muro`) en UNA condicion: cargas sin
+    factorar con su brazo, combinaciones de los dos marcos, codigos de sus
+    verificaciones (que van enteras en `verificaciones` del punto) y
+    solicitaciones factoradas por elemento (para T-7c).
+    """
+    return {
+        "extremo": e.extremo, "condicion": e.condicion.value,
+
+        "regla_de_marco": e.regla_de_marco,
+        "K_A": _num(e.K_A), "K_AE": _num(e.K_AE), "k_h": _num(e.k_h),
+        "i_grados": _num(e.i_grados), "delta_grados": _num(e.delta_grados),
+        "altura_empuje_m": _num(e.altura_empuje), "h_eq_m": _num(e.h_eq),
+        # Correcciones de T-7b (H4, H7): como se calculo el empuje, los
+        # coeficientes de la formula cerrada que quedan de contraste (None
+        # donde no es evaluable o no hay cuña), el regimen y el K0.
+        "metodo_empuje": e.metodo_empuje,
+        "K_A_contraste": _num(e.K_A_contraste),
+        "K_AE_contraste": _num(e.K_AE_contraste),
+        "regimen": e.regimen, "K0": _num(e.K0),
+        "cargas": [{"codigo": q.codigo, "tipo": q.tipo,
+                    "descripcion": q.descripcion, "sobre": q.sobre,
+                    "V_kN_m": _num(q.V), "H_kN_m": _num(q.H),
+                    "x_m": _num(q.x), "z_m": _num(q.z),
+                    "momento_kNm_m": _num(q.momento)} for q in e.cargas],
+        "combinaciones": [{
+            "nombre": k.nombre, "marco": k.marco, "para": k.para,
+            "factores": {codigo: _num(f) for codigo, f in k.factores},
+            "N_kN_m": _num(k.N), "H_kN_m": _num(k.H),
+            "M_estabilizante_kNm_m": _num(k.M_estabilizante),
+            "M_volcante_kNm_m": _num(k.M_volcante),
+            "excentricidad_m": _num(k.excentricidad_publicable)}
+            for k in e.combinaciones],
+        # --- VE-4a --- con las E4 y E5 de FS declarado (`globales`), que
+        # tambien van enteras en `verificaciones` del punto.
+        "verificaciones": [v.codigo for v in e.verificaciones + e.globales],
+        "pendientes": [{"codigo": codigo, "motivo": motivo}
+                       for codigo, motivo in e.pendientes],
+        "solicitaciones": [{
+            "elemento": s.elemento, "seccion": s.seccion,
+            "combinacion": s.combinacion, "V_u_kN_m": _num(s.V_u),
+            "M_u_kNm_m": _num(s.M_u), "nota": s.nota,
+            "regimen": s.regimen,
+            "coeficiente_de_empuje": s.coeficiente_de_empuje,
+            "K_empuje": _num(s.K_empuje), "K0": _num(s.K0),
+            "K0_sobre_K_A": _num(s.K0_sobre_K_A)}
+            for s in e.solicitaciones],
+    }
 
 
 def _cabezal_del_punto_json(informe: InformePunto) -> Optional[Dict[str, Any]]:
@@ -2034,47 +2090,16 @@ def _cabezal_del_punto_json(informe: InformePunto) -> Optional[Dict[str, Any]]:
     # cargas sin factorar con su brazo, combinaciones de los dos marcos,
     # codigos de sus verificaciones (que van enteras en `verificaciones`
     # del punto) y solicitaciones factoradas por elemento (para T-7c).
-    salida["estabilidad"] = [{
-        "extremo": e.extremo, "condicion": e.condicion.value,
-        "regla_de_marco": e.regla_de_marco,
-        "K_A": _num(e.K_A), "K_AE": _num(e.K_AE), "k_h": _num(e.k_h),
-        "i_grados": _num(e.i_grados), "delta_grados": _num(e.delta_grados),
-        "altura_empuje_m": _num(e.altura_empuje), "h_eq_m": _num(e.h_eq),
-        # Correcciones de T-7b (H4, H7): como se calculo el empuje, los
-        # coeficientes de la formula cerrada que quedan de contraste (None
-        # donde no es evaluable o no hay cuña), el regimen y el K0.
-        "metodo_empuje": e.metodo_empuje,
-        "K_A_contraste": _num(e.K_A_contraste),
-        "K_AE_contraste": _num(e.K_AE_contraste),
-        "regimen": e.regimen, "K0": _num(e.K0),
-        "cargas": [{"codigo": q.codigo, "tipo": q.tipo,
-                    "descripcion": q.descripcion, "sobre": q.sobre,
-                    "V_kN_m": _num(q.V), "H_kN_m": _num(q.H),
-                    "x_m": _num(q.x), "z_m": _num(q.z),
-                    "momento_kNm_m": _num(q.momento)} for q in e.cargas],
-        "combinaciones": [{
-            "nombre": k.nombre, "marco": k.marco, "para": k.para,
-            "factores": {codigo: _num(f) for codigo, f in k.factores},
-            "N_kN_m": _num(k.N), "H_kN_m": _num(k.H),
-            "M_estabilizante_kNm_m": _num(k.M_estabilizante),
-            "M_volcante_kNm_m": _num(k.M_volcante),
-            "excentricidad_m": _num(k.excentricidad_publicable)}
-            for k in e.combinaciones],
-        # --- VE-4a --- con las E4 y E5 de FS declarado (`globales`), que
-        # tambien van enteras en `verificaciones` del punto.
-        "verificaciones": [v.codigo for v in e.verificaciones + e.globales],
-        "pendientes": [{"codigo": codigo, "motivo": motivo}
-                       for codigo, motivo in e.pendientes],
-        "solicitaciones": [{
-            "elemento": s.elemento, "seccion": s.seccion,
-            "combinacion": s.combinacion, "V_u_kN_m": _num(s.V_u),
-            "M_u_kNm_m": _num(s.M_u), "nota": s.nota,
-            "regimen": s.regimen,
-            "coeficiente_de_empuje": s.coeficiente_de_empuje,
-            "K_empuje": _num(s.K_empuje), "K0": _num(s.K0),
-            "K0_sobre_K_A": _num(s.K0_sobre_K_A)}
-            for s in e.solicitaciones],
-    } for e in c.estabilidad]
+    salida["estabilidad"] = [_estabilidad_json(e) for e in c.estabilidad]
+    # --- VE-7 (ficha VE7-01) --- la de los aleros como muro en voladizo (la
+    # franja del arranque), con la misma forma; sus codigos llevan `.alero`.
+    salida["estabilidad_aleros"] = [_estabilidad_json(e)
+                                    for e in c.estabilidad_aleros]
+    salida["intentos_de_zapata_aleros"] = [{
+        "extremo": i.extremo, "B_m": _num(i.B),
+        "condiciones": list(i.condiciones),
+        "incumplidas": list(i.incumplidas), "cumple": i.cumple,
+        "al_tope": i.al_tope} for i in c.intentos_de_zapata_aleros]
     # --- T-7c --- el armado de cada cabezal: regimen y materiales, las
     # secciones criticas con sus dos solicitaciones (la que rige y la del
     # muro que cede) y la TABLA de armado por elemento; en el de gravedad,
