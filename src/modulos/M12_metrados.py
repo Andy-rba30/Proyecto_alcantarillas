@@ -228,6 +228,19 @@ def _altura_media_alero(g) -> float:
             + g.D_f - a.espesor_zapata)
 
 
+def _volumen_fuste_alero(g, L_i: float) -> float:
+    """El volumen del fuste de UN alero de longitud L_i (ver
+    `volumen_cabezal`): trapecio en el de gravedad, rectangulo en el de
+    voladizo."""
+    a = g.aleros
+    bajo_el_pie = g.D_f - a.espesor_zapata
+    h1, h2 = a.altura_inicial + bajo_el_pie, a.altura_final + bajo_el_pie
+    k = ((g.espesor_base_muro - g.espesor_corona) / g.H
+         if g.tipo == TIPO_GRAVEDAD else 0.0)
+    media_cuadrado = (h1 * h1 + h1 * h2 + h2 * h2) / 3  # literal-ok: media de h² con h lineal
+    return L_i * (a.espesor * (h1 + h2) / 2 + k / 2 * media_cuadrado)
+
+
 def ancho_losa(g, x: float) -> float:
     """
     El ancho de la losa de entrega a la distancia x del cabezal: la
@@ -629,6 +642,15 @@ def volumen_cabezal(g, area_vano: float) -> Tuple[Tuple[str, float], ...]:
         zapata     B · e_z · L_c
         aleros     e_al · h_media · L_i + B_al · e_z,al · L_i, cada uno
         vano       - A_ext · e_base (el conducto atraviesa el muro)
+
+    --- VE-7 (ficha VE7-01, abierto (c)) --- El fuste del alero de un
+    cabezal de GRAVEDAD es el trapecio de su franja (`M9.entorno_de_la_
+    seccion_del_alero`): corona e_al y base e_al + k·h, k = (e_base -
+    e_corona)/H del cabezal; con h lineal de h1 (arranque) a h2 (punta),
+
+        V_fuste = L_i·[e_al·(h1 + h2)/2 + (k/2)·(h1² + h1·h2 + h2²)/3]
+
+    que con k = 0 (voladizo) es e_al·h_media·L_i.
     """
     partes = [
         ("pantalla", (g.espesor_corona + g.espesor_base_muro) / 2 * g.H
@@ -636,8 +658,7 @@ def volumen_cabezal(g, area_vano: float) -> Tuple[Tuple[str, float], ...]:
         ("zapata", g.B * g.espesor_zapata * g.longitud)]
     for nombre, L_i, _alfa in _aleros(g):
         a = g.aleros
-        partes.append((f"fuste del {nombre}",
-                       a.espesor * _altura_media_alero(g) * L_i))
+        partes.append((f"fuste del {nombre}", _volumen_fuste_alero(g, L_i)))
         partes.append((f"zapata del {nombre}",
                        a.ancho_zapata * a.espesor_zapata * L_i))
     partes.append(("vano del conducto (se descuenta)",

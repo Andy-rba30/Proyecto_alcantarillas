@@ -2354,7 +2354,8 @@ def _bloque_cabezal(informe: Any) -> str:
             f"<p><b>Estabilidad del "
             + ("alero del " if getattr(est, "muro", "") == MURO_ALERO else "")
             + f"cabezal de {_esc(est.extremo)}"
-            + (" (franja del arranque, como muro en voladizo)"
+            + (f" (franja a {getattr(est, 'fraccion_alero', 0) or 0:g}·L, "
+               "como muro)"
                if getattr(est, "muro", "") == MURO_ALERO else "") + ", "
             f"condicion {_esc(est.condicion.value)}</b> (regla de marco "
             f"<code>{_esc(est.regla_de_marco)}</code> [A]; empuje: "

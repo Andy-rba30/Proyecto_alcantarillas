@@ -44,6 +44,11 @@ from tests.fixtures.casos_patron import CP_T7B_ESTABILIDAD as CPB
 from tests.test_t7c_cabezal_armado import tanteo  # noqa: F401
 from tests.test_ve6_m9_alero import ALEROS, _con_aleros
 
+# --- dictamen Fable --- Aleros SIN caida (h0 = H_f): todas las franjas son
+# la del arranque, y los dorados del dimensionamiento siguen leyendose en
+# ella. Con caida (`ALEROS`), las franjas difieren (seccion 5).
+PLANO = replace(ALEROS, altura_final=ALEROS.altura_inicial)
+
 EST = CondicionAnalisis.ESTATICO
 SIS = CondicionAnalisis.SISMICO
 REL = CPB["tolerancia_rel"]
@@ -184,7 +189,9 @@ def test_dorado_a_mano_de_E2_estatico_con_la_zapata_de_1_40(tanteo):
     assert e2.cumple
 
 
-def test_sin_aleros_o_de_gravedad_no_hay_muro_que_verificar(tanteo):
+def test_sin_aleros_no_hay_muro(tanteo):
+    """Sin aleros no hay muro que verificar; con aleros, de voladizo o de
+    gravedad (dictamen Fable, abierto (c)), si."""
     from src.modelos import DatoInvalidoError
     with pytest.raises(DatoInvalidoError):
         M9.estabilidad_del_alero(tanteo, EST)
@@ -192,15 +199,16 @@ def test_sin_aleros_o_de_gravedad_no_hay_muro_que_verificar(tanteo):
     assert M9.alero_verificable_como_muro(_con_aleros(tanteo))
     gravedad = replace(_con_aleros(tanteo), geometria=replace(
         _con_aleros(tanteo).geometria, tipo=M9.TIPO_GRAVEDAD))
-    assert not M9.alero_verificable_como_muro(gravedad)
+    assert M9.alero_verificable_como_muro(gravedad)
 
 
 def test_la_franja_del_arranque_es_la_seccion_de_VE6_sin_el_FS_del_cabezal(
         tanteo):
     """La franja es `entorno_de_la_seccion_del_alero` en f = 0, sin el FS
     declarado de E4 y E5, que es del cabezal y no del alero."""
+    from tests.test_ve4a_e4e5_declarado import FS_AMBOS, _declarado
     entorno = replace(_con_aleros(tanteo),
-                      estabilidad_global={"E4": {"FS": 1.6}})
+                      estabilidad_global=_declarado(**FS_AMBOS))
     franja = M9.franja_del_arranque_del_alero(entorno)
     seccion = M9.entorno_de_la_seccion_del_alero(entorno, 0.0)
     assert franja.geometria == seccion.geometria
@@ -219,28 +227,29 @@ def test_integrar_la_estabilidad_de_los_aleros_al_cabezal(tanteo):
     """
     from src.modelos import CabezalDelPunto, ORIGEN_DIMENSION_ESTABILIDAD
     from src.modelos import ORIGEN_DIMENSION_ESTABILIDAD_INCOMPLETA
-    entorno = _con_aleros(tanteo)
+    entorno = _con_aleros(tanteo, PLANO)
     g = entorno.geometria
     salida = replace(g, extremo="salida")
     cabezal = CabezalDelPunto(id_punto="T-00", embocadura=None, entrada=g,
                               salida=salida, verificaciones=())
     d = M9.dimensionar_zapata_del_alero(entorno)
     est = M9.estabilidad_del_alero(
-        _con_aleros(tanteo, replace(ALEROS, ancho_zapata=d.ancho)), EST)
-    c = M9.integrar_estabilidad_de_aleros(cabezal, [est], [d])
+        _con_aleros(tanteo, replace(PLANO, ancho_zapata=d.ancho)), EST)
+    franjas = M9.paso_de_las_franjas_del_alero(entorno)
+    c = M9.integrar_estabilidad_de_aleros(cabezal, [est], [d],
+                                          pasos_de_franjas=[franjas])
     assert c.estabilidad_aleros == (est,)
     assert {v.codigo for v in est.verificaciones} <= {
         v.codigo for v in c.verificaciones}
-    assert c.pasos[0] is d.paso
+    assert c.pasos[0] is franjas and c.pasos[1] is d.paso
     assert c.entrada.aleros.ancho_zapata == pytest.approx(d.ancho, abs=TOL)
     assert c.salida.aleros.ancho_zapata == pytest.approx(1.20, abs=TOL)
     dim = next(x for x in c.entrada.dimensiones
                if x.nombre == M9.DIMENSION_ZAPATA_ALEROS)
-    # solo la estatica se evaluo: el origen lo dice, y un aviso tambien
+    # una de las 5 franjas x 2 condiciones: el origen lo dice, y un aviso
     assert dim.origen == ORIGEN_DIMENSION_ESTABILIDAD_INCOMPLETA
     assert dim.origen != ORIGEN_DIMENSION_ESTABILIDAD
-    assert any("SOLO en la condicion estatico" in a and "Aleros" in a
-               for a in c.avisos)
+    assert any("SOLO en 1 de 10" in a and "Aleros" in a for a in c.avisos)
     assert c.intentos_de_zapata_aleros == d.intentos
 
 
@@ -268,7 +277,7 @@ def test_dorado_a_mano_del_ancho_con_la_condicion_estatica(tanteo,
     for B, cumple in ((1.20, False), (1.30, False), (1.40, True)):
         N, _H, M_e, M_v = _resistencia_minimos(B)
         assert (B / 2 - (M_e - M_v) / N <= B / 3) is cumple
-    d = M9.dimensionar_zapata_del_alero(_con_aleros(tanteo))
+    d = M9.dimensionar_zapata_del_alero(_con_aleros(tanteo, PLANO))
     assert d.ancho == pytest.approx(1.40, abs=TOL)
     assert d.cumple and not d.al_tope
     assert [i.B for i in d.intentos] == pytest.approx([1.20, 1.30, 1.40],
@@ -281,14 +290,14 @@ def test_dorado_a_mano_del_ancho_con_la_condicion_estatica(tanteo,
 
 
 def test_con_las_dos_condiciones_el_ancho_es_el_primero_que_cumple(tanteo):
-    d = M9.dimensionar_zapata_del_alero(_con_aleros(tanteo))
+    d = M9.dimensionar_zapata_del_alero(_con_aleros(tanteo, PLANO))
     assert d.cumple
     B = d.ancho
     paso_m = ca.valor("dimensionamiento_zapata_cabezal")["paso_m"]
     k = (B - ALEROS.ancho_zapata) / paso_m
     assert k == pytest.approx(round(k), abs=TOL)
-    con = _con_aleros(tanteo, replace(ALEROS, ancho_zapata=B))
-    sin = _con_aleros(tanteo, replace(ALEROS, ancho_zapata=B - paso_m))
+    con = _con_aleros(tanteo, replace(PLANO, ancho_zapata=B))
+    sin = _con_aleros(tanteo, replace(PLANO, ancho_zapata=B - paso_m))
     assert all(M9.estabilidad_del_alero(con, c).cumple for c in (EST, SIS))
     assert not all(M9.estabilidad_del_alero(sin, c).cumple
                    for c in (EST, SIS))
@@ -306,7 +315,7 @@ def test_al_tope_la_zapata_del_alero_es_no_factible(tanteo):
     """
     ca.establecer_valor_dinamico("dimensionamiento_zapata_cabezal",
                                  {"paso_m": 0.20, "fraccion_ancho_max": 1.0})
-    entorno = _con_aleros(tanteo)
+    entorno = _con_aleros(tanteo, PLANO)
     entorno = replace(entorno, suelo=dict(entorno.suelo, phi_grados=20.0))
     d = M9.dimensionar_zapata_del_alero(entorno)
     assert not d.cumple and d.al_tope
@@ -353,10 +362,16 @@ def test_incorporar_el_ancho_al_cabezal(tanteo):
 # ---------------------------------------------------------------------------
 
 def test_la_zapata_del_alero_se_arma_como_la_del_cabezal(tanteo):
-    entorno = _con_aleros(tanteo)
+    entorno = _con_aleros(tanteo, PLANO)
     piezas = M9.armar_elemento(entorno, ELEMENTO_ZAPATA_ALEROS)
-    assert [p.clave for p in piezas] == [SECCION_TALON_ALERO]
-    (talon,) = piezas
+    # una por franja (dictamen Fable, abierto (a)); sin caida son iguales
+    assert [p.clave for p in piezas] == [
+        SECCION_TALON_ALERO, "talon_alero_25", "talon_alero_50",
+        "talon_alero_75", "talon_alero_100"]
+    assert [M9.clave_del_talon_del_alero(f) for f in
+            M9.FRACCIONES_DE_ESTABILIDAD_DEL_ALERO] == [p.clave
+                                                        for p in piezas]
+    talon = piezas[0]
     assert talon.elemento == ELEMENTO_ZAPATA_ALEROS
     assert talon.espesor == pytest.approx(E_Z, abs=TOL)
     franja = M9.entorno_de_la_seccion_del_alero(entorno, 0.0)
@@ -389,7 +404,9 @@ def test_dorado_a_mano_del_momento_del_talon_del_alero(tanteo):
     t = 1.20 - E_AL
     M_u = ((1.35 * c["EV.talon"][0] + 1.75 * c["LS.v"][0]) * t / 2
            + 1.50 * EH_V * t + 1.25 * GAMMA_C * E_Z * t ** 2 / 2)
-    (talon,) = M9.armar_elemento(_con_aleros(tanteo), ELEMENTO_ZAPATA_ALEROS)
+    talon = M9.armar_elemento(_con_aleros(tanteo),
+                              ELEMENTO_ZAPATA_ALEROS)[0]
+    assert talon.clave == SECCION_TALON_ALERO
     resistencia = [s for s in talon.solicitaciones if s.condicion is EST
                    and s.combinacion.startswith("Resistencia I (maximos)")]
     assert resistencia
@@ -405,21 +422,24 @@ def test_el_peralte_de_la_zapata_del_alero_crece_por_el_armado_del_talon(
     Con el de 0.37 m del tanteo ya cumple: no hay nada que dimensionar.
     """
     assert not M9.incumplidas_del_armado_de_la_zapata_del_alero(
-        _con_aleros(tanteo))
-    assert M9.dimensionar_peralte_del_alero(_con_aleros(tanteo)) is None
-    delgada = _con_aleros(tanteo, replace(ALEROS, espesor_zapata=0.20))
+        _con_aleros(tanteo, PLANO))
+    assert M9.dimensionar_peralte_del_alero(_con_aleros(tanteo, PLANO)) is None
+    delgada = _con_aleros(tanteo, replace(PLANO, espesor_zapata=0.20))
     assert M9.incumplidas_del_armado_de_la_zapata_del_alero(delgada)
     d = M9.dimensionar_peralte_del_alero(delgada)
     assert d.cumple and d.espesor > 0.20
     paso_m = ca.valor("dimensionamiento_zapata_cabezal")["paso_m"]
     k = (d.espesor - 0.20) / paso_m
     assert k == pytest.approx(round(k), abs=TOL)
-    con = _con_aleros(tanteo, replace(ALEROS, espesor_zapata=d.espesor))
-    sin = _con_aleros(tanteo, replace(ALEROS,
+    con = _con_aleros(tanteo, replace(PLANO, espesor_zapata=d.espesor))
+    sin = _con_aleros(tanteo, replace(PLANO,
                                       espesor_zapata=d.espesor - paso_m))
     assert not M9.incumplidas_del_armado_de_la_zapata_del_alero(con)
     assert M9.incumplidas_del_armado_de_la_zapata_del_alero(sin)
     assert d.paso.codigo == "9.3.e.e.alero"
+    # decision 5 del dictamen: la herencia de A8 escrita en la nota
+    assert "A8" in d.paso.nota_del_proyecto
+    assert "hereda" in d.paso.nota_del_proyecto
     assert M9.dimensionar_peralte_del_alero(delgada, declarado=True) is None
     g = M9.con_zapata_del_alero(delgada.geometria, espesor=d.espesor)
     assert g.aleros.espesor_zapata == pytest.approx(d.espesor, abs=TOL)
@@ -429,15 +449,23 @@ def test_el_peralte_de_la_zapata_del_alero_crece_por_el_armado_del_talon(
 
 
 def test_el_aviso_del_alero_sin_verificar_sale_solo_si_no_se_verifico(tanteo):
-    entorno = _con_aleros(tanteo)
+    entorno = _con_aleros(tanteo, PLANO)
     sin = M9.armado_del_cabezal(entorno)
     assert any("no verificado como muro" in a and "VE7-01" in a
                for a in sin.avisos)
     con = M9.armado_del_cabezal(entorno, alero_verificado=True)
     assert not any("no verificado como muro" in a for a in con.avisos)
-    # la tabla trae el reparto de la zapata del alero
+    # la tabla trae el reparto de la zapata del alero y UN talon, el de
+    # mayor acero de las franjas
     assert any(f.elemento == ELEMENTO_ZAPATA_ALEROS and "cada cara"
                in f.posicion for f in con.tabla)
+    talones = [f for f in con.tabla if f.elemento == ELEMENTO_ZAPATA_ALEROS
+               and "cada cara" not in f.posicion]
+    assert len(talones) == 1
+    secciones = [x for x in con.secciones
+                 if x.elemento == ELEMENTO_ZAPATA_ALEROS]
+    assert talones[0].As_adoptado == pytest.approx(
+        max(x.As_adoptado for x in secciones), abs=TOL)
 
 
 # ---------------------------------------------------------------------------
@@ -463,6 +491,9 @@ def test_el_expediente_verifica_y_arma_los_aleros():
             propias = [e for e in c.estabilidad_aleros
                        if e.extremo == g.extremo]
             assert {e.condicion for e in propias} <= {EST, SIS}
+            # todas las franjas con fuste, en las dos condiciones
+            assert {e.fraccion_alero for e in propias} <= set(
+                M9.FRACCIONES_DE_ESTABILIDAD_DEL_ALERO)
             bloqueada = [b for b in p.bloqueos if "alero" in b.etapa
                          and g.extremo in b.etapa]
             assert propias or bloqueada
@@ -474,7 +505,8 @@ def test_el_expediente_verifica_y_arma_los_aleros():
             if armado is not None:
                 assert any(s.clave == SECCION_TALON_ALERO
                            for s in armado.secciones)
-                if len(propias) == 2:
+                if len(propias) == 2 * len(
+                        M9.FRACCIONES_DE_ESTABILIDAD_DEL_ALERO):
                     assert not any("no verificado como muro" in a
                                    for a in armado.avisos)
             dim = [d for d in g.dimensiones
@@ -501,3 +533,356 @@ def test_el_expediente_verifica_y_arma_los_aleros():
                for p in datos["puntos"])
     html = M11.memoria_html(informe)
     assert "Estabilidad del alero del cabezal de" in html
+
+
+# ---------------------------------------------------------------------------
+# 5. Dictamen Fable sobre VE7-01: las franjas del alero (abierto (a))
+# ---------------------------------------------------------------------------
+# Un terraplen de talud 2.0 (de prueba) con el borde de la plataforma a la
+# altura de la corona del arranque: detras de la franja del arranque el
+# relleno es horizontal y detras de las de mas adelante SUBE (el borde no
+# baja con el alero), con la pendiente equivalente creciendo.
+
+def _con_talud(tanteo, aleros=ALEROS, talud=2.0):
+    return replace(_con_aleros(tanteo, aleros), talud=talud)
+
+
+def test_el_sufijo_y_las_fracciones_de_las_franjas(tanteo):
+    assert [M9.sufijo_de_la_franja(f)
+            for f in M9.FRACCIONES_DE_ESTABILIDAD_DEL_ALERO] == [
+        ".alero", ".alero.25", ".alero.50", ".alero.75", ".alero.100"]
+    assert M9.fracciones_del_alero(_con_aleros(tanteo)) == (
+        M9.FRACCIONES_DE_ESTABILIDAD_DEL_ALERO, ())
+
+
+def test_cada_franja_lleva_sus_codigos_y_su_rotulo(tanteo):
+    entorno = _con_talud(tanteo)
+    est = M9.estabilidad_del_alero(entorno, EST, 0.5)
+    assert est.fraccion_alero == pytest.approx(0.5, abs=TOL)
+    assert len(est.verificaciones) == 6
+    assert all(v.codigo.endswith(".est.e.alero.50")
+               for v in est.verificaciones)
+    assert all("franja a 0.5·L" in v.paso.que for v in est.verificaciones)
+    assert all(p.codigo.endswith(".alero.50") for p in est.pasos)
+    # la del arranque conserva los codigos de siempre (dorados intactos)
+    cero = M9.estabilidad_del_alero(entorno, EST)
+    assert cero.fraccion_alero == pytest.approx(0.0, abs=TOL)
+    assert all(v.codigo.endswith(".est.e.alero") for v in cero.verificaciones)
+
+
+def test_dorado_a_mano_la_franja_de_la_mitad_no_cumple_E2_y_la_del_arranque_si(
+        tanteo):
+    """
+    Zapata de 1.35 m (talon 1.10 m), talud 2.0. Arranque: relleno horizontal,
+    los empujes del tanteo; con `_resistencia_minimos`, e = 0.4225 m <= B/3
+    = 0.45 m. Mitad: baja Δ = 0.675 m; fuste H = 2.40 - 0.37 - 0.675 =
+    1.355 m; relleno hasta z_rel = 1.725 m y, sobre el talon, una cuña que
+    sube min(1.10/2.0, 0.675) = 0.55 m. A mano los pesos y sus brazos (x
+    desde el pie del fuste):
+
+        DC fuste  = 0.25·1.355·gamma_c          en 0.125
+        DC zapata = 1.35·0.37·gamma_c           en 0.675
+        EV rect   = 1.10·(1.725 - 0.37)·gamma   en 0.25 + 0.55
+        EV cuña   = 1.10·0.55/2·gamma           en 0.25 + 2·1.10/3
+
+    y el empuje del ensamble de esa franja (K_A de la cuña de tanteo sobre
+    el relleno que sube, la parte que no es geometria): e = 0.675 -
+    (M_e - M_v)/N > B/3.
+    """
+    _B = 1.35
+    entorno = _con_talud(tanteo, replace(ALEROS, ancho_zapata=_B))
+    N0, _H0, Me0, Mv0 = _resistencia_minimos(_B)
+    arranque = _v(M9.estabilidad_del_alero(entorno, EST), "E2-LRFD")
+    assert arranque.valor_obtenido == pytest.approx(_B / 2 - (Me0 - Mv0) / N0,
+                                                    rel=REL)
+    assert arranque.cumple
+    est = M9.estabilidad_del_alero(entorno, EST, 0.5)
+    cargas = {q.codigo: q for q in est.cargas}
+    t, H, z_rel, r = _B - E_AL, H_C - E_Z - 0.675, Z_REL - 0.675, 0.55
+    pesos = [(E_AL * H * GAMMA_C, E_AL / 2, 0.90),
+             (_B * E_Z * GAMMA_C, _B / 2, 0.90),
+             (t * (z_rel - E_Z) * GAMMA, E_AL + t / 2, 1.00),
+             (t * r / 2 * GAMMA, E_AL + 2 * t / 3, 1.00)]
+    EV = sum(w for w, _x, _f in pesos[2:])
+    assert cargas["EV.talon"].V == pytest.approx(EV, rel=REL)
+    eh_v, eh_h, ls_h = cargas["EH.v"], cargas["EH.h"], cargas["LS.h"]
+    N = sum(f * w for w, _x, f in pesos) + 1.50 * eh_v.V
+    M_e = sum(f * w * x for w, x, f in pesos) + 1.50 * eh_v.V * eh_v.x
+    M_v = 1.50 * eh_h.H * eh_h.z + 1.75 * ls_h.H * ls_h.z
+    e2 = _v(est, "E2-LRFD")
+    assert e2.valor_obtenido == pytest.approx(_B / 2 - (M_e - M_v) / N,
+                                              rel=REL)
+    assert e2.valor_admisible == pytest.approx(_B / 3, rel=REL)
+    assert not e2.cumple
+
+
+def test_la_zapata_crece_por_la_franja_que_rige(tanteo, monkeypatch):
+    """
+    Con solo la franja del arranque (aleros sin caida) la estatica pide
+    1.40 m (dorado de la seccion 2); con las franjas, la de la mitad y las
+    de mas adelante piden mas, y lo dicen sus codigos en los intentos.
+    """
+    _sin_sismo(monkeypatch)
+    plano = M9.dimensionar_zapata_del_alero(_con_talud(tanteo, PLANO))
+    assert plano.ancho == pytest.approx(1.40, abs=TOL)
+    d = M9.dimensionar_zapata_del_alero(_con_talud(tanteo))
+    assert d.ancho > plano.ancho + TOL
+    en_140 = next(i for i in d.intentos
+                  if i.B == pytest.approx(1.40, abs=TOL))
+    assert any(".alero." in c for c in en_140.incumplidas)
+    assert not any(c.endswith(".alero") for c in en_140.incumplidas)
+
+
+def test_una_franja_sin_fuste_no_se_verifica_y_el_paso_lo_dice(tanteo):
+    """
+    Zapata de los aleros de 1.10 m de espesor (de prueba): H(f) = 2.40 -
+    1.10 - 1.35·f; en la punta H(1) = -0.05 m, sin fuste.
+    """
+    entorno = _con_aleros(tanteo, replace(ALEROS, espesor_zapata=1.10,
+                                          ancho_zapata=2.0))
+    con, sin = M9.fracciones_del_alero(entorno)
+    assert sin == (1,)
+    assert M9.altura_del_fuste_del_alero(entorno.geometria, 1) == \
+        pytest.approx(2.40 - 1.10 - 1.35, abs=TOL)
+    p = M9.paso_de_las_franjas_del_alero(entorno)
+    assert p.codigo == "9.3.f.e.alero"
+    assert "sin fuste" in p.resultado.procedencia.lower()
+    assert p.resultado.valor == len(con)
+
+
+# ---------------------------------------------------------------------------
+# 6. Factores de forma con la longitud del alero (abierto (b))
+# ---------------------------------------------------------------------------
+
+def test_la_franja_tiene_la_longitud_del_alero_corto(tanteo):
+    franja = M9.franja_del_alero(_con_aleros(tanteo), 0.0)
+    assert franja.geometria.longitud == pytest.approx(ALEROS.longitud_corto,
+                                                      abs=TOL)
+
+
+def test_con_forma_rige_la_menor_resistencia_phi_cero(tanteo):
+    """
+    Suelo cohesivo (c = 60 kPa, phi = 0, de prueba), sin inclinacion: con
+    phi = 0, N_c = 5.14, N_q = 1, N_gamma = 0 (Tabla 10.6.3.1.2a-1) y la
+    zapata corrida da q_n = c·N_c + gamma·D_f = 60·5.14 + 18·0.80; con la
+    L del alero, s_c = 1 + B'/(5L) > 1 la sube. Rige la corrida: q_R =
+    0.55·q_n (phi_b de la tabla de muros, 11.5.7).
+    """
+    ca.establecer_valor_dinamico("factores_inclinacion_carga_portante",
+                                 "omitir")
+    ca.establecer_valor_dinamico("factores_forma_profundidad_portante",
+                                 M9.FORMA_CON_LONGITUD)
+    entorno = _con_aleros(tanteo, replace(PLANO, ancho_zapata=2.0))
+    entorno = replace(entorno, suelo={"cohesivo": True, "c_kpa": 60.0,
+                                      "phi_grados": 0.0,
+                                      "gamma_kn_m3": 18.0})
+    est = M9.estabilidad_del_alero(entorno, EST)
+    e1 = _v(est, "E1-LRFD")
+    assert e1.valor_admisible == pytest.approx(
+        0.55 * (60.0 * 5.14 + 18.0 * 0.80), rel=REL)
+    assert "menor resistencia" in e1.paso.nota_del_proyecto.lower()
+    franja = M9.franja_del_alero(entorno, 0.0)
+    con_L = M9.ensamble_estabilidad(franja, EST, muro=M9.MURO_ALERO)
+    assert _v(con_L, "E1-LRFD").valor_admisible > e1.valor_admisible
+
+
+def test_con_forma_rige_la_menor_resistencia_phi_positivo(tanteo):
+    ca.establecer_valor_dinamico("factores_forma_profundidad_portante",
+                                 M9.FORMA_CON_LONGITUD)
+    entorno = _con_aleros(tanteo, replace(PLANO, ancho_zapata=1.70))
+    est = M9.estabilidad_del_alero(entorno, EST)
+    franja = M9.franja_del_alero(entorno, 0.0)
+    lecturas = [M9.ensamble_estabilidad(
+        replace(franja, geometria=replace(franja.geometria, longitud=L)),
+        EST, muro=M9.MURO_ALERO) for L in (math.inf, ALEROS.longitud_corto)]
+    for marco in ("LRFD", "ASD"):
+        assert _v(est, f"E1-{marco}").valor_admisible == pytest.approx(
+            min(_v(x, f"E1-{marco}").valor_admisible for x in lecturas),
+            rel=TOL)
+    # la L del cabezal (3.0 m) no aparece en el alero
+    textos = " ".join(str(m.procedencia) for v in est.verificaciones
+                      for m in v.paso.sustitucion + (v.paso.resultado,))
+    assert "L = 3.000 m" not in textos
+
+
+def test_con_la_zapata_corrida_nada_cambia(tanteo):
+    entorno = _con_aleros(tanteo)
+    franja = M9.franja_del_alero(entorno, 0.0)
+    assert [(v.valor_obtenido, v.valor_admisible) for v in sorted(
+        M9.estabilidad_del_alero(entorno, EST).verificaciones,
+        key=lambda v: v.codigo)] == [
+        (v.valor_obtenido, v.valor_admisible) for v in sorted(
+            M9.ensamble_estabilidad(franja, EST).verificaciones,
+            key=lambda v: v.codigo)]
+
+
+# ---------------------------------------------------------------------------
+# 7. Los aleros del cabezal de GRAVEDAD (abierto (c))
+# ---------------------------------------------------------------------------
+# El muro de tanteo como cabezal de gravedad (corona = base = 0.30 m, punta
+# 0.60 m) con aleros de 0.30 m sobre una zapata de 2.00 x 0.40 m: la franja
+# del arranque es la seccion del cabezal, y sus filas son las del caso
+# patron.
+
+ALEROS_G = replace(ALEROS, espesor=0.30, ancho_zapata=2.0,
+                   espesor_zapata=0.40)
+
+
+def _gravedad(tanteo, aleros=ALEROS_G, **geo):
+    from tests.test_t7c_cabezal_armado import _geometria
+    return replace(tanteo, geometria=_geometria(
+        aleros=aleros, tipo=M9.TIPO_GRAVEDAD, **geo))
+
+
+def test_la_franja_de_gravedad_es_la_seccion_del_cabezal_cortada(tanteo):
+    """Con el cabezal de 0.30 a 0.60 m: la franja de la mitad (H = 2.0 -
+    0.675 = 1.325 m) tiene base 0.30 + 0.30·1.325/2.0 = 0.49875 m, la
+    punta del cabezal y el talon 2.00 - 0.60 - 0.49875 m."""
+    entorno = _gravedad(tanteo, espesor_base_muro=0.60)
+    f = M9.franja_del_alero(entorno, 0.5).geometria
+    assert f.H == pytest.approx(1.325, abs=TOL)
+    assert f.espesor_corona == pytest.approx(0.30, abs=TOL)
+    assert f.espesor_base_muro == pytest.approx(0.49875, abs=TOL)
+    assert f.ancho_punta == pytest.approx(0.60, abs=TOL)
+    assert f.ancho_talon == pytest.approx(2.0 - 0.60 - 0.49875, abs=TOL)
+    assert M9.espesor_de_la_base_del_alero_de_gravedad(
+        entorno.geometria, 1.325) == pytest.approx(0.49875, abs=TOL)
+
+
+def test_dorado_a_mano_de_E2_del_alero_de_gravedad_en_el_arranque(tanteo):
+    """La franja del arranque es el muro del caso patron: e = 0.1453 m
+    (`CP_T7B_ESTABILIDAD`, a mano) frente a B/3."""
+    est = M9.estabilidad_del_alero(_gravedad(tanteo), EST)
+    e2 = _v(est, "E2-LRFD")
+    assert e2.codigo == "E2-LRFD.est.e.alero"
+    assert e2.valor_obtenido == pytest.approx(CPB["E2_LRFD"]["e"],
+                                              abs=CPB["tolerancia"])
+    assert e2.valor_admisible == pytest.approx(2.0 / 3, abs=TOL)
+
+
+def test_dorado_a_mano_de_C2_del_alero_de_gravedad_en_el_arranque(tanteo):
+    """
+    C2 en el arranque del cuerpo (z = 0.40 m), muro que cede, fuste de 0.30
+    m: W = 0.30·2.0·gamma_c sobre el centro de la seccion; empuje del suelo
+    K_A·cos(delta)·gamma·2.0³/6 y de la sobrecarga K_A·gamma·h_eq·2.0²/2
+    (momentos sobre la seccion). Con las cargas de servicio e = M/W y con
+    las de E.060 (0,9 CM, 1,7 CE + 1,7 CV) e = 1.7·M/(0.9·W): rige la mayor
+    frente a t/6 = 0.05 m.
+    """
+    ca.establecer_valor_dinamico("regimen_resistencia_elementos_cabezal",
+                                 "cedente")
+    a = M9.verificacion_ciclopea_del_alero(_gravedad(tanteo), 0.0)
+    c2 = next(v for v in a.verificaciones if v.codigo.startswith("C2."))
+    assert c2.codigo.endswith(".e.alero")
+    K, cos_d = CPB["K_A"], EH_H / (CPB["K_A"] * GAMMA * 2.40 ** 2 / 2)
+    M = (K * cos_d * GAMMA * 2.0 ** 3 / 6 + K * GAMMA * H_EQ * 2.0 ** 2 / 2)
+    W = 0.30 * 2.0 * GAMMA_C
+    assert c2.valor_admisible == pytest.approx(0.30 / 6, abs=TOL)
+    assert c2.valor_obtenido == pytest.approx(
+        max(M / W, 1.7 * M / (0.9 * W)), rel=REL)
+    # C4/C5 (el material) no se repiten; el vano no se avisa
+    assert not any(v.codigo.split(".")[0] in ("C4", "C5")
+                   for v in a.verificaciones)
+    assert not any("vano" in x for x in a.avisos)
+    assert {v.codigo.split(".")[0] for v in a.verificaciones} >= {
+        "C1", "C2", "C3", "C6"}
+
+
+def test_el_alero_de_gravedad_no_se_arma_y_su_zapata_crece(tanteo):
+    entorno = _gravedad(tanteo, aleros=replace(ALEROS_G, ancho_zapata=1.30))
+    assert M9.incumplidas_del_armado_de_la_zapata_del_alero(entorno) == ()
+    assert M9.dimensionar_peralte_del_alero(entorno) is None
+    d = M9.dimensionar_zapata_del_alero(entorno)
+    assert d is not None and d.ancho > 1.30
+
+
+def test_el_metrado_del_alero_de_gravedad_es_el_trapecio(tanteo):
+    """
+    Fuste del alero corto de 2.5 m, h de 1.75 + 0.80 - 0.40 = 2.15 m a 0.40
+    + 0.40 = 0.80 m, k = (0.60 - 0.30)/2.0 = 0.15:
+    V = 2.5·[0.30·(2.15 + 0.80)/2 + 0.075·(2.15² + 2.15·0.80 + 0.80²)/3].
+    """
+    from src.modulos import M12_metrados as M12
+    g = _gravedad(tanteo, espesor_base_muro=0.60).geometria
+    partes = dict(M12.volumen_cabezal(g, 0.0))
+    h1, h2 = 2.15, 0.80
+    esperado = 2.5 * (0.30 * (h1 + h2) / 2
+                      + 0.15 / 2 * (h1 ** 2 + h1 * h2 + h2 ** 2) / 3)
+    assert partes["fuste del alero corto"] == pytest.approx(esperado,
+                                                            rel=TOL)
+
+
+# ---------------------------------------------------------------------------
+# 8. Lo declarado (decisiones 3 y 5, abierto (d)) y E4/E5 (decision 4)
+# ---------------------------------------------------------------------------
+
+def _predimensionar(**declaradas):
+    from tests.test_t7a_cabezal_geometria import _embocadura, _extremo
+    return M9.predimensionar_cabezal(extremo=_extremo(),
+                                     embocadura=_embocadura(), talud=2.0,
+                                     declaradas=declaradas)
+
+
+def test_la_zapata_propia_declarada_gana_aunque_sea_menor(tanteo):
+    from src.modelos import ORIGEN_DIMENSION_DECLARADA
+    g = _predimensionar(ancho_zapata_aleros_m=0.90,
+                        espesor_zapata_aleros_m=0.35)
+    assert g.aleros.ancho_zapata == pytest.approx(0.90, abs=TOL)
+    assert g.aleros.espesor_zapata == pytest.approx(0.35, abs=TOL)
+    assert g.B > 0.90
+    for nombre in (M9.DIMENSION_ZAPATA_ALEROS,
+                   M9.DIMENSION_PERALTE_ZAPATA_ALEROS):
+        d = next(x for x in g.dimensiones if x.nombre == nombre)
+        assert d.origen == ORIGEN_DIMENSION_DECLARADA
+    # declarada: no se itera, y sus filas quedan como salen
+    entorno = replace(_con_aleros(tanteo), geometria=replace(
+        _con_aleros(tanteo).geometria, aleros=replace(
+            ALEROS, ancho_zapata=0.90)))
+    assert M9.dimensionar_zapata_del_alero(entorno, declarado=True) is None
+    assert not M9.estabilidad_del_alero(entorno, EST).cumple
+
+
+def test_un_ancho_propio_menor_que_el_alero_es_invalido():
+    from src.modelos import DatoInvalidoError
+    with pytest.raises(DatoInvalidoError):
+        _predimensionar(ancho_zapata_aleros_m=0.20)
+
+
+def test_un_espesor_propio_bajo_el_piso_no_cumple_CB6():
+    g = _predimensionar(espesor_zapata_aleros_m=0.10)
+    from tests.test_t7a_cabezal_geometria import _embocadura, _extremo
+    filas = M9.verificar_compatibilidad_cabezal(
+        geometria=g, extremo=_extremo(), embocadura=_embocadura())
+    cb6 = next(v for v in filas if v.codigo == "CB6.e.alero")
+    assert not cb6.cumple
+    assert "CB6.e" in {v.codigo for v in filas}
+
+
+def test_lo_declarado_del_cabezal_es_solo_la_partida_y_el_alero_crece(
+        tanteo):
+    """Con `ancho_zapata_m` del cabezal (no el propio) la franja que no cumple
+    hace crecer la zapata de los aleros: `declarado` es la clave propia."""
+    d = M9.dimensionar_zapata_del_alero(_con_aleros(tanteo, PLANO),
+                                        declarado=False)
+    assert d is not None and d.ancho > PLANO.ancho_zapata
+
+
+def test_E4_E5_diferidas_son_del_cabezal_y_de_sus_aleros(tanteo):
+    est = M9.ensamble_estabilidad(_con_aleros(tanteo), EST)
+    assert any("del cabezal y de sus aleros" in a for a in est.avisos)
+    assert any("del cabezal y de sus aleros" in p.que for p in est.pasos)
+    sin = M9.ensamble_estabilidad(tanteo, EST)
+    assert not any("de sus aleros" in a for a in sin.avisos)
+
+
+def test_el_FS_declarado_cubre_los_aleros_solo_si_el_analisis_los_incluyo(
+        tanteo):
+    from tests.test_ve4a_e4e5_declarado import FS_AMBOS, _declarado
+    declarada = _declarado(**FS_AMBOS)
+    est = M9.ensamble_estabilidad(
+        replace(_con_aleros(tanteo), estabilidad_global=declarada), EST)
+    assert any("cubre los aleros solo si el analisis externo incluyo su "
+               "seccion" in a for a in est.avisos)
+    sin = M9.ensamble_estabilidad(
+        replace(tanteo, estabilidad_global=declarada), EST)
+    assert not any("cubre los aleros" in a for a in sin.avisos)

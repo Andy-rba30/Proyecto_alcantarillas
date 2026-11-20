@@ -8267,6 +8267,10 @@ class EstabilidadDelCabezal:
     # franja del arranque de los aleros verificada como muro en voladizo
     # (`M9.estabilidad_del_alero`): sus codigos llevan el sufijo `.alero`.
     muro: str = MURO_CABEZAL
+    # --- VE-7 (dictamen Fable, abierto (a)) --- con `MURO_ALERO`, la
+    # fraccion de la longitud del alero de la franja verificada (0 el
+    # arranque, 1 la punta); None en el cabezal.
+    fraccion_alero: Optional[float] = None
 
     def del_marco(self, marco: str) -> Tuple["Verificacion", ...]:
         return tuple(v for v in self.verificaciones

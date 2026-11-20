@@ -1900,8 +1900,8 @@ def _lineas_cabezal_del_punto(informe: InformePunto) -> List[str]:
     for e in tuple(c.estabilidad) + tuple(c.estabilidad_aleros):
         sismo = ("" if e.K_AE is None else
                  f", K_AE = {_fmt(e.K_AE)} con k_h = {_fmt(e.k_h)}")
-        de_que = ("de los aleros (franja del arranque, como muro) "
-                  if e.muro == MURO_ALERO else "")
+        de_que = (f"de los aleros (franja a {e.fraccion_alero or 0:g}·L, "
+                  "como muro) " if e.muro == MURO_ALERO else "")
         out.append(
             f"{SANGRIA}Fase 9  estabilidad {de_que}del cabezal de {e.extremo}, "
             f"{e.condicion.value} (marco: {e.regla_de_marco}): K_A = "
@@ -1969,6 +1969,9 @@ def _estabilidad_json(e) -> Dict[str, Any]:
     """
     return {
         "extremo": e.extremo, "condicion": e.condicion.value,
+        # --- VE-7 --- la franja del alero (None en el cabezal)
+        **({} if e.fraccion_alero is None
+           else {"fraccion_alero": _num(e.fraccion_alero)}),
 
         "regla_de_marco": e.regla_de_marco,
         "K_A": _num(e.K_A), "K_AE": _num(e.K_AE), "k_h": _num(e.k_h),

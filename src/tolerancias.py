@@ -350,3 +350,17 @@ ITERACIONES_MAX_PUNTO_FIJO_TC = 200
 # evaluable» en vez de devolver un reparto que no reparte.
 TOL_REL_BALANCE_REPARTO_DESBORDE = 1e-6
 TOL_ABS_TIRANTE_TANTEO_DESBORDE_M = 1e-6
+
+
+# ---------------------------------------------------------------------------
+# --- VE-7 (dictamen Fable sobre VE7-01, abierto (a)) --- Las franjas del
+# alero que se verifican como muro
+# ---------------------------------------------------------------------------
+# El alero baja con el talud de h0 a H_f y, con el borde de la plataforma
+# fijo, el relleno SUBE mas detras de cada franja hacia la punta (la
+# pendiente equivalente y K_A crecen): la franja del arranque no rige
+# siempre. Se verifica en estas fracciones de la longitud del alero (0 el
+# arranque, 1 la punta). Es una DISCRETIZACION de la verificacion, como
+# `TRAMOS_CUNA_DE_TANTEO`: no es un valor normativo ni una eleccion del
+# proyecto entre opciones de una fuente, y no entra en ninguna formula.
+FRACCIONES_DE_ESTABILIDAD_DEL_ALERO = (0, 1 / 4, 1 / 2, 3 / 4, 1)
