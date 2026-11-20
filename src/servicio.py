@@ -166,7 +166,8 @@ from src.modulos.M9_cabezal import (  # --- VE-6 ---
     EXTREMOS as CAMPOS_EXTREMOS, validar_sobrecarga_del_punto)
 from src.modulos.M9_cabezal import (  # --- VE-7 (lote A, A2) ---
     DATO_EMBOCADURA_CAJON_DEL_PUNTO, CRITERIO_DE_CAMPO_EMBOCADURA,
-    NOTA_EMBOCADURA_DECLARADA_POR_PUNTO, validar_embocadura_cajon_del_punto)
+    NOTA_EMBOCADURA_DECLARADA_POR_PUNTO, validar_embocadura_cajon_del_punto,
+    DATO_EMPUJE_SISMICO, validar_empuje_sismico_declarado)
 from src.modulos.M9_cabezal import (cabezal_del_punto,
                                     embocadura_del_punto,
                                     validar_cabezal_declarado,
@@ -931,6 +932,15 @@ CLAVES_DE_CABEZAL += (CLAVE_ORIENTACION_DEL_PUNTO,
 CLAVE_EMBOCADURA_CAJON_DEL_PUNTO = DATO_EMBOCADURA_CAJON_DEL_PUNTO
 CLAVES_DE_CABEZAL += (CLAVE_EMBOCADURA_CAJON_DEL_PUNTO,)
 CLAVES_SOLO_POR_PUNTO += (CLAVE_EMBOCADURA_CAJON_DEL_PUNTO,)
+# --- VE-7 (lote A, A5; fichas VE5M9-02 y VE3-15) --- EL EMPUJE SISMICO
+# DECLARADO por un analisis externo (GLE de A11.3.3, o con la presion
+# hidrodinamica del relleno muy abierto), por punto y por cabezal, con su
+# traza: el patron de `estabilidad_global_declarada`. SOLO se consume donde
+# el ensamble no puede calcular el empuje. La valida
+# `M9.validar_empuje_sismico_declarado` al CARGAR.
+CLAVE_EMPUJE_SISMICO_DECLARADO = DATO_EMPUJE_SISMICO
+CLAVES_DE_CABEZAL += (CLAVE_EMPUJE_SISMICO_DECLARADO,)
+CLAVES_SOLO_POR_PUNTO += (CLAVE_EMPUJE_SISMICO_DECLARADO,)
 
 
 def fundir_sobrecarga_del_punto(declarados: Optional[dict], *,
@@ -1141,6 +1151,11 @@ def _dato_externo(clave: str, bruto: Any, origen: str) -> DatoDeclarado:
         # --- VE-5 (catlic) --- el resultado del EMS, validado en la puerta.
         return DatoDeclarado(
             nombre=clave, valor=ML.validar_licuefaccion_declarada(bruto),
+            origen=origen)
+    if clave == CLAVE_EMPUJE_SISMICO_DECLARADO:
+        # --- VE-7 (lote A, A5) --- el P_AE del analisis externo.
+        return DatoDeclarado(
+            nombre=clave, valor=validar_empuje_sismico_declarado(bruto),
             origen=origen)
     if clave == CLAVE_EMBOCADURA_CAJON_DEL_PUNTO:
         # --- VE-7 (lote A, A2) --- la carta y el ke del marco del punto.
@@ -3650,6 +3665,9 @@ def _fase_9(informe: InformePunto,
     # --- VE-4a --- el FS declarado de E4 y E5 del punto, si lo hay.
     global_declarada = (None if externos is None else externos.valor(
         informe.punto.id, CLAVE_ESTABILIDAD_GLOBAL_DECLARADA))
+    # --- VE-7 (lote A, A5) --- el empuje sismico declarado, si lo hay.
+    empuje = (None if externos is None else externos.valor(
+        informe.punto.id, CLAVE_EMPUJE_SISMICO_DECLARADO))
     entornos = _etapa(
         informe.bloqueos, FASE_CABEZAL,
         "datos de la estabilidad del cabezal (T-7b)",
@@ -3657,7 +3675,7 @@ def _fase_9(informe: InformePunto,
             punto=informe.punto_de_calculo, cabezal=informe.cabezal,
             geometria=informe.geometria, socavacion=informe.socavacion,
             suelo_del_punto=suelo, resultado=informe.resultado,
-            estabilidad_global=global_declarada))
+            estabilidad_global=global_declarada, empuje_sismico=empuje))
     if entornos is None:
         return
     # --- VE-3.5 --- LA GEOMETRIA DE LA REGLA SE EVALUA PRIMERO, y lo que no
@@ -3674,7 +3692,8 @@ def _fase_9(informe: InformePunto,
             cabezal=informe.cabezal, estabilidades=estabilidades,
             socavacion=informe.socavacion, declarados=declarados,
             coherencia_embocadura=informe.coherencia_embocadura,
-            motivo_sin_socavacion=motivo, suelo_del_punto=suelo))
+            motivo_sin_socavacion=motivo, suelo_del_punto=suelo,
+            empuje_sismico=empuje))
     # Los bloqueos de la estabilidad que CUENTAN son los de la geometria
     # final: si el dimensionamiento la cambia, la final se evalua de nuevo y
     # los de la partida se descartan.
@@ -3688,7 +3707,7 @@ def _fase_9(informe: InformePunto,
                 punto=informe.punto_de_calculo, cabezal=informe.cabezal,
                 geometria=informe.geometria, socavacion=informe.socavacion,
                 suelo_del_punto=suelo, resultado=informe.resultado,
-            estabilidad_global=global_declarada))
+            estabilidad_global=global_declarada, empuje_sismico=empuje))
         if entornos is None:
             informe.bloqueos.extend(del_dimensionado)
             return
@@ -3712,6 +3731,7 @@ def _fase_9(informe: InformePunto,
             declarados=declarados,
             coherencia_embocadura=informe.coherencia_embocadura,
             motivo_sin_socavacion=motivo, suelo_del_punto=suelo,
+            empuje_sismico=empuje,
             anchos=None if dimensionado is None else dimensionado.anchos,
             puntas=None if dimensionado is None else dimensionado.puntas,
             no_factibles=(() if dimensionado is None
@@ -3725,7 +3745,7 @@ def _fase_9(informe: InformePunto,
                 punto=informe.punto_de_calculo, cabezal=informe.cabezal,
                 geometria=informe.geometria, socavacion=informe.socavacion,
                 suelo_del_punto=suelo, resultado=informe.resultado,
-            estabilidad_global=global_declarada))
+            estabilidad_global=global_declarada, empuje_sismico=empuje))
         if entornos is None:
             informe.bloqueos.extend(del_dimensionado + del_peralte)
             return
@@ -3748,6 +3768,7 @@ def _fase_9(informe: InformePunto,
             declarados=declarados,
             coherencia_embocadura=informe.coherencia_embocadura,
             motivo_sin_socavacion=motivo, suelo_del_punto=suelo,
+            empuje_sismico=empuje,
             anchos=anchos_finales,
             puntas=(peralte.puntas if peralte is not None
                     else None if dimensionado is None
@@ -3763,7 +3784,7 @@ def _fase_9(informe: InformePunto,
                 punto=informe.punto_de_calculo, cabezal=informe.cabezal,
                 geometria=informe.geometria, socavacion=informe.socavacion,
                 suelo_del_punto=suelo, resultado=informe.resultado,
-            estabilidad_global=global_declarada))
+            estabilidad_global=global_declarada, empuje_sismico=empuje))
         if entornos is None:
             informe.bloqueos.extend(del_dimensionado + del_peralte
                                     + del_pantalla)

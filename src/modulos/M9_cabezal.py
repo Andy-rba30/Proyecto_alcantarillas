@@ -6841,6 +6841,228 @@ def validar_estabilidad_global_declarada(valor: Any, *,
 
 
 # ---------------------------------------------------------------------------
+# --- VE-7 (lote A, A5; triaje VE-7 de Fable) --- La puerta del dato externo
+# `empuje_sismico_declarado` (fichas VE5M9-02 y VE3-15)
+# ---------------------------------------------------------------------------
+# Donde el ensamble NO puede calcular el empuje sismico -- la cuña de tanteo
+# sin maximo (psi >= phi: la fuente pide el GLE de A11.3.3) o el relleno muy
+# abierto con agua (la presion hidrodinamica, que ninguna fuente del
+# repositorio da) -- el proyecto puede DECLARAR el resultado de un analisis
+# externo, por punto y por cabezal, con su traza. Es el patron de
+# `estabilidad_global_declarada` (VE-4a): el programa no lo calcula, lo
+# usa SOLO alli; nunca sustituye un empuje que el programa calcula.
+DATO_EMPUJE_SISMICO = "empuje_sismico_declarado"
+CAMPOS_EMPUJE_SISMICO = ("P_AE_kn_m", "altura_aplicacion_m",
+                         "incluye_hidrodinamica")
+CAMPOS_TRAZA_EMPUJE = CAMPOS_TRAZA_GLOBAL
+METODO_INCREMENTO_DECLARADO = (
+    "empuje sismico DECLARADO por un analisis externo "
+    f"(`{DATO_EMPUJE_SISMICO}`): el programa no lo puede calcular aqui")
+PUERTA_EMPUJE_DECLARADO = (
+    f"; o declarar por punto y cabezal el resultado de ese analisis en "
+    f"'{DATO_EMPUJE_SISMICO}' de --datos-externos (P_AE_kn_m, "
+    "altura_aplicacion_m, incluye_hidrodinamica, documento, fecha, metodo)")
+
+
+def validar_empuje_sismico_declarado(valor: Any, *,
+                                     id_punto: Optional[str] = None) -> dict:
+    """
+    Forma y dominio de `empuje_sismico_declarado` (dato externo opcional,
+    SOLO por punto), y su forma normalizada {"entrada": {...}, "salida":
+    {...}}; un extremo sin declarar queda vacio.
+
+    Por extremo, los tres campos del resultado: `P_AE_kn_m` (el empuje
+    TOTAL del suelo bajo sismo, estatico mas sismico, horizontal, kN/m de
+    muro; > 0), `altura_aplicacion_m` (la de su resultante sobre la base del
+    plano de empuje, m; > 0) e `incluye_hidrodinamica` (booleano: si trae la
+    presion hidrodinamica del agua del relleno), y la TRAZA (`documento`,
+    `fecha`, `metodo`), arriba -- vale para los dos -- o dentro del extremo,
+    que gana. Un resultado sin su fuente, un campo de mas o de menos, o un
+    numero fuera de dominio se rechazan.
+    """
+    campo = DATO_EMPUJE_SISMICO
+    if not isinstance(valor, dict) or not valor:
+        raise DatoInvalidoError(
+            campo, valor=valor, id_punto=id_punto,
+            motivo="se espera un objeto con 'entrada' y/o 'salida', cada uno "
+                   "con " + ", ".join(CAMPOS_EMPUJE_SISMICO)
+                   + ", y la traza: " + ", ".join(CAMPOS_TRAZA_EMPUJE))
+    comunes = {k: v for k, v in valor.items() if k not in EXTREMOS}
+    sobran = [k for k in comunes if k not in CAMPOS_TRAZA_EMPUJE]
+    if sobran:
+        raise DatoInvalidoError(
+            campo, valor=sorted(sobran), id_punto=id_punto,
+            motivo="arriba solo va la traza (" + ", ".join(CAMPOS_TRAZA_EMPUJE)
+                   + "): el empuje es de UN cabezal y va dentro de 'entrada' "
+                     "o 'salida'")
+
+    def _traza(bloque: dict, donde: str) -> dict:
+        limpio = {}
+        for k in CAMPOS_TRAZA_EMPUJE:
+            if k not in bloque:
+                continue
+            x = bloque[k]
+            if not isinstance(x, str) or not x.strip():
+                raise DatoInvalidoError(
+                    f"{campo}.{donde}.{k}", valor=x, id_punto=id_punto,
+                    motivo="se espera un texto no vacio: la traza del "
+                           "analisis externo")
+            limpio[k] = x.strip()
+        return limpio
+
+    base = _traza(comunes, "comun")
+    normalizado = {}
+    for extremo in EXTREMOS:
+        bloque = valor.get(extremo, {})
+        if not isinstance(bloque, dict):
+            raise DatoInvalidoError(
+                f"{campo}.{extremo}", valor=bloque, id_punto=id_punto,
+                motivo="se espera un objeto")
+        if not bloque:
+            normalizado[extremo] = {}
+            continue
+        desconocidas = [k for k in bloque if k not in
+                        CAMPOS_EMPUJE_SISMICO + CAMPOS_TRAZA_EMPUJE]
+        faltan = [k for k in CAMPOS_EMPUJE_SISMICO if k not in bloque]
+        if desconocidas or faltan:
+            raise DatoInvalidoError(
+                f"{campo}.{extremo}", valor=sorted(bloque), id_punto=id_punto,
+                motivo="se esperan " + ", ".join(CAMPOS_EMPUJE_SISMICO)
+                       + " (y la traza); "
+                       + (f"faltan {', '.join(faltan)}" if faltan else
+                          f"sobran {', '.join(desconocidas)}"))
+        resultado = {}
+        for k in CAMPOS_EMPUJE_SISMICO[:2]:
+            x = bloque[k]
+            if not (_finito(x) and x > 0):
+                raise DatoInvalidoError(
+                    f"{campo}.{extremo}.{k}", valor=x, id_punto=id_punto,
+                    motivo="se espera un numero finito y mayor que cero")
+            resultado[k] = float(x)
+        hidro = bloque["incluye_hidrodinamica"]
+        if not isinstance(hidro, bool):
+            raise DatoInvalidoError(
+                f"{campo}.{extremo}.incluye_hidrodinamica", valor=hidro,
+                id_punto=id_punto, motivo="se espera true o false")
+        resultado["incluye_hidrodinamica"] = hidro
+        traza = dict(base)
+        traza.update(_traza(bloque, extremo))
+        sin_traza = [k for k in CAMPOS_TRAZA_EMPUJE if k not in traza]
+        if sin_traza:
+            raise DatoInvalidoError(
+                f"{campo}.{extremo}", valor=sorted(traza), id_punto=id_punto,
+                motivo="un empuje sin su fuente no entra: faltan "
+                       + ", ".join(sin_traza))
+        normalizado[extremo] = dict(resultado, **traza)
+    if not any(normalizado.values()):
+        raise DatoInvalidoError(campo, valor=valor, id_punto=id_punto,
+                                motivo="el objeto no declara ningun empuje")
+    return normalizado
+
+
+def _empuje_declarado_utilizable(entorno: EntornoDelCabezal, *, k_h: float,
+                                 k_h_de_la_estabilidad: float
+                                 ) -> Optional[dict]:
+    """
+    El empuje declarado de este cabezal, si lo hay y la llamada es con el
+    k_h de la estabilidad (el del ensamble E1-E3 con el regimen del muro).
+    Un k_h distinto -- el 1.0·k_h0 del armado del muro que no cede, si
+    difiere -- no lo usa: el analisis externo es de UN coeficiente, y
+    aplicarlo con otro seria otra cifra (lado seguro: el elemento sigue
+    detenido; pendiente de revision Fable).
+    """
+    declarado = getattr(entorno, "empuje_sismico", None)
+    if not declarado:
+        return None
+    if abs(k_h - k_h_de_la_estabilidad) > TOL_UMBRAL_NORMATIVO:
+        return None
+    return declarado
+
+
+def _citas_del_empuje_declarado(datos: dict) -> tuple:
+    """--- VE-7 (A5) --- Las citas del paso 9.2.4 con el empuje declarado:
+    el GLE de A11.3.3 (en la frase de 3.11.5.8.1) y, con la presion
+    hidrodinamica, el comentario del relleno muy abierto."""
+    declarado = datos.get("empuje_sismico_declarado")
+    if not declarado:
+        return ()
+    return (("AASHTO_LRFD_9.3.11.5.8.1#CUNA",)
+            + (("AASHTO_LRFD_9.C11.6.5.3#AGUA_ABIERTO",)
+               if declarado["incluye_hidrodinamica"] else ()))
+
+
+def _nota_del_empuje_declarado(datos: dict) -> str:
+    """--- VE-7 (A5) --- Lo que el paso 9.2.4 dice del empuje declarado."""
+    declarado = datos.get("empuje_sismico_declarado")
+    if not declarado:
+        return ""
+    return (
+        f"EMPUJE SISMICO DECLARADO (`{DATO_EMPUJE_SISMICO}`): el programa no "
+        "lo puede calcular aqui -- la cuña de tanteo no tiene maximo (la "
+        "fuente pide el GLE de AASHTO A11.3.3) o el relleno muy abierto "
+        "pide la presion hidrodinamica (C11.6.5.3) --, y se usa el del "
+        f"analisis externo: P_AE = {declarado['P_AE_kn_m']:.3f} kN/m a "
+        f"{declarado['altura_aplicacion_m']:.3f} m, "
+        + ("con" if declarado["incluye_hidrodinamica"] else "sin")
+        + " presion hidrodinamica; documento "
+        f"{declarado['documento']} ({declarado['fecha']}), metodo "
+        f"{declarado['metodo']}. Se toma horizontal y sin bajar del "
+        "estatico (lado seguro, VE-7). ")
+
+
+def _incremento_del_empuje_declarado(declarado: dict, *, h: float,
+                                     gamma: float, k_v: float, P_A: float,
+                                     P_0: float, z_A: float,
+                                     inclinacion: float, reposo_rige: bool,
+                                     ang: dict, k_h: float,
+                                     dominio_MO: bool, ext: str,
+                                     id_punto: Optional[str]) -> tuple:
+    """
+    --- VE-7 (lote A, A5) --- El incremento sismico a partir del P_AE
+    DECLARADO (total, horizontal) y la altura de su resultante:
+
+        dP_h = max(P_AE - P_est,h ; 0),  P_est,h = P_A·cos(delta + beta)
+               (o P_0, el reposo, si rige)
+        z_dP = (P_AE·z_AE - P_est,h·z_A) / dP_h, entre h/3 y h
+        K_AE (EQUIVALENTE) = 2·P_AE / (gamma·h²·(1 - k_v))
+
+    TRES DECISIONES DEL LADO SEGURO (pendientes de revision Fable): el
+    declarado es HORIZONTAL y sin componente vertical (la vertical del empuje
+    estabiliza y el analisis externo no la entrega con la friccion del
+    muro); un declarado menor que el estatico no baja el empuje (dP >= 0,
+    como el «no less than the static» de 11.6.5.1); y la altura del
+    incremento no baja de h/3 (el «but no less than H/3» de 11.6.5.3) ni
+    sube de h. El K_AE equivalente es solo para los consumidores que leen
+    un coeficiente (el reparto sobre la pantalla); el paso dice que lo es.
+    """
+    z_AE = declarado["altura_aplicacion_m"]
+    if not z_AE <= h + TOL_UMBRAL_NORMATIVO:
+        raise DatoInvalidoError(
+            f"{DATO_EMPUJE_SISMICO}.{ext}.altura_aplicacion_m", valor=z_AE,
+            id_punto=id_punto,
+            motivo=f"la resultante declarada queda por encima del plano de "
+                   f"empuje (h = {h:.3f} m)")
+    P_AE = declarado["P_AE_kn_m"]
+    P_est = P_0 if reposo_rige else P_A * math.cos(inclinacion)
+    dP_h = max(P_AE - P_est, 0.0)
+    z_dP = ((P_AE * z_AE - P_est * z_A) / dP_h if dP_h > 0 else z_AE)
+    z_dP = min(max(z_dP, h / LADOS_DEL_TRIANGULO), h)
+    K_AE = 2 * P_AE / (gamma * h ** 2 * (1.0 - k_v))
+    K_AE_formula = (k_ae_mononobe_okabe(
+        phi_grados=ang["phi"], i_grados=ang["i"], beta_grados=ang["beta"],
+        delta_grados=ang["delta"], k_h=k_h, k_v=k_v) if dominio_MO else None)
+    fraccion = z_dP / h
+    traza = (f"{declarado['documento']}, {declarado['fecha']}, "
+             f"{declarado['metodo']}")
+    proc_h = (f"P_AE declarado ({traza}) - estatico horizontal: max("
+              f"{P_AE:.3f} - {P_est:.3f}; 0), a {fraccion:g}·h")
+    proc_v = ("sin componente vertical: el empuje declarado es horizontal "
+              "(lado seguro, VE-7)")
+    return (K_AE, K_AE_formula, None, P_AE, dP_h, dP_h, 0.0, z_dP,
+            fraccion, P_est, P_est + dP_h, proc_h, proc_v)
+
+
+# ---------------------------------------------------------------------------
 # Capacidad portante nominal: AASHTO LRFD 10.6.3.1.2a
 # ---------------------------------------------------------------------------
 
@@ -7755,6 +7977,13 @@ def cargas_del_cabezal(entorno: EntornoDelCabezal,
                                            "no negativo y finito")
         k_v = cadena.k_v
         psi = angulo_inercia_sismica(k_h=k_h, k_v=k_v)
+        # --- VE-7 (lote A, A5) --- el P_AE DECLARADO de este cabezal, si lo
+        # hay y es del k_h de la estabilidad: SOLO se consume donde el
+        # programa no puede calcular el empuje (abajo), nunca en su lugar.
+        declarado = _empuje_declarado_utilizable(
+            entorno, k_h=k_h, k_h_de_la_estabilidad=(
+                cadena.k_h0 if regimen == REGIMEN_NO_CEDENTE else cadena.k_h))
+        usar_declarado = False
         # --- VE-3.14 (H-3 de los ensayos de diseño del cabezal) --- CON
         # AGUA EN EL PLANO DE EMPUJE, EL SISMO NO SE SALTA. Hasta VE-3.14 se
         # detenia aqui sin cifra, y el ancho se dimensionaba sin la
@@ -7775,7 +8004,20 @@ def cargas_del_cabezal(entorno: EntornoDelCabezal,
                     motivo="se espera una de: " + ", ".join(
                         (AGUA_SE_MUEVE_CON_EL_SUELO,
                          AGUA_RELLENO_MUY_ABIERTO)))
-            if tratamiento_agua == AGUA_RELLENO_MUY_ABIERTO:
+            if (tratamiento_agua == AGUA_RELLENO_MUY_ABIERTO
+                    and declarado is not None):
+                # --- VE-7 (lote A, A5) --- el declarado tiene que traer la
+                # presion hidrodinamica que C11.6.5.3 pide aqui.
+                if not declarado["incluye_hidrodinamica"]:
+                    raise DatoInvalidoError(
+                        f"{DATO_EMPUJE_SISMICO}.{ext}.incluye_hidrodinamica",
+                        valor=False, id_punto=idp,
+                        motivo=("con el relleno muy abierto y agua en el "
+                                "plano de empuje AASHTO C11.6.5.3 pide el "
+                                "peso sumergido MAS la presion hidrodinamica: "
+                                "el empuje declarado tiene que incluirla"))
+                usar_declarado = True
+            elif tratamiento_agua == AGUA_RELLENO_MUY_ABIERTO:
                 remedio = (
                     " Declarar el drenaje del trasdos ('drenaje_trasdos' = "
                     "'drenado') baja el agua del relleno al freatico natural"
@@ -7791,172 +8033,194 @@ def cargas_del_cabezal(entorno: EntornoDelCabezal,
                     f"'{CRITERIO_DRENAJE}' = '{drenaje}') y el relleno "
                     f"esta declarado muy abierto ('{CRITERIO_AGUA_SISMO}' "
                     f"= '{tratamiento_agua}'): AASHTO C11.6.5.3 pide el "
-                    "peso sumergido MAS la presion hidrodinamica." + remedio,
-                    idp)
+                    "peso sumergido MAS la presion hidrodinamica." + remedio
+                    + PUERTA_EMPUJE_DECLARADO + " (con "
+                    "'incluye_hidrodinamica' = true)", idp)
         dominio_MO = ang["phi"] >= ang["i"] + psi - TOL_UMBRAL_NORMATIVO
-        metodo_incremento = (METODO_EMPUJE_CUNA if usa_cuna
-                             else METODO_EMPUJE_FORMULA)
-        K_AE_formula = (k_ae_mononobe_okabe(
-            phi_grados=ang["phi"], i_grados=ang["i"],
-            beta_grados=ang["beta"], delta_grados=ang["delta"], k_h=k_h,
-            k_v=k_v) if dominio_MO else None)
-        rho_AE = None
-        if usa_cuna:
-            # La cuña de tanteo bajo sismo (C11.6.5.3): con el relleno que
-            # se quiebra en la plataforma tiene maximo aunque Mononobe-Okabe
-            # con la pendiente equivalente quede fuera de su dominio; esa
-            # formula, si es evaluable, se imprime al lado como contraste.
-            P_unitario_E, rho_AE = cuna_de_tanteo(
-                h=h, subida=relleno["subida_sobre_plano"],
-                talud=relleno["talud"], phi_grados=ang["phi"],
-                delta_grados=ang["delta"], gamma=1.0, k_h=k_h, k_v=k_v,
-                beta_grados=ang["beta"],
-                que=f"empuje sismico del cabezal de {ext}", id_punto=idp,
-                remedio=("Lo que lo destraba es una decision del Propietario "
-                         "-- admitir el desplazamiento del muro, "
-                         f"'{CRITERIO_FACTOR_MURO}', que reduce k_h a la "
-                         "mitad (11.6.5.2.2) y exige declarar tambien el "
-                         "armado del muro que cede "
-                         f"('{CRITERIO_REGIMEN_RESISTENCIA}' = 'cedente') --, "
-                         "un relleno de mayor friccion o un analisis "
-                         "externo"))
-            K_AE = 2 * P_unitario_E / (h ** 2 * (1.0 - k_v))
-        elif not dominio_MO:
-            # --- VE-5 (ficha T7B-06) --- Mononobe-Okabe no es aceptable
-            # (11.6.5.3, ec. 11.6.5.3-1) y la fuente da la cuña de tanteo
-            # para ese caso (C11.6.5.3, «may also be used for situations
-            # when the M–O Method is not suitable»): con la superficie REAL
-            # del relleno, o con la pendiente declarada como talud sin
-            # quiebre si 'pendiente_relleno_trasdos_i' la declara. El
-            # INCREMENTO sale de la misma cuña (P_AE - P_A de la cuña, no
-            # menos el P_A de la formula: dos modelos no se restan) y el
-            # estatico sigue con la formula de la regla. Hasta VE-5 se
-            # detenia aqui.
-            if relleno["i_declarado"]:
-                sub_c = math.inf
-                talud_c = (1.0 / math.tan(math.radians(ang["i"]))
-                           if ang["i"] > TOL_UMBRAL_NORMATIVO else math.inf)
-            else:
-                sub_c, talud_c = relleno["subida_sobre_plano"], relleno["talud"]
-            remedio_c = (
-                f"Mononobe-Okabe tampoco es aceptable (AASHTO 11.6.5.3, ec. "
-                f"11.6.5.3-1: phi = {ang['phi']:.2f} < i + psi = "
-                f"{ang['i']:.2f} + {psi:.2f} grados). Lo que lo destraba es "
-                "una decision del Propietario -- admitir el desplazamiento "
-                f"del muro, '{CRITERIO_FACTOR_MURO}', que reduce k_h a la "
-                "mitad --, un relleno de mayor friccion o un analisis "
-                "externo; la cuña de archivo es "
-                f"'{CRITERIO_REGLA_PENDIENTE}' = '{REGLA_CUNA_DE_TANTEO}'")
-            if math.isinf(talud_c):
-                sub_c, talud_c = 0.0, relleno["talud"]
-            P1_c, _ = cuna_de_tanteo(
-                h=h, subida=sub_c, talud=talud_c, phi_grados=ang["phi"],
-                delta_grados=ang["delta"], gamma=1.0,
-                beta_grados=ang["beta"],
-                que=f"empuje estatico (cuña) del cabezal de {ext}",
-                id_punto=idp, remedio=remedio_c)
-            P1_cE, rho_AE = cuna_de_tanteo(
-                h=h, subida=sub_c, talud=talud_c, phi_grados=ang["phi"],
-                delta_grados=ang["delta"], gamma=1.0, k_h=k_h, k_v=k_v,
-                beta_grados=ang["beta"],
-                que=f"empuje sismico del cabezal de {ext}", id_punto=idp,
-                remedio=remedio_c)
-            K_AE = (K_A + 2 * (P1_cE - P1_c) / h ** 2) / (1.0 - k_v)
-            metodo_incremento = METODO_INCREMENTO_CUNA
-        else:
-            K_AE = K_AE_formula
-        P_AE = empuje_activo_sismico_total(gamma_relleno=gamma, K_AE=K_AE,
-                                           H=h, k_v=k_v)
-        dP = P_AE - P_A
-        if tratamiento_agua == AGUA_SE_MUEVE_CON_EL_SUELO:
-            # El incremento con el peso TOTAL bajo el agua (C11.6.5.3): la
-            # integral del peso total sobre el plano, Γ_t, en lugar de
-            # gamma·h²/2; el estatico (suelo sumergido mas hidrostatica) no
-            # cambia. En seco Γ_t = gamma·h²/2 y es la formula de arriba.
-            gamma_t = (gamma * h_seco ** 2 / 2 + gamma * h_seco * h_w
-                       + gamma_sat * h_w ** 2 / 2)
-            dP = (K_AE * (1.0 - k_v) - K_A) * gamma_t
-            P_AE = P_A + dP
-        fraccion = ca.valor(CRITERIO_BRAZO_SISMICO)
-        if not (_finito(fraccion) and 0 < fraccion <= 1):
-            raise DatoInvalidoError(CRITERIO_BRAZO_SISMICO, valor=fraccion,
-                                    motivo="fraccion de h entre 0 y 1")
-        z_dP = fraccion * h
-        distribucion = _eleccion(CRITERIO_DISTRIBUCION_INCREMENTO,
-                                 (INCREMENTO_SEGUN_REGIMEN,
-                                  INCREMENTO_FRACCION,
-                                  INCREMENTO_DISTRIBUCION_ESTATICA))
-        # --- VE-5 --- con 'regimen_cabezal' = 'no_cedente' el muro no cede
-        # aunque la cadena declare la reduccion: manda el regimen.
-        cede = (regimen == REGIMEN_CEDENTE
-                and ca.valor(CRITERIO_FACTOR_MURO)
-                == FACTOR_MURO_CON_REDUCCION)
-        # --- VE-5 (ficha T7B-14) --- el empuje sismico del muro que no cede
-        # sobre el reposo: el reposo mas el incremento pseudoestatico, o el
-        # mayor del reposo y del total ('empuje_sismico_muro_que_no_cede'
-        # [A]). Todo horizontal, como el reposo. Con el activo rigiendo, el
-        # incremento de siempre (P_AE - P_A) con sus dos componentes.
-        dP_h = dP * math.cos(inclinacion)
-        dP_v = dP * math.sin(inclinacion)
-        P_estatico, P_total = P_A, P_AE
+        if not usar_declarado:
+            try:
+                metodo_incremento = (METODO_EMPUJE_CUNA if usa_cuna
+                                     else METODO_EMPUJE_FORMULA)
+                K_AE_formula = (k_ae_mononobe_okabe(
+                    phi_grados=ang["phi"], i_grados=ang["i"],
+                    beta_grados=ang["beta"], delta_grados=ang["delta"], k_h=k_h,
+                    k_v=k_v) if dominio_MO else None)
+                rho_AE = None
+                if usa_cuna:
+                    # La cuña de tanteo bajo sismo (C11.6.5.3): con el relleno que
+                    # se quiebra en la plataforma tiene maximo aunque Mononobe-Okabe
+                    # con la pendiente equivalente quede fuera de su dominio; esa
+                    # formula, si es evaluable, se imprime al lado como contraste.
+                    P_unitario_E, rho_AE = cuna_de_tanteo(
+                        h=h, subida=relleno["subida_sobre_plano"],
+                        talud=relleno["talud"], phi_grados=ang["phi"],
+                        delta_grados=ang["delta"], gamma=1.0, k_h=k_h, k_v=k_v,
+                        beta_grados=ang["beta"],
+                        que=f"empuje sismico del cabezal de {ext}", id_punto=idp,
+                        remedio=("Lo que lo destraba es una decision del Propietario "
+                                 "-- admitir el desplazamiento del muro, "
+                                 f"'{CRITERIO_FACTOR_MURO}', que reduce k_h a la "
+                                 "mitad (11.6.5.2.2) y exige declarar tambien el "
+                                 "armado del muro que cede "
+                                 f"('{CRITERIO_REGIMEN_RESISTENCIA}' = 'cedente') --, "
+                                 "un relleno de mayor friccion o un analisis "
+                                 "externo" + PUERTA_EMPUJE_DECLARADO))
+                    K_AE = 2 * P_unitario_E / (h ** 2 * (1.0 - k_v))
+                elif not dominio_MO:
+                    # --- VE-5 (ficha T7B-06) --- Mononobe-Okabe no es aceptable
+                    # (11.6.5.3, ec. 11.6.5.3-1) y la fuente da la cuña de tanteo
+                    # para ese caso (C11.6.5.3, «may also be used for situations
+                    # when the M–O Method is not suitable»): con la superficie REAL
+                    # del relleno, o con la pendiente declarada como talud sin
+                    # quiebre si 'pendiente_relleno_trasdos_i' la declara. El
+                    # INCREMENTO sale de la misma cuña (P_AE - P_A de la cuña, no
+                    # menos el P_A de la formula: dos modelos no se restan) y el
+                    # estatico sigue con la formula de la regla. Hasta VE-5 se
+                    # detenia aqui.
+                    if relleno["i_declarado"]:
+                        sub_c = math.inf
+                        talud_c = (1.0 / math.tan(math.radians(ang["i"]))
+                                   if ang["i"] > TOL_UMBRAL_NORMATIVO else math.inf)
+                    else:
+                        sub_c, talud_c = relleno["subida_sobre_plano"], relleno["talud"]
+                    remedio_c = (
+                        f"Mononobe-Okabe tampoco es aceptable (AASHTO 11.6.5.3, ec. "
+                        f"11.6.5.3-1: phi = {ang['phi']:.2f} < i + psi = "
+                        f"{ang['i']:.2f} + {psi:.2f} grados). Lo que lo destraba es "
+                        "una decision del Propietario -- admitir el desplazamiento "
+                        f"del muro, '{CRITERIO_FACTOR_MURO}', que reduce k_h a la "
+                        "mitad --, un relleno de mayor friccion o un analisis "
+                        "externo; la cuña de archivo es "
+                        f"'{CRITERIO_REGLA_PENDIENTE}' = '{REGLA_CUNA_DE_TANTEO}'"
+                        + PUERTA_EMPUJE_DECLARADO)
+                    if math.isinf(talud_c):
+                        sub_c, talud_c = 0.0, relleno["talud"]
+                    P1_c, _ = cuna_de_tanteo(
+                        h=h, subida=sub_c, talud=talud_c, phi_grados=ang["phi"],
+                        delta_grados=ang["delta"], gamma=1.0,
+                        beta_grados=ang["beta"],
+                        que=f"empuje estatico (cuña) del cabezal de {ext}",
+                        id_punto=idp, remedio=remedio_c)
+                    P1_cE, rho_AE = cuna_de_tanteo(
+                        h=h, subida=sub_c, talud=talud_c, phi_grados=ang["phi"],
+                        delta_grados=ang["delta"], gamma=1.0, k_h=k_h, k_v=k_v,
+                        beta_grados=ang["beta"],
+                        que=f"empuje sismico del cabezal de {ext}", id_punto=idp,
+                        remedio=remedio_c)
+                    K_AE = (K_A + 2 * (P1_cE - P1_c) / h ** 2) / (1.0 - k_v)
+                    metodo_incremento = METODO_INCREMENTO_CUNA
+                else:
+                    K_AE = K_AE_formula
+                P_AE = empuje_activo_sismico_total(gamma_relleno=gamma, K_AE=K_AE,
+                                                   H=h, k_v=k_v)
+                dP = P_AE - P_A
+                if tratamiento_agua == AGUA_SE_MUEVE_CON_EL_SUELO:
+                    # El incremento con el peso TOTAL bajo el agua (C11.6.5.3): la
+                    # integral del peso total sobre el plano, Γ_t, en lugar de
+                    # gamma·h²/2; el estatico (suelo sumergido mas hidrostatica) no
+                    # cambia. En seco Γ_t = gamma·h²/2 y es la formula de arriba.
+                    gamma_t = (gamma * h_seco ** 2 / 2 + gamma * h_seco * h_w
+                               + gamma_sat * h_w ** 2 / 2)
+                    dP = (K_AE * (1.0 - k_v) - K_A) * gamma_t
+                    P_AE = P_A + dP
+            except MetodoNoEvaluableError:
+                # --- VE-7 (lote A, A5) --- la cuña sin maximo (psi >=
+                # phi, o el talud mas empinado que phi - psi): la fuente
+                # pide el GLE de A11.3.3. Con el P_AE declarado, ese es.
+                if declarado is None:
+                    raise
+                usar_declarado = True
         forma_no_cede = None
-        if regimen == REGIMEN_NO_CEDENTE:
-            forma_no_cede = _eleccion(CRITERIO_EMPUJE_SISMICO_NO_CEDE,
-                                      EMPUJES_SISMICOS_NO_CEDE)
-        if reposo_rige:
-            if forma_no_cede == NO_CEDE_MAYOR_DE_REPOSO_Y_TOTAL:
-                dP_h = max((P_A + dP) * math.cos(inclinacion) - P_0, 0.0)
-            dP_v = 0.0
-            dP = dP_h
-            P_estatico, P_total = P_0, P_0 + dP_h
-        if distribucion == INCREMENTO_DISTRIBUCION_ESTATICA and not cede:
-            raise DatoInvalidoError(
-                CRITERIO_DISTRIBUCION_INCREMENTO, valor=distribucion,
-                id_punto=idp,
-                motivo=("la distribucion estatica del incremento (11.6.5.3) "
-                        "es del muro que CEDE, y "
-                        f"'{CRITERIO_FACTOR_MURO}' no declara la "
-                        "reduccion por desplazamiento: para el muro que "
-                        "no cede C11.6.5.4 pide la resultante a h/2"))
-        if (distribucion == INCREMENTO_DISTRIBUCION_ESTATICA
-                or (distribucion == INCREMENTO_SEGUN_REGIMEN and cede)):
-            # --- VE-3.14, opcion 13; VE-3.15, derivada del regimen ---
-            # AASHTO 11.6.5.3: el empuje total con la distribucion del
-            # estatico, «but no less than H/3»: el incremento en el mayor
-            # del centroide estatico y h/3 (muro que cede). El centroide del
-            # diagrama ESTATICO con que se diseña el muro: el suelo (EH, a
-            # z_A) y la sobrecarga (LS, uniforme, a h/2), en componente
-            # horizontal; con la sobrecarga queda sobre h/3.
-            H_EH = P_A * math.cos(inclinacion)
-            H_LS = K_A * gamma * h_eq * h
-            z_estatico = ((H_EH * z_A + H_LS * h / 2) / (H_EH + H_LS)
-                          if H_EH + H_LS > 0 else z_A)
-            z_dP = max(z_estatico, h / LADOS_DEL_TRIANGULO)
-            fraccion = z_dP / h
-        elif distribucion == INCREMENTO_SEGUN_REGIMEN and dP > 0:
-            # --- VE-3.15, decision 13 --- Muro que NO cede: C11.6.5.4 pide
-            # considerar la resultante del empuje estatico mas el sismico
-            # en h/2 («a higher resultant location ... of h/2»), y se lee
-            # como piso: el incremento sube lo necesario para que la
-            # resultante no quede bajo h/2, y si la fraccion de archivo ya
-            # la deja mas alta, se conserva. (VE-5: con el estatico que
-            # rige, el reposo del muro que no cede si es el caso.)
-            z_h_medios = (P_total * h / 2 - P_estatico * z_A) / dP
-            if z_h_medios > z_dP:
-                z_dP = z_h_medios
-                fraccion = z_dP / h
-        if reposo_rige:
-            proc_h = (("max[P_AE·cos(delta + beta) - P_0, 0] (el mayor del "
-                       "reposo y del total)"
-                       if forma_no_cede == NO_CEDE_MAYOR_DE_REPOSO_Y_TOTAL
-                       else "(P_AE - P_A)·cos(delta + beta), sobre el "
-                            "reposo")
-                      + f" con k_h = 1.0·k_h0, a {fraccion:g}·h")
-            proc_v = ("sin componente vertical: sobre el reposo no se "
-                      "moviliza la friccion muro-relleno")
+        if usar_declarado:
+            (K_AE, K_AE_formula, rho_AE, P_AE, dP, dP_h, dP_v, z_dP,
+             fraccion, P_estatico, P_total, proc_h, proc_v) = \
+                _incremento_del_empuje_declarado(
+                    declarado, h=h, gamma=gamma, k_v=k_v, P_A=P_A, P_0=P_0,
+                    z_A=z_A, inclinacion=inclinacion,
+                    reposo_rige=reposo_rige, ang=ang, k_h=k_h,
+                    dominio_MO=dominio_MO, ext=ext, id_punto=idp)
+            metodo_incremento = METODO_INCREMENTO_DECLARADO
         else:
-            proc_h = f"(P_AE - P_A)·cos(delta + beta), a {fraccion:g}·h"
-            proc_v = "(P_AE - P_A)·sen(delta + beta)"
+            fraccion = ca.valor(CRITERIO_BRAZO_SISMICO)
+            if not (_finito(fraccion) and 0 < fraccion <= 1):
+                raise DatoInvalidoError(CRITERIO_BRAZO_SISMICO, valor=fraccion,
+                                        motivo="fraccion de h entre 0 y 1")
+            z_dP = fraccion * h
+            distribucion = _eleccion(CRITERIO_DISTRIBUCION_INCREMENTO,
+                                     (INCREMENTO_SEGUN_REGIMEN,
+                                      INCREMENTO_FRACCION,
+                                      INCREMENTO_DISTRIBUCION_ESTATICA))
+            # --- VE-5 --- con 'regimen_cabezal' = 'no_cedente' el muro no cede
+            # aunque la cadena declare la reduccion: manda el regimen.
+            cede = (regimen == REGIMEN_CEDENTE
+                    and ca.valor(CRITERIO_FACTOR_MURO)
+                    == FACTOR_MURO_CON_REDUCCION)
+            # --- VE-5 (ficha T7B-14) --- el empuje sismico del muro que no cede
+            # sobre el reposo: el reposo mas el incremento pseudoestatico, o el
+            # mayor del reposo y del total ('empuje_sismico_muro_que_no_cede'
+            # [A]). Todo horizontal, como el reposo. Con el activo rigiendo, el
+            # incremento de siempre (P_AE - P_A) con sus dos componentes.
+            dP_h = dP * math.cos(inclinacion)
+            dP_v = dP * math.sin(inclinacion)
+            P_estatico, P_total = P_A, P_AE
+            forma_no_cede = None
+            if regimen == REGIMEN_NO_CEDENTE:
+                forma_no_cede = _eleccion(CRITERIO_EMPUJE_SISMICO_NO_CEDE,
+                                          EMPUJES_SISMICOS_NO_CEDE)
+            if reposo_rige:
+                if forma_no_cede == NO_CEDE_MAYOR_DE_REPOSO_Y_TOTAL:
+                    dP_h = max((P_A + dP) * math.cos(inclinacion) - P_0, 0.0)
+                dP_v = 0.0
+                dP = dP_h
+                P_estatico, P_total = P_0, P_0 + dP_h
+            if distribucion == INCREMENTO_DISTRIBUCION_ESTATICA and not cede:
+                raise DatoInvalidoError(
+                    CRITERIO_DISTRIBUCION_INCREMENTO, valor=distribucion,
+                    id_punto=idp,
+                    motivo=("la distribucion estatica del incremento (11.6.5.3) "
+                            "es del muro que CEDE, y "
+                            f"'{CRITERIO_FACTOR_MURO}' no declara la "
+                            "reduccion por desplazamiento: para el muro que "
+                            "no cede C11.6.5.4 pide la resultante a h/2"))
+            if (distribucion == INCREMENTO_DISTRIBUCION_ESTATICA
+                    or (distribucion == INCREMENTO_SEGUN_REGIMEN and cede)):
+                # --- VE-3.14, opcion 13; VE-3.15, derivada del regimen ---
+                # AASHTO 11.6.5.3: el empuje total con la distribucion del
+                # estatico, «but no less than H/3»: el incremento en el mayor
+                # del centroide estatico y h/3 (muro que cede). El centroide del
+                # diagrama ESTATICO con que se diseña el muro: el suelo (EH, a
+                # z_A) y la sobrecarga (LS, uniforme, a h/2), en componente
+                # horizontal; con la sobrecarga queda sobre h/3.
+                H_EH = P_A * math.cos(inclinacion)
+                H_LS = K_A * gamma * h_eq * h
+                z_estatico = ((H_EH * z_A + H_LS * h / 2) / (H_EH + H_LS)
+                              if H_EH + H_LS > 0 else z_A)
+                z_dP = max(z_estatico, h / LADOS_DEL_TRIANGULO)
+                fraccion = z_dP / h
+            elif distribucion == INCREMENTO_SEGUN_REGIMEN and dP > 0:
+                # --- VE-3.15, decision 13 --- Muro que NO cede: C11.6.5.4 pide
+                # considerar la resultante del empuje estatico mas el sismico
+                # en h/2 («a higher resultant location ... of h/2»), y se lee
+                # como piso: el incremento sube lo necesario para que la
+                # resultante no quede bajo h/2, y si la fraccion de archivo ya
+                # la deja mas alta, se conserva. (VE-5: con el estatico que
+                # rige, el reposo del muro que no cede si es el caso.)
+                z_h_medios = (P_total * h / 2 - P_estatico * z_A) / dP
+                if z_h_medios > z_dP:
+                    z_dP = z_h_medios
+                    fraccion = z_dP / h
+            if reposo_rige:
+                proc_h = (("max[P_AE·cos(delta + beta) - P_0, 0] (el mayor del "
+                           "reposo y del total)"
+                           if forma_no_cede == NO_CEDE_MAYOR_DE_REPOSO_Y_TOTAL
+                           else "(P_AE - P_A)·cos(delta + beta), sobre el "
+                                "reposo")
+                          + f" con k_h = 1.0·k_h0, a {fraccion:g}·h")
+                proc_v = ("sin componente vertical: sobre el reposo no se "
+                          "moviliza la friccion muro-relleno")
+            else:
+                proc_h = f"(P_AE - P_A)·cos(delta + beta), a {fraccion:g}·h"
+                proc_v = "(P_AE - P_A)·sen(delta + beta)"
         cargas.append(CargaDeCabezal(
             C_EQ_H, CARGA_EQ, "incremento sismico del empuje, horizontal",
             H=dP_h, z=z_dP, sobre=ELEMENTO_PANTALLA, procedencia=proc_h))
@@ -7983,7 +8247,9 @@ def cargas_del_cabezal(entorno: EntornoDelCabezal,
                      empuje_sismico_no_cede=forma_no_cede,
                      fraccion_brazo=fraccion, psi=psi,
                      K_AE_formula=K_AE_formula, rho_AE=rho_AE,
-                     metodo_incremento=metodo_incremento)
+                     metodo_incremento=metodo_incremento,
+                     empuje_sismico_declarado=(declarado if usar_declarado
+                                               else None))
     return tuple(cargas), datos
 
 
@@ -9399,7 +9665,10 @@ def _pasos_de_cargas(entorno, condicion, cargas, combos, datos,
                 _m("i", ang["i"], "grados", rel["origen_i"]),
                 _m("delta", ang["delta"], "grados", ang["origen_delta"]),
                 _m("K_AE", datos["K_AE"], "-",
-                   ("EQUIVALENTE de la cuña critica pseudoestatica, "
+                   ("EQUIVALENTE del empuje DECLARADO, 2·P_AE/(gamma·h²·"
+                    "(1 - k_v)) (`" + DATO_EMPUJE_SISMICO + "`)"
+                    if datos.get("empuje_sismico_declarado") else
+                    "EQUIVALENTE de la cuña critica pseudoestatica, "
                     "2·P_AE/(gamma·h²·(1 - k_v)) (rho = "
                     f"{datos['rho_AE']:.2f} grados; AASHTO C11.6.5.3)"
                     if datos["metodo_empuje"] == METODO_EMPUJE_CUNA else
@@ -9428,7 +9697,9 @@ def _pasos_de_cargas(entorno, condicion, cargas, combos, datos,
                    "formulacion"),
                 _m("h", datos["h"], "m", "altura del plano de empuje"),
                 _m("f", datos["fraccion_brazo"], "-",
-                   f"criterio '{CRITERIO_BRAZO_SISMICO}' [C]"),
+                   ("de la altura de la resultante declarada"
+                    if datos.get("empuje_sismico_declarado") else
+                    f"criterio '{CRITERIO_BRAZO_SISMICO}' [C]")),
                 _m("W_w", datos["W_w"], "kN/m", "peso del muro"),
                 _m("W_s", datos["W_s"], "kN/m", "peso del relleno sobre el "
                    "talon"))
@@ -9449,9 +9720,11 @@ def _pasos_de_cargas(entorno, condicion, cargas, combos, datos,
                if datos.get("tratamiento_agua_sismo")
                == AGUA_SE_MUEVE_CON_EL_SUELO else ())
             + ((CITA_NIVEL_MEDIO, "AASHTO_LRFD_9.11.6.6#DRENAJE")
-               if datos["nivel_agua_sismo"] is not None else ()),
+               if datos["nivel_agua_sismo"] is not None else ())
+            + _citas_del_empuje_declarado(datos),
             nota_del_proyecto=(
-                _nota_del_agua_del_sismo_sin_drenaje(datos)
+                _nota_del_empuje_declarado(datos)
+                + _nota_del_agua_del_sismo_sin_drenaje(datos)
                 + (("Con agua en el plano de empuje (h_w = "
                   f"{datos['h_w']:.3f} m) el incremento sismico va con el "
                   "peso TOTAL del suelo bajo el agua: suelo y agua se mueven "
@@ -10101,7 +10374,8 @@ def datos_del_cabezal_del_punto(*, punto, cabezal: CabezalDelPunto,
                                 geometria, socavacion=None,
                                 suelo_del_punto: Optional[dict] = None,
                                 resultado=None,
-                                estabilidad_global: Optional[dict] = None
+                                estabilidad_global: Optional[dict] = None,
+                                empuje_sismico: Optional[dict] = None
                                 ) -> Tuple[EntornoDelCabezal, EntornoDelCabezal]:
     """
     Los dos `EntornoDelCabezal` de un punto (entrada y salida), leidos de lo
@@ -10180,7 +10454,9 @@ def datos_del_cabezal_del_punto(*, punto, cabezal: CabezalDelPunto,
             suelo=suelo_del_punto,
             cota_agua_diseno=agua_de.get(g.extremo),
             estabilidad_global=(estabilidad_global or {}).get(g.extremo)
-            or None))
+            or None,
+            # --- VE-7 (lote A, A5) --- el P_AE declarado de ESTE cabezal.
+            empuje_sismico=(empuje_sismico or {}).get(g.extremo) or None))
     return tuple(entornos)
 
 
@@ -10374,6 +10650,7 @@ def dimensionar_zapata_por_estabilidad(
         coherencia_embocadura: Optional[str] = None,
         motivo_sin_socavacion: str = "",
         suelo_del_punto: Optional[dict] = None,
+        empuje_sismico: Optional[dict] = None,
         anchos_previos: Optional[dict] = None,
         espesores_por_armado: Optional[dict] = None,
         puntas_previas: Optional[dict] = None
@@ -10438,7 +10715,7 @@ def dimensionar_zapata_por_estabilidad(
         entornos = datos_del_cabezal_del_punto(
             punto=punto, cabezal=final, geometria=geometria,
             socavacion=socavacion, suelo_del_punto=suelo_del_punto,
-            resultado=resultado)
+            resultado=resultado, empuje_sismico=empuje_sismico)
         evaluadas = _estabilidades_evaluables(entornos, candidatos)
         vivos = []
         for e, B in candidatos.items():
@@ -10488,7 +10765,7 @@ def dimensionar_zapata_por_estabilidad(
             entornos = datos_del_cabezal_del_punto(
                 punto=punto, cabezal=prueba, geometria=geometria,
                 socavacion=socavacion, suelo_del_punto=suelo_del_punto,
-                resultado=resultado)
+                resultado=resultado, empuje_sismico=empuje_sismico)
             evaluadas = _estabilidades_evaluables(entornos, candidatos)
             vivos = []
             for e, B in candidatos.items():
@@ -10698,6 +10975,7 @@ def dimensionar_peralte_por_armado(
         coherencia_embocadura: Optional[str] = None,
         motivo_sin_socavacion: str = "",
         suelo_del_punto: Optional[dict] = None,
+        empuje_sismico: Optional[dict] = None,
         anchos: Optional[dict] = None,
         puntas: Optional[dict] = None,
         no_factibles: Sequence[str] = ()
@@ -10732,7 +11010,7 @@ def dimensionar_peralte_por_armado(
         return {e.extremo: e for e in datos_del_cabezal_del_punto(
             punto=punto, cabezal=cab, geometria=geometria,
             socavacion=socavacion, suelo_del_punto=suelo_del_punto,
-            resultado=resultado)}
+            resultado=resultado, empuje_sismico=empuje_sismico)}
 
     entornos = entornos_de(cabezal)
     estado = {}
@@ -10795,6 +11073,7 @@ def dimensionar_peralte_por_armado(
             coherencia_embocadura=coherencia_embocadura,
             motivo_sin_socavacion=motivo_sin_socavacion,
             suelo_del_punto=suelo_del_punto, anchos_previos=anchos,
+            empuje_sismico=empuje_sismico,
             espesores_por_armado=espesores, puntas_previas=puntas)
         if dim is not None:
             redimensionados = {i.extremo for i in dim.intentos}
@@ -11057,6 +11336,7 @@ def dimensionar_pantalla_por_armado(
         coherencia_embocadura: Optional[str] = None,
         motivo_sin_socavacion: str = "",
         suelo_del_punto: Optional[dict] = None,
+        empuje_sismico: Optional[dict] = None,
         anchos: Optional[dict] = None, puntas: Optional[dict] = None,
         espesores_zapata: Optional[dict] = None
         ) -> Optional[DimensionadoDePantalla]:
@@ -11101,7 +11381,7 @@ def dimensionar_pantalla_por_armado(
         return {e.extremo: e for e in datos_del_cabezal_del_punto(
             punto=punto, cabezal=cab, geometria=geometria,
             socavacion=socavacion, suelo_del_punto=suelo_del_punto,
-            resultado=resultado)}
+            resultado=resultado, empuje_sismico=empuje_sismico)}
 
     entornos = entornos_de(cabezal)
     estado = {}

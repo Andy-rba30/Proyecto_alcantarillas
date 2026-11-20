@@ -8343,9 +8343,9 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   ancho ya no se dimensiona solo con la estática. Un ancho dimensionado sin alguna condición
   evaluada se rotula «dimensionada con la estabilidad evaluable (falta una condición)». El mensaje
   ya no recomienda declarar el drenaje cuando está declarado.
-- **Abierto:** con `relleno_muy_abierto` la condición sísmica sigue deteniéndose: la fórmula de
-  Westergaard no está en ninguna fuente del repositorio de normas, y no se inventa.
-- **Qué haría falta:** una fuente en el repositorio de normas para la fórmula de Westergaard, o la decisión de no detener el sismo con relleno muy abierto.
+- **Abierto:** con `relleno_muy_abierto` la condición sísmica se detiene salvo que el punto
+  declare el empuje con la hidrodinámica (VE7A-05): Westergaard no está en el repositorio de normas.
+- **Qué haría falta:** una fuente en el repositorio de normas para la fórmula de Westergaard.
 - **Dónde vive:** `src/modulos/M9_cabezal.py::cargas_del_cabezal`
 
 ## VE3-16 · Lo que la app dice de sí misma: alcance declarado y resumen de la CLI (VE-3.14, bloque 5; H-10, H-11)
@@ -8704,8 +8704,7 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
 - **Por qué no más:** la fuente da el GLE como método general y la cuña como el de mano;
   el GLE no se calcula a mano.
 - **Qué haría falta (C):** el GLE de A11.3.3 necesita un programa de estabilidad de
-  taludes, y la puerta para un P_AE declarado por punto (como E4/E5 en VE-4a) no se abrió:
-  no es barata (dato nuevo por punto y cabezal, validación y contrato). La cuña sobre la CARA de la
+  taludes; la puerta del P_AE declarado por punto se abrió en VE7A-05. La cuña sobre la CARA de la
   pantalla (`carga_pantalla_cabezal` = `cuna_sobre_la_pantalla`) sigue vertical: con
   talón el trasdós de la regla es vertical, y un β declarado con talón no la inclina.
 - **Dónde vive:** `src/modulos/M9_cabezal.py::cuna_de_tanteo`
@@ -9251,3 +9250,21 @@ el test; lo que la sesión tuvo que decidir sin dictamen va rotulado «pendiente
 - **Qué haría falta:** decidir si el ensamble aplica k_v a los pesos (cambia E1–E3 y sus dorados
   con k_v ≠ 0; hoy k_v = 0 es el de archivo, prescrito).
 - **Dónde vive:** `src/modulos/M9_cabezal.py::_verificar_cuerpo_bajo_sismo`
+
+## VE7A-05 · El empuje sísmico declarado por punto y cabezal donde el programa no lo calcula (VE5M9-02, VE3-15)
+
+- **Cerrado:** clave `empuje_sismico_declarado` (sólo por punto; por cabezal `P_AE_kn_m`,
+  `altura_aplicacion_m`, `incluye_hidrodinamica` y la traza `documento`, `fecha`, `metodo`),
+  validada por `M9.validar_empuje_sismico_declarado`, patrón de VE4A-01. `cargas_del_cabezal` la
+  consume SÓLO donde levantaba `MetodoNoEvaluableError`: la cuña sin máximo (ψ ≥ φ: el GLE de
+  A11.3.3) y el relleno muy abierto con agua, que exige `incluye_hidrodinamica` = true (si no,
+  `DatoInvalidoError`). Sin declararla, el bloqueo nombra la clave. Paso 9.2.4 con la traza y las
+  citas `AASHTO_LRFD_9.3.11.5.8.1#CUNA` (la frase del GLE) y `C11.6.5.3#AGUA_ABIERTO`.
+- **Decisión del consultor Fable (triaje VE-7, 2026-11-20):** la puerta y dónde se consume.
+  **Pendientes de revisión Fable (lado seguro):** el P_AE es horizontal y sin vertical; no baja
+  del estático (dP ≥ 0); la altura del incremento entre h/3 y h; un k_h distinto del de la
+  estabilidad (el 1.0·k_h0 del armado, si difiere) no lo usa; K_AE equivalente para el reparto.
+  Se añadió `EntornoDelCabezal.empuje_sismico` en `src/modelos.py` (fuera del lote).
+- **Abierto:** la cuña sobre la cara de la pantalla del armado no lo usa (sigue detenida).
+- **Qué haría falta:** la revisión de Fable de las cinco decisiones; el GLE en el programa.
+- **Dónde vive:** `src/modulos/M9_cabezal.py::validar_empuje_sismico_declarado`

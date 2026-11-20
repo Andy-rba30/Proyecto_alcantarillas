@@ -8170,6 +8170,12 @@ class EntornoDelCabezal:
     # "sismico": FS}, "E5": {...}, "documento", "fecha", "metodo" y, si
     # viene, "programa"}. None (o vacio): E4 y E5 siguen diferidas.
     estabilidad_global: Optional[dict] = None
+    # --- VE-7 (lote A, A5) --- El empuje sismico DECLARADO de ESTE cabezal,
+    # del dato externo `empuje_sismico_declarado` validado
+    # (`M9.validar_empuje_sismico_declarado`): {"P_AE_kn_m",
+    # "altura_aplicacion_m", "incluye_hidrodinamica", "documento", "fecha",
+    # "metodo"}. Solo se consume donde el programa no calcula el empuje.
+    empuje_sismico: Optional[dict] = None
 
 
 @dataclass(frozen=True)
