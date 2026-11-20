@@ -168,3 +168,24 @@ def test_sin_bloqueo_que_lleve_a_7a_el_motivo_es_el_de_m12(juego_expediente):
         _bloqueo(servicio.FASE_LICUEFACCION, "evaluacion de licuefaccion"),
         _bloqueo(servicio.FASE_ESTRUCTURAL, "(prueba)")])
     assert motivo == _DEFECTO_SIN_TAMIZADO
+
+
+# --- 2 (a): el renglon bajo agua avisa que la partida la fija el Supervisor -
+
+def test_todo_renglon_bajo_agua_lleva_el_aviso_y_el_seco_no(juego_expediente):
+    renglones = [r for p in juego_expediente.puntos if p.metrado
+                 for r in p.metrado.renglones if r.rubro == M12.RUBRO_EXCAVACION]
+    assert renglones
+    for r in renglones:
+        bajo_agua = r.partida in ("501.B", "501.D")
+        assert (M12.AVISO_PARTIDA_BAJO_AGUA in r.avisos) is bajo_agua, r.elemento
+    # La pieza directa, con volumen bajo agua seguro.
+    salida = M12._renglones_por_agua(
+        punto=None, en_roca=False, elemento="zanja", V=2.0, V_agua=1.0,
+        paso_=renglones[0].paso)
+    por_partida = {r.partida: r for r in salida}
+    assert M12.AVISO_PARTIDA_BAJO_AGUA in por_partida["501.D"].avisos
+    assert M12.AVISO_PARTIDA_BAJO_AGUA not in por_partida["501.C"].avisos
+    for necesario in ("NF_profundidad_m", "Supervisor", "501.09", "501.01",
+                      "886"):
+        assert necesario in M12.AVISO_PARTIDA_BAJO_AGUA, necesario
