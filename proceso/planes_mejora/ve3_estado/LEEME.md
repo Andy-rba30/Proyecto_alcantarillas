@@ -3,6 +3,23 @@
 Material de proceso, no del entregable. Lo mantiene la sesión orquestadora y se actualiza
 cada vez que se integra algo. Fecha de esta versión: 2026-11-20.
 
+> **CIERRE DE VE-7 EN CURSO (2026-11-20, ~20:00 UTC, sesión `claude/optimistic-carson-ag7mwp`).**
+> Rama de trabajo: `claude/optimistic-carson-ag7mwp` = `claude/ve7-fix-suite` (todo VE-7: alero,
+> lotes A/B/C, peralte y arreglos de suite; 80 commits sobre `claude/laughing-euler-ybme10`, 0
+> por detrás) + A11. Revisadas todas las ramas: lo no contenido está declarado superado.
+> - **Hecho:** A11 — `NORMAS_DIR` enlazado (clon de `Andy-rba30/Normas` en
+>   `/home/user/andy-rba30/normas`), `E060.22.10.2.2#VOLADIZO` firmada contra la pág. 195 y cita
+>   principal de C7; dictamen Fable APROBADO CON CAMBIOS, aplicados. Los 158 tests `-m pdf`
+>   pasan con el PDF. Línea base, validación hidrológica/externa/conducto/cabezal y bloques de
+>   la guía regenerados: sin cambios.
+> - **En curso:** regeneración de `validacion_integral` y `sensibilidad`; suite base (sin
+>   NORMAS_DIR) con 9 fallos vistos al 63 %, por diagnosticar. Conocido: 6 de
+>   `test_manifiesto_citas` caen hasta regenerar el manifiesto (630 citas, decía 629).
+> - **Falta:** corregir la suite (dudas a Fable), suite completa con NORMAS_DIR en worktree
+>   limpio, sellos (índice y manifiesto), bitácora, este LEEME, fast-forward de
+>   `claude/laughing-euler-ybme10` y `main`, etiqueta `respaldo-2026-11-20`, limpieza de ramas.
+> - **Si la sesión se corta:** retomar desde `claude/optimistic-carson-ag7mwp`.
+
 > **VE-7 EN CURSO (2026-11-20, noche).** Decisión del dueño: cerrar TODO lo de código, con las
 > decisiones a cargo de Fable. Triaje de Fable de todo lo abierto (censo + «Abierto» de las fichas
 > VE4–VE6 + sus recomendaciones): 25 ítems a implementar en tres lotes y el resto cerrado como
