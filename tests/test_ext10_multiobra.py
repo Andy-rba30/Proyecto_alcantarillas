@@ -13,8 +13,9 @@ para que el rojo sea un fallo del test y no un error de coleccion.
 Que se vigila, y por que cada cosa
 ----------------------------------
 (a) `DatoSitio.nivel`, medido por corridas y en las dos direcciones, como
-    `Criterio.nivel` (S21): la corrida de perfil no lee ningun [S] y la de
-    expediente solo `PGA_roca_B`. Lo que ninguna corrida invoca se censa,
+    `Criterio.nivel` (S21): la corrida de perfil lee solo `region_natural`
+    (desde VE-5, la rama de selva alta del TMC) y la de expediente ademas
+    `PGA_roca_B`. Lo que ninguna corrida invoca se censa,
     para que el grupo no crezca en silencio.
 (b) `datos_sitio.establecer_dato_dinamico`: la UNICA puerta por la que un [S]
     de otra obra entra al proceso. Pasa por `_verificar_dato` (via
@@ -208,8 +209,9 @@ def test_a_el_nivel_se_mide_en_las_dos_direcciones():
     usados_perfil = set(perfil.contexto.datos_usados)
     usados_expediente = set(expediente.contexto.datos_usados)
     # El radio medido por el dictamen, comprobado y no copiado.
-    assert usados_perfil == set()
-    assert usados_expediente == {"PGA_roca_B"}
+    # VE-5 (catlic, T4-06): la rama de selva alta del TMC lee la region.
+    assert usados_perfil == {"region_natural"}
+    assert usados_expediente == {"PGA_roca_B", "region_natural"}
     # marcado PERFIL -> la corrida de perfil TIENE que invocarlo, salvo lo que
     # ninguna corrida puede invocar (sin consumidor: nivel argumentado).
     for clave, dato in ds.DATOS_SITIO.items():

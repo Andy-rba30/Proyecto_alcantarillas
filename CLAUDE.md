@@ -83,7 +83,8 @@ nombre de `--proyecto`; comparar dos rótulos por texto se probó y se refutó,
 ficha EXT-10-03—; (4) la ventana normativa sigue sin declarar
 [S] (regla R4: el camino es la sesión, no un campo de formulario). Y todo
 `DatoSitio` lleva `nivel`, como los criterios: medido por corridas, la de
-perfil no lee ningún [S] y la de expediente sólo `PGA_roca_B`
+perfil sólo lee `region_natural` (desde VE-5-catlic, la rama de selva alta
+del TMC) y la de expediente además `PGA_roca_B`
 (`tests/test_ext10_multiobra.py`).
 
 Tabla y elección se separan siempre: los valores de una tabla normativa son

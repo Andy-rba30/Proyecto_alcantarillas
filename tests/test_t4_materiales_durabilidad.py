@@ -1143,18 +1143,17 @@ def test_los_ensayos_son_opcionales_y_no_son_claves_que_una_etapa_exija(tmp_path
 # INF-5.1.16 - la constante de selva alta se conserva sin consumidor
 # ===========================================================================
 
-def test_el_diametro_minimo_de_selva_alta_sigue_sin_consumidor_y_esta_censado():
+def test_el_diametro_minimo_de_selva_alta_lo_lee_solo_M2():
     """
-    La hoja de ruta §3.1 manda «programar la rama y declararla inactiva». La
-    rama NO existe: ningun modulo de calculo nombra la constante. No se le
-    inventa consumidor --el corredor no es de selva alta y ningun dato de
-    entrada dice en que region natural esta la obra--; se conserva como
-    constante de referencia y la decision esta en la ficha T4-06 de
-    `docs/decisiones_diferidas.md`.
+    La hoja de ruta §3.1 manda «programar la rama y declararla inactiva».
+    Hasta VE-5 la rama no existia porque ningun dato decia en que region
+    natural esta la obra; desde VE-5 (lote catlic, ficha T4-06) el [S]
+    'region_natural' lo dice, y la constante la lee SOLO
+    `M2.piso_de_selva_alta`. Ya no es constante de referencia.
     """
     nombre = "DIAMETRO_MIN_TMC_SELVA_ALTA_RECOMENDADO"
     assert hasattr(CN, nombre)
-    assert nombre in CN.CONSTANTES_DE_REFERENCIA
+    assert nombre not in CN.CONSTANTES_DE_REFERENCIA
     consumidores = []
     for ruta in sorted((RAIZ / "src" / "modulos").glob("*.py")) + [
             RAIZ / "src" / "servicio.py", RAIZ / "cli.py"]:
@@ -1164,7 +1163,7 @@ def test_el_diametro_minimo_de_selva_alta_sigue_sin_consumidor_y_esta_censado():
                     or getattr(n, "attr", None) == nombre)
                for n in ast.walk(arbol)):
             consumidores.append(ruta.name)
-    assert consumidores == []
+    assert consumidores == ["M2_material.py"]
     fichas = (RAIZ / "docs" / "decisiones_diferidas.md").read_text(encoding="utf-8")
     assert nombre in fichas and "INF-5.1.16" in fichas
 

@@ -1425,6 +1425,9 @@ _META_SITIO: Dict[str, _Meta] = {
         nota="Declarada en el triage de T2: `COND-CLASE-DE-VIA` y "
              "`COND-DMIN-ALTO-VOLUMEN` resolvian a esta clave y la clave no "
              "existia en ningun archivo."),
+    # VE-5 (catlic, T4-06): decide si rige la recomendacion de TMC de 48"
+    # del num. 4.1.1.3.7 a); la lee `M2.siguiente_diametro`.
+    "region_natural": _Meta(unidad="-"),
     "existe_informacion_secundaria_tramo": _Meta(
         unidad="-",
         fase_declarada="Fase 1 - Datos de entrada (num. 4.2 del Manual de "

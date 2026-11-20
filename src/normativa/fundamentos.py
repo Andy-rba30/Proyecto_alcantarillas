@@ -208,6 +208,30 @@ D_MIN = _fundamento(
 )
 
 
+# --- VE-5 (lote catlic, ficha T4-06) --- la rama de selva alta. Verbo
+# RECOMIENDA porque la cita lo es («Se recomienda utilizar...»): la memoria
+# no puede decir que la norma obliga a un TMC de 48" en selva alta.
+SELVA_ALTA_TMC = _fundamento(
+    id="F3.SELVA_ALTA_TMC",
+    fase=F3,
+    que_paso="Diametro minimo del TMC en zonas de selva alta (Ф 48\")",
+    por_que=(
+        "En los cauces tipicos de la selva alta --encajonados, de pendiente "
+        "media a fuerte, con taludes granulares erosionables-- el flujo es de "
+        "barros, con caudal solido por lo menos dos veces el liquido, y un "
+        "conducto pequeño se obstruye. Por eso el Manual recomienda, en esas "
+        "zonas, alcantarillas TMC de por lo menos 48 pulgadas. Es una "
+        "recomendacion y no una exigencia; la hoja de ruta manda programar la "
+        "rama y el proyecto la aplica como piso del catalogo del TMC."),
+    verbo=Verbo.RECOMIENDA,
+    citas=("MC_HHD.4.1.1.3.7a",),
+    que_pasa_si_no_se_hace=(
+        "En un corredor de selva alta el catalogo ofreceria un TMC de 0.90 m "
+        "en cauces de flujo de barros, contra la recomendacion expresa del "
+        "Manual, y la memoria no diria que la recomendacion existe."),
+)
+
+
 # ===========================================================================
 # Fase 4 - Dimensionamiento hidraulico
 # ===========================================================================

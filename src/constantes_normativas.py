@@ -4339,8 +4339,9 @@ CONSTANTES_DE_REFERENCIA = (
                                  # 'diametros_normalizados' (D_INICIO). Ver
                                  # DIAMETRO_MIN_AMBITO: su numeral lo
                                  # condiciona y exceptua a los cruces de canal
-    "DIAMETRO_MIN_TMC_SELVA_ALTA_RECOMENDADO",   # recomendacion, solo TMC y
-                                 # solo selva alta: no aplica en costa
+    # 'DIAMETRO_MIN_TMC_SELVA_ALTA_RECOMENDADO' SALIO DE ESTA LISTA EN VE-5
+    # (catlic, ficha T4-06): la lee `M2.piso_de_selva_alta` con el [S]
+    # 'region_natural'. En la costa la rama no actua; existe.
     "LONG_MAX_CUNETA",           # Fase 10 recibe L_hidraulico declarado
     "CBR_MIN_SUBRASANTE",        # requisito del paquete estructural vial
     "COMPACTACION_CORONA",       # requisitos de ejecucion (EG-2013), sin

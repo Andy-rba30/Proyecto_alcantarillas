@@ -132,6 +132,17 @@ FORMAS_DE_SITIO = (FORMA_INT, FORMA_FLOAT, FORMA_STR, FORMA_CATEGORIA)
 SI = "si"
 NO = "no"
 
+# Las regiones naturales del territorio, para el dato 'region_natural' (VE-5,
+# ficha T4-06). Solo SELVA ALTA tiene consecuencia en el calculo: es la que
+# nombra el num. 4.1.1.3.7 a) del Manual de Hidrologia. Las otras tres son el
+# conjunto cerrado que permite declarar cualquier obra del pais.
+REGION_COSTA = "costa"
+REGION_SIERRA = "sierra"
+REGION_SELVA_ALTA = "selva_alta"
+REGION_SELVA_BAJA = "selva_baja"
+REGIONES_NATURALES = (REGION_COSTA, REGION_SIERRA, REGION_SELVA_ALTA,
+                      REGION_SELVA_BAJA)
+
 
 @dataclass(frozen=True)
 class DatoSitio:
@@ -850,6 +861,61 @@ DATOS_SITIO: Dict[str, DatoSitio] = {
             trazabilidad_exigida="el IMDA del estudio de demanda, la clase "
                                  "DG-2018 que le corresponde y la lamina de "
                                  "la seccion tipo que la materializa",
+        ),
+    ),
+
+    # --- VE-5 (lote catlic, ficha T4-06) --- LA ENTRADA QUE LA RAMA DE SELVA
+    # ALTA NECESITABA PRIMERO. Hasta VE-5 la constante
+    # `DIAMETRO_MIN_TMC_SELVA_ALTA_RECOMENDADO` no tenia consumidor porque
+    # ningun dato decia en que region natural esta la obra (ficha T4-06):
+    # activarla por defecto habria sido inventar el dato. Es un HECHO de la
+    # ubicacion --- cambia al mover la obra y no al cambiar de proyectista ---,
+    # y por eso [S] de corredor y no criterio.
+    "region_natural": DatoSitio(
+        valor=REGION_COSTA,
+        concepto="Region natural del corredor, en el sentido con que el "
+                 "Manual de Hidrologia nombra las «zonas de selva alta» del "
+                 "num. 4.1.1.3.7 a): decide si la recomendacion de diametro "
+                 "minimo de TMC de ese numeral alcanza a esta obra",
+        procedimiento="Ubicacion del corredor sobre la region natural del "
+                      "territorio (costa, sierra, selva alta, selva baja). El "
+                      "Manual NOMBRA la selva alta y describe sus cauces "
+                      "tipicos (cuatro caracteristicas fisicas y "
+                      "geomorfologicas, pag. impresa 78) pero no la "
+                      "delimita: la lectura es de gabinete, sobre la "
+                      "ubicacion de la obra",
+        fuente="Manual de Hidrologia, Hidraulica y Drenaje (MTC), num. "
+               "4.1.1.3.7 a), pag. impresa 78-79 (PDF 81-82), cita "
+               "MC_HHD.4.1.1.3.7a: «En zonas de selva alta en donde las "
+               "características físicas y geomorfológicos (típicas) sean:» "
+               "y «Se recomienda utilizar, en zonas de selva alta, ... como "
+               "diámetro mínimo alcantarillas TMC Ф 48”». La hoja de ruta "
+               "v8, Sec. 3.1, escribe para este corredor «no aplica en costa»",
+        trazabilidad=(
+            "Distrito de La Union (Piura), llanura del Bajo Piura: el corredor "
+            "esta en la COSTA, que es la region que la hoja de ruta (Sec. 3.1, "
+            "«no aplica en costa») y la nota de "
+            "constantes_normativas.DIAMETRO_MIN_TMC_SELVA_ALTA_CONDICIONES "
+            "le asignan. La lectura es reproducible hasta el distrito; el "
+            "expediente no registra coordenadas. Con COSTA la rama de selva "
+            "alta de `M2.siguiente_diametro` queda INACTIVA, que es lo que la "
+            "hoja de ruta pide («programar la rama y declararla inactiva»)"),
+        ambito=AMBITO_CORREDOR,
+        # nivel: MEDIDO, no argumentado: lo invoca la corrida `--alcance
+        #        perfil` cuando el TMC es candidato (`M2.siguiente_diametro`,
+        #        primer escalon de la serie). tests/test_ext10_multiobra.py
+        #        lo contrasta en las dos direcciones.
+        nivel=NIVEL_PERFIL,
+        forma=FORMA_CATEGORIA,
+        opciones=REGIONES_NATURALES,
+        resolucion=DeEnsayo(
+            ensayo="ubicacion de gabinete del corredor sobre la region "
+                   "natural del territorio",
+            trazabilidad_exigida="el distrito o las coordenadas del "
+                                 "corredor y la region natural leida; en "
+                                 "SELVA ALTA, ademas, la descripcion de los "
+                                 "cauces frente a las cuatro caracteristicas "
+                                 "del num. 4.1.1.3.7 a)",
         ),
     ),
 

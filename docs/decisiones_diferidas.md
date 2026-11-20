@@ -3852,6 +3852,8 @@ lo que la cadena suponía y la fuente no sostiene.
 
 ## T4-06 · `DIAMETRO_MIN_TMC_SELVA_ALTA_RECOMENDADO` se conserva sin consumidor: la «rama inactiva» de la hoja de ruta no existe y no se le inventa una
 
+- **Cerrado en VE-5 (lote catlic): ver la ficha VE5-CAT-01.** Lo que sigue es el texto de T-4.
+
 - **Qué se difirió:** programar la rama de selva alta que la hoja de ruta §3.1 pide
   («programar la rama y declararla inactiva»). `INF-5.1.16`.
 - **Por qué:** comprobado por AST sobre `src/modulos/`, `src/servicio.py` y
@@ -8396,3 +8398,26 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   sueltas `verificar_estabilidad_global` / `verificar_talud` quedan como estaban: el método
   viaja ahora en la traza del dato declarado.
 - **Dónde vive:** `src/modulos/M9_cabezal.py::validar_estabilidad_global_declarada`
+
+## VE5-CAT-01 · La rama de selva alta del TMC: [S] `region_natural` y la recomendación como piso del catálogo (cierre de T4-06)
+
+- **Cerrado (VE-5, lote catlic, 2026-11-20):** la entrada que faltaba es el [S] de corredor
+  `region_natural` (categoría costa / sierra / selva_alta / selva_baja; La Unión = `costa`,
+  nivel perfil, medido). `M2.piso_de_selva_alta` lo lee siempre que el material es TMC; con
+  `selva_alta`, `M2.siguiente_diametro` arranca la serie del TMC en el primer escalón que no
+  baja de Ф 48" y `M2.catalogo` emite el paso `F3.SELVA_ALTA_TMC` con verbo **RECOMIENDA**
+  (la cita `MC_HHD.4.1.1.3.7a` es RECOMENDACION). En la costa la rama no actúa. La constante
+  salió de `CONSTANTES_DE_REFERENCIA`.
+- **Por qué así (decisión pendiente de Fable, tomada del lado seguro):** (1) la recomendación
+  se aplica como piso del catálogo y no como aviso, porque la hoja de ruta §3.1 manda
+  programar la rama y el piso es el lado seguro frente al flujo de barros; (2) el designado
+  de 1200 mm de AASHTO M 36 queda por debajo de 48 in = 1219.2 mm y no se toma por el
+  «Ф 48”» (ninguna fuente del repositorio los equipara para el acero corrugado; la
+  equivalencia de M 170M Table 6 es del concreto): el primer escalón es 1.35 m; (3) las
+  cuatro características del párrafo anterior se presumen para todo cruce de un corredor
+  declarado de selva alta.
+- **Qué haría falta:** que Fable o el dueño confirme (1) y (2) o elija aviso sin piso o
+  1200 mm por equivalencia [N→]; pasar la condición `COND-SELVA-ALTA` del registro de
+  `PorExpresion` a `PorDatoDeSitio("region_natural")` (toca la ventana normativa y los
+  manifiestos generados).
+- **Dónde vive:** `src/modulos/M2_material.py::piso_de_selva_alta`

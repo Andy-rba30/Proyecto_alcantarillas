@@ -360,6 +360,7 @@ lectura (`CLAUDE.md`, «Taxonomía de etiquetas»).
 | `carriles_por_sentido` | Trazo | De la sección típica; fija el número de calicatas (Manual de Suelos, Cuadro 4.1) |
 | `clase_de_via` | Trazo (estudio de demanda, IMDA) | Clase de carretera; elige fila del Cuadro 4.1 y de la Tabla 304.09 del DG-2018 |
 | `existe_informacion_secundaria_tramo` | EMS | Si hay estudios geotécnicos previos en el tramo (Manual de Suelos, num. 4.2) |
+| `region_natural` | Ubicación de gabinete (VE-5) | Costa, sierra, selva alta o selva baja; en selva alta el catálogo del TMC arranca en Ф 48" (Manual de Hidrología, num. 4.1.1.3.7 a), recomendación) |
 
 ### 4.2 Pendientes de ensayo — en `src/criterios_adoptados.py`, con `trazabilidad`
 
