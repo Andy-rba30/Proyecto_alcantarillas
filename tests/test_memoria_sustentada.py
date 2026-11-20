@@ -593,6 +593,11 @@ def test_todo_fundamento_declarado_lo_usa_algun_paso(informe):
         # esta corrida no tiene ningun punto asi. Que se emiten lo mide
         # tests/test_ve5_m6_caida.py, pieza a pieza y por la Fase 6.
         "F6.CAIDA", "F6.CAIDA_ESTANQUE",
+        # --- VE-5 (lote m6) --- EL TW SOBRE LA CLAVE por la Figura 10.3:
+        # esta corrida no tiene ningun punto con el receptor sobre la clave.
+        # Lo mide tests/test_ve5_m6_figura_10_3.py, pieza a pieza y por la
+        # Fase 6.
+        "F6.TW_ALTO",
         # LOS CINCO DEL CAJON, Y SU RAZON CAMBIO EN C5. Hasta C4 estaban aqui
         # porque EL PASO QUE LOS EMITIRIA NO EXISTIA. Ahora existe: los cinco
         # los emite `M2_material._pasos_del_marco` cuando el catalogo resuelve

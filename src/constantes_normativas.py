@@ -4749,6 +4749,28 @@ HEC14_POZA_TALUD_LATERAL_Z = 2.0
 HEC14_POZA_ESPESOR_TALUD_EN_D50 = 3.0
 # Paso 5 (pag. 10-5): «If TW/yo ≤ 0.75, no additional riprap is needed».
 HEC14_POZA_TW_SOBRE_YO_SIN_PROTECCION_ADICIONAL = 0.75
+# Figura 10.3 «Distribution of Centerline Velocity for Flow from Submerged
+# Outlets» (num. 10.1.3, pag. impresa 10-4, PDF 205), la CURVA DE DISEÑO:
+# (L/De, VL/Vo) en escala log-log. LEIDA POR IMAGEN (render a 4x, trazado de
+# la curva gruesa entre las reticulas) salvo los cuatro puntos que la propia
+# fuente imprime en sus ejemplos resueltos (pags. 10-8 y 10-11: 10 -> 0.59,
+# 15 -> 0.42, 20 -> 0.30, 21 -> 0.28), que se toman tal cual. La lectura por
+# imagen dio 0.585, 0.407, 0.30 y 0.286 en esos cuatro: la tolerancia de la
+# lectura es de 0.015 en VL/Vo. De L/De = 20 en adelante la curva es una
+# recta de pendiente -1 (VL/Vo = 6/(L/De)) hasta su ultimo punto, 0.10 en
+# L/De = 60; mas alla la figura no da nada. La metodologia, en la nota de la
+# cita HEC14.10.1.3#FIGURA_10_3.
+HEC14_FIGURA_10_3: Tuple[Tuple[float, float], ...] = (
+    (1.0, 1.0), (2.0, 0.98), (3.0, 0.945), (4.0, 0.907), (5.0, 0.864),
+    (6.0, 0.814), (7.0, 0.762), (8.0, 0.711), (9.0, 0.644), (10.0, 0.59),
+    (12.0, 0.50), (15.0, 0.42), (20.0, 0.30), (21.0, 0.28), (30.0, 0.20),
+    (60.0, 0.10),
+)
+# Ec. (10.6) (Searcy, 1967; Sec. 10.3, pag. impresa 10-19):
+#   D50 = 0.692/(S - 1)·V^2/(2g)
+# La piedra «recommended for use downstream of energy dissipators», y la que
+# la Sec. 10.2 manda usar con la Figura 10.3 cuando el TW supera 1.0·D.
+HEC14_EC_10_6_COEFICIENTE = 0.692
 
 # --- VE-5 (lote m6) --- HEC-14 Cap. 11, ESTRUCTURA DE CAIDA RECTA (num.
 # 11.1.3, pags. impresas 11-6 a 11-8, PDF 227 a 229; las Ec. 11.5 a 11.16 por

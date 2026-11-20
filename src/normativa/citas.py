@@ -8900,9 +8900,12 @@ HEC14_10_2_TW_ALTO = _cita(
     nota=("Con el TW sobre la clave la Ec. (10.4) queda FUERA de su rango "
           "aceptable y la fuente manda a la Figura 10.3 (atenuacion de la "
           "velocidad aguas abajo) y a la Sec. 10.3 para dimensionar la "
-          "piedra. La Figura 10.3 es una familia de curvas que este "
-          "programa no tiene digitalizada: ese caso sale como metodo no "
-          "evaluable, no con la ecuacion extrapolada."),
+          "piedra. Sigue: «The apron length is determined based on the "
+          "allowable velocity and the location at which it occurs based on "
+          "Figure 10.3.» Desde VE-5 (lote m6) la Figura 10.3 esta "
+          "digitalizada (cita HEC14.10.1.3#FIGURA_10_3) y el caso se "
+          "dimensiona (`M6.proteccion_tw_alto_hec14`); no con la Ec. (10.4) "
+          "extrapolada."),
 )
 
 HEC14_10_2_EC_10_5 = _cita(
@@ -16270,6 +16273,81 @@ HEC14_11_ANCHO = _cita(
                  "que lo abra",
                  "la condicion Wo > 1.5·yc se comprueba con ese ancho y "
                  "rechaza el tubo estrecho para un caudal grande")),
+)
+
+HEC14_10_1_3_FIGURA = _cita(
+    id="HEC14.10.1.3#FIGURA_10_3",
+    fuente_id="HEC14",
+    numeral="10.1.3",
+    titulo_numeral="10.1.3 High Tailwater",
+    pagina_impresa="10-4",
+    pagina_pdf=205,
+    texto_literal=Verbatim(
+        texto=("In addition, under high tailwater conditions, it is "
+               "appropriate to estimate the attenuation of the flow velocity "
+               "downstream of the culvert outlet using Figure 10.3."),
+        pagina_pdf=205),
+    caracter=Caracter.RECOMENDACION,
+    metodo=AMBOS,
+    sesion=VE4G,
+    nota=("Sigue: «This attenuation can be used to determine the extent of "
+          "riprap protection required. HEC 11 (Brown and Clyde, 1989) or the "
+          "method provided in Section 10.3 can be used for sizing riprap.» "
+          "LA FIGURA (pag. 10-4) se leyo por imagen: render a 4x, reticula "
+          "log-log localizada por sus lineas (1.0 a 0.1 en las ordenadas, 1 "
+          "a 100 en las abscisas) y la curva de diseño, la gruesa, trazada "
+          "columna a columna; las dos rectas de los orificios no se usan. "
+          "Los cuatro puntos que la fuente imprime en sus ejemplos (L/De = "
+          "10, 15, 20, 21 -> 0.59, 0.42, 0.30, 0.28) se toman tal cual; la "
+          "lectura dio 0.585, 0.407, 0.300 y 0.286 (tolerancia 0.015). "
+          "Tabla en `constantes_normativas.HEC14_FIGURA_10_3`; se interpola "
+          "en log-log y no se extrapola mas alla de L/De = 60. De = "
+          "(4·A/pi)^0.5 con A el area de borde (nota de la figura: «convert "
+          "wetted cross sectional area to an equivalent circular area»)."),
+)
+
+HEC14_10_3_EC_10_6 = _cita(
+    id="HEC14.10.3#EC_10_6",
+    fuente_id="HEC14",
+    numeral="10.3",
+    titulo_numeral="10.3 RIPRAP APRONS AFTER ENERGY DISSIPATORS",
+    pagina_impresa="10-19",
+    pagina_pdf=220,
+    texto_literal=Verbatim(
+        texto=("Equation 10.6 provides the riprap size recommended for use "
+               "downstream of energy dissipators."),
+        pagina_pdf=220),
+    caracter=Caracter.RECOMENDACION,
+    metodo=AMBOS,
+    sesion=VE4G,
+    nota=("La ecuacion, por imagen: «D50 = 0.692/(S - 1)·(V²/2g) (10.6)», "
+          "de Searcy (1967), con V la velocidad a la salida del disipador y "
+          "S la gravedad especifica de la piedra; el programa toma S = 2.65, "
+          "la de la Ec. (10.4). Con S = 2.65 es D50 = 0.0214·V², la "
+          "relacion de Searcy del Apendice D. Los ejemplos de la poza la "
+          "aplican seccion a seccion con la velocidad de la Figura 10.3 "
+          "(VL = 4.50 m/s -> D50 = 0.43 m)."),
+)
+
+HEC14_10_1_HASTA_VALLOW = _cita(
+    id="HEC14.10.1#HASTA_VALLOW",
+    fuente_id="HEC14",
+    numeral="10.1.5 (ejemplo resuelto)",
+    titulo_numeral="10.1.5 Design Procedure",
+    pagina_impresa="10-8",
+    pagina_pdf=209,
+    pagina_pdf_titulo=206,
+    texto_literal=Verbatim(
+        texto="The calculations above continue until VL ≤ Vallow.",
+        pagina_pdf=209),
+    caracter=Caracter.DEFINICION,
+    sesion=VE4G,
+    nota=("Sigue: «Riprap should be at least the size shown. As a practical "
+          "consideration, the channel can be lined with the same size rock "
+          "used for the basin. Protection must extend at least 41.0 m "
+          "downstream from the culvert brink, which is 12.6 m beyond the "
+          "basin exit.» El programa resuelve el L/De en que VL = Vallow sobre "
+          "la curva y no se queda en la seccion tabulada."),
 )
 
 CITAS: Dict[str, Cita] = {c.id: c for c in _TODAS}

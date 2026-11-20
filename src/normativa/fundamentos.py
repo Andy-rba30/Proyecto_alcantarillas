@@ -1123,6 +1123,32 @@ POZA_SALIDA = _fundamento(
         "abajo."),
 )
 
+# --- VE-5 (lote m6) --- La Figura 10.3 de HEC-14: el tirante alto.
+TW_ALTO = _fundamento(
+    id="F6.TW_ALTO",
+    fase=F6,
+    que_paso=("Proteccion aguas abajo con el tirante del receptor alto: "
+              "atenuacion de la velocidad por la Figura 10.3 de HEC-14 y "
+              "piedra por la Ec. (10.6)"),
+    por_que=(
+        "Con el receptor alto la corriente que sale del conducto no se "
+        "abre ni cae: su nucleo rapido atraviesa el agua quieta y se atenua "
+        "despacio aguas abajo. La ecuacion del apron deja de valer con el "
+        "tirante sobre la clave, y la fuente manda a medir esa atenuacion "
+        "con su Figura 10.3 --la velocidad en el eje en funcion de la "
+        "distancia medida en diametros equivalentes-- y a dimensionar la "
+        "piedra con la ecuacion que recomienda aguas abajo de los "
+        "disipadores. La proteccion llega hasta donde la velocidad baja a la "
+        "admisible del cauce."),
+    verbo=Verbo.RECOMIENDA,
+    citas=("HEC14.10.2#TW_ALTO", "HEC14.10.1.3#FIGURA_10_3",
+           "HEC14.10.3#EC_10_6", "HEC14.10.1#HASTA_VALLOW",
+           "HEC14.10.1.5#PASO_5"),
+    que_pasa_si_no_se_hace=(
+        "Con el receptor alto la salida quedaria sin longitud de proteccion "
+        "y la erosion se correria aguas abajo de lo revestido."),
+)
+
 # --- VE-5 (lote m6) --- La estructura de caida recta de HEC-14 Cap. 11.
 CAIDA = _fundamento(
     id="F6.CAIDA",

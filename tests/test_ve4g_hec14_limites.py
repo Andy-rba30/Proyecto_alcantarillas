@@ -25,7 +25,8 @@ FHWA-NHI-06-086), y que hace el programa con cada limite del rotulo
     caudal entre barriles para la hidraulica. El limite QUEDA, en el apron,
     en la poza y en la hoya.
   * TW SOBRE 1.0·D en un tubo de hasta 60 in: la fuente remite a la Figura
-    10.3, que no esta digitalizada. QUEDA.
+    10.3. Hasta VE-5 no estaba digitalizada y QUEDABA; desde VE-5 (lote m6)
+    lo cubre `M6.proteccion_tw_alto_hec14` (tests/test_ve5_m6_figura_10_3.py).
   * IP fuera de 5-16 y caida de mas de 4 alturas (Tabla 5.2): la fuente
     limita sus ecuaciones y no da otra. QUEDAN.
 

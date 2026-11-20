@@ -640,6 +640,12 @@ def _lineas_fase_6(informe: InformePunto) -> List[str]:
                      f"{_fmt(a.ancho_final)} m")
         out.append(f"{SANGRIA_DETALLE}apron de HEC-14: D50 = "
                    f"{_fmt(a.D50_requerido)} m, {geometria} (Sec. 10.2)")
+    z = p.poza
+    if z is not None:
+        out.append(f"{SANGRIA_DETALLE}poza de enrocado de HEC-14: hs = "
+                   f"{_fmt(z.hs)} m, LB = {_fmt(z.longitud_total)} m, WB = "
+                   f"{_fmt(z.ancho_final)} m, D50 = {_fmt(z.D50_piedra)} m "
+                   f"(Sec. 10.1)")
     e = informe.proteccion_entrada
     if e is not None:
         velocidad = ("sin velocidad publicada" if e.V_entrada is None
@@ -657,6 +663,11 @@ def _lineas_fase_6(informe: InformePunto) -> List[str]:
                          f"{_fmt(s.cota_fondo_de_la_hoya)} msnm"))
         out.append(f"{SANGRIA_DETALLE}socavacion a la salida para el "
                    f"desplante: {valor}")
+        if s.caida is not None:
+            out.append(f"{SANGRIA_DETALLE}caida recta de HEC-14: estanque "
+                       f"de {_fmt(s.caida.longitud)} m, piso "
+                       f"{_fmt(s.caida.depresion_piso)} m bajo el lecho "
+                       f"(Cap. 11)")
     return out
 
 
@@ -698,6 +709,33 @@ def _proteccion_json(p: ProteccionSalida) -> Dict[str, Any]:
         "TW_acotado": a.TW_acotado, "clase": a.clase,
         "D50_clase_m": _num(a.D50_clase), "longitud_m": _num(a.longitud),
         "espesor_m": _num(a.espesor), "ancho_final_m": _num(a.ancho_final)}
+    # --- VE-4g --- la poza de enrocado de HEC-14 Sec. 10.1, donde el apron
+    # no llega (marco, conducto de mas de 60 in); null en otro caso.
+    z = p.poza
+    salida["poza_hec14"] = None if z is None else {
+        "y_equivalente_m": _num(z.y_equivalente), "Fr": _num(z.Fr),
+        "Co": _num(z.Co), "relacion_co": z.relacion_co,
+        "D50_piedra_m": _num(z.D50_piedra),
+        "D50_dimensionamiento_m": _num(z.D50_dimensionamiento),
+        "dimensionada_con_menor": z.dimensionada_con_menor,
+        "piedra_subida": z.piedra_subida, "hs_m": _num(z.hs),
+        "Wo_m": _num(z.Wo), "longitud_poza_m": _num(z.longitud_poza),
+        "longitud_apron_m": _num(z.longitud_apron),
+        "longitud_total_m": _num(z.longitud_total),
+        "ancho_final_m": _num(z.ancho_final), "espesor_m": _num(z.espesor),
+        "espesor_talud_m": _num(z.espesor_talud),
+        "yc_salida_m": _num(z.yc_salida),
+        "V_salida_poza_m_s": _num(z.V_salida_poza),
+        "V_admisible_m_s": _num(z.V_admisible), "extendida": z.extendida,
+        "proteccion_adicional": z.proteccion_adicional,
+        "proteccion_adicional_hasta_m": _num(z.proteccion_adicional_hasta),
+        "D50_proteccion_adicional_m": _num(z.D50_proteccion_adicional)}
+    # --- VE-5 (lote m6) --- el TW sobre 1.0·D: Figura 10.3 y Ec. (10.6).
+    t = p.tw_alto
+    salida["tw_alto_hec14"] = None if t is None else {
+        "De_m": _num(t.De), "Vo_m_s": _num(t.Vo),
+        "V_admisible_m_s": _num(t.V_admisible), "D50_m": _num(t.D50),
+        "longitud_m": _num(t.longitud), "espesor_m": _num(t.espesor)}
     c = p.clase_de_la_piedra
     salida["clase_hec14_de_la_piedra"] = None if c is None else {
         "d50_m": _num(c.d50_de_partida), "clase": c.clase,
@@ -757,7 +795,26 @@ def _socavacion_json(s) -> Dict[str, Any]:
                 "duracion_acotada": e.duracion_acotada,
                 "duracion_alternativa_min": _num(e.duracion_alternativa_min),
                 "profundidad_alternativa_m": _num(e.profundidad_alternativa),
-                "Cs": _num(e.Cs), "Ch": _num(e.Ch)}}
+                "Cs": _num(e.Cs), "Ch": _num(e.Ch)},
+            # --- VE-5 (lote m6) --- la caida recta de HEC-14 Cap. 11 para la
+            # salida colgada; null si no hizo falta o no fue evaluable.
+            "caida_recta_hec14": _caida_json(s.caida)}
+
+
+def _caida_json(c) -> Optional[Dict[str, Any]]:
+    """--- VE-5 (lote m6) --- La estructura de caida recta, o null."""
+    if c is None:
+        return None
+    return {"ancho_vertedero_m": _num(c.ancho_vertedero), "q_m2_s": _num(c.q),
+            "yc_m": _num(c.yc), "desnivel_h_m": _num(c.desnivel_h),
+            "y3_m": _num(c.y3), "h2_m": _num(c.h2), "ho_m": _num(c.ho),
+            "depresion_piso_m": _num(c.depresion_piso),
+            "longitud_m": _num(c.longitud),
+            "altura_bloques_m": _num(c.altura_bloques),
+            "ancho_bloques_m": _num(c.ancho_bloques),
+            "altura_umbral_m": _num(c.altura_umbral),
+            "muro_sobre_tw_m": _num(c.muro_sobre_tw),
+            "longitud_aproximacion_m": _num(c.longitud_aproximacion)}
 
 
 def _geometria_t6_json(g: CompatibilidadGeometrica) -> Dict[str, Any]:

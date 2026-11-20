@@ -8396,3 +8396,89 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   sueltas `verificar_estabilidad_global` / `verificar_talud` quedan como estaban: el método
   viaja ahora en la traza del dato declarado.
 - **Dónde vive:** `src/modulos/M9_cabezal.py::validar_estabilidad_global_declarada`
+
+## VE5-M6-01 · La poza de enrocado de HEC-14 Sec. 10.1 entra donde el apron no llega (VE-4g, ítem 2 del censo)
+
+- **Cerrado:** `M6.poza_de_enrocado_hec14` sigue el procedimiento del núm. 10.1.5 (Ec. 10.1
+  con Co de la 10.2 o la 10.3; Ls, LA y LB de la Sec. 10.1; abocinado 3:1 y taludes 2:1 de la
+  Figura 10.2, leída por imagen; tirante crítico de salida por la Ec. 7.14; espesores 2·D50 y
+  3·D50 del núm. 10.1.4) contra los cuatro ejemplos resueltos (págs. impresas 10-6 a 10-16).
+  La Tabla 1.1 la da sin límite de alto y para marcos, que la Ec. (10.4) no cubre: la Fase 6
+  la evalúa cuando el apron falla por **marco** o por **alto de más de 60 in**
+  (`_remite_a_la_poza`), la reviste con la piedra de Laushey y la regla de la protección forma
+  la envolvente con ella (`_regla_con_la_poza`). Con la piedra que da hs/D50 < 2 la poza se
+  dimensiona con la de hs/D50 = 2 exacto y se reviste con la mayor (cita
+  `HEC14.10.1#MAYOR_REVISTE`); bajo D50/ye = 0.1 la piedra se sube a 0.1·ye; si la velocidad
+  de salida supera la admisible (Tabla N° 11), el apron se alarga con el mismo abocinado
+  hasta Vc = Vallow, como el ejemplo de la fuente. Criterio [A] nuevo,
+  `relacion_co_poza_enrocado_hec14` (envolvente, el archivo; mejor ajuste, barrible). El
+  rótulo del apron ya no dice «no implementa»: remite a la poza.
+- **Abierto:** (1) **varios barriles**: los ensayos de la poza, del apron y del Cap. 5 son
+  de un conducto; ninguna fuente del repositorio de normas da la descarga conjunta. Sigue
+  como aviso (la poza lo dice con «barriles»). (2) **Froude ≥ 3**: la Tabla 1.1 limita la
+  poza a Fr < 3; por encima, los disipadores de los Caps. 7 a 9, fuera de alcance (D). (3)
+  La hoya que no llega a 2·D50 ni con la piedra de 0.1·ye no se extrapola. (4) Vallow es la
+  de la Tabla N° 11 (criterio de estabilidad); la fuente admite la normal del cauce si es
+  mayor, que el programa no tiene: lado conservador, declarado en el umbral del paso 6.6p.
+  (5) **IP fuera de 5–16** en la hoya cohesiva (Ec. 5.2 y 5.3): la fuente limita sus
+  ecuaciones y no da otra; sigue como aviso.
+- **Qué haría falta:** para (1), una fuente que dé la protección de varios barriles (o un
+  modelo físico); para (2), los disipadores de los Caps. 7–9, que el dueño dejó fuera.
+- **Dónde vive:** `src/modulos/M6_proteccion.py::poza_de_enrocado_hec14`
+
+## VE5-M6-02 · La Figura 10.3 de HEC-14 está digitalizada: el TW sobre 1.0·D y el paso 5 de la poza (VE-5, lote m6)
+
+- **Cerrado:** la curva de diseño de la Figura 10.3 (pág. impresa 10-4) leída por imagen
+  (render 4x, retícula log-log localizada por sus líneas, curva trazada columna a columna),
+  con los cuatro puntos que la fuente imprime en sus ejemplos tal cual
+  (`constantes_normativas.HEC14_FIGURA_10_3`; método en la nota de la cita
+  `HEC14.10.1.3#FIGURA_10_3`; tolerancia 0.015 en VL/Vo). Con ella y la Ec. (10.6) de la Sec.
+  10.3: (a) el apron con el TW sobre 1.0·D de un tubo de hasta 60 in, que hasta aquí salía
+  «no evaluable», se dimensiona como la Sec. 10.2 manda (`M6.proteccion_tw_alto_hec14`:
+  longitud hasta VL = Vallow, piedra de la Ec. 10.6 con Vo, espesor 2·D50) y entra a la
+  envolvente; (b) el paso 5 de la poza con TW/yo > 0.75 da la extensión de la protección
+  aguas abajo y la piedra en la salida de la poza. Oráculos: 41.0 m y 135 ft de los dos
+  ejemplos del marco.
+- **Abierto:** (1) el espesor de la protección con el TW alto, que la Sec. 10.3 no da, es
+  2·D50: **lectura del proyecto** sobre el piso que HEC-14 pone al enrocado de la poza y del
+  apron. (2) Sin el terreno del receptor no hay Vallow ni longitud: aviso, y rige Laushey. (3)
+  Más allá de L/De = 60 la figura no da nada y no se extrapola. (4) El ancho de esa
+  protección no lo da la fuente para este caso.
+- **Qué haría falta:** HEC-11 (Brown y Clyde, 1989), al que la fuente remite el detalle del
+  enrocado y el filtro, que no está en el repositorio de normas.
+- **Dónde vive:** `src/modulos/M6_proteccion.py::proteccion_tw_alto_hec14`
+
+## VE5-M6-03 · La salida colgada se cierra con la caída recta de HEC-14 Cap. 11 (decisión del dueño: dentro del alcance)
+
+- **Cerrado:** `M6.caida_recta_hec14` (núm. 11.1.3, Ec. 11.5 a 11.16 leídas por imagen;
+  bloques, umbral, muros y aproximación revestida) contra los dos ejemplos resueltos (págs.
+  impresas 11-9 a 11-11). La Fase 6 la evalúa en `socavacion_salida` cuando **gobierna la
+  pendiente máxima** del conducto (el desnivel queda en la salida; ficha T6-02, cuyo «qué
+  haría falta» cierra) o cuando la caída **pasa la Tabla 5.2** (Hd > 4). Sus límites
+  (llegada supercrítica, lámina no aireada, Wo ≤ 1.5·yc, |ho| ≥ 15 ft, |ho|/yc fuera de
+  1–15) salen como aviso. El límite de 15 ft se toma como 4.572 m, no 4.6: la cifra en las
+  unidades de los ensayos, como los 60 in del apron (`HEC14_CAIDA_HO_MAX_M`).
+- **Abierto:** (1) **el ancho del vertedero Wo** en la salida de una alcantarilla: el
+  proyecto toma el de los barriles (n·B o n·D, sin tabiques), lado conservador, declarado
+  como `Interpretacion` de la cita `HEC14.11.1.3#ANCHO_APROXIMACION`. **Decisión pendiente
+  de Fable**: no hubo subagente en la sesión; se tomó el lado conservador. (2) La caja de
+  entrada (Sec. 11.2) no se implementa: es para la entrada, no para la salida colgada. (3)
+  La rejilla de la llegada supercrítica (núm. 11.1.2) no se implementa. (4) La socavación y
+  el desplante del cabezal siguen saliendo de la hoya o del dato declarado; la estructura de
+  caída no los sustituye. Los Caps. 7–9 son fuera de alcance (D).
+- **Qué haría falta:** que el dueño confirme la lectura de Wo; con varios barriles, el
+  ancho real de la cresta con los tabiques.
+- **Dónde vive:** `src/modulos/M6_proteccion.py::caida_recta_hec14`
+
+## VE5-M6-04 · Zampeado, uña y dentellón (ítem 30) y filtro granular (ítem 31) siguen pendientes [C]
+
+- **Qué se difirió:** el ítem 30 (zampeado, uña y dentellón de la protección; ficha T8-03)
+  y el ítem 31 (filtro granular bajo el enrocado; ficha T8-05).
+- **Por qué:** los dos dependen de documentos que **no están** en el repositorio de normas
+  (`NORMAS_DIR`, revisado el 2026-11-20): HEC-11 (Brown y Clyde, 1989), al que HEC-14 remite
+  el detalle del enrocado y el filtro (núm. 10.1.4, Sec. 10.2), y un plano tipo del dueño
+  para el zampeado y el dentellón (las Láminas 02, 02-A y 03 del Manual los traen como letras
+  o «VARIABLE»). La Figura 10.1 de HEC-14 dibuja el muro de corte de la poza sin dimensión.
+- **Qué haría falta:** HEC-11 en `NORMAS_DIR/normas/` para el filtro granular; el plano tipo
+  del dueño o una regla [A] declarada para el zampeado y el dentellón.
+- **Dónde vive:** `src/modulos/M6_proteccion.py::requisito_de_filtro`

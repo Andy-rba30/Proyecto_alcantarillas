@@ -3016,6 +3016,9 @@ class ProteccionSalida:
     # no llega (marco, conducto de mas de 60 in). None si el apron se evaluo
     # o si la poza tampoco es evaluable (varios barriles, Froude de 3 o mas).
     poza: Optional["PozaDeEnrocado"] = None
+    # --- VE-5 (lote m6) --- Con el TW sobre 1.0·D de un tubo de hasta 60
+    # in: la Figura 10.3 y la Ec. (10.6). None en otro caso.
+    tw_alto: Optional["ProteccionTWAlto"] = None
 
 
 # ---------------------------------------------------------------------------
@@ -3155,6 +3158,30 @@ class PozaDeEnrocado:
     proteccion_adicional: Optional[bool] = None
     pasos: Tuple["PasoDeMemoria", ...] = ()
     avisos: Tuple[str, ...] = ()
+    # --- VE-5 (lote m6) --- Con `proteccion_adicional` y la admisible, la
+    # Figura 10.3: hasta donde llega la proteccion (m desde la boca) y la
+    # piedra en la salida de la poza (Ec. 10.6). None si no aplica.
+    proteccion_adicional_hasta: Optional[float] = None
+    D50_proteccion_adicional: Optional[float] = None
+
+
+@dataclass(frozen=True)
+class ProteccionTWAlto:
+    """
+    --- VE-5 (lote m6) --- La proteccion de salida con el tirante del
+    receptor sobre 1.0·D, donde la Ec. (10.4) no vale: la Sec. 10.2 de
+    HEC-14 manda a la Figura 10.3 (atenuacion de la velocidad en el eje) y
+    a la Ec. (10.6) de la Sec. 10.3 para la piedra. La dimensiona
+    `M6.proteccion_tw_alto_hec14`.
+    """
+
+    De: float                             # m - diametro equivalente de borde
+    Vo: float                             # m/s - velocidad de salida
+    V_admisible: float                    # m/s
+    D50: float                            # m - Ec. (10.6) con Vo, en la boca
+    longitud: float                       # m - hasta VL = Vallow
+    espesor: float                        # m - 2·D50 (lectura del proyecto)
+    pasos: Tuple["PasoDeMemoria", ...] = ()
 
 
 @dataclass(frozen=True)
