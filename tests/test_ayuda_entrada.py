@@ -306,7 +306,10 @@ def test_las_ocho_claves_del_json_tienen_ficha_y_sale_del_censo():
                     "cota_afectacion_aguas_arriba_msnm",
                     # --- VE-3.6 --- el desnivel del perfil del canal (VC3,
                     # Familia C): veintidos.
-                    "desnivel_perfil_canal_m"}
+                    "desnivel_perfil_canal_m",
+                    # --- VE-4c --- la seccion del cauce de aproximacion
+                    # del metodo del perfil de remanso de V5: veintitres.
+                    "seccion_cauce_aproximacion"}
     for clave in seis:
         assert ve.variable(clave).poblacion is Poblacion.DATO_EXTERNO
 

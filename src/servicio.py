@@ -713,32 +713,51 @@ CLAVE_ANCHO_DERECHO_VIA = "ancho_derecho_via_m"
 CLAVE_COTA_AFECTACION = "cota_afectacion_aguas_arriba_msnm"
 CLAVE_Q_EVENTO_EXTREMO = "Q_evento_extremo_m3s"
 CLAVE_TW_EVENTO_EXTREMO = "TW_evento_extremo_m"
+# --- VE-4c --- (ficha T7B-01) Y una QUINTA, la del metodo del perfil de
+# remanso de V5:
+#
+#   seccion_cauce_aproximacion   la seccion del cauce de APROXIMACION aguas
+#       arriba del cruce, como objeto con los cinco campos de
+#       `seccion_receptor_medida` (b_m, z_HV, S, n, altura_total_m), del
+#       levantamiento del cauce. La lee V5 con el metodo
+#       «perfil_de_remanso_paso_a_paso»: el paso directo corre sobre ella.
+#       Familias A y B; opcional y sin valor por defecto.
+CLAVE_SECCION_CAUCE_APROXIMACION = "seccion_cauce_aproximacion"
 CLAVES_DE_V5_Y_V8: Tuple[str, ...] = (CLAVE_ANCHO_DERECHO_VIA,
                                       CLAVE_Q_EVENTO_EXTREMO,
                                       CLAVE_TW_EVENTO_EXTREMO,
-                                      CLAVE_COTA_AFECTACION)
+                                      CLAVE_COTA_AFECTACION,
+                                      CLAVE_SECCION_CAUCE_APROXIMACION)
 CLAVES_EXTERNAS += CLAVES_DE_V5_Y_V8
+CLAVES_OBJETO += (CLAVE_SECCION_CAUCE_APROXIMACION,)
 CLAVES_QUE_ADMITEN_CERO += (CLAVE_TW_EVENTO_EXTREMO, CLAVE_COTA_AFECTACION)
 CLAVES_CON_SIGNO += (CLAVE_COTA_AFECTACION,)
 FAMILIAS_QUE_USAN[CLAVE_ANCHO_DERECHO_VIA] = (Familia.A, Familia.B)
 FAMILIAS_QUE_USAN[CLAVE_COTA_AFECTACION] = (Familia.A, Familia.B)
+FAMILIAS_QUE_USAN[CLAVE_SECCION_CAUCE_APROXIMACION] = (Familia.A, Familia.B)
 # El criterio que hace EXIGIBLE cada una: mientras siga sin declarar, la
 # verificacion se detiene antes, en el criterio, y el dato todavia no falta.
 CRITERIO_QUE_EXIGE_LA_CLAVE: Dict[str, str] = {
     CLAVE_ANCHO_DERECHO_VIA: "remanso_derecho_via",
     CLAVE_COTA_AFECTACION: "remanso_derecho_via",
+    CLAVE_SECCION_CAUCE_APROXIMACION: "remanso_derecho_via",
     CLAVE_Q_EVENTO_EXTREMO: "TR_evento_extremo",
     CLAVE_TW_EVENTO_EXTREMO: "TR_evento_extremo",
 }
-# Y, para las dos de V5, el METODO declarado que la pide: cada metodo lee
-# su dato y no el del otro (correcciones de T-7b, H2).
-METODO_QUE_EXIGE_LA_CLAVE: Dict[str, str] = {
-    CLAVE_ANCHO_DERECHO_VIA: "embalse_a_nivel",
-    CLAVE_COTA_AFECTACION: "cota_de_afectacion",
+# Y, para las de V5, los METODOS declarados que la piden: cada metodo lee
+# sus datos y no los del otro (correcciones de T-7b, H2). Desde VE-4c son
+# tuplas: el ancho lo piden el embalse a nivel y el perfil de remanso, que
+# ademas pide la seccion del cauce.
+METODO_QUE_EXIGE_LA_CLAVE: Dict[str, Tuple[str, ...]] = {
+    CLAVE_ANCHO_DERECHO_VIA: ("embalse_a_nivel",
+                              "perfil_de_remanso_paso_a_paso"),
+    CLAVE_COTA_AFECTACION: ("cota_de_afectacion",),
+    CLAVE_SECCION_CAUCE_APROXIMACION: ("perfil_de_remanso_paso_a_paso",),
 }
 VERIFICACION_QUE_EXIGE_LA_CLAVE: Dict[str, str] = {
     CLAVE_ANCHO_DERECHO_VIA: "V5",
     CLAVE_COTA_AFECTACION: "V5",
+    CLAVE_SECCION_CAUCE_APROXIMACION: "V5",
     CLAVE_Q_EVENTO_EXTREMO: "V8",
     CLAVE_TW_EVENTO_EXTREMO: "V8",
 }
@@ -912,8 +931,9 @@ def _dato_externo(clave: str, bruto: Any, origen: str) -> DatoDeclarado:
         return DatoDeclarado(nombre=clave, valor=bruto.strip(), origen=origen)
     if clave in CLAVES_BOOLEANAS:
         return _booleano_externo(clave, bruto, origen)
-    if clave == CLAVE_SECCION_RECEPTOR_MEDIDA:
-        return _seccion_receptor_externa(bruto, origen)
+    if clave in (CLAVE_SECCION_RECEPTOR_MEDIDA,
+                 CLAVE_SECCION_CAUCE_APROXIMACION):
+        return _seccion_receptor_externa(bruto, origen, clave=clave)
     if clave in CLAVES_DE_CATALOGO:
         return _de_catalogo_externo(clave, bruto, origen)
     if clave == CLAVE_MATERIAL_LECHO:
@@ -1041,7 +1061,9 @@ def _booleano_externo(clave: str, bruto: Any, origen: str) -> DatoDeclarado:
     return DatoDeclarado(nombre=clave, valor=bruto, origen=origen)
 
 
-def _seccion_receptor_externa(bruto: Any, origen: str) -> DatoDeclarado:
+def _seccion_receptor_externa(bruto: Any, origen: str,
+                              clave: str = CLAVE_SECCION_RECEPTOR_MEDIDA
+                              ) -> DatoDeclarado:
     """
     --- T-2 --- (INF-3.2.8) La seccion MEDIDA del receptor, validada campo a
     campo: es entrada del proyecto y entra completa o no entra.
@@ -1053,8 +1075,12 @@ def _seccion_receptor_externa(bruto: Any, origen: str) -> DatoDeclarado:
     (profundidad del fondo a la corona, m), `n` (Manning del receptor) y `S`
     (pendiente del receptor, m/m). El dominio es el FISICO, no una banda de
     practica: una medicion no se acota con la ventana de una adopcion.
+
+    --- VE-4c --- La misma puerta valida la seccion del cauce de
+    APROXIMACION (`seccion_cauce_aproximacion`, `clave`), con los mismos
+    cinco campos y el mismo dominio: son dos levantamientos del mismo tipo
+    de seccion, uno a cada lado del cruce.
     """
-    clave = CLAVE_SECCION_RECEPTOR_MEDIDA
     if not isinstance(bruto, dict):
         raise DatoInvalidoError(
             clave, valor=bruto,
@@ -2352,6 +2378,7 @@ def _datos_de_expediente(informe: InformePunto, externos: DatosExternos,
                 "obras de drenaje (lectura del proyecto, registrada en la "
                 "cita)")
     cota_af = externos.dato(punto.id, CLAVE_COTA_AFECTACION)
+    cauce = externos.dato(punto.id, CLAVE_SECCION_CAUCE_APROXIMACION)
     derecho = DerechoDeViaDelPunto(
         ancho_m=None if ancho is None else ancho.valor,
         origen_ancho=("" if ancho is None else
@@ -2363,7 +2390,17 @@ def _datos_de_expediente(informe: InformePunto, externos: DatosExternos,
         cota_afectacion_msnm=None if cota_af is None else cota_af.valor,
         origen_cota_afectacion=(
             "" if cota_af is None else
-            f"`{CLAVE_COTA_AFECTACION}`, dato externo: {cota_af.origen}"))
+            f"`{CLAVE_COTA_AFECTACION}`, dato externo: {cota_af.origen}"),
+        # --- VE-4c --- la seccion del cauce de aproximacion y el remanso de
+        # M3 sobre ella (metodo «perfil_de_remanso_paso_a_paso» de V5).
+        seccion_cauce=(None if cauce is None
+                       else SeccionReceptor(**cauce.valor)),
+        origen_seccion_cauce=(
+            "" if cauce is None else
+            f"seccion del cauce de aproximacion "
+            f"(`{CLAVE_SECCION_CAUCE_APROXIMACION}`, dato externo: "
+            f"{cauce.origen})"),
+        remanso_aguas_arriba=M3.remanso_aguas_arriba)
 
     Q_ext = externos.dato(punto.id, CLAVE_Q_EVENTO_EXTREMO)
     TW_ext = externos.dato(punto.id, CLAVE_TW_EVENTO_EXTREMO)

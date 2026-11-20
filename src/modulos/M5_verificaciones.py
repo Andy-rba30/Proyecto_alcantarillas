@@ -270,6 +270,8 @@ from src.modelos import (DatosDeExpediente, DerechoDeViaDelPunto,
                      METODO_REMANSO_PERFIL_PASO_A_PASO, METODOS_DE_REMANSO,
                      MOTIVO_METODO_NO_EVALUABLE_EVENTO_EXTREMO,
                      MOTIVO_METODO_NO_EVALUABLE_REMANSO,
+                     MOTIVO_METODO_NO_EVALUABLE_REMANSO_PERFIL,
+                     RAMA_REMANSO_M1, RAMA_REMANSO_S1,
                      UMBRAL_V8_SIN_DESBORDE, UMBRALES_V8)
 from src.modelos import (CIFRAS_FACTOR, CIFRAS_FINA, CIFRAS_MAGNITUD,
                      CIFRAS_PORCENTAJE, ControlGobernante, CotaDeEntrada,
@@ -481,6 +483,12 @@ NUMERAL_V10 = ('MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.3 "Pendiente '
 
 CRITERIO_RESGUARDO = "resguardo_HW_subrasante"
 CRITERIO_REMANSO = "remanso_derecho_via"
+# --- VE-4c --- donde termina el perfil de remanso de V5 (ficha T7B-01):
+# la sobreelevacion admisible sobre el tirante natural del cauce. Lo lee
+# solo `_v5_perfil_de_remanso` (tests/test_nivel_medido.py lo fija por AST).
+CRITERIO_SOBREELEVACION_REMANSO = "sobreelevacion_admisible_remanso_m"
+# --- VE-4c --- el dato externo de la seccion del cauce de aproximacion.
+CLAVE_SECCION_CAUCE = "seccion_cauce_aproximacion"
 CRITERIO_EVENTO_EXTREMO = "TR_evento_extremo"
 # --- T-7b --- el umbral con que V8 juzga el «no colapso».
 CRITERIO_UMBRAL_V8 = "umbral_no_colapso_evento_extremo"
@@ -2453,10 +2461,15 @@ def v5_remanso(*, punto: PuntoCritico,
                                    (lo fija la resolucion que aprueba el
                                    derecho de via del tramo) y no tiene valor
                                    por defecto;
-      * metodo «perfil de remanso paso a paso» -> `MetodoNoEvaluableError`:
-                                   esta nombrado y no implementado.
+      * metodo «perfil de remanso paso a paso» -> hasta VE-4c
+                                   `MetodoNoEvaluableError` por no estar
+                                   implementado (CADUCO: desde VE-4c lo
+                                   esta, `_v5_perfil_de_remanso`).
 
-    DOS METODOS IMPLEMENTADOS (correcciones de T-7b, H2):
+    TRES METODOS IMPLEMENTADOS: los dos de abajo (correcciones de T-7b, H2) y,
+    desde VE-4c, «perfil_de_remanso_paso_a_paso» (`_v5_perfil_de_remanso`):
+    hasta donde la obra eleva la lamina del cauce de aproximacion sobre su
+    tirante natural, con la seccion del cauce como dato externo.
 
       * «cota_de_afectacion» (`_v5_cota_de_afectacion`), el que la FUENTE
         sostiene: la cota del embalse de diseño (solera de entrada + HW de
@@ -2520,18 +2533,10 @@ def v5_remanso(*, punto: PuntoCritico,
             motivo="el criterio elige el METODO de V5; se espera uno de: "
                    + ", ".join(METODOS_DE_REMANSO))
     if metodo == METODO_REMANSO_PERFIL_PASO_A_PASO:
-        raise MetodoNoEvaluableError(
-            "V5", "perfil de remanso paso a paso aguas arriba del embalse",
-            "el metodo declarado en 'remanso_derecho_via' no esta "
-            "implementado en V5: el perfil por paso directo existe desde "
-            "VE-3.7 para un canal prismatico trapecial "
-            "(`M3.perfil_remanso_trapecial`, el remanso de la Familia C), "
-            "pero V5 necesita la seccion, el n y la pendiente del CAUCE de "
-            "aproximacion, que no son dato de entrada (ficha T7B-01). Los "
-            "metodos implementados son "
-            f"'{METODO_REMANSO_EMBALSE_A_NIVEL}' y "
-            f"'{METODO_REMANSO_COTA_AFECTACION}'",
-            id_punto=punto.id, rotulo=MOTIVO_METODO_NO_EVALUABLE_REMANSO)
+        # --- VE-4c --- (ficha T7B-01) implementado: hasta VE-4c levantaba
+        # `MetodoNoEvaluableError` por no estar implementado.
+        return _v5_perfil_de_remanso(punto=punto, resultado=resultado,
+                                     derecho_de_via=derecho_de_via)
     if metodo == METODO_REMANSO_COTA_AFECTACION:
         return _v5_cota_de_afectacion(punto=punto, resultado=resultado,
                                       derecho_de_via=derecho_de_via)
@@ -2796,8 +2801,249 @@ def _v5_cota_de_afectacion(*, punto: PuntoCritico,
                 "boca, la cota del dato tiene que llevar ese margen. El "
                 "inciso b. del mismo numeral trae otro criterio "
                 "de nivel -- el AUMENTO admisible sobre el nivel sin la "
-                "obra -- que exige el perfil del cauce y no esta "
-                "implementado.")),
+                "obra --, que exige el perfil del cauce: es el metodo "
+                f"'{METODO_REMANSO_PERFIL_PASO_A_PASO}'.")),
+    )
+
+
+def _v5_perfil_de_remanso(*, punto: PuntoCritico,
+                          resultado: ResultadoHidraulico,
+                          derecho_de_via: Optional[DerechoDeViaDelPunto]
+                          ) -> Verificacion:
+    """
+    --- VE-4c --- (ficha T7B-01) V5 con el metodo «perfil_de_remanso_paso_a_
+    paso»: hasta donde la obra ELEVA la lamina del cauce de aproximacion
+    sobre su tirante natural, frente a la mitad del derecho de via.
+
+        y_n, y_c   normal y critico del cauce con el caudal de diseño, en la
+                   seccion del cauce (`seccion_cauce_aproximacion`)
+        L_remanso  paso directo desde la boca (y = HW) hasta y_fin:
+                     cauce suave  (y_n > y_c)  M1 hasta y_n + Δ
+                     cauce fuerte (y_n <= y_c) S1 hasta max(conjugado, y_n + Δ)
+                   (`M3.remanso_aguas_arriba`, que el servicio entrega en
+                   `derecho_de_via.remanso_aguas_arriba`: M5 no importa M3)
+        d          = (L_boca + L_remanso)·cos(esviaje)  <=  ancho / 2
+
+    con Δ = 'sobreelevacion_admisible_remanso_m' [A] (HDS-5 num. 2.2.5 b.
+    describe ese aumento admisible, de 0 a 0.3 m). Es lo que el embalse a
+    nivel no puede dar: aquel corta el FONDO y cuenta el tramo en que el
+    cauce ya llevaria agua sin la obra (correccion H2 de T-7b).
+
+    Se detiene, por separado:
+      * Δ sin declarar                   -> CriterioPendienteError;
+      * sin ancho o sin seccion del cauce -> DatoFaltanteError, cada uno con
+                                            su nombre;
+      * la lamina en la boca, o el tirante natural, por encima de la
+        `altura_total_m` levantada (el agua sale del trapecio), o Δ = 0 en
+        un cauce suave (la M1 es asintotica)  -> MetodoNoEvaluableError con
+        `MOTIVO_METODO_NO_EVALUABLE_REMANSO_PERFIL`: fuera del dominio del
+        metodo, nunca una cifra.
+    """
+    delta = ca.valor(CRITERIO_SOBREELEVACION_REMANSO)   # CriterioPendienteError
+    if derecho_de_via is None or derecho_de_via.ancho_m is None:
+        raise DatoFaltanteError(
+            "ancho_derecho_via_m", id_punto=punto.id,
+            detalle=(
+                f"el criterio '{CRITERIO_REMANSO}' declara el metodo "
+                f"'{METODO_REMANSO_PERFIL_PASO_A_PASO}', y V5 compara la "
+                "extension del remanso con la mitad del ancho del derecho de "
+                "via de este cruce: no es columna de Sec. 1.2 y no tiene "
+                "valor por defecto. Declarar `ancho_derecho_via_m` (m, ancho "
+                "total de la faja) por --datos-externos, con la resolucion "
+                "que aprueba el derecho de via del tramo"))
+    if derecho_de_via.seccion_cauce is None \
+            or derecho_de_via.remanso_aguas_arriba is None:
+        raise DatoFaltanteError(
+            CLAVE_SECCION_CAUCE, id_punto=punto.id,
+            detalle=(
+                f"el criterio '{CRITERIO_REMANSO}' declara el metodo "
+                f"'{METODO_REMANSO_PERFIL_PASO_A_PASO}', y el perfil de "
+                "remanso corre sobre la seccion del cauce de APROXIMACION "
+                "aguas arriba del cruce, que no es columna de Sec. 1.2 ni "
+                "tiene valor por defecto. Declarar `seccion_cauce_"
+                "aproximacion` por --datos-externos: un objeto con b_m (m), "
+                "z_HV (H:V), altura_total_m (m), n y S (m/m) del "
+                "levantamiento del cauce, como `seccion_receptor_medida`"))
+    ancho = derecho_de_via.ancho_m
+    semilongitud = derecho_de_via.semilongitud_entrada_m
+    seccion = derecho_de_via.seccion_cauce
+    HW, Q = resultado.HW, resultado.Q
+    for nombre, x in (("ancho_derecho_via_m", ancho), ("HW", HW),
+                      ("Q", Q), ("semilongitud de entrada", semilongitud),
+                      (CRITERIO_SOBREELEVACION_REMANSO, delta)):
+        if isinstance(x, bool) or not isinstance(x, (int, float)) \
+                or not math.isfinite(x):
+            raise DatoInvalidoError(
+                nombre, valor=x, id_punto=punto.id,
+                motivo="V5 (perfil de remanso) necesita un numero finito")
+    if not ancho > 0:
+        raise DatoInvalidoError(
+            "ancho_derecho_via_m", valor=ancho, id_punto=punto.id,
+            motivo="el ancho del derecho de via tiene que ser positivo")
+    if not (HW >= 0 and semilongitud >= 0 and Q > 0 and delta >= 0):
+        raise DatoInvalidoError(
+            "HW", valor=(HW, semilongitud, Q, delta), id_punto=punto.id,
+            motivo="la carga de diseño, la semilongitud de entrada y la "
+                   "sobreelevacion admisible no pueden ser negativas, y el "
+                   "caudal tiene que ser positivo")
+    remanso = derecho_de_via.remanso_aguas_arriba(
+        Q=Q, seccion=seccion, HW=HW, sobreelevacion_admisible=delta)
+    tope = max(HW, remanso.y_normal_m)
+    if not tope <= seccion.altura_total_m + TOL_UMBRAL_NORMATIVO:
+        raise MetodoNoEvaluableError(
+            "V5", "perfil de remanso paso a paso aguas arriba de la boca",
+            f"la lamina llega a {tope:.3f} m sobre la solera del cauce (HW = "
+            f"{HW:.3f} m en la boca, tirante natural {remanso.y_normal_m:.3f}"
+            f" m) y la seccion levantada del cauce de aproximacion mide "
+            f"altura_total_m = {seccion.altura_total_m:.3f} m: el agua sale "
+            "del trapecio, y la seccion prismatica no representa el cauce "
+            "por encima de lo levantado. Hace falta la seccion hasta esa "
+            "cota (o la topografia del valle)",
+            id_punto=punto.id, rotulo=MOTIVO_METODO_NO_EVALUABLE_REMANSO_PERFIL)
+    if remanso.asintotico:
+        raise MetodoNoEvaluableError(
+            "V5", "perfil de remanso paso a paso aguas arriba de la boca",
+            f"con '{CRITERIO_SOBREELEVACION_REMANSO}' = {delta:g} m el cauce "
+            f"suave (y_n = {remanso.y_normal_m:.3f} m > y_c = "
+            f"{remanso.y_critico_m:.3f} m) da una curva M1 asintotica al "
+            "tirante natural: la obra eleva la lamina a cualquier distancia "
+            "y el perfil no tiene final que comparar con el derecho de via. "
+            "Hace falta una sobreelevacion admisible positiva",
+            id_punto=punto.id, rotulo=MOTIVO_METODO_NO_EVALUABLE_REMANSO_PERFIL)
+    L_rem = remanso.longitud_m
+    coseno = math.cos(math.radians(punto.esviaje_grados))
+    d = (semilongitud + L_rem) * coseno
+    if not math.isfinite(d):
+        raise LimiteNumericoError(
+            "extension del remanso", valor=d, id_punto=punto.id,
+            motivo=f"la longitud del remanso ({L_rem!r} m) mas la "
+                   f"semilongitud de entrada ({semilongitud!r} m) no cabe en "
+                   "un numero finito")
+    medio = ancho / 2
+    cumple = d <= medio + TOL_UMBRAL_NORMATIVO
+    origen = derecho_de_via.origen_seccion_cauce
+    if remanso.rama == RAMA_REMANSO_M1:
+        que_rama = (f"cauce SUAVE (y_n > y_c): curva M1 por paso directo de "
+                    f"HW = {HW:.3f} m en la boca a y_n + Delta = "
+                    f"{remanso.y_fin_m:.3f} m")
+    elif remanso.rama == RAMA_REMANSO_S1:
+        que_rama = (f"cauce de pendiente FUERTE (y_n <= y_c): curva S1 por "
+                    f"paso directo de HW = {HW:.3f} m hasta "
+                    f"{remanso.y_fin_m:.3f} m, el mayor entre el conjugado del "
+                    f"normal ({remanso.y_conjugado_m:.3f} m, el resalto) y "
+                    "y_n + Delta; aguas arriba el cauce corre a su normal")
+    else:
+        que_rama = (f"la carga en la boca (HW = {HW:.3f} m) no supera "
+                    f"{remanso.y_fin_m:.3f} m ("
+                    + ("y_n + Delta" if remanso.suave else
+                       "el mayor entre el conjugado del normal y y_n + Delta")
+                    + "): la obra no remansa el cauce por encima de lo "
+                      "admisible y L_remanso = 0")
+    sustitucion = [
+        Magnitud("HW", HW, "m",
+                 "carga de diseño de M4, la del control que gobierna "
+                 f"({resultado.control_gobernante.value}): tirante del cauce "
+                 "en la boca", cifras=CIFRAS_MAGNITUD),
+        Magnitud("Q", Q, "m3/s", "caudal de diseño del punto",
+                 cifras=CIFRAS_MAGNITUD),
+        Magnitud("b", seccion.b_m, "m", origen, cifras=CIFRAS_MAGNITUD),
+        Magnitud("z", seccion.z_HV, "H:V", origen, cifras=CIFRAS_MAGNITUD),
+        Magnitud("n", seccion.n, "-", origen, cifras=CIFRAS_FINA),
+        Magnitud("S", seccion.S, "m/m", origen, cifras=CIFRAS_FINA),
+        Magnitud("y_n", remanso.y_normal_m, "m",
+                 "tirante normal del cauce (Manning en su seccion): el "
+                 "tirante natural, sin la obra", cifras=CIFRAS_MAGNITUD),
+        Magnitud("y_c", remanso.y_critico_m, "m",
+                 "tirante critico del cauce (Q^2 T = g A^3): separa el cauce "
+                 "suave del fuerte", cifras=CIFRAS_MAGNITUD),
+    ]
+    if remanso.y_conjugado_m is not None:
+        sustitucion.append(Magnitud(
+            "y_conj", remanso.y_conjugado_m, "m",
+            "conjugado del normal (funcion momentum): donde la S1 termina "
+            "en el resalto", cifras=CIFRAS_MAGNITUD))
+    sustitucion += [
+        Magnitud("Delta", delta, "m",
+                 f"criterio '{CRITERIO_SOBREELEVACION_REMANSO}' [A]: "
+                 "sobreelevacion sobre el tirante natural que no se cuenta "
+                 "como afectacion", cifras=CIFRAS_MAGNITUD),
+        Magnitud("y_fin", remanso.y_fin_m, "m",
+                 "tirante en que termina el perfil", cifras=CIFRAS_MAGNITUD),
+        Magnitud("L_remanso", L_rem, "m", que_rama, cifras=CIFRAS_MAGNITUD),
+        Magnitud("L_boca", semilongitud, "m",
+                 derecho_de_via.origen_semilongitud, cifras=CIFRAS_MAGNITUD),
+        Magnitud("esviaje", punto.esviaje_grados, "grados",
+                 "columna esviaje_grados: proyecta la distancia sobre la "
+                 "normal a la via", cifras=CIFRAS_MAGNITUD),
+        Magnitud("ancho_derecho_via", ancho, "m",
+                 derecho_de_via.origen_ancho, cifras=CIFRAS_MAGNITUD),
+    ]
+    return Verificacion(
+        cumple=cumple,
+        numeral=NUMERAL_V5,
+        valor_obtenido=d,
+        valor_admisible=medio,
+        criterio_aplicado=CRITERIO_REMANSO,
+        codigo="V5",
+        paso=paso(
+            "F5.V5_PERFIL", codigo="V5",
+            que="V5: extension del remanso de la obra sobre el tirante "
+                "natural del cauce frente al derecho de via (metodo del "
+                "perfil de remanso)",
+            formula=("y_n: Manning en el cauce; y_c: Q^2 T = g A^3; "
+                     "L_remanso = suma de dx = (E_abajo - E_arriba) / "
+                     "(S - Sf_medio) de y = HW a y_fin (M1: y_n + Delta; "
+                     "S1: max(y_conj, y_n + Delta));  d = (L_boca + "
+                     "L_remanso) · cos(esviaje)  <=  ancho_derecho_via / 2"),
+            sustitucion=tuple(sustitucion),
+            resultado=Magnitud(
+                "d", d, "m",
+                "distancia del extremo aguas arriba del remanso (donde la "
+                "lamina baja a y_fin) al eje de la via, medida normal a ella",
+                cifras=CIFRAS_MAGNITUD),
+            umbral=Umbral(
+                descripcion="mitad del ancho declarado del derecho de via "
+                            "(faja simetrica respecto del eje)",
+                valor=medio, unidad="m", cita_id="DG2018.304.07.01",
+                caracter="DEFINICION",
+                aplicacion="umbral del proyecto: la fuente define la faja "
+                           "y no enuncia condicion hidraulica; el metodo es "
+                           f"'{CRITERIO_REMANSO}' [A]",
+                criterio_aplicado=CRITERIO_REMANSO),
+            veredicto=_veredicto(
+                cumple, medio - d, "m",
+                ("el remanso de la obra sobre el tirante natural queda "
+                 "dentro de la faja" if cumple else
+                 "el remanso de la obra sale de la faja del derecho de via: "
+                 "eleva la lamina mas de lo admisible fuera de ella; hace "
+                 "falta una seccion mayor (menos carga)")),
+            citas_textuales=("HDS5_3ED.2.2.5#EMBALSE", "HDS5_3ED.2.2.5b#AUMENTO",
+                             "HDS5_3ED.2.2.3a#SECCION_TIPICA",
+                             "HDS5_3ED.2.2.3e#NORMAL", "HDS5_3ED.3.5#PERFIL",
+                             "HDS5_3ED.3.5.1#S1", "MC_HHD.4.1.1.3.6",
+                             "DG2018.304.07.02"),
+            nota_del_proyecto=(
+                "SUPUESTOS DEL METODO (criterio 'remanso_derecho_via' = "
+                f"'{METODO_REMANSO_PERFIL_PASO_A_PASO}', [A]): (1) el cauce "
+                "de aproximacion es un canal prismatico con la seccion "
+                "trapecial declarada (una seccion tipica para todo el tramo "
+                "remansado) y su pendiente S, alineado con el eje del "
+                "conducto; (2) su solera en la boca esta en la cota de "
+                "entrada, y el tirante en la boca es el HW de M4, sin la "
+                "carga de velocidad de aproximacion (el HDS-5 la desprecia en "
+                "el HW); (3) el tirante natural del cauce es el normal de "
+                "Manning, sin remansos ni estrechamientos propios aguas "
+                "abajo; (4) la obra afecta mientras eleva la lamina mas de "
+                "Delta sobre ese tirante natural: en un cauce suave la M1 "
+                "termina en y_n + Delta (con Delta = 0 no tendria final), en "
+                "uno de pendiente fuerte la S1 termina en el resalto; (5) el "
+                "dato es el ancho total de la faja y se toma simetrica "
+                "respecto del eje de la via, y no se mide si el agua se "
+                "extiende a lo ancho fuera del trapecio (por eso la lamina no "
+                "puede pasar la altura levantada). A diferencia del embalse "
+                "a nivel, NO cuenta el tramo en que el cauce ya lleva agua "
+                "sin la obra: mide lo que la obra añade. La faja marginal "
+                "(Ley 29338) no se evalua: la ley no esta en normas/.")),
     )
 
 

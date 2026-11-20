@@ -265,8 +265,20 @@ def test_lo_que_ninguna_corrida_invoca_se_clasifica_por_su_consumidor(
 # corrida de este archivo llega a el (V8 se detiene antes, en el TR), de modo
 # que no se mide; lo mide `tests/test_t7b_cabezal_estabilidad.py`, que corre
 # V8 de punta a punta. Que solo lo lee V8 se comprueba abajo, por AST.
+#
+# --- VE-4c --- Y un SEGUNDO, de V5: 'sobreelevacion_admisible_remanso_m', el
+# fin del perfil de remanso, que solo lee V5 con 'remanso_derecho_via' =
+# «perfil_de_remanso_paso_a_paso» (`M5._v5_perfil_de_remanso`). V5 se detiene
+# antes, en el metodo vacio, y lo mide `tests/test_ve4c_v5_remanso.py`. El
+# test de abajo pasa a decir, por clave, QUE FUNCION de M5 es la unica que lo
+# lee.
 DE_UNA_VERIFICACION_DIFERIDA = {
     "umbral_no_colapso_evento_extremo": "V8",
+    "sobreelevacion_admisible_remanso_m": "V5",
+}
+FUNCION_QUE_LO_LEE = {
+    "umbral_no_colapso_evento_extremo": "v8_evento_extremo",
+    "sobreelevacion_admisible_remanso_m": "_v5_perfil_de_remanso",
 }
 
 # --- VE-2 (c2) --- UN CRITERIO QUE SOLO UNA ALTERNATIVA DE PERFIL LEE. El
@@ -305,7 +317,8 @@ def test_el_criterio_de_la_verificacion_diferida_solo_lo_lee_esa_verificacion():
                     if isinstance(f, ast.FunctionDef)
                     and any(isinstance(n, ast.Name) and n.id == constantes[0]
                             for n in ast.walk(f))}
-        assert lectoras == {"v8_evento_extremo"}, (clave, codigo, lectoras)
+        assert lectoras == {FUNCION_QUE_LO_LEE[clave]}, (clave, codigo,
+                                                         lectoras)
 
 
 # LOS OCHO QUE ESTE ARCHIVO NO PUEDE COMPROBAR, censados en vez de omitidos.

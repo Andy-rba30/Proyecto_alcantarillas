@@ -1223,7 +1223,16 @@ CONDICIONALES_NO_MEDIDAS: Dict[str, str] = {
         "solo cuando el tramo del alivio no se conoce o el caudal se calcula "
         "(T-9)"),
     "ancho_derecho_via_m": (
-        "solo con `remanso_derecho_via` = 'embalse_a_nivel' (T-7b)"),
+        "solo con `remanso_derecho_via` = 'embalse_a_nivel' (T-7b) o "
+        "'perfil_de_remanso_paso_a_paso' (VE-4c)"),
+    # --- VE-4c --- (ficha T7B-01) los dos datos del metodo del perfil.
+    "seccion_cauce_aproximacion": (
+        "solo con `remanso_derecho_via` = 'perfil_de_remanso_paso_a_paso' "
+        "(VE-4c): la seccion del cauce de aproximacion sobre la que corre "
+        "el perfil de remanso de V5"),
+    "sobreelevacion_admisible_remanso_m": (
+        "solo con `remanso_derecho_via` = 'perfil_de_remanso_paso_a_paso' "
+        "(VE-4c): donde termina el perfil de remanso de V5"),
     "TW_receptor": (
         "solo si ninguna via de la Sec. 1.3 es recorrible: sin TW declarado, "
         "sin `cota_TW`, sin `Q_receptor_m3s`, sin seccion medida y con "

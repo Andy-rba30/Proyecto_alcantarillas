@@ -1301,6 +1301,35 @@ _EXTERNOS: Dict[str, _Externo] = {
              "la pasa a `M5.v5_remanso`",
     ),
 
+    # --- VE-4c --- (ficha T7B-01) el dato del metodo del PERFIL de V5.
+    "seccion_cauce_aproximacion": _Externo(
+        concepto="Seccion transversal del cauce de APROXIMACION, aguas arriba "
+                 "del cruce: un objeto con el ancho de fondo `b_m`, el talud "
+                 "`z_HV` (H:V), la profundidad del fondo a la corona "
+                 "`altura_total_m`, el Manning `n` y la pendiente `S` del "
+                 "cauce, los mismos campos que `seccion_receptor_medida`. V5 "
+                 "con el metodo «perfil_de_remanso_paso_a_paso» de "
+                 "'remanso_derecho_via' corre sobre ella el perfil de remanso "
+                 "desde la boca y mide hasta donde la obra eleva la lamina "
+                 "sobre el tirante natural. Familias A y B",
+        unidad="objeto (m, H:V, m, -, m/m)",
+        resolucion=Libre(
+            que_lo_fija="el levantamiento topografico del cauce aguas arriba "
+                        "del cruce (una seccion tipica, HDS-5 num. 2.2.3 a.) "
+                        "y, para n, la estimacion de la rugosidad del cauce "
+                        "natural; dato por punto, opcional y sin valor por "
+                        "defecto",
+            dominio="los cinco campos juntos: b_m >= 0 y z_HV >= 0 (no los "
+                    "dos nulos a la vez); altura_total_m, n y S > 0; S < 1",
+        ),
+        fase_declarada=_FASE_DE_MODULO["M5_verificaciones"],
+        nota="Solo se lee con 'remanso_derecho_via' = «perfil_de_remanso_"
+             "paso_a_paso» y a nivel de expediente; sin el dato, V5 se "
+             "detiene con DatoFaltanteError. La lee `servicio._datos_de_"
+             "expediente` y se la pasa a `M5.v5_remanso`, con el remanso de "
+             "M3 (`M3.remanso_aguas_arriba`)",
+    ),
+
     "Q_evento_extremo_m3s": _Externo(
         concepto="Caudal del evento extremo de V8, m3/s: el que corresponde "
                  "al periodo de retorno de 'TR_evento_extremo', del estudio "
@@ -1746,6 +1775,8 @@ _META_CRITERIOS: Dict[str, _Meta] = {
     "punto_aplicacion_incremento_sismico": _Meta(unidad="- (fraccion de H)"),
     "relacion_intensidad_duracion": _Meta(unidad="-"),
     "remanso_derecho_via": _Meta(unidad="- (metodo de V5)"),
+    # --- VE-4c --- el fin del perfil de remanso de V5 (lo consume M5).
+    "sobreelevacion_admisible_remanso_m": _Meta(unidad="m"),
     "seccion_receptor": _Meta(
         unidad="m, H:V, m/m, -",
         fase_declarada="Fase 1 - Datos de entrada (Sec. 1.3, paso 2: Manning "

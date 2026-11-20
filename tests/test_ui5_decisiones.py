@@ -1318,7 +1318,9 @@ def test_4_el_barrido_cubre_los_141_y_censa_lo_que_no_barre(candidatos):
     # 'distribucion_incremento_sismico').
     # 154 desde VE-4a: 'fila_phi_estabilidad_global' (la fila de phi de
     # AASHTO 11.6.3.7 para el FS declarado de E4 y E5).
-    assert len(por_clave) == len(ca.CRITERIOS) == 154
+    # 155 desde VE-4c: 'sobreelevacion_admisible_remanso_m' (el fin del perfil
+    # de remanso de V5, ficha T7B-01).
+    assert len(por_clave) == len(ca.CRITERIOS) == 155
     assert fuera == FILAS_FUERA_DE_SU_VENTANA
     assert {k for k, cs in por_clave.items() if not cs} == SIN_NADA_QUE_BARRER
     # Y el barrido no es de juguete: cada valor de archivo esta, y mas.

@@ -7385,8 +7385,9 @@ MOTIVO_METODO_NO_EVALUABLE_CABEZAL = (
     "método no evaluable (AASHTO LRFD 11.6, estabilidad del cabezal)")
 
 # Las opciones del criterio 'remanso_derecho_via' (V5), que desde T-7b elige
-# el METODO. «embalse_a_nivel» es la unica implementada; el perfil de remanso
-# paso a paso queda nombrado y diferido (ficha T7B-01).
+# el METODO. Las tres estan implementadas: «embalse_a_nivel» (T-7b),
+# «cota_de_afectacion» (cierre de T-7b) y el perfil de remanso paso a paso
+# (VE-4c, ficha T7B-01).
 METODO_REMANSO_EMBALSE_A_NIVEL = "embalse_a_nivel"
 # --- correcciones de T-7b (H2) --- el criterio de COTA que el HDS-5 num.
 # 2.2.5 si sostiene: la cota del embalse de diseño contra la cota de
@@ -7428,6 +7429,51 @@ class DerechoDeViaDelPunto:
     # metodo «cota_de_afectacion».
     cota_afectacion_msnm: Optional[float] = None
     origen_cota_afectacion: str = ""
+    # --- VE-4c --- (ficha T7B-01) la seccion del cauce de APROXIMACION
+    # (dato externo `seccion_cauce_aproximacion`, None si no se declaro), que
+    # lee el metodo «perfil_de_remanso_paso_a_paso», y la funcion con que el
+    # servicio calcula su remanso (`M3.remanso_aguas_arriba`: M3, que M5 no
+    # importa, como el `resolver` de V8).
+    seccion_cauce: Optional["SeccionReceptor"] = None
+    origen_seccion_cauce: str = ""
+    remanso_aguas_arriba: Optional[Any] = None   # (Q, seccion, HW, Δ) -> RemansoAguasArriba
+
+
+# --- VE-4c --- EL REMANSO DEL CAUCE DE APROXIMACION (V5 por el perfil).
+# El rotulo propio: el del embalse a nivel nombra OTRO metodo.
+MOTIVO_METODO_NO_EVALUABLE_REMANSO_PERFIL = (
+    "método no evaluable (V5, perfil de remanso aguas arriba)")
+# Que rama del perfil remansa el cauce: la M1 de un cauce suave, la S1 de uno
+# fuerte (hasta el resalto) o ninguna (la carga no supera lo que el cauce ya
+# lleva mas la sobreelevacion admisible, o el resalto queda en la boca).
+RAMA_REMANSO_M1 = "M1"
+RAMA_REMANSO_S1 = "S1"
+RAMA_REMANSO_NINGUNA = "sin remanso sobre el admisible"
+
+
+@dataclass(frozen=True)
+class RemansoAguasArriba:
+    """
+    --- VE-4c --- El remanso que la obra forma en el cauce de aproximacion,
+    por paso directo desde la boca (`M3.remanso_aguas_arriba`): hasta donde
+    la lamina queda MAS de una sobreelevacion admisible por encima del
+    tirante natural del cauce (el normal de Manning en su seccion).
+
+    `longitud_m` es la distancia aguas arriba de la boca, sobre el eje del
+    cauce, en que el perfil baja a `y_fin_m`; 0 si la obra no remansa por
+    encima del admisible; None si el perfil es ASINTOTICO (M1 con
+    sobreelevacion admisible nula) y no tiene final: `asintotico` lo dice.
+    """
+
+    y_normal_m: float
+    y_critico_m: float
+    suave: bool
+    rama: str
+    y_conjugado_m: Optional[float]
+    y_fin_m: Optional[float]
+    longitud_m: Optional[float]
+    asintotico: bool = False
+    estaciones: Tuple[Tuple[float, float], ...] = ()
 
 
 @dataclass(frozen=True)

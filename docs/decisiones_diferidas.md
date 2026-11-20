@@ -5717,9 +5717,8 @@ marca del régimen para T-7c.
   abajo, añade el sexto: el plano corta el **fondo**.) El HDS-5 núm. 2.2.5
   identifica la carga con la profundidad del embalse; la extensión es método del
   proyecto. No se le dio valor de archivo al criterio: decisión del dueño.
-- **Qué haría falta:** la sección del cauce aguas arriba (como `seccion_receptor_medida`
-  para el receptor) y un paso directo desde la boca; y decidir si el ancho se mide
-  simétrico o con el eje de la faja declarado.
+- **Qué haría falta:** decidir si el ancho se mide simétrico o con el eje de la faja
+  declarado (la sección y el paso directo los trajo VE-4c, abajo).
 - **Corrección del cierre (H2, ALTA).** `embalse_a_nivel` mide hasta donde el plano
   corta el **fondo**: incluye el tramo natural del cauce, es una **cota superior** de lo
   que la obra añade y con los anchos de la Tabla 304.09 solo cumple en cauces de
@@ -5728,6 +5727,12 @@ marca del régimen para T-7c.
   2.2.5, citas `HDS5_3ED.2.2.5#NO_EXCEDER` y `HDS5_3ED.2.2.5a#COTA_DE_DANO`) es de
   **cota**: `cota_de_afectacion` (`M5._v5_cota_de_afectacion`, dato
   `cota_afectacion_aguas_arriba_msnm`). El criterio sigue sin valor de archivo.
+- **Cerrado (VE-4c, 2026-11-20):** implementado (`M5._v5_perfil_de_remanso`, `F5.V5_PERFIL`):
+  mide hasta dónde la obra eleva la lámina del cauce de aproximación más de Δ
+  (`sobreelevacion_admisible_remanso_m` [A], sin valor, 0–0.30 m) sobre su tirante normal,
+  por el paso directo de VE-3.7 desde la boca (`M3.remanso_aguas_arriba`), sobre el dato
+  externo `seccion_cauce_aproximacion`. Validado contra el USBR (`CP_VE4C_USBR_WSP`).
+  **Abierto:** faja simétrica, sección prismática, tirante natural normal.
 - **Dónde vive:** `src/modulos/M5_verificaciones.py::v5_remanso`
 
 ## T7B-02 · V8 juzga «no colapsa» por el desborde de la plataforma, que es la lectura más exigente; el desborde admitido no está implementado
@@ -8076,11 +8081,13 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   (scipy `solve_ivp`, rtol 1e-11) y con Bélanger en el rectangular: peor error 6.5e-8, contra
   una tolerancia nombrada de 1e-6.
 - **Abierto:** el perfil supone un canal prismático (sin la coronación a lo largo del tramo, el
-  cruce es la sección crítica); V5 de las Familias A y B sigue sin el método paso a paso porque
-  le falta la sección del cauce de aproximación (T7B-01), y su mensaje lo dice; no hay un
-  ejemplo resuelto publicado y legal de paso directo contra el que contrastar.
-- **Qué haría falta:** la sección del cauce de aproximación para V5 de A y B; un ejemplo
-  resuelto publicado (p. ej. del USBR o del manual de referencia de HEC-RAS).
+  cruce es la sección crítica). Desde VE-4c V5 de las Familias A y B usa este mismo paso
+  directo con la sección del cauce de aproximación (T7B-01), y su escalón —la energía y la
+  fricción, `M3.energia_y_friccion_trapecial`— se contrasta con el perfil publicado del USBR
+  (223-E3WSP, pág. impresa 428); un remanso M1 resuelto paso a paso y publicado sigue sin
+  aparecer en el repositorio de normas.
+- **Qué haría falta:** un ejemplo resuelto publicado de un perfil M1 o S1 (p. ej. del manual
+  de referencia de HEC-RAS).
 - **Dónde vive:** `src/modulos/M3_hidraulica.py::perfil_remanso_trapecial`
 
 ## VE3-05 · El cabezal se dimensiona: la zapata crece por el talón (estabilidad) y en peralte (armado)
