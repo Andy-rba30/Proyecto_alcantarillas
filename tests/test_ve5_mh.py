@@ -482,3 +482,95 @@ def test_estadistico_chi_cuadrado_con_una_uniforme_a_mano():
     assert obs == (5, 5)
     assert esp == pytest.approx((5.0, 5.0), rel=REL_ARITMETICA)
     assert D == pytest.approx(0.0, abs=ABS_CERO)
+
+
+# ===========================================================================
+# T1-03 — V8 pide su caudal a la Fase 1-bis
+# ===========================================================================
+
+TR_EXTREMO = "TR_evento_extremo"
+PUNTOS = RAIZ / "tests" / "ejemplo_puntos.csv"
+
+
+def _informe_de(id_punto, **cambios):
+    from src import servicio
+    from src.modulos.M0_carga import cargar_puntos
+    punto = next(p for p in cargar_puntos(PUNTOS) if p.id == id_punto)
+    return servicio.InformePunto(punto=replace(punto, **cambios))
+
+
+def _hidrologia_chica(tmp_path):
+    """A-02 con una cuenca de 0.12 km2 (12 ha en el CSV de puntos)."""
+    from src import servicio
+    ruta = _cuencas_con(tmp_path, [{
+        "id": "A-02", "area_km2": "0.12", "L_cauce_m": "600",
+        "S_cauce_cuenca": "0.04", "S_terreno": "0.04",
+        "cobertura": "cultivos", "suelo": "permeable",
+        "estacion": ESTACION_DE_PRUEBA, "metodo_tc": "kirpich",
+        "ajuste_kirpich": "ninguno"}])
+    return servicio.cargar_hidrologia(ruta, ESTACION)
+
+
+def test_sin_declarar_el_caudal_extremo_lo_calcula_la_fase_1_bis(tmp_path):
+    from src import criterios_adoptados as ca
+    from src import servicio
+    h = _hidrologia_chica(tmp_path)
+    informe = _informe_de("A-02", area_ha=12.0)
+    with declarados({FEN: "serie_completa", TR_EXTREMO: 100.0}):
+        ca.reiniciar_usos()
+        dato = servicio._caudal_del_evento_extremo(informe, h)
+        # El TR se lee sin registrar: quien lo registra es V8 al correr.
+        assert TR_EXTREMO not in ca.criterios_usados()
+        esperado = MH.caudal_de_diseno(h.cuenca_de("A-02"),
+                                       h.estaciones[ESTACION_DE_PRUEBA], 100.0)
+        de_diseno = MH.caudal_de_diseno(h.cuenca_de("A-02"),
+                                        h.estaciones[ESTACION_DE_PRUEBA], 25.0)
+    assert dato.nombre == "Q_evento_extremo_m3s"
+    assert dato.valor == pytest.approx(esperado.Q_m3s, rel=REL_TRANSPORTE)
+    assert dato.valor > de_diseno.Q_m3s          # crece con el TR
+    assert "Fase 1-bis" in dato.origen and "TR = 100" in dato.origen
+
+
+def test_sin_TR_o_sin_cuenca_no_se_calcula_nada(tmp_path):
+    from src import servicio
+    h = _hidrologia_chica(tmp_path)
+    with declarados({FEN: "serie_completa"}):
+        assert servicio._caudal_del_evento_extremo(
+            _informe_de("A-02", area_ha=12.0), h) is None
+    with declarados({FEN: "serie_completa", TR_EXTREMO: 100.0}):
+        assert servicio._caudal_del_evento_extremo(
+            _informe_de("A-02", area_ha=12.0), None) is None
+        assert servicio._caudal_del_evento_extremo(
+            _informe_de("A-01"), h) is None          # sin fila de cuenca
+
+
+def test_si_la_fase_1_bis_no_puede_el_motivo_queda_en_un_aviso(tmp_path):
+    from src import servicio
+    h = _hidrologia_chica(tmp_path)
+    informe = _informe_de("A-02", area_ha=210.0)     # dos areas distintas
+    with declarados({FEN: "serie_completa", TR_EXTREMO: 100.0}):
+        assert servicio._caudal_del_evento_extremo(informe, h) is None
+    assert any("V8 de A-02" in a and "evento extremo" in a
+               for a in informe.avisos_de_expediente)
+
+
+def test_el_caudal_extremo_declarado_gana(tmp_path):
+    """
+    `_datos_de_expediente` solo pide la Fase 1-bis cuando el dato externo
+    falta: con `Q_evento_extremo_m3s` declarado, el evento lleva ese valor y
+    su origen de dato externo.
+    """
+    import ast
+    import inspect
+    from src import servicio
+    arbol = ast.parse(inspect.getsource(servicio._datos_de_expediente))
+    llamadas = [n for n in ast.walk(arbol) if isinstance(n, ast.IfExp)
+                and any(isinstance(c, ast.Call)
+                        and getattr(c.func, "id", "") == "_caudal_del_evento_extremo"
+                        for c in ast.walk(n.body))]
+    assert len(llamadas) == 1
+    # La condicion es «Q_ext is None»: el declarado gana.
+    condicion = llamadas[0].test
+    assert isinstance(condicion, ast.Compare) and \
+        isinstance(condicion.ops[0], ast.Is) and \
+        getattr(condicion.left, "id", "") == "Q_ext"

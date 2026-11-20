@@ -3864,9 +3864,10 @@ def v8_evento_extremo(*, punto: PuntoCritico,
       * 'TR_evento_extremo' sin valor -> `CriterioPendienteError`;
       * sin `Q_evento_extremo_m3s`     -> `DatoFaltanteError`: el caudal de
         ese periodo de retorno es un dato externo por punto (lo da el
-        estudio hidrologico; la Fase 1-bis lo sabe calcular, y el enlace
-        sigue diferido, ficha T1-03). El programa no lo escala del de
-        diseño;
+        estudio hidrologico) o, sin el, lo calcula la Fase 1-bis con la
+        cuenca y la estacion de la corrida (VE-5, ficha T1-03,
+        `servicio._caudal_del_evento_extremo`); el declarado gana. El
+        programa no lo escala del de diseño;
       * sin `TW_evento_extremo_m`      -> `DatoFaltanteError`: el tirante
         del receptor en ese evento. Usar el de diseño seria rellenar una
         entrada del lado NO conservador (el receptor sube con la avenida);
@@ -3923,11 +3924,11 @@ def v8_evento_extremo(*, punto: PuntoCritico,
                 "pero V8 no puede resolverse sin el CAUDAL que corresponde a "
                 "ese periodo de retorno mayor: declarar "
                 "`Q_evento_extremo_m3s` por --datos-externos, con el estudio "
-                "hidrologico que lo da. El programa SABE calcularlo "
-                "(`MH_hidrologia.caudal_de_diseno` admite cualquier periodo "
-                "de retorno), pero ese enlace esta diferido (ficha T1-03 de "
-                "docs/decisiones_diferidas.md), y no lo escala del de "
-                "diseño"
+                "hidrologico que lo da, o correr con la cuenca de la obra "
+                "(--cuencas) y la serie de su estacion (--estacion): la Fase "
+                "1-bis lo calcula con ese periodo de retorno (VE-5, ficha "
+                "T1-03), y si no pudo, el aviso de expediente del punto dice "
+                "por que. El programa no lo escala del de diseño"
             ),
         )
     if evento.TW_m is None:

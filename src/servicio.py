@@ -2329,8 +2329,58 @@ def _piso_del_derecho_de_via() -> Tuple[Optional[float], str]:
             f"Tabla 304.09 del DG-2018, fila '{clase}', ancho minimo")
 
 
+def _caudal_del_evento_extremo(informe: InformePunto,
+                               hidrologia: Optional[EntradaHidrologica],
+                               ) -> Optional[DatoDeclarado]:
+    """
+    --- VE-5 (ficha T1-03) --- El caudal del evento extremo de V8 pedido a la
+    Fase 1-bis, cuando NO se declaro `Q_evento_extremo_m3s` (el declarado
+    gana y no se recalcula): la MISMA puerta que el caudal de diseño del
+    punto (`MH.caudal_de_diseno`, o la de la cuneta en la Familia B), con la
+    cuenca y la serie de la corrida y el periodo de retorno del criterio
+    'TR_evento_extremo'.
+
+    None, sin calcular nada, si falta alguna de las tres cosas: la familia no
+    tiene caudal hidrologico, la corrida no trae la cuenca de la obra o el TR
+    no esta declarado. El TR se lee SIN registrar el uso
+    (`ca.criterio_efectivo`): quien lo registra es V8 cuando corre, y a perfil
+    V8 se difiere. Si el calculo se detiene, None y un aviso de expediente
+    con el motivo: V8 pedira entonces el caudal declarado, con su nombre.
+    """
+    punto = informe.punto_de_calculo
+    if hidrologia is None or punto.familia not in FAMILIAS_CON_CAUDAL_HIDROLOGICO:
+        return None
+    cuenca = hidrologia.cuenca_de(punto.id)
+    TR = ca.criterio_efectivo(M5.CRITERIO_EVENTO_EXTREMO).valor
+    if cuenca is None or TR is None:
+        return None
+    calcular = (MH.caudal_de_aporte_cuneta if punto.familia is Familia.B
+                else MH.caudal_de_diseno)
+    try:
+        if punto.area_ha is not None:
+            MH.exigir_areas_coherentes(area_ha=punto.area_ha,
+                                       area_km2=cuenca.area_km2,
+                                       id_punto=punto.id,
+                                       origen_cuenca=cuenca.origen)
+        caudal = calcular(cuenca, hidrologia.estaciones[cuenca.estacion], TR)
+    except ErrorProyecto as exc:
+        informe.avisos_de_expediente.append(
+            f"V8 de {punto.id}: la Fase 1-bis no pudo calcular el caudal del "
+            f"evento extremo (TR = {TR:g} años) con la cuenca y la estacion "
+            f"de la corrida: {exc}")
+        return None
+    return DatoDeclarado(
+        nombre=CLAVE_Q_EVENTO_EXTREMO, valor=caudal.Q_m3s,
+        origen=(f"calculado por la Fase 1-bis con TR = {TR:g} años "
+                f"('{M5.CRITERIO_EVENTO_EXTREMO}'): {caudal.de_donde}; tc = "
+                f"{caudal.tc_min:.2f} min, I = {caudal.I_mm_h:.2f} mm/h, "
+                f"C = {caudal.C:.3f}, P24(TR) = {caudal.P24_TR_mm:.1f} mm"))
+
+
 def _datos_de_expediente(informe: InformePunto, externos: DatosExternos,
-                         S: Optional[float]) -> DatosDeExpediente:
+                         S: Optional[float],
+                         hidrologia: Optional[EntradaHidrologica] = None,
+                         ) -> DatosDeExpediente:
     """
     --- T-7b --- Lo que V5 y V8 necesitan del punto ademas del resultado
     hidraulico, armado UNA vez antes del bucle de MD (PUNTO 0):
@@ -2419,6 +2469,11 @@ def _datos_de_expediente(informe: InformePunto, externos: DatosExternos,
         remanso_aguas_arriba=M3.remanso_aguas_arriba)
 
     Q_ext = externos.dato(punto.id, CLAVE_Q_EVENTO_EXTREMO)
+    # --- VE-5 (ficha T1-03) --- Sin el declarado, el de la Fase 1-bis.
+    Q_calculado = (_caudal_del_evento_extremo(informe, hidrologia)
+                   if Q_ext is None else None)
+    if Q_calculado is not None:
+        Q_ext = Q_calculado
     TW_ext = externos.dato(punto.id, CLAVE_TW_EVENTO_EXTREMO)
     if calculada is not None and calculada.cota_borde_entrada is not None:
         cota_desborde = calculada.cota_borde_entrada
@@ -2484,6 +2539,8 @@ def _datos_de_expediente(informe: InformePunto, externos: DatosExternos,
         Q_m3s=None if Q_ext is None else Q_ext.valor,
         TW_m=None if TW_ext is None else TW_ext.valor,
         origen=("" if Q_ext is None else
+                f"`{CLAVE_Q_EVENTO_EXTREMO}`, {Q_ext.origen}"
+                if Q_calculado is not None else
                 f"`{CLAVE_Q_EVENTO_EXTREMO}`, dato externo: {Q_ext.origen}"),
         cota_desborde=cota_desborde, origen_cota_desborde=origen_cota,
         resolver=resolver if con_evento else None,
@@ -3069,7 +3126,8 @@ def _fase_durabilidad(informe: InformePunto,
 
 
 def _fase_diseno(informe: InformePunto, externos: DatosExternos,
-                 alcance: str = ALCANCE_EXPEDIENTE) -> None:
+                 alcance: str = ALCANCE_EXPEDIENTE,
+                 hidrologia: Optional[EntradaHidrologica] = None) -> None:
     """
     Fases 3-5: MD recorre materiales y diametros hasta que uno pase la Fase 5.
 
@@ -3105,7 +3163,7 @@ def _fase_diseno(informe: InformePunto, externos: DatosExternos,
     # evento extremo), armados una vez. A nivel de expediente la Fase 5 es
     # la de M5 completa, con ellos; a nivel de perfil, la del verificador
     # que difiere V5 y V8 mientras sigan sin poder evaluarse.
-    expediente = _datos_de_expediente(informe, externos, S)
+    expediente = _datos_de_expediente(informe, externos, S, hidrologia)
     if alcance == ALCANCE_PERFIL:
         verificar = _verificador_perfil(informe, expediente)
     else:
@@ -4260,7 +4318,7 @@ def correr_punto(punto: PuntoCritico, externos: DatosExternos,
     if clasificado:
         _fase_durabilidad(informe, externos)
     if clasificado and con_caudal:
-        _fase_diseno(informe, externos, alcance)
+        _fase_diseno(informe, externos, alcance, hidrologia)
         _compuerta_metodo_h_o(informe, alcance)
         if informe.dimensionado:
             _fase_6(informe, externos)
