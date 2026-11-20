@@ -88,3 +88,83 @@ def test_la_licuefaccion_no_es_el_motivo_del_cuadro_de_compatibilidad():
     motivo = b01.compatibilidad_rasante.motivo
     assert servicio.FASE_LICUEFACCION not in motivo
     assert servicio.ETAPA_BUCLE_DE_MD in motivo
+
+
+# ===========================================================================
+# VE-6, dictamen Fable («aprobar con cambios» en las dos decisiones)
+# ===========================================================================
+
+import copy                                                    # noqa: E402
+
+import pytest                                                  # noqa: E402
+
+from src.modelos import Bloqueo, DatoInvalidoError             # noqa: E402
+from src.modulos import M12_metrados as M12                    # noqa: E402
+
+_DEFECTO_SIN_TAMIZADO = "el punto no llego a 7.A con una seccion adoptada"
+
+
+@pytest.fixture(scope="module")
+def juego_expediente():
+    return V.correr_juego(V.juego_completo())
+
+
+def _bloqueo(fase, etapa):
+    return Bloqueo(fase=fase, etapa=etapa, tipo=TipoDeBloqueo.DATO_INVALIDO,
+                   mensaje="(prueba)")
+
+
+def _sin_tamizado(punto, bloqueos):
+    informe = servicio.InformePunto(punto=punto)
+    informe.bloqueos.extend(bloqueos)
+    servicio._fase_11_compatibilidad(informe)
+    return informe.compatibilidad_rasante.motivo
+
+
+# --- 1 (b): seleccion positiva de las fases que llevan a 7.A ---------------
+
+def test_las_fases_que_llevan_a_7a_son_las_cinco_y_la_0bis_queda_fuera():
+    assert servicio.FASES_QUE_LLEVAN_A_7A == (
+        servicio.FASE_CARGA, servicio.FASE_CLASIFICACION,
+        servicio.FASE_HIDROLOGIA, servicio.FASE_DISENO,
+        servicio.FASE_GEOMETRIA)
+    assert servicio.FASE_LICUEFACCION in servicio.FASES_AL_MARGEN_DEL_DIMENSIONADO
+    assert servicio.FASE_PROTECCION in servicio.FASES_AL_MARGEN_DEL_DIMENSIONADO
+    assert not set(servicio.FASES_AL_MARGEN_DEL_DIMENSIONADO) & set(
+        servicio.FASES_QUE_LLEVAN_A_7A)
+
+
+def test_un_techo_de_transcripcion_mal_declarado_no_es_el_motivo(monkeypatch):
+    """(i) El bloqueo de los techos (Fase 6, antes que nada en el punto) en
+    B-01, que se detiene en el bucle de MD: el motivo es el del bucle."""
+    def _techo_mal_declarado(_dato):
+        raise DatoInvalidoError("techos_de_transcripcion_fase_6",
+                                valor="Sv: -1", motivo="(prueba)")
+    monkeypatch.setattr(servicio, "avisos_de_transcripcion", _techo_mal_declarado)
+    informe = V.correr_juego(V.aplicar(V.juego_completo(),
+                                       J.VARIANTES[V.VARIANTE_DE_REFERENCIA][1]))
+    b01 = next(p for p in informe.puntos if p.punto.id == "B-01")
+    assert b01.bloqueos[0].fase == servicio.FASE_PROTECCION
+    motivo = b01.compatibilidad_rasante.motivo
+    assert servicio.FASE_PROTECCION not in motivo
+    assert servicio.FASE_DISENO in motivo and servicio.ETAPA_BUCLE_DE_MD in motivo
+
+
+def test_un_bloqueo_de_la_fase_6_con_7b_fallida_nombra_la_geometria(
+        juego_expediente):
+    """(ii) La proteccion se bloquea y 7.B tambien: el motivo es 7.B."""
+    punto = juego_expediente.puntos[0].punto
+    motivo = _sin_tamizado(punto, [
+        _bloqueo(servicio.FASE_LICUEFACCION, "evaluacion de licuefaccion"),
+        _bloqueo(servicio.FASE_PROTECCION, "d50, espesor y longitud"),
+        _bloqueo(servicio.FASE_GEOMETRIA, "compatibilidad geometrica (7.B)")])
+    assert servicio.FASE_GEOMETRIA in motivo
+    assert servicio.FASE_PROTECCION not in motivo
+
+
+def test_sin_bloqueo_que_lleve_a_7a_el_motivo_es_el_de_m12(juego_expediente):
+    punto = juego_expediente.puntos[0].punto
+    motivo = _sin_tamizado(punto, [
+        _bloqueo(servicio.FASE_LICUEFACCION, "evaluacion de licuefaccion"),
+        _bloqueo(servicio.FASE_ESTRUCTURAL, "(prueba)")])
+    assert motivo == _DEFECTO_SIN_TAMIZADO
