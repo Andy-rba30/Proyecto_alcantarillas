@@ -55,6 +55,9 @@ UNIDADES_DE_M6_A_M10: Dict[str, Dim] = {
     "mm/N": T ** 2 / M,                 # factor de flexibilidad (D^2/(E*I))
     "s-1": ADIM / T,                    # permitividad del geotextil
     "min": T,                           # duracion del caudal pico
+    # --- VE-7 (dictamen Fable, (i-c)) --- la quinta corrida: el s_xe del
+    # cortante del armado (AASHTO 5.7.3.4.2) se imprime en pulgadas.
+    "in": L,
 }
 
 

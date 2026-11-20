@@ -284,6 +284,12 @@ def _poner_entradas(ventana, raiz, referencia):
                                              relativa(referencia.cuencas))
         hechos["estacion"] = _pulsar_examinar(ventana, raiz, "_elegir_estacion",
                                               relativa(referencia.estacion))
+    else:
+        # --- VE-7 (dictamen Fable, (iv)) --- una corrida sin hidrologia
+        # detras de otra con ella: los dos campos se vacian, como haria el
+        # proyectista, o la ventana correria con las cuencas de la anterior.
+        ventana.cuencas_var.set("")
+        ventana.estacion_var.set("")
     ventana.alcance_var.set(referencia.alcance)
     raiz.update()
     return hechos
