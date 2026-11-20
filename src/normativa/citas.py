@@ -13444,7 +13444,8 @@ HDS5_2_2_5_COTA_DE_DANO = _cita(
           "('remanso_derecho_via' [A]). El inciso b. trae otro criterio de "
           "nivel, el AUMENTO admisible de la superficie del agua (de 0 a 1 "
           "ft en la llanura de inundacion de la FEMA), que exige el perfil "
-          "del cauce sin la obra y no esta implementado."),
+          "del cauce sin la obra: desde VE-4c lo usa el metodo del perfil de "
+          "remanso (cita HDS5_3ED.2.2.5b#AUMENTO)."),
 )
 
 # ===========================================================================
@@ -15362,6 +15363,93 @@ AASHTO_C11_6_5_3_AGUA_ABIERTO = _cita(
           "involve a form of the Westergaard solution» (Kramer, 1996): la "
           "formula no esta en ninguna fuente del repositorio de normas, y "
           "por eso el programa se detiene en este caso en vez de inventarla."),
+)
+
+
+# ===========================================================================
+# --- VE-4c --- V5 por el PERFIL DE REMANSO del cauce de aproximacion (ficha
+# T7B-01). Tres frases del HDS-5, 3.ª ed., Cap. 2, leidas en la capa de texto
+# de la pagina (PDF 68, 69 y 72): la seccion tipica del cauce, su lamina
+# natural como la del tirante normal, y el aumento admisible de la lamina.
+# ===========================================================================
+FECHA_VE4C = "2026-11-20"
+POR_VE4C = "validacion/VE-4c · lectura directa de la pagina por la sesion"
+VE4C = (FECHA_VE4C, POR_VE4C)
+
+HDS5_2_2_3A_SECCION_TIPICA = _cita(
+    id="HDS5_3ED.2.2.3a#SECCION_TIPICA",
+    fuente_id="HDS5_3ED",
+    numeral="2.2.3 a.",
+    titulo_numeral="Waterway Data",
+    pagina_impresa="2.6",
+    pagina_pdf=68,
+    texto_literal=Verbatim(
+        texto=("If only one cross section of the natural channel is "
+               "available, it will be used as the typical cross section."),
+        pagina_pdf=68),
+    caracter=Caracter.RECOMENDACION,
+    sesion=VE4C,
+    nota=("Inciso a. «Cross Sections» de los datos del cauce: lo deseable son "
+          "al menos dos secciones levantadas, una aguas arriba y otra aguas "
+          "abajo, y mas aguas arriba si hay embalse importante. Con UNA, se "
+          "toma como seccion tipica. Es lo que sostiene que V5, con el "
+          "perfil de remanso, corra el paso directo sobre UNA seccion "
+          "trapecial prismatica del cauce de aproximacion (dato externo "
+          "`seccion_cauce_aproximacion`): la lectura de que esa seccion "
+          "representa todo el tramo remansado es del proyecto, y la fuente "
+          "dice que hay que comprobarla con la cartografia y las fotos."),
+)
+
+HDS5_2_2_3E_NORMAL = _cita(
+    id="HDS5_3ED.2.2.3e#NORMAL",
+    fuente_id="HDS5_3ED",
+    numeral="2.2.3 e.",
+    titulo_numeral="Waterway Data",
+    pagina_impresa="2.7",
+    pagina_pdf=69,
+    pagina_pdf_titulo=68,
+    texto_literal=Verbatim(
+        texto=("Lacking these conditions, tailwater elevations can be based "
+               "on water surface elevations in the natural channel as "
+               "defined by the normal depth."),
+        pagina_pdf=69),
+    caracter=Caracter.PERMISO,
+    sesion=VE4C,
+    nota=("Inciso e. «Tailwater»: «these conditions» son los embalses, "
+          "obstrucciones, estrechamientos, mareas y confluencias aguas abajo; "
+          "sin ellos, la lamina del cauce natural es la del tirante normal. "
+          "La fuente lo dice para el TW; V5 lo aplica al cauce de "
+          "APROXIMACION para obtener el tirante natural sobre el que se mide "
+          "lo que la obra añade (lectura del proyecto). La frase sigue: si "
+          "esas condiciones existen, hace falta el perfil de la lamina "
+          "«typically using the standard step method»."),
+)
+
+HDS5_2_2_5B_AUMENTO = _cita(
+    id="HDS5_3ED.2.2.5b#AUMENTO",
+    fuente_id="HDS5_3ED",
+    numeral="2.2.5 b.",
+    titulo_numeral="Allowable Headwater",
+    pagina_impresa="2.10",
+    pagina_pdf=72,
+    pagina_pdf_titulo=71,
+    texto_literal=Verbatim(
+        texto=("Depending upon the culvert location, existing floodplain "
+               "encroachments, and whether there is a regulatory floodway, "
+               "the allowable water surface elevation increase varies from "
+               "0 to 1 ft (0.3 m)."),
+        pagina_pdf=72),
+    caracter=Caracter.DEFINICION,
+    sesion=VE4C,
+    nota=("Inciso b. «Regulatory Constraints»: el limite es el del Programa "
+          "Nacional de Seguros contra Inundaciones de EE. UU. (FEMA) sobre "
+          "la cota de la crecida de 100 años, y la fuente lo DESCRIBE como "
+          "practica regulatoria de su pais. Es el criterio de nivel que la "
+          "nota de `HDS5_3ED.2.2.5a#COTA_DE_DANO` dejaba sin implementar: el "
+          "AUMENTO de la lamina sobre la que hay sin la obra. V5, con el "
+          "perfil de remanso, termina la curva donde la lamina baja a esa "
+          "sobreelevacion sobre el tirante natural; el valor dentro de la "
+          "banda 0 a 0.3 m es [A] ('sobreelevacion_admisible_remanso_m')."),
 )
 
 CITAS: Dict[str, Cita] = {c.id: c for c in _TODAS}

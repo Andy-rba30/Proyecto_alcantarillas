@@ -4698,9 +4698,12 @@ CRITERIOS: Dict[str, Criterio] = {
         #                     de NIVEL que el HDS-5 num. 2.2.5 sostiene.
         #                     IMPLEMENTADO (correcciones de T-7b, H2).
         #   perfil_de_remanso_paso_a_paso   la curva de remanso aguas arriba
-        #                     (M1 en cauce suave). Se puede declarar y V5 se
-        #                     detiene con «metodo no evaluable»: no esta
-        #                     implementado (ficha T7B-01).
+        #                     por paso directo desde la boca, sobre la
+        #                     seccion del cauce de aproximacion (dato externo
+        #                     `seccion_cauce_aproximacion`), hasta donde la
+        #                     lamina queda 'sobreelevacion_admisible_remanso_m'
+        #                     sobre el tirante natural. IMPLEMENTADO en VE-4c
+        #                     (ficha T7B-01): mide lo que la obra AÑADE.
         sensibilidad=("embalse_a_nivel", "cota_de_afectacion",
                       "perfil_de_remanso_paso_a_paso"),
         concepto="Metodo con que V5 mide la extension del embalse aguas "
@@ -4754,9 +4757,16 @@ CRITERIOS: Dict[str, Criterio] = {
                       "como medida de lo que la obra añade es una cota "
                       "SUPERIOR, y con los anchos de la Tabla 304.09 (16 a "
                       "40 m) solo cumple en cauces de pendiente fuerte. "
-                      "Restar el tirante natural exige la seccion del cauce "
-                      "de aproximacion, que no es dato de entrada (ficha "
-                      "T7B-01)",
+                      "Lo que la obra añade lo mide el tercer metodo, el "
+                      "perfil de remanso: la curva de la lamina por paso "
+                      "directo desde la boca sobre la seccion del cauce de "
+                      "aproximacion (`seccion_cauce_aproximacion`, dato "
+                      "externo por punto), hasta donde la lamina queda a la "
+                      "sobreelevacion admisible sobre el tirante natural del "
+                      "cauce ('sobreelevacion_admisible_remanso_m'); la "
+                      "distancia, sumada a la de la boca y proyectada por el "
+                      "esviaje, se compara con la mitad del ancho del derecho "
+                      "de via, como en el embalse a nivel",
         fuente="Fase 5, V5 de la hoja de ruta. El requisito juridico: "
                "DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 "
                "(pags. impresas 198-199, registro DG2018.304.07.02), y la "
@@ -4770,6 +4780,60 @@ CRITERIOS: Dict[str, Criterio] = {
             que_lo_fija="el proyectista: ninguna fuente de normas/ da el "
                         "metodo de la extension del embalse",
             dominio="uno de los metodos de la ventana",
+        ),
+    ),
+
+    "sobreelevacion_admisible_remanso_m": Criterio(
+        # --- VE-4c --- (ficha T7B-01) EL FIN DEL PERFIL DE REMANSO DE V5. Lo
+        # lee solo V5 con 'remanso_derecho_via' = «perfil_de_remanso_paso_a_
+        # paso» (`M5._v5_perfil_de_remanso`), y SIN VALOR DE ARCHIVO: sin
+        # declarar ese metodo nadie lo pide y ningun resultado cambia;
+        # declarado el metodo, V5 se detiene aqui con CriterioPendienteError.
+        # NIVEL: expediente, el de V5 (diferida a perfil). Ninguna corrida de
+        # tests/test_nivel_medido.py lo alcanza (V5 se detiene antes, en el
+        # metodo vacio): lo mide tests/test_ve4c_v5_remanso.py, y que solo lo
+        # lee V5 lo comprueba test_nivel_medido por AST.
+        valor=None,
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="A",
+        forma=FORMA_FLOAT,
+        # La ventana es la del HDS-5 num. 2.2.5 b. (de 0 a 1 ft, 0.30 m). El 0
+        # entra: es un valor que una autoridad puede exigir, y con el V5 dice
+        # que la M1 de un cauce suave no tiene final (metodo no evaluable) en
+        # vez de cortarla en un numero que nadie declaro.
+        sensibilidad=(0.0, 0.30),
+        concepto="Sobreelevacion de la lamina del cauce de aproximacion sobre "
+                 "su tirante natural (m) por debajo de la cual el remanso de "
+                 "la obra no se cuenta como afectacion: el perfil de remanso "
+                 "de V5 termina donde la lamina baja a y_n + este valor, y su "
+                 "longitud es la que se compara con el derecho de via",
+        justificacion="Decide donde termina el remanso que V5 compara con la "
+                      "faja del derecho de via cuando el metodo declarado es "
+                      "el perfil de remanso. En un cauce de pendiente suave "
+                      "la curva M1 se acerca al tirante natural sin "
+                      "alcanzarlo, de modo que la distancia hasta la que la "
+                      "obra eleva la lamina solo tiene final si se fija "
+                      "cuanta elevacion no se cuenta; un valor menor alarga "
+                      "el remanso y puede hacer que V5 no cumpla. El HDS-5 "
+                      "describe ese aumento admisible de la superficie del "
+                      "agua sobre la que hay sin la obra como una restriccion "
+                      "regulatoria de EE. UU. (cita HDS5_3ED.2.2.5b#AUMENTO), "
+                      "entre 0 m y 0.30 m segun el sitio; el MTC no fija "
+                      "ninguno. Elegir el valor es adopcion del proyectista, y "
+                      "con 0 m el cauce suave no da distancia finita. En un "
+                      "cauce de pendiente fuerte el remanso termina en el "
+                      "resalto y este valor solo lo acorta si supera la "
+                      "diferencia entre el conjugado y el tirante natural",
+        fuente="Adopcion del proyectista dentro de la ventana que describe el "
+               "HDS-5 num. 2.2.5 b. (pag. impresa 2.10, PDF 72, registro "
+               "HDS5_3ED.2.2.5b#AUMENTO): el aumento admisible de la "
+               "superficie del agua por una obra en la llanura de inundacion "
+               "del programa de la FEMA. Ninguna fuente peruana de normas/ lo "
+               "fija",
+        resolucion=Libre(
+            que_lo_fija="el proyectista, o la autoridad del agua si fija un "
+                        "aumento admisible del nivel aguas arriba",
+            dominio="m, 0 <= valor <= 0.30",
         ),
     ),
 

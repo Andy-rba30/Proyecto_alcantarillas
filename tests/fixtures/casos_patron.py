@@ -3215,3 +3215,98 @@ CP_T7V_ETA = {
     # kN/m y 35.402 kN·m/m con eta = 1.00, se escala entera con 1.05
     "pantalla_reposo": {"V_u": 1.05 * 43.5024, "M_u": 1.05 * 35.4024},
 }
+
+
+# ===========================================================================
+# --- VE-4c --- V5 por el PERFIL DE REMANSO (metodo 'perfil_de_remanso_paso_
+# a_paso' de 'remanso_derecho_via'; ficha T7B-01)
+# ===========================================================================
+#
+# EL DORADO. A-01 del fixture con la carga de la linea base (HW = 1.042 m con
+# el tubo de 0.90 m, Q = 1.167 m3/s, L_boca = 9.317 m, esviaje 15) y DOS
+# cauces de aproximacion DE PRUEBA (no son levantamientos de ninguna obra):
+#
+#   suave   b 1.00, z 1.5, n 0.035, S 0.006: y_n = 0.5733 > y_c = 0.4174 m.
+#           Con Δ = 0.10 m la M1 va de 1.042 a 0.6733 m: L = 75.05 m (la
+#           integracion independiente del test la recalcula) y
+#           d = (9.317 + 75.05)·cos 15 = 81.49 m. Contra 200 m de faja
+#           (100 m) CUMPLE; contra 120 m (60 m) NO. El embalse a nivel da
+#           176.75 m con el mismo HW: mas del doble, porque corta el fondo.
+#   fuerte  b 0.80, z 1.0, n 0.035, S 0.04: y_n = 0.4164 < y_c = 0.4870 m;
+#           el conjugado del normal es 0.5641 m (S1 hasta el resalto). Con
+#           Δ = 0.25 m, y_n + Δ = 0.6664 m supera al conjugado y corta la S1
+#           antes del resalto.
+CP_VE4C_V5 = {
+    "Q": 1.167, "HW": 1.042, "L_boca": 9.317, "esviaje": 15.0,
+    "cauce_suave": {"b_m": 1.0, "z_HV": 1.5, "S": 0.006, "n": 0.035,
+                    "altura_total_m": 2.5},
+    "cauce_fuerte": {"b_m": 0.8, "z_HV": 1.0, "S": 0.04, "n": 0.035,
+                     "altura_total_m": 2.5},
+    "delta_suave": 0.10, "delta_fuerte_grande": 0.25,
+    "ancho_que_cumple": 200.0, "ancho_que_no": 120.0,
+}
+
+# EL ORACULO PUBLICADO. USBR, «Design of Small Canal Structures» (1978),
+# Apendice C, «EXAMPLE OUTPUT FROM PROGRAM 223-E3WSP / DESIGN EXAMPLE CHUTE
+# FROM CHAPTER II / WATER SURFACE PROFILE - RECTANGULAR SECTION», pag.
+# impresa 428 (PDF 451); los datos de entrada, en la «INPUT DATA» de la pag.
+# 429 (PDF 452): Q = 35 cfs, n = 0.010, rectangular, ancho 3 ft hasta 42+00
+# y 3.74, 3.91, 4.09, 4.43 y 5 ft en la transicion; pendiente de la solera
+# 0 en la seccion inicial, 0.08163, 0.1051, 0.05241 y 0.5 (V/H). Es la
+# ecuacion de la energia por tramos con la friccion de Manning PROMEDIADA
+# (listing: H3 = L9*(S1+S2)/2, con L9 la distancia sobre la solera), es
+# decir, el escalon del paso directo; el perfil es supercritico (una rapida),
+# lo que no cambia el escalon. El ejemplar es un escaneo con capa OCR: las
+# cifras se leyeron de la pagina; las que el OCR rompe ('*so9' por .509,
+# '9479' por .479) se reconstruyeron con la velocidad y el ancho de la fila.
+#
+# LAS TOLERANCIAS, derivadas y no ajustadas:
+#   - D se reconstruye de la velocidad impresa (D = Q / (W V)); la impresa
+#     es su redondeo a 0.001 ft. Media cifra seria 0.0005 ft, y la estacion
+#     42+00 se aparta 0.0007 ft (V = 19.466 ft/s da D = 0.5993 ft; la tabla
+#     imprime .600): ERRATA de la salida publicada, registrada aqui; la
+#     tolerancia es una cifra entera, 0.001 ft.
+#   - el residuo del balance de un tramo: el programa acepta cada seccion
+#     con +-0.005 ft entre su energia y la linea de energia que arrastra
+#     (listing, lineas 4640-4650), y el tramo combina dos (0.010 ft); la
+#     velocidad impresa a 0.001 ft/s mueve cada carga de velocidad menos de
+#     0.0004 ft y la g del programa (32.16 ft/s2) frente a la del proyecto
+#     (9.81 m/s2) menos de 0.001 ft en la diferencia del tramo: 0.012 ft. El
+#     peor residuo medido es 0.0107 ft, en los dos tramos que tocan 42+00.
+CP_VE4C_USBR_WSP = {
+    "pagina_pdf": 451,
+    "Q_cfs": 35.0, "n": 0.010,
+    "filas": (
+        # estacion, solera, V, D impresa, ancho, pendiente de la solera
+        {"estacion_ft": 3578.0, "solera_ft": 3703.00, "V_fps": 7.224,
+         "D_ft": 1.615, "ancho_ft": 3.0, "pendiente_solera": 0.0},
+        {"estacion_ft": 3748.0, "solera_ft": 3689.12, "V_fps": 22.906,
+         "D_ft": 0.509, "ancho_ft": 3.0, "pendiente_solera": 0.08163},
+        {"estacion_ft": 3805.0, "solera_ft": 3684.47, "V_fps": 22.626,
+         "D_ft": 0.516, "ancho_ft": 3.0, "pendiente_solera": 0.08163},
+        {"estacion_ft": 3940.0, "solera_ft": 3670.28, "V_fps": 24.531,
+         "D_ft": 0.476, "ancho_ft": 3.0, "pendiente_solera": 0.1051},
+        {"estacion_ft": 4046.42, "solera_ft": 3659.10, "V_fps": 24.417,
+         "D_ft": 0.478, "ancho_ft": 3.0, "pendiente_solera": 0.1051},
+        {"estacion_ft": 4168.0, "solera_ft": 3652.73, "V_fps": 19.495,
+         "D_ft": 0.598, "ancho_ft": 3.0, "pendiente_solera": 0.05241},
+        {"estacion_ft": 4200.0, "solera_ft": 3651.05, "V_fps": 19.466,
+         "D_ft": 0.600, "ancho_ft": 3.0, "pendiente_solera": 0.05241},
+        {"estacion_ft": 4213.0, "solera_ft": 3650.37, "V_fps": 19.527,
+         "D_ft": 0.479, "ancho_ft": 3.74, "pendiente_solera": 0.05241},
+        {"estacion_ft": 4216.0, "solera_ft": 3650.04, "V_fps": 19.788,
+         "D_ft": 0.452, "ancho_ft": 3.91, "pendiente_solera": 0.05241},
+        {"estacion_ft": 4219.0, "solera_ft": 3649.38, "V_fps": 20.538,
+         "D_ft": 0.417, "ancho_ft": 4.09, "pendiente_solera": 0.05241},
+        {"estacion_ft": 4223.82, "solera_ft": 3647.06, "V_fps": 23.305,
+         "D_ft": 0.339, "ancho_ft": 4.43, "pendiente_solera": 0.5},
+        {"estacion_ft": 4235.0, "solera_ft": 3642.06, "V_fps": 27.024,
+         "D_ft": 0.259, "ancho_ft": 5.0, "pendiente_solera": 0.5},
+    ),
+    "tolerancia_D_ft": 0.001,
+    "tolerancia_tramo_ft": 0.012,
+    # Cifras de la pagina que la capa OCR entrega limpias: el test `pdf`
+    # comprueba que estan donde el caso dice.
+    "cifras_en_la_pagina": ("3697.786", "3692.942", "3680.106", "3668.845",
+                            "3653.641", "22.906", "24.531", "27.024"),
+}

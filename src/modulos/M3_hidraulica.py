@@ -167,12 +167,14 @@ from src.constantes_normativas import K_MANNING_SI
 from src.modelos import (CIFRAS_FINA, CIFRAS_MAGNITUD, DatoInvalidoError,
                      Seccion, SeccionCircular,
                      Geometria, LimiteNumericoError, Magnitud, Material,
-                     PuntoCritico, SECCION_RECEPTOR_ADOPTADA,
+                     PuntoCritico, RAMA_REMANSO_M1, RAMA_REMANSO_NINGUNA,
+                     RAMA_REMANSO_S1, RemansoAguasArriba,
+                     SECCION_RECEPTOR_ADOPTADA,
                      SECCION_RECEPTOR_MEDIDA, SeccionReceptor,
                      SinTiranteNormal, TiranteNormal,
                      TWDeterminado, ViaDelTW, paso)
 from src.tolerancias import (PASOS_PERFIL_REMANSO, PUNTOS_MOMENTO_SECCION,
-                             TOL_BRENT,
+                             TOL_BRENT, TOL_UMBRAL_NORMATIVO,
                               TOL_THETA_BORDE)
 
 NUMERAL_MANNING = "4.1"
@@ -757,6 +759,90 @@ def tirante_conjugado_trapecial(*, Q: float, seccion: SeccionReceptor,
                "la seccion declarada del canal")
 
 
+def energia_y_friccion_trapecial(*, Q: float, b: float, z: float, n: float,
+                                 y: float) -> Tuple[float, float]:
+    """
+    --- VE-4c --- (E, Sf) en una seccion trapecial con tirante VERTICAL y:
+    la energia especifica E = y + V^2 / (2 g) y la pendiente de friccion de
+    Manning Sf = (n V / (K R^(2/3)))^2, con V = Q / A (Manual num. 4.1.1.3.6
+    para Manning; K = K_MANNING_SI). Son las dos piezas de cada escalon del
+    paso directo de `perfil_remanso_trapecial`, sacadas a una funcion para
+    que el escalon se pueda contrastar por si solo: la validacion contra el
+    perfil publicado del USBR (223-E3WSP, «Design of Small Canal Structures»,
+    pag. impresa 428) cierra el balance de energia de cada tramo con ellas
+    (tests/test_ve4c_v5_remanso.py).
+    """
+    A = area_trapecial(b=b, z=z, y=y)
+    R = A / perimetro_trapecial(b=b, z=z, y=y)
+    V = Q / A
+    return (y + V * V / (2 * G),                                # literal-ok: carga de velocidad V^2/(2g)
+            (n * V / (K_MANNING_SI * R ** (2 / 3))) ** 2)      # literal-ok: Manning, Sf = (n V / R^(2/3))^2
+
+
+def remanso_aguas_arriba(*, Q: float, seccion: SeccionReceptor, HW: float,
+                         sobreelevacion_admisible: float
+                         ) -> RemansoAguasArriba:
+    """
+    --- VE-4c --- (ficha T7B-01) El remanso que la obra forma en el cauce de
+    APROXIMACION, aguas arriba de la boca, por el paso directo de
+    `perfil_remanso_trapecial` con la carga a la entrada como condicion de
+    borde: el tirante del cauce en la boca es HW (la solera del cauce en la
+    boca se toma en la cota de entrada del conducto, y el HW sin la carga de
+    velocidad de aproximacion, como lo da M4: HDS-5 la desprecia).
+
+    Lo que mide es lo que la obra AÑADE sobre el cauce natural: la distancia
+    hasta la que la lamina queda MAS de `sobreelevacion_admisible` (Δ) por
+    encima del tirante natural, que es el normal de Manning y_n en la seccion
+    del cauce (HDS-5 num. 2.2.3 e.: la lamina del cauce natural «as defined
+    by the normal depth»).
+
+        cauce suave  (y_n > y_c):  M1 de HW a y_fin = y_n + Δ. Con Δ = 0 la M1
+                                   es asintotica al normal y no tiene final:
+                                   `longitud_m` None y `asintotico`.
+        cauce fuerte (y_n <= y_c): S1 de HW a y_fin = max(y_conj, y_n + Δ), con
+                                   y_conj el conjugado del normal: el resalto.
+                                   Aguas arriba el cauce corre a su normal.
+
+    Si HW no supera y_fin, la obra no remansa el cauce por encima del
+    admisible (o el resalto queda en la boca): longitud 0. El corte entre
+    suave y fuerte es el de `M7.remanso_canal` (y_n > y_c + TOL_UMBRAL_
+    NORMATIVO).
+
+    No juzga el dominio del metodo (la altura de la seccion, Δ = 0 en un
+    cauce suave): lo hace quien lo usa, V5, con su rotulo.
+    """
+    y_n = tirante_normal_trapecial(Q=Q, seccion=seccion)
+    y_c = tirante_critico_trapecial(Q=Q, seccion=seccion)
+    suave = y_n > y_c + TOL_UMBRAL_NORMATIVO
+    y_conj = None
+    if suave:
+        if not sobreelevacion_admisible > 0:
+            if HW > y_n:
+                return RemansoAguasArriba(
+                    y_normal_m=y_n, y_critico_m=y_c, suave=True,
+                    rama=RAMA_REMANSO_M1, y_conjugado_m=None, y_fin_m=None,
+                    longitud_m=None, asintotico=True)
+            y_fin = y_n
+        else:
+            y_fin = y_n + sobreelevacion_admisible
+        rama = RAMA_REMANSO_M1
+    else:
+        y_conj = tirante_conjugado_trapecial(Q=Q, seccion=seccion, y=y_n)
+        y_fin = max(y_conj, y_n + sobreelevacion_admisible)
+        rama = RAMA_REMANSO_S1
+    if not HW > y_fin:
+        return RemansoAguasArriba(
+            y_normal_m=y_n, y_critico_m=y_c, suave=suave,
+            rama=RAMA_REMANSO_NINGUNA, y_conjugado_m=y_conj, y_fin_m=y_fin,
+            longitud_m=0.0, estaciones=((0.0, HW),))
+    L, estaciones = perfil_remanso_trapecial(Q=Q, seccion=seccion,
+                                             y_inicio=HW, y_fin=y_fin)
+    return RemansoAguasArriba(
+        y_normal_m=y_n, y_critico_m=y_c, suave=suave, rama=rama,
+        y_conjugado_m=y_conj, y_fin_m=y_fin, longitud_m=L,
+        estaciones=estaciones)
+
+
 def perfil_remanso_trapecial(*, Q: float, seccion: SeccionReceptor,
                              y_inicio: float, y_fin: float,
                              pasos: int = PASOS_PERFIL_REMANSO
@@ -789,10 +875,7 @@ def perfil_remanso_trapecial(*, Q: float, seccion: SeccionReceptor,
                    "y_inicio > y_fin > y_n")
 
     def _E_Sf(t: float) -> Tuple[float, float]:
-        A = area_trapecial(b=b, z=z, y=t)
-        R = A / perimetro_trapecial(b=b, z=z, y=t)
-        V = Q / A
-        return t + V * V / (2 * G), (n * V / R ** (2 / 3)) ** 2   # literal-ok: Manning
+        return energia_y_friccion_trapecial(Q=Q, b=b, z=z, n=n, y=t)
 
     d0, d1 = y_inicio - y_n, y_fin - y_n
     x = 0.0

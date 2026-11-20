@@ -638,9 +638,10 @@ def datos_faltantes_por_punto(ruta_csv: Any, externos: Any,
                 declarado = ca.criterio_efectivo(criterio).valor
                 if declarado is None:
                     continue
-                # Las dos de V5 las pide cada una SU metodo (H2).
-                metodo = servicio.METODO_QUE_EXIGE_LA_CLAVE.get(clave)
-                if metodo is not None and declarado != metodo:
+                # Las de V5 las piden SUS metodos (H2; VE-4c: el ancho, el
+                # embalse a nivel y el perfil de remanso).
+                metodos = servicio.METODO_QUE_EXIGE_LA_CLAVE.get(clave)
+                if metodos is not None and declarado not in metodos:
                     continue
                 anadir(clave, EXTERNO,
                        f"{concepto}. El criterio '{criterio}' esta declarado "

@@ -502,14 +502,26 @@ def test_la_faja_simetrica_es_una_lectura_declarada_y_el_paso_la_cita():
     assert "HDS5_3ED.2.2.5#EMBALSE" in v.paso.citas_textuales
 
 
-def test_v5_el_metodo_nombrado_y_no_implementado_no_da_cifra():
+def test_v5_el_metodo_del_perfil_sin_su_seccion_no_da_cifra():
+    """
+    REESCRITO DECLARANDOLO (VE-4c, ficha T7B-01): el metodo «perfil_de_
+    remanso_paso_a_paso» esta implementado y ya no levanta «metodo no
+    evaluable» por no estarlo. Sin la sobreelevacion admisible se detiene en
+    el criterio, y declarada, sin la seccion del cauce de aproximacion, en el
+    dato: nunca una cifra. Lo demas del metodo, en
+    tests/test_ve4c_v5_remanso.py.
+    """
     ca.establecer_valor_dinamico("remanso_derecho_via",
                                  "perfil_de_remanso_paso_a_paso")
-    with pytest.raises(MetodoNoEvaluableError) as e:
+    with pytest.raises(CriterioPendienteError) as e:
         M5.v5_remanso(punto=_punto_v5(), resultado=_resultado_v5(),
                       derecho_de_via=_derecho(400.0))
-    assert str(e.value).startswith(modelos.MOTIVO_METODO_NO_EVALUABLE_REMANSO)
-    assert not str(e.value).startswith(modelos.MOTIVO_METODO_NO_EVALUABLE)
+    assert e.value.clave == "sobreelevacion_admisible_remanso_m"
+    ca.establecer_valor_dinamico("sobreelevacion_admisible_remanso_m", 0.1)
+    with pytest.raises(DatoFaltanteError) as e:
+        M5.v5_remanso(punto=_punto_v5(), resultado=_resultado_v5(),
+                      derecho_de_via=_derecho(400.0))
+    assert e.value.campo == "seccion_cauce_aproximacion"
 
 
 @pytest.mark.parametrize("S", [0.0, -0.01, float("nan")])
@@ -766,21 +778,26 @@ def test_las_tres_claves_de_V5_y_V8_son_datos_externos_por_punto():
     arriba; `CLAVES_EXTERNAS` pasa de 24 a 25. La cota admite cero y signo.
     Y 26 desde VE-3.6, que sumo `desnivel_perfil_canal_m` (el F del canal
     que VC3 pide en la Familia C); este recuento se habia quedado en 25.
+    REESCRITO DECLARANDOLO (VE-4c): CINCO y 27, con la seccion del cauce de
+    aproximacion que pide el metodo del perfil de remanso; y cada clave de
+    V5 la piden una TUPLA de metodos (el ancho, dos).
     """
     assert servicio.CLAVES_DE_V5_Y_V8 == (
         "ancho_derecho_via_m", "Q_evento_extremo_m3s", "TW_evento_extremo_m",
-        "cota_afectacion_aguas_arriba_msnm")
+        "cota_afectacion_aguas_arriba_msnm", "seccion_cauce_aproximacion")
     for clave in servicio.CLAVES_DE_V5_Y_V8:
         assert clave in servicio.CLAVES_EXTERNAS
-    assert len(servicio.CLAVES_EXTERNAS) == 26
+    assert len(servicio.CLAVES_EXTERNAS) == 27
     assert "desnivel_perfil_canal_m" in servicio.CLAVES_EXTERNAS
     cota = "cota_afectacion_aguas_arriba_msnm"
     assert {f.value for f in servicio.FAMILIAS_QUE_USAN[cota]} == {"A", "B"}
     assert cota in servicio.CLAVES_QUE_ADMITEN_CERO
     assert cota in servicio.CLAVES_CON_SIGNO
     assert servicio.METODO_QUE_EXIGE_LA_CLAVE == {
-        "ancho_derecho_via_m": "embalse_a_nivel",
-        cota: "cota_de_afectacion"}
+        "ancho_derecho_via_m": ("embalse_a_nivel",
+                                "perfil_de_remanso_paso_a_paso"),
+        cota: ("cota_de_afectacion",),
+        "seccion_cauce_aproximacion": ("perfil_de_remanso_paso_a_paso",)}
     # El ancho del derecho de via es de las Familias A y B: en la C la
     # sustituye VC1 y el dato no se pide.
     familias = servicio.FAMILIAS_QUE_USAN["ancho_derecho_via_m"]

@@ -3515,6 +3515,36 @@ V5_REMANSO = _fundamento(
         "medido."),
 )
 
+# --- VE-4c --- (ficha T7B-01) V5 por el perfil de remanso: el tercer metodo
+# de 'remanso_derecho_via', con su propio paso porque mide otra cosa -- lo
+# que la obra AÑADE sobre el tirante natural del cauce --.
+V5_PERFIL_REMANSO = _fundamento(
+    id="F5.V5_PERFIL",
+    fase=F5,
+    que_paso=("V5: hasta donde la obra eleva la lamina del cauce de "
+              "aproximacion sobre su tirante natural, frente al derecho de "
+              "via (metodo del perfil de remanso)"),
+    por_que=(
+        "La fuente identifica la carga a la entrada con la profundidad del "
+        "embalse en la boca, define la lamina del cauce natural como la del "
+        "tirante normal y describe, como restriccion regulatoria, un aumento "
+        "admisible de la superficie del agua sobre la que habria sin la "
+        "obra. El derecho de via es la faja de dominio publico cuyo ancho "
+        "fija la autoridad. Medir hasta donde llega lo que la obra añade "
+        "exige la curva de la lamina aguas arriba de la boca, sobre la "
+        "seccion tipica del cauce, hasta donde la elevacion baja al aumento "
+        "admisible; esa distancia es la que tiene que quedar dentro de la "
+        "faja."),
+    verbo=Verbo.DEFINE,
+    citas=("HDS5_3ED.2.2.5#EMBALSE", "HDS5_3ED.2.2.5b#AUMENTO",
+           "DG2018.304.07.01", "DG2018.304.07.02"),
+    que_pasa_si_no_se_hace=(
+        "El remanso de la obra podria levantar el agua sobre el predio de un "
+        "tercero, fuera de la faja, sin que la memoria lo hubiera medido; o, "
+        "con el embalse a nivel, la obra se rechazaria por un tramo en que el "
+        "cauce ya llevaba agua sin ella."),
+)
+
 V8_EVENTO_EXTREMO = _fundamento(
     id="F5.V8",
     fase=F5,
