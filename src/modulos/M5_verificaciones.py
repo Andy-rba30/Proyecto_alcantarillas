@@ -3466,6 +3466,20 @@ def _v8_con_desborde(*, punto: PuntoCritico, seccion: Seccion,
     caudal unitario sobre la plataforma, q = Q_plataforma / L, con el que la
     proteccion del terraplen admite. No recalcula nada; las claves de los
     criterios llegan como argumento porque los lee `v8_evento_extremo`.
+
+    LO QUE SIGUE DIFERIDO (ficha T7B-02):
+      * el diseño de la proteccion del talud de aguas abajo (HEC-23, que el
+        HDS-5 num. 5.4.5 cita y que no esta en el repositorio de normas) y
+        el sifonamiento por la carga sostenida: el admisible es el que ese
+        diseño de, y se declara;
+      * la cresta que crece con el nivel en una curva vertical en columpio
+        (varios tramos, Figura 3.12A): aqui es un tramo de longitud fija;
+      * el tirante y la velocidad sobre la via: «no colapsa» se juzga con el
+        caudal unitario, que el reparto da sin suponer el perfil del flujo;
+      * el reparto por debajo del caudal de diseño (si con el ya hay
+        desborde) y el coeficiente fuera de los ejes de la Figura 3.11
+        (HW_r > 4 ft en el panel B, HW_r/L_r > 0.32 en el A, k_t < 0.5):
+        `MetodoNoEvaluableError` con el rotulo del evento extremo.
     """
     q = reparto.q_unitario
     cumple = q <= q_adm + TOL_UMBRAL_NORMATIVO

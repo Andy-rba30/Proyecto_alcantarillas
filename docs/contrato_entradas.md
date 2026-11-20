@@ -182,15 +182,21 @@ la tabla):
 | `Q_evento_extremo_m3s` | m³/s | **Estudio hidrológico** | Caudal del periodo de retorno que declare `TR_evento_extremo`, para V8. No puede ser menor que el de diseño. Por punto o global (T-7b) | Sólo se lee con `TR_evento_extremo` declarado; entonces, sin él, V8 se detiene con `DatoFaltanteError`. El programa **no lo escala** del caudal de diseño |
 | `TW_evento_extremo_m` | m (admite 0: salida libre) | **Estudio hidrológico** · hidráulico del receptor | Tirante del receptor sobre el fondo de la salida **en ese evento**. No se reutiliza el de diseño: el receptor sube con la avenida (T-7b) | Con el caudal declarado y sin él, V8 se detiene con `DatoFaltanteError` |
 | `cota_afectacion_aguas_arriba_msnm` | msnm (admite cero y signo: es una cota) | **Topografía** del cruce (levantamiento del cauce y del límite del derecho de vía aguas arriba) | La cota del terreno o del bien a proteger en el **límite del derecho de vía aguas arriba**. V5, con el método `cota_de_afectacion` de `remanso_derecho_via` —el criterio de nivel que el HDS-5 núm. 2.2.5 sostiene—, la compara con la cota del embalse de diseño (cota de entrada + HW de M4). Familias A y B. Por punto o global (cierre de T-7b, H2) | Sólo se lee con `remanso_derecho_via` = `cota_de_afectacion` y a nivel de expediente; entonces, sin ella, V5 se detiene con `DatoFaltanteError`. **No tiene valor por defecto** |
+| `longitud_cresta_desborde_m` | m | **Trazo** (perfil longitudinal de la vía en el cruce) | Longitud de la cresta por la que la plataforma desborda, medida **a lo largo de la vía**: la L de la Ec. 3.9 del HDS-5 (núm. 3.1.5), con la curva vertical en columpio representada por **un solo tramo horizontal** a la cota de desborde que V8 ya usa (Figura 3.12B). V8, con el umbral `desborde_admitido_con_terraplen_protegido`, reparte el caudal del evento extremo entre el conducto y la plataforma con ella. El ancho de la cresta en la dirección del flujo es la columna `ancho_plataforma`. Por punto o global (VE-4d) | Sólo se lee con `umbral_no_colapso_evento_extremo` = `desborde_admitido_con_terraplen_protegido` y a nivel de expediente; entonces, sin ella, V8 se detiene con `DatoFaltanteError`. **No tiene valor por defecto** ni techo |
 
-Las cuatro claves de V5 y V8 las abrió T-7b (decisión del dueño del proyecto del
-2026-11-13; la cuarta, la cota de afectación, en el cierre de T-7b). Cada método de V5
+Las cuatro primeras claves de V5 y V8 las abrió T-7b (decisión del dueño del proyecto del
+2026-11-13; la cuarta, la cota de afectación, en el cierre de T-7b); la quinta, la longitud
+de la cresta del desborde, VE-4d. Cada método de V5
 pide **su** dato: `embalse_a_nivel` el ancho del derecho de vía, `cota_de_afectacion` la
 cota. Los **criterios** que las habilitan —`remanso_derecho_via` (el método de V5),
 `TR_evento_extremo` y `umbral_no_colapso_evento_extremo` (el periodo de retorno y el umbral
 de V8)— **no tienen valor de archivo**: los declara el **proyectista** (el método), y el
 **Propietario** con el estudio hidrológico (el periodo de retorno y qué se entiende por
-«no colapsa»). Sin declararlos, V5 y V8 se detienen como siempre y nada cambia.
+«no colapsa»). Sin declararlos, V5 y V8 se detienen como siempre y nada cambia. Con el
+umbral `desborde_admitido_con_terraplen_protegido` (desde VE-4d) V8 pide además el
+criterio `caudal_unitario_admisible_desborde_m2s` [A] —el caudal por metro de cresta que
+la protección del talud de aguas abajo admite, sin valor de archivo: lo da el diseño de
+esa protección (HEC-23, fuera del repositorio de normas)— y la clave de la cresta.
 
 ### 3.1 Ensayos de durabilidad — opcionales, por el mismo JSON (T-4)
 
@@ -480,6 +486,8 @@ tabla: detienen sólo en una rama que ninguna de las dos bases recorre.
 | `cota_afectacion_aguas_arriba_msnm` | entrada del proyecto | Topografía | V5 con el método `cota_de_afectacion`, y con ella el punto (Familias A y B) |
 | `TR_evento_extremo` | criterio que se declara | Propietario (con el estudio hidrológico) | V8, y con ella el punto |
 | `umbral_no_colapso_evento_extremo` | criterio que se declara | Propietario | Ídem |
+| `caudal_unitario_admisible_desborde_m2s` | criterio que se declara | Proyectista (diseño de la protección del terraplén) | V8 con el desborde admitido, y con ella el punto |
+| `longitud_cresta_desborde_m` | entrada del proyecto | Trazo (perfil longitudinal de la vía) | Ídem |
 | `remanso_derecho_via` | criterio que se declara | Proyectista | V5, y con ella el punto (Familias A y B) |
 | `categoria_refuerzo_aashto` | criterio que se declara | Proyectista · especificación de materiales | Los tres recubrimientos de diseño de la 9.4 de la Fase 9 del proyecto (§3.4) |
 

@@ -3515,6 +3515,13 @@ class CoeficienteDelVertedero(NamedTuple):
     h_t_sobre_HW_r: float
 
 
+# El campo de un `DatoInvalidoError` sobre las curvas: el criterio que las
+# trae lo lee V8 (`M5.v8_evento_extremo`), no este modulo, y por eso aqui se
+# nombran por lo que son y no por su clave.
+_CAMPO_CURVAS_DESBORDE = ("curvas de la Figura 3.11 del HDS-5 (los "
+                          "coeficientes del desborde que V8 entrega)")
+
+
 def _no_evaluable_vertedero(motivo: str) -> MetodoNoEvaluableError:
     from src.modelos import MOTIVO_METODO_NO_EVALUABLE_EVENTO_EXTREMO
     return MetodoNoEvaluableError(
@@ -3536,12 +3543,12 @@ def _curva(coeficientes, campo: str, superficie: str):
                       for x, y in coeficientes[campo][superficie])
     except (KeyError, TypeError, ValueError) as exc:
         raise DatoInvalidoError(
-            "coeficientes_desborde_plataforma", valor=campo,
+            _CAMPO_CURVAS_DESBORDE, valor=campo,
             motivo=f"falta la curva '{campo}' de '{superficie}' o no es una "
                    f"serie de pares (abscisa, ordenada): {exc}") from exc
     if len(serie) < 2 or any(not b[0] > a[0] for a, b in zip(serie, serie[1:])):
         raise DatoInvalidoError(
-            "coeficientes_desborde_plataforma", valor=campo,
+            _CAMPO_CURVAS_DESBORDE, valor=campo,
             motivo=f"la curva '{campo}' de '{superficie}' necesita dos o mas "
                    "puntos con la abscisa estrictamente creciente")
     return serie
@@ -3594,7 +3601,7 @@ def coeficiente_de_desborde(*, HW_r: float, ancho_cresta: float, h_t: float,
         conversion = float(coeficientes["conversion_cd_si"])
     except (KeyError, TypeError, ValueError) as exc:
         raise DatoInvalidoError(
-            "coeficientes_desborde_plataforma", valor=coeficientes,
+            _CAMPO_CURVAS_DESBORDE, valor=coeficientes,
             motivo="faltan 'limite_HWr_sobre_Lr' o 'conversion_cd_si'") from exc
     if relacion > limite:
         panel = PANEL_DESBORDE_PROFUNDO

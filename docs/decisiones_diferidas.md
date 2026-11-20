@@ -5738,39 +5738,33 @@ marca del régimen para T-7c.
   `cota_afectacion_aguas_arriba_msnm`). El criterio sigue sin valor de archivo.
 - **Dónde vive:** `src/modulos/M5_verificaciones.py::v5_remanso`
 
-## T7B-02 · V8 juzga «no colapsa» por el desborde de la plataforma, que es la lectura más exigente; el desborde admitido no está implementado
+## T7B-02 · V8 juzga «no colapsa» por el desborde de la plataforma, que es la lectura más exigente; el desborde admitido no estaba implementado (lo está desde VE-4d)
 
 - **Qué se difirió:** el umbral `desborde_admitido_con_terraplen_protegido` —lo que la
-  fila V8 de la hoja de ruta literalmente admite— y el flujo a presión o sobre la vía
-  con el caudal del evento extremo. Con ese umbral, o cuando la sección adoptada no
-  conduce el caudal en lámina libre, V8 levanta `MetodoNoEvaluableError` (rótulo
-  `MOTIVO_METODO_NO_EVALUABLE_EVENTO_EXTREMO`).
-- **Por qué:** el encargo decía «a V8 le faltan entradas». Le faltaban además el método
-  y el umbral: la hoja no dice cómo se juzga el colapso. Se escribió lo mínimo que no
-  inventa nada —cota de entrada + HW(Q_ext) ≤ cota del borde de la plataforma, con M3 y
-  M4 de siempre—, con el umbral como criterio **sin valor**, y el resto se nombró.
-  Consecuencia medida: como V8 corre dentro del bucle de MD, un candidato que no
-  conduce el caudal extremo en lámina libre deja el punto en «método no evaluable»
-  aunque otro anterior haya incumplido V5 (regla T4-10: no se acepta un candidato si uno
-  anterior quedó sin evaluar). Pasa en A-01 con una faja de 300 m: V5 no cumple con
-  Ø 0.90 m, la progresión sigue y el punto termina bloqueado por V8, no por V5; el
-  incumplimiento de V5 se lee en la traza.
-- **Qué haría falta:** el reparto del caudal entre el conducto y la plataforma (HDS-5
-  núm. 3.1.5), el flujo a presión de M4 con el barril lleno a ese caudal, y un criterio
-  de erosión del talud de aguas abajo. Y que el Propietario declare el periodo de
-  retorno y qué entiende por colapso.
-- **Corrección del cierre (H3, ALTA).** El flujo a presión está
-  (`M4.hidraulica_a_presion`: control de entrada sumergido y de salida a barril lleno,
-  gobierna la mayor, sin ecuaciones nuevas), y V8 se evalúa solo sobre el candidato que
-  ya cumple lo anterior (`M5.verificar`). Barrido del auditor en A-01: con ×1.11 y ×1.20
-  lámina libre y cumple en Ø 0.90 m; con ×1.29 y ×1.50 a presión y cumple; con ×1.97 el
-  Ø 0.90 m desborda y MD adopta Ø 1.05 m. El desborde admitido sigue diferido.
-- **Corrección de la verificación de fórmulas (punto 3, MEDIA).** `M4.hidraulica_a_presion`
-  comparaba la aproximación de barril lleno **sin** las dos reglas de la pág. 3.24 del
-  HDS-5, y un caudal mayor podía dar menos carga que uno menor en lámina libre (0.957 m
-  con 1.021 m³/s frente a 0.965 m con 0.987 m³/s). Ahora compite con el perfil de la
-  lámina, como en lámina libre, y V8 lleva la guardia HW_ext ≥ HW de diseño con aviso
-  (ficha T7V-01).
+  fila V8 literalmente admite— y el flujo a presión o sobre la vía con el caudal del
+  evento extremo. V8 levantaba `MetodoNoEvaluableError`
+  (`MOTIVO_METODO_NO_EVALUABLE_EVENTO_EXTREMO`).
+- **Por qué:** a V8 le faltaban el método y el umbral: la hoja no dice cómo se juzga el
+  colapso. Se escribió lo mínimo que no inventa nada —cota de entrada + HW(Q_ext) ≤ cota
+  del borde de la plataforma— con el umbral **sin valor**.
+- **Qué haría falta (y qué se hizo):** el flujo a presión llegó en el cierre de T-7b
+  (H3, `M4.hidraulica_a_presion`; V8 sólo sobre el candidato que ya cumple lo anterior,
+  y no deja en «no evaluable» un punto que V5 descarta; con ×1.97 el caudal de A-01
+  desborda el Ø 0.90 m y MD adopta Ø 1.05 m) y compite con el perfil de la lámina desde
+  la verificación de fórmulas (ficha T7V-01). **El desborde admitido, en VE-4d (2026-11-20):** el caudal se reparte entre
+  el conducto y la plataforma por tanteo (`M4.repartir_caudal_con_desborde`, HDS-5 núm.
+  3.1.5, Ec. 3.9) con la Figura 3.11 digitalizada (`coeficientes_desborde_plataforma`
+  [C]), la cresta como un tramo horizontal de longitud declarada
+  (`longitud_cresta_desborde_m`) y «no colapsa» como caudal unitario ≤
+  `caudal_unitario_admisible_desborde_m2s` [A], **sin valor de archivo**: la fuente
+  acepta el desborde (núm. 5.4.5) y remite la protección a HEC-23, ausente del
+  repositorio de normas. Validado contra el DG 1.5 del HDS-5 y su solución HY-8
+  (`tests/test_ve4d_v8_desborde.py`). Con los datos de archivo nada cambia.
+  **Sigue diferido** (el docstring de `_v8_con_desborde` lo detalla): el diseño de la
+  protección y el sifonamiento; la cresta que crece con el nivel (Figura 3.12A); el
+  tirante y la velocidad sobre la vía; el reparto por debajo del caudal de diseño y el
+  coeficiente fuera de los ejes de la figura, que se detienen con «método no evaluable».
+  Y que el Propietario declare el periodo de retorno y el caudal unitario admisible.
 - **Dónde vive:** `src/modulos/M5_verificaciones.py::v8_evento_extremo`
 
 ## T7B-03 · El cabezal se calcula como muro de semigravedad en voladizo, por metro y en la sección llena: es hipótesis del proyecto

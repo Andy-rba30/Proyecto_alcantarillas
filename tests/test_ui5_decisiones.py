@@ -1250,7 +1250,10 @@ SIN_NADA_QUE_BARRER = {
     "edicion_que_rige_el_expediente", "edicion_legal_que_rige_el_expediente",
     # VE-2 (c2): sin valor de archivo y con ventana en prosa (su extremo de
     # arriba depende del NF de cada punto).
-    "margen_estacional_nf_v7_m"}
+    "margen_estacional_nf_v7_m",
+    # VE-4d: el caudal unitario admisible del desborde de V8, sin valor de
+    # archivo y sin ventana (lo da el diseño de la proteccion del terraplen).
+    "caudal_unitario_admisible_desborde_m2s"}
 # VE-3.5 lo habia sumado ('dimensionamiento_zapata_cabezal', sin valor de
 # archivo y sin ventana). Desde VE-3.9 tiene valor de archivo y ventana por
 # campo (decision del dueño), y ya hay que barrer.
