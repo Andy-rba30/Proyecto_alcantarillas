@@ -477,8 +477,14 @@ def test_hec14_la_cita_T8_y_wsdot_las_tiene_desde_t4():
     de_t8_08 = {c.id for c in hec14 if "T8-08" in c.verificado.por}
     assert de_t8_08 == {"HEC14.3.1.3#FIGURAS", "HEC14.3.1.3#OTRAS_FORMAS",
                         "HEC14.F3.3", "HEC14.F3.4"}
+    # VE-5 (lote m45, item 17) suma CINCO, las del Cap. 6 (el resalto por
+    # momentum), firmadas por su propia sesion. Se amplia declarandolo.
+    de_ve5_m45 = {c.id for c in hec14 if "VE-5 m45" in c.verificado.por}
+    assert de_ve5_m45 == {"HEC14.6.2#MOMENTUM", "HEC14.6.2.2#LLENO",
+                          "HEC14.6.2.2#FROUDE", "HEC14.6#V_TRAS_RESALTO",
+                          "HEC14.6.3#PENDIENTE"}
     assert all("T-8" in c.verificado.por for c in hec14
-               if c.id not in de_ve2 | de_t8_08)
+               if c.id not in de_ve2 | de_t8_08 | de_ve5_m45)
     assert {"WSDOT_HM.2-6.3#TC_MINIMO", "WSDOT_HM.2-6.2#T2-2",
             "WSDOT_HM.2-6.2#FRECUENCIA"} <= {c.id for c in reg.citas_de("WSDOT_HM")}
 

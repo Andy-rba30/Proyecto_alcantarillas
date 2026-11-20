@@ -158,7 +158,13 @@ def test_e13_el_resalto_queda_dentro_del_barril_y_v1_no_cumple():
 
 
 def test_con_el_tw_bajo_el_conjugado_el_resalto_sale_y_v1_usa_el_normal():
-    r = _e13(0.70)
+    # Desde VE-5 (item 17, ficha EA-02) el resalto se SITUA por momentum
+    # contra la S2 que baja desde la entrada: a la salida esa S2 no ha
+    # llegado al normal (0.282 m frente a 0.267 m tras 22.6 m de barril) y su
+    # conjugado es 0.697 m, no el 0.729 m del normal. Con TW = 0.70 el
+    # resalto queda DENTRO, a 0.09 m de la salida (lo fija
+    # tests/test_ve5_m45_resalto.py); por debajo de 0.697 m sale.
+    r = _e13(0.68)
     assert r.control_gobernante is ControlGobernante.ENTRADA
     assert not r.resalto_en_el_barril
     v = v1_borde_libre(D=D_E13, material=_concreto(), punto=_punto_e13(),

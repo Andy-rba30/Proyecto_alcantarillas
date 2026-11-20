@@ -2295,9 +2295,9 @@ class PerfilLamina:
             entrada (`alcanza_entrada=False`): la S1 corto y_c en
             `x_fin_remanso_m` < L, o tuvo longitud cero, y el control es de
             entrada (Section 3.5.1: la S1 se usa «if the S1 curve extends to
-            the face of the culvert»). El proyecto NO situa el resalto por
-            momentum (HY-8 v7.3): esa lectura basta para el HW y queda
-            escrita en `docs/decisiones_diferidas.md`.
+            the face of the culvert»). Para el HW esa lectura basta; el
+            resalto lo situa por momentum, aparte, `M4.situar_resalto`
+            (VE-5, ficha EA-02) y viaja en `ResultadoHidraulico.resalto`.
         `sustituye_aproximacion`
             True cuando HW_aproximado/D < 0.75, donde la fuente dice que la
             aproximacion h_o = max(TW, (y_c + D)/2) «should not be used» y
@@ -2426,6 +2426,44 @@ class PerfilLamina:
         y la memoria imprimia la aproximacion descartada como «salida».
         """
         return self.sustituye_aproximacion and self.HW_remanso_m is None
+
+
+@dataclass(frozen=True)
+class ResaltoHidraulico:
+    """
+    --- VE-5 (lote m45, item 17; fichas EA-02 y VE3-08) --- El resalto
+    hidraulico resuelto por CANTIDAD DE MOVIMIENTO, HEC-14 num. 6.2, Ec.
+    (6.1), pag. impresa 6-3 (PDF 66): «M = Q2/(gA) + AY … momentum is
+    conserved through a hydraulic jump». Lo resuelve `M3.resalto_hidraulico`
+    para cualquier forma del protocolo `Seccion`; cuando el conjugado no cabe
+    bajo la clave la seccion 2 va llena y su «tirante» es la carga
+    piezometrica sobre la solera, que es la Ec. (6.5) del circular (pag.
+    impresa 6-8) escrita para cualquier forma (`lleno`).
+
+    `x_desde_salida_m` lo pone M4 cuando SITUA el resalto dentro del barril
+    (la S1 que sube desde el receptor contra la S2 que baja desde la
+    entrada); `None` en el resalto suelto (los ejemplos resueltos de HEC-14).
+
+    `V1`, `Fr1` son los de la seccion supercritica, con el Froude «computed
+    using the maximum depth in the channel» (pag. impresa 6-9), y `V2` =
+    Q / A2 es la velocidad tras el resalto del paso 3 de los ejemplos
+    resueltos de HEC-14 (pags. impresas 6-6 y 6-11).
+    """
+
+    y1_m: float                       # m   - tirante supercritico (antes del resalto)
+    A1_m2: float                      # m2
+    V1_m_s: float                     # m/s
+    Fr1: float                        # -   - V1 / sqrt(g y1), con el tirante maximo
+    y2_m: float                       # m   - conjugado; carga piezometrica si `lleno`
+    A2_m2: float                      # m2  - el area llena si `lleno`
+    V2_m_s: float                     # m/s - Q / A2 (velocidad tras el resalto)
+    lleno: bool                       # el conjugado no cabe bajo la clave (Ec. 6.5)
+    x_desde_salida_m: Optional[float] = None   # m - donde lo situa M4
+
+    @property
+    def reduccion_de_velocidad(self) -> float:
+        """(V1 - V2) / V1, como el paso 3 de los ejemplos de HEC-14."""
+        return (self.V1_m_s - self.V2_m_s) / self.V1_m_s
 
 
 # ===========================================================================
@@ -2880,6 +2918,14 @@ class ResultadoHidraulico:
     y_conjugado_m: Optional[float] = None
     resalto_en_el_barril: bool = False
     receptor_en_el_barril: bool = False
+    # --- VE-5 (item 17, EA-02) --- EL RESALTO SITUADO POR MOMENTUM (HEC-14
+    # num. 6.2, Ec. 6.1): donde la S1 que sube desde el receptor iguala el
+    # conjugado de la S2 que baja desde la entrada. Lo llena M4 cuando el
+    # resalto queda DENTRO del barril bajo control de entrada; V2 imprime su
+    # velocidad tras el resalto (paso 3 de los ejemplos de HEC-14). None si
+    # no hay resalto en el barril o si la S1 alcanza la cara de entrada (el
+    # resalto se ahoga en la boca y todo el barril es subcritico).
+    resalto: Optional[ResaltoHidraulico] = None
     # --- T8-08 / T8-09 --- LA VELOCIDAD DE SALIDA BAJO CONTROL DE SALIDA
     # CON EL TW BAJO EL CRITICO (primera viñeta de HDS-5 3.1.6). Desde el
     # cierre de T8-08 no se mide al tirante critico sino al de BORDE de las
@@ -7726,6 +7772,12 @@ class DatosDeExpediente:
     # --- VE-3.6 --- VC3 (Familia C): el desnivel F que el perfil del canal
     # provee en el cruce (`desnivel_perfil_canal_m` de --datos-externos).
     desnivel_perfil_canal_m: Optional[float] = None
+    # --- VE-5 (item 18, fichas EXT-2-01 y T3-05) --- V6: si el cauce del
+    # punto arrastra palizada, troncos o material de cauce
+    # (`arrastre_de_solidos` de --datos-externos, booleano, [S] por punto de
+    # la inspeccion del cauce), con su origen. None si no se declaro.
+    arrastre_de_solidos: Optional[bool] = None
+    origen_arrastre: str = ""
 
 
 # ---------------------------------------------------------------------------

@@ -312,7 +312,10 @@ def test_las_ocho_claves_del_json_tienen_ficha_y_sale_del_censo():
                     "seccion_cauce_aproximacion",
                     # --- VE-4d --- la longitud de la cresta del desborde
                     # admitido de V8: veinticuatro.
-                    "longitud_cresta_desborde_m"}
+                    "longitud_cresta_desborde_m",
+                    # --- VE-5 (m45, item 18) --- el arrastre de solidos del
+                    # cauce, que V6 lee con mas de una celda: veinticinco.
+                    "arrastre_de_solidos"}
     for clave in seis:
         assert ve.variable(clave).poblacion is Poblacion.DATO_EXTERNO
 

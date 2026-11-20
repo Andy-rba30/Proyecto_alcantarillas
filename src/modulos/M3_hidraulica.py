@@ -163,8 +163,11 @@ from typing import Optional, Tuple, Union
 
 from src import criterios_adoptados as ca
 from src.constantes_fisicas import G
-from src.constantes_normativas import K_MANNING_SI
+from src.constantes_normativas import (HEC14_RESALTO_PENDIENTE_HORIZONTAL_MAX,
+                                       K_MANNING_SI)
 from src.modelos import (CIFRAS_FINA, CIFRAS_MAGNITUD, DatoInvalidoError,
+                     MOTIVO_METODO_NO_EVALUABLE_HEC14, MetodoNoEvaluableError,
+                     ResaltoHidraulico,
                      Seccion, SeccionCircular,
                      Geometria, LimiteNumericoError, Magnitud, Material,
                      PuntoCritico, RAMA_REMANSO_M1, RAMA_REMANSO_NINGUNA,
@@ -666,6 +669,89 @@ def tirante_critico_trapecial(*, Q: float, seccion: SeccionReceptor) -> float:
                "caudal")
 
 
+class _MomentoDelBarril:
+    """
+    La funcion momentum de HEC-14 num. 6.2, Ec. (6.1), pag. impresa 6-3 (PDF
+    66): M(t) = Q^2 / (g A) + A Y, con A Y el primer momento del area mojada
+    respecto de la lamina, int_0^t A(z) dz, integrado por trapecios sobre el
+    llenado PROPIO de la seccion (via canonica, `geometria_en`), con
+    `PUNTOS_MOMENTO_SECCION` puntos. Vale para cualquier forma del protocolo
+    `Seccion`: HEC-14 da la Ec. (6.2) con los K y C de Sylvester para cada
+    forma, y aqui se integra la propia seccion en vez de leer la Tabla 6.1.
+
+    POR ENCIMA DE LA CLAVE (t >= altura) la seccion va llena y t es la carga
+    piezometrica sobre la solera: A = A_llena y el primer momento crece a
+    razon de A_llena por metro, int_0^H A dz + A_llena (t - H). Es la Ec.
+    (6.5) del circular (pag. impresa 6-8, «For y2 greater than or equal to
+    D»: el termino 0.5 C2 D / (C1 y1) es el centroide de la seccion llena a
+    D/2), escrita para cualquier forma.
+    """
+
+    def __init__(self, Q: float, seccion: Seccion) -> None:
+        import numpy as np
+        self.Q, self.seccion = Q, seccion
+        self.lo, self.hi = seccion.bracket_llenado()
+        llenados = np.linspace(self.lo, self.hi, PUNTOS_MOMENTO_SECCION)
+        geos = [seccion.geometria_en(float(l)) for l in llenados]
+        self._ys = np.array([g.y for g in geos])
+        As = np.array([g.A for g in geos])
+        self._As = As
+        self._primer_momento = np.concatenate(
+            ([0.0], np.cumsum((As[1:] + As[:-1]) / 2 * np.diff(self._ys))))
+        self.altura = float(self._ys[-1])
+        self.A_llena = seccion.area_llena
+
+    def llenado_de(self, t: float) -> float:
+        """El llenado propio cuyo tirante es t (t bajo la clave)."""
+        from scipy.optimize import brentq   # perezoso: ver la nota junto a los imports
+        return brentq(lambda l: self.seccion.geometria_en(l).y - t,
+                      self.lo, self.hi, xtol=TOL_BRENT)
+
+    def area(self, t: float) -> float:
+        """A(t); la llena por encima de la clave."""
+        if not t < self.altura:
+            return self.A_llena
+        return self.seccion.geometria_en(self.llenado_de(t)).A
+
+    def __call__(self, t: float) -> float:
+        import numpy as np
+        if not t < self.altura:
+            return (self.Q * self.Q / (G * self.A_llena)
+                    + float(self._primer_momento[-1])
+                    + self.A_llena * (t - self.altura))
+        g = self.seccion.geometria_en(self.llenado_de(t))
+        return (self.Q * self.Q / (G * g.A)
+                + float(np.interp(g.y, self._ys, self._primer_momento)))
+
+    def tabulado(self, t: float) -> float:
+        """
+        M(t) con el area INTERPOLADA en la misma tabla del primer momento, sin
+        resolver el llenado: es la que `M4` evalua estacion a estacion para
+        situar el resalto (miles de estaciones por corrida). La diferencia
+        con `__call__` es de interpolacion lineal sobre
+        `PUNTOS_MOMENTO_SECCION` puntos: precision numerica.
+        """
+        import numpy as np
+        if not t < self.altura:
+            return self(t)
+        A = float(np.interp(t, self._ys, self._As))
+        return (self.Q * self.Q / (G * A)
+                + float(np.interp(t, self._ys, self._primer_momento)))
+
+    def conjugado(self, y1: float, y_c: float) -> float:
+        """
+        El tirante subcritico (o la carga piezometrica, si no cabe bajo la
+        clave) con el mismo momentum que el supercritico y1 < y_c.
+        """
+        from scipy.optimize import brentq   # perezoso: ver la nota junto a los imports
+        objetivo = self(y1)
+        if not self(self.altura) < objetivo:
+            return brentq(lambda t: self(t) - objetivo, y_c, self.altura,
+                          xtol=TOL_BRENT)
+        # Lleno: M crece linealmente con la carga (A_llena por metro).
+        return self.altura + (objetivo - self(self.altura)) / self.A_llena
+
+
 def tirante_conjugado_barril(*, Q: float, seccion: Seccion, y: float,
                              y_c: float) -> Optional[float]:
     """
@@ -682,39 +768,84 @@ def tirante_conjugado_barril(*, Q: float, seccion: Seccion, y: float,
     resalto entra al barril y aguas abajo de el la lamina esta al nivel del
     TW; si no, el resalto sale y el barril va a tirante normal.
 
-    La funcion momentum es M(t) = Q^2 / (g A) + int_0^t A(z) dz (el primer
-    momento del area mojada respecto de la lamina), la misma ecuacion que
-    `tirante_conjugado_trapecial` escribe con el centroide del trapecio. Aqui
-    la seccion es cualquiera del protocolo `Seccion` (la circular no tiene
-    forma cerrada en el proyecto), y la integral se hace por trapecios sobre
-    el llenado PROPIO de la seccion, por la via canonica (`geometria_en`), con
-    `PUNTOS_MOMENTO_SECCION` puntos: no pasa por la via por tirante.
+    La funcion momentum es la de HEC-14 Ec. (6.1) (`_MomentoDelBarril`,
+    desde VE-5; la misma ecuacion que `tirante_conjugado_trapecial` escribe
+    con el centroide del trapecio). El conjugado que no cabe bajo la clave
+    lo resuelve `resalto_hidraulico` (Ec. 6.5); esta funcion conserva su
+    contrato de VE-3.11 y devuelve None.
     """
-    import numpy as np
-    from scipy.optimize import brentq   # perezoso: ver la nota junto a los imports
-    lo, hi = seccion.bracket_llenado()
-    llenados = np.linspace(lo, hi, PUNTOS_MOMENTO_SECCION)
-    geos = [seccion.geometria_en(float(l)) for l in llenados]
-    ys = np.array([g.y for g in geos])
-    As = np.array([g.A for g in geos])
-    primer_momento = np.concatenate(
-        ([0.0], np.cumsum((As[1:] + As[:-1]) / 2 * np.diff(ys))))
-
-    def momento_en(l: float) -> float:
-        g = seccion.geometria_en(l)
-        return (Q * Q / (G * g.A)
-                + float(np.interp(g.y, ys, primer_momento)))
-
-    def llenado_de(t: float) -> float:
-        return brentq(lambda l: seccion.geometria_en(l).y - t, lo, hi,
-                      xtol=TOL_BRENT)
-
-    objetivo = momento_en(llenado_de(y))
-    l_c = llenado_de(y_c)
-    if momento_en(hi) < objetivo:
+    momento = _MomentoDelBarril(Q, seccion)
+    y2 = momento.conjugado(y, y_c)
+    if not y2 < momento.altura:
         return None
-    l2 = brentq(lambda l: momento_en(l) - objetivo, l_c, hi, xtol=TOL_BRENT)
-    return seccion.geometria_en(l2).y
+    return y2
+
+
+def exigir_dominio_del_resalto(S: float) -> None:
+    """
+    El dominio de la Ec. (6.1) de HEC-14 aplicada a un barril con pendiente:
+    num. 6.3, pag. impresa 6-13 (PDF 76), «This volume may be neglected for
+    slopes less than 10 percent and the jump analyzed as a horizontal
+    channel» (`HEC14_RESALTO_PENDIENTE_HORIZONTAL_MAX`). Por encima levanta
+    `MetodoNoEvaluableError` con el rotulo de HEC-14: el peso del agua dentro
+    del resalto entra a la ecuacion y la fuente remite a Bradley (1961) y a
+    ensayos de modelo, que este software no implementa.
+    """
+    if not S < HEC14_RESALTO_PENDIENTE_HORIZONTAL_MAX:
+        raise MetodoNoEvaluableError(
+            que="resalto hidraulico",
+            procedimiento=("el resalto en canal inclinado con el peso del agua "
+                           "dentro del volumen de control (HEC-14 num. 6.3, "
+                           "Bradley 1961) o ensayos de modelo"),
+            motivo=(f"la pendiente del barril ({S:g}) no es menor que "
+                    f"{HEC14_RESALTO_PENDIENTE_HORIZONTAL_MAX:g}: HEC-14 num. "
+                    "6.3 solo deja analizar el resalto como en canal "
+                    "horizontal por debajo del 10 %"),
+            rotulo=MOTIVO_METODO_NO_EVALUABLE_HEC14)
+
+
+def resalto_hidraulico(*, Q: float, seccion: Seccion, y1: float, y_c: float,
+                       S: float, x_desde_salida_m: Optional[float] = None
+                       ) -> ResaltoHidraulico:
+    """
+    --- VE-5 (lote m45, item 17; fichas EA-02 y VE3-08) --- El resalto
+    hidraulico del tirante supercritico `y1` en el barril, por CANTIDAD DE
+    MOVIMIENTO: HEC-14 (FHWA-NHI-06-086) num. 6.2 «Hydraulic Jump in
+    Horizontal Channels», Ec. (6.1), pag. impresa 6-3 (PDF 66): «The general
+    form of the momentum equation can be used for the solution of the
+    hydraulic jump sequent-depth relationship in any shape of channel with a
+    horizontal floor». El conjugado sale de `_MomentoDelBarril`; con la
+    seccion 2 llena (el conjugado no cabe bajo la clave) es la Ec. (6.5),
+    pag. impresa 6-8, escrita para cualquier forma.
+
+    El Froude es el de la pag. impresa 6-9 («Fr1 is computed using the
+    maximum depth in the channel»): V1 / sqrt(g y1). La velocidad tras el
+    resalto es V2 = Q / A2, el paso 3 de los ejemplos resueltos (pags.
+    impresas 6-6 y 6-11); con la seccion llena, A2 = A_llena.
+
+    DOMINIO: la Ec. (6.1) es de fondo HORIZONTAL. El num. 6.3 (pag. impresa
+    6-13, PDF 76) deja despreciar el peso del agua dentro del resalto «for
+    slopes less than 10 percent» (`HEC14_RESALTO_PENDIENTE_HORIZONTAL_MAX`);
+    por encima la fuente remite a Bradley (1961) y a ensayos de modelo, y la
+    funcion levanta `MetodoNoEvaluableError` con el rotulo de HEC-14. Un
+    `y1` que no es supercritico (y1 >= y_c) no tiene resalto: DatoInvalido.
+    """
+    exigir_dominio_del_resalto(S)
+    if not 0 < y1 < y_c:
+        raise DatoInvalidoError(
+            "y1", valor=y1,
+            motivo=f"el resalto parte de un tirante supercritico, 0 < y1 < "
+                   f"y_c = {y_c} m")
+    momento = _MomentoDelBarril(Q, seccion)
+    y2 = momento.conjugado(y1, y_c)
+    A1 = momento.area(y1)
+    A2 = momento.area(y2)
+    V1 = Q / A1
+    return ResaltoHidraulico(
+        y1_m=y1, A1_m2=A1, V1_m_s=V1, Fr1=V1 / math.sqrt(G * y1),
+        y2_m=y2, A2_m2=A2, V2_m_s=Q / A2,
+        lleno=not y2 < momento.altura,
+        x_desde_salida_m=x_desde_salida_m)
 
 
 def tirante_conjugado_trapecial(*, Q: float, seccion: SeccionReceptor,

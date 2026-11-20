@@ -527,6 +527,12 @@ def test_todo_fundamento_declarado_lo_usa_algun_paso(informe):
         # cableado existe lo mide `tests/test_ve2_flotacion.py` (la eleccion
         # con `clave_criterio` = 'nivel_agua_diseno_v7' en las dos reglas).
         "F5.V7_NIVEL",
+        # --- VE-5 (lote m45, item 17) --- el resalto situado por momentum
+        # cuelga de un punto bajo control de ENTRADA en pendiente pronunciada
+        # con el receptor por encima del conjugado de la S2, y esta corrida
+        # no dimensiona ninguno. Que se emite lo mide
+        # tests/test_ve5_m45_resalto.py (E13 del revisor, paso 4.4b).
+        "F4.RESALTO",
         # --- T-7b --- V5, V8 Y EL ENSAMBLE DE ESTABILIDAD. F5.V5 y F5.V8
         # dejaron de ser huecos (tienen metodo y paso), pero su metodo y su
         # umbral son DECLARABLES y no tienen valor de archivo -- decision del

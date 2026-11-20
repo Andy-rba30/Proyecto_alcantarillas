@@ -1263,10 +1263,13 @@ UMBRALES_DE_VERIFICACION = (
               "-- indicador con aviso --; el umbral duro, que lo endurece "
               "como el proyecto endurece las recomendaciones de V1 y de V2, "
               "queda en la ventana.",
-     "aplicacion": "De los DOS indicadores que el numeral nombra se evalua "
-                   "UNO -- pendiente del barril frente a la del cauce --, "
-                   "porque el otro exige el n de Manning del CAUCE NATURAL, "
-                   "que no es columna de Sec. 1.2. Con que regimen se aplica "
+     "aplicacion": "De los DOS indicadores que el numeral nombra decide "
+                   "UNO -- pendiente del barril frente a la del cauce --; "
+                   "el otro, la rugosidad, exige el n de Manning del CAUCE "
+                   "NATURAL, que no es columna de Sec. 1.2, y desde VE-5 se "
+                   "evalua como INDICADOR sin veredicto (un aviso) donde el "
+                   "punto declara la seccion del cauce de aproximacion. Con "
+                   "que regimen se aplica "
                    "el indicador evaluable lo fija el criterio 'regimen_v2b' "
                    "[A]: como indicador con aviso (valor del archivo desde "
                    "T-2), que se imprime con veredicto INDICADOR y no "
@@ -4649,6 +4652,18 @@ HEC14_TAU_C_ALFA_U_SI = 8630.0      # N/m2
 # Es la misma presion: 180 lbf/ft2 · 4.44822 N/lbf / 0.3048^2 m2/ft2 = 8618.4
 # N/m2, un 0.14 % bajo el 8630 impreso (la fuente redondea uno de los dos).
 # El ejemplo resuelto de la pag. impresa 5-8 usa 8630 y da tau_c = 39.9 N/m2.
+
+# --- VE-5 (item 17) --- HEC-14 Cap. 6, el resalto hidraulico -----------------
+# Num. 6.3, pag. impresa 6-13 (PDF 76): en un canal inclinado el peso del agua
+# dentro del resalto entra a la ecuacion de cantidad de movimiento, y «This
+# volume may be neglected for slopes less than 10 percent and the jump
+# analyzed as a horizontal channel». Es el DOMINIO de la Ec. (6.1) aplicada a
+# un barril con pendiente: por encima, `M3.resalto_hidraulico` levanta
+# `MetodoNoEvaluableError` (la fuente remite a ensayos de modelo). El num.
+# 6.2 (pag. impresa 6-3) admite el canal «horizontal up to a slope of 18
+# percent» para despreciar la friccion; rige el 10 % por ser el mas estricto
+# de los dos. Adimensional (m/m).
+HEC14_RESALTO_PENDIENTE_HORIZONTAL_MAX = 0.10
 
 # --- EG-2013, Tabla 511-06 (num. 511.08, pag. impresa 1015, PDF 1023) -------
 # Geotextil para control permanente de erosion, por el porcentaje de suelo in

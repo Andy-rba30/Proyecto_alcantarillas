@@ -1020,7 +1020,9 @@ def siguiente_diametro(material: MaterialLike,
         )
 
     siguiente = _escalon_de_la_serie(inicio, paso, n + 1)
-    if siguiente > tope + TOL_UMBRAL_NORMATIVO:
+    # --- VE-5 (item 24, ficha VE2-G) --- el tope se compara con el
+    # DESIGNADO del escalon: el tubo de 108 in (2.7432 m) es el de 2700 mm.
+    if diametro_designado(tipo, siguiente) > tope + TOL_UMBRAL_NORMATIVO:
         return None
     _exigir_escalon_designado(tipo, siguiente)
     return siguiente
@@ -1097,6 +1099,35 @@ def _diametro_de_diseno_del_concreto() -> str:
 def _es_el_diametro(D: float, mm: float) -> bool:
     """D (m) es el diametro de `mm` milimetros, con la tolerancia nombrada."""
     return abs(D - mm / MILIMETROS_POR_METRO) <= TOL_UMBRAL_NORMATIVO
+
+
+def diametro_designado(material: MaterialLike, D: float) -> float:
+    """
+    --- VE-5 (lote m45, item 24; fichas VE2-G y T4-02) --- El diametro
+    DESIGNADO (m) del tubo cuyo diametro de calculo es `D`: el propio `D` si
+    ya es un designado de la norma de producto, o --solo en el concreto-- el
+    designado de la fila de AASHTO M 170M Table 6 (pag. impresa M 170M-20,
+    tabla `AASHTO_M170M.T6`) cuyo diametro ingles convertido es `D`. El num.
+    12.1 (cita `AASHTO_M170M.12.1`) deja al fabricante diseñar con «the
+    designated diameter or the converted English diameter»: los dos son el
+    MISMO tubo de la serie, y la pertenencia a la serie (el tope de
+    `siguiente_diametro`, V9) se juzga por el designado. Decision adoptada
+    en el censo (item 24).
+
+    No lee 'diametro_de_diseno_concreto': que un escalon ingles se admita lo
+    decide `_exigir_escalon_designado`; esta funcion solo nombra la fila. Un
+    `D` que no es de ninguna fila se devuelve tal cual.
+    """
+    tipo = _tipo_material(material)
+    if any(_es_el_diametro(D, mm)
+           for mm in DIAMETROS_DESIGNADOS_MM[tipo.value]):
+        return D
+    if tipo is TipoMaterial.CONCRETO_REFORZADO:
+        for dn_mm, (pulgadas, ingles_mm) in EQUIVALENTE_INGLES_M170M.items():
+            if (_es_el_diametro(D, pulgadas * PULGADA_EN_MM)
+                    or _es_el_diametro(D, ingles_mm)):
+                return dn_mm / MILIMETROS_POR_METRO
+    return D
 
 
 def _exigir_escalon_designado(tipo: TipoMaterial, D: float) -> None:

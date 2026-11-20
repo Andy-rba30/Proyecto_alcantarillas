@@ -19,8 +19,8 @@ que declara su Protocol `Verificador`.
                                   (INDICADOR, aplicado con el regimen de
                                   'regimen_v2b' [A]: con aviso desde T-2,
                                   umbral duro hasta entonces; el
-                                  segundo indicador del numeral queda
-                                  declarado pendiente -- ver
+                                  segundo, la rugosidad, desde VE-5 como
+                                  indicador sin veredicto -- ver
                                   `v2b_sedimentacion`)
     V3  Velocidad maxima          concreto: fila de la Tabla N 10 [N]
                                   TMC / HDPE: 'v_max_tmc' / 'v_max_hdpe',
@@ -290,6 +290,7 @@ from src.modulos.M2_material import (CRITERIO_CALIBRE_TMC,
                                  CRITERIO_D_MAX_NORMA,
                                  CRITERIO_N_CELDAS_CAJON,
                                  CRITERIO_SECCIONES_CAJON, CRITERIO_V_MAX,
+                                 diametro_designado,
                                  espesor_pared,
                                  numero_de_celdas,
                                  procedencia_del_espesor)
@@ -361,6 +362,20 @@ def _regimen_de_v1_v2(codigo: str, resultado: ResultadoHidraulico,
                 motivo=MOTIVO_V1_V2_PENDIENTES, id_punto=id_punto)
         return REGIMEN_PERFIL
     return REGIMEN_UNIFORME
+
+
+def _entrada_con_receptor(regimen: str, resultado: ResultadoHidraulico) -> bool:
+    """
+    --- VE-3.11 (V1) y VE-5 (V2, item 17) --- True cuando el barril va
+    parcialmente lleno bajo control de ENTRADA y aun asi el receptor fija el
+    tirante dentro de el: el resalto queda dentro del conducto (M4 lo situa
+    por momentum, HEC-14 Ec. 6.1) o el barril va subcritico y el remanso M1
+    llega a la salida. Entonces V1 y V2 leen el perfil de la lamina --su
+    tirante maximo y su velocidad minima-- en vez del flujo uniforme, que
+    no describe el tramo aguas abajo del resalto.
+    """
+    return (regimen == REGIMEN_UNIFORME and resultado.receptor_en_el_barril
+            and resultado.perfil is not None)
 
 # Los TRES numerales de las verificaciones hidraulicas se escriben largos, y
 # por el mismo motivo: son lo UNICO que la memoria imprime de cada
@@ -435,9 +450,10 @@ NUMERAL_V2B = ('HDS-5 3.a ed. (FHWA-HIF-12-026), num. 5.3.3 "Sedimentation", '
                'potential problems"). Aqui se evalua el PRIMERO, y como se '
                "aplica lo declara el criterio 'regimen_v2b' [A] (umbral duro "
                'que detiene el punto, o indicador con aviso que no descarta '
-               'el diametro); el segundo '
-               'exige el n de Manning del cauce natural, que no es columna de '
-               'Sec. 1.2, y queda declarado pendiente. La otra mitad de la '
+               'el diametro); el segundo -- la rugosidad -- se evalua desde '
+               'VE-5 como INDICADOR que no cambia el veredicto, con el n del '
+               'cauce de la seccion del cauce de aproximacion declarada, y '
+               'sin ella no se evalua. La otra mitad de la '
                'fila V2b de la hoja de ruta -- el acceso de mantenimiento en '
                'planos -- entra por el criterio '
                "'acceso_mantenimiento_v2b' [A]")
@@ -491,6 +507,9 @@ CRITERIO_REMANSO = "remanso_derecho_via"
 CRITERIO_SOBREELEVACION_REMANSO = "sobreelevacion_admisible_remanso_m"
 # --- VE-4c --- el dato externo de la seccion del cauce de aproximacion.
 CLAVE_SECCION_CAUCE = "seccion_cauce_aproximacion"
+# --- VE-5 (item 18) --- el dato por punto que V6 lee con N > 1 (la clave la
+# registra `servicio.CLAVE_ARRASTRE_DE_SOLIDOS`, que la nombra igual).
+CLAVE_ARRASTRE_DE_SOLIDOS = "arrastre_de_solidos"
 CRITERIO_EVENTO_EXTREMO = "TR_evento_extremo"
 # --- T-7b --- el umbral con que V8 juzga el «no colapso».
 CRITERIO_UMBRAL_V8 = "umbral_no_colapso_evento_extremo"
@@ -1010,12 +1029,10 @@ def v1_borde_libre(*, D: float, material: Material, punto: PuntoCritico,
     # «La lectura es una sola a lo largo del TW: no cambia al cruzar TW = D»).
     # Hasta VE-3.11 V1 tomaba aqui el tirante normal y el rechazo saltaba
     # recien en TW = D (E13 del revisor: Ø 0.90 con 0.80 m de agua en el
-    # barril). SOLO V1: V2 sigue con su regimen (`_regimen_de_v1_v2`), y si
-    # el resalto dentro del barril deberia cambiar tambien la velocidad que
-    # V2 juzga es otra pregunta, no tocada aqui.
-    entrada_con_receptor = (regimen == REGIMEN_UNIFORME
-                            and resultado.receptor_en_el_barril
-                            and resultado.perfil is not None)
+    # barril). Desde VE-5 (item 17, ficha VE3-08) V2 lee la misma
+    # bifurcacion (`_entrada_con_receptor`): la velocidad que juzga es la
+    # minima del tramo que el receptor fija.
+    entrada_con_receptor = _entrada_con_receptor(regimen, resultado)
     if entrada_con_receptor:
         regimen = REGIMEN_PERFIL
     lleno = regimen == REGIMEN_LLENO
@@ -1370,6 +1387,19 @@ def v2_velocidad_minima(*, resultado: ResultadoHidraulico) -> Verificacion:
         `_regimen_de_v1_v2`).
     """
     regimen = _regimen_de_v1_v2("V2", resultado, None)
+    # --- VE-5 (item 17, fichas VE3-08 y EA-02) --- EL RESALTO DENTRO DEL
+    # BARRIL BAJO CONTROL DE ENTRADA. El numeral pide verificar «la velocidad
+    # minima del flujo dentro del conducto», y aguas abajo de un resalto esa
+    # velocidad no es la supercritica del uniforme: tras el resalto la
+    # lamina sube hasta el nivel del receptor (HEC-14 num. 6.2; HDS-5 num.
+    # 3.1.3) y la velocidad minima es Q_celda / A(y_max) del perfil, menor
+    # aun que la velocidad tras el resalto de HEC-14 (V2 = Q / A2, pag.
+    # impresa 6-6), que el paso imprime al lado. Hasta VE-5 V2 juzgaba aqui
+    # la velocidad uniforme supercritica de un tramo que va lento.
+    entrada_con_receptor = _entrada_con_receptor(regimen, resultado)
+    if entrada_con_receptor:
+        regimen = REGIMEN_PERFIL
+    resalto = resultado.resalto if entrada_con_receptor else None
     lleno = regimen == REGIMEN_LLENO
     if lleno:
         if resultado.V_llena_m_s is None:
@@ -1391,7 +1421,19 @@ def v2_velocidad_minima(*, resultado: ResultadoHidraulico) -> Verificacion:
         procedencia_V = (
             "M4 (paso 4.3c/4.3d): Q_celda / A(y_max), la velocidad MINIMA del "
             "perfil de la lamina de agua, con n_max. "
-            + ("El barril es HORIZONTAL (S = 0): no hay velocidad uniforme, "
+            + (("Bajo control de ENTRADA el receptor fija el tirante del "
+                "barril: "
+                + ("el resalto se forma DENTRO del conducto (M4, paso 4.4b, "
+                   "situado por cantidad de movimiento, HEC-14 Ec. 6.1) y "
+                   "aguas abajo de el la lamina sube hasta el nivel del TW"
+                   if resultado.resalto_en_el_barril else
+                   "el barril va subcritico y el remanso M1 llega a la "
+                   "salida")
+                + "; la velocidad uniforme supercritica de M3 no describe "
+                "ese tramo, y el piso de autolimpieza se juzga donde la "
+                "velocidad es menor")
+               if entrada_con_receptor else
+               "El barril es HORIZONTAL (S = 0): no hay velocidad uniforme, "
                "y el piso de autolimpieza se juzga donde la velocidad es "
                "menor" if resultado.sin_tirante_normal else
                "El barril va parcialmente "
@@ -1430,10 +1472,23 @@ def v2_velocidad_minima(*, resultado: ResultadoHidraulico) -> Verificacion:
             # LAS DOS MITADES DEL PARRAFO, y en este orden: primero la que
             # obliga a verificar, despues la que recomienda el valor. Leida
             # sola, la segunda hace parecer opcional lo que el Manual manda.
-            citas_textuales=("MC_HHD.4.1.1.3.6#VMIN_INICIO",),
+            citas_textuales=("MC_HHD.4.1.1.3.6#VMIN_INICIO",
+                             *(("HEC14.6#V_TRAS_RESALTO",)
+                               if resalto is not None else ())),
             sustitucion=(
                 Magnitud(simbolo_V, V, "m/s", procedencia_V,
-                         cifras=CIFRAS_MAGNITUD),),
+                         cifras=CIFRAS_MAGNITUD),
+                *((Magnitud("V_tras_resalto", resalto.V2_m_s, "m/s",
+                            f"Q_celda / A2, la velocidad inmediatamente "
+                            f"tras el resalto (HEC-14, paso 3 de los "
+                            f"ejemplos resueltos), con y2 = "
+                            f"{resalto.y2_m:.3f} m a "
+                            f"{resalto.x_desde_salida_m:.2f} m de la salida "
+                            "(M4, paso 4.4b). No es la que se compara: "
+                            "aguas abajo la lamina sigue subiendo hasta el "
+                            "TW y la velocidad baja a V_min",
+                            cifras=CIFRAS_MAGNITUD),)
+                  if resalto is not None else ())),
             resultado=Magnitud(simbolo_V, V,
                                "m/s", "la misma velocidad, contrastada contra "
                                "el piso", cifras=CIFRAS_MAGNITUD),
@@ -1458,8 +1513,74 @@ def v2_velocidad_minima(*, resultado: ResultadoHidraulico) -> Verificacion:
 # V2b - Sedimentacion / colmatacion (HDS-5 3.a ed., num. 5.3.3)
 # ---------------------------------------------------------------------------
 
+def _indicador_de_rugosidad(*, material: Optional[Material],
+                            expediente: Optional[DatosDeExpediente]
+                            ) -> Tuple[Tuple[Magnitud, ...], Tuple[str, ...],
+                                       str]:
+    """
+    --- VE-5 (lote m45, item 19; fichas T2-06 y C10-02) --- EL SEGUNDO
+    INDICADOR del HDS-5 num. 5.3.3 (pag. impresa 5.11, cita
+    `HDS5_3ED.5.3.3#INDICADORES`): «roughness greater than the channel».
+    Compara el n del conducto --el n_max de la regla de doble n, la rama de
+    la sedimentacion (MAT-D1), con la que se resolvio el tirante-- con el n
+    del CAUCE NATURAL, que entra con la seccion del cauce de aproximacion
+    del punto (`seccion_cauce_aproximacion` de --datos-externos, su campo
+    `n`: el levantamiento del cauce aguas arriba del cruce, VE-4c).
+
+    ES UN INDICADOR Y NO UN VEREDICTO (decision adoptada en el censo del
+    item 19): la fuente no da umbral --«are key indicators of potential
+    problems»--, de modo que no cambia `cumple` bajo ningun regimen de
+    'regimen_v2b'; si se dispara (n_conducto > n_cauce) viaja como AVISO de
+    la verificacion. Sin la seccion del cauce el indicador no se evalua y
+    el paso lo dice: el n del cauce no se supone.
+
+    Devuelve (magnitudes para la sustitucion, avisos, frase para la nota).
+    """
+    seccion = (None if expediente is None or expediente.derecho_de_via is None
+               else expediente.derecho_de_via.seccion_cauce)
+    if material is None or seccion is None:
+        falta = ("la seccion del cauce de aproximacion del punto "
+                 "(`seccion_cauce_aproximacion` de --datos-externos, con su "
+                 "n de Manning)" if seccion is None else
+                 "el material del conducto")
+        return ((Magnitud("n_cauce", "no declarado", "",
+                          f"sin {falta}: el segundo indicador no se evalua y "
+                          "el n del cauce no se supone", cifras=None),),
+                (), f"El SEGUNDO -- «roughness greater than the channel» -- "
+                    f"no se evalua en este punto: falta {falta}.")
+    n_conducto = material.n_para_capacidad
+    n_cauce = seccion.n
+    origen = expediente.derecho_de_via.origen_seccion_cauce
+    disparado = n_conducto > n_cauce + TOL_UMBRAL_NORMATIVO
+    magnitudes = (
+        Magnitud("n_conducto", n_conducto, "",
+                 "n de Manning del conducto, el MAXIMO de su rango (la rama "
+                 "de la sedimentacion, la misma de V2)", cifras=CIFRAS_FINA),
+        Magnitud("n_cauce", n_cauce, "",
+                 f"n de Manning del cauce natural, de la {origen}",
+                 cifras=CIFRAS_FINA))
+    if not disparado:
+        return (magnitudes, (),
+                f"El SEGUNDO -- «roughness greater than the channel» -- se "
+                f"evalua como INDICADOR: n_conducto = {n_conducto:g} no "
+                f"supera n_cauce = {n_cauce:g}, y no se dispara.")
+    aviso = (f"V2b, segundo indicador del HDS-5 num. 5.3.3: el conducto es "
+             f"MAS RUGOSO que el cauce natural (n_conducto = {n_conducto:g} "
+             f"> n_cauce = {n_cauce:g}), «key indicator of potential "
+             "problems» de sedimentacion. Es un indicador: no descarta el "
+             "diametro; pide atencion al mantenimiento y a la limpieza")
+    return (magnitudes, (aviso,),
+            f"El SEGUNDO -- «roughness greater than the channel» -- se "
+            f"evalua como INDICADOR y SE DISPARA: n_conducto = "
+            f"{n_conducto:g} > n_cauce = {n_cauce:g}; viaja como aviso y no "
+            f"cambia el veredicto.")
+
+
 def v2b_sedimentacion(*, punto: PuntoCritico,
-                      resultado: ResultadoHidraulico) -> Verificacion:
+                      resultado: ResultadoHidraulico,
+                      material: Optional[Material] = None,
+                      expediente: Optional[DatosDeExpediente] = None
+                      ) -> Verificacion:
     """
     S_conducto >= S_cauce, el indicador de sedimentacion del HDS-5, aplicado
     con el regimen declarado en 'regimen_v2b', mas el acceso de
@@ -1481,6 +1602,11 @@ def v2b_sedimentacion(*, punto: PuntoCritico,
 
         "Culverts which are located on and aligned with the natural channel
         generally do not have a sedimentation problem."
+
+    DESDE VE-5 (item 19) EL SEGUNDO SE EVALUA COMO INDICADOR cuando el
+    punto declara la seccion del cauce de aproximacion (su n de Manning):
+    `_indicador_de_rugosidad`; no cambia el veredicto y, si se dispara,
+    viaja como aviso. Lo que sigue es como estaba hasta entonces.
 
     DE LOS DOS INDICADORES SE EVALUA UNO, Y HAY QUE DECIR CUAL Y POR QUE. El
     primero -- pendiente del barril frente a la del cauce -- son dos numeros
@@ -1545,6 +1671,8 @@ def v2b_sedimentacion(*, punto: PuntoCritico,
     # porque el censo de mutacion (`tests/test_ext11_mutacion.py`) la nombra.
     cumple = resultado.S >= S_cauce - TOL_UMBRAL_NORMATIVO
     disparado = not cumple
+    magnitudes_n, avisos_n, nota_n = _indicador_de_rugosidad(
+        material=material, expediente=expediente)
     aviso = regimen == REGIMEN_V2B_INDICADOR_CON_AVISO
     umbral = _umbral_de(
         "V2b", valor=S_cauce, unidad="m/m",
@@ -1583,6 +1711,7 @@ def v2b_sedimentacion(*, punto: PuntoCritico,
         valor_admisible=S_cauce,
         criterio_aplicado=CRITERIO_ACCESO_MANTENIMIENTO,
         codigo="V2b",
+        avisos=avisos_n,
         paso=paso(
             "F5.V2b",
             codigo="V2b",
@@ -1605,7 +1734,8 @@ def v2b_sedimentacion(*, punto: PuntoCritico,
                 Magnitud("S_cauce", S_cauce, "m/m",
                          "pendiente del CAUCE NATURAL, columna del CSV "
                          "(Sec. 1.5: no es la de la alcantarilla)",
-                         cifras=CIFRAS_FINA)),
+                         cifras=CIFRAS_FINA),
+                *magnitudes_n),
             resultado=Magnitud("S_conducto - S_cauce", margen,
                                "m/m",
                                "diferencia de pendientes: negativa es el "
@@ -1654,11 +1784,11 @@ def v2b_sedimentacion(*, punto: PuntoCritico,
                             "no que pueda entrar",
                     clave_criterio=CRITERIO_ACCESO_MANTENIMIENTO),),
             nota_del_proyecto=(
-                "SE EVALUA UNO DE LOS DOS INDICADORES DEL NUMERAL. El "
-                "segundo -- «roughness greater than the channel» -- exige el "
-                "n de Manning del cauce natural, que no es columna de "
-                "Sec. 1.2 ni lo fija la hoja de ruta. No se aproxima: queda "
-                "declarado como pendiente. Y el caracter de la fuente es "
+                "EL VEREDICTO ES DEL PRIMERO DE LOS DOS INDICADORES DEL "
+                "NUMERAL (la pendiente). " + nota_n + " El n del cauce "
+                "natural no es columna de Sec. 1.2: entra con la seccion "
+                "del cauce de aproximacion y no se aproxima. Y el caracter "
+                "de la fuente es "
                 "INDICADOR («are key indicators of potential problems»), no "
                 "exigencia: como se aplica lo declara el criterio "
                 "'regimen_v2b' [A] -- en esta corrida, "
@@ -3229,9 +3359,22 @@ def vc1_borde_libre_canal(*, punto: PuntoCritico,
 
 def v6_material_solido_arrastre(*, material: Material,
                                 seccion: Optional[Seccion] = None,
-                                Q: Optional[float] = None) -> Verificacion:
+                                Q: Optional[float] = None,
+                                expediente: Optional[DatosDeExpediente] = None
+                                ) -> Verificacion:
     """
     Con palizada: seccion unica mayor, nunca multiple (Sec. 3.1).
+
+    --- VE-5 (lote m45, item 18; fichas EXT-2-01 y T3-05) --- LA PUERTA DEL
+    ARRASTRE. El Manual, num. 4.1.1.3.4 a) (pag. impresa 72, PDF 75; cita
+    `MC_HHD.4.1.1.3.4a#MULTIPLES`), condiciona la recomendacion de seccion
+    unica a la «capacidad de arrastre del curso natural (palizada, troncos y
+    material de cauce)». Con N > 1 V6 lee `expediente.arrastre_de_solidos`
+    (`arrastre_de_solidos` de --datos-externos, [S] por punto de la
+    inspeccion del cauce): con `False` el curso no arrastra y la multicelda
+    se ACEPTA; con `True` no se acepta (la recomendacion rige); sin declarar
+    sigue sin aceptarse, como hasta VE-5, y el paso dice que dato falta. Con
+    una celda el dato no se consulta: la seccion unica cumple siempre.
 
     --- T-3 --- (cadena T, INF-0.4) CON N > 1 LA FILA DICE QUE SE RECHAZA, y
     no solo cuantas celdas: el reparto Q/N que MD ya hace (EXT-2), el tabique
@@ -3303,9 +3446,32 @@ def v6_material_solido_arrastre(*, material: Material,
             f"monolitico vaciado in situ: la separacion de tubos del num. "
             f"4.1.1.3.4 a) -- D/2 entre 0.40 y 1.00 m, entre superficies "
             f"externas -- es de TUBERIAS con relleno entre ellas); ancho "
-            f"exterior total {ancho:.2f} m. No se acepta mientras no haya "
-            f"dato de arrastre del cauce (ficha EXT-2-01)")
-    cumple = celdas == 1
+            f"exterior total {ancho:.2f} m")
+    arrastre = None if expediente is None else expediente.arrastre_de_solidos
+    origen_arrastre = ("" if expediente is None
+                       else expediente.origen_arrastre)
+    sin_arrastre = arrastre is False
+    cumple = celdas == 1 or sin_arrastre
+    if celdas > 1:
+        obtenido += (
+            "; el cauce NO arrastra palizada, troncos ni material de cauce "
+            f"('{CLAVE_ARRASTRE_DE_SOLIDOS}' = false: {origen_arrastre}): la "
+            "multicelda se acepta" if sin_arrastre else
+            "; el cauce ARRASTRA palizada, troncos o material de cauce "
+            f"('{CLAVE_ARRASTRE_DE_SOLIDOS}' = true: {origen_arrastre}): la "
+            "recomendacion de seccion unica rige" if arrastre else
+            f"; sin '{CLAVE_ARRASTRE_DE_SOLIDOS}' declarado para el punto "
+            "(--datos-externos): no se acepta mientras no se sepa si el "
+            "cauce arrastra (ficha EXT-2-01)")
+    if celdas > 1:
+        magnitud_arrastre = Magnitud(
+            "arrastre", ("no" if sin_arrastre else "si" if arrastre
+                         else "no declarado"), "",
+            (f"'{CLAVE_ARRASTRE_DE_SOLIDOS}' de --datos-externos, [S] por "
+             f"punto de la inspeccion del cauce: {origen_arrastre}")
+            if arrastre is not None else
+            f"'{CLAVE_ARRASTRE_DE_SOLIDOS}' no declarado para el punto",
+            cifras=None)
     # --- T-10 --- EL PASO, que V6 no tenia («constatacion declarativa sin
     # magnitud ni umbral», censo `SIN_FUNDAMENTO`). Desde C5 y T-3 V6 cuenta
     # celdas, que SI es una magnitud, y la fuente que la sostiene RECOMIENDA:
@@ -3321,9 +3487,11 @@ def v6_material_solido_arrastre(*, material: Material,
             "F5.V6",
             codigo="V6",
             que="Seccion unica con arrastre: numero de celdas del conducto",
-            formula="N_celdas = 1",
+            formula=("N_celdas = 1, salvo que el cauce del punto no arrastre "
+                     f"('{CLAVE_ARRASTRE_DE_SOLIDOS}' = false)"),
             sustitucion=(
-                Magnitud("N_celdas", celdas, "celda", procedencia),),
+                Magnitud("N_celdas", celdas, "celda", procedencia),
+                *((magnitud_arrastre,) if celdas > 1 else ())),
             resultado=Magnitud("N_celdas", celdas, "celda", obtenido),
             umbral=_umbral_de(
                 "V6", valor=1, unidad="celda",
@@ -3333,9 +3501,16 @@ def v6_material_solido_arrastre(*, material: Material,
             veredicto=_veredicto(
                 cumple, 1 - celdas, "celda",
                 "una sola celda: la seccion libre no se subdivide"
+                if celdas == 1 else
+                "mas de una celda en un cauce declarado SIN arrastre: la "
+                "condicion de la recomendacion no se da y la multicelda se "
+                "acepta"
                 if cumple else
-                "mas de una celda: no se acepta mientras no haya un dato "
-                "de sitio sobre la capacidad de arrastre del cauce (ficha "
+                "mas de una celda en un cauce que ARRASTRA: rige la "
+                "recomendacion de seccion libre sin subdivisiones"
+                if arrastre else
+                "mas de una celda: no se acepta mientras no se declare si el "
+                f"cauce arrastra ('{CLAVE_ARRASTRE_DE_SOLIDOS}', ficha "
                 "EXT-2-01)"),
         ),
     )
@@ -4188,8 +4363,16 @@ def v9_disponibilidad_diametro(*, D: float, material: Material) -> Verificacion:
     de_cajon = material.forma is FormaSeccion.RECTANGULAR
     criterio = (CRITERIO_SECCIONES_CAJON if de_cajon
                 else material.D_max_criterio or CRITERIO_D_MAX_NORMA)
-    cumple = D <= material.D_max + TOL_UMBRAL_NORMATIVO
-    margen = material.D_max - D
+    # --- VE-5 (lote m45, item 24; ficha VE2-G) --- CON LA SERIE INGLESA SE
+    # COMPARA EL DESIGNADO: el tubo de 108 in (2.7432 m) es el designado de
+    # 2700 mm de AASHTO M 170M Table 6, y el num. 12.1 deja diseñarlo con
+    # cualquiera de los dos diametros; la serie a la que pertenece es la del
+    # designado. Hasta VE-5 V9 comparaba el de calculo y lo dejaba fuera de
+    # su propia serie. Sin la opcion inglesa, o en el marco, son el mismo.
+    D_comparado = D if de_cajon else diametro_designado(material.tipo, D)
+    ingles = abs(D_comparado - D) > TOL_UMBRAL_NORMATIVO
+    cumple = D_comparado <= material.D_max + TOL_UMBRAL_NORMATIVO
+    margen = material.D_max - D_comparado
     # --- T-10 --- EL PASO, que V9 no tenia (censo `SIN_FUNDAMENTO`: «un
     # catalogo no tiene numeral»). Desde T-4 el tope del TUBO sale de su
     # norma de producto y tiene cita: entonces el paso juzga contra ella. Si
@@ -4212,6 +4395,9 @@ def v9_disponibilidad_diametro(*, D: float, material: Material) -> Verificacion:
     return Verificacion(
         cumple=cumple,
         numeral=NUMERAL_V9,
+        # El de CALCULO, como siempre: es el diametro con que el punto se
+        # dimensiona (el JSON y la memoria lo leen de aqui). Con la serie
+        # inglesa el paso imprime ademas el designado, que es el comparado.
         valor_obtenido=D,
         valor_admisible=material.D_max,
         criterio_aplicado=criterio,
@@ -4220,14 +4406,25 @@ def v9_disponibilidad_diametro(*, D: float, material: Material) -> Verificacion:
             "F5.V9",
             codigo="V9",
             que="Seccion requerida frente al tope de la serie de su material",
-            formula="D <= D_max",
+            formula=("D_designado <= D_max, con D_designado el designado de "
+                     "la fila de AASHTO M 170M Table 6 cuyo diametro ingles "
+                     "convertido es D" if ingles else "D <= D_max"),
+            citas_textuales=(("AASHTO_M170M.12.1",) if ingles else ()),
             sustitucion=(
                 Magnitud("D", D, "m",
-                         "altura interior de la seccion candidata",
+                         "altura interior de la seccion candidata"
+                         + (" (diametro ingles convertido, AASHTO M 170M "
+                            "num. 12.1)" if ingles else ""),
                          cifras=CIFRAS_MAGNITUD),
+                *((Magnitud("D_designado", D_comparado, "m",
+                            "diametro DESIGNADO del mismo tubo (AASHTO M "
+                            "170M Table 6): es el que pertenece a la serie y "
+                            "el que se compara con el tope",
+                            cifras=CIFRAS_MAGNITUD),) if ingles else ()),
                 Magnitud("D_max", material.D_max, "m", rotulo,
                          cifras=CIFRAS_MAGNITUD)),
-            resultado=Magnitud("D_max - D", margen, "m",
+            resultado=Magnitud("D_max - D_designado" if ingles
+                               else "D_max - D", margen, "m",
                                "holgura respecto del tope: negativa es fuera "
                                "de la serie", cifras=CIFRAS_MAGNITUD),
             umbral=umbral,
@@ -4766,7 +4963,8 @@ def verificar(*, punto: PuntoCritico, material: Material,
         lambda: v1_borde_libre(D=D, material=material, punto=punto,
                                resultado=resultado),
         lambda: v2_velocidad_minima(resultado=resultado),
-        lambda: v2b_sedimentacion(punto=punto, resultado=resultado),
+        lambda: v2b_sedimentacion(punto=punto, resultado=resultado,
+                                  material=material, expediente=expediente),
         lambda: v3_velocidad_maxima(material=material, resultado=resultado),
         lambda: v4_carga_entrada(punto=punto, resultado=resultado),
         lambda: v4b_relacion_hw_d(D=D, resultado=resultado, punto=punto),
@@ -4784,7 +4982,8 @@ def verificar(*, punto: PuntoCritico, material: Material,
                             else expediente.derecho_de_via))[1],
         lambda: v6_material_solido_arrastre(material=material,
                                             seccion=seccion,
-                                            Q=resultado.Q),
+                                            Q=resultado.Q,
+                                            expediente=expediente),
         lambda: v7_flotacion(punto=punto, material=material,
                              seccion=seccion, resultado=resultado),
         pieza_v8,

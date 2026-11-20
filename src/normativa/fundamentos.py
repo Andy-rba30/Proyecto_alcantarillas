@@ -425,6 +425,37 @@ PERFIL = _fundamento(
 )
 
 
+RESALTO = _fundamento(
+    id="F4.RESALTO",
+    fase=F4,
+    que_paso=("Resalto hidraulico dentro del barril bajo control de entrada, "
+              "situado por cantidad de movimiento (HEC-14 Cap. 6)"),
+    por_que=(
+        "Bajo control de entrada con la salida alta el tramo de aguas arriba "
+        "es supercritico y, si el receptor sostiene suficiente tirante, el "
+        "resalto se forma dentro del conducto: aguas abajo de el la lamina ya "
+        "no es la del flujo uniforme sino la que sube hasta el nivel del "
+        "receptor, mas alta y mas lenta. Donde queda el resalto lo decide la "
+        "conservacion de la cantidad de movimiento entre la lamina que baja "
+        "desde la entrada --que parte del tirante critico-- y la que sube "
+        "desde la salida, y con el se conocen el tirante y la velocidad tras "
+        "el resalto. Es lo que V1 y V2 necesitan para juzgar el borde libre "
+        "y la autolimpieza donde de verdad se juegan, en vez de suponer el "
+        "tirante normal en un tramo que no lo lleva."),
+    verbo=Verbo.DEFINE,
+    citas=("HEC14.6.2#MOMENTUM", "HEC14.6.2.2#LLENO", "HEC14.6.2.2#FROUDE",
+           "HEC14.6#V_TRAS_RESALTO", "HDS5_3ED.3.1.3#SUMERGENCIA"),
+    que_pasa_si_no_se_hace=(
+        "Lo que pasaba hasta VE-5: el resalto se daba por dentro del barril "
+        "solo si el receptor alcanzaba el conjugado del tirante NORMAL, y el "
+        "tramo supercritico se aproximaba por el uniforme; un receptor entre "
+        "el conjugado del tirante real a la salida y el del normal dejaba el "
+        "resalto fuera del conducto cuando estaba dentro, y V2 juzgaba la "
+        "autolimpieza con la velocidad supercritica de un tramo que va lento "
+        "(fichas EA-02 y VE3-08)."),
+)
+
+
 # ===========================================================================
 # Fase 5 - Verificaciones
 # ===========================================================================

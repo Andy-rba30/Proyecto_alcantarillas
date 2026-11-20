@@ -1546,6 +1546,13 @@ argumento para que nadie las lea como olvido.
   declarado. Con ese dato, `test_V6_sigue_rechazando_el_multicelda` se
   reescribe en la misma sesión.
 - **Dónde vive:** `src/modulos/M5_verificaciones.py::v6_material_solido_arrastre`
+- **Cerrado (VE-5, lote m45, ítem 18):** la entrada existe: `arrastre_de_solidos`, booleano
+  por punto o global de `--datos-externos` ([S] de la inspección del cauce), en
+  `servicio.CLAVES_EXTERNAS` (29), con ficha en `variables_entrada` y fila en
+  `docs/contrato_entradas.md`. Viaja en `DatosDeExpediente` y V6 la lee con N > 1: `false`
+  acepta la multicelda; `true` o sin declarar, no. Tests:
+  `tests/test_ve5_m45_arrastre_v6.py`; `test_V6_sigue_rechazando_el_multicelda` sigue
+  valiendo sin el dato.
 
 ## EXT-2-02 · El JSON de la CLI no lleva `Q_celda_m3s` ni `numero_celdas` todavía
 
@@ -2587,6 +2594,13 @@ cada una lleva su argumento y su símbolo.
   para la sección circular y el marco (Chow o HY-8) con su cita, y una
   corrida de referencia que la valide.
 - **Dónde vive:** `src/modulos/M4_control.py::perfil_lamina`
+- **Cerrado (VE-5, lote m45, ítem 17):** `M4.situar_resalto` lo sitúa por momentum
+  (HEC-14 Ec. 6.1; Ec. 6.5 con la sección 2 llena) entre la S2 que baja desde y_c en la
+  entrada y la S1 que sube desde el receptor; viaja en `ResultadoHidraulico.resalto` y en
+  el paso 4.4b. Oráculo: ejemplos SI de HEC-14 Cap. 6 (`tests/test_ve5_m45_resalto.py`).
+  Dominio S < 10 % (núm. 6.3). E13: con TW = 0.70 m el resalto queda dentro.
+- **Sigue diferido:** la S2 no sustituye al uniforme en V3 ni en la Fase 6, y la longitud
+  del resalto (sólo gráfica) no se calcula.
 
 ## EA-03 · En la banda 0.75 ≤ HW/D < 1.2 la aproximación es el método y la comprobación manda sólo si pide más carga; el paso 4.3c puede decir NO CUMPLE sin rechazar el punto
 
@@ -3184,8 +3198,9 @@ símbolo.
   `Bloqueo` se queda para lo que NO se evaluó (una etapa detenida no es una
   verificación), y `EstabilidadCabezal` rechaza la tupla vacía desde EXT-7.
 - **Abierto:** DIFERIDO y SIN_VEREDICTO siguen siendo valores del veredicto
-  sin traducción a estado —no hay `Verificacion` que los produzca— y el
-  segundo indicador del num. 5.3.3 sigue sin evaluarse (PF-4-01, punto 2).
+  sin traducción a estado —no hay `Verificacion` que los produzca—. El
+  segundo indicador del num. 5.3.3 se evalúa desde VE-5 (ficha T2-06), como
+  aviso de la verificación y sin estado propio.
 - **Qué haría falta:** un productor de esos dos valores, si alguna vez lo
   hay, extendería `EstadoDeVerificacion.de_veredicto`.
 - **Dónde vive:** `src/modelos.py::EstadoDeVerificacion`
@@ -3663,6 +3678,15 @@ alternativa sin aplicar porque decidirla es del proyectista.
   el proyectista adopte y declare, porque la fuente no la da. Hasta entonces la ficha
   de `regimen_v2b` lo declara en `verificacion_pendiente` y la memoria lo imprime.
 - **Dónde vive:** `src/normativa/citas.py::HDS5_5_3_3_DEPRESION`
+- **Cerrado (VE-5, lote m45, ítem 19):** el segundo indicador se evalúa como INDICADOR, no
+  veredicto (`M5._indicador_de_rugosidad`): n_max del conducto (la rama de la
+  sedimentación, MAT-D1) frente al n del cauce natural, que entra con la sección del cauce
+  de aproximación del punto (`seccion_cauce_aproximacion`, su campo `n`; sin ella no se
+  evalúa ni se supone). La regla es la literal de la fuente, «roughness greater than the
+  channel» (n_conducto > n_cauce), sin umbral añadido; si se dispara viaja como aviso de
+  V2b (`Verificacion.avisos`) y no cambia `cumple` bajo ningún `regimen_v2b`. Tests:
+  `tests/test_ve5_m45_rugosidad_v2b.py`. Sigue sin evaluarse en la Familia C (la clave es
+  de A y B) y los demás factores del numeral siguen sin cifra.
 
 ## T2-07 · La aceptación de T-2 no se escribió en rojo antes del código: se midió después; 34 de sus 160 tests valen antes y después, y quedan 28 mutantes vivos, censados
 
@@ -3766,6 +3790,7 @@ lo que la cadena suponía y la fuente no sostiene.
   basta, porque el tope no pasa de 2.70 m—; y, de quien conozca el mercado, el valor
   de `D_max_catalogo`.
 - **Dónde vive:** `src/modulos/M2_material.py::tope_de_diametro`
+- **VE-5 (ítem 24):** sigue igual, ver VE2-G.
 
 ## T4-03 · `v_max_tmc` es [A] con ventana y `v_max_hdpe` sigue [C]: los dos valen 4.572 m/s y no son la misma cosa
 
@@ -5110,8 +5135,9 @@ Doce fichas; las cinco últimas son de la auditoría.
   TUBERÍAS con relleno compactado entre ellas, y la fila la nombra para decir por qué no la
   aplica (cita `MC_HHD.4.1.1.3.4a#SEPARACION`). La cadena T pedía usarla: la fuente no la
   da para un marco. (3) V7 se evalúa por celda: con N > 1 no carga el marco entero.
-- **Qué haría falta:** un dato de sitio sobre la capacidad de arrastre del canal para
-  decidir la multicelda; y, si se adopta, V7 sobre la sección completa.
+- **Cerrado (VE-5, lote m45, ítem 18):** (1) el dato existe —`arrastre_de_solidos`, ficha
+  EXT-2-01— y V6 acepta la multicelda en un cauce declarado sin arrastre.
+- **Qué haría falta:** si se adopta la multicelda, V7 sobre la sección completa.
 - **Dónde vive:** `src/modulos/M5_verificaciones.py::v6_material_solido_arrastre`
 
 ## T3-06 · La geometría del marco queda en `modelos.GeometriaMarco` para la Fase 8 y el cabezal; M8 no se toca
@@ -7728,15 +7754,15 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   (VE-1 H2). Tolerancia `TOL_UMBRAL_NORMATIVO` en metros, no de centímetro: 375, 525, 675
   y 825 mm son designados. Un escalón no positivo lo sigue rechazando la hidráulica
   (rama de error de la línea base). Con los valores de archivo ningún número se mueve.
-- **Abierto:** (1) con la opción inglesa, el escalón de 108 in (2.7432 m, designado
-  2700) queda fuera del tope de 2.70 m: el tope y V9 comparan el diámetro de cálculo y
-  no el designado; cambiarlo toca V9 (`M5_verificaciones`), fuera del permiso.
-  (2) Con la opción inglesa, 'espesor_pared_conducto' necesita las filas 914, 1067…
+- **Abierto:** (1) cerrado en VE-5 (abajo). (2) Con la opción inglesa, 'espesor_pared_conducto' necesita las filas 914, 1067…
   (su clave es el diámetro redondeado al mm, `M2.espesor_pared`); leer la pared de la
   fila designada sería otra decisión, no tomada. (3) Las seis filas de 2850 a 3600 de la
   Table 6 no se transcriben (`Acotada`).
-- **Qué haría falta:** (1) decisión del dueño y un cambio en V9; (2) decidir si la pared
-  del diámetro inglés es la del designado; (3) otro ejemplar de M 170M, no recompuesto.
+- **Cerrado (VE-5, ítem 24), (1):** el tope y V9 comparan el designado
+  (`M2.diametro_designado`); 108 in entra como 2700 mm. (3) releída por imagen: sigue
+  ilegible (2830, iM8, 3333, U38, 3S05 y la última fila).
+- **Qué haría falta:** (2) decidir si la pared del diámetro inglés es la del designado;
+  (3) otro ejemplar de M 170M, no recompuesto.
 - **Dónde vive:** `src/modulos/M2_material.py::_exigir_escalon_designado`
 
 ## VE2-C · V7: el nivel de agua de diseño es una elección [A] del Propietario
@@ -8117,12 +8143,18 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   lo largo del TW (nota T-2). (H6) El titular de un «no factible» nombra V2, V2b o V10 cuando
   fallan en todo escalón evaluado. (H3 b) El delta de 7.A se rotula si V7 seguiría sin cumplir.
   Línea base §25: ningún diámetro, sección ni material (B-01 pasa a «NO FACTIBLE POR V2»).
+- **Cerrado (VE-5, lote m45, ítem 17):** V2 adopta la velocidad aguas abajo del resalto. Con
+  el resalto dentro del barril bajo control de entrada (o el barril subcrítico con el remanso
+  M1 en la salida) V2 juzga la velocidad MÍNIMA del perfil, Q_celda / A(y_max), por la misma
+  bifurcación que V1 (`M5._entrada_con_receptor`): el numeral pide «la velocidad mínima del
+  flujo dentro del conducto», y tras el resalto la lámina sube hasta el TW. El paso imprime
+  al lado la velocidad tras el resalto de HEC-14 (V2 = Q/A2, paso 3 de los ejemplos, cita
+  `HEC14.6#V_TRAS_RESALTO`), que no se compara. El resalto lo sitúa M4 (ficha EA-02).
 - **Abierto:** (H3 a) el delta con V4 gobernada por el resguardo sigue sin darse (regla de
-  T11-03: el HW depende de la longitud); si V2 adopta la velocidad aguas abajo del resalto; E06
+  T11-03: el HW depende de la longitud); E06
   (titular por V3), H7 (la progresión sigue tras una falla que sólo empeora) y H8 (cobertura G1
   fuera del bucle).
-- **Qué haría falta:** decidir si V2 adopta el régimen del resalto; iterar 7.A con el HW para
-  dar el delta de resguardo.
+- **Qué haría falta:** iterar 7.A con el HW para dar el delta de resguardo.
 - **Dónde vive:** `src/modulos/M5_verificaciones.py::v1_borde_libre`
 
 ## VE3-09 · El diámetro gobernado por el nivel del receptor se dice (decisión 8 del dueño, VE-3.13)
