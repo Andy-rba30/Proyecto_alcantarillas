@@ -4026,7 +4026,7 @@ tres más (`T1-07` a `T1-09`) las dejó la auditoría adversarial de la misma se
   el umbral de colapso, que la hoja de ruta no fija.
 - **Dónde vive:** `src/modulos/M5_verificaciones.py::v8_evento_extremo`
 
-## T1-04 · La hidrología entraba sólo por la CLI; desde UI-1 la ventana y la sesión la conocen, y el pre-vuelo la carga pero no la calcula — en parte cerrado (UI-1)
+## T1-04 · La hidrología entraba sólo por la CLI; desde UI-1 la ventana y la sesión la conocen, y desde VE-4b el pre-vuelo anticipa lo que detendría la Fase 1-bis — Cerrado (UI-1 y VE-4b)
 
 - **Cerrado (UI-1, la interfaz y la sesión):** T-1 difirió los campos de `--cuencas` y
   `--estacion` en la pestaña 1, su sitio en la sesión, el SHA-1 de los dos archivos y la
@@ -4042,14 +4042,21 @@ tres más (`T1-07` a `T1-09`) las dejó la auditoría adversarial de la misma se
   los dos CSV por «Examinar...», el caudal «calculado» en el detalle de la pestaña 3, el
   mismo JSON que la CLI con `--cuencas` y `--estacion`, los dos PDF del hijo con la
   hidrología y la sesión que la guarda y la repone (ficha UI4-01).
-- **Abierto:** el estimador de lo que detiene la Fase 1-bis. Con los dos CSV el
-  pre-vuelo —el de la CLI y el anticipo de la ventana— carga y valida los archivos y
-  dice de un `Q_m3s` vacío con cuenca «depende de la hidrología (no evaluada en
-  pre-vuelo)»; no calcula si el punto se detendrá. Es una estimación que no gobierna
-  ningún botón (§0 de la cadena de interfaz).
-- **Qué haría falta:** un estimador en `anticipo` de lo que detiene la Fase 1-bis
-  (criterio FEN sin declarar, cuenca fuera de la población de su método, dos áreas).
-- **Dónde vive:** `src/servicio.py::cargar_hidrologia`
+- **Cerrado (VE-4b, el estimador):** con los dos CSV el pre-vuelo de la CLI y el
+  anticipo de la ventana (que sólo pinta) anuncian, punto a punto, lo que la Fase 1-bis
+  registraría como `Bloqueo`, con su misma etapa y su mismo mensaje
+  (`anticipo.POBLACION_HIDROLOGIA`, todas DETIENE). Qué compuertas anticipa sin TR y sin
+  registrar usos: `MH_hidrologia.anticipar_caudal`; la precedencia (el área escrita dos
+  veces siempre, nada más con `Q_m3s` declarado): `servicio.anticipar_fase_hidrologia`;
+  lo que depende del TR, como «puede detener»: `anticipo.PUEDE_DETENER_SEGUN_TR`. La
+  unión contra la corrida real: `tests/test_ve4b_prevuelo_hidrologia.py`.
+- **Abierto (a propósito):** lo que sólo se decide con el TR o con el cálculo hecho: el C
+  vial por encima de 100 años, el rango de duración de la intensidad, el coeficiente de
+  la ecuación (35) y un Tc o un caudal no positivos; y nada se anticipa de un punto cuya
+  Fase 2 se detiene antes, donde lo anunciado sobra.
+- **Qué haría falta:** el TR en el pre-vuelo (la Fase 2 sin cargar los puntos); no se
+  recomienda: haría del pre-vuelo una segunda corrida.
+- **Dónde vive:** `src/servicio.py::anticipar_fase_hidrologia`
 
 ## T1-05 · Lo que el prompt de T-1 suponía y el Manual no trae
 

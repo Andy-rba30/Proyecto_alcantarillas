@@ -3713,6 +3713,38 @@ class Bloqueo:
 
 
 @dataclass(frozen=True)
+class ObstaculoAnticipado:
+    """
+    Lo que DETENDRIA una etapa, anticipado sin correrla (VE-4b, ficha T1-04):
+    el `Bloqueo` que la corrida registraria, antes de que exista.
+
+    Lo produce el estimador de la Fase 1-bis (`MH_hidrologia.anticipar_caudal`
+    y `servicio.anticipar_fase_hidrologia`) y lo lee el pre-vuelo
+    (`anticipo.datos_faltantes_por_punto`). Se construye desde la MISMA
+    excepcion que la etapa levantaria (`de_excepcion`), de modo que `tipo` y
+    `mensaje` son los del `Bloqueo` real: el texto no se escribe dos veces.
+
+    `dato` es lo que hay que tocar: la clave del criterio, el campo que falta
+    o esta mal, o la magnitud que el metodo no evalua (`que` de
+    `MetodoNoEvaluableError`). `depende_del_tr` marca la compuerta que solo
+    se decide con el periodo de retorno de la Fase 2, que el pre-vuelo no
+    calcula: entonces el `mensaje` dice la condicion y no el numero, y el
+    pre-vuelo la anuncia como «puede detener» (estima de MAS a proposito).
+    """
+
+    dato: str
+    tipo: TipoDeBloqueo
+    mensaje: str
+    depende_del_tr: bool = False
+
+    @classmethod
+    def de_excepcion(cls, exc: ErrorProyecto, dato: str, *,
+                     depende_del_tr: bool = False) -> "ObstaculoAnticipado":
+        return cls(dato=dato, tipo=TipoDeBloqueo.de_excepcion(exc),
+                   mensaje=str(exc), depende_del_tr=depende_del_tr)
+
+
+@dataclass(frozen=True)
 class DatoEfectivoDeSitio:
     """
     Lo que un dato de sitio [S] APORTO a una corrida, y de donde (EXT-10).

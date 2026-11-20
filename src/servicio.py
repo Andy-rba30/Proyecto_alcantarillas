@@ -111,6 +111,7 @@ from src.modelos import (ORIGEN_CAUDAL_CALCULADO,               # --- T-9 ---
                          TramoDeAlivio)
 from src.modelos import (AporteDelAlivio,             # --- T-9 (correcciones) ---
                          ExtremoDeTramo)
+from src.modelos import ObstaculoAnticipado                    # --- VE-4b ---
 from src.modulos.M0_carga import (COLUMNA_CAUDAL,
                                   FAMILIAS_CON_CAUDAL_HIDROLOGICO,
                                   cargar_puntos, cargar_puntos_de_bytes,
@@ -2806,6 +2807,59 @@ def ids_con_caudal_calculable(hidrologia: Optional[EntradaHidrologica]) -> froze
     las tres no pueden discrepar sobre que celda vacia «detiene».
     """
     return frozenset() if hidrologia is None else hidrologia.ids_calculables()
+
+
+def anticipar_fase_hidrologia(hidrologia: Optional[EntradaHidrologica],
+                              id_punto: str, familia: Optional[Familia], *,
+                              area_ha: Optional[float],
+                              caudal_declarado: bool,
+                              ) -> Tuple[Tuple[str, ObstaculoAnticipado], ...]:
+    """
+    Lo que DETENDRIA la Fase 1-bis de este punto, sin correrla: pares
+    (etapa, obstaculo) con la MISMA etapa con que `_fase_hidrologia` registra
+    el `Bloqueo` (VE-4b, ficha T1-04). Lo pide el pre-vuelo
+    (`anticipo.datos_faltantes_por_punto`), que no puede importar
+    `MH_hidrologia`: este es el unico modulo que lo importa (T-1).
+
+    LA PRECEDENCIA DE `_fase_hidrologia`, sin el calculo:
+
+      * sin hidrologia, fuera de las Familias A y B o sin cuenca de la obra,
+        nada: la Fase 1-bis no tiene compuertas que anticipar;
+      * el AREA ESCRITA DOS VECES (`area_ha` del CSV de puntos frente a
+        `area_km2` del de cuencas) se contrasta SIEMPRE que las dos esten,
+        tambien con el caudal declarado: la corrida la bloquea igual
+        (`ETAPA_AREA_DE_LA_CUENCA`), aunque el punto se dimensione con el
+        caudal declarado;
+      * con `caudal_declarado` (la columna `Q_m3s` llena o el JSON), nada mas:
+        un caudal declarado GANA y no se recalcula;
+      * si no, las compuertas del calculo que no dependen del periodo de
+        retorno (`MH.anticipar_caudal`, en `ETAPA_CAUDAL_CALCULADO`), por la
+        puerta de la cuneta en la Familia B, como la corrida.
+
+    No corre la Fase 2 ni calcula el caudal, y no registra el uso de ningun
+    criterio.
+    """
+    if hidrologia is None or familia not in FAMILIAS_CON_CAUDAL_HIDROLOGICO:
+        return ()
+    cuenca = hidrologia.cuenca_de(id_punto)
+    if cuenca is None:
+        return ()
+    salida: List[Tuple[str, ObstaculoAnticipado]] = []
+    if area_ha is not None:
+        try:
+            MH.exigir_areas_coherentes(area_ha=area_ha, area_km2=cuenca.area_km2,
+                                       id_punto=id_punto,
+                                       origen_cuenca=cuenca.origen)
+        except ErrorProyecto as exc:
+            salida.append((ETAPA_AREA_DE_LA_CUENCA,
+                           ObstaculoAnticipado.de_excepcion(exc, exc.campo)))
+    serie = hidrologia.estaciones.get(cuenca.estacion)
+    if caudal_declarado or serie is None:
+        return tuple(salida)
+    salida.extend((ETAPA_CAUDAL_CALCULADO, obstaculo)
+                  for obstaculo in MH.anticipar_caudal(
+                      cuenca, serie, de_cuneta=familia is Familia.B))
+    return tuple(salida)
 
 
 def _fase_hidrologia(informe: InformePunto, externos: DatosExternos,

@@ -330,6 +330,11 @@ def lineas_de_diferimientos(diferido: DiferimientosDelAlcance) -> Tuple[str, ...
 #                                    falta (ETAPA_FALTA_*, DETALLE_FALTA_*)
 #   el TW sin ninguna via            servicio.tw_sin_via_de_sec_1_3, el MISMO
 #                                    predicado que `_resolver_tw`
+#   lo que detendria la Fase 1-bis   servicio.anticipar_fase_hidrologia (VE-4b,
+#                                    ficha T1-04): la precedencia de
+#                                    `_fase_hidrologia` y, por dentro,
+#                                    `MH_hidrologia.anticipar_caudal`, con el
+#                                    mensaje de la MISMA excepcion
 #
 # SIGUE SIENDO UNA ESTIMACION, por dos razones medidas y no supuestas
 # (tests/test_pf2_prevuelo.py, la union contra la corrida real): estima de MAS
@@ -346,17 +351,31 @@ ETAPA_CARGA = "carga del CSV (M0, Sec. 1.2)"
 # T-1 (auditoria): el caudal de una fila de Familia A o B que va vacio y
 # tiene cuenca y estacion en la corrida NO detiene la carga -- M0 la admite--,
 # y que el caudal salga depende de un calculo que el pre-vuelo no hace.
-ETAPA_DEPENDE_DE_LA_HIDROLOGIA = ("depende de la hidrologia (Fase 1-bis, no "
-                                  "evaluada en pre-vuelo)")
+# Desde VE-4b (ficha T1-04) el pre-vuelo ANTICIPA lo que detendria ese
+# calculo, en filas aparte de poblacion `POBLACION_HIDROLOGIA`; la fila del
+# caudal sigue diciendo que espera a la Fase 1-bis.
+ETAPA_DEPENDE_DE_LA_HIDROLOGIA = "depende de la hidrologia (Fase 1-bis)"
+# --- VE-4b --- La poblacion de las faltas que la Fase 1-bis registraria
+# como `Bloqueo` (`servicio.anticipar_fase_hidrologia`): criterios sin
+# declarar, datos de la cuenca, metodos no evaluables. Su `etapa` es la del
+# Bloqueo y su `de_donde` es el MENSAJE del Bloqueo, letra por letra.
+POBLACION_HIDROLOGIA = "Fase 1-bis (hidrologia)"
+# Lo que encabeza una falta que solo el periodo de retorno de la Fase 2
+# decide: el pre-vuelo no lo calcula y la anuncia como DETIENE, de mas.
+PUEDE_DETENER_SEGUN_TR = ("Puede detener (depende del periodo de retorno de "
+                          "la Fase 2, que el pre-vuelo no calcula): ")
 # El aviso que acompaña al pre-vuelo cuando la corrida trae los dos CSV de
 # la hidrologia: lo imprime `cli._prevuelo` y lo pinta el anticipo de la
 # ventana, de aqui (revision de UI-1: hasta entonces vivia en cli.py y la
-# ventana no lo decia).
+# ventana no lo decia). Reescrito en VE-4b, que anticipa las compuertas.
 AVISO_HIDROLOGIA_NO_CALCULADA = (
-    "Aviso: --cuencas y --estacion se cargaron y se validaron, pero el "
-    "pre-vuelo NO calcula la hidrologia. Un Q_m3s vacio con cuenca y estacion "
-    "figura como «" + ETAPA_DEPENDE_DE_LA_HIDROLOGIA + "»: la corrida puede "
-    "detenerlo por un criterio sin declarar o por un metodo no evaluable.")
+    "Aviso: --cuencas y --estacion se cargaron y se validaron. El pre-vuelo "
+    "NO calcula la hidrologia: anticipa lo que detendria la Fase 1-bis sin "
+    "el periodo de retorno (criterios sin declarar, area escrita dos veces, "
+    "area y tiempo de concentracion fuera de su metodo, datos de la cuenca, "
+    "serie corta y prueba de Kolmogorov-Smirnov), en filas «"
+    + POBLACION_HIDROLOGIA + "»; lo que depende del periodo de retorno se "
+    "anuncia como «puede detener», y la lista definitiva la da la corrida.")
 COLUMNA = "columna del CSV"
 EXTERNO = "dato externo"
 # Los modulos del censo que LEEN la columna sin consumirla en un calculo: la
@@ -469,6 +488,7 @@ def _numero_o_none(celda: str) -> Optional[float]:
 def datos_faltantes_por_punto(ruta_csv: Any, externos: Any,
                               alcance: str, *,
                               ids_con_caudal_calculable: frozenset = frozenset(),
+                              hidrologia: Any = None,
                               ) -> Tuple[DatoFaltanteEstimado, ...]:
     """
     El bloque 4: lo que le falta a cada fila del CSV para que la corrida de
@@ -481,6 +501,15 @@ def datos_faltantes_por_punto(ruta_csv: Any, externos: Any,
     hidrologia», que puede detenerse por un criterio sin declarar o por un
     metodo no evaluable.
 
+    `hidrologia` (VE-4b, ficha T1-04) es la `EntradaHidrologica` que la
+    corrida recibiria (`servicio.cargar_hidrologia`), o None. Con ella el
+    pre-vuelo anticipa, punto a punto, lo que detendria la Fase 1-bis
+    (`servicio.anticipar_fase_hidrologia`): filas de poblacion
+    `POBLACION_HIDROLOGIA` con la etapa y el mensaje del `Bloqueo`, todas
+    DETIENE. Un caudal declarado gana: de el solo se contrasta el area
+    escrita dos veces, que la corrida contrasta tambien. Sus obras
+    calculables se suman a `ids_con_caudal_calculable`.
+
     `externos` es el `DatosExternos` que la corrida recibiria (el JSON de
     `--datos-externos` mas las banderas): una clave declarada ahi, global o
     por punto, cuenta como presente. Lee el CSV con `_filas_crudas`, que no
@@ -490,6 +519,9 @@ def datos_faltantes_por_punto(ruta_csv: Any, externos: Any,
     externas_no_columna = tuple(c for c in servicio.CLAVES_EXTERNAS
                                 if c not in m0.COLUMNAS)
     filas = _filas_crudas(ruta_csv)
+    if hidrologia is not None:
+        ids_con_caudal_calculable = (frozenset(ids_con_caudal_calculable)
+                                     | servicio.ids_con_caudal_calculable(hidrologia))
     # --- T-9 (correcciones, H2) --- El extremo del tramo de cuneta de cada
     # alivio, con la MISMA funcion que la corrida (`servicio.extremos_de_los_
     # tramos`): sin extremo, VB1 queda sin evaluar y la corrida lo registra
@@ -536,7 +568,10 @@ def datos_faltantes_por_punto(ruta_csv: Any, externos: Any,
                        f"{concepto}. La celda va vacia y la corrida trae la "
                        "cuenca de la obra y la serie de su estacion: el "
                        "caudal lo calcula el programa, si sus criterios "
-                       "estan declarados y el metodo es evaluable",
+                       "estan declarados y el metodo es evaluable"
+                       + ("" if hidrologia is None else
+                          ". Lo que lo detendria va en las filas «"
+                          + POBLACION_HIDROLOGIA + "» de este punto"),
                        ETAPA_DEPENDE_DE_LA_HIDROLOGIA, False)
                 continue
             if columna not in admiten:
@@ -669,6 +704,20 @@ def datos_faltantes_por_punto(ruta_csv: Any, externos: Any,
                        "pre-vuelo ni via alterna declarada (EXTERNOS_CON_VIA_"
                        "ALTERNA): el pre-vuelo no sabe si detiene",
                        "sin regla de pre-vuelo", False)
+
+        # --- VE-4b --- lo que detendria la Fase 1-bis (ficha T1-04) ------
+        # El servicio lo anticipa con la misma precedencia que la corrida:
+        # el caudal declarado (celda o JSON) gana y solo se contrasta el
+        # area escrita dos veces. Etapa y mensaje son los del Bloqueo.
+        caudal_declarado = bool(fila.get(m0.COLUMNA_CAUDAL, "")) or (
+            externos.dato(id_punto, m0.COLUMNA_CAUDAL) is not None)
+        for etapa, obstaculo in servicio.anticipar_fase_hidrologia(
+                hidrologia, id_punto, familia,
+                area_ha=_numero_o_none(fila.get("area_ha", "")),
+                caudal_declarado=caudal_declarado):
+            anadir(obstaculo.dato, POBLACION_HIDROLOGIA,
+                   (PUEDE_DETENER_SEGUN_TR if obstaculo.depende_del_tr else "")
+                   + obstaculo.mensaje, etapa, True)
     return tuple(salida)
 
 
