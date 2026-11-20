@@ -7797,6 +7797,119 @@ MC_HHD_T05_SCS = _cita(
           "trata como a los «3 a 10%» de Kirpich."),
 )
 
+# --- VE-5 (mh, ficha T1-07) --- Las dos filas de la Tabla Nº 05 que piden
+# iterar con la intensidad: Izzard y la onda cinematica. Leidas en la capa de
+# texto de las pags. impresas 39 y 40 y, las formulas, en la imagen.
+FECHA_VE5_MH = "2026-11-20"
+POR_VE5_MH = "VE-5 (lote mh) · lectura directa de la pagina por la sesion"
+VE5_MH = (FECHA_VE5_MH, POR_VE5_MH)
+
+MC_HHD_T05_IZZARD = _cita(
+    id="MC_HHD.3.9#T05_IZZARD",
+    fuente_id="MC_HHD",
+    numeral="3.9",
+    titulo_numeral="Tiempo de Concentración",
+    pagina_impresa="39",
+    pagina_pdf=42,
+    pagina_pdf_titulo=41,
+    texto_literal=Verbatim(
+        texto=("Desarrollada experimentalmente en laboratorio por el Bureau "
+               "of Public Roads para flujo superficial en caminos y Áreas de "
+               "céspedes; los valores del coeficiente de retardo varían desde "
+               "0.0070 para pavimentos muy lisos hasta 0.012 para pavimentos "
+               "de concreto y 0.06 para superficies densamente cubiertas de "
+               "pasto; la solución requiere de procesos iterativos"),
+        pagina_pdf=42),
+    caracter=Caracter.APROXIMACION,
+    metodo=AMBOS,
+    sesion=VE5_MH,
+    derivado_de="MC_HHD.3.9#T05",
+    nota=("Fila «Izzard (1946)». La formula, vista en imagen: tc = 525 · "
+          "(0.0000276·i + c) · L^0.33 / (S^0.333 · i^0.667), con «i = "
+          "intensidad de lluvia, mm/h», «c = coeficiente de retardo», «L = "
+          "longitud de la trayectoria de flujo, m.» y «S = pendiente de la "
+          "trayectoria de flujo, m/m.» La observacion termina con la "
+          "condicion de aplicacion (cita MC_HHD.3.9#T05_IZZARD_IL). Los "
+          "valores del coeficiente de retardo son una DESCRIPCION (de 0.0070 "
+          "a 0.06 segun la superficie), no un rango de validez: el "
+          "coeficiente es un dato de la cuenca."),
+)
+
+MC_HHD_T05_IZZARD_IL = _cita(
+    id="MC_HHD.3.9#T05_IZZARD_IL",
+    fuente_id="MC_HHD",
+    numeral="3.9",
+    titulo_numeral="Tiempo de Concentración",
+    pagina_impresa="39",
+    pagina_pdf=42,
+    pagina_pdf_titulo=41,
+    texto_literal=Verbatim(
+        texto="el producto de i por L debe ser ≤ 3800.",
+        pagina_pdf=42),
+    caracter=Caracter.EXIGENCIA,
+    metodo=AMBOS,
+    sesion=VE5_MH,
+    derivado_de="MC_HHD.3.9#T05_IZZARD",
+    nota=("Ultima frase de la observacion de la fila «Izzard (1946)», con "
+          "i en mm/h y L en m (las unidades que la misma fila escribe). Es la "
+          "condicion de la formula, y el programa no la evalua fuera de ella. "
+          "El «≤» se leyo en la imagen."),
+)
+
+MC_HHD_T05_ONDA = _cita(
+    id="MC_HHD.3.9#T05_ONDA",
+    fuente_id="MC_HHD",
+    numeral="3.9",
+    titulo_numeral="Tiempo de Concentración",
+    pagina_impresa="40",
+    pagina_pdf=43,
+    pagina_pdf_titulo=41,
+    texto_literal=Verbatim(
+        texto=("Ecuación para flujo superficial desarrollada a partir de "
+               "análisis de onda cinemática de la escorrentía superficial "
+               "desde superficies desarrolladas; el método requiere "
+               "iteraciones debido a que tanto I (Intensidad de lluvia) como "
+               "tc son desconocidos"),
+        pagina_pdf=43),
+    caracter=Caracter.APROXIMACION,
+    metodo=AMBOS,
+    sesion=VE5_MH,
+    derivado_de="MC_HHD.3.9#T05",
+    nota=("Fila «Ecuaciones de onda cinemática Morgali y Linsley (1965) Aron "
+          "y Erborge (1973)». La formula, vista en imagen: tc = 7 · L^0.6 · "
+          "n^0.6 / (I^0.4 · S^0.3), con «L = longitud del flujo superficial, "
+          "m.», «n = coeficiente de rugosidad de Manning.», «I = intensidad de "
+          "lluvia, mm/h.» y «S = pendiente promedio del terreno-m/m.» La "
+          "observacion sigue: «la superposición de una curva de intensidad – "
+          "duración – frecuencia da una solución gráfica directa para tc»; el "
+          "programa hace lo mismo numericamente (punto fijo tc <-> I con la "
+          "relacion intensidad-duracion del criterio). La fila no escribe "
+          "rango de aplicacion."),
+    interpretacion=Interpretacion(
+        texto=("La S de la fila es la «pendiente promedio del terreno»: el "
+               "proyecto le pasa la columna S_terreno del CSV de cuencas, que "
+               "es la pendiente media del terreno de la cuenca --la misma que "
+               "la ecuacion de retardo lee como «pendiente promedio de la "
+               "cuenca»--, y no S_cauce_cuenca. La L, «longitud del flujo "
+               "superficial», es la columna L_cauce_m, que en un metodo de "
+               "flujo superficial se declara como la longitud del recorrido "
+               "sobre la superficie (como en la fila de la FAA)."),
+        en_contra=(
+            "en una plataforma o un talud la pendiente que gobierna el flujo "
+            "superficial es la de su recorrido, que el CSV escribe en "
+            "S_cauce_cuenca; con la del terreno de la cuenca, si es menor, la "
+            "formula da mas tiempo y menos intensidad",
+        ),
+        a_favor=(
+            "la fila escribe «del terreno», y el CSV tiene una columna que "
+            "es exactamente eso; leer la otra seria cambiarle la palabra a la "
+            "fuente",
+            "quien declara este metodo para una superficie de la plataforma "
+            "escribe en S_terreno la pendiente de esa superficie, que es su "
+            "terreno",
+        )),
+)
+
 MC_HHD_3_12_2_1_K = _cita(
     id="MC_HHD.3.12.2.1#K",
     fuente_id="MC_HHD",

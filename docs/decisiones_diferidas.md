@@ -4088,7 +4088,22 @@ tres más (`T1-07` a `T1-09`) las dejó la auditoría adversarial de la misma se
   la integración de T-1 (2026-11-12).
 - **Dónde vive:** `src/modelos.py::MOTIVO_METODO_NO_EVALUABLE_HIDROLOGIA`
 
-## T1-07 · De las seis filas de la Tabla Nº 05 se implementan cuatro: Izzard y onda cinemática quedan diferidas
+## T1-07 · De las seis filas de la Tabla Nº 05 se implementan cuatro: Izzard y onda cinemática quedan diferidas — Cerrado (VE-5, lote mh)
+
+- **Cerrado (VE-5, 2026-11-20):** las seis filas tienen función. `metodo_tc` admite
+  `izzard` y `onda_cinematica`, con su dato de superficie en dos columnas opcionales del
+  CSV de cuencas (`c_retardo_izzard`, `n_manning_superficial`: obligatorias con su método,
+  vacías con cualquier otro). El tiempo de concentración sale del **punto fijo tc ↔ I**
+  (`MH._punto_fijo_tc`): sustitución sucesiva desde una lluvia de 24 horas, con la MISMA
+  relación intensidad-duración y la MISMA duración mínima del paso de la intensidad
+  (`MH._intensidad_de_diseno`), hasta `TOL_REL_PUNTO_FIJO_TC` relativo; sin convergencia en
+  `ITERACIONES_MAX_PUNTO_FIJO_TC`, `LimiteNumericoError`. La condición de Izzard «el producto
+  de i por L debe ser ≤ 3800» (cita `MC_HHD.3.9#T05_IZZARD_IL`, exigencia) se exige con la
+  intensidad del punto fijo y fuera de ella el punto no se evalúa. La onda cinemática lee la
+  S de `S_terreno` («pendiente promedio del terreno»: la `Interpretacion` de
+  `MC_HHD.3.9#T05_ONDA`). Los dorados son forma cerrada (onda, con una curva I = a/t^b) y
+  `brentq` (Izzard), en `tests/test_ve5_mh.py`. Sigue sin anticiparse en el pre-vuelo la
+  condición i·L de Izzard, que depende de la intensidad y por tanto del TR (ficha T1-04).
 
 - **Qué se difirió:** las filas «Izzard (1946)» y «Ecuaciones de onda cinemática
   Morgali y Linsley (1965), Aron y Erborge (1973)» de la tabla de fórmulas de tiempo

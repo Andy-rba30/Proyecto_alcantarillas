@@ -4208,6 +4208,29 @@ TC_RETARDO_SCS_AREA_MAX_KM2 = 8.0
 # vale 1 y por debajo crece. Dominio de la formula, no umbral.
 TC_RETARDO_SCS_CN_MAX = 100
 NUMERAL_TC_RETARDO_SCS = _reg.cita("MC_HHD.3.9#T05_SCS").como_texto()
+# --- VE-5 (mh, ficha T1-07) --- Las dos filas de la Tabla Nº 05 que llevan la
+# INTENSIDAD dentro de la formula y piden iterar con ella (punto fijo tc <-> I,
+# `MH.tiempo_de_concentracion`).
+# Izzard (1946): tc = 525 · (0.0000276·i + c) · L^0.33 / (S^0.333 · i^0.667),
+# tc en min, i en mm/h, L en m, S en m/m, c el coeficiente de retardo.
+# Imperial equivalente, que NO se usa: tc[min] = 41 · (0.0007·i[in/h] + c) ·
+# L[ft]^(1/3) / (S^(1/3) · i^(2/3)).
+TC_IZZARD_SI = {"coeficiente": 525, "coeficiente_i": 0.0000276,
+                "exp_L": 0.33, "exp_S": 0.333, "exp_i": 0.667}
+# «el producto de i por L debe ser ≤ 3800»: i en mm/h y L en m (las unidades de
+# la fila). Es una condicion de aplicacion que la fuente ESCRIBE: fuera de ella
+# la formula no se evalua. Imperial equivalente, que NO se usa: i·L <= 500
+# (in/h · ft).
+TC_IZZARD_PRODUCTO_IL_MAX = 3800            # mm/h · m, incluido
+NUMERAL_TC_IZZARD = _reg.cita("MC_HHD.3.9#T05_IZZARD").como_texto()
+# Ecuaciones de onda cinematica, Morgali y Linsley (1965), Aron y Erborge
+# (1973): tc = 7 · L^0.6 · n^0.6 / (I^0.4 · S^0.3), tc en min, L en m, I en
+# mm/h, S en m/m, n el coeficiente de rugosidad de Manning del flujo
+# superficial. Imperial equivalente, que NO se usa: tc[min] = 0.94 ·
+# L[ft]^0.6 · n^0.6 / (I[in/h]^0.4 · S^0.3).
+TC_ONDA_CINEMATICA_SI = {"coeficiente": 7, "exp_L": 0.6, "exp_n": 0.6,
+                         "exp_I": 0.4, "exp_S": 0.3}
+NUMERAL_TC_ONDA_CINEMATICA = _reg.cita("MC_HHD.3.9#T05_ONDA").como_texto()
 # Temez, ecuacion (30) del num. 3.12.2.1: Tc = 0.3 · (L / S^0.25)^0.76, con L
 # en KM y Tc en HORAS. NO esta en la Tabla Nº 05. Sin forma inglesa en uso.
 TC_TEMEZ_SI = {"coeficiente": 0.3, "exp_S": 0.25, "exp": 0.76}

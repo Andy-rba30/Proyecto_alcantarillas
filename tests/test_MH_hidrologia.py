@@ -567,7 +567,8 @@ def test_la_ecuacion_de_retardo_pide_el_numero_de_curva_y_usa_S_terreno(cuencas)
 def test_un_metodo_que_no_es_de_la_lista_es_dato_invalido(cuencas):
     from dataclasses import replace
     with pytest.raises(modelos.DatoInvalidoError) as exc:
-        MH.tiempo_de_concentracion(replace(cuencas["A-02"], metodo_tc="izzard"))
+        MH.tiempo_de_concentracion(replace(cuencas["A-02"],
+                                           metodo_tc="metodo_que_no_existe"))
     assert exc.value.campo == "metodo_tc"
 
 

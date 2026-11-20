@@ -2430,7 +2430,8 @@ def _parser() -> argparse.ArgumentParser:
                    help="CSV de cuencas, una fila por obra (id, area_km2, "
                         "L_cauce_m, S_cauce_cuenca, S_terreno, cobertura, "
                         "suelo, estacion, metodo_tc; segun el metodo, "
-                        "H_desnivel_m, ajuste_kirpich y CN). Con --estacion, el "
+                        "H_desnivel_m, ajuste_kirpich, CN, c_retardo_izzard y "
+                        "n_manning_superficial). Con --estacion, el "
                         "programa calcula el caudal de los puntos de Familia "
                         "A y B que traigan Q_m3s vacio (Fase 1-bis). Si "
                         "Q_m3s viene lleno, gana el declarado")

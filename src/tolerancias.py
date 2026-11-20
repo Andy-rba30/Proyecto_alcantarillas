@@ -297,3 +297,26 @@ TOL_ANGULO_CUNA = 1e-10
 # la nota de las dos citas, que la declaran. Cambiarla no mueve ningun
 # resultado; si una celda queda fuera de ella, lo que esta mal es la celda.
 TOL_LECTURA_FIGURA_HEC14 = 0.01
+
+
+# ---------------------------------------------------------------------------
+# --- VE-5 (mh, ficha T1-07) --- El punto fijo tiempo de concentracion <-> I
+# ---------------------------------------------------------------------------
+# Izzard y la onda cinematica (Tabla N 05 del Manual de Hidrologia) llevan la
+# intensidad DENTRO de la formula, y la intensidad depende de la duracion,
+# que es el tiempo de concentracion que se busca: «la solución requiere de
+# procesos iterativos». `MH._punto_fijo_tc` itera tc_{k+1} = f(I(tc_k)) desde
+# una lluvia de 24 horas y se detiene cuando dos iterados consecutivos
+# difieren menos que esta fraccion del ultimo. La aplicacion es CONTRACTIVA
+# (tc crece con la duracion a la potencia 0.3 en la onda cinematica y ~0.5
+# en Izzard con la relacion de Dick y Peschke, porque I cae con la duracion a
+# la potencia 0.75): converge en una a tres decenas de iteraciones. Si no converge
+# en `ITERACIONES_MAX_PUNTO_FIJO_TC`, el calculo se detiene con
+# `LimiteNumericoError` en vez de devolver el ultimo iterado.
+#
+# NO son valores de proyecto: deciden cuando dos iterados son el mismo
+# numero. Medido sobre una cuenca de 2.1 km2 con la onda cinematica y la
+# serie de prueba (tests/test_ve5_mh.py): 19, 21 y 25 iteraciones con 1e-9,
+# 1e-10 y 1e-12, y el mismo caudal a 3e-11 relativo.
+TOL_REL_PUNTO_FIJO_TC = 1e-10
+ITERACIONES_MAX_PUNTO_FIJO_TC = 200

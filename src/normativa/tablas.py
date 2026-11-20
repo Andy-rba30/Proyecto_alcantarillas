@@ -5278,12 +5278,9 @@ T04 = _tabla(
 # escrita en una linea (la extraccion de texto las desordena); las de
 # observaciones son el texto de la pagina, recompuesto de sus renglones. La
 # frase que cada paso entrecomilla sale de la CITA de su fila, no de aqui.
-_NO_USADA_T05_ITERATIVA = NoUsada(por_que_no=(
-    "la propia observacion dice que la solucion es ITERATIVA --la formula "
-    "pide la intensidad de la lluvia, que depende del tiempo de concentracion "
-    "que se busca-- y pide ademas un dato de la superficie que el CSV de "
-    "cuencas no trae (el coeficiente de retardo de Izzard, el n de Manning de "
-    "la onda cinematica). Diferida con ficha (T1-07)"))
+# --- VE-5 (mh, ficha T1-07) --- Las dos filas que piden iterar con la
+# intensidad (Izzard y la onda cinematica) tienen funcion desde VE-5: el punto
+# fijo tc <-> I vive en `MH.tiempo_de_concentracion`.
 
 T05 = _tabla(
     id="MC_HHD.T05",
@@ -5302,7 +5299,9 @@ T05 = _tabla(
                        unidad="min",
                        uso=Usada(por=("MH.tc_kirpich_min",
                                       "MH.tc_california_min",
-                                      "MH.tc_faa_min", "MH.tc_retardo_scs_min"))),
+                                      "MH.tc_izzard_min", "MH.tc_faa_min",
+                                      "MH.tc_onda_cinematica_min",
+                                      "MH.tc_retardo_scs_min"))),
         ColumnaDeTabla(id="observaciones", etiqueta_literal="OBSERVACIONES",
                        unidad="",
                        uso=Usada(por=("MH.poblacion_del_metodo",))),
@@ -5357,7 +5356,7 @@ T05 = _tabla(
                          "cubiertas de pasto; la solución requiere de "
                          "procesos iterativos; el producto de i por L debe "
                          "ser ≤ 3800.")},
-            uso=_NO_USADA_T05_ITERATIVA),
+            uso=Usada(por=("MH.tc_izzard_min",))),
         FilaDeTabla(
             id="MC_HHD.T05#federal_aviation_administration",
             etiqueta_literal="Federal Aviation Administration (1970)",
@@ -5394,7 +5393,7 @@ T05 = _tabla(
                          "tc son desconocidos, la superposición de una "
                          "curva de intensidad – duración – frecuencia da "
                          "una solución gráfica directa para tc.")},
-            uso=_NO_USADA_T05_ITERATIVA),
+            uso=Usada(por=("MH.tc_onda_cinematica_min",))),
         FilaDeTabla(
             id="MC_HHD.T05#retardo_scs",
             etiqueta_literal="Ecuación de retardo SCS (1973)",

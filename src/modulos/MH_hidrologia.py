@@ -101,7 +101,7 @@ import math
 from dataclasses import dataclass
 from pathlib import Path
 from statistics import NormalDist, fmean, median, stdev
-from typing import Any, Dict, List, Optional, Sequence, Tuple
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
 
 from src import criterios_adoptados as ca
 from src.constantes_normativas import (COEFICIENTE_RACIONAL_MODIFICADO,
@@ -124,8 +124,10 @@ from src.constantes_normativas import (COEFICIENTE_RACIONAL_MODIFICADO,
                                        TABLA_08_COEFICIENTE_DE_ESCORRENTIA,
                                        TABLA_08_PENDIENTE_MENOR,
                                        TABLA_08_PENDIENTES, TC_CALIFORNIA_SI,
-                                       TC_FAA_SI, TC_KIRPICH_AJUSTES,
+                                       TC_FAA_SI, TC_IZZARD_PRODUCTO_IL_MAX,
+                                       TC_IZZARD_SI, TC_KIRPICH_AJUSTES,
                                        TC_KIRPICH_RANGO_S, TC_KIRPICH_SI,
+                                       TC_ONDA_CINEMATICA_SI,
                                        TC_RETARDO_SCS_AREA_MAX_KM2,
                                        TC_RETARDO_SCS_CN_MAX,
                                        TC_RETARDO_SCS_SI,
@@ -148,8 +150,10 @@ from src.modelos import (CIFRAS_FINA, CIFRAS_MAGNITUD, LEYENDA_CAUDAL_CALCULADO,
                          SerieDeEstacion,
                          TipoDeVeredicto, Umbral, Veredicto, eleccion, paso)
 from src.normativa import registro as _registro_normativo
-from src.tolerancias import (TOL_ABS_MISMO_MAXIMO_ANUAL_MM,
-                             TOL_REL_AREA_ESCRITA_DOS_VECES)
+from src.tolerancias import (ITERACIONES_MAX_PUNTO_FIJO_TC,
+                             TOL_ABS_MISMO_MAXIMO_ANUAL_MM,
+                             TOL_REL_AREA_ESCRITA_DOS_VECES,
+                             TOL_REL_PUNTO_FIJO_TC)
 
 _REG = _registro_normativo.construir()
 
@@ -190,17 +194,27 @@ RELACION_TABLA_04 = "tabla_04_coeficientes_de_duracion"
 # California) salieron de cuencas empinadas; la de la FAA es de flujo
 # superficial y la de retardo pide el numero de curva: con ellas una cuenca
 # plana o el area tributaria de una cuneta tienen un tiempo de concentracion
-# evaluable y citado. Las dos filas que faltan (Izzard y onda cinematica)
-# llevan la intensidad de la lluvia DENTRO de la formula y piden iterar con
-# datos que el CSV no trae: ficha T1-07 de docs/decisiones_diferidas.md.
+# evaluable y citado. Desde VE-5 (ficha T1-07) tambien las dos filas que
+# llevan la intensidad de la lluvia DENTRO de la formula (Izzard y la onda
+# cinematica): se resuelven por punto fijo tc <-> I (`_punto_fijo_tc`), con
+# el dato de la superficie que cada una pide en su columna opcional.
 TC_METODO_KIRPICH = "kirpich"
 TC_METODO_CALIFORNIA = "california_culverts_practice"
 TC_METODO_FAA = "federal_aviation_administration"
 TC_METODO_RETARDO_SCS = "retardo_scs"
 TC_METODO_TEMEZ = "temez"
+TC_METODO_IZZARD = "izzard"
+TC_METODO_ONDA_CINEMATICA = "onda_cinematica"
 METODOS_TC: Tuple[str, ...] = (TC_METODO_KIRPICH, TC_METODO_CALIFORNIA,
                                TC_METODO_FAA, TC_METODO_RETARDO_SCS,
-                               TC_METODO_TEMEZ)
+                               TC_METODO_TEMEZ, TC_METODO_IZZARD,
+                               TC_METODO_ONDA_CINEMATICA)
+# Los que llevan la intensidad dentro de la formula, y el dato de la
+# superficie que cada uno pide (columna opcional del CSV de cuencas).
+METODOS_TC_ITERATIVOS: Dict[str, str] = {
+    TC_METODO_IZZARD: "c_retardo_izzard",
+    TC_METODO_ONDA_CINEMATICA: "n_manning_superficial",
+}
 
 # Columnas de los dos CSV de entrada. Las obligatorias tienen que estar en el
 # encabezado y traer valor en cada fila; las opcionales pueden faltar del
@@ -210,7 +224,9 @@ COLUMNAS_CUENCAS: Tuple[str, ...] = ("id", "area_km2", "L_cauce_m",
                                      "cobertura", "suelo", "estacion",
                                      "metodo_tc")
 COLUMNAS_CUENCAS_OPCIONALES: Tuple[str, ...] = ("H_desnivel_m",
-                                                "ajuste_kirpich", "CN")
+                                                "ajuste_kirpich", "CN",
+                                                "c_retardo_izzard",
+                                                "n_manning_superficial")
 COLUMNAS_ESTACION: Tuple[str, ...] = ("estacion", "anio", "p24_mm", "fen")
 # Como se escribe el hecho «este año fue FEN» en la columna `fen`.
 FEN_SI: Tuple[str, ...] = ("si", "sí", "1", "fen", "x")
@@ -485,6 +501,147 @@ def tc_temez_h(*, L_km: float, S: float, area_km2: float,
     return tc_h
 
 
+def tc_izzard_min(*, i_mm_h: float, c: float, L_m: float, S: float,
+                  id_punto: Optional[str] = None) -> float:
+    """
+    Izzard (1946), Tabla N 05 del num. 3.9 (pag. impresa 39):
+    tc = 525 · (0.0000276·i + c) · L^0.33 / (S^0.333 · i^0.667), tc en
+    MINUTOS, i = intensidad de la lluvia en mm/h, c = coeficiente de retardo,
+    L = longitud de la trayectoria de flujo en m, S = su pendiente en m/m.
+
+    La formula PURA, con una intensidad dada. La intensidad depende a su vez
+    del tiempo de concentracion («la solución requiere de procesos
+    iterativos»): el tc de una cuenca sale del punto fijo de
+    `tiempo_de_concentracion`, y la condicion «el producto de i por L debe
+    ser ≤ 3800» se exige sobre la intensidad que resulta
+    (`exigir_producto_izzard`).
+    """
+    if not c > 0:
+        raise DatoInvalidoError(
+            "c_retardo_izzard", valor=c, id_punto=id_punto,
+            motivo="el coeficiente de retardo de Izzard es positivo (la "
+                   "Tabla N 05 lo describe de 0.0070 a 0.06)")
+    if not i_mm_h > 0:
+        raise LimiteNumericoError(
+            "i", valor=i_mm_h, id_punto=id_punto,
+            motivo="la formula de Izzard divide por la intensidad de la "
+                   "lluvia, y no es un numero positivo")
+    k = TC_IZZARD_SI
+    return (k["coeficiente"] * (k["coeficiente_i"] * i_mm_h + c)
+            * L_m ** k["exp_L"] / (S ** k["exp_S"] * i_mm_h ** k["exp_i"]))
+
+
+def exigir_producto_izzard(*, i_mm_h: float, L_m: float,
+                           id_punto: Optional[str] = None) -> float:
+    """
+    La condicion de aplicacion de Izzard, Tabla N 05 del num. 3.9 (pag.
+    impresa 39): «el producto de i por L debe ser ≤ 3800», i en mm/h y L en
+    m. Devuelve el producto; fuera de la condicion NO se evalua
+    (`MetodoNoEvaluableError`), porque la fuente la escribe como exigencia.
+    """
+    producto = i_mm_h * L_m
+    if not producto <= TC_IZZARD_PRODUCTO_IL_MAX:
+        raise _no_evaluable(
+            "tc",
+            f"la formula de Izzard exige que el producto de la intensidad "
+            f"por la longitud no pase de {TC_IZZARD_PRODUCTO_IL_MAX:g} "
+            f"(Tabla N 05), y con la intensidad del punto fijo "
+            f"(i = {i_mm_h:.2f} mm/h) y L = {L_m:g} m vale {producto:.0f}",
+            "otro metodo de tiempo de concentracion en la columna "
+            "`metodo_tc` del CSV de cuencas "
+            f"({', '.join(m for m in METODOS_TC if m != TC_METODO_IZZARD)}), "
+            "una trayectoria de flujo mas corta, o el caudal declarado en "
+            "Q_m3s",
+            id_punto)
+    return producto
+
+
+def tc_onda_cinematica_min(*, L_m: float, n: float, I_mm_h: float, S: float,
+                           id_punto: Optional[str] = None) -> float:
+    """
+    Ecuaciones de onda cinematica, Morgali y Linsley (1965), Aron y Erborge
+    (1973), Tabla N 05 del num. 3.9 (pag. impresa 40):
+    tc = 7 · L^0.6 · n^0.6 / (I^0.4 · S^0.3), tc en MINUTOS, L = longitud
+    del flujo superficial en m, n = coeficiente de rugosidad de Manning,
+    I = intensidad de la lluvia en mm/h, S = pendiente promedio del terreno
+    en m/m.
+
+    La formula PURA, con una intensidad dada: «el método requiere
+    iteraciones debido a que tanto I (Intensidad de lluvia) como tc son
+    desconocidos». El tc de una cuenca sale del punto fijo de
+    `tiempo_de_concentracion`. La fila no escribe rango de aplicacion.
+    """
+    if not n > 0:
+        raise DatoInvalidoError(
+            "n_manning_superficial", valor=n, id_punto=id_punto,
+            motivo="el coeficiente de rugosidad de Manning es positivo")
+    if not I_mm_h > 0:
+        raise LimiteNumericoError(
+            "I", valor=I_mm_h, id_punto=id_punto,
+            motivo="la formula de la onda cinematica divide por la "
+                   "intensidad de la lluvia, y no es un numero positivo")
+    k = TC_ONDA_CINEMATICA_SI
+    return (k["coeficiente"] * L_m ** k["exp_L"] * n ** k["exp_n"]
+            / (I_mm_h ** k["exp_I"] * S ** k["exp_S"]))
+
+
+def _punto_fijo_tc(formula: Callable[[float], float],
+                   intensidad_de: Callable[[float], float], *,
+                   id_punto: Optional[str] = None,
+                   ) -> Tuple[float, float, int]:
+    """
+    El punto fijo tc = f(I(tc)) de una formula de la Tabla N 05 que lleva la
+    intensidad dentro (Izzard, onda cinematica): (tc en min, I en mm/h,
+    iteraciones).
+
+    `formula(I)` da el tc con una intensidad; `intensidad_de(tc)` da la
+    intensidad de la lluvia de diseño de esa duracion, con la MISMA relacion
+    y la MISMA duracion minima que el paso de la intensidad
+    (`_intensidad_de_diseno`), de modo que el tc y la I del paso son los del
+    punto fijo. Es la «solución gráfica directa» de la observacion de la
+    onda cinematica (superponer la curva intensidad-duracion), hecha por
+    sustitucion sucesiva.
+
+    Arranca de una lluvia de 24 horas (la duracion que las dos relaciones
+    del num. 3.8.1 cubren) y para cuando dos iterados difieren menos que
+    `TOL_REL_PUNTO_FIJO_TC` del ultimo. La aplicacion es creciente y
+    contractiva, de modo que los iterados bajan hacia el punto fijo y la
+    intensidad sube hacia la de diseño sin pasarla. Sin convergencia en
+    `ITERACIONES_MAX_PUNTO_FIJO_TC` se detiene con `LimiteNumericoError`.
+    """
+    tc = float(DICK_PESCHKE["minutos_en_24_h"])
+    for iteracion in range(1, ITERACIONES_MAX_PUNTO_FIJO_TC + 1):
+        I = intensidad_de(tc)
+        siguiente = formula(I)
+        if not (math.isfinite(siguiente) and siguiente > 0):
+            raise LimiteNumericoError(
+                "tc", valor=siguiente, id_punto=id_punto,
+                motivo=f"el punto fijo tc <-> I dio un tiempo de "
+                       f"concentracion que no es un numero positivo con "
+                       f"I = {I:g} mm/h (iteracion {iteracion})")
+        if abs(siguiente - tc) <= TOL_REL_PUNTO_FIJO_TC * siguiente:
+            return siguiente, intensidad_de(siguiente), iteracion
+        tc = siguiente
+    raise LimiteNumericoError(
+        "tc", valor=tc, id_punto=id_punto,
+        motivo=f"el punto fijo tc <-> I no convergio en "
+               f"{ITERACIONES_MAX_PUNTO_FIJO_TC} iteraciones (tolerancia "
+               f"relativa {TOL_REL_PUNTO_FIJO_TC:g})")
+
+
+def _falta_dato_iterativo(cuenca: Cuenca) -> DatoFaltanteError:
+    columna = METODOS_TC_ITERATIVOS[cuenca.metodo_tc]
+    que = ("el coeficiente de retardo de la superficie (la Tabla N 05 lo "
+           "describe de 0.0070 en pavimento muy liso a 0.06 en pasto denso)"
+           if cuenca.metodo_tc == TC_METODO_IZZARD else
+           "el coeficiente de rugosidad de Manning del flujo superficial")
+    return DatoFaltanteError(
+        columna, id_punto=cuenca.id,
+        detalle=f"el metodo «{cuenca.metodo_tc}» (Tabla N 05) pide {que}: es "
+                f"la columna opcional {columna} del CSV de cuencas, la "
+                "entrega el estudio hidrologico y el programa no la elige")
+
+
 def _lectura_del_proyecto(cita_id: str) -> str:
     """La `Interpretacion` de una cita, tal como esta en el registro."""
     return _REG.cita(cita_id).interpretacion.texto
@@ -542,6 +699,7 @@ def _falta_cn_retardo(cuenca: Cuenca) -> DatoFaltanteError:
 
 def tiempo_de_concentracion(cuenca: Cuenca, *, C: Optional[float] = None,
                             racional_modificado: bool = False,
+                            intensidad_de: Optional[Callable[[float], float]] = None,
                             ) -> Tuple[float, PasoDeMemoria, Tuple[str, ...]]:
     """
     El tiempo de concentracion de la cuenca, en MINUTOS, por el metodo que su
@@ -553,6 +711,12 @@ def tiempo_de_concentracion(cuenca: Cuenca, *, C: Optional[float] = None,
     cuenca sale del metodo racional modificado completo, del que la formula
     de Temez es la ecuacion (30); entonces no hay uso hibrido que declarar,
     y un Tc fuera de 0.25-24 h remite a los metodos de hidrograma.
+
+    `intensidad_de` (VE-5, ficha T1-07): la intensidad de la lluvia de
+    diseño en mm/h para un tiempo de concentracion en minutos, que solo
+    piden Izzard y la onda cinematica --llevan la intensidad DENTRO de la
+    formula--. Con ella el tc sale del punto fijo tc <-> I
+    (`_punto_fijo_tc`); sin ella esos dos metodos no se pueden evaluar.
     """
     metodo = cuenca.metodo_tc
     L = Magnitud("L", cuenca.L_cauce_m, "m",
@@ -648,6 +812,97 @@ def tiempo_de_concentracion(cuenca: Cuenca, *, C: Optional[float] = None,
                      cifras=CIFRAS_FINA))
         umbral, veredicto = _juicio_de_poblacion(metodo, cita, aviso,
                                                  area_km2=cuenca.area_km2)
+    elif metodo in METODOS_TC_ITERATIVOS:
+        dato = (cuenca.c_retardo_izzard if metodo == TC_METODO_IZZARD
+                else cuenca.n_manning_superficial)
+        if dato is None:
+            raise _falta_dato_iterativo(cuenca)
+        if intensidad_de is None:
+            raise DatoFaltanteError(
+                "I", id_punto=cuenca.id,
+                detalle=f"el metodo «{metodo}» lleva la intensidad de la "
+                        "lluvia dentro de la formula: el tiempo de "
+                        "concentracion se pide con la relacion intensidad-"
+                        "duracion de la cuenca (punto fijo tc <-> I)")
+        if metodo == TC_METODO_IZZARD:
+            cita = "MC_HHD.3.9#T05_IZZARD"
+            S_flujo = cuenca.S_cauce_cuenca
+
+            def formula_de(I_: float) -> float:
+                return tc_izzard_min(i_mm_h=I_, c=dato, L_m=cuenca.L_cauce_m,
+                                     S=S_flujo, id_punto=cuenca.id)
+            formula = ("tc = 525 · (0.0000276·i + c) · L^0.33 / (S^0.333 · "
+                       "i^0.667)   [min; i en mm/h, L en m, S en m/m]")
+            S_magnitud = S
+            dato_magnitud = Magnitud(
+                "c", dato, "", f"columna c_retardo_izzard de {cuenca.origen}",
+                cifras=CIFRAS_FINA)
+        else:
+            cita = "MC_HHD.3.9#T05_ONDA"
+            S_flujo = cuenca.S_terreno
+
+            def formula_de(I_: float) -> float:
+                return tc_onda_cinematica_min(
+                    L_m=cuenca.L_cauce_m, n=dato, I_mm_h=I_, S=S_flujo,
+                    id_punto=cuenca.id)
+            formula = ("tc = 7 · L^0.6 · n^0.6 / (I^0.4 · S^0.3)   "
+                       "[min; L en m, I en mm/h, S en m/m]")
+            S_magnitud = Magnitud(
+                "S", cuenca.S_terreno, "m/m",
+                f"columna S_terreno de {cuenca.origen}: la fila pide la "
+                "«pendiente promedio del terreno»", cifras=CIFRAS_FINA)
+            dato_magnitud = Magnitud(
+                "n", dato, "",
+                f"columna n_manning_superficial de {cuenca.origen}",
+                cifras=CIFRAS_FINA)
+        tc, I_fijo, iteraciones = _punto_fijo_tc(formula_de, intensidad_de,
+                                                 id_punto=cuenca.id)
+        sustitucion = (
+            L, S_magnitud, dato_magnitud,
+            Magnitud("i" if metodo == TC_METODO_IZZARD else "I", I_fijo,
+                     "mm/h", f"la intensidad del punto fijo: la de la lluvia "
+                     f"de diseño de duracion tc (paso {CODIGO_INTENSIDAD})",
+                     cifras=CIFRAS_MAGNITUD))
+        notas.append(
+            f"PUNTO FIJO tc <-> I. La formula lleva la intensidad de la "
+            "lluvia, y la intensidad depende de la duracion, que es el tiempo "
+            "de concentracion que se busca: se itero tc = f(I(tc)) desde una "
+            "lluvia de 24 horas, con la misma relacion intensidad-duracion y "
+            f"la misma duracion minima del paso {CODIGO_INTENSIDAD}, hasta "
+            f"que dos iterados difirieron menos de {TOL_REL_PUNTO_FIJO_TC:g} "
+            f"relativo ({iteraciones} iteraciones). Es la «solución gráfica "
+            "directa» de la observacion de la tabla, hecha numericamente.")
+        if metodo == TC_METODO_IZZARD:
+            cita_il = "MC_HHD.3.9#T05_IZZARD_IL"
+            producto = exigir_producto_izzard(i_mm_h=I_fijo,
+                                              L_m=cuenca.L_cauce_m,
+                                              id_punto=cuenca.id)
+            umbral = Umbral(
+                descripcion="producto de la intensidad por la longitud de la "
+                            "trayectoria de flujo (formula de Izzard)",
+                valor=TC_IZZARD_PRODUCTO_IL_MAX, unidad="mm/h · m",
+                cita_id=cita_il, caracter=_caracter(cita_il),
+                aplicacion="condicion de la formula: fuera de ella el "
+                           "programa no la evalua")
+            veredicto = Veredicto(
+                tipo=TipoDeVeredicto.CUMPLE,
+                margen=TC_IZZARD_PRODUCTO_IL_MAX - producto,
+                unidad="mm/h · m",
+                explicacion=f"i · L = {producto:.0f} no pasa del limite")
+            notas.append(
+                "Las columnas L_cauce_m y S_cauce_cuenca de la fila se leen "
+                "aqui como la longitud y la pendiente de la trayectoria del "
+                "flujo superficial, que es lo que la formula pide. El "
+                "coeficiente de retardo es un dato del estudio: la tabla lo "
+                "describe de 0.0070 (pavimento muy liso) a 0.012 (pavimento "
+                "de concreto) y 0.06 (pasto denso), y el programa no lo "
+                "juzga contra esos valores.")
+        else:
+            veredicto = Veredicto(
+                tipo=TipoDeVeredicto.SIN_VEREDICTO,
+                explicacion="la fila de la Tabla N 05 no escribe rango de "
+                            "aplicacion para esta formula")
+            notas.append(_lectura_del_proyecto(cita))
     elif metodo == TC_METODO_TEMEZ:
         tc_h = tc_temez_h(L_km=cuenca.L_cauce_m / METROS_POR_KM,
                           S=cuenca.S_cauce_cuenca, area_km2=cuenca.area_km2,
@@ -1667,6 +1922,20 @@ def _intensidad(*, P24_mm: float, d_min: float,
     return Pd, Pd / d_h
 
 
+def _intensidad_de_diseno(P24_mm: float, tc_min: float) -> float:
+    """
+    La intensidad de la lluvia de diseño, en mm/h, para un tiempo de
+    concentracion en minutos: la MISMA regla que `_paso_intensidad` (la
+    relacion del criterio 'relacion_intensidad_duracion' y la duracion
+    minima 'duracion_minima_lluvia_min'), sin paso. Es la curva con que el
+    punto fijo de Izzard y de la onda cinematica (`_punto_fijo_tc`) se cruza.
+    """
+    minimo = ca.valor(CRITERIO_DURACION_MINIMA)
+    d_min = minimo if tc_min < minimo else tc_min
+    return _intensidad(P24_mm=P24_mm, d_min=d_min,
+                       relacion=ca.valor(CRITERIO_RELACION))[1]
+
+
 def _paso_intensidad(P24_mm: float, tc_min: float,
                      ) -> Tuple[float, float, PasoDeMemoria, Tuple[str, ...]]:
     """
@@ -2097,7 +2366,10 @@ def _caudal_calculado(cuenca: Cuenca, serie: SerieDeEstacion, TR: float, *,
     # C antes que tc: la formula de la FAA lleva el coeficiente de
     # escorrentia. Los pasos se imprimen en su orden de siempre.
     C, paso_c = _paso_c(cuenca, TR)
-    tc, paso_tc, avisos_tc = tiempo_de_concentracion(cuenca, C=C)
+    tc, paso_tc, avisos_tc = tiempo_de_concentracion(
+        cuenca, C=C,
+        intensidad_de=lambda tc_min: _intensidad_de_diseno(adoptado.P_TR_mm,
+                                                           tc_min))
     I, d_min, paso_i, avisos_i = _paso_intensidad(adoptado.P_TR_mm, tc)
 
     # El coeficiente de uniformidad K solo entra con la formula de Temez, que
@@ -2722,6 +2994,13 @@ def anticipar_caudal(cuenca: Cuenca, serie: SerieDeEstacion, *,
             compuerta(lambda: _exigir_poblacion(
                 metodo, area_km2=cuenca.area_km2, id_punto=cuenca.id,
                 leer=_leer_sin_registrar))
+        elif metodo in METODOS_TC_ITERATIVOS:
+            # VE-5: el dato de la superficie. La condicion i·L de Izzard
+            # depende de la intensidad, que depende del TR: no se anticipa.
+            dato = (cuenca.c_retardo_izzard if metodo == TC_METODO_IZZARD
+                    else cuenca.n_manning_superficial)
+            if dato is None:
+                anotar(_falta_dato_iterativo(cuenca))
         elif metodo == TC_METODO_TEMEZ:
             compuerta(lambda: tc_temez_h(
                 L_km=cuenca.L_cauce_m / METROS_POR_KM, S=cuenca.S_cauce_cuenca,
@@ -3016,6 +3295,21 @@ def cargar_cuencas(ruta: Any, *, datos: Optional[bytes] = None) -> Dict[str, Cue
                        f"Kirpich de la Tabla N 05 y esta fila declara "
                        f"metodo_tc = {metodo}, que no lo aplica; la celda va "
                        f"vacia ({donde})")
+        # --- VE-5 (ficha T1-07) --- El dato de la superficie de Izzard y de
+        # la onda cinematica: opcional, y escrito con OTRO metodo es un dato
+        # contradicho (como el ajuste de Kirpich), no ignorado. Que falte con
+        # su metodo se dice al calcular, y lo anticipa el pre-vuelo.
+        de_superficie: Dict[str, Optional[float]] = {}
+        for metodo_suyo, columna in METODOS_TC_ITERATIVOS.items():
+            de_superficie[columna] = _numero(fila, columna, donde,
+                                             opcional=True, id_punto=id_)
+            if de_superficie[columna] is not None and metodo != metodo_suyo:
+                raise DatoInvalidoError(
+                    columna, valor=fila.get(columna), id_punto=id_,
+                    motivo=f"contradice a otro dato: la columna es de la "
+                           f"fila «{metodo_suyo}» de la Tabla N 05 y esta "
+                           f"fila declara metodo_tc = {metodo}, que no la "
+                           f"usa; la celda va vacia ({donde})")
         CN = _numero(fila, "CN", donde, opcional=True, id_punto=id_)
         if CN is not None and not CN <= TC_RETARDO_SCS_CN_MAX:
             raise DatoInvalidoError(
@@ -3034,7 +3328,9 @@ def cargar_cuencas(ruta: Any, *, datos: Optional[bytes] = None) -> Dict[str, Cue
                               id_punto=id_),
             H_desnivel_m=_numero(fila, "H_desnivel_m", donde, opcional=True,
                                  id_punto=id_),
-            ajuste_kirpich=ajuste, CN=CN, origen=donde)
+            ajuste_kirpich=ajuste, CN=CN, origen=donde,
+            c_retardo_izzard=de_superficie["c_retardo_izzard"],
+            n_manning_superficial=de_superficie["n_manning_superficial"])
     return cuencas
 
 
