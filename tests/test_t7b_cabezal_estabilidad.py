@@ -1222,8 +1222,16 @@ def test_con_agua_en_el_plano_de_empuje_el_sismo_no_se_evalua(tanteo):
     total bajo el agua (C11.6.5.3, 'agua_del_relleno_bajo_sismo' [C] de
     archivo); la detencion queda para el relleno declarado muy abierto, cuya
     presion hidrodinamica (Westergaard) no esta en el repositorio.
+
+    CAMBIADO DECLARANDOLO (VE-4e, ficha VE3-21): sin drenaje el agua del
+    sismo es la del nivel medio que declara
+    'nivel_agua_relleno_sin_drenaje_bajo_sismo' [A] (sin valor de archivo);
+    se declara la superficie del relleno para que el plano de empuje siga
+    mojado bajo sismo, que es lo que este test ejercita.
     """
     ca.establecer_valor_dinamico("drenaje_trasdos", "sin_drenaje")
+    ca.establecer_valor_dinamico("nivel_agua_relleno_sin_drenaje_bajo_sismo",
+                                 "superficie_del_relleno")
     with con_valor("peso_especifico_saturado_relleno_kn_m3", 20.0,
                    motivo="dato de ensayo de prueba"):
         e = M9.ensamble_estabilidad(tanteo, SIS)

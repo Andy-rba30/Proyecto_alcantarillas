@@ -1113,10 +1113,19 @@ def test_si_el_sismo_no_es_evaluable_el_armado_sale_de_resistencia_I_y_avisa(
     VE-3.14: con el de archivo se evalua con el peso total, C11.6.5.3): el
     armado NO se detiene, sale de Resistencia I y lo dice; el bloqueo de
     esa causa es el de la estabilidad sismica.
+
+    CAMBIADO DECLARANDOLO (VE-4e, ficha VE3-21): sin drenaje el agua del
+    SISMO es la del nivel medio que declara
+    'nivel_agua_relleno_sin_drenaje_bajo_sismo' [A], sin valor de archivo;
+    se declara la superficie del relleno para que el relleno siga lleno bajo
+    sismo y lo que detenga la condicion sea el relleno muy abierto, no el
+    criterio pendiente.
     """
     ca.establecer_valor_dinamico("agua_del_relleno_bajo_sismo",
                                  "relleno_muy_abierto")
     ca.establecer_valor_dinamico("drenaje_trasdos", "sin_drenaje")
+    ca.establecer_valor_dinamico("nivel_agua_relleno_sin_drenaje_bajo_sismo",
+                                 "superficie_del_relleno")
     ca.establecer_valor_dinamico("peso_especifico_saturado_relleno_kn_m3",
                                  20.0)
     sol = M9.solicitaciones_de_resistencia(tanteo)
@@ -1124,6 +1133,7 @@ def test_si_el_sismo_no_es_evaluable_el_armado_sale_de_resistencia_I_y_avisa(
     assert all(s.condicion is EST for v in sol["secciones"].values()
                for s in v)
     assert any("SOLO de Resistencia I" in a for a in sol["avisos"])
+    assert any("relleno_muy_abierto" in a for a in sol["avisos"])
 
 
 def test_el_contraste_E060_usa_sus_combinaciones_y_no_las_de_AASHTO(tanteo):
