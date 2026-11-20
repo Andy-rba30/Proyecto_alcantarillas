@@ -172,3 +172,51 @@ def test_el_aviso_cuando_la_carga_sube_con_la_formula_escrita(a01):
     assert ref.HW_cabezales_m > ref.HW_diseno_m
     assert "declarar `longitud_m`" in ref.aviso
     assert f"{L_cab:.3f}" in ref.aviso
+
+
+# ===========================================================================
+# Dictamen Fable (2026-11-20), cambio 1 A: el aviso dice si V1 o V4 dejarian
+# de cumplirse con la longitud entre cabezales
+# ===========================================================================
+
+def _v4_del_diseno(a01):
+    return next(v for v in a01.resultado.verificaciones if v.codigo == "V4")
+
+
+def test_el_aviso_dice_que_v4_no_se_cumpliria_si_delta_supera_su_margen(a01):
+    ref = a01.refinamiento_longitud
+    v4 = _v4_del_diseno(a01)
+    margen = v4.valor_admisible - v4.valor_obtenido      # m, cota contra cota
+    assert margen > 0
+    excede = ref._replace(HW_cabezales_m=ref.HW_diseno_m + margen + 0.05)
+    no = servicio._lo_que_no_se_cumpliria(a01, excede)
+    assert any("V4 NO se cumpliria" in t for t in no)
+    holgado = ref._replace(HW_cabezales_m=ref.HW_diseno_m + margen - 0.05)
+    assert not any("V4" in t for t in
+                   servicio._lo_que_no_se_cumpliria(a01, holgado))
+
+
+def test_el_aviso_dice_que_v1_no_se_cumpliria_con_el_barril_lleno(a01):
+    """V1 juzga el tirante (y/D), no el HW: se re-evalua con la hidraulica
+    refinada. Un receptor sobre la clave llena el barril y, con la lectura
+    de archivo de 'borde_libre_bajo_tw_ahogante' (no_cumple), V1 no cumple."""
+    ref = a01.refinamiento_longitud
+    res = a01.resultado
+    lleno = M4.resolver_control(
+        seccion=res.seccion, Q=res.resultado_hidraulico.Q,
+        S=res.resultado_hidraulico.S, L=ref.L_cabezales_m,
+        TW=res.seccion.altura * 1.2, material=res.material)
+    no = servicio._lo_que_no_se_cumpliria(
+        a01, ref._replace(resultado_cabezales=lleno))
+    assert any("V1 NO se cumpliria" in t for t in no)
+    # con la hidraulica refinada real, V1 sigue cumpliendo
+    assert not any("V1" in t for t in
+                   servicio._lo_que_no_se_cumpliria(a01, ref))
+
+
+def test_el_fundamento_del_refinamiento_recomienda():
+    """3.3.5: «should be close» (RECOMIENDA); F9.LONGITUD no se toca."""
+    from src.normativa import fundamentos as F
+    from src.normativa.esquema import Verbo
+    assert F.FUNDAMENTOS["F9.REFINAMIENTO_LONGITUD"].verbo is Verbo.RECOMIENDA
+    assert F.FUNDAMENTOS["F9.LONGITUD"].verbo is Verbo.OBLIGA

@@ -9004,14 +9004,16 @@ decisiones ambiguas las tomó ella, y cada ficha dice cuál, por qué y con qué
   declarar `longitud_m` por punto. Si el TW o el control no se pueden rehacer, se avisa con el
   motivo y el punto no se bloquea (ya está verificado con la aproximada). Sin criterio nuevo: no hay
   número que elegir.
-- **Decisión de la sesión (qué, por qué, cita):** no se itera ni se sustituye. El HDS-5 manda
-  arrancar con una longitud aproximada (núm. 3.1.4, pág. impresa 3.9) y, encajada la sección, que
-  la longitud «should be close to the approximate length» (núm. 3.3.5, pág. impresa 3.25) sin
-  tolerancia; L_cab depende de la coronación y ésta de la sección, y el punto fijo sobre un catálogo
-  discreto puede no converger. Con A-01 del fixture (entrada gobierna, 1.042 m) la carga no cambia;
-  el TW por cota baja S·ΔL (3.2 cm con ΔL = 5.38 m, S = 0.006).
-- **Abierto:** V1, V4 y el tamizado de 7.A siguen juzgados con la carga del diseño; cuando la
-  refinada es mayor, sólo se avisa. La coronación de salida sigue fijada con la cota de salida de la
+- **Decisión:** no se itera ni se sustituye: HDS-5 3.1.4 (pág. 3.9) arranca con longitud
+  aproximada y 3.3.5 (pág. 3.25) pide que la final «should be close», sin tolerancia; L_cab
+  depende de la coronación y ésta de la sección. En A-01 la carga no cambia (entrada gobierna).
+- **Dictamen Fable (2026-11-20, aprobado con cambios):** el aviso dice «V4 NO se cumpliría» si
+  Δ = HW(L_cab) − HW(L) supera el margen de V4 del diseño, y «V1 NO se cumpliría» si V1,
+  re-evaluada con la hidráulica refinada, deja de cumplir (V1 juzga y/D, no el HW: comparar Δ
+  con su margen mezclaría dimensiones); `F9.REFINAMIENTO_LONGITUD` pasa a RECOMIENDA («should
+  be close», 3.3.5). `servicio._lo_que_no_se_cumpliria`.
+- **Abierto:** V1, V4 y el tamizado de 7.A siguen juzgados con la carga del diseño; con la
+  refinada sólo se avisa. La coronación de salida sigue fijada con la cota de salida de la
   aproximada (ficha T7A-06).
 - **Qué haría falta:** declarar `longitud_m` = L_cab en el punto avisado (gana y se verifica
   entero); o, si el dueño lo pide, una segunda pasada completa de MD con L_cab.

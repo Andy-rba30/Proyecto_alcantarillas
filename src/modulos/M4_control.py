@@ -4066,6 +4066,9 @@ class RefinamientoLongitud(NamedTuple):
     control_cabezales: ControlGobernante
     paso: object
     aviso: str = ""
+    # --- dictamen Fable (2026-11-20) --- la hidraulica refinada entera, para
+    # que quien llama re-evalue V1 (que juzga el tirante, no el HW).
+    resultado_cabezales: object = None
 
     @property
     def delta_HW_m(self) -> float:
@@ -4189,7 +4192,7 @@ def refinar_con_longitud_entre_cabezales(*, seccion: Seccion,
         HW_diseno_m=diseno.HW, HW_cabezales_m=refinado.HW,
         control_diseno=diseno.control_gobernante,
         control_cabezales=refinado.control_gobernante,
-        paso=p, aviso=aviso)
+        paso=p, aviso=aviso, resultado_cabezales=refinado)
 
 
 # ===========================================================================

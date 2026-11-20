@@ -3686,11 +3686,70 @@ def _fase_9_refinamiento(informe: InformePunto,
             f"({type(exc).__name__}: {exc}); el diseño queda con la "
             "longitud aproximada de 7.B (fichas T6-01 y T7A-06)",))
         return
+    no_se_cumplirian = _lo_que_no_se_cumpliria(informe, refinado)
+    if no_se_cumplirian:
+        refinado = refinado._replace(aviso=(
+            (refinado.aviso or (
+                f"Longitud entre cabezales de {informe.punto.id}: con L_cab "
+                f"= {L_cab:.3f} m la hidraulica de la seccion adoptada "
+                "cambia (el diseño corrio con la longitud aproximada de 7.B "
+                "y NO se sustituye)"))
+            + ". " + "; ".join(no_se_cumplirian)
+            + ": la corrida no se detiene, y lo dice (hoja de ruta §7.B: "
+              "nunca un resultado silencioso)"))
     informe.refinamiento_longitud = refinado
     informe.cabezal = replace(
         cabezal, pasos=cabezal.pasos + (refinado.paso,),
         avisos=cabezal.avisos + ((refinado.aviso,) if refinado.aviso
                                  else ()))
+
+
+def _lo_que_no_se_cumpliria(informe: InformePunto,
+                            refinado: Any) -> List[str]:
+    """
+    --- dictamen Fable (2026-11-20, cambio 1 A) --- Que verificaciones del
+    diseño dejarian de cumplirse con la longitud entre cabezales, dicho en
+    frases para el aviso:
+
+      * V4 juzga una COTA (entrada + HW) contra la subrasante menos el
+        resguardo: su margen, admisible - obtenido, esta en metros, y la
+        carga refinada lo consume entero con Δ = HW(L_cab) - HW(L). Se
+        compara Δ con ese margen, ya calculado por la Fase 5.
+      * V1 juzga el TIRANTE en el barril (y/D), no el HW: comparar Δ con su
+        margen mezclaria dimensiones. Se re-evalua V1 (`M5.v1_borde_libre`)
+        con la hidraulica refinada (`RefinamientoLongitud.
+        resultado_cabezales`), que trae el TW de la longitud entre cabezales.
+
+    Solo cuenta lo que el diseño CUMPLIA. Ninguna de las dos bloquea ni
+    sustituye: alimentan el aviso.
+    """
+    resultado = informe.resultado
+    diseno = {v.codigo: v for v in resultado.verificaciones}
+    frases: List[str] = []
+    v4 = diseno.get("V4")
+    if v4 is not None and v4.cumple:
+        margen = v4.valor_admisible - v4.valor_obtenido
+        delta = refinado.HW_cabezales_m - refinado.HW_diseno_m
+        if delta > margen + TOL_UMBRAL_NORMATIVO:
+            frases.append(
+                f"V4 NO se cumpliria con la longitud entre cabezales: la "
+                f"carga sube {delta:.3f} m y el margen del diseño frente a "
+                f"la subrasante menos el resguardo es {margen:.3f} m")
+    v1 = diseno.get("V1")
+    hidraulica = getattr(refinado, "resultado_cabezales", None)
+    if v1 is not None and v1.cumple and hidraulica is not None:
+        try:
+            v1_cab = M5.v1_borde_libre(
+                D=resultado.seccion.altura, material=resultado.material,
+                punto=informe.punto_de_calculo, resultado=hidraulica)
+        except ErrorProyecto:
+            v1_cab = None
+        if v1_cab is not None and not v1_cab.cumple:
+            frases.append(
+                f"V1 NO se cumpliria con la longitud entre cabezales: y/D = "
+                f"{v1_cab.valor_obtenido:.3f} frente a "
+                f"{v1_cab.valor_admisible:.3f} admisible")
+    return frases
 
 
 def etapa_de_armado(extremo: str, que: str) -> str:

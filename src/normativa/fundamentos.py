@@ -3798,7 +3798,11 @@ REFINAMIENTO_LONGITUD = _fundamento(
         "tirante en el receptor, que cambia con la cota de la salida: se "
         "rehace una vez con la longitud entre cabezales y se imprime al "
         "lado de la del diseño, que no se sustituye."),
-    verbo=Verbo.OBLIGA,
+    # --- dictamen Fable (2026-11-20) --- RECOMIENDA y no OBLIGA: la
+    # clausula que este paso aplica es «the length SHOULD be close to the
+    # approximate length» (3.3.5), y 3.1.4#LONGITUD es una APROXIMACION.
+    # F9.LONGITUD, que aplica «must be fitted», sigue en OBLIGA.
+    verbo=Verbo.RECOMIENDA,
     citas=("HDS5_3ED.3.3.5#ENCAJE", "HDS5_3ED.3.1.4#LONGITUD"),
     que_pasa_si_no_se_hace=(
         "Si la longitud entre cabezales diera una carga mayor que la del "
