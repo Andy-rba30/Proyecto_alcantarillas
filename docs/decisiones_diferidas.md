@@ -9340,21 +9340,19 @@ cambios están aplicados en estas fichas.
 
 ## VE7B-09 · Las caras del pórtico que no se traccionan llevan el mínimo de 5.10.6 (T5-07 (3))
 
-- **Cerrado (VE-7 lote B, B4):** en `M8.disenar_portico`, la cara de una sección que ninguna
-  combinación de resistencia tracciona ya no se salta: lleva una `FilaDeArmado` con el acero de
-  retracción y temperatura (`DisenoPortico.minimos`, `M8._minimo_de_la_cara`). Es la fila de reparto
-  del cabezal, importada de M9 sin duplicarla ni modificarla (`M9._fila_de_reparto`: AASHTO 5.10.6 por
-  cara y dirección con b = h por metro, como el resto del pórtico, y E.060 9.7.2 con la regla del más
-  exigente), con su barra propuesta. 12.11.5.3.1 lo manda («Shrinkage and temperature reinforcement
-  shall be provided near the inside surfaces of walls and slabs in accordance with Article 5.10.6»,
-  nota de la cita `AASHTO_LRFD_9.12.11.5.3.1`). Paso `F8.PORTICO_MINIMOS` con las dos citas; una cara
-  sin barra del catálogo avisa. Toda cara de toda sección tiene acero
-  (`tests/test_ve7_lote_b_portico.py`).
-- **Decisión del consultor Fable (triaje VE-7, 2026-11-20):** fila con el mínimo de 5.10.6 que M9 ya
-  calcula.
-- **Abierto:** el acero de distribución de la losa superior con menos de 2.0 ft (9.7.3.2) y el
-  desarrollo y los empalmes siguen fuera (`M8.DIFERIDO_PORTICO`).
-- **Qué haría falta:** transcribir 9.7.3.2 y 5.10.8 para el pórtico.
+- **Cerrado (VE-7 lote B, B4):** la cara que ninguna combinación de resistencia tracciona lleva una
+  `FilaDeArmado` de retracción y temperatura (`DisenoPortico.minimos`, `M8._minimo_de_la_cara`): la
+  fila de reparto del cabezal, `M9._fila_de_reparto`, importada sin modificarla (5.10.6 y E.060 9.7.2
+  con la regla del más exigente), con su barra. 12.11.5.3.1 lo manda (nota de la cita
+  `AASHTO_LRFD_9.12.11.5.3.1`). Paso `F8.PORTICO_MINIMOS`. Toda cara de toda sección tiene acero.
+- **Revisado por Fable (dictamen del consultor, 2026-11-20): defecto 3, aplicado.** 5.10.6 se
+  calculaba con b = h; ahora con el ANCHO REAL del elemento, el largo del miembro entre ejes
+  (`M8.largos_de_los_miembros`), como la decisión 3 del dueño en O-2 para el cabezal: en las caras de
+  mínimo y en las armadas (`ancho_seccion` de `M9.diseno_flexion_corte`). El oráculo discrimina con
+  t = 0.40 y la regla «solo AASHTO».
+- **Abierto:** el desarrollo y los empalmes siguen fuera (`M8.DIFERIDO_PORTICO`); el acero
+  longitudinal y la distribución, en la ficha VE7B-12.
+- **Qué haría falta:** transcribir 5.10.8 para el pórtico.
 - **Dónde vive:** `src/modulos/M8_estructural.py::_minimo_de_la_cara`
 
 ## VE7B-10 · El agua exterior del pórtico con el freático sobre la losa inferior (T5-07 (5))

@@ -4741,7 +4741,12 @@ def _disenar_portico_con(*, punto: PuntoCritico, material: Material,
     armados, verificaciones, pasos_armado = [], [], []
     avisos = list(avisos_agua)
     minimos = []
-    for (sec, _m, _s, t, desc, _c, contra_suelo) in secciones:
+    # --- dictamen Fable (defecto 3) --- 5.10.6 con el ANCHO REAL del
+    # elemento (decision 3 del dueño en O-2, `M9.acero_de_temperatura_aashto`:
+    # «el ancho es el real del elemento»): el largo del miembro entre ejes,
+    # en las caras armadas y en las de minimo.
+    largos = largos_de_los_miembros(g)
+    for (sec, miembro, _s, t, desc, _c, contra_suelo) in secciones:
         for signo, cara in ((1, CARA_INTERIOR), (-1, CARA_EXTERIOR)):
             indice = 0 if signo > 0 else 1
             sols = tuple(
@@ -4764,13 +4769,15 @@ def _disenar_portico_con(*, punto: PuntoCritico, material: Material,
                 # La fila es la de REPARTO del cabezal, la MISMA funcion de
                 # M9 (5.10.6 con el ancho de la seccion por metro, y E.060
                 # 9.7.2 con la regla del mas exigente): no se duplica.
-                minimos.append(_minimo_de_la_cara(M9, sec, cara, desc, t))
+                minimos.append(_minimo_de_la_cara(M9, sec, cara, desc, t,
+                                                  largos[miembro]))
                 continue
             M_s = extremo(sec, signo, servicio)
             a = M9.diseno_flexion_corte(
                 solicitaciones=sols, espesor=t, elemento=ELEMENTO_PORTICO,
                 clave=f"{sec}.{cara}", seccion=desc, cara=cara,
                 es_zapata=True, momento_servicio=M_s,
+                ancho_seccion=largos[miembro],
                 contra_el_suelo=contra_suelo and cara == CARA_EXTERIOR,
                 regimen="portico cerrado (12.11)", id_punto=punto.id)
             armados.append(a)
@@ -4916,13 +4923,14 @@ def exigir_canto_del_portico(portico: DisenoPortico,
                             id_punto=id_punto, motivo=motivo)
 
 
-def _minimo_de_la_cara(M9, sec: str, cara: str, desc: str, t: float):
+def _minimo_de_la_cara(M9, sec: str, cara: str, desc: str, t: float,
+                       ancho: float):
     """
     --- VE-7 lote B, B4 --- La `FilaDeArmado` de una cara del portico que no
     se tracciona en ninguna combinacion: `M9._fila_de_reparto`, la fila de
     reparto del cabezal (AASHTO 5.10.6 por cara y por direccion, con el
-    ancho de la seccion por metro como en el resto del portico, y E.060
-    9.7.2 con la regla del mas exigente). La posicion empieza por la clave
+    ANCHO REAL del elemento --el largo del miembro entre ejes, dictamen
+    Fable, defecto 3--, y E.060 9.7.2 con la regla del mas exigente). La posicion empieza por la clave
     de la cara («seccion.cara»), la misma de `ArmadoDeSeccion.clave`.
     """
     mat = M9.materiales_del_armado()
@@ -4930,7 +4938,7 @@ def _minimo_de_la_cara(M9, sec: str, cara: str, desc: str, t: float):
         elemento=ELEMENTO_PORTICO,
         posicion=f"{sec}.{cara}: {desc}, cara {cara} sin traccion en ninguna "
                  "combinacion (12.11.5.3.1: retraccion y temperatura)",
-        es_zapata=True, direccion="reparto", espesor=t, ancho=t,
+        es_zapata=True, direccion="reparto", espesor=t, ancho=ancho,
         fy=mat["fy"], regla=M9._regla_de_minimos(),
         catalogo=M9.catalogo_de_barras(), hm=None, lm=None)
 
@@ -4944,8 +4952,8 @@ def _paso_de_los_minimos(minimos) -> Optional[PasoDeMemoria]:
         que=("Portico del marco: acero de retraccion y temperatura en las "
              "caras que ninguna combinacion tracciona"),
         formula=("A_s >= 1.30 b h / [2 (b + h) f_y], 0.11 <= A_s <= 0.60 "
-                 "in2/ft por cara y direccion (5.10.6); con la regla del mas "
-                 "exigente, y E.060 9.7.2"),
+                 "in2/ft por cara y direccion (5.10.6), b el largo del "
+                 "miembro; con la regla del mas exigente, y E.060 9.7.2"),
         formula_cita_id="AASHTO_LRFD_9.5.10.6#TEMPERATURA",
         citas_textuales=("AASHTO_LRFD_9.12.11.5.3.1",
                          "AASHTO_LRFD_9.5.10.6#TEMPERATURA"),
@@ -4967,5 +4975,6 @@ def _paso_de_los_minimos(minimos) -> Optional[PasoDeMemoria]:
         nota_del_proyecto=(
             "El acero de estas caras es el minimo de retraccion y "
             "temperatura de la fila de reparto del cabezal "
-            "(`M9._fila_de_reparto`), con el ancho de la seccion por metro "
-            "como en el resto del portico."))
+            "(`M9._fila_de_reparto`), con el ancho REAL del elemento: el "
+            "largo del miembro entre ejes (5.10.6, «least width of "
+            "component section»)."))

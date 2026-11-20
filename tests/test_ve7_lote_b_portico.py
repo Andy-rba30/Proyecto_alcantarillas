@@ -47,25 +47,39 @@ def test_b4_toda_cara_de_toda_seccion_tiene_acero(a01):
     assert "AASHTO_LRFD_9.12.11.5.3.1" in paso.citas_textuales
 
 
-def test_b4_el_minimo_es_el_de_5_10_6_o_el_de_e060(a01):
+@pytest.mark.parametrize("t, regla", ((0.20, "mas_exigente_aashto_e060"),
+                                      (0.40, "solo_aashto")))
+def test_b4_el_minimo_es_el_de_5_10_6_o_el_de_e060(a01, t, regla):
     """5.10.6 a mano en su unidad: A_s = 1.30 b h / [2 (b + h) f_y] in2/ft
-    (b, h en in; f_y en ksi), con b = h por metro de seccion, acotado a
-    0.11-0.60 in2/ft; E.060 9.7.2: 0.0018 b h repartido en dos caras."""
+    (b, h en in; f_y en ksi), con b el ANCHO REAL del elemento --el largo
+    del miembro entre ejes: B + t las losas, H + t las paredes (dictamen
+    Fable, defecto 3)--, acotado a 0.11-0.60 in2/ft; E.060 9.7.2: 0.0018 b h
+    repartido en dos caras (con la regla del mas exigente). Con t = 0.40 y
+    solo AASHTO el 5.10.6 de b = h queda en el piso y el del ancho real lo
+    supera: el oraculo discrimina."""
     from tests.apoyo.criterios import declarados
-    d = _disenar(a01)
-    t = d.geometria.t_losa_superior_m
-    with declarados(DECLARACIONES_CAJON):
+    declaraciones = dict(DECLARACIONES_CAJON, espesor_pared_cajon=t,
+                         regla_minimos_constructivos_cabezal=regla)
+    d = _disenar(a01, declaraciones=declaraciones)
+    assert d.minimos
+    with declarados(declaraciones):
         fy = M9.materiales_del_armado()["fy"]            # MPa
     h_in = t * 1000 / PULG_EN_MM
     fy_ksi = fy * 1000 / KIP_EN_KN * (PULG_EN_MM / 1000) ** 2
-    As_in2_ft = 1.30 * h_in * h_in / (2 * (h_in + h_in) * fy_ksi)
-    As_in2_ft = min(max(As_in2_ft, 0.11), 0.60)
-    As_5106 = As_in2_ft * PULG_EN_MM ** 2 / PIE_EN_METROS
-    As_e060 = 0.0018 * t * 1e6 / 2
+    As_e060 = (0.0018 * t * 1e6 / 2 if regla == "mas_exigente_aashto_e060"
+               else 0.0)
+
+    def a_5106(b_m):
+        b_in = b_m * 1000 / PULG_EN_MM
+        x = 1.30 * b_in * h_in / (2 * (b_in + h_in) * fy_ksi)
+        return min(max(x, 0.11), 0.60) * PULG_EN_MM ** 2 / PIE_EN_METROS
     for f in d.minimos:
-        assert f.As_minimo == pytest.approx(max(As_5106, As_e060),
+        b_m = (2.0 + t) if f.posicion.startswith("losa") else (1.5 + t)
+        assert f.As_minimo == pytest.approx(max(a_5106(b_m), As_e060),
                                             rel=REL_CONVERSION), f.posicion
         assert f.As_requerido == pytest.approx(0.0, abs=REL_TRANSPORTE)
+    if t > 0.30:
+        assert a_5106(1.5 + t) > max(a_5106(t), As_e060)
 
 
 # ===========================================================================
