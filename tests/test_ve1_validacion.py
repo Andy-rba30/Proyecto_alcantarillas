@@ -686,7 +686,8 @@ def test_h2_guardia_el_valor_de_archivo_de_todos_los_criterios_sigue_pasando():
     # 155 desde VE-4c: 'sobreelevacion_admisible_remanso_m' (ficha T7B-01).
     # 157 desde VE-4d: los dos criterios del desborde admitido de V8.
     # 158 desde VE-4e: 'nivel_agua_relleno_sin_drenaje_bajo_sismo'.
-    assert len(ca.CRITERIOS) == 158 and barridos > 100, (len(ca.CRITERIOS),
+    # 159 desde VE-4f: 'carga_viva_tubo_concreto_somero' (ficha VE4F-01).
+    assert len(ca.CRITERIOS) == 159 and barridos > 100, (len(ca.CRITERIOS),
                                                           barridos)
 
 

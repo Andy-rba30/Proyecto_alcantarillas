@@ -1043,7 +1043,9 @@ CENSO_DE_MARCAS = {
     # una deformacion y el 100 del porcentaje de la deflexion admisible).
     # NINGUNO es un valor de proyecto: los valores estan en
     # constantes_normativas (bloque T-5) y criterios_adoptados.
-    "src/modulos/M8_estructural.py": 29,
+    # 29 -> 30 en VE-4f: el 100 de (1 + IM/100) de la franja de 4.6.2.10.2
+    # (`_carga_viva_en_la_franja`).
+    "src/modulos/M8_estructural.py": 30,
     # 1 -> 0 en C7, y por eso desaparece del censo: el `pi/4` de la
     # subpresion se fue a `SeccionCircular.area_exterior`. M8 dejo de
     # saber que forma tiene el conducto, que es justo lo que se buscaba.

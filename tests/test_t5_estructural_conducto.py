@@ -211,12 +211,17 @@ def test_el_HL93_es_el_del_manual_en_su_unidad_primaria():
 def test_fuera_del_dominio_del_metodo_la_carga_viva_no_es_evaluable():
     """
     Concreto y marco: desde 2.0 ft; flexible: MAS de 1.0 ft (3.6.1.2.6a).
-    Por debajo la fuente manda otro metodo, que no esta implementado.
+    Por debajo la fuente manda otro metodo. Desde VE-4f el tubo de concreto
+    con 1.0 a 2.0 ft y el marco con menos de 2.0 ft usan la franja de
+    4.6.2.10.2 (tests/test_ve4f_relleno_bajo.py); sigue sin metodo el tubo
+    redondo con menos de 1.0 ft y el flexible con 1.0 ft o menos.
     """
     with pytest.raises(MetodoNoEvaluableError) as exc:
-        M8.carga_viva_enterrada(H=0.60, D_i=0.90,
+        M8.carga_viva_enterrada(H=0.30, D_i=0.90,
                                 conducto=M8.CONDUCTO_TUBO_CONCRETO)
     assert str(exc.value).startswith(MOTIVO_METODO_NO_EVALUABLE_ESTRUCTURAL)
+    assert M8.carga_viva_enterrada(H=0.60, D_i=0.90,
+                                   conducto=M8.CONDUCTO_CAJON).relleno_somero
     M8.carga_viva_enterrada(H=2 * PIE_EN_METROS, D_i=0.90,
                             conducto=M8.CONDUCTO_CAJON)
     with pytest.raises(MetodoNoEvaluableError):
@@ -929,18 +934,20 @@ def test_un_incumplimiento_hidraulico_no_lo_tapa_la_fase_8(ruta, funcion):
 
 def test_con_relleno_somero_la_fase_8_no_es_evaluable(a01):
     """
-    Un tubo de concreto con menos de 2 ft hasta la rasante: la carga viva
-    no es evaluable con 3.6.1.2.6, y la Fase 8 lo dice con
-    `MetodoNoEvaluableError` (no con un incumplimiento: subir de diametro
-    solo reduce el relleno). Que a nivel de perfil se difiera y a nivel de
-    expediente bloquee lo decide `servicio._verificador_perfil`, con la
-    misma tabla que V1/V2 (`ALCANCES_QUE_DIFIEREN_METODO_NO_EVALUABLE`).
+    Un flexible con 1.0 ft o menos hasta la rasante, con la cobertura minima
+    cumplida: la carga viva no es evaluable con 3.6.1.2.6 y la Fase 8 lo
+    dice con `MetodoNoEvaluableError` (no con un incumplimiento). Que a
+    nivel de perfil se difiera y a nivel de expediente bloquee lo decide
+    `servicio._verificador_perfil`, con la misma tabla que V1/V2
+    (`ALCANCES_QUE_DIFIEREN_METODO_NO_EVALUABLE`). Hasta VE-4f el ejemplo
+    era el tubo de concreto con menos de 2 ft, que hoy tiene metodo
+    (tests/test_ve4f_relleno_bajo.py).
     """
-    somero = replace(a01, cota_rasante=a01.cota_subrasante + 0.05)
-    mat = _material(TipoMaterial.CONCRETO_REFORZADO)
+    mat = _material(TipoMaterial.TMC)
     with pytest.raises(MetodoNoEvaluableError):
-        M5.fase_8_estructural(punto=somero, material=mat,
-                              seccion=SeccionCircular(1.35))
+        M8.verificar_conducto(punto=a01, material=mat,
+                              seccion=SeccionCircular(0.90),
+                              altura_relleno=PIE_EN_METROS - CP["e_paquete"])
 
 
 def test_el_diferimiento_de_perfil_ya_no_es_la_fase_8_entera():

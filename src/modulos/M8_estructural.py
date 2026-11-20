@@ -231,9 +231,15 @@ Excepciones
                              Tabla A12-11 no trae. (VE-2) Con «nf_del_punto»,
                              la columna 'NF_profundidad_m' vacia.
     MetodoNoEvaluableError   (T-5) relleno fuera del dominio de la carga viva
-                             de AASHTO LRFD 3.6.1.2.6 (menos de 2.0 ft sobre
-                             concreto o marco, 1.0 ft o menos sobre un
-                             flexible).
+                             de AASHTO LRFD 3.6.1.2.6. Desde VE-4f solo lo
+                             que la fuente deja sin metodo: el tubo redondo
+                             con menos de 1.0 ft («more comprehensive
+                             methods») y el flexible con 1.0 ft o menos que
+                             cumple la cobertura minima. El marco con menos
+                             de 2.0 ft y el tubo de concreto con 1.0 a 2.0 ft
+                             usan la franja de 4.6.2.10.2, y el conducto
+                             redondo sin la cobertura de la Tabla 12.6.6.3-1
+                             INCUMPLE (F8.COBERTURA).
 
 Uso
 ---
@@ -249,6 +255,7 @@ Uso
 from __future__ import annotations
 
 import math
+from dataclasses import replace
 from typing import Callable, List, Optional, Tuple
 
 from src import constantes_normativas as _CN
@@ -956,6 +963,11 @@ CRITERIO_CARGA_VIVA_ALTA = "carga_viva_bajo_relleno_alto"
 CRITERIO_PERFIL_HDPE = "perfil_hdpe_fabricante"
 CARGA_VIVA_CONSERVAR = "conservar"
 CARGA_VIVA_DESPRECIAR = "despreciar_3_6_1_2_6a"
+# --- VE-4f --- El largo del area cargada a traves del tubo de concreto somero.
+CRITERIO_CARGA_VIVA_SOMERA = "carga_viva_tubo_concreto_somero"
+LECTURA_LARGO_NEUMATICO = "largo_del_neumatico"
+LECTURA_E_SPAN_UN_PIE = "e_span_a_un_pie"
+LECTURAS_TUBO_SOMERO = (LECTURA_LARGO_NEUMATICO, LECTURA_E_SPAN_UN_PIE)
 # Los tres campos del perfil del fabricante por diametro.
 CAMPOS_PERFIL_HDPE = ("A_mm2_mm", "I_mm4_mm", "od_m")
 # El rotulo del HDPE calculado sin el perfil del fabricante (decision del
@@ -985,8 +997,12 @@ CODIGO_FF = "F8.FF"
 CODIGO_EMPUJE = "F8.EMPUJE"
 CODIGO_PANDEO = "F8.PANDEO"
 CODIGO_DEFLEXION = "F8.DEFLEXION"
-CODIGOS_FASE_8 = (CODIGO_CLASE, CODIGO_AREA, CODIGO_COSTURA, CODIGO_FF,
-                  CODIGO_EMPUJE, CODIGO_PANDEO, CODIGO_DEFLEXION)
+# --- VE-4f --- La cobertura minima de la Tabla 12.6.6.3-1, juzgada cuando el
+# relleno de un conducto redondo queda por debajo del dominio de la rueda
+# distribuida (`verificar_conducto`).
+CODIGO_COBERTURA = "F8.COBERTURA"
+CODIGOS_FASE_8 = (CODIGO_COBERTURA, CODIGO_CLASE, CODIGO_AREA, CODIGO_COSTURA,
+                  CODIGO_FF, CODIGO_EMPUJE, CODIGO_PANDEO, CODIGO_DEFLEXION)
 # Los dos pasos del CONTRASTE con la instalacion Tipo 4 del tubo de concreto
 # (no rigen): la D-load y, si alguna clase transcrita la alcanza, el relleno
 # maximo. La CLI de texto lee el segundo por su codigo.
@@ -1024,6 +1040,8 @@ NUMERAL_F8_CLASE = ("AASHTO LRFD 12.10.4.3 (metodo indirecto, servicio) y "
                     "506.02)")
 NUMERAL_F8_TMC = "AASHTO LRFD 12.7.2 (LRFD); EG-2013 Tabla 507-01"
 NUMERAL_F8_HDPE = "AASHTO LRFD 12.12 (LRFD y servicio); AASHTO M 294"
+NUMERAL_F8_COBERTURA = ("AASHTO LRFD 12.6.6.3 y Tabla 12.6.6.3-1 (cobertura "
+                        "minima del conducto redondo)")
 
 # Decimales de presentacion de una deformacion unitaria: no entra en ningun
 # calculo (mismo regimen que CIFRAS_* de modelos.py).
@@ -1142,7 +1160,8 @@ def carga_viva_enterrada(*, H: float, D_i: float, conducto: str,
                          id_punto=None,
                          efecto: Optional[Callable[[float, float], float]] = None,
                          efecto_descripcion: str = "",
-                         luz_del_permiso: Optional[float] = None
+                         luz_del_permiso: Optional[float] = None,
+                         ancho_del_conducto: Optional[float] = None
                          ) -> CargaVivaEnterrada:
     """
     Presion vertical de la carga viva HL-93 sobre el conducto, kPa (AASHTO
@@ -1168,10 +1187,18 @@ def carga_viva_enterrada(*, H: float, D_i: float, conducto: str,
     --W_L = P_L min(l_w, B_c) el tubo de concreto, P_L C_L F_1 los
     flexibles, P_L el marco--; sin ella, P_L min(l_w, D_i).
 
-    Fuera del dominio del metodo --menos de 2.0 ft de relleno sobre un tubo
-    de concreto o un marco, o 1.0 ft o menos sobre uno flexible-- se detiene
-    con `MetodoNoEvaluableError`: la fuente manda ahi la Eq. 4.6.2.10.2-1 o
-    «more comprehensive methods», que este programa no implementa.
+    POR DEBAJO DEL DOMINIO DE LA RUEDA DISTRIBUIDA (VE-4f, ficha VE4F-01):
+    el marco con menos de 2.0 ft y el tubo de concreto con 1.0 ft o mas y
+    menos de 2.0 ft reparten el eje en la franja equivalente de 4.6.2.10.2
+    (`_carga_viva_en_la_franja`; 3.6.1.2.6a, 4.6.2.10.1 y 12.11.2.1). Lo
+    que sigue sin metodo se detiene con `MetodoNoEvaluableError`: el tubo
+    redondo con menos de 1.0 ft («more comprehensive methods») y el flexible
+    con 1.0 ft o menos, para el que la fuente no da otro reparto. La
+    cobertura minima de la Tabla 12.6.6.3-1, que en esos casos se juzga
+    antes, no es de esta funcion: es F8.COBERTURA (`verificar_conducto`).
+    `ancho_del_conducto` (B_c) es el ancho del tubo sobre el que caen los
+    ejes cuando el relleno es somero: con el, el efecto de cada vehiculo
+    suma lo que de cada eje cae sobre el tubo.
 
     CON MAS DE 8.0 FT QUE ADEMAS SUPERAN LA LUZ la fuente PERMITE despreciar
     la carga viva («may be neglected»), y un permiso no se toma en silencio:
@@ -1189,29 +1216,48 @@ def carga_viva_enterrada(*, H: float, D_i: float, conducto: str,
             campo="conducto", valor=conducto, id_punto=id_punto,
             motivo=f"tiene que ser uno de {CONDUCTOS}: de el salen el LLDF y "
                    "el relleno minimo del metodo (3.6.1.2.6a)")
-    if conducto == CONDUCTO_FLEXIBLE:
-        minimo = _CN.RELLENO_MIN_METODO_NO_CONCRETO_M
-        fuera = not H > minimo + TOL_UMBRAL_NORMATIVO
-        regla = "mas de"
-    else:
-        minimo = _CN.RELLENO_MIN_METODO_TUBO_CONCRETO_M
-        fuera = not H >= minimo - TOL_UMBRAL_NORMATIVO
-        regla = "desde"
-    if fuera:
-        raise MetodoNoEvaluableError(
-            que="carga viva sobre el conducto (Fase 8)",
-            procedimiento=("la distribucion de AASHTO LRFD 4.6.2.10 para "
-                           "relleno somero o un analisis mas completo, que "
-                           "este programa no implementa; o subir la rasante"),
-            motivo=(f"el relleno sobre la clave hasta la rasante es {H:.3f} m "
-                    f"y el metodo de la rueda distribuida de 3.6.1.2.6 vale "
-                    f"{regla} {minimo:.4f} m para este conducto"),
-            id_punto=id_punto, rotulo=MOTIVO_METODO_NO_EVALUABLE_ESTRUCTURAL)
     if efecto is None:
         def efecto(P_L: float, l_w: float) -> float:
             return P_L * min(l_w, D_i)
         efecto_descripcion = ("P_L min(l_w, D_i): la carga por unidad de "
                               "longitud sobre la luz")
+    if conducto == CONDUCTO_FLEXIBLE:
+        minimo = _CN.RELLENO_MIN_METODO_NO_CONCRETO_M
+        if not H > minimo + TOL_UMBRAL_NORMATIVO:
+            raise MetodoNoEvaluableError(
+                que="carga viva sobre el conducto flexible (Fase 8)",
+                procedimiento=("un analisis mas completo, que la fuente no "
+                               "describe y este programa no implementa; o "
+                               "subir la rasante"),
+                motivo=(f"el relleno sobre la clave hasta la rasante es "
+                        f"{H:.3f} m y el metodo de la rueda distribuida de "
+                        f"3.6.1.2.6 vale con mas de {minimo:.4f} m sobre un "
+                        "conducto redondo que no es de concreto; por debajo "
+                        "AASHTO LRFD 3.6.1.2.6a no da otro reparto («Round "
+                        "culverts with less than 1.0 ft of fill shall be "
+                        "analyzed with more comprehensive methods»)"),
+                id_punto=id_punto,
+                rotulo=MOTIVO_METODO_NO_EVALUABLE_ESTRUCTURAL)
+    elif not H >= _CN.RELLENO_MIN_METODO_TUBO_CONCRETO_M - TOL_UMBRAL_NORMATIVO:
+        if (conducto == CONDUCTO_TUBO_CONCRETO
+                and not H >= (_CN.RELLENO_MIN_FRANJA_TUBO_CONCRETO_M
+                              - TOL_UMBRAL_NORMATIVO)):
+            raise MetodoNoEvaluableError(
+                que="carga viva sobre el tubo de concreto (Fase 8)",
+                procedimiento=("los «more comprehensive methods» que AASHTO "
+                               "LRFD 3.6.1.2.6a manda y no describe, que este "
+                               "programa no implementa; o subir la rasante"),
+                motivo=(f"el relleno sobre la clave hasta la rasante es "
+                        f"{H:.3f} m, menos de 1.0 ft "
+                        f"({_CN.RELLENO_MIN_FRANJA_TUBO_CONCRETO_M:.4f} m): "
+                        "«Round culverts with less than 1.0 ft of fill shall "
+                        "be analyzed with more comprehensive methods»"),
+                id_punto=id_punto,
+                rotulo=MOTIVO_METODO_NO_EVALUABLE_ESTRUCTURAL)
+        return _carga_viva_en_la_franja(
+            H=H, D_i=D_i, D_E=D_E, conducto=conducto, id_punto=id_punto,
+            efecto=efecto, efecto_descripcion=efecto_descripcion,
+            ancho_del_conducto=ancho_del_conducto)
     LLDF = _lldf(D_i, conducto)
     IM = incremento_dinamico_enterrado(D_E)
     m = _CN.PRESENCIA_MULTIPLE_UN_CARRIL
@@ -1319,6 +1365,177 @@ def carga_viva_enterrada(*, H: float, D_i: float, conducto: str,
                               efecto_descripcion=efecto_descripcion,
                               candidatos=tuple(candidatos),
                               en_zona_de_permiso=en_zona)
+
+
+def lectura_del_tubo_de_concreto_somero(id_punto=None) -> str:
+    """
+    El valor de 'carga_viva_tubo_concreto_somero' [A] (VE-4f), validado en
+    segunda linea: `LECTURA_LARGO_NEUMATICO` o `LECTURA_E_SPAN_UN_PIE`.
+    `CriterioPendienteError` mientras siga sin valor: la fuente no dice que
+    largo tiene el area cargada A TRAVES del tubo de concreto somero.
+    """
+    lectura = ca.valor(CRITERIO_CARGA_VIVA_SOMERA)
+    if lectura not in LECTURAS_TUBO_SOMERO:
+        raise DatoInvalidoError(
+            campo=CRITERIO_CARGA_VIVA_SOMERA, valor=lectura, id_punto=id_punto,
+            motivo=f"tiene que ser una de {LECTURAS_TUBO_SOMERO}")
+    return lectura
+
+
+def _carga_viva_en_la_franja(*, H: float, D_i: float, D_E: float,
+                             conducto: str, id_punto,
+                             efecto: Callable[[float, float], float],
+                             efecto_descripcion: str,
+                             ancho_del_conducto: Optional[float]
+                             ) -> CargaVivaEnterrada:
+    """
+    --- VE-4f --- La carga viva con relleno SOMERO: menos de 2.0 ft hasta la
+    rasante sobre un marco o sobre un tubo de concreto (con 1.0 ft o mas).
+    AASHTO LRFD 4.6.2.10.2 (Case 1, trafico paralelo al vano), al que
+    remiten 3.6.1.2.6a (tubo de concreto), 4.6.2.10.1 y 12.11.2.1 (cajon):
+
+        E      = 96 + 1.44 S       (in, S en ft)        (4.6.2.10.2-1)
+        E_span = L_T + LLDF H      (in)                 (4.6.2.10.2-2)
+        P_L    = P (1 + IM/100) m / (E E_span)
+
+    con P la carga de UN eje (los ejes del tandem, a 4 ft, no interactuan
+    con menos de 2.0 ft: E_span <= 10 + 1.15 x 24 in = 3.13 ft), m de un
+    carril y LLDF el de «All other culverts» (1.15: la fila del tubo de
+    concreto de la Tabla 3.6.1.2.6a-1 es para 2.0 ft o mas).
+
+    EL MARCO usa la profundidad que tiene: H en E_span y D_E en el IM. Es el
+    reparto del ejemplo resuelto de MnDOT, LRFD Bridge Design Manual §12.6
+    (cajon de 16 ft bajo 1 ft: E = 119.04 in, E_span = 23.8 in, 2.52 y 1.97
+    ksf), contrastado en tests/test_ve4f_relleno_bajo.py.
+
+    EL TUBO DE CONCRETO se diseña «for a depth of 1.0 ft» (cita #UN_PIE): el
+    IM con D_E = 1.0 ft, o la cubierta de tierra si es menor (el IM mayor), y
+    el largo del area cargada A TRAVES del tubo lo declara
+    'carga_viva_tubo_concreto_somero' [A] -- L_T, o L_T + LLDF (1.0 ft) --
+    porque la fuente da el ancho E a lo largo del tubo y calla ese largo.
+    Con `ancho_del_conducto` (B_c), el efecto de un vehiculo suma lo que de
+    cada uno de sus ejes cae sobre el tubo, min(B_c, l) + min(l, B_c - s_a)
+    cuando el segundo eje alcanza; sin el, el del primero.
+    """
+    LLDF = _CN.LLDF_OTRAS_ALCANTARILLAS
+    m = _CN.PRESENCIA_MULTIPLE_UN_CARRIL
+    E = _CN.FRANJA_CAJON_BASE_M + _CN.FRANJA_CAJON_PENDIENTE_SI * D_i
+    es_tubo = conducto == CONDUCTO_TUBO_CONCRETO
+    if es_tubo:
+        lectura = lectura_del_tubo_de_concreto_somero(id_punto)
+        H_diseno = _CN.PROFUNDIDAD_DISENO_TUBO_CONCRETO_SOMERO_M
+        D_E_im = min(D_E, H_diseno)
+        l = (_CN.LARGO_NEUMATICO_M if lectura == LECTURA_LARGO_NEUMATICO
+             else _CN.LARGO_NEUMATICO_M + LLDF * H_diseno)
+        desc_l = (f"largo del area cargada A TRAVES del tubo, "
+                  f"'{CRITERIO_CARGA_VIVA_SOMERA}' [A] = {lectura}: "
+                  + ("L_T, el del neumatico (3.6.1.2.5), sin el aumento por "
+                     "el relleno que C4.6.2.10.2 permite despreciar"
+                     if lectura == LECTURA_LARGO_NEUMATICO else
+                     "E_span = L_T + LLDF (1.0 ft), la Eq. 4.6.2.10.2-2 a la "
+                     "profundidad de diseño"))
+    else:
+        lectura = ""
+        H_diseno = H
+        D_E_im = D_E
+        l = _CN.LARGO_NEUMATICO_M + LLDF * H
+        desc_l = ("E_span = L_T + LLDF H, largo del area cargada paralelo al "
+                  "vano (Eq. 4.6.2.10.2-2)")
+    IM = incremento_dinamico_enterrado(D_E_im)
+    candidatos = []
+    for nombre, eje, s_a in (
+            (VEHICULO_CAMION, _CN.EJE_CAMION_HL93_KN,
+             _CN.SEPARACION_EJES_CAMION_MIN_M),
+            (VEHICULO_TANDEM, _CN.EJE_TANDEM_HL93_KN,
+             _CN.SEPARACION_EJES_TANDEM_M)):
+        P_L_v = eje * (1 + IM / 100) * m / (E * l)   # literal-ok: el 100 de (1 + IM/100), Eq. 3.6.1.2.6b-7
+        if ancho_del_conducto is None:
+            largo = l
+        else:
+            largo = (min(ancho_del_conducto, l)
+                     + max(0.0, min(l, ancho_del_conducto - s_a)))
+        candidatos.append((nombre, eje, l, E, P_L_v, efecto(P_L_v, largo)))
+    # El de MAYOR EFECTO; en el empate, el camion (el primero).
+    vehiculo, P, l_w, w_w, P_L, e_gob = max(candidatos, key=lambda c: c[-1])
+    sust = (
+        Magnitud("H", H, "m", "relleno sobre la clave fisica hasta la "
+                 "RASANTE: subrasante menos clave mas el paquete estructural",
+                 cifras=CIFRAS_MAGNITUD),
+        Magnitud("S", D_i, "m", "luz libre (interior) del escalon",
+                 cifras=CIFRAS_MAGNITUD),
+        Magnitud("E", E, "m", "ancho de la franja a lo largo del conducto, "
+                 "96 + 1.44 S (in, S en ft; Eq. 4.6.2.10.2-1)",
+                 cifras=CIFRAS_MAGNITUD),
+        Magnitud("LLDF", LLDF, "", "Tabla 3.6.1.2.6a-1, «All other "
+                 "culverts» (la fila del tubo de concreto es de 2.0 ft o "
+                 "mas)", cifras=CIFRAS_FACTOR),
+        Magnitud("l", l, "m", desc_l, cifras=CIFRAS_MAGNITUD),
+        Magnitud("IM", IM, "%", f"33 (1 - 0.125 D_E), D_E en pies (Manual de "
+                 f"Puentes 2.4.3.3.2), con D_E = {D_E_im:.3f} m"
+                 + (": la profundidad de diseño de 1.0 ft, o la cubierta de "
+                    "tierra si es menor (el IM mayor)" if es_tubo else
+                    " de cubierta de tierra, sin el paquete estructural"),
+                 cifras=CIFRAS_MAGNITUD),
+        Magnitud("m", m, "", "un carril cargado (4.6.2.10.2; Tabla "
+                 "2.4.3.2.2.6-1 del Manual de Puentes)", cifras=CIFRAS_FACTOR),
+        Magnitud("P", P, "kN", f"un eje del {vehiculo} HL-93 (32.0 kip el "
+                 "camion, 25.0 kip el tandem; Manual de Puentes 2.4.3.2.2.2 "
+                 "y .3)", cifras=CIFRAS_MAGNITUD),
+    ) + tuple(
+        Magnitud(f"P_L del {nombre}", PL_v, "kPa",
+                 f"un eje sobre E x l; efecto = {e_v:.3f} "
+                 f"({efecto_descripcion})", cifras=CIFRAS_MAGNITUD)
+        for nombre, _P, _l, _E, PL_v, e_v in candidatos)
+    citas = ("AASHTO_LRFD_9.4.6.2.10.2#UN_CARRIL",
+             "AASHTO_LRFD_9.3.6.1.2.6a#EJES", "AASHTO_LRFD_9.T3.6.1.2.6a-1",
+             "MP.2.4.3.2.2.2", "MP.2.4.3.2.2.3", "MP.2.4.3.2.2.5",
+             "MP.2.4.3.2.2.6", "MP.2.4.3.3.2")
+    if es_tubo:
+        citas = ("AASHTO_LRFD_9.3.6.1.2.6a#CONCRETO_SOMERO",
+                 "AASHTO_LRFD_9.3.6.1.2.6a#UN_PIE",
+                 "AASHTO_LRFD_9.C4.6.2.10.2#E_SPAN") + citas
+        nota = (
+            "TUBO DE CONCRETO CON 1.0 A 2.0 FT HASTA LA RASANTE: el eje se "
+            "reparte a lo largo del tubo en el ancho E de la Eq. "
+            "4.6.2.10.2-1 «regardless of the direction of travel», y el tubo "
+            "se diseña a la profundidad de 1.0 ft. Que esa profundidad entre "
+            "en el IM y en E_span, y no en la carga de tierra, es lectura del "
+            "proyecto; el largo A TRAVES del tubo es la eleccion "
+            f"'{CRITERIO_CARGA_VIVA_SOMERA}' [A], que la fuente no fija. "
+            "GOBIERNA EL VEHICULO DE MAYOR CARGA SOBRE EL TUBO "
+            f"({efecto_descripcion}): con un tubo mas ancho que la "
+            "separacion de los ejes del tandem, su segundo eje tambien cae "
+            "en el.")
+    else:
+        citas = ("AASHTO_LRFD_9.4.6.2.10.1", "AASHTO_LRFD_9.12.11.2.1#SOMERO",
+                 ) + citas
+        nota = (
+            "MARCO CON MENOS DE 2.0 FT DE RELLENO: el eje se reparte en la "
+            "franja equivalente de 4.6.2.10.2 (12.11.2.1 y 4.6.2.10.1), con "
+            "la profundidad que tiene. Es el reparto del ejemplo resuelto de "
+            "MnDOT (LRFD Bridge Design Manual §12.6), que suma ademas la "
+            "carga de carril: la 9.a ed. 3.6.1.2.6a manda aplicar a una "
+            "alcantarilla SOLO los ejes, y la carga de carril no entra. "
+            f"GOBIERNA EL VEHICULO DE MAYOR EFECTO ({efecto_descripcion}).")
+    p = paso(
+        "F8.CARGA_VIVA", codigo="F8.LL",
+        que=("Carga viva HL-93 con relleno somero: franja equivalente de "
+             f"4.6.2.10.2 (gobierna el {vehiculo}, por efecto)"),
+        formula=("E = 96 + 1.44 S (in, S en ft); E_span = L_T + LLDF H (in); "
+                 "P_L = P (1 + IM/100) m / (E l)"),
+        formula_cita_id="AASHTO_LRFD_9.4.6.2.10.2#FRANJA",
+        citas_textuales=citas,
+        sustitucion=sust,
+        resultado=Magnitud("P_L", P_L, "kPa", "presion de un eje sobre la "
+                           "franja, con IM y m", cifras=CIFRAS_MAGNITUD),
+        nota_del_proyecto=nota)
+    return CargaVivaEnterrada(H_m=H, LLDF=LLDF, IM_pct=IM, m=m,
+                              vehiculo=vehiculo, P_kN=P, l_w_m=l_w, w_w_m=w_w,
+                              P_L_kPa=P_L, despreciada=False, paso=p,
+                              efecto=e_gob,
+                              efecto_descripcion=efecto_descripcion,
+                              candidatos=tuple(candidatos),
+                              en_zona_de_permiso=False, relleno_somero=True)
 
 
 def _aviso_de_carga_viva_despreciada(cv: CargaVivaEnterrada) -> Tuple[str, ...]:
@@ -1648,13 +1865,14 @@ def verificar_concreto(*, punto: PuntoCritico, material: Material,
     S_i_mm = D * MILIMETROS_POR_METRO
     D_pulg = S_i_mm / PULGADA_EN_MM
     W_F = GAMMA_AGUA_KN_M3 * seccion.area_llena
-    # La Tabla 12.10.4.3.2c-1 tiene dos filas de B_FLL; la de «< 2.0 ft» no
-    # se alcanza nunca: con menos de 2.0 ft `carga_viva_enterrada` ya se
-    # detuvo (el metodo de la rueda distribuida no vale ahi). La rama que la
-    # leia era codigo muerto y se retiro (auditoria de T-5); la constante
-    # `BFLL_RELLENO_MENOR_2_PIES` queda como transcripcion de la tabla.
-    B_FLL = _interpolar(D_pulg, _CN.BFLL_DIAMETROS_PULG,
-                        _CN.BFLL_RELLENO_DESDE_2_PIES)
+    # La Tabla 12.10.4.3.2c-1 tiene dos filas de B_FLL. Hasta VE-4f la de
+    # «< 2.0 ft» no se alcanzaba (con menos de 2.0 ft `carga_viva_enterrada`
+    # se detenia); desde VE-4f el tubo con 1.0 a 2.0 ft hasta la rasante
+    # tiene carga viva (la franja de 4.6.2.10.2) y la lee: `_b_fll(cv)`.
+    def _b_fll(cv) -> float:
+        return _interpolar(D_pulg, _CN.BFLL_DIAMETROS_PULG,
+                           _CN.BFLL_RELLENO_MENOR_2_PIES if cv.relleno_somero
+                           else _CN.BFLL_RELLENO_DESDE_2_PIES)
 
     def _efecto(P_L: float, l_w: float) -> float:
         return P_L * min(l_w, B_c)
@@ -1671,15 +1889,20 @@ def verificar_concreto(*, punto: PuntoCritico, material: Material,
         cv = carga_viva_enterrada(
             H=H + e_paq, D_i=D, D_E=H, conducto=CONDUCTO_TUBO_CONCRETO,
             id_punto=punto.id, efecto=_efecto,
-            efecto_descripcion="W_L = P_L min(l_w, B_c), kN/m")
+            efecto_descripcion="W_L = P_L min(l_w, B_c), kN/m",
+            ancho_del_conducto=B_c)
         W_E = VAF_i * B_c * (gamma_s * H + gamma_p * e_paq)
-        W_L = cv.P_L_kPa * min(cv.l_w_m, B_c)
-        D_req = (factor_i * ((W_E + W_F) / B_FE_i + W_L / B_FLL)
+        # W_L es el EFECTO del vehiculo que gobierna: P_L min(l_w, B_c) con
+        # la rueda distribuida, y con el relleno somero la suma de lo que de
+        # cada eje cae sobre el tubo (VE-4f).
+        W_L = cv.efecto
+        D_req = (factor_i * ((W_E + W_F) / B_FE_i + W_L / _b_fll(cv))
                  * N_POR_KN / S_i_mm)
         return D_req, W_E, W_L, cv
 
     VAF, B_FE, factor_tipo = _factores(tipo)
     D_req, W_E, W_L, cv = _demanda(H_rel, tipo)
+    B_FLL = _b_fll(cv)
     ofrecidas, faltan = clases_de_concreto_para(D)
     bloqueadas = clases_bloqueadas_para(D)
     transcritas = _clases_transcritas()
@@ -1791,14 +2014,19 @@ def verificar_concreto(*, punto: PuntoCritico, material: Material,
             sust=(Magnitud("W_E", W_E, "kN/m", "paso F8.EV", cifras=CIFRAS_MAGNITUD),
               Magnitud("W_F", W_F, "kN/m", "paso F8.EV", cifras=CIFRAS_MAGNITUD),
               Magnitud("W_L", W_L, "kN/m", f"P_L del {cv.vehiculo} (paso "
-                       "F8.LL, el de mayor W_L) por min(l_w, B_c): la parte "
-                       "del area cargada que cae sobre el tubo",
+                       "F8.LL, el de mayor W_L) por "
+                       + ("lo que de cada eje cae sobre el tubo, min(B_c, l) "
+                          "+ min(l, B_c - s_a) (relleno somero, franja de "
+                          "4.6.2.10.2)" if cv.relleno_somero else
+                          "min(l_w, B_c): la parte del area cargada que cae "
+                          "sobre el tubo"),
                        cifras=CIFRAS_MAGNITUD),
               Magnitud("B_FE", B_FE, "", f"Tabla 12.10.4.3.2a-1, {tipo}, "
                        f"interpolado en D = {D_pulg:.1f} in",
                        cifras=CIFRAS_FACTOR),
-              Magnitud("B_FLL", B_FLL, "", "Tabla 12.10.4.3.2c-1",
-                       cifras=CIFRAS_FACTOR),
+              Magnitud("B_FLL", B_FLL, "", "Tabla 12.10.4.3.2c-1, fila "
+                       + ("«< 2.0 ft»" if cv.relleno_somero else
+                          "«>= 2.0 ft»"), cifras=CIFRAS_FACTOR),
               Magnitud("S_i", S_i_mm, "mm", "diametro interior",
                        cifras=CIFRAS_MAGNITUD)),
             obtenido=Magnitud("D", D_req, "N/m/mm", "D-load requerida a grieta "
@@ -1900,6 +2128,12 @@ def _contraste_acpa(*, D: float, B_c: float, H_total: float, cv, W_L: float,
     tubos de 0.60 a 0.90 m con menos de ~1.0 m). Devuelve (paso, aviso), o
     None por encima del umbral o si la carga viva se desprecio.
     """
+    if cv.relleno_somero:
+        # --- VE-4f --- La L_e de ACPA corrige el reparto de la rueda
+        # distribuida (3.6.1.2.6b); con relleno somero rige la franja de
+        # 4.6.2.10.2, que ya reparte el eje a lo largo del tubo en E: sumarle
+        # L_e contaria dos veces ese reparto. No hay contraste.
+        return None
     umbral = ca.valor(CRITERIO_UMBRAL_ACPA)
     if cv.despreciada or not H_total < umbral:
         return None
@@ -3156,12 +3390,95 @@ def demanda_marco(*, punto: PuntoCritico, material: Material,
 # Las dos puertas: la de la Fase 5 y la de la etapa de la Fase 8
 # ---------------------------------------------------------------------------
 
+def bajo_el_dominio_de_la_rueda_distribuida(*, material: Material,
+                                             H_total: float) -> bool:
+    """
+    True si el relleno hasta la rasante de un conducto REDONDO queda por
+    debajo del dominio del metodo de 3.6.1.2.6a: menos de 2.0 ft sobre el
+    tubo de concreto, 1.0 ft o menos sobre un flexible (VE-4f).
+    """
+    if material.tipo is TipoMaterial.CONCRETO_REFORZADO:
+        return not H_total >= (_CN.RELLENO_MIN_METODO_TUBO_CONCRETO_M
+                               - TOL_UMBRAL_NORMATIVO)
+    return not H_total > (_CN.RELLENO_MIN_METODO_NO_CONCRETO_M
+                          + TOL_UMBRAL_NORMATIVO)
+
+
+def verificar_cobertura(*, punto: PuntoCritico, material: Material,
+                        seccion: Seccion, altura_relleno: float
+                        ) -> Verificacion:
+    """
+    --- VE-4f --- F8.COBERTURA: el relleno hasta la rasante frente a la
+    cobertura minima de AASHTO LRFD 12.6.6.3 (Tabla 12.6.6.3-1, leida por
+    `M7.cobertura_minima_aashto` con 'condicion_pavimento' [A]).
+
+        H_total = H_rel + e_paq  >=  cobertura minima
+
+    La fuente la cuenta «including a well-compacted granular subbase and base
+    course», y por eso entra el paquete estructural: medirla hasta la
+    rasante es lectura del proyecto (la base forma parte del paquete), y la
+    G1 de la Fase 7 la vuelve a juzgar, hasta la subrasante, que es lo
+    conservador. Se juzga SOLO por debajo del dominio de la rueda
+    distribuida (`bajo_el_dominio_de_la_rueda_distribuida`): ahi el
+    conducto sin cobertura INCUMPLE, y no es «no evaluable» (fundamento
+    F8.COBERTURA). El marco no entra: la tabla no tiene fila de cajon.
+    """
+    from src.modulos.M7_geometria import (       # perezoso: M7 importa M5, que importa M8
+        CRITERIO_COBERTURA_AASHTO, CRITERIO_CONDICION_PAVIMENTO,
+        cobertura_minima_aashto)
+    e_paq = espesor_del_paquete(punto)
+    H_rel = _finito_positivo("altura_relleno", altura_relleno, punto.id)
+    H_total = H_rel + e_paq
+    minimo = cobertura_minima_aashto(material=material, seccion=seccion)
+    condicion = ca.valor(CRITERIO_CONDICION_PAVIMENTO)
+    cumple = H_total + TOL_UMBRAL_NORMATIVO >= minimo
+    p = paso("F8.COBERTURA", **_campos_f8(
+        codigo=CODIGO_COBERTURA,
+        que=("Cobertura minima del conducto redondo con relleno por debajo "
+             "del dominio de la rueda distribuida"),
+        formula="H_total = H_rel + e_paq >= cobertura minima (Tabla 12.6.6.3-1)",
+        formula_cita_id="AASHTO_LRFD_9.12.6.6.3#COBERTURA",
+        sust=(Magnitud("H_rel", H_rel, "m", "subrasante menos clave fisica "
+                       "(M5.altura_relleno_sobre_clave)",
+                       cifras=CIFRAS_MAGNITUD),
+              Magnitud("e_paq", e_paq, "m", "rasante menos subrasante: el "
+                       "paquete, que la fuente cuenta en la cobertura "
+                       "(«including a well-compacted granular subbase and "
+                       "base course»)", cifras=CIFRAS_MAGNITUD)),
+        obtenido=Magnitud("H_total", H_total, "m", "relleno sobre la clave "
+                          "hasta la rasante", cifras=CIFRAS_MAGNITUD),
+        admisible=minimo, unidad="m",
+        cita_umbral="AASHTO_LRFD_9.T12.6.6.3-1",
+        descripcion_umbral=(f"cobertura minima de la Tabla 12.6.6.3-1 para "
+                            f"{material.tipo.value}, condicion «{condicion}» "
+                            "('condicion_pavimento' [A])"),
+        aplicacion=("umbral duro: un conducto redondo sin la cobertura minima "
+                    "no se verifica con otra carga, incumple"),
+        criterio=CRITERIO_COBERTURA_AASHTO,
+        cumple=cumple, margen=H_total - minimo,
+        explicacion=("el conducto tiene la cobertura minima" if cumple else
+                     "el relleno hasta la rasante no alcanza la cobertura "
+                     "minima: subir la rasante o bajar el conducto"),
+        citas=("AASHTO_LRFD_9.3.6.1.2.6a#MENOS_DE_UN_PIE",),
+        nota=("Se juzga porque el relleno queda por debajo del dominio de la "
+              "rueda distribuida de 3.6.1.2.6a. Medida hasta la rasante: la "
+              "G1 de la Fase 7 la juzga tambien hasta la subrasante.")))
+    return _verificacion_f8(p, numeral=NUMERAL_F8_COBERTURA)
+
+
 def verificar_conducto(*, punto: PuntoCritico, material: Material,
                        seccion: Seccion, altura_relleno: float
                        ) -> ResultadoEstructural:
     """
     La Fase 8 del conducto, por material y forma. Para el marco devuelve la
     DEMANDA, sin verificaciones: el diseño del portico se difiere.
+
+    --- VE-4f --- Con el relleno de un conducto REDONDO por debajo del
+    dominio de la rueda distribuida, primero F8.COBERTURA (12.6.6.3): si
+    incumple, el resultado lleva SOLO esa verificacion y nada elegido (no
+    hay carga que calcular sobre un conducto que no puede quedar ahi); si
+    cumple, va delante de las del material, que con relleno somero usan la
+    franja de 4.6.2.10.2 (tubo de concreto) o se detienen sin metodo.
     """
     if material.forma is FormaSeccion.RECTANGULAR:
         dem = demanda_marco(punto=punto, material=material, seccion=seccion,
@@ -3176,8 +3493,23 @@ def verificar_conducto(*, punto: PuntoCritico, material: Material,
     funcion = {TipoMaterial.CONCRETO_REFORZADO: verificar_concreto,
                TipoMaterial.TMC: verificar_tmc,
                TipoMaterial.HDPE: verificar_hdpe}[material.tipo]
-    return funcion(punto=punto, material=material, seccion=seccion,
-                   altura_relleno=altura_relleno)
+    e_paq = espesor_del_paquete(punto)
+    H_rel = _finito_positivo("altura_relleno", altura_relleno, punto.id)
+    if not bajo_el_dominio_de_la_rueda_distribuida(material=material,
+                                                   H_total=H_rel + e_paq):
+        return funcion(punto=punto, material=material, seccion=seccion,
+                       altura_relleno=altura_relleno)
+    v_cob = verificar_cobertura(punto=punto, material=material,
+                                seccion=seccion, altura_relleno=altura_relleno)
+    if not v_cob.cumple:
+        return ResultadoEstructural(
+            material=material.tipo.value, H_relleno_m=H_rel, e_paquete_m=e_paq,
+            H_total_m=H_rel + e_paq, seleccion="", relleno_maximo_m=None,
+            verificaciones=(v_cob,), pasos=(v_cob.paso,))
+    r = funcion(punto=punto, material=material, seccion=seccion,
+                altura_relleno=altura_relleno)
+    return replace(r, verificaciones=(v_cob,) + r.verificaciones,
+                   pasos=(v_cob.paso,) + r.pasos)
 
 
 def verificaciones_estructurales(*, punto: PuntoCritico, material: Material,

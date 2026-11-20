@@ -5181,8 +5181,9 @@ Doce fichas; las cinco últimas son de la auditoría.
   admite el marco sin relleno (MTC 4.1.1.3.4 a), Lámina N° 03, AASHTO LRFD 12.6.6.3,
   pág. impresa 12-22). `TamizadoRasante.cobertura_como_aviso`: bloquea la clave bajo la
   subrasante y el resguardo; la cobertura adoptada da INDICADOR. G1 del tubo no cambia.
-- **Abierto:** con relleno < 2 ft la Fase 8 del marco no es evaluable (AASHTO 3.6.1.2.6a)
-  y la losa para carga directa no se diseña. En C-01, con sumersión completa, V7 (DC = 0)
+- **Abierto:** con relleno < 2 ft la Fase 8 del marco no era evaluable (AASHTO 3.6.1.2.6a);
+  desde VE-4f lo es (la franja de 4.6.2.10.2, ficha VE4F-01), y la losa para carga directa
+  se diseña con el pórtico (ítem 1 del censo, ficha T5-07). En C-01, con sumersión completa, V7 (DC = 0)
   rechaza antes el escalón, y el caso de la auditoría (rasante 38.40 / subrasante 38.25)
   termina con V4 y V7 en el primero y la clave sobre la subrasante en el segundo.
 - **Qué haría falta:** el diseño de la losa para carga vehicular directa (expediente) y
@@ -8164,16 +8165,15 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
 
 ## VE3-11 · El hueco 1.0 ≤ H < 2.0 ft del tubo de concreto no se implementa
 
-- **Qué se difirió:** AASHTO LRFD 3.6.1.2.6a manda el tubo de concreto con menos de 2.0 ft de
-  relleno a la franja de la losa del cajón (Eq. 4.6.2.10.2-1) diseñado «for a depth of 1.0
-  ft». Hoy un relleno bajo 0.6096 m sigue saliendo `MetodoNoEvaluableError` (un relleno de
-  0.60 m cae 9.6 mm bajo el umbral).
-- **Por qué:** aplicarlo a un tubo circular por el método indirecto exige tres lecturas que la
-  norma no escribe: cómo E se combina con E_span, qué parte de la franja cae sobre el tubo y
-  cómo esa carga se vuelve la W_L del método indirecto (que 12.10.4.3 define con la huella,
-  W_L = P_L·min(l_w, B_c)). Sería un [N→]/[A], una decisión, no una transcripción.
-- **Qué haría falta:** una decisión del dueño sobre las tres lecturas o la revisión de un
-  ingeniero estructural; el B_FLL bajo 2 ft ya está transcrito.
+- **Cerrado por VE-4f (ficha VE4F-01):** el tubo de concreto con 1.0 ft o más y menos de
+  2.0 ft hasta la rasante reparte el eje en la franja de la Eq. 4.6.2.10.2-1 a la
+  profundidad de diseño de 1.0 ft y lee el B_FLL de la fila «< 2.0 ft». De las tres
+  lecturas que esta ficha nombraba, dos se resolvieron con la fuente (E a lo largo del
+  tubo; lo que cae sobre el tubo es lo que de cada eje cae en B_c) y la tercera, el largo
+  A TRAVÉS del tubo, es el criterio [A] `carga_viva_tubo_concreto_somero`, sin valor.
+- **Por qué:** la fuente da el camino (3.6.1.2.6a, Eq. 4.6.2.10.2-1, B_FLL «< 2.0 ft»); lo
+  único que calla es una elección, y se dejó como [A] sin valor en vez de inventarla.
+- **Qué haría falta:** declarar `carga_viva_tubo_concreto_somero` (ficha VE4F-01).
 - **Dónde vive:** `src/modulos/M8_estructural.py::verificar_concreto`
 
 ## VE3-12 · El cortante fuera de 5.7.3.4.1 se verifica con el procedimiento general de 5.7.3.4.2 (VE-3.14, bloque 1; H-2 de los ensayos)
@@ -8396,3 +8396,28 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   sueltas `verificar_estabilidad_global` / `verificar_talud` quedan como estaban: el método
   viaja ahora en la traza del dato declarado.
 - **Dónde vive:** `src/modulos/M9_cabezal.py::validar_estabilidad_global_declarada`
+
+## VE4F-01 · La carga viva con relleno somero: la franja de 4.6.2.10.2, la cobertura mínima y un [A] sin valor (VE-4f)
+
+- **Cerrado:** por debajo del dominio de la rueda distribuida de AASHTO LRFD 3.6.1.2.6a la
+  Fase 8 ya no se detiene entera. (1) El MARCO con menos de 2.0 ft reparte un eje en la
+  franja de 4.6.2.10.2 (12.11.2.1 y 4.6.2.10.1): E = 96 + 1.44 S, E_span = L_T + LLDF H,
+  un carril con su m, con la profundidad que tiene; contrastado con MnDOT, LRFD Bridge
+  Design Manual §12.6 (cajón de 16 ft bajo 1 ft: E = 119.04 in, E_span = 23.8 in, 2.52 y
+  1.97 ksf), sin la carga de carril que MnDOT suma y la 9.ª ed. no manda. (2) El TUBO DE
+  CONCRETO con 1.0 a 2.0 ft se diseña «for a depth of 1.0 ft» (IM con D_E = 1.0 ft, o la
+  cubierta si es menor), con E a lo largo del tubo, lo que de cada eje cae sobre B_c como
+  W_L y el B_FLL de la fila «< 2.0 ft»; no hay contraste ACPA (la franja ya reparte a lo
+  largo del tubo). (3) Un conducto REDONDO bajo el dominio se juzga antes contra la
+  cobertura mínima de la Tabla 12.6.6.3-1 (F8.COBERTURA, medida hasta la rasante porque la
+  fuente cuenta la base): sin ella INCUMPLE y el escalón se rechaza, no es «no evaluable».
+- **Abierto:** el largo del área cargada A TRAVÉS del tubo de concreto somero no lo fija la
+  fuente: `carga_viva_tubo_concreto_somero` [A] sin valor (L_T, la cota superior que
+  C4.6.2.10.2 permite, recomendada; o L_T + LLDF·1.0 ft). Difiere sólo con el tándem sobre
+  tubos de B_c entre 1.22 y 1.82 m. Sigue sin método (`MetodoNoEvaluableError`): el tubo de
+  concreto bajo pavimento rígido entre 9 y 12 in («more comprehensive methods») y el
+  flexible con 1.0 ft o menos que cumple la cobertura (sólo justo en 1.0 ft).
+- **Qué haría falta:** la decisión del dueño sobre el criterio; los métodos completos para
+  el tubo con menos de 1.0 ft. Con el pórtico (ficha T5-07) la presión de la franja se
+  aplica al marco como carga concentrada sobre la losa.
+- **Dónde vive:** `src/modulos/M8_estructural.py::_carga_viva_en_la_franja`
