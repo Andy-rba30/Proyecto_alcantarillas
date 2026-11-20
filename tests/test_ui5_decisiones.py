@@ -1253,7 +1253,11 @@ SIN_NADA_QUE_BARRER = {
     "margen_estacional_nf_v7_m",
     # VE-4d: el caudal unitario admisible del desborde de V8, sin valor de
     # archivo y sin ventana (lo da el diseño de la proteccion del terraplen).
-    "caudal_unitario_admisible_desborde_m2s"}
+    "caudal_unitario_admisible_desborde_m2s",
+    # VE-5 met: lo que agregan los anclajes y empalmes del despiece al acero
+    # de los cabezales, sin valor de archivo y sin ventana (ninguna fuente
+    # del repositorio la fija: la da el despiece de los planos).
+    "incremento_acero_por_despiece"}
 # VE-3.5 lo habia sumado ('dimensionamiento_zapata_cabezal', sin valor de
 # archivo y sin ventana). Desde VE-3.9 tiene valor de archivo y ventana por
 # campo (decision del dueño), y ya hay que barrer.
@@ -1327,7 +1331,10 @@ def test_4_el_barrido_cubre_los_141_y_censa_lo_que_no_barre(candidatos):
     # 'coeficientes_desborde_plataforma' (el desborde admitido de V8).
     # 158 desde VE-4e: 'nivel_agua_relleno_sin_drenaje_bajo_sismo' (ficha
     # VE3-21), sin valor de archivo y con sus dos opciones barribles.
-    assert len(por_clave) == len(ca.CRITERIOS) == 158
+    # 161 desde VE-5-met: 'sobreancho_excavacion_estructuras_m' (opcional,
+    # ventana 0-0.45 m de EG-2013 501.04), 'incremento_acero_por_despiece' y
+    # 'clase_concreto_losa_entrega' (los metrados de la Fase 11).
+    assert len(por_clave) == len(ca.CRITERIOS) == 161
     assert fuera == FILAS_FUERA_DE_SU_VENTANA
     assert {k for k, cs in por_clave.items() if not cs} == SIN_NADA_QUE_BARRER
     # Y el barrido no es de juguete: cada valor de archivo esta, y mas.

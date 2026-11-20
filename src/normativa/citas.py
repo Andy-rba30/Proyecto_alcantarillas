@@ -15954,8 +15954,7 @@ EG2013_503_13_DESPERDICIOS = _cita(
     pagina_pdf=943,
     texto_literal=Verbatim(
         texto=("el suministro, almacenamiento, desperdicios, cargas, "
-               "transportes, descargas y mezclas de todos los materiales "
-               "constitutivos de la mezcla"),
+               "transportes, descargas y mezclas de todos los materiales"),
         pagina_pdf=943),
     caracter=Caracter.DEFINICION,
     sesion=VE5_MET,

@@ -226,6 +226,12 @@ def test_lo_que_ninguna_corrida_invoca_se_clasifica_por_su_consumidor(
                 cli.VERIFICACIONES_DIFERIDAS_POR_ALCANCE[cli.ALCANCE_PERFIL]
             assert consumidores == {"M5_verificaciones"}, clave
             continue
+        if clave in DETRAS_DEL_CABEZAL:
+            # M12 corre a perfil (el cuadro de compatibilidad); sus metrados,
+            # que son los que leen estos criterios, van detras de la Fase 9.
+            assert DETRAS_DEL_CABEZAL[clave] in diferidos, clave
+            assert consumidores == {"M12_metrados"}, clave
+            continue
         if clave in DE_UNA_ALTERNATIVA_NO_DE_ARCHIVO:
             # V7 corre a perfil, y lo lee solo con una alternativa de otro
             # criterio que el archivo no trae.
@@ -302,6 +308,21 @@ FUNCION_QUE_LO_LEE = {
 # `tests/test_ve2_revision_m3_m4.py::test_m3_medido_la_corrida_de_perfil_lo_
 # invoca_sin_diferir`. Que su unico consumidor de perfil sea V7 lo comprueba
 # la rama de arriba.
+# --- VE-5 met --- LOS CRITERIOS DE LOS METRADOS DE LA FASE 11. El censo de
+# `variables_entrada` es por MODULO, y M12 corre en los dos alcances --- la
+# fila del cuadro de compatibilidad rasante-alcantarilla es de todo punto ---;
+# pero sus METRADOS, los unicos que leen estos tres criterios, los arma
+# `servicio._fase_11_metrados` solo con el cabezal del punto, detras de
+# `_fase_9`, y la Fase 9 la difiere el alcance de perfil. Ninguna corrida de
+# este archivo llega a un cabezal a expediente; los mide
+# `tests/test_M12_metrados.py` sobre la corrida de referencia
+# `expediente_cabezal`.
+DETRAS_DEL_CABEZAL = {
+    "sobreancho_excavacion_estructuras_m": "M9_cabezal",
+    "incremento_acero_por_despiece": "M9_cabezal",
+    "clase_concreto_losa_entrega": "M9_cabezal",
+}
+
 DE_UNA_ALTERNATIVA_NO_DE_ARCHIVO = {
     "peso_especifico_saturado_relleno_kn_m3": ("nivel_agua_diseno_v7",
                                                "nf_del_punto"),

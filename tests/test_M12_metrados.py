@@ -35,8 +35,10 @@ from src.modelos import (CriterioPendienteError, DatoFaltanteError,
                          TipoMaterial)
 from src.modulos import M12_metrados as M12
 from src.modulos.M9_cabezal import TIPO_GRAVEDAD, TIPO_VOLADIZO
+from tests.fixtures.casos_patron import CP_M12_METRADOS as CP
 
 TOL = 1e-6
+TOL_CP = 1e-5          # las cifras del caso patron van a seis decimales
 
 
 # ===========================================================================
@@ -133,6 +135,7 @@ def test_conducto_entre_caras_exteriores_siguiendo_la_pendiente():
         espesor=T, cabezal=_cabezal(), S=S)
     # 12.0 · sqrt(1 + 0.01^2) = 12.00059998
     assert r.cantidad == pytest.approx(12.0 * math.sqrt(1.0001), abs=TOL)
+    assert r.cantidad == pytest.approx(CP["conducto_m"], abs=TOL_CP)
     assert (r.partida, r.unidad) == ("506.A", "m")
     assert "1000 mm" in r.descripcion
     assert r.paso.formula_cita_id == "EG2013.506.14#LONGITUD"
@@ -190,6 +193,8 @@ def test_zanja_del_conducto_a_mano():
     assert seco.cantidad == pytest.approx(V - V_agua, abs=TOL)
     assert agua.cantidad == pytest.approx(V_agua, abs=TOL)
     assert (seco.partida, agua.partida) == ("501.C", "501.D")
+    assert V == pytest.approx(CP["zanja_m3"], abs=TOL_CP)
+    assert V_agua == pytest.approx(CP["zanja_agua_m3"], abs=TOL_CP)
     assert seco.unidad == "m3"
 
 
@@ -202,6 +207,8 @@ def test_cimientos_del_cabezal_recto_a_mano():
     r = _por_elemento(_excavacion())
     total = 5.40 + 0.576
     agua = 4.86 + 0.504
+    assert (total, agua) == pytest.approx(
+        (CP["cimientos_entrada_m3"], CP["cimientos_entrada_agua_m3"]))
     assert r["cimientos del cabezal de entrada, bajo agua (bajo el nivel "
              "freatico)"].cantidad == pytest.approx(agua, abs=TOL)
     assert r["cimientos del cabezal de entrada, en seco"].cantidad == \
@@ -225,6 +232,8 @@ def test_cimientos_del_cabezal_con_aleros_y_sobreancho_declarado():
     esperado = 10.53 + 2 * 11.31 + 0.4 * ancho_borde * 0.8
     salida = r["cimientos del cabezal de salida, en seco"]
     assert salida.cantidad == pytest.approx(esperado, abs=TOL)
+    assert esperado == pytest.approx(CP["cimientos_salida_s045_m3"],
+                                     abs=TOL_CP)
     assert "cimientos del cabezal de salida, bajo agua (bajo el nivel " \
            "freatico)" not in r
 
@@ -282,6 +291,8 @@ def test_concreto_de_los_cabezales_a_mano():
     assert sal.cantidad == pytest.approx(
         1.08 + 2.16 + 2 * (0.3 * 1.8 * 2.0) + 2 * 2.4 - vano, abs=TOL)
     assert ent.partida == "503.A" and "Clase D" in ent.descripcion
+    assert ent.cantidad == pytest.approx(CP["concreto_entrada_m3"], abs=TOL_CP)
+    assert sal.cantidad == pytest.approx(CP["concreto_salida_m3"], abs=TOL_CP)
 
 
 def test_clase_de_concreto_de_la_tabla_503_07():
@@ -321,6 +332,7 @@ def test_acero_de_los_cabezales_a_mano():
     assert ent.cantidad == pytest.approx(1.10 * (18.0 + 16.128 + 21.6),
                                          abs=TOL)
     assert (ent.partida, ent.unidad) == ("504.A", "kg")
+    assert ent.cantidad == pytest.approx(CP["acero_cabezal_kg"], abs=TOL_CP)
     assert sal.cantidad == pytest.approx(ent.cantidad, abs=TOL)
 
 
@@ -363,6 +375,8 @@ def test_losa_de_entrega_entre_los_aleros_a_mano():
     esperado = 0.3 * area + 0.4 * 0.8 * (1.8 + 2 * a)
     assert sal.cantidad == pytest.approx(esperado, abs=TOL)
     assert "Clase E" in sal.descripcion
+    assert ent.cantidad == pytest.approx(CP["losa_entrada_m3"], abs=TOL_CP)
+    assert sal.cantidad == pytest.approx(CP["losa_salida_m3"], abs=TOL_CP)
 
 
 # ===========================================================================
@@ -384,6 +398,8 @@ def test_enrocado_y_geotextil_a_mano():
     assert enr.partida == "" and enr.etiqueta_partida == "A"
     assert (geo.partida, geo.unidad) == ("511.A", "m2")
     assert geo.cantidad == pytest.approx(A, abs=TOL)
+    assert enr.cantidad == pytest.approx(CP["enrocado_m3"], abs=TOL_CP)
+    assert geo.cantidad == pytest.approx(CP["geotextil_m2"], abs=TOL_CP)
 
 
 def test_sin_filtro_no_hay_geotextil():
@@ -527,3 +543,28 @@ def test_a_perfil_no_hay_metrado_y_si_cuadro():
     assert all(p.compatibilidad_rasante is not None for p in informe.puntos)
     assert not [b for p in informe.puntos for b in p.bloqueos
                 if b.fase.startswith("Fase 11")]
+
+
+def test_las_piezas_de_geometria_que_suman_los_renglones():
+    """Las funciones de geometria del metrado, una por una, contra la mano:
+    el vano del tubo, el ancho de la losa en el cabezal y en su borde, el
+    area de la losa recta, y las partes del cabezal recto."""
+    from src.modulos import M11_reporte as M11
+    assert M12.area_exterior_del_conducto(SeccionCircular(D=D), T, 1) == \
+        pytest.approx(A_EXT, abs=TOL)
+    c = _cabezal()
+    assert M12.ancho_losa(c.salida, 0.0) == pytest.approx(1.8, abs=TOL)
+    assert M12.ancho_losa(c.salida, 1.5) == pytest.approx(
+        1.8 + 2 * 2.0 * math.sin(math.radians(45)), abs=TOL)
+    assert M12.area_losa(c.entrada) == pytest.approx(1.8 * 1.5, abs=TOL)
+    partes = dict(M12.volumen_cabezal(c.entrada, A_EXT))
+    assert partes["pantalla"] == pytest.approx(1.08, abs=TOL)
+    assert partes["zapata"] == pytest.approx(2.16, abs=TOL)
+    assert partes["vano del conducto (se descuenta)"] == pytest.approx(
+        -A_EXT * 0.30, abs=TOL)
+    # Y la memoria toma los pasos del metrado sin repetir el de una
+    # excavacion partida en dos renglones.
+    renglones = _excavacion()
+    punto = SimpleNamespace(metrado=MetradoDelPunto("P-1", renglones))
+    pasos = M11.traza_metrado(punto)
+    assert len(pasos) == len({id(p) for p in pasos}) < len(renglones)

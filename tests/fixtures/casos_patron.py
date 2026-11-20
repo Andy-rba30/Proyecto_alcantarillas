@@ -3364,3 +3364,59 @@ CP_VE4C_USBR_WSP = {
     "cifras_en_la_pagina": ("3697.786", "3692.942", "3680.106", "3668.845",
                             "3653.641", "22.906", "24.531", "27.024"),
 }
+
+
+# ===========================================================================
+# --- VE-5 met --- CP_M12_METRADOS: los metrados de la Fase 11 (M12)
+# ===========================================================================
+# CALCULADO A MANO, con la aritmetica de la regla de MEDICION de cada Seccion
+# del EG-2013 escrita, sobre una geometria de cabezal de PRUEBA (numeros
+# redondos, no de un proyecto). El EG-2013 no trae ejemplos de metrado.
+#
+# Tubo de concreto reforzado D = 1.00 m, pared t = 0.10 m: Bc = 1.20 m,
+# A_ext = pi·1.20²/4 = 1.130973 m2. L_metrado = 12.0 m, S = 0.01. Fondo del
+# conducto: 99.90 (entrada) y 99.78 (salida). NF = 0.10 m. SUCS «SP-SM».
+# Cabezales: H = 2.0, B = 3.0, D_f = 1.0, e_corona = e_base = 0.30,
+# e_zapata = 0.40, talon = 1.5, L_c = 1.8; desplante 99.0 (pie 100.0) en la
+# entrada, recto; 98.0 (pie 99.0) en la salida, con dos aleros a 45° de
+# 2.0 m (h0 = 2.0, H_f = 0.4, e = 0.30, zapata 3.0 x 0.40). Losa de entrega
+# 1.5 x 0.30 m, dentellon 0.40 x 0.80 m.
+#
+#   conducto (506.14)   12.0 · √(1 + 0.01²)                    = 12.000600 m
+#   zanja (501.09, 506.06, 506.07): W = 1.20 + 0.60 = 1.80; fondo = solera
+#       - 0.10 - 0.15. Con x desde la cara exterior del muro de entrada:
+#       d(x) = (100 - x/12) - (99.65 - 0.01·x) = 0.35 - 0.073333·x
+#       talones: x_a = 1.8, x_b = 10.2 -> d_a = 0.218, d_b = -0.398
+#       corte en 8.4·0.218/0.616 = 2.972727 m del talon de entrada
+#       V      = 1.80 · 0.218 · 2.972727 / 2                  = 0.583249 m3
+#       V_agua = 1.80 · 0.118 · (8.4·0.118/0.616) / 2         = 0.170885 m3
+#   cimientos de entrada (501.04, s = 0): 3.0·1.8·1.0 + 0.4·1.8·0.8
+#                                       = 5.400 + 0.576       = 5.976 m3
+#       bajo el freatico: 3.0·1.8·0.9 + 0.4·1.8·0.7           = 5.364 m3
+#   cimientos de salida con s = 0.45 y NF = 5.0 (todo en seco):
+#       (3.9·2.7 + 2·3.9·2.9)·1.0 + 0.4·(1.8 + 4·sen45)·0.8    = 34.631097 m3
+#   concreto (503.12): entrada 1.08 + 2.16 - 0.339292         = 2.900708 m3
+#       salida + 2·0.3·1.8·2.0 + 2·3.0·0.4·2.0 (h_media = 1.2 + 0.6 = 1.8)
+#                                                             = 9.860708 m3
+#   acero (504.10, Tabla 504-01) de un cabezal, i = 0.10:
+#       pantalla vertical 1/2" @ 0.20: (1.8/0.20)·2.0·1.00     = 18.000
+#       pantalla horizontal 3/8" @ 0.25, cada cara:
+#                          2·(2.0/0.25)·1.8·0.56              = 16.128
+#       punta transversal 1/2" @ 0.25: (1.8/0.25)·3.0·1.00     = 21.600
+#       1.10 · 55.728                                         = 61.3008 kg
+#   losa (503.12): entrada 0.3·1.8·1.5 + 0.4·0.8·1.8          = 1.386 m3
+#       salida: a = 2·cos45 = 1.414214 (el alero llega) < 1.5:
+#       area = 2.7 + 2·(a²/2 + a·(1.5 - a)) = 4.942641
+#       0.3·4.942641 + 0.32·(1.8 + 2a)                        = 2.963889 m3
+#   enrocado (HEC-14 10.2): D = 1.0, L = 5.0, e = 0.6; W_0 = 3.0,
+#       W_L = 3.0 + (2/3)·5.0 = 6.333333; A = 23.333333 m2; V = 14.0 m3
+CP_M12_METRADOS = {
+    "conducto_m": 12.000600,
+    "zanja_m3": 0.583249, "zanja_agua_m3": 0.170885,
+    "cimientos_entrada_m3": 5.976, "cimientos_entrada_agua_m3": 5.364,
+    "cimientos_salida_s045_m3": 34.631097,
+    "concreto_entrada_m3": 2.900708, "concreto_salida_m3": 9.860708,
+    "acero_cabezal_kg": 61.3008,
+    "losa_entrada_m3": 1.386, "losa_salida_m3": 2.963889,
+    "enrocado_m3": 14.0, "geotextil_m2": 23.333333,
+}

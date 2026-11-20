@@ -868,7 +868,12 @@ def test_los_opcionales_declarados_hoy():
                           # remanso del canal (Familia C): sin declarar, la
                           # cota inferior dh / S; declarado, la longitud del
                           # perfil por paso directo.
-                          "fraccion_fin_remanso_canal"}
+                          "fraccion_fin_remanso_canal",
+                          # Y desde VE-5 met el sobreancho de la excavacion de
+                          # los cimientos: sin declarar, caras verticales
+                          # conforme a la estructura (EG-2013 501.04); hasta
+                          # 0.45 m con encofrado.
+                          "sobreancho_excavacion_estructuras_m"}
 
 
 def test_un_opcional_no_figura_entre_los_vacios_que_bloquean():
