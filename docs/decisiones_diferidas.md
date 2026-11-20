@@ -8954,10 +8954,13 @@ generados (`indice_formulas.md`, línea base) no se regeneran aquí: los regener
   (las de forma y las cuatro `D` de M4) los decimales del rótulo: 0.90 sigue «0.90», 1.0668 dice
   «1.0668».
 - **Abierto:** `docs/indice_formulas.md` no se regeneró (lo regenera el integrador; ya estaba
-  desincronizado en la base). Las `D` de M5, M6 y M9 que usan `CIFRAS_MAGNITUD` (3) siguen con tres
+  desincronizado en la base). Las `D` de M9 que usan `CIFRAS_MAGNITUD` (3) siguen con tres
   decimales.
-- **Qué haría falta:** regenerar el índice; extender `cifras_de_dimension` a esas `D` si el dueño lo
-  pide (archivos de otros lotes).
+- **Cerrado (VE-7 lote B, B13; decisión del consultor Fable, triaje VE-7, 2026-11-20):** las cinco
+  `Magnitud("D", …)` de M5 (V4b, V9) y M6 (apron y clase de HEC-14) usan `cifras_de_dimension`;
+  `tests/test_ve7_lote_b_cifras.py` lo fija por AST y con el paso de V9 en 1.0668 m.
+- **Qué haría falta:** regenerar el índice; extender `cifras_de_dimension` a las `D` de M9 (otro
+  lote).
 - **Dónde vive:** `src/modelos.py::cifras_de_dimension`
 
 ## VE5GUI-43 · Los ensayos de durabilidad, quinta población del censo

@@ -276,6 +276,7 @@ from src.modelos import (DatosDeExpediente, DerechoDeViaDelPunto,
                      UMBRAL_V8_DESBORDE_ADMITIDO,
                      UMBRAL_V8_SIN_DESBORDE, UMBRALES_V8)
 from src.modelos import (CIFRAS_FACTOR, CIFRAS_FINA, CIFRAS_MAGNITUD,
+                         cifras_de_dimension,
                      CIFRAS_PORCENTAJE, ControlGobernante, CotaDeEntrada,
                      DatoFaltanteError, DatoInvalidoError, EleccionDeProyecto,
                      ErrorProyecto, EstadoDeVerificacion, Familia, FormaSeccion,
@@ -2545,7 +2546,7 @@ def v4b_relacion_hw_d(*, D: float,
                          cifras=CIFRAS_MAGNITUD),
                 Magnitud("D", D, "m", "altura interior de la seccion "
                          "candidata (la dimension que el catalogo recorre)",
-                         cifras=CIFRAS_MAGNITUD),
+                         cifras=cifras_de_dimension(D)),
                 Magnitud("HW_D_max", admisible, "",
                          f"criterio '{CLAVE_HW_D_MAX}' [A]",
                          cifras=CIFRAS_FACTOR)),
@@ -4423,7 +4424,7 @@ def v9_disponibilidad_diametro(*, D: float, material: Material) -> Verificacion:
                          "altura interior de la seccion candidata"
                          + (" (diametro ingles convertido, AASHTO M 170M "
                             "num. 12.1)" if ingles else ""),
-                         cifras=CIFRAS_MAGNITUD),
+                         cifras=cifras_de_dimension(D)),
                 *((Magnitud("D_designado", D_comparado, "m",
                             "diametro DESIGNADO del mismo tubo (AASHTO M "
                             "170M Table 6): es el que pertenece a la serie y "

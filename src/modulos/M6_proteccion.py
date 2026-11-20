@@ -194,6 +194,7 @@ from src.constantes_normativas import (
     REGIMENES_DE_FLUJO_T11, TERRENO_T11_ROTULO, V_MAX_NO_REVESTIDOS)
 from src.modelos import (
     CIFRAS_FACTOR, CIFRAS_FINA, CIFRAS_MAGNITUD, ApronHEC14, ClaseHEC14,
+    cifras_de_dimension,
     ControlGobernante, TIPO_LECHO_COHESIVO,
     DatoFaltanteError, DatoInvalidoError, EleccionDeProyecto,
     EstructuraDeCaida, FroudeSalida,
@@ -925,7 +926,8 @@ def apron_hec14(*, Q_celda: float, seccion: Seccion, TW: float,
         sustitucion=(
             Magnitud("Q", Q_celda, "m3/s", "caudal del barril, Q_celda",
                      cifras=CIFRAS_FINA),
-            Magnitud("D", D_calc, "m", procedencia_D, cifras=CIFRAS_MAGNITUD),
+            Magnitud("D", D_calc, "m", procedencia_D,
+                     cifras=cifras_de_dimension(D_calc)),
             Magnitud("TW", TW_calc, "m", procedencia_TW,
                      cifras=CIFRAS_MAGNITUD),
             Magnitud("g", G, "m/s2", "`constantes_fisicas.G`, el 9.81 que "
@@ -1015,7 +1017,7 @@ def apron_hec14(*, Q_celda: float, seccion: Seccion, TW: float,
                      f"{clase}, en D50", cifras=CIFRAS_FACTOR),
             Magnitud("D", D, "m", "altura del conducto («D is the culvert "
                      "rise»): el diametro, sin el ajuste de la Ec. (10.5)",
-                     cifras=CIFRAS_MAGNITUD)),
+                     cifras=cifras_de_dimension(D))),
         resultado=Magnitud("L", longitud, "m",
                            f"longitud del apron; profundidad e = "
                            f"{espesor:.3f} m; ancho al final W = "
@@ -1890,7 +1892,7 @@ def clase_hec14_de_la_piedra(*, d50: float, D: float,
                 Magnitud("ke", k_esp, "-", "profundidad de la clase, en D50",
                          cifras=CIFRAS_FACTOR),
                 Magnitud("D", D, "m", "altura del conducto («D is the "
-                         "culvert rise»)", cifras=CIFRAS_MAGNITUD)),
+                         "culvert rise»)", cifras=cifras_de_dimension(D))),
             resultado=Magnitud("L", longitud, "m",
                                f"longitud; profundidad e = {espesor:.3f} m; "
                                f"ancho al final W = {ancho:.3f} m",
