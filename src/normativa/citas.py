@@ -16261,11 +16261,18 @@ HEC14_11_ANCHO = _cita(
     sesion=VE4G,
     interpretacion=Interpretacion(
         texto=("En la salida de una alcantarilla el canal de aproximacion es "
-               "el barril, y el proyecto toma como ancho del vertedero Wo el "
+               "el barril, y el proyecto toma como longitud de cresta Wo el "
                "ancho total de los barriles en la salida: n·B en un marco y "
-               "n·D en un tubo, sin los tabiques. Es el lado conservador: un "
-               "Wo menor da un caudal unitario y un yc mayores, y con ellos "
-               "un estanque mas largo y mas hondo."),
+               "n·D en un tubo, sin los tabiques. En el MARCO, Wo da tambien "
+               "el caudal unitario de la Ec. (11.5) («Critical depth in a "
+               "rectangular channel or culvert is calculated from the unit "
+               "discharge (discharge divided by culvert/chute width, B)», "
+               "pag. 11-6), y ahi es el lado conservador: un Wo menor da un "
+               "yc mayor y un estanque mas largo y mas hondo. En el TUBO, Wo "
+               "= n·D es solo la longitud de cresta de la condicion 3: el yc "
+               "sale de la Ec. (11.6) sobre la seccion circular, por barril, "
+               "porque q = Q/(n·D) daria un yc menor y un estanque mas corto, "
+               "del lado inseguro (decision Fable, VE-5 lote m6)."),
         en_contra=("la fuente diseña con un vertedero rectangular; un tubo no "
                    "tiene ancho de fondo y su vertedero es una transicion "
                    "que el proyecto no dibuja",
@@ -16462,6 +16469,48 @@ HEC14_6_3_PENDIENTE = _cita(
           "el dominio de `M3.resalto_hidraulico` "
           "(`HEC14_RESALTO_PENDIENTE_HORIZONTAL_MAX`); por encima, la fuente "
           "remite a Bradley (1961) y a ensayos de modelo."),
+)
+
+HEC14_11_EC_11_5 = _cita(
+    id="HEC14.11.1.3#EC_11_5",
+    fuente_id="HEC14",
+    numeral="11.1.3",
+    titulo_numeral="11.1.3 Straight Drop Structure Design Features",
+    pagina_impresa="11-6",
+    pagina_pdf=227,
+    pagina_pdf_titulo=226,
+    texto_literal=Verbatim(
+        texto=("Critical depth in a rectangular channel or culvert is "
+               "calculated from the unit discharge (discharge divided by "
+               "culvert/chute width, B)."),
+        pagina_pdf=227),
+    caracter=Caracter.DEFINICION,
+    metodo=AMBOS,
+    sesion=VE4G,
+    nota=("La ecuacion, por imagen: «yc = (q²/g)^(1/3) (11.5)», q = Q/B. Solo "
+          "para la seccion rectangular: el marco de la caida recta."),
+)
+
+HEC14_11_EC_11_6 = _cita(
+    id="HEC14.11.1.3#EC_11_6",
+    fuente_id="HEC14",
+    numeral="11.1.3",
+    titulo_numeral="11.1.3 Straight Drop Structure Design Features",
+    pagina_impresa="11-6",
+    pagina_pdf=227,
+    pagina_pdf_titulo=226,
+    texto_literal=Verbatim(
+        texto=("Critical flow for an open channel of any shape will occur "
+               "when:"),
+        pagina_pdf=227),
+    caracter=Caracter.DEFINICION,
+    metodo=AMBOS,
+    sesion=VE4G,
+    nota=("La ecuacion, por imagen: «Q²Tc/(gAc³) = 1 (11.6)», con Tc el "
+          "ancho de la lamina y Ac el area en condicion critica. Es la que da "
+          "el yc del TUBO en la caida recta (decision Fable, VE-5 lote m6): el "
+          "y_critico por barril que M4 resuelve con la misma condicion (Sec. "
+          "4.2.1 de la hoja de ruta)."),
 )
 
 CITAS: Dict[str, Cita] = {c.id: c for c in _TODAS}

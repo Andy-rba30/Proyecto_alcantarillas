@@ -8490,16 +8490,23 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   (llegada supercrítica, lámina no aireada, Wo ≤ 1.5·yc, |ho| ≥ 15 ft, |ho|/yc fuera de
   1–15) salen como aviso. El límite de 15 ft se toma como 4.572 m, no 4.6: la cifra en las
   unidades de los ensayos, como los 60 in del apron (`HEC14_CAIDA_HO_MAX_M`).
-- **Abierto:** (1) **el ancho del vertedero Wo** en la salida de una alcantarilla: el
-  proyecto toma el de los barriles (n·B o n·D, sin tabiques), lado conservador, declarado
-  como `Interpretacion` de la cita `HEC14.11.1.3#ANCHO_APROXIMACION`. **Decisión pendiente
-  de Fable**: no hubo subagente en la sesión; se tomó el lado conservador. (2) La caja de
+- **Decisión Fable (Wo y yc):** la longitud de cresta Wo es el ancho de los barriles en la
+  salida (n·B o n·D, sin tabiques). En el **marco** el yc sale de la Ec. (11.5) con q =
+  Q/(n·B), que es lo que la fuente escribe para la sección rectangular (pág. 11-6, cita
+  `HEC14.11.1.3#EC_11_5`), y ahí n·B es el lado conservador. En el **tubo** n·D es solo la
+  longitud de cresta de la condición 3: el yc es el de la Ec. (11.6) sobre la sección
+  circular, por barril (el `y_critico` de M4, resuelto con Q_celda; cita
+  `HEC14.11.1.3#EC_11_6`), porque q = Q/(n·D) da un yc menor y un estanque más corto, del
+  lado inseguro (Q = 1 m³/s, D = 1.2 m: 0.414 contra 0.542 m). Queda como `Interpretacion`
+  declarada de la cita `HEC14.11.1.3#ANCHO_APROXIMACION`, no como [A]; el paso 6.15 dice qué
+  ecuación dio el yc.
+- **Abierto:** (1) con varios barriles, el ancho real de la cresta incluye los tabiques. (2) La caja de
   entrada (Sec. 11.2) no se implementa: es para la entrada, no para la salida colgada. (3)
   La rejilla de la llegada supercrítica (núm. 11.1.2) no se implementa. (4) La socavación y
   el desplante del cabezal siguen saliendo de la hoya o del dato declarado; la estructura de
   caída no los sustituye. Los Caps. 7–9 son fuera de alcance (D).
-- **Qué haría falta:** que el dueño confirme la lectura de Wo; con varios barriles, el
-  ancho real de la cresta con los tabiques.
+- **Qué haría falta:** con varios barriles, el ancho real de la cresta con los tabiques
+  (el plano de la salida).
 - **Dónde vive:** `src/modulos/M6_proteccion.py::caida_recta_hec14`
 
 ## VE5-M6-04 · Zampeado, uña y dentellón (ítem 30) y filtro granular (ítem 31) siguen pendientes [C]

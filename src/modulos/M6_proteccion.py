@@ -3238,7 +3238,8 @@ def _longitud_de_caida(cota: float, yc: float) -> float:
 
 def caida_recta_hec14(*, Q: float, ancho_vertedero: float, desnivel_h: float,
                       tirante_aguas_abajo: float,
-                      aproximacion_supercritica: bool = False
+                      aproximacion_supercritica: bool = False,
+                      yc_seccion: Optional[float] = None
                       ) -> EstructuraDeCaida:
     """
     Estructura de caida recta con estanque de bloques y umbral, HEC-14 num.
@@ -3265,6 +3266,16 @@ def caida_recta_hec14(*, Q: float, ancho_vertedero: float, desnivel_h: float,
     una alcantarilla, la solera de salida sobre el lecho) y
     `tirante_aguas_abajo` el tirante normal del receptor, yo.
 
+    EL yc, por la ecuacion que la fuente da para la seccion (decision Fable,
+    VE-5 lote m6): en un vertedero o un conducto RECTANGULAR, la Ec. (11.5)
+    con q = Q/Wo («Critical depth in a rectangular channel or culvert is
+    calculated from the unit discharge»); en una seccion de otra forma, la
+    Ec. (11.6), Q^2·Tc/(g·Ac^3) = 1, que el llamador resuelve sobre su
+    seccion y pasa en `yc_seccion` (en el tubo, el y_critico POR BARRIL que
+    M4 publica). Con q = Q/(n·D) el yc del tubo sale MENOR que el de la Ec.
+    (11.6) y el estanque, mas corto: lado inseguro. Wo sigue siendo la
+    longitud de cresta de la condicion 3.
+
     LIMITES (`MetodoNoEvaluableError`, rotulo de HEC-14), en este orden: la
     llegada supercritica (paso 2; la rejilla del num. 11.1.2 no se
     implementa), el receptor que no queda bajo la cresta (sin lamina
@@ -3287,7 +3298,16 @@ def caida_recta_hec14(*, Q: float, ancho_vertedero: float, desnivel_h: float,
                    "verificar condiciones subcriticas (paso 2)",
             rotulo=MOTIVO_METODO_NO_EVALUABLE_HEC14)
     q = Q / ancho_vertedero
-    yc = math.cbrt(q * q / G)
+    if yc_seccion is None:
+        yc = math.cbrt(q * q / G)
+        origen_yc = (f"Ec. (11.5), seccion rectangular: q = Q/Wo = {q:.3f} "
+                     "m2/s")
+    else:
+        _exigir_positivo("yc", yc_seccion, "tirante critico de la seccion, m")
+        yc = yc_seccion
+        origen_yc = ("Ec. (11.6), Q^2·Tc/(g·Ac^3) = 1 sobre la seccion del "
+                     "conducto (no rectangular), por barril: el y_critico de "
+                     "M4")
     y3 = HEC14_CAIDA_Y3_EN_YC * yc
     h2 = -(desnivel_h - tirante_aguas_abajo)
     if not h2 < -TOL_UMBRAL_NORMATIVO:
@@ -3355,10 +3375,14 @@ def caida_recta_hec14(*, Q: float, ancho_vertedero: float, desnivel_h: float,
         codigo="6.15",
         que="Cotas de la estructura de caida recta de HEC-14 (desde la "
             "cresta, negativas hacia abajo)",
-        formula="yc = (q^2/g)^(1/3);  y3 = 2.15 yc;  h2 = -(h - yo);  "
-                "ho = h2 - y3",
+        formula=("yc = (q^2/g)^(1/3)" if yc_seccion is None else
+                 "Q^2 Tc / (g Ac^3) = 1")
+        + ";  y3 = 2.15 yc;  h2 = -(h - yo);  ho = h2 - y3",
         formula_cita_id="HEC14.11.1.3#Y3",
-        citas_textuales=("HEC14.11.1.3#Y3", "HEC14.11.1.3#LIMITES",
+        citas_textuales=("HEC14.11.1.3#Y3",
+                         "HEC14.11.1.3#EC_11_5" if yc_seccion is None
+                         else "HEC14.11.1.3#EC_11_6",
+                         "HEC14.11.1.3#LIMITES",
                          "HEC14.11.1.3#SALIDA_COLGADA",
                          "HEC14.11.1.3#SUBCRITICO",
                          "HEC14.11.1.3#ANCHO_APROXIMACION"),
@@ -3375,8 +3399,8 @@ def caida_recta_hec14(*, Q: float, ancho_vertedero: float, desnivel_h: float,
             Magnitud("yo", tirante_aguas_abajo, "m",
                      "tirante del receptor (Sec. 1.3)",
                      cifras=CIFRAS_MAGNITUD),
-            Magnitud("yc", yc, "m", f"tirante critico sobre la cresta, q = "
-                     f"{q:.3f} m2/s", cifras=CIFRAS_MAGNITUD),
+            Magnitud("yc", yc, "m", f"tirante critico sobre la cresta, "
+                     f"{origen_yc}", cifras=CIFRAS_MAGNITUD),
             Magnitud("y3", y3, "m", "agua sobre el piso del estanque",
                      cifras=CIFRAS_MAGNITUD),
             Magnitud("h2", h2, "m", "nivel del receptor bajo la cresta",
@@ -3479,11 +3503,17 @@ def _caida_de_la_fase(*, resultado: ResultadoHidraulico, seccion: Seccion,
         seccion.B if isinstance(seccion, SeccionRectangular) else seccion.D)
     llegada_supercritica = bool(flujo_supercritico(resultado.y_normal,
                                                    resultado.y_critico))
+    # Decision Fable (VE-5, lote m6): el marco con la Ec. (11.5) sobre n·B;
+    # el tubo, con el yc de la Ec. (11.6) POR BARRIL, que es el y_critico que
+    # M4 publica (lo resuelve con Q_celda sobre la seccion circular).
+    yc_seccion = (None if isinstance(seccion, SeccionRectangular)
+                  else resultado.y_critico)
     try:
         caida = caida_recta_hec14(
             Q=resultado.Q, ancho_vertedero=ancho, desnivel_h=altura_caida_m,
             tirante_aguas_abajo=resultado.TW_m,
-            aproximacion_supercritica=llegada_supercritica)
+            aproximacion_supercritica=llegada_supercritica,
+            yc_seccion=yc_seccion)
     except MetodoNoEvaluableError as error:
         avisos.append(
             f"{_CAIDA}: {por_que}, y la estructura NO se evaluo -- "

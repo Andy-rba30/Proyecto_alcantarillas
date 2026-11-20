@@ -224,11 +224,13 @@ def test_la_caida_por_pendiente_maxima_se_dimensiona(corrida_base):
 def test_la_caida_mas_alla_de_la_tabla_5_2_se_dimensiona(corrida_base):
     """
     Un tubo de 0.45 m con 1.83 m de caida: Hd = 4.07 > 4 (Tabla 5.2). Con Q =
-    0.2 m3/s y el vertedero del ancho del tubo: q = 0.444, yc = 0.272 m,
-    1.5·yc = 0.41 m < 0.45 m.
+    0.12 m3/s el yc de la Ec. (11.6) sobre el circulo es 0.242 m y 1.5·yc =
+    0.36 m < 0.45 m, la longitud de cresta (condicion 3).
     """
-    r, _ = _resultado(corrida_base, Q=0.2, Q_celda_m3s=0.2, TW_m=0.30,
-                      y_normal=0.35, y_critico=0.30)
+    from src.modulos.M4_control import tirante_critico
+    yc = tirante_critico(0.12, SeccionCircular(0.45)).y_c
+    r, _ = _resultado(corrida_base, Q=0.12, Q_celda_m3s=0.12, TW_m=0.30,
+                      y_normal=0.35, y_critico=yc)
     s = M6.socavacion_salida(resultado=r, seccion=SeccionCircular(0.45),
                              altura_caida_m=1.83)
     assert s.caida is not None
@@ -246,3 +248,45 @@ def test_la_caida_con_el_barril_supercritico_avisa_y_no_dimensiona(
     assert s.caida is None
     assert any("caida recta" in a and "NO se evaluo" in a
                and "subcritic" in a for a in s.avisos)
+
+
+# ===========================================================================
+# 4 · El yc del TUBO: Ec. (11.6) y no q = Q/(n·D) (decision Fable)
+# ===========================================================================
+
+def test_el_tubo_toma_el_yc_de_la_ec_11_6_y_no_el_rectangular(corrida_base):
+    """
+    Tubo de 1.2 m, Q = 1 m3/s, 1.83 m de caida por pendiente maxima, TW =
+    0.30 m. Con q = Q/D: yc = (0.833^2/9.81)^(1/3) = 0.414 m. Por la Ec.
+    (11.6) sobre el circulo: 0.542 m (M4.tirante_critico, por barril). El
+    estanque sale con el mayor: mas largo, lado seguro.
+    """
+    from src.modulos.M4_control import tirante_critico
+    yc_circ = tirante_critico(1.0, SeccionCircular(1.2)).y_c
+    assert yc_circ == pytest.approx(0.542, rel=REL_EJEMPLO)
+    r, _ = _resultado(corrida_base, Q=1.0, Q_celda_m3s=1.0, TW_m=0.30,
+                      y_normal=0.70, y_critico=yc_circ)
+    s = M6.socavacion_salida(resultado=r, seccion=SeccionCircular(1.2),
+                             altura_caida_m=1.83,
+                             pendiente_maxima_gobierna=True)
+    assert s.caida is not None
+    assert s.caida.yc == pytest.approx(yc_circ, rel=REL_FORMULA)
+    rect = M6.caida_recta_hec14(Q=1.0, ancho_vertedero=1.2, desnivel_h=1.83,
+                                tirante_aguas_abajo=0.30)
+    assert rect.yc == pytest.approx(0.414, rel=REL_EJEMPLO)
+    assert s.caida.longitud > rect.longitud
+    paso = next(x for x in s.pasos if x.codigo == "6.15")
+    assert "HEC14.11.1.3#EC_11_6" in paso.citas_textuales
+    assert "Ec. (11.6)" in next(m.procedencia for m in paso.sustitucion
+                                if m.simbolo == "yc")
+
+
+def test_el_marco_sigue_con_la_ec_11_5(corrida_base):
+    r, _ = _resultado(corrida_base, Q=7.1, Q_celda_m3s=7.1, TW_m=1.025,
+                      y_normal=1.3, y_critico=0.81)
+    s = M6.socavacion_salida(
+        resultado=r, seccion=SeccionRectangular(B=3.10, H=1.5),
+        altura_caida_m=1.83, pendiente_maxima_gobierna=True)
+    paso = next(x for x in s.pasos if x.codigo == "6.15")
+    assert "HEC14.11.1.3#EC_11_5" in paso.citas_textuales
+    assert s.caida.yc == pytest.approx(0.812, rel=REL_EJEMPLO)
