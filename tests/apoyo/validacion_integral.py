@@ -1262,6 +1262,13 @@ CONDICIONALES_NO_MEDIDAS: Dict[str, str] = {
         "(VE-3.16) y el freatico bajo la zapata no se lee. El juego lo "
         "declara (20 kN/m³ de prueba) para la variante "
         "`sin_drenaje_declarado`"),
+    # --- VE-4e (ficha VE3-21) ---
+    "nivel_agua_relleno_sin_drenaje_bajo_sismo": (
+        "solo con `drenaje_trasdos` = 'sin_drenaje' declarado: detiene la "
+        "condicion sismica de los cabezales (el nivel medio del agua en el "
+        "tiempo de un relleno sin drenar, C11.6.5.3, que la fuente no da). "
+        "Las variantes `sin_drenaje_declarado` y "
+        "`sin_drenaje_sismo_en_el_freatico` declaran sus dos opciones"),
 }
 
 

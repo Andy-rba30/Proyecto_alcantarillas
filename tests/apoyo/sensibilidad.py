@@ -412,6 +412,12 @@ NO_BARRIBLES: Dict[str, str] = {
     # --- VE-2 (c2) --- solo lo lee V7 con 'nivel_agua_diseno_v7' =
     # 'nf_del_punto'; su barrido es el de ese criterio, que si se barre.
     "margen_estacional_nf_v7_m": _R_SIN_VALOR + "; " + _R_PROSA,
+    # --- VE-4e --- solo lo lee el sismo del cabezal con 'drenaje_trasdos' =
+    # 'sin_drenaje', que el juego no declara (lo miden las dos variantes
+    # sin drenaje de `docs/validacion_integral.md`).
+    "nivel_agua_relleno_sin_drenaje_bajo_sismo": (
+        _R_SIN_VALOR + "; condicional que el juego no dispara (trasdós sin "
+        "drenaje declarado)"),
 }
 
 

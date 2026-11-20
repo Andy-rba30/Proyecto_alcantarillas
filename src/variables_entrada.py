@@ -1509,6 +1509,9 @@ _META_CRITERIOS: Dict[str, _Meta] = {
     "drenaje_trasdos": _Meta(unidad="-"),
     # --- VE-3.14 --- el agua del relleno bajo sismo (la consume M9, Fase 9).
     "agua_del_relleno_bajo_sismo": _Meta(unidad="-"),
+    # --- VE-4e --- el nivel medio del agua de un relleno sin drenar bajo
+    # sismo (la consume M9, Fase 9, solo con 'drenaje_trasdos' = sin_drenaje).
+    "nivel_agua_relleno_sin_drenaje_bajo_sismo": _Meta(unidad="-"),
     "momento_talon_cabezal": _Meta(unidad="-"),
     "carga_pantalla_cabezal": _Meta(unidad="-"),
     "distribucion_incremento_sismico": _Meta(unidad="-"),

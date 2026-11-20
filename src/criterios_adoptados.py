@@ -12431,6 +12431,73 @@ CRITERIOS: Dict[str, Criterio] = {
             dominio="una de las dos opciones de la ventana",
         ),
     ),
+
+    "nivel_agua_relleno_sin_drenaje_bajo_sismo": Criterio(
+        # --- VE-4e (ficha VE3-21) --- Hasta VE-4e, con 'drenaje_trasdos' =
+        # «sin_drenaje» el sismo del cabezal iba con el relleno lleno hasta
+        # su superficie, el agua de la estatica. AASHTO C11.6.5.3 recomienda
+        # para el sismo el nivel MEDIO del agua en el tiempo y no dice cual
+        # es en un relleno que no drena: es un vacio de la fuente, y la regla
+        # de CLAUDE.md para un vacio es esta ficha SIN valor de archivo (se
+        # declara o la condicion sismica se detiene). Las dos opciones son
+        # niveles que el ensamble ya calcula; ninguna es un numero nuevo.
+        # NIVEL: el de la Fase 9 (expediente), su unico consumidor
+        # (`M9.cargas_del_cabezal`, condicion sismica con «sin_drenaje»). Con
+        # «drenado» de archivo no lo lee ninguna corrida
+        # (`tests/test_ve4e_agua_por_condicion.py`).
+        valor=None,
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        #   superficie_del_relleno  el relleno sin drenar queda lleno en el
+        #       tiempo: su nivel medio es su superficie contra el trasdos, el
+        #       agua de la estatica (y el incremento sismico con el peso
+        #       total bajo el agua, 'agua_del_relleno_bajo_sismo').
+        #   freatico_natural        el relleno se llena solo por episodios
+        #       (lluvia, avenida) y en el tiempo vuelve al freatico natural
+        #       del punto (columna NF_profundidad_m): el agua del relleno
+        #       drenado.
+        sensibilidad=("superficie_del_relleno", "freatico_natural"),
+        concepto="Hasta que nivel se cuenta el agua del relleno del trasdos "
+                 "en la condicion sismica cuando el trasdos no tiene drenaje",
+        justificacion="Decide el agua del relleno en la condicion sismica "
+                      "del cabezal cuando el trasdos se declara sin drenaje, "
+                      "y con ella el empuje del agua, la subpresion, el peso "
+                      "del relleno sobre el talon y el incremento sismico. "
+                      "En la condicion estatica el agua llena el relleno "
+                      "retenido hasta su superficie (cita "
+                      "AASHTO_LRFD_9.11.6.6#DRENAJE, con la lectura del "
+                      "proyecto en su interpretacion); para el sismo el "
+                      "comentario de la fuente recomienda el nivel medio del "
+                      "agua en el tiempo (cita "
+                      "AASHTO_LRFD_9.C11.6.5.3#NIVEL_MEDIO) y no dice cual "
+                      "es en un relleno que no drena. Las dos lecturas "
+                      "posibles son las de la ventana: la superficie del "
+                      "relleno, si el relleno queda lleno en el tiempo (es "
+                      "la cota superior y repite el agua de la estatica), o "
+                      "el freatico natural del punto, si se llena solo por "
+                      "episodios y el agua sale por el terreno de fundacion "
+                      "(es el agua del relleno drenado). La eleccion la "
+                      "sostiene el estudio de suelos: la permeabilidad del "
+                      "relleno y de la fundacion, y la permanencia del agua "
+                      "en el trasdos. No tiene valor de archivo porque la "
+                      "fuente no lo fija; sin declararlo la condicion "
+                      "sismica de un trasdos sin drenaje se detiene. Con el "
+                      "trasdos drenado no se lee",
+        fuente="AASHTO LRFD 9a ed., C11.6.5.3, pag. impresa 11-31 (PDF 1500; "
+               "cita AASHTO_LRFD_9.C11.6.5.3#NIVEL_MEDIO), y 11.6.6 "
+               "'Drainage', pag. impresa 11-35 (PDF 1504; cita "
+               "AASHTO_LRFD_9.11.6.6#DRENAJE)",
+        reemplazado_por="Nivel medio del agua en el relleno del trasdos del "
+                        "estudio de suelos (permeabilidad del relleno y de la "
+                        "fundacion, lecturas del freatico)",
+        resolucion=Libre(
+            que_lo_fija="el proyectista, con el estudio de suelos: si el "
+                        "relleno sin drenar queda lleno en el tiempo o se "
+                        "vacia por el terreno de fundacion",
+            dominio="una de las dos opciones de la ventana",
+        ),
+    ),
 }
 
 

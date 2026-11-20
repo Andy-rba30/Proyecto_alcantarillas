@@ -8337,14 +8337,38 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   medio queda cubierta sin tocar el ensamble. El juego de la validación integral ya no declara
   el drenaje, y su corrida titular no lee el peso específico saturado del relleno, que pasa a
   las condicionales no medidas del contrato de entradas (§7).
-- **Qué se difirió:** con «sin_drenaje» declarado el sismo sigue con el relleno lleno hasta su
-  superficie, no con el nivel medio.
-- **Por qué:** separar el agua estática de la sísmica en `M9.cargas_del_cabezal` exigiría
-  duplicar las cargas WA (empuje del agua y subpresión) por condición, y el caso declarado es
-  el excepcional de la norma.
+- **Cerrado (VE-4e, 2026-11-20), lo que se había diferido:** con «sin_drenaje» declarado el
+  sismo seguía con el relleno lleno hasta su superficie y no con el nivel medio. Hoy el agua del
+  relleno es POR CONDICIÓN en `M9.cargas_del_cabezal`: la estática sigue llenando el relleno
+  retenido hasta su superficie (AASHTO 11.6.6, la hidrostática plena; cita
+  `AASHTO_LRFD_9.11.6.6#DRENAJE`), y la sísmica va con el nivel medio del agua en el tiempo
+  (C11.6.5.3, pág. impresa 11-31, PDF 1500, «The time-averaged mean groundwater elevation
+  should be used when assessing groundwater effects»: comentario, «should»; cita nueva
+  `AASHTO_LRFD_9.C11.6.5.3#NIVEL_MEDIO`, verificada contra el PDF). Todo lo que depende del
+  agua sale del nivel de SU condición: el empuje del agua y la subpresión (WA), el suelo
+  sumergido del empuje estático que la sísmica arrastra, el peso del relleno sobre el talón y
+  su inercia, y el incremento sísmico con el peso total bajo el agua de VE-3.14 (que sólo
+  aplica si el agua del sismo moja el plano de empuje). No hubo que duplicar las cargas: el
+  ensamble ya llamaba a `cargas_del_cabezal` una vez por condición, también el armado.
+- **Lo que la fuente no dice, y es [A] sin valor de archivo:** cuál es el nivel medio de un
+  relleno que NO drena. El criterio `nivel_agua_relleno_sin_drenaje_bajo_sismo` [A] lo
+  declara el proyectista con el EMS, entre `superficie_del_relleno` (el relleno queda lleno en
+  el tiempo: repite el agua de la estática y es lo que el programa hacía hasta VE-4e) y
+  `freatico_natural` (se llena sólo por episodios: el agua del relleno drenado). Sin
+  declararlo la condición sísmica del cabezal se detiene (`CriterioPendienteError`, que viaja
+  como `Bloqueo` del punto) y la estática no. Con `drenado` —el valor de archivo— el criterio
+  no se lee y ningún número cambia (`tests/test_ve4e_agua_por_condicion.py`, sobre el muro de
+  tanteo de T-7b y sobre las dos bases de la validación integral). La variante
+  `sin_drenaje_declarado` de la validación declara `superficie_del_relleno` (sus cifras no
+  cambian) y la nueva `sin_drenaje_sismo_en_el_freatico`, `freatico_natural`.
 - **Cerrado (dueño, 2026-11-20), la hoja de ruta:** su Fase 9 («El agua una sola vez») decía
   `sin_drenaje` de archivo; hoy dice `drenado`, con su nota «Corregido (`VE3-21`, dueño,
-  2026-11-20)» verificada contra AASHTO 11.6.6 y C11.6.5.3.
-- **Qué haría falta:** cargas WA por condición (estática y sísmica) en el ensamble, y la lectura
-  del nivel medio de un relleno sin drenar bajo sismo verificada contra C11.6.5.3.
+  2026-11-20)» verificada contra AASHTO 11.6.6 y C11.6.5.3. **Pendiente contra la hoja de ruta
+  desde VE-4e:** esa nota dice todavía que, declarado `sin_drenaje`, «el sismo se evalúa con el
+  relleno lleno hasta su superficie y no con el nivel medio (diferido en la ficha VE3-21)». El
+  código ya no lo hace; mientras la nota no se corrija, quien lea sólo la hoja de ruta creerá
+  que el sismo de un trasdós sin drenaje va siempre con el relleno lleno.
+- **Qué haría falta todavía:** el nivel medio como COTA declarada por punto (un dato del EMS
+  entre el freático natural y la superficie del relleno), si una obra la tuviera medida; hoy la
+  ventana sólo admite los dos extremos, que el ensamble ya calcula.
 - **Dónde vive:** `src/modulos/M9_cabezal.py::cargas_del_cabezal`

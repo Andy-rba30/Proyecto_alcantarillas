@@ -15364,4 +15364,60 @@ AASHTO_C11_6_5_3_AGUA_ABIERTO = _cita(
           "por eso el programa se detiene en este caso en vez de inventarla."),
 )
 
+
+# ===========================================================================
+# --- VE-4e (ficha VE3-21) --- El nivel del agua del relleno bajo sismo. La
+# frase la nombraba la nota de #AGUA_TOTAL y ningun calculo la aplicaba: con
+# el trasdos sin drenaje el sismo iba con el relleno lleno hasta su
+# superficie. Leida en la capa de texto de la pagina.
+# ===========================================================================
+FECHA_VE4_E = "2026-11-20"
+POR_VE4_E = "validacion/VE-4e · lectura directa de la pagina por la sesion"
+VE4_E = (FECHA_VE4_E, POR_VE4_E)
+
+AASHTO_C11_6_5_3_NIVEL_MEDIO = _cita(
+    id="AASHTO_LRFD_9.C11.6.5.3#NIVEL_MEDIO",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="C11.6.5.3",
+    titulo_numeral="Calculation of Seismic Active Earth Pressures",
+    pagina_impresa="11-31",
+    pagina_pdf=1500,
+    pagina_pdf_titulo=1498,
+    texto_literal=Verbatim(
+        texto=("The time-averaged mean groundwater elevation should be used "
+               "when assessing groundwater effects."),
+        pagina_pdf=1500),
+    caracter=Caracter.RECOMENDACION,
+    sesion=VE4_E,
+    nota=("La frase anterior dice de que agua habla: «The groundwater within "
+          "the active wedge or submerged conditions (e.g., as in the case of "
+          "a retaining structure in a harbor or next to a lake or river) can "
+          "influence the magnitude of the seismic active earth pressure». "
+          "Es comentario y recomienda («should»). No dice cual es el nivel "
+          "medio de un relleno que no drena, y la regla estatica de 11.6.6 "
+          "(cita AASHTO_LRFD_9.11.6.6#DRENAJE) no lo trae: la hidrostatica "
+          "plena es de la condicion estatica."),
+    interpretacion=Interpretacion(
+        texto=("El proyecto aplica el nivel medio SOLO a la condicion "
+               "sismica: la estatica sigue con el agua que fija 11.6.6. Con "
+               "el trasdos drenado el nivel medio es el freatico natural del "
+               "punto, el mismo de la estatica. Con el trasdos sin drenaje la "
+               "fuente no da el nivel medio y el proyecto no lo elige: lo "
+               "declara el proyectista entre la superficie del relleno (el "
+               "relleno queda lleno en el tiempo) y el freatico natural (se "
+               "llena solo por episodios), criterio "
+               "'nivel_agua_relleno_sin_drenaje_bajo_sismo' [A], y sin "
+               "declararlo la condicion sismica se detiene."),
+        en_contra=("la frase es un «should» de comentario, no una exigencia: "
+                   "calcular el sismo con el relleno lleno no la contradice "
+                   "como mandato, solo como recomendacion",
+                   "un relleno que no drena puede quedar lleno mucho tiempo; "
+                   "tomar el freatico natural como su nivel medio supone que "
+                   "el agua se va por el terreno de fundacion"),
+        a_favor=("combinar el relleno lleno con el sismo de diseño suma dos "
+                 "eventos raros que la fuente separa",
+                 "la superficie del relleno queda en la ventana: quien no "
+                 "pueda sostener que el relleno se vacia la declara")),
+)
+
 CITAS: Dict[str, Cita] = {c.id: c for c in _TODAS}

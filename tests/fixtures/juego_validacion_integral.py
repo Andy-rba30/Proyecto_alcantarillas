@@ -456,10 +456,28 @@ VARIANTES: Dict[str, Tuple[str, Tuple[Tuple[Any, ...], ...]]] = {
     # valor de archivo; desde que el archivo es 'drenado' la variante
     # DECLARA 'sin_drenaje' (el caso «if drainage cannot be provided» de
     # AASHTO 11.6.6), con el gamma saturado de prueba del juego.
+    #
+    # VE-4e (ficha VE3-21): sin drenaje, el agua del sismo es la del nivel
+    # medio en el tiempo (C11.6.5.3), que se declara en
+    # 'nivel_agua_relleno_sin_drenaje_bajo_sismo' [A] (sin valor de archivo:
+    # sin el, la condicion sismica se detiene). Esta variante declara la
+    # superficie del relleno --el relleno queda lleno en el tiempo--, que es
+    # lo que el programa hacia con 'sin_drenaje' hasta VE-4e: sus cifras no
+    # cambian. La de abajo declara el freatico natural.
     "sin_drenaje_declarado": (
         "Trasdos sin drenaje declarado (`drenaje_trasdos` = 'sin_drenaje': "
         "el drenaje no puede darse y el relleno se llena de agua)",
-        (("declarar", "drenaje_trasdos", "sin_drenaje"),)),
+        (("declarar", "drenaje_trasdos", "sin_drenaje"),
+         ("declarar", "nivel_agua_relleno_sin_drenaje_bajo_sismo",
+          "superficie_del_relleno"))),
+    "sin_drenaje_sismo_en_el_freatico": (
+        "Trasdos sin drenaje declarado y, bajo sismo, el nivel medio del agua "
+        "en el freatico natural (`nivel_agua_relleno_sin_drenaje_bajo_sismo` "
+        "= 'freatico_natural', C11.6.5.3): la estatica sigue con el relleno "
+        "lleno",
+        (("declarar", "drenaje_trasdos", "sin_drenaje"),
+         ("declarar", "nivel_agua_relleno_sin_drenaje_bajo_sismo",
+          "freatico_natural"))),
     # --- VE-2 (bloque 1, decision (b) de VE1-02) --- LA VARIANTE VACIA
     # TAMBIEN EL CAUDAL DEL EVENTO EXTREMO de los tres puntos. El del juego
     # es el de su Q DECLARADO (1.11 veces el de diseño, de T-7b), y con el

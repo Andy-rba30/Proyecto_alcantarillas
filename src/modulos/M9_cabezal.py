@@ -5916,6 +5916,14 @@ CRITERIO_DRENAJE = "drenaje_trasdos"
 CRITERIO_AGUA_SISMO = "agua_del_relleno_bajo_sismo"
 AGUA_SE_MUEVE_CON_EL_SUELO = "se_mueve_con_el_suelo"
 AGUA_RELLENO_MUY_ABIERTO = "relleno_muy_abierto"
+# --- VE-4e (ficha VE3-21) --- el nivel MEDIO del agua de un relleno sin
+# drenar bajo sismo (C11.6.5.3): la fuente no lo da y lo declara el
+# proyectista; sin declararlo, la condicion sismica se detiene.
+CRITERIO_NIVEL_AGUA_SISMO = "nivel_agua_relleno_sin_drenaje_bajo_sismo"
+NIVEL_MEDIO_SUPERFICIE = "superficie_del_relleno"
+NIVEL_MEDIO_FREATICO = "freatico_natural"
+NIVELES_MEDIOS_SIN_DRENAJE = (NIVEL_MEDIO_SUPERFICIE, NIVEL_MEDIO_FREATICO)
+CITA_NIVEL_MEDIO = "AASHTO_LRFD_9.C11.6.5.3#NIVEL_MEDIO"
 # --- VE-3.14, opciones 9, 10 y 13 --- (ver sus fichas en criterios_adoptados)
 CRITERIO_MOMENTO_TALON = "momento_talon_cabezal"
 TALON_PESO_ENTERO = "peso_entero"
@@ -6635,7 +6643,17 @@ def cargas_del_cabezal(entorno: EntornoDelCabezal,
       WA  empuje hidrostatico del agua del relleno sobre el plano de empuje
           y subpresion bajo la zapata, lineal entre el nivel de delante (el
           freatico natural) y el del relleno. Hasta donde sube el agua del
-          relleno lo declara 'drenaje_trasdos'.
+          relleno lo declara 'drenaje_trasdos', y es POR CONDICION (VE-4e,
+          ficha VE3-21): con el trasdos drenado es el freatico natural en
+          las dos; sin drenaje, la estatica llena el relleno retenido hasta
+          su superficie (AASHTO 11.6.6) y la sismica va con el nivel MEDIO
+          del agua en el tiempo (C11.6.5.3, «should»), que la fuente no da
+          para un relleno sin drenar y declara
+          'nivel_agua_relleno_sin_drenaje_bajo_sismo' [A] (sin valor de
+          archivo: sin el, la sismica se detiene). Todo lo que depende del
+          agua -- el suelo sumergido del empuje, el peso del relleno sobre el
+          talon, la subpresion, el incremento sismico -- sale del nivel de
+          SU condicion.
       EQ  (solo sismica) incremento sismico P_AE - P_A (cuña de tanteo
           pseudoestatica con k_h y k_v, o Mononobe-Okabe), con sus
           dos componentes, aplicado a la fraccion de h de
@@ -6707,8 +6725,20 @@ def cargas_del_cabezal(entorno: EntornoDelCabezal,
     # H6; la FASE A la subia hasta el terreno sobre el extremo del talon, por
     # encima de la coronacion). Con DRENAJE declarado queda en el freatico
     # natural. `HIPOTESIS_EMPUJE_BAJO_NF` lo dice con las mismas palabras.
+    # --- VE-4e (ficha VE3-21) --- POR CONDICION: el relleno lleno es la
+    # regla ESTATICA de 11.6.6; bajo sismo C11.6.5.3 recomienda el nivel
+    # medio en el tiempo, que para un relleno sin drenar declara
+    # 'nivel_agua_relleno_sin_drenaje_bajo_sismo' [A] (CriterioPendienteError
+    # sin declararlo). Con el trasdos drenado el criterio no se lee: el nivel
+    # medio es el freatico natural, el mismo de la estatica.
+    nivel_agua_sismo = None
     if drenaje == DRENAJE_SIN:
         h_w = max(min(z_rel, h), h_w_natural)
+        if condicion is CondicionAnalisis.SISMICO:
+            nivel_agua_sismo = _eleccion(CRITERIO_NIVEL_AGUA_SISMO,
+                                         NIVELES_MEDIOS_SIN_DRENAJE)
+            if nivel_agua_sismo == NIVEL_MEDIO_FREATICO:
+                h_w = h_w_natural
     else:
         h_w = h_w_natural
     gamma_sat = None
@@ -6856,6 +6886,7 @@ def cargas_del_cabezal(entorno: EntornoDelCabezal,
     datos = {"relleno": relleno, "angulos": ang, "K_A": K_A, "P_A": P_A,
              "z_A": z_A, "h": h, "h_eq": h_eq, "h_w": h_w,
              "h_w_natural": h_w_natural, "drenaje": drenaje, "gamma": gamma,
+             "nivel_agua_sismo": nivel_agua_sismo,
              "gamma_saturado": gamma_sat, "gamma_c": gamma_c, "D_f": D_f,
              "cota_freatico": cota_nf, "W_w": W_pant + W_zap, "W_s": W_s, "x_plano": x_plano,
              "x_trasdos": x_trasdos, "punta": punta, "talon": talon,
@@ -8182,6 +8213,39 @@ def _solicitaciones_de_la_zapata(marca, combo, f, datos, por_codigo, e_z,
 # El ensamble de UN cabezal en UNA condicion
 # ---------------------------------------------------------------------------
 
+def _agua_del_sismo_sin_drenaje(datos: dict) -> tuple:
+    """
+    --- VE-4e (ficha VE3-21) --- La altura de agua de la condicion sismica
+    cuando el trasdos se declara SIN drenaje, con la eleccion de la que sale.
+    Con el trasdos drenado no se imprime: el agua del sismo es la del
+    freatico natural, la misma del paso del agua de la estatica.
+    """
+    nivel = datos["nivel_agua_sismo"]
+    if nivel is None:
+        return ()
+    return (_m("h_w", datos["h_w"], "m",
+               f"agua del relleno bajo sismo con '{CRITERIO_DRENAJE}' = "
+               f"'{DRENAJE_SIN}': el nivel medio en el tiempo (AASHTO "
+               f"C11.6.5.3), '{CRITERIO_NIVEL_AGUA_SISMO}' [A] = '{nivel}' -- "
+               + ("la superficie del relleno retenido, el agua de la "
+                  "estatica" if nivel == NIVEL_MEDIO_SUPERFICIE else
+                  "el freatico natural del punto, como el relleno "
+                  "drenado")),)
+
+
+def _nota_del_agua_del_sismo_sin_drenaje(datos: dict) -> str:
+    """La frase del paso sismico que separa el agua del sismo de la estatica."""
+    nivel = datos["nivel_agua_sismo"]
+    if nivel is None:
+        return ""
+    return ("Trasdos sin drenaje: la condicion estatica llena el relleno "
+            "retenido hasta su superficie (11.6.6), y esta va con el nivel "
+            "medio del agua en el tiempo que recomienda C11.6.5.3; la fuente "
+            "no dice cual es en un relleno que no drena, y el proyectista lo "
+            f"declara ('{CRITERIO_NIVEL_AGUA_SISMO}' [A] = '{nivel}', h_w = "
+            f"{datos['h_w']:.3f} m). ")
+
+
 def _pasos_de_cargas(entorno, condicion, cargas, combos, datos,
                      sufijo) -> List[PasoDeMemoria]:
     ext = entorno.extremo
@@ -8381,7 +8445,8 @@ def _pasos_de_cargas(entorno, condicion, cargas, combos, datos,
                    f"criterio '{CRITERIO_BRAZO_SISMICO}' [C]"),
                 _m("W_w", datos["W_w"], "kN/m", "peso del muro"),
                 _m("W_s", datos["W_s"], "kN/m", "peso del relleno sobre el "
-                   "talon")),
+                   "talon"))
+            + _agua_del_sismo_sin_drenaje(datos),
             resultado=Magnitud(
                 "P_AE / P_IR",
                 f"{datos['P_AE']:.3f} / "
@@ -8396,9 +8461,12 @@ def _pasos_de_cargas(entorno, condicion, cargas, combos, datos,
                              "AASHTO_LRFD_9.11.6.5.4#NO_CEDENTE")
             + (("AASHTO_LRFD_9.C11.6.5.3#AGUA_TOTAL",)
                if datos.get("tratamiento_agua_sismo")
-               == AGUA_SE_MUEVE_CON_EL_SUELO else ()),
+               == AGUA_SE_MUEVE_CON_EL_SUELO else ())
+            + ((CITA_NIVEL_MEDIO, "AASHTO_LRFD_9.11.6.6#DRENAJE")
+               if datos["nivel_agua_sismo"] is not None else ()),
             nota_del_proyecto=(
-                (("Con agua en el plano de empuje (h_w = "
+                _nota_del_agua_del_sismo_sin_drenaje(datos)
+                + (("Con agua en el plano de empuje (h_w = "
                   f"{datos['h_w']:.3f} m) el incremento sismico va con el "
                   "peso TOTAL del suelo bajo el agua: suelo y agua se mueven "
                   "juntos en el relleno que no drena libremente (C11.6.5.3, "
@@ -8606,9 +8674,14 @@ def ensamble_estabilidad(entorno: EntornoDelCabezal,
                 f"Cabezal de {entorno.extremo} de {entorno.id_punto}: con el "
                 f"trasdos sin drenaje ('{CRITERIO_DRENAJE}' = "
                 f"'{DRENAJE_SIN}', declarado: el drenaje no puede darse), la "
-                "estabilidad se calcula con el relleno retenido lleno de "
-                "agua hasta su superficie contra el trasdos (AASHTO "
-                "11.6.6), tambien bajo sismo (ficha VE3-21). El valor de "
+                "estabilidad estatica se calcula con el relleno retenido "
+                "lleno de agua hasta su superficie contra el trasdos (AASHTO "
+                "11.6.6); bajo sismo el agua es la del nivel medio en el "
+                "tiempo (C11.6.5.3), que la fuente no da para un relleno sin "
+                "drenar y se declara en "
+                f"'{CRITERIO_NIVEL_AGUA_SISMO}' [A] (la superficie del "
+                "relleno o el freatico natural; sin declararla, la condicion "
+                "sismica se detiene). El valor de "
                 f"archivo ('{DRENAJE_CON}') lo deja en el freatico natural "
                 "y compromete el filtro y los lloraderos en planos")
         else:
