@@ -9157,12 +9157,10 @@ cambios están aplicados en estas fichas.
 - **Decisiones (aprobadas por Fable):** la orientación la elige la FILA declarada (no alcanza a los
   tubos); con cabezal paralelo el esviaje de la embocadura es el del barril (nota de
   `#MAXIMO_PRACTICO`), sin interpolar fuera de banda; los dos cabezales van paralelos (`#PARALELO`).
-- **Abierto:** (1) `embocadura_cajon` es de proyecto y el esviaje es por punto: declarar una fila
-  de la Carta 11 detiene con `DatoInvalidoError` todo marco fuera de banda (con chaflán, todo el que
-  no tenga 15/30/45° exactos): seguro pero restrictivo. (2) El extremo oblicuo del marco no se
+- **Abierto:** (1) Cerrado en VE7A-02 (embocadura del marco por punto). (2) El extremo oblicuo del marco no se
   verifica en M8 (sin numeral atribuido). (3) Carta 12 escala 3 (paralelo con aleros) sin banda; la
   nota del paso 9.2.2 y la h_eq por orientación, con el ítem 28. (4) Cerrado en VE7A-01.
-- **Qué haría falta:** declaración de la embocadura por punto; el extremo oblicuo en M8; los aleros
+- **Qué haría falta:** el extremo oblicuo en M8; los aleros
   del paralelo.
 - **Dónde vive:** `src/modulos/M9_cabezal.py::_embocadura_paralela`
 
@@ -9208,3 +9206,21 @@ el test; lo que la sesión tuvo que decidir sin dictamen va rotulado «pendiente
 - **Abierto:** nada de esta ficha.
 - **Qué haría falta:** nada; una frase literal de la fuente que empareje borde y fila la sustituiría.
 - **Dónde vive:** `src/constantes_normativas.py::KE_C2_POR_FILA_SIN_ALETAS`
+
+## VE7A-02 · La embocadura del marco se declara por punto (cierra VE6-T7A03 (1))
+
+- **Cerrado:** clave `embocadura_cajon_del_punto` = {`carta`, `ke`} de `--datos-externos`, sólo
+  por punto (en `globales` se rechaza), en `servicio.CLAVES_DE_CABEZAL`, validada al cargar por
+  `M9.validar_embocadura_cajon_del_punto` (las dos filas, de cajón, y nada más). En un punto de la
+  Familia C `servicio.correr_punto` pisa `embocadura_cajon` y `ke_entrada_cajon` con
+  `ca.establecer_valor_dinamico` (la carta primero) y en `finally` repone lo que había: la
+  declaración en caliente previa o el archivo. La coherencia sigue en
+  `verificar_coherencia_embocadura_cajon`, y su nota (paso 9.0.0) dice «declarada por punto».
+  En otra familia no se aplica y se avisa.
+- **Decisión del consultor Fable (triaje VE-7, 2026-11-20):** la clave por punto y la puerta en
+  caliente con `try/finally`. **Pendiente de revisión Fable:** la memoria lista el criterio
+  usado con su valor de proyecto (la fotografía del contexto se toma al salir de `correr`); el
+  valor del punto lo imprime el paso 9.0.0.
+- **Abierto:** el pre-vuelo no la anuncia (no es una falta: sin ella rige la de proyecto).
+- **Qué haría falta:** si el dueño lo pide, una columna de la memoria con la embocadura por punto.
+- **Dónde vive:** `src/servicio.py::correr_punto`

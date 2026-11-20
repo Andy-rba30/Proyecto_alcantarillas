@@ -4481,6 +4481,57 @@ def verificar_coherencia_embocadura_cajon(embocadura: EmbocaduraDelPunto, *,
             + "; ".join(comprobadas))
 
 
+# --- VE-7 (lote A, A2; triaje VE-7 de Fable, 2026-11-20) --- LA EMBOCADURA
+# DEL MARCO DECLARADA POR PUNTO: {"carta": fila de la Tabla A.1, "ke": fila
+# de la Tabla C.2}. 'embocadura_cajon' y 'ke_entrada_cajon' son de proyecto
+# y el esviaje es del punto: con una fila de la Carta 11 (paralelo a la via)
+# todo marco fuera de su banda se detenia (VE6-T7A03 (1)). El servicio la
+# aplica en caliente durante el punto y la retira al salir; la coherencia
+# sigue en `verificar_coherencia_embocadura_cajon`.
+DATO_EMBOCADURA_CAJON_DEL_PUNTO = "embocadura_cajon_del_punto"
+CAMPOS_EMBOCADURA_CAJON_DEL_PUNTO = ("carta", "ke")
+CRITERIO_DE_CAMPO_EMBOCADURA = {"carta": CRITERIO_EMBOCADURA_CAJON,
+                                "ke": CRITERIO_KE_CAJON}
+NOTA_EMBOCADURA_DECLARADA_POR_PUNTO = (
+    "declarada por punto (`embocadura_cajon_del_punto` de "
+    "--datos-externos): rige para este punto en lugar de la del proyecto")
+
+
+def validar_embocadura_cajon_del_punto(valor: Any, *,
+                                       id_punto: Optional[str] = None
+                                       ) -> dict:
+    """
+    Forma y dominio de `embocadura_cajon_del_punto` (dato externo opcional,
+    SOLO por punto): un objeto con exactamente `carta` (una fila de cajon de
+    la Tabla A.1 del HDS-5) y `ke` (una fila de cajon de la Tabla C.2). Las
+    dos van juntas -- «ambas decisiones deben moverse juntas» (Sec. 9.1) --:
+    medio par no entra. Si son de la embocadura del cabezal del punto lo
+    decide despues `verificar_coherencia_embocadura_cajon`, como con las de
+    proyecto.
+    """
+    campo = DATO_EMBOCADURA_CAJON_DEL_PUNTO
+    if not (isinstance(valor, dict)
+            and set(valor) == set(CAMPOS_EMBOCADURA_CAJON_DEL_PUNTO)):
+        raise DatoInvalidoError(
+            campo, valor=valor, id_punto=id_punto,
+            motivo="se espera un objeto con 'carta' (fila de la Tabla A.1) y "
+                   "'ke' (fila de la Tabla C.2) del HDS-5, los dos y nada "
+                   "mas: las dos decisiones se mueven juntas (Sec. 9.1)")
+    admitidas = {"carta": tuple(sorted(BANDAS_ALETAS_CAJON_A1)),
+                 "ke": tuple(sorted(BANDAS_ALETAS_CAJON_C2))}
+    limpio = {}
+    for k in CAMPOS_EMBOCADURA_CAJON_DEL_PUNTO:
+        x = valor[k]
+        if not isinstance(x, str) or x.strip() not in admitidas[k]:
+            raise DatoInvalidoError(
+                f"{campo}.{k}", valor=x, id_punto=id_punto,
+                motivo="se espera una de las filas de cajon de '"
+                       + CRITERIO_DE_CAMPO_EMBOCADURA[k] + "': "
+                       + ", ".join(admitidas[k]))
+        limpio[k] = x.strip()
+    return limpio
+
+
 # ---------------------------------------------------------------------------
 # Lo que el cabezal necesita del conducto, en cada extremo
 # ---------------------------------------------------------------------------

@@ -11,13 +11,20 @@ biselados (0.2) o la escuadra; la escala 2 de la Carta 8 («90° and 15°
 wingwall flares», arista viva) -> la escuadra.
 """
 
+import json
+from pathlib import Path
+
 import pytest
 
+import cli
+from src import criterios_adoptados as ca
+from src import servicio
 from src.constantes_normativas import CAJON_C2_SIN_ALETAS, KE_HDS5_C2
 from src.modelos import DatoInvalidoError, Familia
 from src.modulos import M9_cabezal as M9
 from src.normativa import tablas
 from tests.apoyo.criterios import declarados
+from tests.test_canal_discrepancias import DECLARACIONES_DEL_CAJON
 
 ESCUADRA = "cajon_sin_aletas_escuadra_3"
 BISELADA = "cajon_sin_aletas_redondeado_3"
@@ -94,3 +101,104 @@ def test_sin_carta_declarada_de_cabezal_normal_rigen_las_dos_filas():
     se detiene en la carta, no en el ke: la banda del ke sigue entera."""
     _, c2 = M9.filas_hds5_del_cajon(_normal_sin_aletas())
     assert c2 == CAJON_C2_SIN_ALETAS
+
+
+# ===========================================================================
+# A2 (VE6-T7A03 (1)) -- la embocadura del marco declarada por punto
+# ===========================================================================
+
+RAIZ = Path(__file__).resolve().parents[1]
+CSV_EJEMPLO = RAIZ / "tests" / "ejemplo_puntos.csv"
+EXTERNOS_AMPLIADOS = RAIZ / "tests" / "linea_base_familia_c" / \
+    "entradas_ampliadas.json"
+FILA_C01 = "C-01,3+100,C,,,,36.90,39.10,38.95,6.5,30,9.60,36.20,,,ML,,,"
+CARTA_11_30 = "cajon_concreto_chaflan_esviaje_30"
+CARTA_10 = "cajon_concreto_cabezal_90_chaflan"
+
+
+@pytest.fixture
+def corredor_de_dos_marcos(tmp_path):
+    """C-01 (esviaje 30) y C-02, la misma fila a 0 grados; los datos de
+    C-01 de la linea base de la Familia C, repetidos para C-02, y la
+    embocadura de cada uno declarada por punto."""
+    texto = CSV_EJEMPLO.read_text(encoding="utf-8")
+    cabecera = texto.split("\n", 1)[0]
+    c01 = FILA_C01 + "38.30"
+    c02 = c01.replace("C-01,3+100", "C-02,3+400").replace(",6.5,30,",
+                                                          ",6.5,0,")
+    csv = tmp_path / "dos_marcos.csv"
+    csv.write_text("\n".join((cabecera, c01, c02)) + "\n", encoding="utf-8")
+    crudo = json.loads(EXTERNOS_AMPLIADOS.read_text(encoding="utf-8"))
+    crudo["puntos"] = {"C-01": dict(crudo["puntos"]["C-01"]),
+                       "C-02": dict(crudo["puntos"]["C-01"])}
+    crudo["puntos"]["C-01"]["embocadura_cajon_del_punto"] = {
+        "carta": CARTA_11_30, "ke": ESCUADRA}
+    crudo["puntos"]["C-02"]["embocadura_cajon_del_punto"] = {
+        "carta": CARTA_10, "ke": ESCUADRA}
+    ruta = tmp_path / "externos.json"
+    ruta.write_text(json.dumps(crudo), encoding="utf-8")
+    return csv, cli.cargar_datos_externos(ruta, {"luz_m": 2.75})
+
+
+def test_la_clave_se_valida_al_cargar_y_va_solo_por_punto(tmp_path):
+    assert "embocadura_cajon_del_punto" in servicio.CLAVES_DE_CABEZAL
+    assert "embocadura_cajon_del_punto" not in servicio.CLAVES_EXTERNAS
+    for malo in ({"carta": CARTA_10}, {"carta": CARTA_10, "ke": "x"},
+                 {"carta": "tubo", "ke": ESCUADRA},
+                 {"carta": CARTA_10, "ke": ESCUADRA, "n": 1}, "texto"):
+        with pytest.raises(DatoInvalidoError):
+            M9.validar_embocadura_cajon_del_punto(malo)
+    ruta = tmp_path / "g.json"
+    ruta.write_text(json.dumps({"globales": {"embocadura_cajon_del_punto": {
+        "carta": CARTA_10, "ke": ESCUADRA}}}), encoding="utf-8")
+    with pytest.raises(DatoInvalidoError):
+        cli.cargar_datos_externos(ruta, {})
+
+
+def test_un_corredor_con_un_marco_carta_10_y_otro_carta_11_corre_entero(
+        corredor_de_dos_marcos):
+    """
+    Con 'embocadura_cabezal' = recto en el proyecto, C-01 (30 grados) corre
+    con la Carta 11 -- cabezal paralelo a la via -- y C-02 (0 grados) con la
+    Carta 10 -- cabezal normal --. Con una sola embocadura de proyecto, una
+    de las dos se detendria en la coherencia. Al salir, el proyecto vuelve
+    a la suya.
+    """
+    csv, externos = corredor_de_dos_marcos
+    with declarados(DECLARACIONES_DEL_CAJON):
+        with declarados({"embocadura_cabezal": M9.EMBOCADURA_CABEZAL_RECTO}):
+            informe = cli.correr(csv, externos, alcance=cli.ALCANCE_PERFIL)
+            assert ca.valor("embocadura_cajon") == \
+                DECLARACIONES_DEL_CAJON["embocadura_cajon"]
+            assert ca.valor("ke_entrada_cajon") == \
+                DECLARACIONES_DEL_CAJON["ke_entrada_cajon"]
+    c01, c02 = informe.puntos
+    for p in (c01, c02):
+        assert p.dimensionado, [b.mensaje for b in p.bloqueos]
+        assert not any("coherencia" in b.etapa for b in p.bloqueos)
+        assert "declarada por punto" in p.coherencia_embocadura
+    assert c01.embocadura.orientacion == M9.ORIENTACION_PARALELO_A_LA_VIA
+    assert c02.embocadura.orientacion == M9.ORIENTACION_NORMAL_AL_EJE
+    assert CARTA_11_30 in c01.coherencia_embocadura
+    assert CARTA_10 in c02.coherencia_embocadura
+
+
+def test_el_valor_de_proyecto_queda_restaurado_aunque_el_punto_falle(
+        corredor_de_dos_marcos, monkeypatch):
+    csv, externos = corredor_de_dos_marcos
+
+    def revienta(*a, **k):
+        assert ca.valor("embocadura_cajon") in (CARTA_11_30, CARTA_10)
+        raise RuntimeError("fallo de prueba dentro del punto")
+
+    monkeypatch.setattr(servicio, "_fase_2", revienta)
+    with declarados(DECLARACIONES_DEL_CAJON):
+        antes = ca.valores_dinamicos()
+        with pytest.raises(RuntimeError):
+            cli.correr(csv, externos, alcance=cli.ALCANCE_PERFIL)
+        assert ca.valores_dinamicos() == antes
+    # y sin nada declarado en caliente, el punto no deja nada vivo
+    with pytest.raises(RuntimeError):
+        cli.correr(csv, externos, alcance=cli.ALCANCE_PERFIL)
+    assert "embocadura_cajon" not in ca.valores_dinamicos()
+    assert "ke_entrada_cajon" not in ca.valores_dinamicos()

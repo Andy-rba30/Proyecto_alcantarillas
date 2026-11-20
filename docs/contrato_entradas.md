@@ -317,6 +317,12 @@ FS de cada E declarada, finitos y positivos, y la traza del documento; un FS fue
 `entrada`/`salida` o en `globales` se rechaza). Entonces cada cabezal lleva las filas `E4-LRFD`,
 `E4-ASD`, `E5-LRFD` y `E5-ASD` de cada condición, y el paso dice de qué documento sale el FS.
 
+Desde VE-7 (lote A) hay dos claves más en `CLAVES_DE_CABEZAL`, las dos **sólo por punto**:
+`embocadura_cajon_del_punto` (`{"carta": …, "ke": …}`, una fila de cajón de la Tabla A.1 y una
+de la C.2 del HDS-5, validadas por `M9.validar_embocadura_cajon_del_punto`), que en un marco pisa
+`embocadura_cajon` y `ke_entrada_cajon` mientras corre ese punto (la coherencia con el cabezal
+se comprueba igual; ficha VE7A-02), y `empuje_sismico_declarado` (ficha VE7A-05).
+
 ### 3.4 Lo que el armado del cabezal necesita (T-7c)
 
 Desde T-7c cada cabezal de voladizo armado sale con el armado de su pantalla, de su

@@ -164,6 +164,9 @@ from src.modulos.M9_cabezal import (aviso_ambiente_corrosivo,
 from src.modulos.M9_cabezal import (  # --- VE-6 ---
     CAMPO_DISTANCIA_BORDE_DEL_PUNTO, CAMPO_ORIENTACION_DEL_PUNTO,
     EXTREMOS as CAMPOS_EXTREMOS, validar_sobrecarga_del_punto)
+from src.modulos.M9_cabezal import (  # --- VE-7 (lote A, A2) ---
+    DATO_EMBOCADURA_CAJON_DEL_PUNTO, CRITERIO_DE_CAMPO_EMBOCADURA,
+    NOTA_EMBOCADURA_DECLARADA_POR_PUNTO, validar_embocadura_cajon_del_punto)
 from src.modulos.M9_cabezal import (cabezal_del_punto,
                                     embocadura_del_punto,
                                     validar_cabezal_declarado,
@@ -920,6 +923,14 @@ CLAVE_ORIENTACION_DEL_PUNTO = CAMPO_ORIENTACION_DEL_PUNTO
 CLAVE_DISTANCIA_BORDE_DEL_PUNTO = CAMPO_DISTANCIA_BORDE_DEL_PUNTO
 CLAVES_DE_CABEZAL += (CLAVE_ORIENTACION_DEL_PUNTO,
                       CLAVE_DISTANCIA_BORDE_DEL_PUNTO)
+# --- VE-7 (lote A, A2; triaje VE-7 de Fable) --- LA EMBOCADURA DEL MARCO
+# DECLARADA POR PUNTO, {"carta": ..., "ke": ...}: SOLO por punto (es del
+# esviaje de ese cruce) y FUERA de `CLAVES_EXTERNAS` (sin ella rigen las de
+# proyecto). La valida `M9.validar_embocadura_cajon_del_punto` al CARGAR y
+# `correr_punto` la aplica en caliente mientras corre ESE punto.
+CLAVE_EMBOCADURA_CAJON_DEL_PUNTO = DATO_EMBOCADURA_CAJON_DEL_PUNTO
+CLAVES_DE_CABEZAL += (CLAVE_EMBOCADURA_CAJON_DEL_PUNTO,)
+CLAVES_SOLO_POR_PUNTO += (CLAVE_EMBOCADURA_CAJON_DEL_PUNTO,)
 
 
 def fundir_sobrecarga_del_punto(declarados: Optional[dict], *,
@@ -1130,6 +1141,11 @@ def _dato_externo(clave: str, bruto: Any, origen: str) -> DatoDeclarado:
         # --- VE-5 (catlic) --- el resultado del EMS, validado en la puerta.
         return DatoDeclarado(
             nombre=clave, valor=ML.validar_licuefaccion_declarada(bruto),
+            origen=origen)
+    if clave == CLAVE_EMBOCADURA_CAJON_DEL_PUNTO:
+        # --- VE-7 (lote A, A2) --- la carta y el ke del marco del punto.
+        return DatoDeclarado(
+            nombre=clave, valor=validar_embocadura_cajon_del_punto(bruto),
             origen=origen)
     if clave == CLAVE_ESTABILIDAD_GLOBAL_DECLARADA:
         # --- VE-4a --- el FS declarado de E4 y E5, validado en la puerta.
@@ -1966,6 +1982,9 @@ class InformePunto:
     # declarada o terraplen simetrico). Su paso (9.0.6) y su aviso viajan
     # tambien en `cabezal`, que es por donde la memoria y `avisos()` los leen.
     refinamiento_longitud: Optional[Any] = None
+    # --- VE-7 (lote A, A2) --- la embocadura del marco declarada por punto
+    # (`embocadura_cajon_del_punto`, {"carta", "ke"}) con que corrio, o None.
+    embocadura_cajon_del_punto: Optional[dict] = None
 
     @property
     def punto_de_calculo(self) -> PuntoCritico:
@@ -3506,6 +3525,12 @@ def _fase_embocadura(informe: InformePunto) -> bool:
         "coherencia de la embocadura del marco con el cabezal (T-7a)",
         lambda: verificar_coherencia_embocadura_cajon(
             informe.embocadura, id_punto=punto.id))
+    # --- VE-7 (lote A, A2) --- el paso 9.0.0 dice que la embocadura del
+    # marco es la DECLARADA POR PUNTO, y cual.
+    if (informe.coherencia_embocadura is not None
+            and informe.embocadura_cajon_del_punto is not None):
+        informe.coherencia_embocadura += (
+            "; " + NOTA_EMBOCADURA_DECLARADA_POR_PUNTO)
     # `_etapa` devuelve None TAMBIEN cuando no habia nada que comprobar; lo
     # que separa el bloqueo es que haya dejado uno.
     return len(informe.bloqueos) == antes
@@ -4736,6 +4761,53 @@ def correr_punto(punto: PuntoCritico, externos: DatosExternos,
                  hidrologia: Optional[EntradaHidrologica] = None,
                  tramo: Optional[Any] = None) -> InformePunto:
     """
+    El pipeline de un punto (`_correr_punto`), con la embocadura del marco
+    DECLARADA POR PUNTO si la hay.
+
+    --- VE-7 (lote A, A2; triaje VE-7 de Fable) --- `embocadura_cajon_del_
+    punto` ({"carta", "ke"}) pisa en caliente 'embocadura_cajon' y
+    'ke_entrada_cajon' mientras corre ESTE punto de la Familia C
+    (`ca.establecer_valor_dinamico`, la misma guardia que `--declarar`), y
+    al salir -- tambien con excepcion -- el proceso vuelve a lo que habia: la
+    declaracion en caliente previa, o el archivo (`try/finally`). En otra
+    familia no se aplica (el tubo no lee esas filas) y se avisa.
+    """
+    declarada = externos.valor(punto.id, CLAVE_EMBOCADURA_CAJON_DEL_PUNTO)
+    if declarada is None:
+        return _correr_punto(punto, externos, alcance, hidrologia, tramo)
+    if punto.familia is not Familia.C:
+        informe = _correr_punto(punto, externos, alcance, hidrologia, tramo)
+        informe.avisos_de_expediente.append(
+            f"{punto.id}: '{CLAVE_EMBOCADURA_CAJON_DEL_PUNTO}' es la "
+            "embocadura de un MARCO (Tablas A.1 y C.2 del HDS-5) y el punto "
+            f"es de la Familia {punto.familia.value}: no se aplica")
+        return informe
+    previos = ca.valores_dinamicos()
+    try:
+        for campo in CAMPOS_DE_LA_EMBOCADURA_DEL_PUNTO:
+            ca.establecer_valor_dinamico(CRITERIO_DE_CAMPO_EMBOCADURA[campo],
+                                         declarada[campo])
+        return _correr_punto(punto, externos, alcance, hidrologia, tramo,
+                             embocadura_del_punto=dict(declarada))
+    finally:
+        for criterio in CRITERIO_DE_CAMPO_EMBOCADURA.values():
+            if criterio in previos:
+                ca.establecer_valor_dinamico(criterio, previos[criterio])
+            else:
+                ca.quitar_valor_dinamico(criterio)
+
+
+# El orden en que se aplican: la carta elige la fila del ke (R4).
+CAMPOS_DE_LA_EMBOCADURA_DEL_PUNTO: Tuple[str, ...] = ("carta", "ke")
+
+
+def _correr_punto(punto: PuntoCritico, externos: DatosExternos,
+                  alcance: str = ALCANCE_EXPEDIENTE,
+                  hidrologia: Optional[EntradaHidrologica] = None,
+                  tramo: Optional[Any] = None, *,
+                  embocadura_del_punto: Optional[dict] = None
+                  ) -> InformePunto:
+    """
     El pipeline de un punto, de la Fase 2 a la Fase 10. Cada etapa corre si su
     insumo existe; si no, queda registrada como bloqueo y las que no dependen
     de ella siguen (la Fase 10 no necesita el diametro, por ejemplo).
@@ -4751,7 +4823,8 @@ def correr_punto(punto: PuntoCritico, externos: DatosExternos,
     de la lamina lleva el bloqueo «metodo no evaluable», diferido solo a
     nivel de perfil; con el perfil que M4 emite desde E-A, no se alcanza.
     """
-    informe = InformePunto(punto=punto)
+    informe = InformePunto(punto=punto,
+                           embocadura_cajon_del_punto=embocadura_del_punto)
     # --- T-2 --- La declaracion del acceso de mantenimiento, si la hay: no
     # depende de ninguna fase y se anota antes que nada, para que viaje
     # tambien en el punto que no llega a dimensionarse.
