@@ -14,6 +14,23 @@ cada vez que se integra algo. Fecha de esta versión: 2026-11-20.
 > regeneración de documentos, suite en worktree limpio, sello y fast-forward de `main`.
 > **Si la sesión se corta:** retomar desde esas ramas (su último commit) e integrarlas en este orden:
 > alero → A → B → C → A11.
+> **Avance (2026-11-20, noche):** las cuatro ramas recibieron revisión de Fable; alero y lote A tienen
+> el dictamen aplicado y están integrados en `claude/ve7-integracion` (desde `b6be2af`, 1566 tests de
+> sus áreas en verde). Lote B (dictamen en curso: B10 C por tabla, envolvente seco/sumergido, ▲ NF
+> estacional, ▲ ancho de 5.10.6, ▲ metrado del acero, ▲ cuneta 0.30) y lote C (dictamen en curso:
+> comparador cerrado, línea CLI de 0-bis, 4.1 del índice, quinta corrida, test_c7, caducidad de la
+> cita sin firma) faltan por terminar e integrar. Pendiente en esta rama: 11 fallos de
+> `test_t11_validacion_integral`/`test_t11_sensibilidad` por diagnosticar antes de sellar `main`.
+> **Diagnóstico (7 de validación integral):** no son de cálculo; el juego completo de
+> `tests/apoyo/validacion_integral.py` es anterior a VE-5 y no declara lo nuevo. Corregir declarando
+> en el JUEGO (datos de prueba rotulados): `licuefaccion_ems` (global, `no_licua` con Mw/Tr ≥ los
+> adoptados, documento/fecha/metodo), `incremento_acero_por_despiece` y `clase_concreto_losa_entrega`
+> (sin valor de archivo por dictamen Fable: el juego los declara); y actualizar los censos del test:
+> fichas de método {VC1-01, VE5-MET-01}, §7 del contrato (+`arrastre_de_solidos`, que el juego ya
+> lee), sin consumidor = 2 (ediciones), perfil sin valor (+`carga_viva_tubo_concreto_somero`,
+> `factores_idf_regional`), y el escalón «no cabe» que ahora trae además el bloqueo de Fase 0-bis
+> (VE6-02: va al lado de las demás faltas; el test debe buscar el bloqueo de diseño, no el primero).
+> Luego regenerar `docs/validacion_integral.md` y repasar los 4 de `test_t11_sensibilidad`.
 
 > **ESTADO (2026-11-20, tarde, sesión `claude/laughing-euler-ybme10`): VE-5 y VE-6 integrados.**
 > `main` había sido vaciado (commit `03ab811`, «Repositorio vaciado a pedido del propietario»)
