@@ -651,11 +651,12 @@ def test_44_sin_declarar_no_hay_aviso():
 
 def test_44_declarado_avisa_lo_que_pasa_su_techo_y_nada_mas(monkeypatch):
     from src.modulos import M6_proteccion as M6
-    monkeypatch.setitem(ca._OVERRIDES, "techos_de_transcripcion_fase_6",
-                        {"D84_m": 1.0, "duracion_caudal_pico_min": 1440.0})
+    from tests.apoyo.criterios import declarados
     datos = {"duracion_caudal_pico_min": 60.0,
              "material_lecho_salida": _Lecho(D84_m=5.0, Sv_Pa=1e300)}
-    avisos = M6.avisos_de_transcripcion(datos.get)
+    with declarados({"techos_de_transcripcion_fase_6":
+                     {"D84_m": 1.0, "duracion_caudal_pico_min": 1440.0}}):
+        avisos = M6.avisos_de_transcripcion(datos.get)
     assert len(avisos) == 1
     assert "material_lecho_salida.D84_m = 5 m" in avisos[0]
     assert "ningun resultado cambia" in avisos[0]
@@ -666,6 +667,9 @@ def test_44_declarado_avisa_lo_que_pasa_su_techo_y_nada_mas(monkeypatch):
 def test_44_un_techo_mal_declarado_no_se_ignora(malo, monkeypatch):
     from src.modulos import M6_proteccion as M6
     from src.modelos import DatoInvalidoError
-    monkeypatch.setitem(ca._OVERRIDES, "techos_de_transcripcion_fase_6", malo)
-    with pytest.raises(DatoInvalidoError):
-        M6.avisos_de_transcripcion(lambda clave: None)
+    from tests.apoyo.criterios import con_valor
+    with con_valor("techos_de_transcripcion_fase_6", malo,
+                   motivo="un techo mal declarado, para la guardia de "
+                          "segunda linea de M6"):
+        with pytest.raises(DatoInvalidoError):
+            M6.avisos_de_transcripcion(lambda clave: None)

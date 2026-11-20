@@ -393,10 +393,12 @@ def test_fila_phi_estabilidad_global_devuelve_la_declarada_o_None(
     for fila in cn.PHI_ESTABILIDAD_GLOBAL_11_6_3_7:
         ca.establecer_valor_dinamico("fila_phi_estabilidad_global", fila)
         assert M9.fila_phi_estabilidad_global() == fila
-    monkeypatch.setitem(ca._OVERRIDES, "fila_phi_estabilidad_global",
-                        "otra_fila")
-    with pytest.raises(DatoInvalidoError):
-        M9.fila_phi_estabilidad_global()
+    from tests.apoyo.criterios import con_valor
+    with con_valor("fila_phi_estabilidad_global", "otra_fila",
+                   motivo="una fila que no es de la tabla de 11.6.3.7, para "
+                          "la guardia de segunda linea de M9"):
+        with pytest.raises(DatoInvalidoError):
+            M9.fila_phi_estabilidad_global()
 
 
 def test_el_criterio_de_la_fila_de_phi_es_A_de_expediente_y_sin_valor():

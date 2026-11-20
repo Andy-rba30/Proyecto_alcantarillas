@@ -218,7 +218,8 @@ SUPERVIVIENTES_CON_RAZON = {
         "equivalente: `<=`/`>=` frente a `<`/`>` con la banda TOL_UMBRAL_NORMATIVO solo difieren en la igualdad exacta umbral ± 1e-9, de medida nula en punto flotante",
     "src/modulos/M5_verificaciones.py::v7_flotacion::aritmetico::desestabilizante - TOL_UMBRAL_NORMATIVO -> desestabilizante + TOL_UMBRAL_NORMATIVO":
         "banda: solo se distingue con un valor a menos de 2·TOL_UMBRAL_NORMATIVO (1e-9) del umbral; la banda existe para que la igualdad en punto flotante cuente como cumplimiento",
-    "src/modulos/M5_verificaciones.py::v9_disponibilidad_diametro::comparacion::D <= material.D_max + TOL_UMBRAL_NORMATIVO -> D < material.D_max + TOL_UMBRAL_NORMATIVO":
+    # VE-5 (m45, item 24): V9 compara el designado con serie inglesa (`D_comparado`).
+    "src/modulos/M5_verificaciones.py::v9_disponibilidad_diametro::comparacion::D_comparado <= material.D_max + TOL_UMBRAL_NORMATIVO -> D_comparado < material.D_max + TOL_UMBRAL_NORMATIVO":
         "equivalente: `<=`/`>=` frente a `<`/`>` con la banda TOL_UMBRAL_NORMATIVO solo difieren en la igualdad exacta umbral ± 1e-9, de medida nula en punto flotante",
     "src/modulos/M5_verificaciones.py::verificar::retorno_none::return tuple(hechas) -> return None":
         "fuera: ningun test llega al final de `M5.verificar` (la Fase 5 de expediente) porque V5 esta vacia y detiene antes; la de perfil corre por `servicio._verificador_perfil` (ficha EXT-11-04)",

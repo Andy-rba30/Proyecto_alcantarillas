@@ -134,9 +134,12 @@ def test_t901_el_archivo_sigue_siendo_triangular_y_no_mueve_la_capacidad(seccion
     # Sin el campo no se le supone una seccion: M10 lo rechaza.
     v = dict(ca.CRITERIOS["seccion_cuneta"].valor)
     del v["ancho_fondo_m"]
-    ca._OVERRIDES["seccion_cuneta"] = v
-    with pytest.raises(DatoInvalidoError):
-        M10.capacidad_cuneta(S_cuneta=S_PRUEBA)
+    from tests.apoyo.criterios import con_valor
+    with con_valor("seccion_cuneta", v,
+                   motivo="la seccion sin el campo del fondo, para la "
+                          "guardia de segunda linea de M10"):
+        with pytest.raises(DatoInvalidoError):
+            M10.capacidad_cuneta(S_cuneta=S_PRUEBA)
 
 def test_t901_la_capacidad_trapezoidal_contra_el_calculo_a_mano(seccion):
     d, a, b, Z2 = 0.40, 1.20, 0.30, 1.0
@@ -175,9 +178,12 @@ def test_t901_un_fondo_fuera_del_minimo_es_dato_invalido(seccion, campos, culpab
     v = dict(ca.CRITERIOS["seccion_cuneta"].valor)
     v.update(campos)
     # Se pisa sin la puerta para probar la guardia de segunda linea de M10.
-    ca._OVERRIDES["seccion_cuneta"] = v
-    with pytest.raises(DatoInvalidoError) as exc:
-        M10.capacidad_cuneta(S_cuneta=S_PRUEBA)
+    from tests.apoyo.criterios import con_valor
+    with con_valor("seccion_cuneta", v,
+                   motivo="un fondo fuera del minimo, para la guardia de "
+                          "segunda linea de M10"):
+        with pytest.raises(DatoInvalidoError) as exc:
+            M10.capacidad_cuneta(S_cuneta=S_PRUEBA)
     assert culpable in exc.value.campo
 
 

@@ -707,8 +707,13 @@ class _MomentoDelBarril:
         return brentq(lambda l: self.seccion.geometria_en(l).y - t,
                       self.lo, self.hi, xtol=TOL_BRENT)
 
-    def area(self, t: float) -> float:
-        """A(t); la llena por encima de la clave."""
+    def area_mojada_en(self, t: float) -> float:
+        """
+        A(t) por la via CANONICA (`geometria_en` en el llenado propio cuyo
+        tirante es t); la llena por encima de la clave. No se llama `area`
+        para que no se confunda con la via por tirante de `Seccion` (regla
+        vinculante #12 y su censo en tests/test_seccion_rectangular.py).
+        """
         if not t < self.altura:
             return self.A_llena
         return self.seccion.geometria_en(self.llenado_de(t)).A
@@ -838,8 +843,8 @@ def resalto_hidraulico(*, Q: float, seccion: Seccion, y1: float, y_c: float,
                    f"y_c = {y_c} m")
     momento = _MomentoDelBarril(Q, seccion)
     y2 = momento.conjugado(y1, y_c)
-    A1 = momento.area(y1)
-    A2 = momento.area(y2)
+    A1 = momento.area_mojada_en(y1)
+    A2 = momento.area_mojada_en(y2)
     V1 = Q / A1
     return ResaltoHidraulico(
         y1_m=y1, A1_m2=A1, V1_m_s=V1, Fr1=V1 / math.sqrt(G * y1),
