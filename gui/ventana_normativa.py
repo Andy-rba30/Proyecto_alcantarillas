@@ -44,8 +44,10 @@ import tkinter as tk
 from tkinter import messagebox, ttk
 
 from src import declaracion as dec
+from src import editores as sed
 from src import ventana_normativa as vn
 from gui import componentes as comp
+from gui import editores as ged
 from gui.componentes import (COLOR_AVISO, COLOR_ERROR, COLOR_OK,
                              CampoValidable, MarcoScroll, Tooltip,
                              interpretar_texto_declarado)
@@ -98,6 +100,10 @@ class VentanaNormativa(tk.Toplevel):
         self.valor_var = tk.StringVar()
         self.fila_var = tk.StringVar()
         self.columna_var = tk.StringVar()
+        # La NOTA de procedencia (VE5-GUI, fichas EB-06 y T11-10): lo que la
+        # pestaña 2 y la CLI ya pedian para un numero que difiere de la celda,
+        # un criterio de tabla sin fila o un dato de ensayo.
+        self.nota_var = tk.StringVar()
         self.campo = None
         self._tree = None
 
@@ -532,13 +538,26 @@ class VentanaNormativa(tk.Toplevel):
             Tooltip(ent_col, "Solo cuando lo que se elige es una COLUMNA de la "
                              "tabla y no una fila.")
 
+        # La nota: el mismo rotulo que el editor de la pestaña 2 y la ventana
+        # del barrido (`gui/editores.py::rotulo_de_la_nota`), derivado de lo
+        # que la ficha EXIGE de ella.
+        ttk.Label(marco, text=ged.rotulo_de_la_nota(sed.esquema_de(self.clave)),
+                  wraplength=260, justify="left").grid(
+            row=4, column=0, sticky="w", padx=6)
+        ent_nota = ttk.Entry(marco, textvariable=self.nota_var)
+        ent_nota.grid(row=4, column=1, sticky="we", padx=6, pady=4)
+        Tooltip(ent_nota, "La procedencia que la memoria imprime: por que se\n"
+                          "adopta un valor que no es el de la fila elegida, o\n"
+                          "de donde sale si no sale de ninguna; en un dato de\n"
+                          "ensayo, su TRAZABILIDAD (obligatoria).")
+
         boton = tk.Button(marco, text="Declarar para esta corrida",
                           font=comp.tipografia().ui(comp.PEQUENA_PT, "bold"),
                           bg=comp.AZUL, activebackground=comp.AZUL_OSCURO,
                           activeforeground="white",
                           fg="white", relief="flat", cursor="hand2",
                           command=self._declarar)
-        boton.grid(row=4, column=0, columnspan=2, sticky="w", padx=6, pady=8,
+        boton.grid(row=5, column=0, columnspan=2, sticky="w", padx=6, pady=8,
                    ipadx=8, ipady=3)
         Tooltip(boton, "Pasa por criterios_adoptados.establecer_valor_dinamico,\n"
                        "la misma guardia que el archivo. criterios_adoptados.py\n"
@@ -547,7 +566,7 @@ class VentanaNormativa(tk.Toplevel):
 
         self.lbl_estado = ttk.Label(marco, text="", wraplength=820,
                                     justify="left")
-        self.lbl_estado.grid(row=5, column=0, columnspan=2, sticky="w", padx=6)
+        self.lbl_estado.grid(row=6, column=0, columnspan=2, sticky="w", padx=6)
 
     def _mostrar_validacion(self, color, mensaje):
         self.lbl_validacion.config(text=mensaje,
@@ -578,23 +597,21 @@ class VentanaNormativa(tk.Toplevel):
             self.al_declarar(self.clave)
 
     def _declarar_segun_cara(self, valor):
-        cara = self.ventana.cara
-        if cara is vn.Cara.TABLA:
-            fila = self.fila_var.get().strip()
-            columna = self.columna_var.get().strip()
-            if not fila and not columna:
-                raise ValueError(
-                    "Elija la fila (o la columna) de la que sale el valor: la "
-                    "procedencia que se registra la nombra, y sin ella la "
-                    "memoria no puede decir de donde vino el numero.")
-            return dec.declarar_desde_tabla(
-                self.clave, valor,
-                tabla_id=self.ventana.tabla.tabla_id,
-                filas=(fila,) if fila else (),
-                columnas=(columna,) if columna else ())
-        if cara is vn.Cara.RANGO:
-            return dec.declarar_en_rango(self.clave, valor)
-        return dec.declarar_valor(self.clave, valor)
+        """
+        Declara por la MISMA puerta que la pestaña 2 (VE5-GUI, fichas EB-06
+        y T11-10): `src.editores.declarar_desde_la_ventana`, con la fila y
+        la columna que la tabla de arriba eligio y la nota. Aqui no se
+        decide nada: las reglas (DIFIERE, R4, la nota de un ensayo, el
+        criterio de tabla sin fila) son las de `src/editores.py`.
+        """
+        nota_var = getattr(self, "nota_var", None)
+        nota = nota_var.get().strip() if nota_var is not None else ""
+        if self.ventana.cara is vn.Cara.TABLA:
+            return sed.declarar_desde_la_ventana(
+                self.clave, valor, tabla_id=self.ventana.tabla.tabla_id,
+                fila=self.fila_var.get().strip(),
+                columna=self.columna_var.get().strip(), nota=nota)
+        return sed.declarar_desde_la_ventana(self.clave, valor, nota=nota)
 
     # ------------------------------------------------------------------
     # Utilidades de pintado

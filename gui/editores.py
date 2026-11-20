@@ -54,7 +54,10 @@ MOTIVO_SIN_SELECCION = "seleccione un par de la lista para quitarlo"
 
 def rotulo_de_opcion(opcion) -> str:
     """El texto con que una fila de la tabla se ofrece en el desplegable."""
-    texto = f"{opcion.fila}{SEPARADOR_DE_ROTULO}{opcion.etiqueta}"
+    # La REFERENCIA: la clave corta con una sola tabla, «tabla#fila» con
+    # varias (VE5-GUI, ficha UI1-02), para que dos filas homonimas de dos
+    # tablas no se pinten iguales.
+    texto = f"{opcion.referencia or opcion.fila}{SEPARADOR_DE_ROTULO}{opcion.etiqueta}"
     if opcion.celdas:
         texto += f"  [{opcion.celdas}]"
     if not opcion.elegible:
@@ -251,7 +254,7 @@ class EditorTipado:
             return None
         f = ttk.Frame(p)
         f.pack(fill="x", pady=(0, 4))
-        ttk.Label(f, text=f"Fila de {e.tabla_id}:").pack(side="left")
+        ttk.Label(f, text=f"Fila de {', '.join(e.tablas) or e.tabla_id}:").pack(side="left")
         self.rotulo_fila_var = tk.StringVar()
         cmb = ttk.Combobox(f, textvariable=self.rotulo_fila_var, state="readonly",
                            width=70, values=[rotulo_de_opcion(o) for o in e.opciones_de_tabla])
@@ -269,21 +272,25 @@ class EditorTipado:
         opcion = opcion_del_rotulo(self.esquema, self.rotulo_fila_var.get())
         if opcion is None:
             return
-        self.fila_var.set(opcion.fila)
+        self.fila_var.set(opcion.referencia or opcion.fila)
         self.lbl_fila.config(
-            text=f"Fila elegida: {opcion.fila}" + (
+            text=f"Fila elegida: {opcion.referencia or opcion.fila}" + (
                 "" if opcion.elegible else f" — NO elegible: {opcion.motivo}"),
             foreground=COLOR_OK if opcion.elegible else COLOR_ERROR)
         al_elegir(opcion)
 
     def elegir_fila(self, fila):
-        """Elige una fila por su clave, como lo haria el raton sobre el desplegable."""
-        for o in self.esquema.opciones_de_tabla:
-            if o.fila == fila:
-                self.rotulo_fila_var.set(rotulo_de_opcion(o))
-                self._al_elegir_fila(self._al_fila_elegida)
-                return o
-        raise KeyError(f"{self.esquema.tabla_id}: no hay fila «{fila}»")
+        """
+        Elige una fila por su clave (o por «tabla#fila» si el criterio se
+        lee sobre varias tablas), como lo haria el raton sobre el desplegable.
+        """
+        try:
+            o = sed.opcion_de(self.esquema, fila)
+        except ValueError as exc:
+            raise KeyError(str(exc)) from exc
+        self.rotulo_fila_var.set(rotulo_de_opcion(o))
+        self._al_elegir_fila(self._al_fila_elegida)
+        return o
 
     def _al_fila_elegida(self, opcion):
         """Que hace cada editor con la fila elegida; por defecto, nada."""

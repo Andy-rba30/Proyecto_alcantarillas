@@ -124,6 +124,14 @@ class OpcionDeTabla:
     celdas: str                     # las celdas escritas, para leer la fila
     elegible: bool
     motivo: str = ""
+    # DE QUE TABLA es la fila (VE5-GUI, ficha UI1-02): un criterio que se lee
+    # sobre varias tablas ofrece las filas de todas, y la clave corta de una
+    # fila puede repetirse entre ellas (las filas «5», «10» y «20» de las dos
+    # tablas de AASHTO 3.11.6.4). `referencia` es lo que el editor guarda y
+    # `declarar` acepta: la clave corta si el criterio tiene una sola tabla
+    # (como hasta VE5-GUI), y «tabla#fila» si tiene varias.
+    tabla_id: str = ""
+    referencia: str = ""
 
 
 @dataclass(frozen=True)
@@ -141,6 +149,8 @@ class EsquemaDeEditor:
     exige_nota: bool = False        # de_ensayo: la nota es la trazabilidad
     dominio: str = ""
     valor_actual: Any = None
+    # Todas las tablas de la ficha, en su orden; `tabla_id` es la primera.
+    tablas: Tuple[str, ...] = ()
 
     def campo(self, nombre: str) -> CampoDelEditor:
         for c in self.campos:
@@ -219,7 +229,25 @@ def _campos_homonimos(tabla: Any, fila_id: str,
 def _opciones_de_tabla(clave: str, r: DeTabla, tipo_de_editor: str,
                        formas: Tuple[str, ...],
                        campos: Tuple[CampoDelEditor, ...]) -> Tuple[str, Tuple[OpcionDeTabla, ...]]:
-    contenido = _vn.contenido_de_tabla(r.tablas[0], clave)
+    """
+    Las filas de TODAS las tablas de la ficha, en el orden de la ficha
+    (VE5-GUI, ficha UI1-02). Hasta VE5-GUI se derivaban de la primera, y
+    `concreto_afinado` --- la alternativa barrible de la Tabla N 09 que la
+    ficha de `n_manning_cajon` nombra --- solo entraba con nota, como
+    adopcion, y no con la procedencia de su fila.
+    """
+    varias = len(r.tablas) > 1
+    opciones: List[OpcionDeTabla] = []
+    for tabla_id in r.tablas:
+        opciones.extend(_opciones_de_una_tabla(
+            clave, tabla_id, tipo_de_editor, formas, campos, calificar=varias))
+    return r.tablas[0], tuple(opciones)
+
+
+def _opciones_de_una_tabla(clave: str, tabla_id: str, tipo_de_editor: str,
+                           formas: Tuple[str, ...], campos: Tuple[CampoDelEditor, ...],
+                           *, calificar: bool) -> List[OpcionDeTabla]:
+    contenido = _vn.contenido_de_tabla(tabla_id, clave)
     numerico = tipo_de_editor in (ESCALAR, PAR) and not (
         {TIPO_TEXTO, TIPO_CATEGORIA} & set(formas))
     tabla = _registro.construir().tabla(contenido.tabla_id)
@@ -251,8 +279,11 @@ def _opciones_de_tabla(clave: str, r: DeTabla, tipo_de_editor: str,
             fila=f.clave_corta, etiqueta=f.etiqueta_legible, valor_propuesto=propuesto,
             celdas=" / ".join(f"{k}={v}" for k, v in f.celdas.items()),
             elegible=f.elegible,
-            motivo="" if f.elegible else _dec._motivo_de(f.disponibilidad)))
-    return contenido.tabla_id, tuple(opciones)
+            motivo="" if f.elegible else _dec._motivo_de(f.disponibilidad),
+            tabla_id=contenido.tabla_id,
+            referencia=(f"{contenido.tabla_id}#{f.clave_corta}" if calificar
+                        else f.clave_corta)))
+    return opciones
 
 
 def _campos_del_dict(c: Any) -> Tuple[CampoDelEditor, ...]:
@@ -343,7 +374,8 @@ def esquema_de(clave: str) -> EsquemaDeEditor:
         exige_fila=(isinstance(r, DeTabla) and tipo_de_editor in (ESCALAR, PAR)
                     and TIPO_CATEGORIA not in formas),
         exige_nota=isinstance(r, DeEnsayo),
-        dominio=_dominio_de(r), valor_actual=_ca.criterio_efectivo(clave).valor)
+        dominio=_dominio_de(r), valor_actual=_ca.criterio_efectivo(clave).valor,
+        tablas=tuple(r.tablas) if isinstance(r, DeTabla) else ())
 
 
 # ===========================================================================
@@ -493,10 +525,44 @@ def fila_implicita(esquema: EsquemaDeEditor, valor: Any) -> Optional[str]:
     """
     if not esquema.opciones_de_tabla or not isinstance(valor, str):
         return None
-    for o in esquema.opciones_de_tabla:
-        if valor in (o.fila, f"{esquema.tabla_id}#{o.fila}"):
-            return o.fila
+    nombradas = [o for o in esquema.opciones_de_tabla
+                 if valor in (o.fila, f"{o.tabla_id}#{o.fila}")]
+    if len(nombradas) == 1:
+        return nombradas[0].referencia
+    # Con varias tablas el texto puede nombrar la misma clave corta en dos:
+    # entonces no nombra UNA fila, y `declarar` pide que se diga cual.
     return None
+
+
+def _nombrada_en_varias_tablas(esquema: EsquemaDeEditor, valor: Any) -> Tuple[OpcionDeTabla, ...]:
+    if not isinstance(valor, str):
+        return ()
+    nombradas = tuple(o for o in esquema.opciones_de_tabla if valor == o.fila)
+    return nombradas if len({o.tabla_id for o in nombradas}) > 1 else ()
+
+
+def opcion_de(esquema: EsquemaDeEditor, fila: str) -> OpcionDeTabla:
+    """
+    La fila que `fila` nombra entre las de TODAS las tablas del editor: por
+    su referencia, por «tabla#fila» o por su clave corta si es unica.
+    `ValueError` si no existe en ninguna, o si la clave corta se repite en
+    varias tablas y no se dijo de cual (VE5-GUI, ficha UI1-02).
+    """
+    exactas = [o for o in esquema.opciones_de_tabla
+               if fila in (o.referencia, f"{o.tabla_id}#{o.fila}")]
+    if len(exactas) == 1:
+        return exactas[0]
+    cortas = [o for o in esquema.opciones_de_tabla if o.fila == fila]
+    if len(cortas) == 1:
+        return cortas[0]
+    if len(cortas) > 1:
+        raise ValueError(
+            f"'{esquema.clave}': la fila «{fila}» esta en varias tablas "
+            f"({', '.join(o.tabla_id for o in cortas)}); diga de cual con "
+            f"«tabla#fila»: {', '.join(o.referencia for o in cortas)}")
+    raise ValueError(
+        f"'{esquema.clave}': ninguna de las tablas {', '.join(esquema.tablas)} "
+        f"tiene la fila «{fila}»")
 
 
 def filas_con_esa_celda(esquema: EsquemaDeEditor, valor: Any) -> Tuple[OpcionDeTabla, ...]:
@@ -526,8 +592,8 @@ def _campos_que_difieren_de_la_fila(esquema: EsquemaDeEditor, fila: str,
     Los campos del dict que la fila fija (columnas homonimas) y cuyo valor
     declarado es OTRO. None si la fila no fija ningun campo.
     """
-    opcion = next((o for o in esquema.opciones_de_tabla if o.fila == fila), None)
-    if opcion is None or not isinstance(opcion.valor_propuesto, dict):
+    opcion = opcion_de(esquema, fila)
+    if not isinstance(opcion.valor_propuesto, dict):
         return None
     return [campo for campo, celda in opcion.valor_propuesto.items()
             if not _mismo_valor(valor.get(campo), celda)]
@@ -550,38 +616,46 @@ def declarar(clave: str, valor: Any, *, fila: str = "", nota: str = "") -> _dec.
             f"TRAZABILIDAD y no es opcional ({r.trazabilidad_exigida}). Sin ella "
             "la procedencia nombraria un ensayo que nadie hizo")
     if isinstance(r, DeTabla):
-        fila = (fila or "").strip() or (fila_implicita(esquema, valor) or "")
+        fila = (fila or "").strip()
+        if not fila:
+            repetida = _nombrada_en_varias_tablas(esquema, valor)
+            if repetida:
+                raise ValueError(
+                    f"'{clave}': el texto {valor!r} nombra una fila de varias tablas "
+                    f"({', '.join(o.tabla_id for o in repetida)}); elija la fila de "
+                    f"una: {', '.join(o.referencia for o in repetida)}")
+            fila = fila_implicita(esquema, valor) or ""
         if esquema.tipo_de_editor == SERIE_DE_CLAVES and isinstance(valor, (tuple, list)):
             # Las claves SON las filas: R4 y las alternativas descartadas
             # las aplica `declaracion`, como desde la ventana emergente.
             return _dec.declarar_desde_tabla(clave, valor, tabla_id=esquema.tabla_id,
                                              filas=tuple(valor), nota=nota)
         if fila:
+            opcion = opcion_de(esquema, fila)
             if isinstance(valor, dict):
                 difieren = _campos_que_difieren_de_la_fila(esquema, fila, valor)
                 if difieren is None and not nota:
                     raise ValueError(
-                        f"'{clave}': la fila «{fila}» de {esquema.tabla_id} no fija "
+                        f"'{clave}': la fila «{opcion.fila}» de {opcion.tabla_id} no fija "
                         "ningun campo de este dict, de modo que elegirla no dice de "
                         "donde salen sus valores: escriba en la nota que se toma de "
                         "ella y por que")
                 if difieren and not nota:
                     raise ValueError(
                         f"'{clave}': los campos {difieren} DIFIEREN de las celdas de la "
-                        f"fila «{fila}» de {esquema.tabla_id}, y no traen nota. Un dict "
+                        f"fila «{opcion.fila}» de {opcion.tabla_id}, y no traen nota. Un dict "
                         "que no es el de la fila no PROVIENE de ella: o se toman sus "
                         "celdas, o se escribe por que se adoptan otros numeros")
             elif isinstance(valor, (tuple, list)):
-                opcion = next((o for o in esquema.opciones_de_tabla if o.fila == fila), None)
-                if opcion is not None and isinstance(opcion.valor_propuesto, tuple) \
+                if isinstance(opcion.valor_propuesto, tuple) \
                         and not nota and not all(
                             _mismo_valor(x, y) for x, y in zip(valor, opcion.valor_propuesto)):
                     raise ValueError(
                         f"'{clave}': el par {valor!r} DIFIERE del par "
-                        f"{opcion.valor_propuesto!r} de la fila «{fila}» de "
-                        f"{esquema.tabla_id}, y no trae nota")
-            return _dec.declarar_desde_tabla(clave, valor, tabla_id=esquema.tabla_id,
-                                             filas=(fila,), nota=nota)
+                        f"{opcion.valor_propuesto!r} de la fila «{opcion.fila}» de "
+                        f"{opcion.tabla_id}, y no trae nota")
+            return _dec.declarar_desde_tabla(clave, valor, tabla_id=opcion.tabla_id,
+                                             filas=(opcion.fila,), nota=nota)
         if esquema.exige_fila and not nota:
             coinciden = filas_con_esa_celda(esquema, valor)
             pista = ""
@@ -598,3 +672,49 @@ def declarar(clave: str, valor: Any, *, fila: str = "", nota: str = "") -> _dec.
     if isinstance(r, EnRango):
         return _dec.declarar_en_rango(clave, valor, nota=nota)
     return _dec.declarar_valor(clave, valor, nota=nota)
+
+
+def declarar_desde_la_ventana(clave: str, valor: Any, *, tabla_id: str = "",
+                              fila: str = "", columna: str = "",
+                              nota: str = "") -> _dec.Procedencia:
+    """
+    La declaracion de la VENTANA EMERGENTE (`gui/ventana_normativa.py`), por
+    la MISMA puerta que la pestaña 2 (VE5-GUI, fichas EB-06 y T11-10).
+
+    Hasta VE5-GUI la emergente llamaba a `declaracion.py` sin nota: lo que
+    exige nota --- un numero que DIFIERE de la celda de la fila elegida, un
+    criterio de tabla sin fila, un dato de ensayo, el par del encofrado de
+    `n_manning_cajon` --- solo entraba por la pestaña 2 o la CLI, y un dato de
+    ensayo entraba por ella SIN trazabilidad. Ahora:
+
+    - `fila` es lo que la tabla de la ventana selecciona (el id de la fila o
+      su clave corta, de la tabla `tabla_id` que la ventana muestra); se
+      califica con su tabla y entra por `declarar`, con las reglas de la
+      pestaña 2 (DIFIERE, R4, el texto que nombra otra fila);
+    - `columna` (la eleccion de una COLUMNA, que la pestaña 2 no tiene) va a
+      `declaracion.declarar_desde_tabla` con la nota;
+    - sin fila ni columna, en un criterio que se lee de una tabla, la nota
+      es la procedencia, y sin ella no entra (la ventana lo exigia ya; ahora
+      dice como cumplirlo);
+    - lo demas, por `declarar`.
+    """
+    nota = (nota or "").strip()
+    r = _ca.criterio(clave).resolucion
+    if columna:
+        return _dec.declarar_desde_tabla(clave, valor, tabla_id=tabla_id or None,
+                                         filas=(fila,) if fila else (),
+                                         columnas=(columna,), nota=nota)
+    if isinstance(r, DeTabla) and fila:
+        usada = tabla_id or r.tablas[0]
+        contenido = _vn.contenido_de_tabla(usada, clave)
+        corta = next((f.clave_corta for f in contenido.filas
+                      if fila in (f.id, f.clave_corta)), fila)
+        return declarar(clave, valor, fila=f"{usada}#{corta}", nota=nota)
+    if isinstance(r, DeTabla) and not nota:
+        raise ValueError(
+            "Elija la fila (o la columna) de la que sale el valor: la "
+            "procedencia que se registra la nombra, y sin ella la memoria no "
+            "puede decir de donde vino el numero. Si el valor no sale de "
+            "ninguna fila, escriba en la nota por que se adopta: la memoria "
+            "lo imprimira como adoptado.")
+    return declarar(clave, valor, nota=nota)
