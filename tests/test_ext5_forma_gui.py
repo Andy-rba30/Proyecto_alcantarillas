@@ -99,7 +99,9 @@ SEIS_EXTERNAS = ("luz_m", "TW_m", "longitud_m", "S_conducto",
                  "cota_afectacion_aguas_arriba_msnm",
                  # --- VE-3.6 --- el F del canal que VC3 pide en la Familia
                  # C; este censo se habia quedado sin el desde VE-3.6.
-                 "desnivel_perfil_canal_m")
+                 "desnivel_perfil_canal_m",
+                 # --- VE-4d --- la cresta del desborde admitido de V8.
+                 "longitud_cresta_desborde_m")
 
 
 def _formas_de(clave):

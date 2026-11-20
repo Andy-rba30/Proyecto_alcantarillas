@@ -83,6 +83,9 @@ diferencia importa porque se corrigen en sitios distintos:
       «cota_de_afectacion». Y, desde VE-3.6, `desnivel_perfil_canal_m` (m;
       el desnivel F de la lamina normal del canal que su perfil provee en el
       cruce, del proyecto del canal; admite 0), que lee VC3 en la Familia C.
+      Y, desde VE-4d, `longitud_cresta_desborde_m` (m; la longitud de la
+      cresta por la que la plataforma desborda, del perfil de la via), que
+      lee V8 con el umbral «desborde_admitido_con_terraplen_protegido».
   (b) COLUMNAS QUE UNA FAMILIA DEJA VACIAS POR TABLERO. `Q_m3s` y `S_cauce`.
       La columna existe y para la Familia C va vacia a proposito
       (`M0_carga._VACIAS_FAMILIA_C`): su valor no lo tiene quien escribe el
