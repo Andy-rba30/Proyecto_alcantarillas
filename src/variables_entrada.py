@@ -1564,7 +1564,7 @@ _META_CRITERIOS: Dict[str, _Meta] = {
     # --- VE-4d --- el desborde admitido de V8 (los lee V8, Fase 5).
     "caudal_unitario_admisible_desborde_m2s": _Meta(unidad="m3/s por m"),
     "coeficientes_desborde_plataforma": _Meta(
-        unidad="C_r en ft^0.5/s (Figura 3.11), k_t y conversion: -; "
+        unidad="C_r en m^0.5/s (Figura 3.11 por 0.552), k_t: -; "
                "abscisas: HW_r/L_r, HW_r en m, h_t/HW_r"),
     "marco_estabilidad_cabezal": _Meta(unidad="-"),
     "fila_phi_estabilidad_cabezal": _Meta(unidad="-"),

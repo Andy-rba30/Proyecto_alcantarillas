@@ -674,6 +674,22 @@ LONG_MAX_CUNETA_LAGUNA = (
 # Tabla Nº 09), que PD declaro con este mismo molde.
 KU_SI = 1.811                       # q* = KU*Q/(A*D**0.5). Imperial: 1.0
 NUMERAL_KU_SI = _reg.cita("HDS5_3ED.A.2").como_texto()
+# --- VE-5 fixve4 --- (revision de la fusion de VE-4, hallazgo 3) LA
+# CONVERSION A SI DEL COEFICIENTE DEL DESBORDE de la plataforma, HDS-5 3a ed.
+# num. 3.1.5, pag. impresa 3.15: «[Cd (SI) = 0.552(Cd from Figure 3.11)]».
+# La Figura 3.11 da C_r en unidades inglesas (ft^0.5/s); 0.552 es la raiz de
+# 0.3048 redondeada a tres cifras y es la que la fuente IMPRIME: se usa la
+# impresa. Hasta aqui era un campo ('conversion_cd_si') del criterio [C]
+# 'coeficientes_desborde_plataforma', declarable por el usuario, y el C_r
+# viajaba en ft^0.5/s por M4, modelos y M5. Es la misma forma que KU_SI: un
+# coeficiente de sistema de unidades que la fuente escribe junto a su
+# ecuacion, el mismo numero en cualquier obra y que ningun proyectista
+# elige; por eso vive aqui y no en el criterio. El criterio guarda las curvas
+# de C_r YA en SI (convertidas con esta constante); el imperial no entra en
+# ninguna formula y solo se imprime como lectura de la figura
+# (`RepartoDelDesborde.C_r_figura`, presentacion).
+K_CD_DESBORDE_SI = 0.552            # C_d(SI) = K_CD_DESBORDE_SI * C_d(Figura 3.11). Imperial: 1.0
+NUMERAL_K_CD_DESBORDE_SI = _reg.cita("HDS5_3ED.3.1.5#CD_SI").como_texto()
 NUMERAL_KS_PENDIENTE = _reg.cita("HDS5_3ED.A.2.1#KS").como_texto()
 NUMERAL_TABLA_A1 = _reg.cita("HDS5_3ED.TA.1").como_texto()
 # El 1.811 no esta en la Tabla A.1 (pag. A.8) sino en la lista de variables de

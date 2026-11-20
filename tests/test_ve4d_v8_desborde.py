@@ -41,7 +41,7 @@ import pytest
 from src import criterios_adoptados as ca
 from src import modelos
 from src import servicio
-from src.constantes_normativas import HDS5_INLET
+from src.constantes_normativas import HDS5_INLET, K_CD_DESBORDE_SI
 from src.modelos import (ConstantesHDS5, ControlGobernante,
                          CriterioPendienteError, DatoFaltanteError,
                          DatoInvalidoError, EventoExtremoDelPunto,
@@ -71,11 +71,14 @@ def test_la_figura_digitalizada_da_las_lecturas_del_ejemplo(HW_r_ft, C_r):
         HW_r=HW_r_ft * PIE, ancho_cresta=CP_HDS5_DG15["L_r_ft"] * PIE,
         h_t=0.0, superficie=modelos.SUPERFICIE_CRESTA_GRAVA,
         coeficientes=COEF)
-    assert coef.C_r == pytest.approx(C_r, abs=CP_HDS5_DG15["tolerancia_C_r"])
+    # --- VE-5 fixve4 --- M4 opera en SI: el oraculo (la lectura impresa,
+    # ft^0.5/s) se compara convertido con la conversion de la fuente.
+    assert coef.C_r_si == pytest.approx(
+        K_CD_DESBORDE_SI * C_r,
+        abs=K_CD_DESBORDE_SI * CP_HDS5_DG15["tolerancia_C_r"])
     assert coef.k_t == pytest.approx(1.0, abs=ABS_CERO)
     assert coef.panel == modelos.PANEL_DESBORDE_SOMERO
-    assert coef.C_d_si == pytest.approx(
-        COEF["conversion_cd_si"] * coef.C_r, abs=ABS_CERO)
+    assert coef.C_d_si == pytest.approx(coef.k_t * coef.C_r_si, abs=ABS_CERO)
 
 
 def test_la_ecuacion_3_9_reproduce_la_fila_del_ejemplo():
@@ -86,8 +89,8 @@ def test_la_ecuacion_3_9_reproduce_la_fila_del_ejemplo():
         ancho_cresta=CP_HDS5_DG15["L_r_ft"] * PIE, h_t=0.0,
         superficie=modelos.SUPERFICIE_CRESTA_GRAVA, coeficientes=COEF)
     assert Q_o / PIE3 == pytest.approx(fila["Q_o_ft3_s"], rel=LECTURA)
-    assert coef.C_r == pytest.approx(fila["C_r"],
-                                     abs=CP_HDS5_DG15["tolerancia_C_r"])
+    assert coef.C_r_si / K_CD_DESBORDE_SI == pytest.approx(
+        fila["C_r"], abs=CP_HDS5_DG15["tolerancia_C_r"])
 
 
 def test_el_panel_lo_decide_HW_r_sobre_L_r_y_la_pavimentada_corre_mas():
@@ -103,7 +106,7 @@ def test_el_panel_lo_decide_HW_r_sobre_L_r_y_la_pavimentada_corre_mas():
     assert c(0.30, pav).panel == modelos.PANEL_DESBORDE_SOMERO
     assert c(0.60, pav).panel == modelos.PANEL_DESBORDE_PROFUNDO
     for HW_r in (0.30, 0.60):
-        assert c(HW_r, pav).C_r > c(HW_r, gra).C_r
+        assert c(HW_r, pav).C_r_si > c(HW_r, gra).C_r_si
 
 
 def test_la_sumergencia_reduce_el_coeficiente_y_fuera_de_la_figura_se_detiene():
@@ -225,7 +228,7 @@ def test_sin_alcanzar_la_cresta_no_hay_reparto():
     assert not r.desborda
     assert r.Q_plataforma == pytest.approx(0.0, abs=ABS_CERO)
     assert r.Q_conducto == pytest.approx(700.0 * PIE3, rel=1e-12)
-    assert r.C_r is None and r.k_t is None
+    assert r.C_r_si is None and r.k_t is None and r.C_r_figura is None
 
 
 def test_si_la_carga_de_diseno_ya_desborda_el_tanteo_no_se_busca():
@@ -364,7 +367,7 @@ def _reparto_de_prueba(q_unitario, desborda=True):
         desborda=desborda, cota_cresta=44.20, longitud_cresta=30.0,
         ancho_cresta=9.60, HW_r=0.10 if desborda else 0.0,
         panel=modelos.PANEL_DESBORDE_SOMERO if desborda else "",
-        C_r=3.0 if desborda else None, k_t=1.0 if desborda else None,
+        C_r_si=1.656 if desborda else None, k_t=1.0 if desborda else None,
         C_d_si=1.656 if desborda else None,
         q_unitario=q_unitario if desborda else 0.0)
 
@@ -427,6 +430,12 @@ def test_V8_cumple_si_el_caudal_unitario_no_supera_el_admisible():
     assert kw["coeficientes"] == COEF
     assert kw["Q_minimo"] == pytest.approx(1.167, abs=ABS_CERO)
     assert kw["HW_minimo"] == pytest.approx(1.042, abs=ABS_CERO)
+    # --- VE-5 fixve4 --- la memoria lleva C_r en SI y la lectura de la
+    # figura (ft^0.5/s) solo como presentacion.
+    c_r = next(m for m in v.paso.sustitucion if m.simbolo == "C_r")
+    assert c_r.unidad == "m^0.5/s"
+    assert c_r.valor == pytest.approx(1.656, abs=ABS_CERO)
+    assert "3.000 ft^0.5/s" in c_r.procedencia
     v = _v8(_evento(q_unitario=0.25))
     assert not v.cumple
 
@@ -471,10 +480,33 @@ def test_los_criterios_nuevos_y_su_etiqueta():
     assert q.nivel == ca.NIVEL_EXPEDIENTE
     c = ca.CRITERIOS["coeficientes_desborde_plataforma"]
     assert c.etiqueta == "C" and c.nivel == ca.NIVEL_EXPEDIENTE
-    assert set(c.valor) == {"conversion_cd_si", "limite_HWr_sobre_Lr",
-                            "Cr_profundo", "Cr_somero_m", "kt"}
-    for curva in ("Cr_profundo", "Cr_somero_m", "kt"):
+    # --- VE-5 fixve4 --- sin campo de conversion (es la constante [N]
+    # K_CD_DESBORDE_SI) y con las curvas de C_r en SI.
+    assert set(c.valor) == {"limite_HWr_sobre_Lr", "Cr_profundo_si",
+                            "Cr_somero_si", "kt"}
+    for curva in ("Cr_profundo_si", "Cr_somero_si", "kt"):
         assert set(c.valor[curva]) == set(modelos.SUPERFICIES_CRESTA)
+    leida = ca._FIGURA_3_11_C_R_LEIDA
+    for curva_si, curva in (("Cr_profundo_si", "Cr_profundo"),
+                            ("Cr_somero_si", "Cr_somero_m")):
+        for sup in modelos.SUPERFICIES_CRESTA:
+            for (x_si, y_si), (x, y) in zip(c.valor[curva_si][sup],
+                                            leida[curva][sup]):
+                assert x_si == pytest.approx(x, abs=ABS_CERO)
+                assert y_si == pytest.approx(K_CD_DESBORDE_SI * y,
+                                             abs=ABS_CERO)
+
+
+def test_la_conversion_a_SI_es_la_que_la_fuente_imprime():
+    """«[Cd (SI) = 0.552(Cd from Figure 3.11)]» (pag. impresa 3.15): una
+    constante con su cita, no un campo declarable del criterio."""
+    from src import constantes_normativas as cn
+    from src.normativa.registro import construir
+    assert cn.K_CD_DESBORDE_SI == pytest.approx(0.552, abs=ABS_CERO)
+    cita = construir().cita("HDS5_3ED.3.1.5#CD_SI")
+    assert "0.552" in cita.texto_literal.texto
+    assert "conversion_cd_si" not in ca.CRITERIOS[
+        "coeficientes_desborde_plataforma"].valor
     # El umbral ya no anuncia «no implementado».
     assert "no esta implementado" not in ca.CRITERIOS[UMBRAL].justificacion
 
@@ -625,7 +657,10 @@ def test_la_digitalizacion_de_la_figura_se_repite_sobre_el_pdf():
         f0, f1 = ejes["filas"]
         c0, c1 = ejes["columnas"]
         for superficie, mascara in colores.items():
-            serie = COEF[curva][superficie]
+            # La imagen esta en las unidades de la figura: se contrasta la
+            # TRANSCRIPCION (C_r en ft^0.5/s); el criterio la lleva en SI.
+            serie = (COEF[curva][superficie] if curva == "kt" else
+                     ca._FIGURA_3_11_C_R_LEIDA[curva][superficie])
             # Por columna, la mediana del trazo: (abscisa, ordenada).
             trazo = [(x_de(c), a_valor(f0 + float(np.median(
                 np.where(mascara[f0:f1, c])[0]))))

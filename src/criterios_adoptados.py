@@ -84,6 +84,7 @@ from src.constantes_normativas import (  # --- T-7c ---
     PHI_FLEXION_AASHTO)
 from src.constantes_normativas import (  # --- T11-10 ---
     MANNING_CAJON_IN_SITU_HDS5, NUMERAL_MANNING_CAJON_IN_SITU_HDS5)
+from src.constantes_normativas import K_CD_DESBORDE_SI  # --- VE-5 fixve4 ---
 from src.dominios import MILIMETROS_POR_METRO
 from src.normativa import esquema as _esquema
 from src.normativa import registro as _registro_normativo
@@ -1047,6 +1048,57 @@ REVESTIMIENTOS_CUNETA: Dict[str, Tuple[str, str]] = {
         "excavada_en_terreno", "arena_arcillosa_dura_margas_duras"),
     "terreno_arena_fina_o_limo": ("excavada_en_terreno", "arena_fina_o_limo"),
 }
+
+
+# --- VE-5 fixve4 --- LA FIGURA 3.11 DEL HDS-5 COMO SE LEYO (curvas de C_r
+# en las unidades de la figura, ft^0.5/s; el panel B ya con la abscisa en m).
+# Es la TRANSCRIPCION de la lectura de VE-4d (ver el comentario del criterio
+# 'coeficientes_desborde_plataforma', que dice como se leyo); el imperial no
+# entra en ninguna formula: el criterio guarda estas curvas CONVERTIDAS a SI
+# con K_CD_DESBORDE_SI (revision de la fusion de VE-4, hallazgo 3), y el test
+# marcado `pdf` de tests/test_ve4d_v8_desborde.py contrasta esta transcripcion
+# con la imagen. Ordenada imperial: C_r(SI) = 0.552 · C_r(figura).
+_FIGURA_3_11_C_R_LEIDA = {
+    # Panel A: abscisa HW_r/L_r (el eje esta rotulado «HWr», y su
+    # rango 0.15-0.32 es el de la relacion: interpretacion
+    # declarada en la cita HDS5_3ED.F3.11).
+    "Cr_profundo": {
+        "pavimentada": ((0.15, 3.052), (0.16, 3.058), (0.18, 3.067),
+                        (0.20, 3.076), (0.22, 3.081), (0.24, 3.085),
+                        (0.26, 3.088), (0.28, 3.091), (0.30, 3.093),
+                        (0.32, 3.093)),
+        "grava": ((0.15, 2.951), (0.16, 2.958), (0.18, 2.979),
+                  (0.20, 3.001), (0.22, 3.021), (0.24, 3.043),
+                  (0.26, 3.060), (0.28, 3.079), (0.30, 3.090),
+                  (0.32, 3.094)),
+    },
+    # Panel B: abscisa HW_r en METROS. La figura la da en pies (0 a
+    # 4.0 ft): se leyo en 0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.8, 1.0,
+    # 1.25 (grava), 1.5, 1.75 (grava), 2.0, 2.5, 3.0, 3.5 y 4.0 ft y
+    # se convirtio con 0.3048 m/ft exactos. El valor en 0 se toma en
+    # la primera columna del trazo (0.02 ft) extrapolado al eje.
+    "Cr_somero_m": {
+        "pavimentada": ((0.0, 2.897), (0.03048, 2.933),
+                        (0.06096, 2.969), (0.09144, 2.990),
+                        (0.12192, 3.006), (0.1524, 3.019),
+                        (0.18288, 3.026), (0.24384, 3.032),
+                        (0.3048, 3.034), (0.4572, 3.034),
+                        (0.6096, 3.037), (0.762, 3.037),
+                        (0.9144, 3.043), (1.0668, 3.040),
+                        (1.2192, 3.040)),
+        "grava": ((0.0, 2.513), (0.03048, 2.550), (0.06096, 2.591),
+                  (0.09144, 2.629), (0.12192, 2.674), (0.1524, 2.701),
+                  (0.18288, 2.729), (0.24384, 2.778), (0.3048, 2.827),
+                  (0.381, 2.875), (0.4572, 2.919), (0.5334, 2.953),
+                  (0.6096, 2.978), (0.762, 3.012), (0.9144, 3.034),
+                  (1.0668, 3.039), (1.2192, 3.039)),
+    },
+}
+_FIGURA_3_11_C_R_EN_SI = {
+    curva: {superficie: tuple((abscisa, K_CD_DESBORDE_SI * ordenada)
+                              for abscisa, ordenada in serie)
+            for superficie, serie in por_superficie.items()}
+    for curva, por_superficie in _FIGURA_3_11_C_R_LEIDA.items()}
 
 
 CRITERIOS: Dict[str, Criterio] = {
@@ -11449,8 +11501,10 @@ CRITERIOS: Dict[str, Criterio] = {
     ),
 
     "coeficientes_desborde_plataforma": Criterio(
-        # LA FIGURA 3.11 DEL HDS-5, DIGITALIZADA, y la conversion a SI que la
-        # misma pagina imprime. Es una LECTURA de una figura y por eso es [C]
+        # LA FIGURA 3.11 DEL HDS-5, DIGITALIZADA, con C_r en SI (VE-5
+        # fixve4: la conversion que la pagina 3.15 imprime es
+        # constantes_normativas.K_CD_DESBORDE_SI, y la lectura en unidades de
+        # la figura es `_FIGURA_3_11_C_R_LEIDA`, arriba). Es una LECTURA de una figura y por eso es [C]
         # y no [N]: la hoja de ruta no trae el desborde, y el registro no
         # tiene tipo para un abaco (ver 'N_cq_N_gammaq_meyerhof'). A
         # diferencia de aquel, aqui la lectura no depende de la geometria
@@ -11474,44 +11528,15 @@ CRITERIOS: Dict[str, Criterio] = {
         # hay coeficiente («metodo no evaluable»), salvo k_t por debajo del
         # inicio de su curva, que vale 1 (vertedero libre).
         valor={
-            # «[Cd (SI) = 0.552(Cd from Figure 3.11)]» (pag. impresa 3.15).
-            "conversion_cd_si": 0.552,
             # El rotulo de los paneles A («HWr/Lr > 0.15») y B («<= 0.15»).
             "limite_HWr_sobre_Lr": 0.15,
-            # Panel A: abscisa HW_r/L_r (el eje esta rotulado «HWr», y su
-            # rango 0.15-0.32 es el de la relacion: interpretacion
-            # declarada en la cita HDS5_3ED.F3.11).
-            "Cr_profundo": {
-                "pavimentada": ((0.15, 3.052), (0.16, 3.058), (0.18, 3.067),
-                                (0.20, 3.076), (0.22, 3.081), (0.24, 3.085),
-                                (0.26, 3.088), (0.28, 3.091), (0.30, 3.093),
-                                (0.32, 3.093)),
-                "grava": ((0.15, 2.951), (0.16, 2.958), (0.18, 2.979),
-                          (0.20, 3.001), (0.22, 3.021), (0.24, 3.043),
-                          (0.26, 3.060), (0.28, 3.079), (0.30, 3.090),
-                          (0.32, 3.094)),
-            },
-            # Panel B: abscisa HW_r en METROS. La figura la da en pies (0 a
-            # 4.0 ft): se leyo en 0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.8, 1.0,
-            # 1.25 (grava), 1.5, 1.75 (grava), 2.0, 2.5, 3.0, 3.5 y 4.0 ft y
-            # se convirtio con 0.3048 m/ft exactos. El valor en 0 se toma en
-            # la primera columna del trazo (0.02 ft) extrapolado al eje.
-            "Cr_somero_m": {
-                "pavimentada": ((0.0, 2.897), (0.03048, 2.933),
-                                (0.06096, 2.969), (0.09144, 2.990),
-                                (0.12192, 3.006), (0.1524, 3.019),
-                                (0.18288, 3.026), (0.24384, 3.032),
-                                (0.3048, 3.034), (0.4572, 3.034),
-                                (0.6096, 3.037), (0.762, 3.037),
-                                (0.9144, 3.043), (1.0668, 3.040),
-                                (1.2192, 3.040)),
-                "grava": ((0.0, 2.513), (0.03048, 2.550), (0.06096, 2.591),
-                          (0.09144, 2.629), (0.12192, 2.674), (0.1524, 2.701),
-                          (0.18288, 2.729), (0.24384, 2.778), (0.3048, 2.827),
-                          (0.381, 2.875), (0.4572, 2.919), (0.5334, 2.953),
-                          (0.6096, 2.978), (0.762, 3.012), (0.9144, 3.034),
-                          (1.0668, 3.039), (1.2192, 3.039)),
-            },
+            # --- VE-5 fixve4 --- Paneles A y B EN SI: las curvas de C_r de
+            # la figura (ft^0.5/s, transcritas en `_FIGURA_3_11_C_R_LEIDA`)
+            # multiplicadas por constantes_normativas.K_CD_DESBORDE_SI
+            # (0.552, cita HDS5_3ED.3.1.5#CD_SI). Una lectura que se declare
+            # en su lugar va tambien en m^0.5/s.
+            "Cr_profundo_si": _FIGURA_3_11_C_R_EN_SI["Cr_profundo"],
+            "Cr_somero_si": _FIGURA_3_11_C_R_EN_SI["Cr_somero_m"],
             # Panel C: abscisa h_t/HW_r; k_t = 1 a la izquierda del primer
             # punto (donde la curva deja el borde superior del cuadro) y
             # ningun valor a la derecha del ultimo (k_t = 0.50, el pie del
@@ -11532,9 +11557,9 @@ CRITERIOS: Dict[str, Criterio] = {
         etiqueta="C",
         forma=FORMA_DICT_CON_CAMPOS,
         concepto="Coeficiente de descarga del flujo sobre la plataforma: las "
-                 "curvas C_r (desborde profundo y somero) y k_t (sumergencia) "
-                 "de la Figura 3.11 del HDS-5, digitalizadas, y la conversion "
-                 "de C_d a SI",
+                 "curvas C_r (desborde profundo y somero, en m^0.5/s) y k_t "
+                 "(sumergencia) de la Figura 3.11 del HDS-5, digitalizadas y "
+                 "convertidas a SI",
         justificacion="Da el coeficiente de la Ec. 3.9 del HDS-5 (Q_o = C_d "
                       "L HW_r^1.5, cita HDS5_3ED.3.1.5#EC_3_9) con que V8 "
                       "reparte el caudal del evento extremo entre el "
@@ -11542,8 +11567,11 @@ CRITERIOS: Dict[str, Criterio] = {
                       "admite. El vacio es de la hoja de ruta, que no trae "
                       "el desborde; lo cubre el HDS-5, que define C_d = k_t "
                       "C_r con las curvas de la Figura 3.11 (cita "
-                      "HDS5_3ED.F3.11) y su conversion a SI, 0.552 (cita "
-                      "HDS5_3ED.3.1.5#CD_SI). La figura distingue la cresta "
+                      "HDS5_3ED.F3.11) en ft^0.5/s; el criterio las guarda "
+                      "convertidas a SI con la conversion que la fuente "
+                      "imprime, 0.552 (cita HDS5_3ED.3.1.5#CD_SI, "
+                      "constantes_normativas.K_CD_DESBORDE_SI: no es un campo "
+                      "declarable desde VE-5 fixve4). La figura distingue la cresta "
                       "pavimentada de la de grava; cual es la de esta via lo "
                       "dice 'condicion_pavimento'. Lo que no resuelve: la "
                       "figura es un abaco y su lectura tiene la resolucion "

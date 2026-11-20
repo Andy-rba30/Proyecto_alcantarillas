@@ -8386,20 +8386,11 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   con que el analista obtuvo el FS (Resistencia I en la 9a edición; Servicio I en el
   2.4.5.3.1 del Manual de Puentes, que no da cifra de φ) la sostiene su documento, no el
   programa. Y `fila_phi_estabilidad_global` no tiene valor de archivo: sin declararla, la
-  fila LRFD estática decide sólo si las dos filas dan lo mismo. **Desde VE-5 fixve4**
-  (revisión de la fusión de VE-4, hallazgo 5) entre 1.333 y 1.538 la fila **espera el
-  criterio**: no se emite, E4/E5 vuelve a `pendientes` con su motivo
-  (`EstabilidadDelCabezal.pendientes_por_criterio`) y el servicio lo lleva como `Bloqueo`
-  `CriterioPendienteError` del punto (`servicio.etapa_de_global_declarada`), sin tumbar E1
-  a E3. Hasta ahí salía INDICADOR «no decidida» con `cumple` True y E4 salía de
-  `pendientes` — el patrón de la fila A6 del armado, que `EstadoDeVerificacion` reserva
-  para un [A] DECLARADO; la fila A6 (`M9._fila_de_fisuracion`, `clase_de_exposicion`)
-  conserva ese patrón y queda señalada para la misma revisión. Con el marco LRFD que no
-  rige, la fila sigue siendo INDICADOR (informa). **Hallazgo 6, decidido en VE-5 fixve4:**
-  se conserva 1/φ exacto (FS = 1.50 con φ = 0.65 NO CUMPLE): la desigualdad de 11.6.3.7
-  es φ·R ≥ Q, el «approximately» de C11.6.3.7 es comentario, y el inverso exacto es el lado
-  exigente. Las dos decisiones las tomó la sesión sin el subagente Fable (no disponible):
-  **decisión pendiente de Fable**.
+  fila LRFD estática decide sólo si las dos filas dan lo mismo; entre 1.333 y 1.538 **espera
+  el criterio** (VE-5 fixve4: `Bloqueo`; razón en
+  `M9._fila_global_declarada` y `EstabilidadDelCabezal.pendientes_por_criterio`; la A6, sin
+  cambio). 1/φ exacto se conserva (FS 1.50 con φ 0.65 no cumple).
+  **Decisión pendiente de Fable**.
 - **Qué haría falta:** que el dueño confirme las tres lecturas o elija otra (por ejemplo,
   las cifras redondeadas del comentario); declarar `fila_phi_estabilidad_global` con el EMS
   real; y corregir la hoja de ruta, cuya §9.3 y la nota de la Fase 9 siguen diciendo que E4
