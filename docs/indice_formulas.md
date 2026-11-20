@@ -7,7 +7,7 @@
 > Si difieren, lo que hay que corregir es el cálculo o el registro, no
 > este archivo.
 >
-> **Sello.** Fecha de generación: 2026-11-18 · Commit del árbol de origen: `28dfe9f` · Suite: 0 passed, 0 skipped (PROVISIONAL, se sella con el par medido)
+> **Sello.** Fecha de generación: 2026-11-20 · Commit del árbol de origen: `24e7c0b` · Suite: 0 passed, 0 skipped (PROVISIONAL, se sella con el par medido)
 >
 > **Qué es una fila.** Una fórmula distinta que la corrida evaluó:
 > fase, módulo emisor (derivado del AST de `src/modulos/`, no de una
