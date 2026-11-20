@@ -892,7 +892,11 @@ def _bloque_del_cabezal_en_la_salida_de_la_cli(salida):
     lineas = salida.splitlines()
     titulo = f"{cli.FASE_CABEZAL} - del proyecto, no del punto"
     inicio = lineas.index(titulo)
-    fin = lineas.index("ALCANCE DE LA CORRIDA", inicio)
+    # Hasta el siguiente bloque: desde VE-5 met, la Fase 11 del proyecto va
+    # entre el cabezal y el alcance, y tiene su propio panel en la ventana.
+    fin = min(i for i, l in enumerate(lineas)
+              if i > inicio and (l == "ALCANCE DE LA CORRIDA"
+                                 or l.startswith("FASE 11 - ")))
     return lineas[inicio - 1:fin - 1]
 
 
