@@ -4935,6 +4935,14 @@ def _fase_11_metrados(informe: InformePunto) -> None:
                lambda: M12.renglones_proteccion_salida(
                    proteccion=informe.proteccion, seccion=seccion,
                    celdas=celdas))
+    # --- VE-7 lote B, B7 --- lo que no se metra, renglon por renglon.
+    for elemento in M12.RENGLONES_NO_MEDIDOS:
+        if elemento == M12.NO_MEDIDO_EMBOQUILLADO and \
+                informe.proteccion_entrada is None:
+            continue
+        _rubro(M12.etapa_no_medido(elemento),
+               lambda e=elemento: M12.renglon_no_medido(
+                   e, id_punto=informe.punto.id))
     avisos: List[str] = []
     if material.forma is FormaSeccion.RECTANGULAR:
         avisos.append(AVISO_ACERO_DEL_MARCO)

@@ -957,6 +957,57 @@ def renglones_proteccion_salida(*, proteccion, seccion, celdas: int
 # Totales del expediente
 # ===========================================================================
 
+# ---------------------------------------------------------------------------
+# --- VE-7 lote B, B7 (VE5-MET-01; decision del consultor Fable, triaje VE-7,
+# 2026-11-20) --- LO QUE NO SE METRA, DICHO RENGLON POR RENGLON. Tres partes
+# de la obra no se miden y hasta VE-7 el cuadro las omitia en silencio: cada
+# una sale como `Bloqueo` de la fase de los metrados («no medido») con su
+# motivo, como cualquier renglon que no se pudo medir (`MetradoDelPunto`).
+# ---------------------------------------------------------------------------
+NO_MEDIDO_RELLENO = "relleno para estructuras (EG-2013 502.A)"
+NO_MEDIDO_CAMA = "cama de apoyo del conducto"
+NO_MEDIDO_EMBOQUILLADO = "revestimiento de la entrada (emboquillado)"
+
+# (que se omite, que haria falta para medirlo, por que no se mide hoy)
+RENGLONES_NO_MEDIDOS: Dict[str, Tuple[str, str]] = OrderedDict((
+    (NO_MEDIDO_RELLENO, (
+        "la seccion del relleno compactado alrededor del conducto y del "
+        "trasdos de los cabezales, de los planos del expediente",
+        "el programa no tiene la seccion del relleno: la Fase 9 da el "
+        "cabezal y la 7.B la cota del conducto, no las lineas del relleno")),
+    (NO_MEDIDO_CAMA, (
+        "el espesor y el ancho de la cama de la seccion tipica del plano",
+        "la excavacion baja hasta el fondo de la cama (506.07, 508.05), pero "
+        "el material de la cama no tiene renglon propio en este programa")),
+    (NO_MEDIDO_EMBOQUILLADO, (
+        "la geometria del zampeado y del dentellon de la entrada (planos del "
+        "expediente; ficha T8-03)",
+        "la proteccion de la entrada declara la CLASE de revestimiento "
+        "('tipo_proteccion_entrada') y ninguna fuente del repositorio le da "
+        "dimensiones")),
+))
+
+
+def etapa_no_medido(elemento: str) -> str:
+    """La etapa de `servicio.FASE_METRADOS` del renglon no medido."""
+    return f"metrado de {elemento}: no medido"
+
+
+def renglon_no_medido(elemento: str, *, id_punto: Optional[str] = None):
+    """
+    --- VE-7 lote B, B7 --- El renglon que NO se metra, como excepcion: el
+    servicio lo convierte en el `Bloqueo` de la fase de los metrados con su
+    motivo, para que el cuadro no lo omita en silencio. `MetodoNoEvaluable`
+    con el rotulo de los metrados: el dato esta, y lo que falta es la
+    medicion de esa parte de la obra, que el programa no implementa.
+    """
+    procedimiento, motivo = RENGLONES_NO_MEDIDOS[elemento]
+    raise MetodoNoEvaluableError(
+        f"{elemento} (no medido)", id_punto=id_punto,
+        procedimiento=procedimiento, motivo=f"no medido: {motivo}",
+        rotulo=MOTIVO_METODO_NO_EVALUABLE_METRADO)
+
+
 def totales_por_partida(metrados: Sequence) -> Tuple[TotalDePartida, ...]:
     """
     La suma de cada partida en el expediente: los renglones con la misma
