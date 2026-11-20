@@ -207,7 +207,8 @@ def test_b5_el_canto_impreso_declarado_cierra_el_portico(a01):
     assert exc.value.campo == "espesor_pared_cajon"
     texto = str(exc.value)
     assert "y repetir" in texto
-    X = float(re.search(r">= (\d+\.\d+) m", texto).group(1))
+    assert "(el menor de la grilla que cierra)" in texto
+    X = float(re.search(r"= (\d+\.\d+) m \(el menor", texto).group(1))
     assert X == pytest.approx(d.canto_que_cierra_m, rel=REL_TRANSPORTE)
     t0 = d.geometria.t_losa_superior_m
     assert X > t0
@@ -475,3 +476,13 @@ def test_d3_con_el_nf_entre_losas_no_hay_casos_nuevos(a01):
     casos = dict(d.casos)
     assert M8.CASO_EV_SUM not in casos and M8.CASO_WA_SUP not in casos
     assert not any(e[0].endswith(M8.SUFIJO_SUMERGIDO) for e in d.envolventes)
+
+
+def test_d9_la_busqueda_del_canto_tiene_tope_y_lo_imprime(a01):
+    from src.tolerancias import ITERACIONES_MAX_CANTO_PORTICO
+    d = _disenar(a01, H_rel=1.0)
+    paso = next(p for p in d.pasos if p.codigo == M8.CODIGO_PASO_PORTICO_CANTO)
+    sust = {m.simbolo: m.valor for m in paso.sustitucion}
+    assert sust["tope"] == pytest.approx(
+        0.20 + ITERACIONES_MAX_CANTO_PORTICO * 0.10, rel=REL_CONVERSION)
+    assert "(el menor de la grilla que cierra)" in paso.nota_del_proyecto

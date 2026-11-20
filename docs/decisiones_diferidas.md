@@ -9394,9 +9394,12 @@ cambios están aplicados en estas fichas.
   ese canto forma la clave física, V4, V7 y G1. Oráculo: el canto impreso, declarado con el relleno
   reducido, cierra el pórtico; el anterior de la grilla no.
 - **Decisión del consultor Fable (triaje VE-7, 2026-11-20):** buscar y decir, no iterar.
-- **Abierto:** el canto es uniforme (losas, paredes y tabiques); los cantos separados siguen sin
-  existir en la geometría del programa (T5-07). Con el canto declarado la corrida se repite entera.
-- **Qué haría falta:** separar los cantos en M2/M5/M7.
+- **Revisado por Fable (dictamen del consultor, 2026-11-20): defecto 9, aplicado.** El bloqueo y el
+  paso dicen «= X m (el menor de la grilla que cierra)»; la búsqueda tiene tope
+  (`tolerancias.ITERACIONES_MAX_CANTO_PORTICO`, 20 escalones) y el paso lo imprime.
+- **Abierto:** el canto es uniforme; los cantos separados NO PROCEDEN (dictamen, (ii-a)). Con el
+  canto declarado la corrida se repite entera.
+- **Qué haría falta:** nada más mientras la geometría del programa tenga un solo canto.
 - **Dónde vive:** `src/modulos/M8_estructural.py::exigir_canto_del_portico`
 
 ## VE7B-12 · El acero del pórtico del marco se metra con sus armados (VE5-MET-01)

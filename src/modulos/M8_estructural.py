@@ -286,6 +286,7 @@ from src.modelos import (CIFRAS_FACTOR, CIFRAS_FINA, CIFRAS_MAGNITUD,
                          SeccionRectangular, TipoDeVeredicto,
                          TipoMaterial, Umbral, Verificacion, Veredicto, paso)
 from src.modulos.M2_material import espesor_pared, numero_de_celdas
+from src.tolerancias import ITERACIONES_MAX_CANTO_PORTICO   # dictamen Fable
 from src.tolerancias import (DIVISIONES_MIEMBRO_PORTICO,
                              POSICIONES_CARGA_VIVA_POR_CELDA, TOL_BRENT,
                              TOL_UMBRAL_NORMATIVO,
@@ -4869,8 +4870,10 @@ def _con_el_canto_que_cierra(d: DisenoPortico, *, punto: PuntoCritico,
     t0 = d.geometria.t_losa_superior_m
     paso_m, _fraccion = M9._regla_de_dimensionamiento()
     cierra, hasta, motivo_fin = None, t0, ""
-    k = 1
-    while True:
+    tope = _escalon_de_la_serie(t0, paso_m, ITERACIONES_MAX_CANTO_PORTICO)
+    motivo_fin = (f"tope de la busqueda: {ITERACIONES_MAX_CANTO_PORTICO} "
+                  f"escalones, hasta {tope:.2f} m")
+    for k in range(1, ITERACIONES_MAX_CANTO_PORTICO + 1):
         t = _escalon_de_la_serie(t0, paso_m, k)
         H_k = H_rel - (t - t0)
         if not H_k > TOL_UMBRAL_NORMATIVO:
@@ -4888,9 +4891,8 @@ def _con_el_canto_que_cierra(d: DisenoPortico, *, punto: PuntoCritico,
             break
         hasta = t
         if d_k.cumple:
-            cierra = t
+            cierra, motivo_fin = t, ""
             break
-        k += 1
     incumplidas = sorted({v.codigo.split(".")[0] for v in d.verificaciones
                           if not v.cumple})
     p_canto = paso(
@@ -4909,7 +4911,10 @@ def _con_el_canto_que_cierra(d: DisenoPortico, *, punto: PuntoCritico,
             Magnitud("H_rel", H_rel, "m", "relleno sobre la clave con t_0",
                      cifras=CIFRAS_MAGNITUD),
             Magnitud("t buscado hasta", hasta, "m", motivo_fin or
-                     "el primero que cumple", cifras=CIFRAS_MAGNITUD)),
+                     "el primero que cumple", cifras=CIFRAS_MAGNITUD),
+            Magnitud("tope", tope, "m", f"t_0 + {ITERACIONES_MAX_CANTO_PORTICO}"
+                     "·paso (ITERACIONES_MAX_CANTO_PORTICO)",
+                     cifras=CIFRAS_MAGNITUD)),
         resultado=Magnitud("t_cierra", cierra if cierra is not None else "—",
                            "m", "menor canto uniforme con el que el portico "
                            "cumple", cifras=CIFRAS_MAGNITUD),
@@ -4918,8 +4923,9 @@ def _con_el_canto_que_cierra(d: DisenoPortico, *, punto: PuntoCritico,
             explicacion="busqueda, no verificacion: el canto no se adopta"),
         nota_del_proyecto=(
             f"Con {t0:.2f} m el portico incumple {', '.join(incumplidas)}. "
-            + (f"Declarar '{CRITERIO_ESPESOR_CAJON}' >= {cierra:.2f} m y "
-               "repetir la corrida: el canto mueve la clave fisica, V4, V7 "
+            + (f"Declarar '{CRITERIO_ESPESOR_CAJON}' = {cierra:.2f} m (el "
+               "menor de la grilla que cierra) y repetir la corrida: el "
+               "canto mueve la clave fisica, V4, V7 "
                "y G1, que se verifican con la geometria del programa."
                if cierra is not None else
                f"Ningun canto uniforme de la grilla cierra el portico "
@@ -4967,9 +4973,10 @@ def exigir_canto_del_portico(portico: DisenoPortico,
     t0 = portico.geometria.t_losa_superior_m
     if portico.canto_que_cierra_m is not None:
         motivo = (f"el portico del marco no cumple {', '.join(incumplidas)} "
-                  f"con {t0:.2f} m: declarar '{CRITERIO_ESPESOR_CAJON}' >= "
-                  f"{portico.canto_que_cierra_m:.2f} m y repetir (el canto "
-                  "mueve la clave, V4, V7 y G1: no se adopta solo)")
+                  f"con {t0:.2f} m: declarar '{CRITERIO_ESPESOR_CAJON}' = "
+                  f"{portico.canto_que_cierra_m:.2f} m (el menor de la "
+                  "grilla que cierra) y repetir (el canto mueve la clave, "
+                  "V4, V7 y G1: no se adopta solo)")
     else:
         hasta = portico.canto_buscado_hasta_m
         motivo = (f"el portico del marco no cumple {', '.join(incumplidas)} "
