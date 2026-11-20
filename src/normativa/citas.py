@@ -7800,6 +7800,216 @@ MC_HHD_T05_SCS = _cita(
           "trata como a los «3 a 10%» de Kirpich."),
 )
 
+# --- VE-5 (mh, ficha T1-07) --- Las dos filas de la Tabla Nº 05 que piden
+# iterar con la intensidad: Izzard y la onda cinematica. Leidas en la capa de
+# texto de las pags. impresas 39 y 40 y, las formulas, en la imagen.
+FECHA_VE5_MH = "2026-11-20"
+POR_VE5_MH = "VE-5 (lote mh) · lectura directa de la pagina por la sesion"
+VE5_MH = (FECHA_VE5_MH, POR_VE5_MH)
+
+MC_HHD_T05_IZZARD = _cita(
+    id="MC_HHD.3.9#T05_IZZARD",
+    fuente_id="MC_HHD",
+    numeral="3.9",
+    titulo_numeral="Tiempo de Concentración",
+    pagina_impresa="39",
+    pagina_pdf=42,
+    pagina_pdf_titulo=41,
+    texto_literal=Verbatim(
+        texto=("Desarrollada experimentalmente en laboratorio por el Bureau "
+               "of Public Roads para flujo superficial en caminos y Áreas de "
+               "céspedes; los valores del coeficiente de retardo varían desde "
+               "0.0070 para pavimentos muy lisos hasta 0.012 para pavimentos "
+               "de concreto y 0.06 para superficies densamente cubiertas de "
+               "pasto; la solución requiere de procesos iterativos"),
+        pagina_pdf=42),
+    caracter=Caracter.APROXIMACION,
+    metodo=AMBOS,
+    sesion=VE5_MH,
+    derivado_de="MC_HHD.3.9#T05",
+    nota=("Fila «Izzard (1946)». La formula, vista en imagen: tc = 525 · "
+          "(0.0000276·i + c) · L^0.33 / (S^0.333 · i^0.667), con «i = "
+          "intensidad de lluvia, mm/h», «c = coeficiente de retardo», «L = "
+          "longitud de la trayectoria de flujo, m.» y «S = pendiente de la "
+          "trayectoria de flujo, m/m.» La observacion termina con la "
+          "condicion de aplicacion (cita MC_HHD.3.9#T05_IZZARD_IL). Los "
+          "valores del coeficiente de retardo son una DESCRIPCION (de 0.0070 "
+          "a 0.06 segun la superficie), no un rango de validez: el "
+          "coeficiente es un dato de la cuenca."),
+)
+
+MC_HHD_T05_IZZARD_IL = _cita(
+    id="MC_HHD.3.9#T05_IZZARD_IL",
+    fuente_id="MC_HHD",
+    numeral="3.9",
+    titulo_numeral="Tiempo de Concentración",
+    pagina_impresa="39",
+    pagina_pdf=42,
+    pagina_pdf_titulo=41,
+    texto_literal=Verbatim(
+        texto="el producto de i por L debe ser ≤ 3800.",
+        pagina_pdf=42),
+    caracter=Caracter.EXIGENCIA,
+    metodo=AMBOS,
+    sesion=VE5_MH,
+    derivado_de="MC_HHD.3.9#T05_IZZARD",
+    nota=("Ultima frase de la observacion de la fila «Izzard (1946)», con "
+          "i en mm/h y L en m (las unidades que la misma fila escribe). Es la "
+          "condicion de la formula, y el programa no la evalua fuera de ella. "
+          "El «≤» se leyo en la imagen."),
+)
+
+MC_HHD_T05_ONDA = _cita(
+    id="MC_HHD.3.9#T05_ONDA",
+    fuente_id="MC_HHD",
+    numeral="3.9",
+    titulo_numeral="Tiempo de Concentración",
+    pagina_impresa="40",
+    pagina_pdf=43,
+    pagina_pdf_titulo=41,
+    texto_literal=Verbatim(
+        texto=("Ecuación para flujo superficial desarrollada a partir de "
+               "análisis de onda cinemática de la escorrentía superficial "
+               "desde superficies desarrolladas; el método requiere "
+               "iteraciones debido a que tanto I (Intensidad de lluvia) como "
+               "tc son desconocidos"),
+        pagina_pdf=43),
+    caracter=Caracter.APROXIMACION,
+    metodo=AMBOS,
+    sesion=VE5_MH,
+    derivado_de="MC_HHD.3.9#T05",
+    nota=("Fila «Ecuaciones de onda cinemática Morgali y Linsley (1965) Aron "
+          "y Erborge (1973)». La formula, vista en imagen: tc = 7 · L^0.6 · "
+          "n^0.6 / (I^0.4 · S^0.3), con «L = longitud del flujo superficial, "
+          "m.», «n = coeficiente de rugosidad de Manning.», «I = intensidad de "
+          "lluvia, mm/h.» y «S = pendiente promedio del terreno-m/m.» La "
+          "observacion sigue: «la superposición de una curva de intensidad – "
+          "duración – frecuencia da una solución gráfica directa para tc»; el "
+          "programa hace lo mismo numericamente (punto fijo tc <-> I con la "
+          "relacion intensidad-duracion del criterio). La fila no escribe "
+          "rango de aplicacion."),
+    interpretacion=Interpretacion(
+        texto=("La S de la fila es la «pendiente promedio del terreno»: el "
+               "proyecto le pasa la columna S_terreno del CSV de cuencas, que "
+               "es la pendiente media del terreno de la cuenca --la misma que "
+               "la ecuacion de retardo lee como «pendiente promedio de la "
+               "cuenca»--, y no S_cauce_cuenca. La L, «longitud del flujo "
+               "superficial», es la columna L_cauce_m, que en un metodo de "
+               "flujo superficial se declara como la longitud del recorrido "
+               "sobre la superficie (como en la fila de la FAA)."),
+        en_contra=(
+            "en una plataforma o un talud la pendiente que gobierna el flujo "
+            "superficial es la de su recorrido, que el CSV escribe en "
+            "S_cauce_cuenca; con la del terreno de la cuenca, si es menor, la "
+            "formula da mas tiempo y menos intensidad",
+        ),
+        a_favor=(
+            "la fila escribe «del terreno», y el CSV tiene una columna que "
+            "es exactamente eso; leer la otra seria cambiarle la palabra a la "
+            "fuente",
+            "quien declara este metodo para una superficie de la plataforma "
+            "escribe en S_terreno la pendiente de esa superficie, que es su "
+            "terreno",
+        )),
+)
+
+# --- VE-5 (mh, ficha T1-01) --- La prueba chi-cuadrado del num. 3.7.2 a),
+# pag. impresa 31 (PDF 34). La capa de texto escribe el titulo «a) Prueba 2 χ»
+# (el χ² en dos piezas); el titulo se cita hasta «Prueba» y el simbolo se leyo
+# en la imagen.
+MC_HHD_3_7_2A = _cita(
+    id="MC_HHD.3.7.2a",
+    fuente_id="MC_HHD",
+    numeral="3.7.2 a)",
+    titulo_numeral="a) Prueba",
+    jerarquia_numeral=("3.7.2 Pruebas de bondad de ajuste",),
+    pagina_impresa="31",
+    pagina_pdf=34,
+    pagina_pdf_titulo=33,
+    texto_literal=Verbatim(
+        texto="Para aceptar una función de distribución dada, se debe cumplir:",
+        pagina_pdf=34),
+    caracter=Caracter.EXIGENCIA,
+    metodo=AMBOS,
+    sesion=VE5_MH,
+    nota=("El titulo, en imagen: «a) Prueba χ²». La condicion que sigue, en "
+          "imagen: D ≤ X²(1−α, k−1−m), con D = Σ (θi − εi)² / εi, ecuacion "
+          "(12), θi el numero observado de eventos en el intervalo i, εi = "
+          "n[F(Si) − F(Ii)] el esperado, ν = k − 1 − m grados de libertad y "
+          "m el numero de parametros estimados a partir de los datos. La "
+          "prueba de que se acepta una distribucion con χ² es la del "
+          "numeral; el programa adopta por la de Kolmogorov-Smirnov (cita "
+          "MC_HHD.3.7.2b#ELIGE) e imprime la χ² como contraste."),
+)
+
+MC_HHD_3_7_2A_INTERVALOS = _cita(
+    id="MC_HHD.3.7.2a#INTERVALOS",
+    fuente_id="MC_HHD",
+    numeral="3.7.2 a)",
+    titulo_numeral="a) Prueba",
+    jerarquia_numeral=("3.7.2 Pruebas de bondad de ajuste",),
+    pagina_impresa="31",
+    pagina_pdf=34,
+    pagina_pdf_titulo=33,
+    texto_literal=Verbatim(
+        texto=("Para aplicar la prueba, el primer paso es dividir los datos "
+               "en un número k de intervalos de clase."),
+        pagina_pdf=34),
+    caracter=Caracter.DEFINICION,
+    metodo=AMBOS,
+    sesion=VE5_MH,
+    derivado_de="MC_HHD.3.7.2a",
+    nota=("El numeral no fija k ni como se trazan los intervalos: es el "
+          "vacio que cubre el criterio 'intervalos_de_clase_chi_cuadrado' "
+          "[A]."),
+)
+
+MC_HHD_3_7_2A_ALCANCE = _cita(
+    id="MC_HHD.3.7.2a#ALCANCE",
+    fuente_id="MC_HHD",
+    numeral="3.7.2 a)",
+    titulo_numeral="a) Prueba",
+    jerarquia_numeral=("3.7.2 Pruebas de bondad de ajuste",),
+    pagina_impresa="31",
+    pagina_pdf=34,
+    pagina_pdf_titulo=33,
+    texto_literal=Verbatim(
+        texto=("se aplica para verificar bondad de las distribuciones "
+               "normales y log normales."),
+        pagina_pdf=34),
+    caracter=Caracter.DEFINICION,
+    metodo=AMBOS,
+    sesion=VE5_MH,
+    derivado_de="MC_HHD.3.7.2a",
+    nota=("Por eso el contraste χ² se imprime para la normal y la log normal "
+          "de 2 parametros y no para la Gumbel."),
+)
+
+# --- VE-5 (mh, ficha T1-05) --- La relacion regional de la ecuacion (17).
+MC_HHD_3_8_1_EC17 = _cita(
+    id="MC_HHD.3.8.1#EC17",
+    fuente_id="MC_HHD",
+    numeral="3.8.1",
+    titulo_numeral="Curvas Intensidad – Duración – Frecuencia",
+    pagina_impresa="38",
+    pagina_pdf=41,
+    pagina_pdf_titulo=36,
+    texto_literal=Verbatim(
+        texto=("Las curvas de intensidad-duración-frecuencia, se han "
+               "calculado indirectamente, mediante la siguiente relación:"),
+        pagina_pdf=41),
+    caracter=Caracter.DEFINICION,
+    metodo=AMBOS,
+    sesion=VE5_MH,
+    nota=("Ecuacion (17), vista en imagen: I = K · T^m / t^n, con «I = "
+          "Intensidad máxima (mm/h)», «K, m, n = factores característicos de "
+          "la zona de estudio», «T = período de retorno en años» y «t = "
+          "duración de la precipitación equivalente al tiempo de "
+          "concentración (min)». La pagina no da ningun valor de K, m ni n: "
+          "son datos de un estudio de la zona (criterio "
+          "'factores_idf_regional' [S])."),
+)
+
 MC_HHD_3_12_2_1_K = _cita(
     id="MC_HHD.3.12.2.1#K",
     fuente_id="MC_HHD",
