@@ -274,6 +274,18 @@ el 0.5 es [N] y cuál de las dos declaraciones aplica a esta obra es [A].
   VE3-18): talón por el método exacto, pantalla con la cuña sobre su cara,
   factores φ de la tabla de muros (AASHTO 11.5.7) y margen cero bajo la hoya
   de socavación sin proteger.
+- **La Fase 11 MIDE, no diseña (VE-5 met, ficha VE5-MET-01).**
+  `src/modulos/M12_metrados.py` arma los metrados referidos a las partidas
+  del EG-2013 (entregable 8) y el cuadro de compatibilidad rasante-
+  alcantarilla (entregable 9, la salida de 7.A) leyendo la geometría FINAL
+  que las fases anteriores entregaron —la sección adoptada, las cotas de
+  7.B, el cabezal de la Fase 9 con su armado, la protección de la Fase 6—
+  con la regla de MEDICIÓN de cada Sección (501.09, 503.12, 504.10, 506.14,
+  507.12, 508.11, 511.13; zanjas de 506.06, 507.05 y 508.04). Sin factor de
+  desperdicio ni de esponjamiento: el EG-2013 los pone en el precio. El
+  cuadro corre en los dos alcances; los metrados sólo a expediente (leen el
+  cabezal), y un renglón que no se puede medir es un `Bloqueo` de
+  `servicio.FASE_METRADOS` mientras los demás siguen.
 - Los tipos que fluyen entre módulos están en modelos.py. Ningún módulo define
   sus propios dicts ad-hoc para lo que ya existe ahí.
 - criterios_adoptados.valor(clave) y datos_sitio.valor(clave) con valor None
@@ -291,7 +303,7 @@ el 0.5 es [N] y cuál de las dos declaraciones aplica a esta obra es [A].
   numérica. Es lo que M2/M4 iban a exigir de todos modos, dicho en la ficha
   para que se rechace en la puerta con `ValueError` (SIS-E-05) y no en el
   consumidor con un `TypeError` fuera de `ErrorProyecto`: medido antes de
-  EXT-5, 53 de las 70 claves (71 desde EXT-6, 73 desde EXT-7, 74 desde E-A, 75 desde PF-1, 76 desde PF-4, 77 desde el cierre de C10, 79 desde el de C05, 82 desde T-2, 88 desde T-4, 95 desde T-1, 97 desde T-6, 102 desde T-8, 109 desde T-5, 110 desde T-3, 114 desde T-9, 119 desde T-7a, 129 desde T-7b, 139 desde T-7c, 141 desde la verificación de fórmulas de T-7, 146 desde VE-2, 148 desde VE-3, 149 desde VE-3.12, 153 desde VE-3.14, 154 desde VE-4a, 155 desde VE-4c, 157 desde VE-4d, 158 desde VE-4e, 159 desde VE-5-m6) aceptaban la cadena `'cero'` y la GUI no podía
+  EXT-5, 53 de las 70 claves (71 desde EXT-6, 73 desde EXT-7, 74 desde E-A, 75 desde PF-1, 76 desde PF-4, 77 desde el cierre de C10, 79 desde el de C05, 82 desde T-2, 88 desde T-4, 95 desde T-1, 97 desde T-6, 102 desde T-8, 109 desde T-5, 110 desde T-3, 114 desde T-9, 119 desde T-7a, 129 desde T-7b, 139 desde T-7c, 141 desde la verificación de fórmulas de T-7, 146 desde VE-2, 148 desde VE-3, 149 desde VE-3.12, 153 desde VE-3.14, 154 desde VE-4a, 155 desde VE-4c, 157 desde VE-4d, 158 desde VE-4e, 159 desde VE-5-m6, 162 desde VE-5-met) aceptaban la cadena `'cero'` y la GUI no podía
   declarar el entero de `n_celdas_cajon` (PC-13, PC-14). Una `categoria`
   valida contra la tupla de textos de `sensibilidad`, que es donde vive el
   conjunto cerrado de un criterio; las guardias de los consumidores se
@@ -383,7 +395,7 @@ documento. La tercera es el criterio de salida del nivel de perfil escrito como
 invariante: **ningún [A] de perfil sin valor, sin sensibilidad y sin
 procedencia**.
 
-**Y desde S21 el nivel lo llevan los 69 (70 desde T1, 71 desde EXT-6, 73 desde EXT-7, 74 desde E-A, 75 desde PF-1, 76 desde PF-4, 77 desde el cierre de C10, 79 desde el de C05, 82 desde T-2, 88 desde T-4, 95 desde T-1, 97 desde T-6, 102 desde T-8, 109 desde T-5, 110 desde T-3, 114 desde T-9, 119 desde T-7a, 129 desde T-7b, 139 desde T-7c, 141 desde la verificación de fórmulas de T-7, 146 desde VE-2, 148 desde VE-3, 149 desde VE-3.12, 153 desde VE-3.14, 154 desde VE-4a, 155 desde VE-4c, 157 desde VE-4d, 158 desde VE-4e, 159 desde VE-5-m6), no sólo los que no tienen valor.** La
+**Y desde S21 el nivel lo llevan los 69 (70 desde T1, 71 desde EXT-6, 73 desde EXT-7, 74 desde E-A, 75 desde PF-1, 76 desde PF-4, 77 desde el cierre de C10, 79 desde el de C05, 82 desde T-2, 88 desde T-4, 95 desde T-1, 97 desde T-6, 102 desde T-8, 109 desde T-5, 110 desde T-3, 114 desde T-9, 119 desde T-7a, 129 desde T-7b, 139 desde T-7c, 141 desde la verificación de fórmulas de T-7, 146 desde VE-2, 148 desde VE-3, 149 desde VE-3.12, 153 desde VE-3.14, 154 desde VE-4a, 155 desde VE-4c, 157 desde VE-4d, 158 desde VE-4e, 159 desde VE-5-m6, 162 desde VE-5-met), no sólo los que no tienen valor.** La
 guardia sólo lo exigía a los criterios SIN VALOR, de modo que trece con valor
 —once de Fase 9 y licuefacción, dos opcionales— se habían quedado sin
 clasificar. Se rellenaron **midiendo**, no opinando, y esa distinción tiene
@@ -424,7 +436,7 @@ consecuencias que conviene leer antes de tocar el campo:
 
 **Para qué se completó, además de por completitud:** `nivel` gobierna el
 filtro de alcance de la pestaña 2 (`criterios_adoptados.criterios_del_alcance`),
-que a `--alcance perfil` pasa la tabla de 69 filas (70 desde T1, 71 desde EXT-6, 73 desde EXT-7, 74 desde E-A, 75 desde PF-1, 76 desde PF-4, 77 desde el cierre de C10, 79 desde el de C05, 82 desde T-2, 88 desde T-4, 95 desde T-1, 97 desde T-6, 102 desde T-8, 109 desde T-5, 110 desde T-3, 114 desde T-9, 119 desde T-7a, 129 desde T-7b, 139 desde T-7c, 141 desde la verificación de fórmulas de T-7, 146 desde VE-2, 148 desde VE-3, 149 desde VE-3.12, 153 desde VE-3.14, 154 desde VE-4a, 155 desde VE-4c, 157 desde VE-4d, 158 desde VE-4e, 159 desde VE-5-m6) a 36 y los pendientes
+que a `--alcance perfil` pasa la tabla de 69 filas (70 desde T1, 71 desde EXT-6, 73 desde EXT-7, 74 desde E-A, 75 desde PF-1, 76 desde PF-4, 77 desde el cierre de C10, 79 desde el de C05, 82 desde T-2, 88 desde T-4, 95 desde T-1, 97 desde T-6, 102 desde T-8, 109 desde T-5, 110 desde T-3, 114 desde T-9, 119 desde T-7a, 129 desde T-7b, 139 desde T-7c, 141 desde la verificación de fórmulas de T-7, 146 desde VE-2, 148 desde VE-3, 149 desde VE-3.12, 153 desde VE-3.14, 154 desde VE-4a, 155 desde VE-4c, 157 desde VE-4d, 158 desde VE-4e, 159 desde VE-5-m6, 162 desde VE-5-met) a 36 y los pendientes
 visibles de 33 a 11. El filtro **no oculta**: el recuento sigue contando los 33
 sobre el archivo entero y dice además cuántas filas esconde. Y **no se apoya en
 la derivación estática** de `variables_entrada` —que es una ESTIMACIÓN y tuvo

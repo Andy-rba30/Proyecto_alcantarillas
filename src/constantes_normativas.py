@@ -2161,6 +2161,101 @@ CAMA_RELLENO_LATERAL = {
     },
 }
 
+# ========== EG-2013 - Medicion y pago (Fase 11, entregable 8) ==============
+# --- VE-5 (lote «met», item 8 del censo) --- Lo que el EG-2013 escribe para
+# METRAR la obra: la unidad, las lineas entre las que se mide y la partida de
+# pago. Son [N] por la misma razon que las fichas de cama de arriba: son
+# reglas de la especificacion vial peruana, el mismo numero en cualquier obra.
+# Cada valor con su cita del registro (leidas en VE-5, desfase +8).
+#
+# QUE NO ESTA AQUI, Y POR QUE. Ningun factor de desperdicio ni de
+# esponjamiento: la excavacion se mide «en su posición original» (501.09) y
+# el concreto «realmente suministrada, colocada y consolidada» (503.12), y el
+# desperdicio del concreto y del acero esta en el PRECIO (503.13, 504.11),
+# no en la cantidad. Ninguna partida para el enrocado de salida: la unica
+# Seccion que mide enrocado es la 603, «Defensas ribereñas», por metro lineal
+# de defensa (603.10); ver `SIN_PARTIDA_ENROCADO_SALIDA_EG2013`.
+
+# Tabla 504-01 «Peso de las barras por unidad de longitud» (pag. impresa 940,
+# PDF 948; cita EG2013.504.01#PESOS), kg/m por designacion en pulgadas. Las
+# claves son las del catalogo de barras del cabezal ('1/2', '5/8'...).
+PESO_BARRA_KG_M_EG2013 = {
+    "1/4": 0.25, "3/8": 0.56, "1/2": 1.00, "5/8": 1.55, "3/4": 2.24,
+    "7/8": 3.04, "1": 3.97, "1 1/8": 5.06, "1 1/4": 6.41, "1 3/8": 7.91,
+    "1 3/4": 11.38, "2 1/4": 20.24,
+}
+CITA_PESO_BARRA_EG2013 = "EG2013.504.01#PESOS"
+
+# El ancho total de la zanja de cada tubo (las «líneas indicadas en el
+# Proyecto» de 501.09 para un tubo). Dos reglas distintas en la fuente:
+#   concreto reforzado  diametro EXTERIOR + 60 cm «por lo menos» (506.06)
+#   TMC                 1,5 veces el diametro del tubo (507.05)
+#   HDPE                2 veces el diametro del tubo (508.04)
+REGLA_ZANJA_EXTERIOR_MAS = "diametro exterior mas"
+REGLA_ZANJA_VECES_DIAMETRO = "veces el diametro del tubo"
+ANCHO_ZANJA_EG2013 = {
+    "concreto_reforzado": (REGLA_ZANJA_EXTERIOR_MAS, 0.60,
+                           "EG2013.506.06#ZANJA"),
+    "tmc": (REGLA_ZANJA_VECES_DIAMETRO, 1.5, "EG2013.507.05#ZANJA"),
+    "hdpe": (REGLA_ZANJA_VECES_DIAMETRO, 2.0, "EG2013.508.04#ZANJA"),
+}
+
+# El espesor MINIMO del solado o de la cama bajo el fondo exterior del tubo:
+# 15 cm en los tres (506.07; el TMC por remision de 507.06 a 506.07; el HDPE,
+# 508.05, «no se admitirá espesores menores a 0,15 m»). Es el fondo de la
+# zanja que el metrado toma como linea del Proyecto.
+ESPESOR_MIN_CAMA_EG2013_M = {
+    "concreto_reforzado": (0.15, "EG2013.506.07#ESPESOR"),
+    "tmc": (0.15, "EG2013.506.07#ESPESOR"),
+    "hdpe": (0.15, "EG2013.508.05#CAMA"),
+}
+
+# El tope del sobreancho de la excavacion de una zapata que necesita
+# encofrado (501.04: «se podrá extender hasta 45 cm»; cita
+# EG2013.501.04#ENCOFRADO). Sin encofrado, «caras verticales conforme a las
+# dimensiones de la estructura» (EG2013.501.04#CARAS): cero.
+SOBREANCHO_MAX_ENCOFRADO_EG2013_M = 0.45
+
+# Las partidas de pago, con su texto literal (501.10, 503.13, 504.11, 506.15,
+# 507.13, 508.12, 511.14) y la unidad de su medicion.
+UNIDAD_M = "m"
+UNIDAD_M2 = "m2"
+UNIDAD_M3 = "m3"
+UNIDAD_KG = "kg"
+PARTIDA_EXCAVACION_EG2013 = {
+    # (en roca, bajo agua) -> (codigo, texto de la partida)
+    (True, False): ("501.A", "Excavaciones para estructuras en roca en seco"),
+    (True, True): ("501.B", "Excavaciones para estructuras en roca bajo agua"),
+    (False, False): ("501.C", "Excavaciones para estructuras en material "
+                              "común en seco"),
+    (False, True): ("501.D", "Excavaciones para estructuras en material "
+                             "común bajo agua"),
+}
+PARTIDA_CONCRETO_EG2013 = ("503.A", "Concreto Estructural (Clase {clase})")
+PARTIDA_ACERO_EG2013 = ("504.A", "Acero de Refuerzo")
+PARTIDA_GEOTEXTIL_EG2013 = ("511.A", "Geotextiles")
+PARTIDA_TUBERIA_EG2013 = {
+    "concreto_reforzado": ("506.A", "Tubería de concreto reforzado de "
+                                    "diámetro interior {D_mm} mm"),
+    "tmc": ("507.A", "Tubería corrugada de acero galvanizado circular de "
+                     "diámetro {D_m} m"),
+    "hdpe": ("508.A", "Tubería de Polietileno (PAD o HDPE) de diámetro "
+                      "{D_mm} mm"),
+}
+CITA_LONGITUD_TUBERIA_EG2013 = {
+    "concreto_reforzado": "EG2013.506.14#LONGITUD",
+    "tmc": "EG2013.507.12#LONGITUD",
+    "hdpe": "EG2013.508.11#LONGITUD",
+}
+# Los grupos de la Tabla 503-07 (cita EG2013.503.04#T503_07): las clases del
+# concreto REFORZADO y la del ciclopeo.
+CLASES_CONCRETO_REFORZADO_EG2013 = ("C", "D", "E")
+CLASE_CONCRETO_CICLOPEO_EG2013 = "G"
+SIN_PARTIDA_ENROCADO_SALIDA_EG2013 = (
+    "sin partida en EG-2013: la Seccion 603 «Defensas ribereñas» mide el "
+    "enrocado por metro lineal de defensa (603.10) y no alcanza al enrocado "
+    "de salida de una alcantarilla; partida especial del proyecto, en m3")
+
 # ================= Manual de Puentes (RD 041-2016-MTC/14) ==================
 # ---------------------------------------------------------------------------
 # SOBRECARGA DE TRAFICO EN EL TRASDOS -- h_eq

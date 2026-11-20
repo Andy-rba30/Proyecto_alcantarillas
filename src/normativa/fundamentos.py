@@ -4512,3 +4512,125 @@ V9 = _fundamento(
         "El diseño podria adoptar un diametro que ninguna norma de producto "
         "tipifica, como si fuera un tubo de catalogo."),
 )
+
+
+# ===========================================================================
+# --- VE-5 (lote «met», item 8 del censo) --- Fase 11, entregable 8: los
+# metrados de la obra referidos a las partidas del EG-2013. Cada renglon lee
+# la geometria FINAL que las fases anteriores ya entregaron (el conducto de
+# la Fase 4, la longitud de metrado del cabezal de la Fase 9, la proteccion
+# de la Fase 6) y la mide con la regla de MEDICION de su Seccion: no vuelve a
+# diseñar nada.
+# ===========================================================================
+F11 = "Fase 11 - Entregables"
+
+METRADO_CONDUCTO = _fundamento(
+    id="F11.CONDUCTO",
+    fase=F11,
+    que_paso=("Metrado del conducto: longitud entre las caras exteriores de "
+              "los cabezales, a lo largo del eje y siguiendo la pendiente"),
+    por_que=(
+        "La tuberia se paga por metro lineal, y la especificacion dice entre "
+        "que caras se mide: las exteriores de los extremos del tubo o de los "
+        "cabezales, a lo largo del eje y siguiendo la pendiente. La longitud "
+        "que el cabezal cierra entre sus trasdoses no alcanza: el tubo "
+        "atraviesa los dos muros, y una medida en planta es mas corta que la "
+        "del tubo inclinado. Un marco vaciado en sitio no es una tuberia: "
+        "se mide como concreto estructural, en metros cubicos de mezcla "
+        "colocada."),
+    verbo=Verbo.OBLIGA,
+    citas=("EG2013.506.14#LONGITUD", "EG2013.507.12#LONGITUD",
+           "EG2013.508.11#LONGITUD", "EG2013.503.12"),
+    que_pasa_si_no_se_hace=(
+        "El presupuesto pagaria la longitud de diseño o la de planta, y la "
+        "obra se valorizaria con otra: una diferencia que aparece recien en "
+        "la liquidacion."),
+)
+
+METRADO_EXCAVACION = _fundamento(
+    id="F11.EXCAVACION",
+    fase=F11,
+    que_paso=("Metrado de la excavacion para estructuras: la zanja del "
+              "conducto y la de los cimientos de los cabezales, en volumen "
+              "en su posicion original"),
+    por_que=(
+        "La excavacion se mide en metros cubicos en su posicion original, "
+        "dentro de las lineas del proyecto y con caras verticales. Esas "
+        "lineas las fija la propia especificacion: para un tubo, el ancho "
+        "total de la zanja de su Seccion y su fondo bajo el solado o la cama "
+        "de espesor minimo; para una zapata, sus dimensiones, que solo se "
+        "pueden extender hasta 45 cm cuando hace falta encofrarla. Se "
+        "clasifica por el material y por la posicion del nivel freatico, "
+        "porque cada clase es una partida distinta."),
+    verbo=Verbo.OBLIGA,
+    citas=("EG2013.501.09", "EG2013.501.01#CLASES", "EG2013.501.04#CARAS",
+           "EG2013.501.04#ENCOFRADO", "EG2013.506.06#ZANJA",
+           "EG2013.507.05#ZANJA", "EG2013.508.04#ZANJA",
+           "EG2013.506.07#ESPESOR", "EG2013.508.05#CAMA"),
+    que_pasa_si_no_se_hace=(
+        "Sin las lineas de pago el volumen lo fija la obra: lo que se excave "
+        "de mas o lo que se derrumbe, que la especificacion manda no medir."),
+)
+
+METRADO_CONCRETO = _fundamento(
+    id="F11.CONCRETO",
+    fase=F11,
+    que_paso=("Metrado del concreto estructural de los cabezales: muro, "
+              "zapata y aleros, con el vano del conducto descontado"),
+    por_que=(
+        "El concreto se mide en metros cubicos de mezcla realmente colocada "
+        "y consolidada, de modo que el vano por donde pasa el conducto se "
+        "descuenta, y el desperdicio no se suma: esta en el precio unitario. "
+        "La clase de la partida es la de la tabla de clases de concreto "
+        "estructural que alcanza la resistencia con que se diseño."),
+    verbo=Verbo.OBLIGA,
+    citas=("EG2013.503.12", "EG2013.503.13#DESPERDICIOS",
+           "EG2013.503.04#T503_07"),
+    que_pasa_si_no_se_hace=(
+        "El cabezal se pagaria con el volumen bruto o con un factor de "
+        "desperdicio que la especificacion ya pone en el precio: dos veces."),
+)
+
+METRADO_ACERO = _fundamento(
+    id="F11.ACERO",
+    fase=F11,
+    que_paso=("Metrado del acero de refuerzo de los cabezales: peso de las "
+              "barras propuestas por cara, con los pesos unitarios de la "
+              "Tabla 504-01"),
+    por_que=(
+        "El acero se mide en kilogramos, con el peso que la tabla de la "
+        "especificacion asigna a cada barra y las longitudes de las barras "
+        "utilizadas. El armado del cabezal da, por cara, la barra y su "
+        "espaciamiento: con ellos y las dimensiones del elemento sale el "
+        "peso de las barras dentro del concreto. Los anclajes, ganchos y "
+        "empalmes son del despiece de los planos, y lo que agregan es una "
+        "eleccion del proyecto que se declara."),
+    verbo=Verbo.OBLIGA,
+    citas=("EG2013.504.10", "EG2013.504.01#PESOS"),
+    que_pasa_si_no_se_hace=(
+        "El acero se presupuestaria con una cuantia supuesta y no con el "
+        "armado que el calculo dio."),
+)
+
+METRADO_ENROCADO = _fundamento(
+    id="F11.ENROCADO",
+    fase=F11,
+    que_paso=("Metrado del enrocado de salida y del geotextil bajo el: area "
+              "en planta del apron con su abocinado y volumen con el espesor "
+              "que rige"),
+    por_que=(
+        "La proteccion de salida tiene longitud y espesor, que la Fase 6 "
+        "fija; el ancho lo da HEC-14 con el apron que empieza en tres veces "
+        "la altura del conducto y se abre 1:3 a cada lado. Con eso el "
+        "enrocado tiene area y volumen. La especificacion general no tiene "
+        "partida para el enrocado de salida --- la unica que mide enrocado es "
+        "la de defensas riberenas, por metro lineal ---, de modo que se "
+        "entrega en volumen para una partida especial. El geotextil de "
+        "filtro se mide por metro cuadrado, con los traslapes incluidos en "
+        "la medida: el area en planta del enrocado."),
+    verbo=Verbo.PERMITE,
+    citas=("HEC14.10.2#ANCHO", "EG2013.603.10", "EG2013.511.13"),
+    que_pasa_si_no_se_hace=(
+        "La proteccion de salida se quedaria en un tamaño de piedra sin "
+        "cantidad, y el expediente sin la partida que la paga."),
+)

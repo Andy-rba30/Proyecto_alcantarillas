@@ -1181,6 +1181,9 @@ def _punto_json(informe: InformePunto) -> Dict[str, Any]:
                 if informe.resultado is not None else None)
     if gobierno is not None:
         salida["gobierno_por_receptor"] = _gobierno_por_receptor_json(gobierno)
+    # --- VE-5 met --- Fase 11: la fila del cuadro de compatibilidad (todo
+    # punto) y el metrado (solo el que se metro, a expediente).
+    salida.update(_fase_11_json(informe))
     return salida
 
 
@@ -1304,6 +1307,91 @@ def _cabezal_json(informe: InformeCabezal) -> Dict[str, Any]:
     }
 
 
+# ===========================================================================
+# --- VE-5 met --- Fase 11, entregables 8 y 9: lo que `M12_metrados` armo,
+# en el JSON y en el texto. Ningun numero se calcula aqui.
+# ===========================================================================
+
+def _renglon_json(r: Any) -> Dict[str, Any]:
+    return {"rubro": r.rubro, "elemento": r.elemento, "partida": r.partida,
+            "etiqueta_partida": r.etiqueta_partida,
+            "descripcion": r.descripcion, "unidad": r.unidad,
+            "cantidad": _num(r.cantidad),
+            "desglose": [{"parte": parte, "cantidad": _num(c)}
+                         for parte, c in r.desglose],
+            "paso": r.paso.codigo, "avisos": list(r.avisos)}
+
+
+def _compatibilidad_json(f: Any) -> Dict[str, Any]:
+    return {"estado": f.estado, "seccion": f.seccion,
+            "cota_rasante_actual": _num(f.cota_rasante_actual),
+            "cota_rasante_min": _num(f.cota_rasante_min),
+            "cota_por_recubrimiento": _num(f.cota_por_recubrimiento),
+            "cota_por_resguardo": _num(f.cota_por_resguardo),
+            "gobierna": f.gobierna, "holgura_m": _num(f.holgura_m),
+            "delta_rasante_m": _num(f.delta_rasante_m),
+            "cota_entrada": _num(f.cota_entrada),
+            "cota_clave": _num(f.cota_clave),
+            "cota_salida": _num(f.cota_salida),
+            "provisional": f.provisional, "aviso": f.aviso,
+            "motivo": f.motivo}
+
+
+def _fase_11_json(informe: InformePunto) -> Dict[str, Any]:
+    salida: Dict[str, Any] = {}
+    if informe.compatibilidad_rasante is not None:
+        salida["compatibilidad_rasante"] = _compatibilidad_json(
+            informe.compatibilidad_rasante)
+    if informe.metrado is not None:
+        salida["metrado"] = {
+            "renglones": [_renglon_json(r) for r in informe.metrado.renglones],
+            "avisos": list(informe.metrado.avisos)}
+    return salida
+
+
+def _totales_metrado_json(informe: Informe) -> List[Dict[str, Any]]:
+    return [{"partida": t.partida, "etiqueta_partida": t.etiqueta_partida,
+             "descripcion": t.descripcion, "unidad": t.unidad,
+             "cantidad": _num(t.cantidad), "puntos": list(t.puntos)}
+            for t in informe.totales_metrado]
+
+
+def _lineas_metrados(informe: Informe) -> List[str]:
+    """
+    El cuadro de compatibilidad rasante-alcantarilla y los metrados por
+    partida, en texto: lo que imprime la CLI y pinta la pestaña 4.
+    """
+    filas = [p.compatibilidad_rasante for p in informe.puntos
+             if p.compatibilidad_rasante is not None]
+    if not filas and not informe.totales_metrado:
+        return []
+    lineas = _titulo("FASE 11 - COMPATIBILIDAD RASANTE-ALCANTARILLA Y "
+                     "METRADOS (EG-2013)")
+    for f in filas:
+        if f.cota_rasante_min is not None:
+            texto = (f"rasante {_fmt(f.cota_rasante_actual)} msnm, minima "
+                     f"7.A {_fmt(f.cota_rasante_min)} msnm (gobierna "
+                     f"{f.gobierna}), holgura {_fmt(f.holgura_m)} m")
+        elif f.delta_rasante_m is not None:
+            texto = f"subir la rasante {_fmt(f.delta_rasante_m)} m"
+        else:
+            texto = f.motivo
+        lineas.append(f"  {f.id_punto} ({f.progresiva}): {f.estado} -- "
+                      f"{texto}" + (" [provisional]" if f.provisional else ""))
+    if informe.totales_metrado:
+        lineas.append("  Metrados por partida:")
+        for t in informe.totales_metrado:
+            partida = t.partida or "(especial)"
+            lineas.append(f"    {partida:<7} {t.descripcion}: "
+                          f"{_fmt(t.cantidad, 2)} {t.unidad} "
+                          f"[{', '.join(t.puntos)}]")
+    for p in informe.puntos:
+        if p.metrado is not None:
+            for a in p.metrado.avisos:
+                lineas.append(f"  {p.punto.id}: {a}")
+    return lineas
+
+
 def informe_json(informe: Informe) -> Dict[str, Any]:
     """
     El expediente completo como dict listo para `json.dump`.
@@ -1365,6 +1453,8 @@ def _informe_json_base(informe: Informe, bloqueantes: Any,
                           for a in ALCANCE_DECLARADO]},
         "puntos": [_punto_json(p) for p in informe.puntos],
         "cabezal": _cabezal_json(informe.cabezal),
+        # --- VE-5 met --- Fase 11, entregable 8: la suma por partida.
+        "metrados": _totales_metrado_json(informe),
         "datos_sitio": {
             # Valor, trazabilidad, fecha y ORIGEN de la corrida (EXT-10),
             # leidos de la foto: un [S] declarado por sesion viaja con el
@@ -2228,6 +2318,10 @@ def volcar(informe: Informe, con_criterios: bool = False) -> str:
         lineas.append("")
     lineas.extend(_lineas_cabezal(informe.cabezal))
     lineas.append("")
+    metrados = _lineas_metrados(informe)          # --- VE-5 met ---
+    if metrados:
+        lineas.extend(metrados)
+        lineas.append("")
     lineas.extend(_lineas_alcance(informe))
     lineas.append("")
     lineas.extend(_lineas_criterios_bloqueantes(informe))

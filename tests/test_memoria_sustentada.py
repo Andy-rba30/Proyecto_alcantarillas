@@ -137,6 +137,14 @@ def _pasos_de(informe):
             vistos.extend(geometria.pasos)
         elif calculada is not None:
             vistos.extend(calculada.pasos)
+        # --- VE-5 met --- La Fase 11 emite un paso por renglon del metrado
+        # (los dos de una excavacion partida por el freatico comparten el
+        # suyo). Se recorren aqui sin `M11.traza_metrado`.
+        metrado = getattr(punto, "metrado", None)
+        if metrado is not None:
+            for renglon in metrado.renglones:
+                if not any(renglon.paso is p for p in vistos):
+                    vistos.append(renglon.paso)
     for recubrimiento in informe.cabezal.recubrimientos:
         _anota(getattr(recubrimiento, "paso", None))
     return vistos
@@ -697,6 +705,12 @@ def test_todo_fundamento_declarado_lo_usa_algun_paso(informe):
         # `tests/test_t7a_cabezal_geometria.py` sobre A-01 (ficha T7A-01).
         "F9.EMBOCADURA", "F9.CORONACION", "F9.DESPLANTE", "F9.DIMENSIONES",
         "F9.ALEROS", "F9.LOSA", "F9.LONGITUD",
+        # --- VE-5 met --- Los cinco de la Fase 11, por la misma razon: el
+        # metrado lee el cabezal del punto, y aqui ningun punto llega a la
+        # Fase 9. Los mide `tests/test_M12_metrados.py` sobre la corrida de
+        # referencia `expediente_cabezal`.
+        "F11.CONDUCTO", "F11.EXCAVACION", "F11.CONCRETO", "F11.ACERO",
+        "F11.ENROCADO",
     }
     declarados = set(F.FUNDAMENTOS)
     huerfanos = declarados - emitidos - del_bloque_fijo - sin_alcanzar

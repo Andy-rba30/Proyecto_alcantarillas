@@ -402,7 +402,11 @@ def test_d2_guardia_quien_lee_el_nf_es_la_fase_8_y_el_cabezal():
     de archivo, no: lo fija la guardia de comportamiento de arriba, que
     sigue igual). M5 sigue sin leer la columna por su cuenta.
     """
-    assert _lectores_del_nf() == {"M8_estructural", "M9_cabezal"}
+    # --- VE-5 met --- Y la Fase 11: el metrado de la excavacion la parte en
+    # «en seco» y «bajo agua» por el freatico del punto (EG-2013 501.01,
+    # `M12.renglones_excavacion`). No juzga nada: clasifica la partida.
+    assert _lectores_del_nf() == {"M8_estructural", "M9_cabezal",
+                                  "M12_metrados"}
 
 
 def _fila_del_contrato(columna: str) -> str:
@@ -690,7 +694,8 @@ def test_h2_guardia_el_valor_de_archivo_de_todos_los_criterios_sigue_pasando():
     # 157 desde VE-4d: los dos criterios del desborde admitido de V8.
     # 158 desde VE-4e: 'nivel_agua_relleno_sin_drenaje_bajo_sismo'.
     # 159 desde VE-5-m6: 'relacion_co_poza_enrocado_hec14'.
-    assert len(ca.CRITERIOS) == 159 and barridos > 100, (len(ca.CRITERIOS),
+    # 162 desde VE-5-met: los tres criterios de los metrados de la Fase 11.
+    assert len(ca.CRITERIOS) == 162 and barridos > 100, (len(ca.CRITERIOS),
                                                           barridos)
 
 

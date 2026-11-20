@@ -112,6 +112,8 @@ from src.modelos import (ORIGEN_CAUDAL_CALCULADO,               # --- T-9 ---
 from src.modelos import (AporteDelAlivio,             # --- T-9 (correcciones) ---
                          ExtremoDeTramo)
 from src.modelos import ObstaculoAnticipado                    # --- VE-4b ---
+from src.modelos import (FilaCompatibilidadRasante,   # --- VE-5 met ---
+                         MetradoDelPunto, TipoDeBloqueo as _TipoDeBloqueo)
 from src.modulos.M0_carga import (COLUMNA_CAUDAL,
                                   FAMILIAS_CON_CAUDAL_HIDROLOGICO,
                                   cargar_puntos, cargar_puntos_de_bytes,
@@ -121,6 +123,7 @@ from src.modulos.M0_carga import (COLUMNA_CAUDAL,
 # punto de calculo, igual que el declarado, y ningun modulo de M1 a M11 sabe
 # de cual de los dos se trata salvo por `InformePunto.caudal`.
 from src.modulos import MH_hidrologia as MH
+from src.modulos import M12_metrados as M12             # --- VE-5 met ---
 from src.modulos.M1_clasificacion import clasificar, exigir_alcance
 from src.modulos.M2_material import matriz_durabilidad
 from src.modulos.M6_proteccion import (proteccion_entrada, proteccion_salida,
@@ -523,6 +526,20 @@ ETAPA_PENDIENTE = "pendiente adoptada del conducto (7.B.1)"
 FASE_ESTRUCTURAL = "Fase 8 - Estructural del conducto (M8)"
 FASE_CABEZAL = "Fase 9 - Cabezal y aletas (M9)"
 FASE_ALIVIO = "Fase 10 - Espaciamiento de alivio (M10)"
+# --- VE-5 met --- Fase 11, entregables 8 y 9: los metrados referidos al
+# EG-2013 (solo a expediente: leen el cabezal) y el cuadro de compatibilidad
+# rasante-alcantarilla (los dos alcances: es la salida de 7.A).
+FASE_METRADOS = "Fase 11 - Metrados y compatibilidad rasante (M12)"
+ETAPA_METRADO_CONDUCTO = "metrado del conducto (EG-2013 503, 506 a 508)"
+ETAPA_METRADO_EXCAVACION = "metrado de la excavacion (EG-2013 501)"
+ETAPA_METRADO_CONCRETO = "metrado del concreto de los cabezales (EG-2013 503)"
+ETAPA_METRADO_ACERO = "metrado del acero de los cabezales (EG-2013 504)"
+ETAPA_METRADO_LOSA = "metrado de la losa de entrega (EG-2013 503)"
+ETAPA_METRADO_PROTECCION = ("metrado del enrocado de salida y el geotextil "
+                            "(EG-2013 511)")
+AVISO_ACERO_DEL_MARCO = (
+    "el acero del marco no se metra: el armado de la seccion del marco esta "
+    "fuera del alcance declarado (armado_seccion_marco, ficha T5-07)")
 
 CRITERIO_TW = "TW_receptor"
 # La seccion del receptor, que el paso 2 de Sec. 1.3 necesita.
@@ -1762,6 +1779,14 @@ class InformePunto:
     # diametro anterior al adoptado. Se llena tambien cuando el punto no cierra.
     traza: List[PasoDiseno] = field(default_factory=list)
     bloqueos: List[Bloqueo] = field(default_factory=list)
+    # --- VE-5 met --- Fase 11: la fila del cuadro de compatibilidad
+    # rasante-alcantarilla (entregable 9, la salida de 7.A; en los dos
+    # alcances y en todo punto, con el motivo cuando no hay tamizado) y el
+    # metrado del punto (entregable 8; solo a expediente y solo con el
+    # cabezal: un renglon que no se pudo medir es un `Bloqueo` de
+    # FASE_METRADOS en `bloqueos`).
+    compatibilidad_rasante: Optional[FilaCompatibilidadRasante] = None
+    metrado: Optional[MetradoDelPunto] = None
 
     @property
     def punto_de_calculo(self) -> PuntoCritico:
@@ -2058,6 +2083,9 @@ class Informe:
     # mano no la tiene y `ContextoCorrida.de` lo dice en vez de leer el
     # estado vivo del proceso.
     contexto: Optional[ContextoCorrida] = None
+    # --- VE-5 met --- la suma de cada partida del EG-2013 en el expediente
+    # (`M12.totales_por_partida` sobre los metrados de los puntos).
+    totales_metrado: Tuple[Any, ...] = ()
 
     @property
     def dimensionados(self) -> int:
@@ -4306,6 +4334,10 @@ def correr_punto(punto: PuntoCritico, externos: DatosExternos,
             # la difiere entera `_cabezal_diferido`, una vez por corrida).
             if not _difiere(alcance, "M9_cabezal"):
                 _fase_9(informe, externos)
+                # --- VE-5 met --- los metrados leen el cabezal: van detras.
+                _fase_11_metrados(informe)
+    # --- VE-5 met --- la fila del cuadro de compatibilidad, de todo punto.
+    _fase_11_compatibilidad(informe)
     # --- T-9 (correcciones) --- El tramo de cuneta (y con el VB1) es de la
     # alcantarilla de alivio que la Fase 2 clasifico como alcantarilla: la
     # que no paso la Fase 2 ya tiene su bloqueo, y una de luz >= 6 m es
@@ -4318,6 +4350,90 @@ def correr_punto(punto: PuntoCritico, externos: DatosExternos,
              (tramo() if callable(tramo) else tramo)
              if clasificado and es_alivio else None)
     return informe
+
+
+# ===========================================================================
+# --- VE-5 met --- Fase 11, entregables 8 y 9
+# ===========================================================================
+
+def _fase_11_compatibilidad(informe: InformePunto) -> None:
+    """
+    La fila del CUADRO DE COMPATIBILIDAD RASANTE-ALCANTARILLA del punto (v8
+    Fase 11, entregable 9: «salida de 7.A»), con el tamizado de la seccion
+    adoptada; sin el, con el delta del «no factible» de MD o con el motivo
+    por el que el punto no llego a 7.A. Corre en los dos alcances: 7.A es de
+    perfil.
+    """
+    g = informe.geometria
+    r = informe.resultado
+    seccion = ("" if r is None or r.seccion is None or r.material is None
+               else f"{r.material.tipo.value} {r.seccion.etiqueta()}")
+    if g is not None:
+        informe.compatibilidad_rasante = M12.fila_compatibilidad(
+            punto=informe.punto, tamizado=g.tamizado,
+            cota_salida=g.cota_salida, seccion=seccion)
+        return
+    delta = next((b.delta_rasante_m for b in informe.bloqueos
+                  if b.tipo is _TipoDeBloqueo.DISENO_NO_FACTIBLE
+                  and b.delta_rasante_m is not None), None)
+    motivo = next((f"detenido en {b.fase}, {b.etapa}"
+                   for b in informe.bloqueos
+                   if not b.diferido_por_alcance), "")
+    informe.compatibilidad_rasante = M12.fila_compatibilidad(
+        punto=informe.punto, delta_no_factible=delta, seccion=seccion,
+        motivo=motivo)
+
+
+def _fase_11_metrados(informe: InformePunto) -> None:
+    """
+    Los METRADOS del punto referidos al EG-2013 (v8 Fase 11, entregable 8),
+    renglon por renglon con `M12_metrados`, sobre la geometria FINAL: la
+    seccion adoptada, las cotas de 7.B, el cabezal de la Fase 9 con su
+    armado y la proteccion de la Fase 6. Cada rubro es una etapa: lo que no
+    se puede medir (un criterio [A] sin declarar, el nivel freatico que
+    falta) queda como `Bloqueo` de FASE_METRADOS y los demas rubros siguen.
+    Sin cabezal no hay metrado: la longitud del barril entre caras
+    exteriores es la de la Fase 9.
+    """
+    c, r, g = informe.cabezal, informe.resultado, informe.geometria
+    if c is None or r is None or g is None or not r.aceptado:
+        return
+    material, seccion = r.material, r.seccion
+    celdas = r.resultado_hidraulico.numero_celdas
+    t = g.tamizado.espesor_pared
+    renglones: List[Any] = []
+
+    def _rubro(etapa: str, fn) -> None:
+        res = _etapa(informe.bloqueos, FASE_METRADOS, etapa, fn)
+        if res:
+            renglones.extend(res)
+
+    _rubro(ETAPA_METRADO_CONDUCTO, lambda: M12.renglones_conducto(
+        material=material, seccion=seccion, celdas=celdas, espesor=t,
+        cabezal=c, S=g.S_conducto))
+    _rubro(ETAPA_METRADO_EXCAVACION, lambda: M12.renglones_excavacion(
+        punto=informe.punto_de_calculo, material=material, seccion=seccion,
+        celdas=celdas, espesor=t, cabezal=c,
+        cota_solera_entrada=g.cota_entrada.valor,
+        cota_solera_salida=g.cota_salida))
+    _rubro(ETAPA_METRADO_CONCRETO, lambda: M12.renglones_concreto_cabezales(
+        cabezal=c, seccion=seccion, celdas=celdas, espesor=t))
+    _rubro(ETAPA_METRADO_ACERO,
+           lambda: M12.renglones_acero_cabezales(cabezal=c))
+    _rubro(ETAPA_METRADO_LOSA, lambda: M12.renglones_losa_entrega(cabezal=c))
+    if informe.proteccion is not None:
+        _rubro(ETAPA_METRADO_PROTECCION,
+               lambda: M12.renglones_proteccion_salida(
+                   proteccion=informe.proteccion, seccion=seccion,
+                   celdas=celdas))
+    avisos: List[str] = []
+    if material.forma is FormaSeccion.RECTANGULAR:
+        avisos.append(AVISO_ACERO_DEL_MARCO)
+    for renglon in renglones:
+        avisos.extend(a for a in renglon.avisos if a not in avisos)
+    informe.metrado = MetradoDelPunto(id_punto=informe.punto.id,
+                                      renglones=tuple(renglones),
+                                      avisos=tuple(avisos))
 
 
 # ===========================================================================
@@ -4459,6 +4575,9 @@ def correr(ruta_csv: Path, externos: DatosExternos,
     # --- T-7a --- la suma del proyecto: los cabezales de cada punto.
     informe.cabezal.por_punto = [p.cabezal for p in informe.puntos
                                  if p.cabezal is not None]
+    # --- VE-5 met --- y la de los metrados, por partida del EG-2013.
+    informe.totales_metrado = M12.totales_por_partida(
+        [p.metrado for p in informe.puntos if p.metrado is not None])
 
     _avisar_ids_desconocidos(informe, externos)
     _avisar_cuencas_sin_punto(informe)

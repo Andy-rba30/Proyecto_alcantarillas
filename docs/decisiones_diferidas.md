@@ -8521,3 +8521,51 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
 - **Qué haría falta:** HEC-11 en `NORMAS_DIR/normas/` para el filtro granular; el plano tipo
   del dueño o una regla [A] declarada para el zampeado y el dentellón.
 - **Dónde vive:** `src/modulos/M6_proteccion.py::requisito_de_filtro`
+
+## VE5-MET-01 · Metrados referidos al EG-2013 y cuadro de compatibilidad rasante-alcantarilla (Fase 11, entregables 8 y 9; ítem 8 del censo)
+
+- **Cerrado:** `src/modulos/M12_metrados.py` mide la geometría FINAL que las fases
+  anteriores entregan, sin rediseñar nada, con la regla de MEDICIÓN de cada Sección del
+  EG-2013 (18 citas nuevas, leídas en la capa de texto, desfase +8): conducto por metro
+  lineal entre las caras exteriores de los cabezales y siguiendo la pendiente (506.14,
+  507.12, 508.11; el marco, en m³ de concreto por 503.12); excavación en m³ en posición
+  original con caras verticales (501.09): la zanja con el ancho de la Sección del tubo
+  (506.06 Bc + 0.60; 507.05 1.5·D; 508.04 2·D) y el fondo bajo la cama mínima de 15 cm
+  (506.07, 508.05), las zapatas con el sobreancho de encofrado hasta 45 cm (501.04),
+  partida 501.C/D según el freático del punto (501.01) y material común cuando la calicata
+  declara un suelo SUCS (un `sucs_fundacion` que no lo es detiene el renglón: puede ser
+  roca); concreto de cabezales y aleros con el vano descontado (503.12), clase de la Tabla
+  503-07 por el f'c del armado (la de concreto reforzado de menor resistencia que lo
+  alcanza; ciclópeo, G); acero por la barra y el espaciamiento propuestos y la Tabla 504-01
+  (504.10); losa de entrega y dentellón; enrocado con el apron de HEC-14 (3D en la boca,
+  abocinado 1:3), sin partida en el EG-2013 (603.10 mide defensas ribereñas por metro
+  lineal: partida especial [A]); geotextil por el área en planta del enrocado (511.13). Sin
+  desperdicio ni esponjamiento: el EG-2013 los pone en el precio (503.13, 504.11). El
+  cuadro de compatibilidad es la salida de 7.A por punto (los dos alcances); los metrados,
+  sólo a expediente (leen el cabezal). Lo que no se mide es un `Bloqueo` de la Fase 11
+  (`servicio.FASE_METRADOS`) y los demás rubros siguen.
+- **Tres criterios nuevos (161):** `sobreancho_excavacion_estructuras_m` [A] opcional
+  (defecto normativo cero, ventana 0–0.45 m de 501.04); `incremento_acero_por_despiece` [A]
+  sin valor (anclajes, ganchos y empalmes del despiece de los planos, que el programa no
+  produce: sin declararlo el acero se detiene); `clase_concreto_losa_entrega` [A] sin valor
+  (la losa de entrega no tiene diseño estructural ni material: T8-03). Decisión pendiente de
+  Fable para los dos sin valor (no se pudo lanzar el subagente): quedan vacíos, que es el
+  lado seguro (detienen su renglón y no inventan una cantidad).
+- **Convenciones geométricas del metrado, declaradas en cada paso:** terreno y fondo
+  lineales entre los pies de los dos cabezales; la zanja corre entre los bordes de los
+  talones; los aleros se miden desde el extremo del cabezal sin descontar el encuentro de
+  las zapatas; la losa ocupa el espacio entre los aleros (cada uno se abre L·sen α); las
+  barras transversales de la zapata recorren su ancho B.
+- **Abierto:** el relleno para estructuras (502.A) y la cama/solado no se metran (la cama
+  está en el precio de 506.15, 507.13 y 508.12; el relleno pide la sección de relleno del
+  plano); el acero del marco, fuera del alcance declarado (`armado_seccion_marco`); la
+  protección de entrada (emboquillado) no tiene geometría; la zanja de varios tubos y el
+  enrocado de varios barriles se detienen como método no evaluable. La memoria resumida
+  (T-12) no lleva todavía la sección de la Fase 11.
+- **Abierto contra la hoja de ruta:** su Fase 11 ítem 8 dice «EG-2013 Sec. 500
+  (conductos) y 503/504 (cabezales)»: la «Sección 500» no existe (los conductos son las
+  505 a 508 del Capítulo V, como ya corrigió `constantes_normativas`), y omite la 501
+  (excavación), la 511 (geotextil) y la falta de partida del enrocado de salida.
+- **Dónde vive:** `src/modulos/M12_metrados.py`; `servicio._fase_11_metrados` y
+  `_fase_11_compatibilidad`; `M11_reporte.bloque_metrados_proyecto` y `_bloque_metrado`;
+  `cli._fase_11_json`, `_totales_metrado_json` y `_lineas_metrados`; panel de la pestaña 4.
