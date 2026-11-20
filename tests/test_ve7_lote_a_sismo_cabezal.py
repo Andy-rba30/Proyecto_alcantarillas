@@ -99,18 +99,36 @@ def test_A4_con_k_v_el_peso_estabilizante_va_con_uno_menos_k_v(
     assert "W·(1 - k_v)" in media.paso.formula
     sus = {m.simbolo: m.valor for m in media.paso.sustitucion}
     assert sus["k_v"] == pytest.approx(K_V, rel=REL_TRANSPORTE)
-    # el aviso: el ensamble E1-E3 no lo aplica a los pesos
-    assert any("NO aplica k_v a los pesos" in x for x in a.avisos)
 
 
-def test_A4_el_ensamble_no_aplica_k_v_a_los_pesos(tanteo, monkeypatch):
-    """Lo que el aviso afirma, medido: los pesos del ensamble sismico son
-    los del estatico con k_v distinto de cero."""
+def test_el_ensamble_aplica_uno_menos_k_v_a_los_pesos(tanteo, monkeypatch):
+    """Dictamen Fable, abierto (i): con k_v distinto de cero el ensamble
+    lleva -k_v·(W_w + W_s) en el centro de gravedad de los pesos, con factor
+    1 en las filas de excentricidad, deslizamiento y volteo y 0 en las de
+    portante; con k_v = 0 la carga no existe."""
+    entorno = tanteo
+    sin, _ = M9.cargas_del_cabezal(entorno, SIS)
+    assert not any(c.codigo == "EQ.kv.pesos" for c in sin)
     _con_k_v(monkeypatch)
-    entorno = _gravedad()
-    est, _ = M9.cargas_del_cabezal(entorno, CondicionAnalisis.ESTATICO)
-    sis, _ = M9.cargas_del_cabezal(entorno, SIS)
-    pesos = ("DC.pantalla", "DC.zapata", "EV.talon")
-    V_est = {c.codigo: c.V for c in est if c.codigo in pesos}
-    V_sis = {c.codigo: c.V for c in sis if c.codigo in pesos}
-    assert V_est and V_est == pytest.approx(V_sis, rel=REL_TRANSPORTE)
+    sis, datos = M9.cargas_del_cabezal(entorno, SIS)
+    pesos = [c for c in sis
+             if c.codigo in ("DC.pantalla", "DC.zapata", "EV.talon")]
+    W = sum(c.V for c in pesos)
+    x = sum(c.V * c.x for c in pesos) / W
+    kv = next(c for c in sis if c.codigo == "EQ.kv.pesos")
+    assert kv.V == pytest.approx(-K_V * W, rel=REL_TRANSPORTE)
+    assert kv.x == pytest.approx(x, rel=REL_TRANSPORTE)
+    for combo in M9.combinaciones_de_estabilidad(
+            sis, datos, SIS, entorno.geometria.B):
+        f = dict(combo.factores)["EQ.kv.pesos"]
+        esperado = 0.0 if "(portante)" in combo.nombre else 1.0
+        assert f == pytest.approx(esperado, abs=ABS_CERO)
+    # y C8 ya no avisa que el ensamble no lo aplica
+    a = M9.verificar_cabezal_ciclopeo(_gravedad())
+    assert not any("NO aplica k_v a los pesos" in x for x in a.avisos)
+
+
+def test_el_armado_lleva_los_pesos_enteros(tanteo, monkeypatch):
+    _con_k_v(monkeypatch)
+    sol = M9.solicitaciones_de_resistencia(tanteo)
+    assert any("pesos enteros" in a for a in sol["avisos"])

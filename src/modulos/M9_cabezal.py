@@ -6683,6 +6683,15 @@ C_EQ_V = "EQ.dPAE.v"
 C_EQ_PIR_MURO = "EQ.PIR.muro"
 C_EQ_PIR_SUELO = "EQ.PIR.suelo"
 CARGAS_DE_INERCIA = (C_EQ_PIR_MURO, C_EQ_PIR_SUELO)
+# --- dictamen Fable (VE-7 lote A, abierto (i)) --- con k_v distinto de cero
+# los pesos estabilizantes (DC y EV) van con (1 - k_v): una carga vertical
+# -k_v·(W_w + W_s) en su centro de gravedad (AASHTO A11.3.1, el mismo k_v
+# de Mononobe-Okabe; Manual de Puentes 2.8.1.1.14.2.1; los dos casos de
+# 11.6.5.1). Solo bajo sismo y solo con |k_v| > 0.
+C_EQ_KV = "EQ.kv.pesos"
+CITAS_K_V_EN_LOS_PESOS = ("AASHTO_LRFD_9.A11.3.1#KAE",
+                          "MP.2.8.1.1.14.2.1#ROCA",
+                          "AASHTO_LRFD_9.11.6.5.1#EXC")
 CARGAS_DE_EMPUJE_ESTATICO = (C_EH_H, C_EH_V)
 CARGAS_DE_INCREMENTO = (C_EQ_H, C_EQ_V)
 
@@ -8469,6 +8478,18 @@ def cargas_del_cabezal(entorno: EntornoDelCabezal,
                 "inercia del relleno sobre el talon", H=k_h * W_s, z=z_s,
                 sobre=ELEMENTO_ZAPATA,
                 procedencia=f"k_h·W_s = {k_h:.3f}·{W_s:.3f}"))
+        if abs(k_v) > TOL_UMBRAL_NORMATIVO:
+            pesos = [c for c in cargas
+                     if c.codigo in (C_DC_PANTALLA, C_DC_ZAPATA, C_EV_TALON)]
+            W_v = sum(c.V for c in pesos)
+            if W_v > 0:
+                cargas.append(CargaDeCabezal(
+                    C_EQ_KV, CARGA_EQ,
+                    "aceleracion vertical sobre los pesos estabilizantes",
+                    V=-k_v * W_v, x=sum(c.V * c.x for c in pesos) / W_v,
+                    sobre=ELEMENTO_ZAPATA,
+                    procedencia=(f"k_v·(W_w + W_s) = {k_v:g}·{W_v:.3f}, "
+                                 "hacia arriba (signo desfavorable)")))
         datos.update(K_AE=K_AE, k_h=k_h, k_v=k_v, P_AE=P_AE,
                      tratamiento_agua_sismo=tratamiento_agua,
                      z_AE=((P_estatico * z_A + dP * z_dP) / P_total
@@ -8622,6 +8643,11 @@ def combinaciones_de_estabilidad(cargas: tuple, datos: dict,
                  de la sobrecarga (portante) y otra sin el.
     WA va siempre con 1.00 (C11.5.6).
 
+    --- dictamen Fable (VE-7 lote A, abierto (i)) --- La carga
+    `C_EQ_KV` (-k_v·(W_w + W_s), solo con k_v distinto de cero) va con
+    factor 1.0 en las filas de excentricidad, deslizamiento y volteo, en
+    los dos casos de 11.6.5.1, y con 0 en las «(portante)».
+
     --- verificacion de T-7 (punto 9) --- Y EN RESISTENCIA I CADA FACTOR
     LLEVA EL MODIFICADOR DE CARGA eta_i de AASHTO 1.3.2.1
     (`modificador_de_carga`, `_resistencia_i_con_eta`): eta en las cargas
@@ -8682,7 +8708,7 @@ def combinaciones_de_estabilidad(cargas: tuple, datos: dict,
             cargas, factores(LS=g_eq, **comunes), B, "portante"))
         combos.append(_combinar(
             f"Evento Extremo I, {nombre}", MARCO_LRFD, condicion, cargas,
-            factores(LS=g_eq, LS_v=0.0, **comunes), B,
+            factores(LS=g_eq, LS_v=0.0, EQ_kv_pesos=1.0, **comunes), B,
             "excentricidad y deslizamiento"))
         servicio = dict(comunes, DC=1.0, EV=1.0, WA=1.0, EH=f_eh)
         combos.append(_combinar(
@@ -8690,7 +8716,7 @@ def combinaciones_de_estabilidad(cargas: tuple, datos: dict,
             cargas, factores(LS=1.0, **servicio), B, "portante"))
         combos.append(_combinar(
             f"Servicio con sismo, {nombre}", MARCO_ASD, condicion, cargas,
-            factores(LS=1.0, LS_v=0.0, **servicio), B,
+            factores(LS=1.0, LS_v=0.0, EQ_kv_pesos=1.0, **servicio), B,
             "volteo y deslizamiento"))
     del codigos
     return tuple(combos)
@@ -9967,7 +9993,9 @@ def _pasos_de_cargas(entorno, condicion, cargas, combos, datos,
                == AGUA_SE_MUEVE_CON_EL_SUELO else ())
             + ((CITA_NIVEL_MEDIO, "AASHTO_LRFD_9.11.6.6#DRENAJE")
                if datos["nivel_agua_sismo"] is not None else ())
-            + _citas_del_empuje_declarado(datos),
+            + _citas_del_empuje_declarado(datos)
+            + (CITAS_K_V_EN_LOS_PESOS
+               if abs(datos["k_v"]) > TOL_UMBRAL_NORMATIVO else ()),
             nota_del_proyecto=(
                 _nota_del_empuje_declarado(datos)
                 + _nota_del_agua_del_sismo_sin_drenaje(datos)
@@ -13317,6 +13345,14 @@ def solicitaciones_de_resistencia(entorno: EntornoDelCabezal) -> dict:
     k_h_armado = cadena.k_h0 if usa_reposo else None
     try:
         cargas_s, datos_s = cargas_del_cabezal(entorno, sis, k_h=k_h_armado)
+        # --- dictamen Fable (VE-7 lote A, (i)) --- el armado lleva los
+        # pesos ENTEROS: la reduccion por k_v es de la estabilidad.
+        if any(c.codigo == C_EQ_KV for c in cargas_s):
+            cargas_s = tuple(c for c in cargas_s if c.codigo != C_EQ_KV)
+            avisos.append(
+                f"{quien}: el Evento Extremo I del armado lleva los pesos "
+                "enteros; la reduccion (1 - k_v) de los pesos solo entra en "
+                "la estabilidad (E1 a E3)")
         combos_s = combinaciones_de_estabilidad(cargas_s, datos_s, sis, g.B)
         ced_s = solicitaciones_por_elemento(entorno, cargas_s, combos_s,
                                             datos_s)
@@ -15588,8 +15624,8 @@ def _verificar_cuerpo_bajo_sismo(entorno: EntornoDelCabezal, *, regimen: str,
     desfavorable (la aceleracion vertical hacia arriba lo aligera): e =
     [M_H - W·(1 - k_v)·(t/2 - x_W)] / [W·(1 - k_v)]; la inercia horizontal
     sigue con la masa entera, k_h·W. Con k_v = 0 es la formula de VE-6. El
-    ensamble E1-E3 NO aplica k_v a los pesos (`cargas_del_cabezal`: k_v
-    solo entra en el empuje), y con k_v distinto de cero se avisa.
+    ensamble E1-E3 tambien aplica (1 - k_v) a los pesos desde el dictamen
+    de Fable (carga `C_EQ_KV`).
 
     En el arranque, con la junta de construccion de archivo, la condicion es
     la de E.060 22.4.7 y DECIDE siempre. --- VE-7 (lote A, A3; abierto (b)
@@ -15767,15 +15803,8 @@ def _verificar_cuerpo_bajo_sismo(entorno: EntornoDelCabezal, *, regimen: str,
                                "cuerpo: aumentar su espesor"),
             citas=("MP.2.8.1.1.14.1#EXC", "AASHTO_LRFD_9.11.6.5.1#EXC"),
             numeral=NUMERAL_9_4_CICLOPEO))
-    aviso = ""
-    if con_k_v:
-        aviso = (
-            f"C8 lleva el peso del cuerpo con (1 - k_v) = "
-            f"{alivio_vertical:g} (k_v = {k_v:g}, '{CRITERIO_K_V}'); el "
-            "ensamble de la estabilidad E1 a E3 NO aplica k_v a los pesos "
-            "(solo al empuje): sus filas sismicas quedan del lado "
-            "favorable en esa medida (ficha VE7A-04)")
-    return salida, True, aviso
+    del con_k_v
+    return salida, True, ""
 
 
 def integrar_armado(cabezal: CabezalDelPunto,
