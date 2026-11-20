@@ -141,11 +141,33 @@ def test_ic_la_quinta_es_de_prueba_y_ejercita_lo_que_las_cuatro_no(emitidos):
     assert not (EJERCITA_LA_QUINTA & cuatro)
 
 
+# --- dictamen Fable, C6.b, y VE-7 fix-suite (ficha VE7C-06) --- lo que NO
+# cumple en la quinta, por la raiz del codigo, medido: la corrida ejercita
+# formulas y no es un diseño. A-04 (receptor 3.8 m bajo la entrada) tiene un
+# cabezal de salida de H_c = 6.03 m (B = 6.62 m dimensionado por
+# estabilidad): la zapata de sus ALEROS crece por el talon hasta el tope
+# 1.5·H_c (B = 9.02 m, `al_tope`) y la franja del extremo (1·L) sigue sin
+# cumplir el deslizamiento sismico (E3-LRFD.sis.s.alero.100: 251.2 kN/m de
+# demanda contra 224.1 de resistencia factorada). La app lo dice con su
+# aviso («ZAPATA DE LOS ALEROS NO FACTIBLE con estos criterios»); el censo
+# lo registra, no lo corrige.
+NO_CUMPLE_EN_LA_QUINTA = {
+    "C-01": {"A2"},
+    "A-04": {"E3-LRFD"},
+}
+CODIGOS_QUE_NO_CUMPLEN_EN_A04_DE_LA_QUINTA = {"E3-LRFD.sis.s.alero.100"}
+
+
 def test_ic_la_quinta_no_cumple_solo_lo_medido(emitidos):
     *_, informe = emitidos[QUINTA]
     assert {pid: set(r) for pid, r in
-            ind.raices_que_no_cumplen(informe).items()} == {"C-01": {"A2"}}
+            ind.raices_que_no_cumplen(informe).items()} == NO_CUMPLE_EN_LA_QUINTA
     por_id = {p.punto.id: p for p in informe.puntos}
+    a04 = por_id["A-04"].cabezal
+    assert {v.codigo for v in a04.verificaciones_incumplidas} == \
+        CODIGOS_QUE_NO_CUMPLEN_EN_A04_DE_LA_QUINTA
+    assert a04.intentos_de_zapata_aleros[-1].al_tope
+    assert any("ZAPATA DE LOS ALEROS NO FACTIBLE" in a for a in a04.avisos)
     assert por_id["A-03"].resultado.seccion.etiqueta() == "Ø 1.35 m"
     assert not por_id["A-06"].dimensionado
 

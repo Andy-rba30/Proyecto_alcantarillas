@@ -21,5 +21,10 @@ El CSV y los JSON no admiten esta cabecera; vale para los cinco archivos.
 | A-06 (Q = 0.02 m³/s, S = 0.09) | el piso de la carga de control de entrada cuando Ks·S la anula (`F4.PISO_HW`, elección); el punto no cierra (V2) |
 | `licuefaccion_ems`, `Mw_licuefaccion`, `incremento_acero_por_despiece`, `clase_concreto_losa_entrega` | quitar bloqueos que no son el objeto de esta corrida |
 
+La corrida ejercita fórmulas y no es un diseño: no cumplen `A2` del pórtico de C-01 y, en
+A-04, el deslizamiento sísmico de la franja extrema de los aleros de salida
+(`E3-LRFD.sis.s.alero.100`: su zapata llega al tope 1.5·H_c), y se dejan así
+(`NO_CUMPLE_EN_LA_QUINTA`, ficha VE7C-06).
+
 Lo que esta corrida NO alcanza, con su razón medida, está en el censo
 `SIN_EJERCITAR` de `tests/test_ve7_lote_c_cuarta_corrida.py` y en la ficha VE7C-06.

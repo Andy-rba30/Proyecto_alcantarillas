@@ -9497,9 +9497,16 @@ Fable (triaje VE-7, 2026-11-20): Fable decidió QUÉ hacer; estas fichas dicen c
   `tests/test_ve7_lote_c_cuarta_corrida.py::test_ic_el_peralte_sin_puerta_es_por_el_metodo_del_talon`
   (referencia sin crecer; el mismo juego con «peso_entero» declarado crece un paso y emite
   `9.3.p.s`).
-- **Abierto (integración, no de esta ficha):** `test_ic_la_quinta_no_cumple_solo_lo_medido` falla
-  en la rama integrada antes y después del lote B: A-04 de la quinta no cumple además E3-LRFD
-  (salida con H_c = 6.03 m y B = 6.62 m). Sin tocar aquí.
+- **Cerrado (VE-7 fix-suite, medido; dictamen Fable: la corrida ejercita fórmulas, no es un
+  diseño válido):** A-04 de la quinta tampoco cumple E3-LRFD. El cabezal de salida tiene
+  H_c = 6.03 m (B = 6.62 m, dimensionado por estabilidad); la zapata de sus **aleros** crece por
+  el talón hasta el tope 1.5·H_c (B = 9.02 m, `al_tope`) y la franja del extremo (1·L) sigue sin
+  cumplir el deslizamiento sísmico: `E3-LRFD.sis.s.alero.100`, 251.2 kN/m de demanda contra
+  224.1 de resistencia factorada. La app lo dice («ZAPATA DE LOS ALEROS NO FACTIBLE con estos
+  criterios»). Censado por igualdad como el resto: la quinta no cumple A2 (C-01) y E3-LRFD
+  (A-04), y de A-04 sólo esa franja (`NO_CUMPLE_EN_LA_QUINTA`,
+  `CODIGOS_QUE_NO_CUMPLEN_EN_A04_DE_LA_QUINTA`). No se cambian los datos de la corrida para
+  que cumpla: lo que ejercita (la caída recta de HEC-14) necesita ese receptor.
 - **Qué haría falta:** regenerar y sellar `docs/indice_formulas.md`; si se quiere puerta para
   `9.3.p.*` en una corrida de referencia, declarar «peso_entero» en la quinta (su ventana lo
   admite) y re-medir su censo de lo que no cumple — decisión del consultor.
