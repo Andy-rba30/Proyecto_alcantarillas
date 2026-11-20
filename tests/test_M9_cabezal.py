@@ -1255,31 +1255,35 @@ def test_N_q_es_cero_en_zapata_proxima_al_talud():
     assert NQ_ZAPATA_EN_TALUD == pytest.approx(0.0, abs=ABS_CERO)
 
 
-def test_N_s_es_cero_si_B_menor_que_Hs():
-    assert n_s_zapata_en_talud(B=1.6, H_s=3.0, gamma=19.0, c=20.0) == pytest.approx(0.0, abs=ABS_CERO)
-
-
-def test_N_s_es_gamma_Hs_sobre_c_si_B_mayor_o_igual_que_Hs():
-    assert n_s_zapata_en_talud(B=4.0, H_s=3.0, gamma=19.0,
+def test_N_s_es_gamma_Hs_sobre_c():
+    """
+    REESCRITO DECLARANDOLO (VE-5, ficha T7B-04): N_s es el de AASHTO ec.
+    10.6.3.1.2c-2, gamma·H_s/c, sin la rama «N_s = 0 si B < H_s» del
+    Manual de Puentes (la de los abacos de Meyerhof, retirados).
+    """
+    assert n_s_zapata_en_talud(H_s=3.0, gamma=19.0,
                                c=20.0) == pytest.approx(19.0 * 3.0 / 20.0)
 
 
 def test_N_s_con_c_cero_dice_que_hacer_en_vez_de_devolver_infinito():
-    """Suelo friccionante (Art. 20): el caso es del abaco de N_gamma_q."""
+    """Suelo friccionante (Art. 20): las tablas tienen su columna c' = 0."""
     with pytest.raises(DatoInvalidoError) as excinfo:
-        n_s_zapata_en_talud(B=4.0, H_s=3.0, gamma=19.0, c=0.0)
-    assert "N_cq_N_gammaq_meyerhof" in str(excinfo.value)
+        n_s_zapata_en_talud(H_s=3.0, gamma=19.0, c=0.0)
+    assert "c' = 0" in str(excinfo.value)
 
 
-def test_la_capacidad_portante_en_talud_se_detiene_en_los_abacos():
+def test_la_capacidad_portante_en_talud_reduce_con_las_tablas_de_aashto():
     """
-    No hay via alternativa: usar N_c y N_gamma de terreno horizontal es
-    exactamente la sobrestimacion que Sec. 9.3 advierte.
+    REESCRITO DECLARANDOLO (VE-5, ficha T7B-04): hasta VE-5 se detenia en
+    'N_cq_N_gammaq_meyerhof' (los abacos); desde VE-5 aplica la RC_BC de las
+    Tablas 10.6.3.1.2c-1 y -2. Los dorados a mano estan en
+    tests/test_ve5_m9_portante_talud.py; aqui, que reduce y no inventa.
     """
-    with pytest.raises(CriterioPendienteError) as excinfo:
-        capacidad_portante_zapata_en_talud(B=1.6, H_s=3.0, gamma=19.0,
-                                           c=0.0, phi_grados=32.0)
-    assert excinfo.value.clave == "N_cq_N_gammaq_meyerhof"
+    q, det = capacidad_portante_zapata_en_talud(
+        B=1.6, H_s=3.0, b=0.0, beta_grados=20.0, gamma=19.0, c=0.0,
+        phi_grados=32.0)
+    assert 0 < det["RC_BC"] < 1
+    assert q < 0.5 * 19.0 * 1.6 * 30.2
 
 
 def test_la_geometria_por_criterio_ya_no_existe_y_la_del_tanteo_si(geometria):
@@ -1773,7 +1777,8 @@ def test_la_cadena_completa_corre_cuando_los_vacios_se_declaran(monkeypatch,
     # sigue_vacio` y el del brazo, arriba.
     # 'predimensionamiento_cabezal' SALIO de esta lista en T-7a: tiene valor
     # (las reglas del predimensionamiento por punto, [A] con ventana).
-    "N_cq_N_gammaq_meyerhof",
+    # 'N_cq_N_gammaq_meyerhof' SALIO en VE-5 (ficha T7B-04): se retiro; la
+    # zapata en talud usa la RC_BC de AASHTO 10.6.3.1.2c.
     "metodo_estabilidad_global",
 ])
 def test_cada_vacio_de_la_fase_9_esta_declarado_con_su_justificacion(clave):

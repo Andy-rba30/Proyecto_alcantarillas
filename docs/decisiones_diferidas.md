@@ -5813,6 +5813,7 @@ marca del régimen para T-7c.
 - **Qué haría falta:** transcribir las tablas de 10.6.3.1.2c con su verificación contra
   el PDF si aparece un cabezal en ladera; y el EMS, que con `q_n_kpa` o `q_adm_kpa`
   gana sobre todo esto.
+- **VE-5 (lote M9):** cerrados (1), (2) y la admisible suelta; ver la ficha VE5M9-03.
 - **Dónde vive:** `src/modulos/M9_cabezal.py::resistencia_portante_nominal`
 
 ## T7B-05 · Sin drenaje declarado el relleno se calcula lleno de agua: es el valor de archivo, y deja la condición sísmica sin evaluar
@@ -8447,3 +8448,25 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   pantalla (`carga_pantalla_cabezal` = `cuna_sobre_la_pantalla`) sigue vertical: con
   talón el trasdós de la regla es vertical, y un β declarado con talón no la inclina.
 - **Dónde vive:** `src/modulos/M9_cabezal.py::cuna_de_tanteo`
+
+## VE5M9-03 · Capacidad portante: la RC_BC de AASHTO sustituye a Meyerhof, forma y profundidad declarables, y la admisible de corredor con consumidor (VE-5, ficha T7B-04)
+
+- **Cerrado:** (1) las Tablas 10.6.3.1.2c-1 y -2 de AASHTO 9.ª ed. transcritas enteras
+  (`constantes_normativas.RCBC_EN_TALUD_T10_6_3_1_2C_1` y `RCBC_JUNTO_AL_TALUD_…`), leídas
+  con un analizador del texto del PDF y comprobadas celda a celda por un test `pdf`;
+  `M9.coeficiente_rcbc` interpola en φ, B/H, b/B, β y N_s, toma la fila de 10° bajo 10°
+  (lado seguro) y, fuera de la tabla, se detiene («analysis limite», C10.6.3.1.2c). La
+  zapata en talud es RC_BC·(c·N_cm + 0.5·γ·B'·N_γm) sin empotramiento, con la geometría
+  de `talud_delante_del_cabezal` [S]. `N_cq_N_gammaq_meyerhof` (abacos de Meyerhof del
+  Manual de Puentes) se **retiró**, y con él el `H_s = 0` que se le pasaba. (2) Forma
+  (Tabla 10.6.3.1.2a-3, con L = longitud del cabezal) y profundidad (ec.
+  10.6.3.1.2a-10, ≤ 1.4) por `factores_forma_profundidad_portante` [A]; el archivo sigue
+  en la zapata corrida sin profundidad, de modo que ningún dorado se mueve. (3)
+  `capacidad_portante_adm` **no se retiró**: el Anexo A de la hoja de ruta la nombra; se le
+  dio consumidor (`M9.suelo_de_fundacion`), como el `q_adm_kpa` de corredor.
+- **Por qué:** la Fase 9 rige con AASHTO LRFD 9.ª ed. y su 10.6.3.1.2c son tablas, no
+  figuras; la §9.3 de la hoja de ruta sigue nombrando la ecuación del Manual de Puentes
+  2.8.1.3.1.2c (Meyerhof): **la hoja de ruta sigue mal** mientras no se corrija.
+- **Qué haría falta:** la geometría del talud por PUNTO (hoy es de corredor, como
+  `terreno_delante_del_cabezal`); y corregir la §9.3 de la hoja de ruta.
+- **Dónde vive:** `src/modulos/M9_cabezal.py::coeficiente_rcbc`

@@ -104,8 +104,14 @@ Lo que se detiene, y por que no se rellena
     friccion_muro_suelo_delta    cuarto, phi, ya estaba vacio en GEOTECNIA
                                  ('phi_relleno_trasdos').
     punto_aplicacion_...         Mononobe-Okabe da el empuje, no su brazo.
-    N_cq_N_gammaq_meyerhof       Salen de FIGURAS (2.8.1.3.1.2c-1 y -2), no de
-                                 una formula transcribible.
+    talud_delante_del_cabezal    La geometria del talud que desciende delante
+                                 de la zapata (H_s, beta, b), con
+                                 'terreno_delante_del_cabezal' = talud: dato
+                                 de topografia [S]. Desde VE-5 sustituye a
+                                 'N_cq_N_gammaq_meyerhof' (las figuras de
+                                 Meyerhof), retirado: la reduccion es la
+                                 RC_BC de AASHTO 10.6.3.1.2c, que si se
+                                 transcribe (tablas).
     metodo_estabilidad_global    E4 y E5: el FS esta, el metodo con que
                                  producir el valor a comparar no.
     cortante_alto_muro_...       El escalon de cuantia horizontal minima a
@@ -177,7 +183,7 @@ Uso
 from __future__ import annotations
 
 import math
-from typing import Optional, Sequence, Tuple
+from typing import Any, Optional, Sequence, Tuple
 
 from src import criterios_adoptados as ca
 from src import datos_sitio as ds
@@ -304,7 +310,15 @@ from src.constantes_normativas import (AMBIENTE_CORROSIVO_AUMENTAR,
                                    H_EQ_MURO_PARALELO_FT,
                                    SULFATOS,
                                    TABLA_COMBINACIONES_FILAS,
-                                   TABLA_GAMMA_P_FILAS)
+                                   TABLA_GAMMA_P_FILAS,
+                                   # --- VE-5 (ficha T7B-04) ---
+                                   DQ_MAXIMO_10_6_3_1_2A_10,
+                                   FORMA_SC_PHI_CERO_DIVISOR,
+                                   FORMA_SGAMMA_COEFICIENTE,
+                                   NUMERAL_FORMA_PROFUNDIDAD, NUMERAL_RCBC,
+                                   RCBC_BETAS_GRADOS, RCBC_COLUMNAS_NS,
+                                   RCBC_EN_TALUD_T10_6_3_1_2C_1,
+                                   RCBC_JUNTO_AL_TALUD_T10_6_3_1_2C_2)
 from src.modelos import (CIFRAS_FACTOR, CadenaSismica, CasoDemandaSismica,
                      CombinacionCarga, EleccionDeProyecto, Magnitud,
                      TipoDeVeredicto, Umbral, Veredicto, paso,
@@ -388,7 +402,18 @@ CRITERIO_DIMENSIONAMIENTO_ZAPATA = "dimensionamiento_zapata_cabezal"
 # El NF ya no es criterio: es la columna 'NF_profundidad_m' del CSV, medida en
 # cada cruce. Entra por argumento a las funciones que lo necesitan.
 
-CRITERIO_MEYERHOF = "N_cq_N_gammaq_meyerhof"
+# --- VE-5 (ficha T7B-04) --- 'N_cq_N_gammaq_meyerhof' se RETIRO: la zapata
+# en talud se calcula con la RC_BC de AASHTO 10.6.3.1.2c (tablas transcritas)
+# sobre la geometria del talud de 'talud_delante_del_cabezal' [S].
+CRITERIO_TALUD_DELANTE = "talud_delante_del_cabezal"
+CRITERIO_PORTANTE_ADMISIBLE = "capacidad_portante_adm"
+CRITERIO_FORMA_PROFUNDIDAD = "factores_forma_profundidad_portante"
+FORMA_CORRIDA = "corrida_sin_profundidad"
+FORMA_CON_LONGITUD = "forma_con_la_longitud_del_cabezal"
+FORMA_Y_PROFUNDIDAD = "forma_y_profundidad"
+OPCIONES_FORMA_PROFUNDIDAD = (FORMA_CORRIDA, FORMA_CON_LONGITUD,
+                              FORMA_Y_PROFUNDIDAD)
+CAMPOS_TALUD_DELANTE = ("H_s_m", "beta_grados", "b_m")
 CRITERIO_ESTABILIDAD_GLOBAL = "metodo_estabilidad_global"
 CRITERIO_TABLA_RECUBRIMIENTO = "tabla_recubrimiento_aashto_mm"
 # Las dos lagunas de las tablas de h_eq de AASHTO 3.11.6.4, que el registro
@@ -2400,93 +2425,232 @@ def _es_numero_finito(x: object) -> bool:
             and math.isfinite(x))
 
 
-def n_s_zapata_en_talud(*, B: float, H_s: float, gamma: float,
-                        c: float) -> float:
+def n_s_zapata_en_talud(*, H_s: float, gamma: float, c: float) -> float:
     """
-    Numero de estabilidad N_s de la zapata proxima al talud (Manual de
-    Puentes num. 2.8.1.3.1.2c):
+    Factor de estabilidad del talud N_s de AASHTO LRFD 10.6.3.1.2c (ec.
+    10.6.3.1.2c-2, pag. impresa 10-75):
 
-        N_s = 0            si B <  H_s
-        N_s = gamma*H_s/c  si B >= H_s
+        N_s = gamma·H_s / c
 
-    Con c = 0 la segunda rama no esta definida. No es un caso raro: E.050
-    Art. 20 obliga a c = 0 en todo suelo friccionante, y ahi el caso no se
-    resuelve con N_s sino con el abaco de N_gamma_q, que es el vacio del
-    criterio 'N_cq_N_gammaq_meyerhof'. Se levanta `DatoInvalidoError` en vez
-    de devolver infinito, para que el mensaje diga que hay que hacer.
+    --- VE-5 (ficha T7B-04) --- Hasta VE-5 era la del Manual de Puentes
+    2.8.1.3.1.2c (N_s = 0 si B < H_s), la de los abacos de Meyerhof que el
+    proyecto ya no lee. Con c = 0 (suelo friccionante, E.050 Art. 20) N_s no
+    esta definido: las tablas tienen para ese caso su columna «c' = 0», que
+    elige `coeficiente_rcbc`; aqui se levanta `DatoInvalidoError` en vez de
+    devolver infinito.
     """
-    if B < H_s:
-        return 0.0
-    if c <= 0:
+    if not c > 0:
         raise DatoInvalidoError(
-            campo="c",
-            valor=c,
-            motivo=("N_s = gamma*H_s/c no esta definido con c = 0 (suelo "
-                    f"friccionante, {NUMERAL_C_PHI}). Ese caso se resuelve "
-                    f"con el abaco de N_gamma_q: ver el criterio "
-                    f"'{CRITERIO_MEYERHOF}' ({NUMERAL_ZAPATA_EN_TALUD})"),
-        )
+            campo="c", valor=c,
+            motivo=("N_s = gamma·H_s/c no esta definido con c = 0 (suelo "
+                    f"friccionante, {NUMERAL_C_PHI}): las tablas de "
+                    f"{NUMERAL_RCBC} lo resuelven con su columna c' = 0"))
     return gamma * H_s / c
 
 
 def n_q_zapata_en_talud() -> float:
     """
-    N_q = 0.0 para zapata proxima al talud (Manual de Puentes num.
-    2.8.1.3.1.2c). [N] literal de `constantes_normativas`.
+    N_q = 0.0 para la zapata en talud. [N] literal de `constantes_normativas`.
 
-    Es el unico de los tres factores de capacidad de carga que la hoja de
-    ruta entrega como NUMERO, y anularlo no es un detalle: el termino de
-    sobrecarga desaparece por completo, que es la forma de escribir la
-    perdida de confinamiento del borde del terraplen.
+    --- VE-5 --- La ec. 10.6.3.1.2c-1 de AASHTO tampoco lleva el termino de
+    sobrecarga (q_n = RC_BC·(c·N_cm + 0.5·gamma·B·N_gamma_m)): sus
+    coeficientes son de zapatas sin empotramiento, y la perdida de
+    confinamiento del borde se escribe anulando ese termino, como en el
+    Manual de Puentes.
     """
     return NQ_ZAPATA_EN_TALUD
 
 
-def capacidad_portante_zapata_en_talud(*, B: float, H_s: float,
-                                       gamma: float, c: float,
-                                       phi_grados: float) -> float:
+def _interpolar_en(nodo: dict, x: float) -> Tuple[Any, Any, float]:
+    """(inferior, superior, fraccion) de `x` entre las claves de `nodo`."""
+    claves = sorted(nodo)
+    if x <= claves[0] + TOL_UMBRAL_NORMATIVO:
+        return nodo[claves[0]], nodo[claves[0]], 0.0
+    for a, b in zip(claves, claves[1:]):
+        if x <= b + TOL_UMBRAL_NORMATIVO:
+            f = min(max((x - a) / (b - a), 0.0), 1.0)
+            return nodo[a], nodo[b], f
+    return nodo[claves[-1]], nodo[claves[-1]], 0.0
+
+
+def _multilineal(nodo, coordenadas: Tuple[float, ...]):
+    """Interpolacion lineal anidada sobre las claves de un dict de tablas;
+    la hoja es una tupla, que se interpola componente a componente."""
+    if not coordenadas:
+        return nodo
+    a, b, f = _interpolar_en(nodo, coordenadas[0])
+    va = _multilineal(a, coordenadas[1:])
+    vb = _multilineal(b, coordenadas[1:])
+    return tuple(x + (y - x) * f for x, y in zip(va, vb))
+
+
+def _fuera_de_la_tabla(que: str, id_punto: Optional[str]
+                       ) -> MetodoNoEvaluableError:
+    return MetodoNoEvaluableError(
+        "reduccion por talud de la capacidad portante del cabezal",
+        "analisis limite o de equilibrio limite de la zapata en el talud "
+        "(AASHTO C10.6.3.1.2c)",
+        f"{que}: fuera de las Tablas 10.6.3.1.2c-1 y -2 ({NUMERAL_RCBC}). "
+        "El comentario pide entonces el analisis limite; la tabla no se "
+        "extrapola", id_punto=id_punto,
+        rotulo=MOTIVO_METODO_NO_EVALUABLE_CABEZAL)
+
+
+def coeficiente_rcbc(*, phi_grados: float, c_kpa: float, gamma: float,
+                     B: float, H_s: float, b: float, beta_grados: float,
+                     id_punto: Optional[str] = None) -> Tuple[float, dict]:
     """
-    q_ultima de una zapata proxima al talud, kPa (Manual de Puentes num.
-    2.8.1.3.1.2c, pags. 272-273): N_q = 0.0, y N_c y N_gamma REEMPLAZADOS por
-    N_cq y N_gamma_q de las figuras 2.8.1.3.1.2c-1 y -2 (Meyerhof 1957).
+    RC_BC, coeficiente de reduccion de la capacidad portante por talud de
+    AASHTO LRFD 10.6.3.1.2c (Tablas 10.6.3.1.2c-1 y -2, pags. impresas 10-76
+    a 10-78), y el detalle de la lectura.
 
-    Se detiene con `CriterioPendienteError` en 'N_cq_N_gammaq_meyerhof'. La
-    penalizacion es severa por perdida de confinamiento y la hoja de ruta lo
-    subraya: "el cabezal se apoya en el BORDE DEL TERRAPLEN, no en terreno
-    horizontal". Usar aqui los N_c y N_gamma de terreno horizontal -- que
-    cualquier formulario tiene a mano -- es exactamente la sobrestimacion que
-    Sec. 9.3 advierte, y por eso este modulo no ofrece via alternativa.
+      b = 0     zapata EN el talud: Tabla 10.6.3.1.2c-1, por phi, B/H_s y
+                beta (B/H_s de 0.1 a 3);
+      b > 0     zapata JUNTO al talud: Tabla 10.6.3.1.2c-2, por phi, B/H_s,
+                b/B y beta (B/H_s de 0.2 a 2, b/B de 0 a 10; mas alla de 10
+                se toma la fila de 10, que ya es 1.00 o casi: lado seguro).
+      columna   c = 0 (friccionante, E.050 Art. 20): la columna «c' = 0»;
+                c > 0: N_s = gamma·H_s/c (`n_s_zapata_en_talud`) entre sus
+                columnas 0, 2 y 4.
 
-    El vacio se comprueba ANTES que cualquier otra cosa a proposito: con suelo
-    friccionante (c = 0 por E.050 Art. 20) `n_s_zapata_en_talud` levantaria
-    `DatoInvalidoError` y el mensaje culparia al dato, cuando lo que falta de
-    verdad es la lectura de los abacos. N_s se calcula aparte, con esa
-    funcion, al ir a leerlos.
-
-    E.050 Art. 30.1-30.2 exige ADEMAS la verificacion por inclinacion de la
-    superficie y de la base y el analisis de estabilidad global con la
-    estructura cargando el talud: son dos comprobaciones y no una (la "doble
-    verificacion" de Sec. 9.3). La segunda es E4/E5.
+    «Use linear interpolation to obtain reduction coefficients for values
+    not provided»: interpolacion lineal anidada en phi, B/H, [b/B], beta y
+    N_s. Bajo beta = 10 grados (el talud mas tendido de la tabla) se toma la
+    fila de 10: el coeficiente crece al tender el talud, y no se inventa el
+    valor de 0 grados. LO QUE NO SE EXTRAPOLA -- beta > 40, N_s > 4, phi >
+    40, B/H fuera de su rango -- detiene con `MetodoNoEvaluableError`: el
+    comentario pide el analisis limite para geometrias y suelos fuera de las
+    de la referencia.
     """
-    factores = ca.valor(CRITERIO_MEYERHOF)   # CriterioPendienteError mientras falte
-    # --- T-7b --- CON los factores declarados, la formula del numeral (era
-    # un AssertionError desnudo): N_q = 0, y N_c y N_gamma reemplazados por
-    # N_cq y N_gamma_q, que el proyectista lee de las Figuras 2.8.1.3.1.2c-1
-    # y -2 del Manual de Puentes y declara. E.050 Art. 20: en friccionantes
-    # c = 0 y solo cuenta el termino de N_gamma_q.
-    if not hasattr(factores, "get") or not (
-            _es_numero_finito(factores.get("N_cq"))
-            and _es_numero_finito(factores.get("N_gamma_q"))):
+    for nombre, x in (("phi", phi_grados), ("c", c_kpa), ("gamma", gamma),
+                      ("B", B), ("H_s", H_s), ("b", b),
+                      ("beta", beta_grados)):
+        if not _finito(x):
+            raise DatoInvalidoError(nombre, valor=x, id_punto=id_punto,
+                                    motivo="se espera un numero finito")
+    if not (B > 0 and H_s > 0 and gamma > 0 and b >= 0 and c_kpa >= 0
+            and phi_grados >= 0 and beta_grados > 0):
         raise DatoInvalidoError(
-            campo=CRITERIO_MEYERHOF, valor=factores,
-            motivo="se esperan los dos factores leidos de las Figuras "
-                   "2.8.1.3.1.2c-1 y -2: {'N_cq': ..., 'N_gamma_q': ...}")
-    if not (B > 0 and gamma > 0 and c >= 0):
+            "talud delante del cabezal", id_punto=id_punto,
+            valor=(B, H_s, b, beta_grados, c_kpa, phi_grados),
+            motivo="B, H_s, gamma y beta positivos; b, c y phi no negativos")
+    t1, t2 = RCBC_EN_TALUD_T10_6_3_1_2C_1, RCBC_JUNTO_AL_TALUD_T10_6_3_1_2C_2
+    if phi_grados > max(t1) + TOL_UMBRAL_NORMATIVO:
+        raise _fuera_de_la_tabla(f"phi = {phi_grados:g} grados > {max(t1)}",
+                                 id_punto)
+    if beta_grados > max(RCBC_BETAS_GRADOS) + TOL_UMBRAL_NORMATIVO:
+        raise _fuera_de_la_tabla(f"talud de {beta_grados:g} grados > "
+                                 f"{max(RCBC_BETAS_GRADOS)}", id_punto)
+    beta = max(beta_grados, min(RCBC_BETAS_GRADOS))
+    B_H = B / H_s
+    if c_kpa > 0:
+        N_s = n_s_zapata_en_talud(H_s=H_s, gamma=gamma, c=c_kpa)
+        if N_s > max(RCBC_COLUMNAS_NS) + TOL_UMBRAL_NORMATIVO:
+            raise _fuera_de_la_tabla(f"N_s = gamma·H_s/c = {N_s:.3f} > "
+                                     f"{max(RCBC_COLUMNAS_NS)}", id_punto)
+    else:
+        N_s = None
+    if b > TOL_UMBRAL_NORMATIVO:
+        tabla, nombre = t2, "10.6.3.1.2c-2"
+        filas_BH = sorted(next(iter(t2.values())))
+        b_B = min(b / B, max(next(iter(next(iter(t2.values())).values()))))
+        coordenadas = (phi_grados, B_H, b_B, beta)
+    else:
+        tabla, nombre = t1, "10.6.3.1.2c-1"
+        filas_BH = sorted(next(iter(t1.values())))
+        b_B = 0.0
+        coordenadas = (phi_grados, B_H, beta)
+    if not (filas_BH[0] - TOL_UMBRAL_NORMATIVO <= B_H
+            <= filas_BH[-1] + TOL_UMBRAL_NORMATIVO):
+        raise _fuera_de_la_tabla(
+            f"B/H_s = {B:.3f}/{H_s:.3f} = {B_H:.3f} fuera de "
+            f"{filas_BH[0]:g} a {filas_BH[-1]:g} (Tabla {nombre})", id_punto)
+    fila = _multilineal(tabla, coordenadas)
+    if N_s is None:
+        rc = fila[len(RCBC_COLUMNAS_NS)]           # la columna c' = 0
+        columna = "c' = 0"
+    else:
+        columnas = dict(zip(RCBC_COLUMNAS_NS, fila))
+        a, b2, f = _interpolar_en(columnas, N_s)
+        rc = a + (b2 - a) * f
+        columna = f"N_s = {N_s:.3f}"
+    return rc, {"tabla": nombre, "B_H": B_H, "b_B": b_B, "beta": beta,
+                "N_s": N_s, "columna": columna, "RC_BC": rc}
+
+
+def validar_talud_delante(valor: Any, *, id_punto: Optional[str] = None
+                          ) -> dict:
+    """
+    La geometria del talud que desciende delante de la zapata (Figura
+    10.6.3.1.2c-1 de AASHTO): `H_s_m`, la altura del terreno inclinado bajo
+    la base de la zapata (m, > 0); `beta_grados`, su inclinacion (> 0 y <
+    90); `b_m`, la distancia del borde de la zapata a la coronacion del
+    talud (m, >= 0; 0 = zapata en el talud). Forma y dominio, o
+    `DatoInvalidoError`.
+    """
+    if not hasattr(valor, "get") or set(valor) != set(CAMPOS_TALUD_DELANTE):
         raise DatoInvalidoError(
-            campo="B", valor=(B, gamma, c),
+            CRITERIO_TALUD_DELANTE, valor=valor, id_punto=id_punto,
+            motivo="se espera {'H_s_m': ..., 'beta_grados': ..., 'b_m': ...}")
+    H_s, beta, b = (valor["H_s_m"], valor["beta_grados"], valor["b_m"])
+    recto = math.degrees(math.pi / 2)
+    if not (all(_es_numero_finito(x) for x in (H_s, beta, b))
+            and H_s > 0 and 0 < beta < recto and b >= 0):
+        raise DatoInvalidoError(
+            CRITERIO_TALUD_DELANTE, valor=valor, id_punto=id_punto,
+            motivo="H_s > 0 m, 0 < beta < 90 grados y b >= 0 m, numeros "
+                   "finitos")
+    return {"H_s_m": float(H_s), "beta_grados": float(beta),
+            "b_m": float(b)}
+
+
+def capacidad_portante_zapata_en_talud(*, B: float, H_s: float, b: float,
+                                       beta_grados: float, gamma: float,
+                                       c: float, phi_grados: float,
+                                       C_wgamma: float = 1.0,
+                                       i_c: float = 1.0, i_gamma: float = 1.0,
+                                       s_c: float = 1.0, s_gamma: float = 1.0,
+                                       id_punto: Optional[str] = None
+                                       ) -> Tuple[float, dict]:
+    """
+    q_n de la zapata EN o JUNTO a un talud, kPa, por AASHTO LRFD
+    10.6.3.1.2c (ec. 10.6.3.1.2c-1, pag. impresa 10-74):
+
+        q_n = RC_BC·(c·N_cm + 0.5·gamma·B·N_gamma_m)
+        N_cm = N_c·s_c·i_c;  N_gamma_m = N_gamma·s_gamma·i_gamma·C_wgamma
+
+    con N_c y N_gamma de la Tabla 10.6.3.1.2a-1 (`factores_de_capacidad_de_
+    carga`) y RC_BC de `coeficiente_rcbc`. Sin termino de sobrecarga
+    (`n_q_zapata_en_talud`): los coeficientes son de zapatas sin
+    empotramiento, y la fuente avisa que con empotramiento pueden ser
+    conservadores. C_wgamma, el del nivel freatico (Tabla 10.6.3.1.2a-2),
+    se conserva: el agua bajo la zapata no deja de restar por estar en un
+    talud.
+
+    --- VE-5 (ficha T7B-04) --- SUSTITUYE la ecuacion del Manual de Puentes
+    2.8.1.3.1.2c con los abacos de Meyerhof ('N_cq_N_gammaq_meyerhof',
+    retirado), que no se podian transcribir: las tablas de la 9a edicion si.
+    """
+    if not (_finito(B) and B > 0 and _finito(gamma) and gamma > 0
+            and _finito(c) and c >= 0):
+        raise DatoInvalidoError(
+            campo="B", valor=(B, gamma, c), id_punto=id_punto,
             motivo="ancho y peso especifico positivos y cohesion no negativa")
-    # El termino de sobrecarga lleva N_q = 0 (`n_q_zapata_en_talud`): no suma.
-    return c * factores["N_cq"] + gamma * B * factores["N_gamma_q"] / 2
+    rc, detalle = coeficiente_rcbc(phi_grados=phi_grados, c_kpa=c,
+                                   gamma=gamma, B=B, H_s=H_s, b=b,
+                                   beta_grados=beta_grados, id_punto=id_punto)
+    N_c, _N_q, N_g = factores_de_capacidad_de_carga(phi_grados)
+    termino_c = c * N_c * s_c * i_c
+    termino_g = gamma * B * N_g * s_gamma * i_gamma * C_wgamma / 2
+    q = rc * (termino_c + termino_g + n_q_zapata_en_talud())
+    if not (math.isfinite(q) and q >= 0):
+        raise LimiteNumericoError(
+            "q_n", valor=q, id_punto=id_punto,
+            motivo="la capacidad portante en talud no es finita y no "
+                   "negativa")
+    detalle.update(N_c=N_c, N_gamma=N_g, termino_c=termino_c,
+                   termino_gamma=termino_g)
+    return q, detalle
 
 
 def verificar_estabilidad(*, geometria: GeometriaCabezal,
@@ -3652,10 +3816,11 @@ FUNCIONES_SIN_CONSUMIDOR = {
     "n_q_zapata_en_talud / n_s_zapata_en_talud": (
         "`capacidad_portante_zapata_en_talud` solo se alcanza con "
         "'terreno_delante_del_cabezal' = 'talud_descendente', que no es el "
-        "valor de archivo, y entonces pide 'N_cq_N_gammaq_meyerhof': N_cq y "
-        "N_gamma_q salen de FIGURAS del Manual de Puentes y no de una "
-        "formula transcribible. N_s se calcula aparte al leer los abacos, "
-        "que es justo para lo que existe la funcion (SIS-B-21)"),
+        "valor de archivo, y entonces pide la geometria del talud "
+        "('talud_delante_del_cabezal' [S]); desde VE-5 la reduccion es la "
+        "RC_BC de AASHTO 10.6.3.1.2c, cuyas tablas leen N_s "
+        "(`coeficiente_rcbc`). Ninguna corrida con el valor de archivo las "
+        "llama (SIS-B-21)"),
 }
 
 
@@ -6139,9 +6304,30 @@ def suelo_de_fundacion(suelo_del_punto: Optional[dict] = None, *,
         return dict(suelo_del_punto), ("dato externo del punto "
                                        "(`suelo_fundacion`), del EMS")
     declarado = ca.valor(CRITERIO_SUELO_FUNDACION)   # CriterioPendienteError
-    return (validar_suelo_fundacion(declarado, campo=CRITERIO_SUELO_FUNDACION,
-                                    id_punto=id_punto),
-            f"criterio de corredor '{CRITERIO_SUELO_FUNDACION}', del EMS")
+    suelo = validar_suelo_fundacion(declarado, campo=CRITERIO_SUELO_FUNDACION,
+                                    id_punto=id_punto)
+    origen = f"criterio de corredor '{CRITERIO_SUELO_FUNDACION}', del EMS"
+    # --- VE-5 (ficha T7B-04) --- 'capacidad_portante_adm' [S] ya no es un
+    # criterio sin consumidor: es la presion ADMISIBLE de corredor, la misma
+    # magnitud que el campo `q_adm_kpa` del suelo de corredor, y entra cuando
+    # ese campo no viene. Si vienen los dos y difieren, el expediente se
+    # contradice: `DatoInvalidoError`. El suelo de un PUNTO no la hereda (es
+    # del EMS de ese punto, y gana entero).
+    adm = ca.valor_si_declarado(CRITERIO_PORTANTE_ADMISIBLE)
+    if adm is not None:
+        if "q_adm_kpa" in suelo and not math.isclose(
+                suelo["q_adm_kpa"], adm, rel_tol=TOL_UMBRAL_NORMATIVO):
+            raise DatoInvalidoError(
+                CRITERIO_PORTANTE_ADMISIBLE, valor=adm, id_punto=id_punto,
+                motivo=f"'{CRITERIO_SUELO_FUNDACION}' declara q_adm_kpa = "
+                       f"{suelo['q_adm_kpa']:g} kPa y "
+                       f"'{CRITERIO_PORTANTE_ADMISIBLE}' {adm:g} kPa: la "
+                       "presion admisible del EMS es una sola")
+        if "q_adm_kpa" not in suelo:
+            suelo["q_adm_kpa"] = float(adm)
+            origen += (f"; la presion admisible de "
+                       f"'{CRITERIO_PORTANTE_ADMISIBLE}' [S]")
+    return suelo, origen
 
 
 # ---------------------------------------------------------------------------
@@ -6348,10 +6534,51 @@ def coeficientes_de_nivel_freatico(*, D_w: float, D_f: float,
     return c_wq, c_wg
 
 
+def factores_de_forma(*, phi_grados: float, B: float, L: float,
+                      N_c: float, N_q: float) -> Tuple[float, float, float]:
+    """
+    (s_c, s_q, s_gamma) de la Tabla 10.6.3.1.2a-3 de AASHTO LRFD (pag.
+    impresa 10-73): con phi = 0, s_c = 1 + B/(5L) y s_q = s_gamma = 1; con
+    phi > 0, s_c = 1 + (B/L)(N_q/N_c), s_q = 1 + (B/L)·tan(phi) y s_gamma =
+    1 - 0.4·(B/L). B/L no pasa de 1 (L es la dimension mayor).
+    """
+    if not (_finito(B) and _finito(L) and B > 0 and L > 0):
+        raise DatoInvalidoError("longitud", valor=(B, L),
+                                motivo="ancho y longitud de la zapata "
+                                       "positivos y finitos")
+    r = min(B / L, 1.0)
+    if phi_grados > 0:
+        return (1.0 + r * N_q / N_c,
+                1.0 + r * math.tan(math.radians(phi_grados)),
+                1.0 - FORMA_SGAMMA_COEFICIENTE * r)
+    return 1.0 + r / FORMA_SC_PHI_CERO_DIVISOR, 1.0, 1.0
+
+
+def factor_de_profundidad(*, phi_grados: float, D_f: float,
+                          B: float) -> float:
+    """
+    d_q de la ec. 10.6.3.1.2a-10 de AASHTO LRFD (pag. impresa 10-73):
+
+        d_q = 1 + 2·tan(phi)·(1 - sen(phi))²·arctan(D_f/B)  (radianes)
+
+    «shall not exceed 1.4» (`DQ_MAXIMO_10_6_3_1_2A_10`). La fuente lo pide
+    solo con el suelo sobre el desplante tan competente como el de debajo,
+    y lo verifico para phi de 32 a 42 grados y D_f/B de 1 a 8: quien lo
+    declara ('factores_forma_profundidad_portante') asume lo primero, y el
+    paso dice si se esta fuera de lo segundo.
+    """
+    phi = math.radians(phi_grados)
+    d_q = (1.0 + 2 * math.tan(phi) * (1.0 - math.sin(phi)) ** 2
+           * math.atan(max(D_f, 0.0) / B))
+    return min(d_q, DQ_MAXIMO_10_6_3_1_2A_10)
+
+
 def resistencia_portante_nominal(*, suelo: dict, B_efectivo: float,
                                  D_f: float, D_w: float, H_servicio: float,
                                  V_servicio: float,
-                                 aplicar_inclinacion: bool
+                                 aplicar_inclinacion: bool,
+                                 longitud: Optional[float] = None,
+                                 profundidad: bool = False
                                  ) -> Tuple[float, dict]:
     """
     q_n, resistencia portante NOMINAL del terreno bajo la zapata corrida del
@@ -6361,11 +6588,18 @@ def resistencia_portante_nominal(*, suelo: dict, B_efectivo: float,
         q_n = c·N_c·i_c + gamma·D_f·N_q·i_q·C_wq
               + 0.5·gamma·B'·N_gamma·i_gamma·C_wgamma
 
-    LO QUE SE TOMA IGUAL A 1, y por que: los factores de FORMA (s_c, s_q,
-    s_gamma), porque la zapata del cabezal continua bajo los aleros y se
-    trata como corrida (B/L -> 0); y el de PROFUNDIDAD d_q, porque la fuente
-    lo admite solo con suelo competente sobre el desplante y lo verifico para
-    D_f/B de 1 a 8, que no es el caso de esta zapata.
+    LO QUE SE TOMA IGUAL A 1 DE ARCHIVO, y por que: los factores de FORMA
+    (s_c, s_q, s_gamma), porque la zapata del cabezal continua bajo los
+    aleros y se trata como corrida (B/L -> 0); y el de PROFUNDIDAD d_q,
+    porque la fuente lo admite solo con suelo competente sobre el desplante
+    y lo verifico para D_f/B de 1 a 8, que no es el caso de esta zapata.
+    --- VE-5 (ficha T7B-04) --- Con `longitud` (L) se aplican los de forma
+    (`factores_de_forma`, Tabla 10.6.3.1.2a-3) y con `profundidad`, d_q
+    (`factor_de_profundidad`, ec. 10.6.3.1.2a-10): lo declara
+    'factores_forma_profundidad_portante' [A].
+
+        q_n = c·N_c·s_c·i_c + gamma·D_f·N_q·s_q·d_q·i_q·C_wq
+              + 0.5·gamma·B'·N_gamma·s_gamma·i_gamma·C_wgamma
 
     `B_efectivo` es B - 2e de la combinacion (10.6.3.1.1 manda usar las
     dimensiones efectivas). `D_f` es el empotramiento que queda DELANTE de la
@@ -6411,9 +6645,15 @@ def resistencia_portante_nominal(*, suelo: dict, B_efectivo: float,
             i_c = i_q - (1.0 - i_q) / (N_q - 1.0)
         else:
             i_c = max(1.0 - n * H / (c * B_efectivo * N_c), 0.0)
-    termino_c = c * N_c * i_c
-    termino_q = gamma * D_f * N_q * i_q * c_wq
-    termino_g = gamma * B_efectivo * N_g * i_g * c_wg / 2
+    s_c = s_q = s_g = d_q = 1.0
+    if longitud is not None:
+        s_c, s_q, s_g = factores_de_forma(phi_grados=phi, B=B_efectivo,
+                                          L=longitud, N_c=N_c, N_q=N_q)
+    if profundidad:
+        d_q = factor_de_profundidad(phi_grados=phi, D_f=D_f, B=B_efectivo)
+    termino_c = c * N_c * s_c * i_c
+    termino_q = gamma * D_f * N_q * s_q * d_q * i_q * c_wq
+    termino_g = gamma * B_efectivo * N_g * s_g * i_g * c_wg / 2
     q_n = termino_c + termino_q + termino_g
     if not (math.isfinite(q_n) and q_n >= 0):
         raise LimiteNumericoError(
@@ -6422,6 +6662,7 @@ def resistencia_portante_nominal(*, suelo: dict, B_efectivo: float,
                    f"y no negativo (B' = {B_efectivo!r} m, H/V = "
                    f"{H!r}/{V_servicio!r})")
     return q_n, {"N_c": N_c, "N_q": N_q, "N_gamma": N_g, "i_c": i_c,
+                 "s_c": s_c, "s_q": s_q, "s_gamma": s_g, "d_q": d_q,
                  "i_q": i_q, "i_gamma": i_g, "C_wq": c_wq, "C_wgamma": c_wg,
                  "c": c, "phi": phi, "gamma": gamma,
                  "termino_c": termino_c, "termino_q": termino_q,
@@ -7667,16 +7908,7 @@ def _q_nominal(entorno: EntornoDelCabezal, datos: dict, suelo: dict,
             "falta la resistencia nominal del EMS (`q_n_kpa`)",
             entorno.id_punto)
     terreno = ca.valor(CRITERIO_TERRENO_DELANTE)
-    if terreno == TERRENO_TALUD:
-        c_art20, phi_art20 = parametros_resistencia_art20(
-            c=suelo["c_kpa"], phi_grados=suelo["phi_grados"],
-            cohesivo=suelo["cohesivo"])
-        q = capacidad_portante_zapata_en_talud(
-            B=B_efectivo, H_s=0.0, gamma=suelo["gamma_kn_m3"],
-            c=c_art20, phi_grados=phi_art20)
-        return q, ("zapata en talud (Manual de Puentes 2.8.1.3.1.2c), con "
-                   f"los factores de '{CRITERIO_MEYERHOF}'"), {}
-    if terreno != TERRENO_HORIZONTAL:
+    if terreno not in (TERRENO_HORIZONTAL, TERRENO_TALUD):
         raise DatoInvalidoError(CRITERIO_TERRENO_DELANTE, valor=terreno,
                                 motivo=f"se espera '{TERRENO_HORIZONTAL}' o "
                                        f"'{TERRENO_TALUD}'")
@@ -7687,14 +7919,62 @@ def _q_nominal(entorno: EntornoDelCabezal, datos: dict, suelo: dict,
         raise DatoInvalidoError(CRITERIO_INCLINACION_PORTANTE,
                                 valor=inclinacion,
                                 motivo="se espera 'aplicar' u 'omitir'")
+    # --- VE-5 (ficha T7B-04) --- forma y profundidad, declarables.
+    forma = _eleccion(CRITERIO_FORMA_PROFUNDIDAD, OPCIONES_FORMA_PROFUNDIDAD)
+    longitud = None
+    if forma != FORMA_CORRIDA:
+        longitud = entorno.geometria.longitud
+        if longitud is None:
+            raise DatoFaltanteError(
+                "longitud", id_punto=entorno.id_punto,
+                detalle=f"'{CRITERIO_FORMA_PROFUNDIDAD}' = '{forma}' pide la "
+                        "longitud de la zapata del cabezal (L de la Tabla "
+                        "10.6.3.1.2a-3), que la geometria no trae")
+    profundidad = forma == FORMA_Y_PROFUNDIDAD
+    texto_forma = ("zapata corrida, s = d_q = 1" if forma == FORMA_CORRIDA
+                   else f"factores de forma con L = {longitud:.3f} m"
+                   + (" y d_q (ec. 10.6.3.1.2a-10)" if profundidad else ""))
+    if terreno == TERRENO_TALUD:
+        # --- VE-5 (ficha T7B-04) --- la RC_BC de AASHTO 10.6.3.1.2c sobre
+        # la geometria del talud ('talud_delante_del_cabezal' [S]): hasta
+        # VE-5 pedia los factores de los abacos de Meyerhof del Manual de
+        # Puentes (retirados) y les pasaba H_s = 0.
+        talud = validar_talud_delante(ca.valor(CRITERIO_TALUD_DELANTE),
+                                      id_punto=entorno.id_punto)
+        D_w_base = max(D_w - D_f, 0.0)
+        q_0, det0 = resistencia_portante_nominal(
+            suelo=suelo, B_efectivo=B_efectivo, D_f=0.0, D_w=D_w_base,
+            H_servicio=servicio.H, V_servicio=servicio.N,
+            aplicar_inclinacion=inclinacion == INCLINACION_APLICAR,
+            longitud=longitud)
+        c_art20, phi_art20 = parametros_resistencia_art20(
+            c=suelo["c_kpa"], phi_grados=suelo["phi_grados"],
+            cohesivo=suelo["cohesivo"])
+        q, detalle = capacidad_portante_zapata_en_talud(
+            B=B_efectivo, H_s=talud["H_s_m"], b=talud["b_m"],
+            beta_grados=talud["beta_grados"], gamma=suelo["gamma_kn_m3"],
+            c=c_art20, phi_grados=phi_art20, C_wgamma=det0["C_wgamma"],
+            i_c=det0["i_c"], i_gamma=det0["i_gamma"], s_c=det0["s_c"],
+            s_gamma=det0["s_gamma"], id_punto=entorno.id_punto)
+        detalle.update(talud, inclinacion=inclinacion, forma=forma,
+                       D_f=0.0, D_w=D_w_base, texto_D_f=texto)
+        return q, (f"zapata {'en el' if talud['b_m'] <= 0 else 'junto al'} "
+                   f"talud (AASHTO 10.6.3.1.2c): RC_BC = "
+                   f"{detalle['RC_BC']:.4f} de la Tabla {detalle['tabla']} "
+                   f"({detalle['columna']}, B/H_s = {detalle['B_H']:.3f}, "
+                   f"beta = {talud['beta_grados']:g} grados) sobre c·N_cm + "
+                   "0.5·gamma·B'·N_gamma_m, sin empotramiento; "
+                   + texto_forma), detalle
     q_n, detalle = resistencia_portante_nominal(
         suelo=suelo, B_efectivo=B_efectivo, D_f=D_f, D_w=D_w,
         H_servicio=servicio.H, V_servicio=servicio.N,
-        aplicar_inclinacion=inclinacion == INCLINACION_APLICAR)
-    detalle.update(D_f=D_f, D_w=D_w, texto_D_f=texto, inclinacion=inclinacion)
+        aplicar_inclinacion=inclinacion == INCLINACION_APLICAR,
+        longitud=longitud, profundidad=profundidad)
+    detalle.update(D_f=D_f, D_w=D_w, texto_D_f=texto, inclinacion=inclinacion,
+                   forma=forma)
     return q_n, ("ecuacion de AASHTO 10.6.3.1.2a con B' = B - 2e, "
-                 f"D_f = {D_f:.3f} m ({texto}) y factores de inclinacion "
-                 f"'{inclinacion}'"), detalle
+                 f"D_f = {D_f:.3f} m ({texto}), factores de inclinacion "
+                 f"'{inclinacion}' y {texto_forma}"), detalle
 
 
 def _resistencia_al_deslizamiento(suelo: dict, combo: CombinacionDeEstabilidad

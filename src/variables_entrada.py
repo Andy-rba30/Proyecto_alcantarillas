@@ -1546,8 +1546,8 @@ _META_CRITERIOS: Dict[str, _Meta] = {
     "peralte_min_zapata_armada_m": _Meta(unidad="m"),
     # --- T-7b --- 'c_phi_fundacion' TIENE consumidor (el ensamble de
     # estabilidad de M9) y su fase se deduce de el; 'capacidad_portante_adm'
-    # sigue sin consumidor: la presion admisible del EMS entra como el campo
-    # `q_adm_kpa` del suelo de fundacion.
+    # tiene consumidor desde VE-5 (ficha T7B-04): el `q_adm_kpa` de corredor
+    # cuando el suelo no lo trae.
     "c_phi_fundacion": _Meta(unidad="kPa, grados y kN/m3"),
     "capacidad_portante_adm": _Meta(
         unidad="kPa",
@@ -1580,6 +1580,8 @@ _META_CRITERIOS: Dict[str, _Meta] = {
     "factores_inclinacion_carga_portante": _Meta(unidad="-"),
     "terreno_delante_del_cabezal": _Meta(unidad="-"),
     "regimen_cabezal": _Meta(unidad="-"),
+    "talud_delante_del_cabezal": _Meta(unidad="m, grados y m"),
+    "factores_forma_profundidad_portante": _Meta(unidad="-"),
     "empuje_sismico_muro_que_no_cede": _Meta(unidad="-"),
     # --- T-7c --- el armado del cabezal (los consume M9, Fase 9).
     "regimen_resistencia_elementos_cabezal": _Meta(unidad="-"),

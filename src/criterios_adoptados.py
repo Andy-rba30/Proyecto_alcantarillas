@@ -5443,20 +5443,13 @@ CRITERIOS: Dict[str, Criterio] = {
                      "zapata de cada cabezal, de modo que un valor de "
                      "corredor solo vale para un tramo homogeneo",
         reemplazado_por="EMS conforme a E.050",
-        # --- T-7b --- SIGUE SIN CONSUMIDOR, y ahora con otra razon: la
-        # presion admisible que el EMS entregue entra al ensamble de
-        # estabilidad junto a los demas parametros del suelo, como el campo
-        # opcional `q_adm_kpa` de 'c_phi_fundacion' (corredor) o de
-        # `suelo_fundacion` (por punto). Un valor suelto de corredor para
-        # una magnitud que depende de la zapata de cada cabezal no se lee.
-        sin_consumidor="La presion admisible del EMS entra al ensamble de "
-                       "estabilidad del cabezal (T-7b) como el campo "
-                       "opcional `q_adm_kpa` de 'c_phi_fundacion' o del dato "
-                       "externo `suelo_fundacion` del punto, junto al resto "
-                       "de los parametros del suelo, y solo en el marco de "
-                       "factores de seguridad. Este criterio suelto no lo "
-                       "lee ningun modulo; se conserva vacio para que la "
-                       "decision de retirarlo sea del expediente",
+        # --- VE-5 (ficha T7B-04) --- TIENE CONSUMIDOR desde VE-5
+        # (`M9.suelo_de_fundacion`): es la presion admisible de CORREDOR, la
+        # misma magnitud que el campo `q_adm_kpa` de 'c_phi_fundacion', y
+        # entra cuando ese campo no viene (si vienen los dos y difieren, se
+        # detiene). Hasta VE-5 era sin consumidor; el censo pedia retirarla
+        # o darle uno, y se le dio porque el Anexo A de la hoja de ruta la
+        # nombra. El suelo de un punto (`suelo_fundacion`) no la hereda.
         resolucion=DeEnsayo(
             ensayo="capacidad portante admisible del terreno de fundacion, "
                    "del EMS del expediente",
@@ -9765,63 +9758,6 @@ CRITERIOS: Dict[str, Criterio] = {
         ),
     ),
 
-    "N_cq_N_gammaq_meyerhof": Criterio(
-        valor=None,                 # VACIO: bloquea la capacidad portante en talud
-        nivel=NIVEL_EXPEDIENTE,
-        etiqueta="A",
-        forma=FORMA_DICT_CON_CAMPOS,
-        concepto="Factores de capacidad de carga N_cq y N_gamma_q para zapata "
-                 "proxima a talud (Meyerhof 1957), leidos de las figuras "
-                 "2.8.1.3.1.2c-1 y -2 del Manual de Puentes",
-        justificacion="Decide los factores de capacidad de carga N_cq y "
-                      "N_gamma_q de la zapata del cabezal, y hoy es un vacio "
-                      "declarado. La fuente proxima (Sec. 9.3 de la hoja de "
-                      "ruta) es taxativa en que el cabezal se apoya en el "
-                      "borde del terraplen y no en terreno horizontal, y en "
-                      "que la penalizacion es severa por perdida de "
-                      "confinamiento: N_q = 0.0 -- eso si es un numero y esta "
-                      "en constantes_normativas -- y N_c y N_gamma se "
-                      "reemplazan por N_cq y N_gamma_q, leidos de las figuras "
-                      "del num. 2.8.1.3.1.2c del Manual de Puentes "
-                      "(Meyerhof). Lo que la fuente no resuelve: esos dos "
-                      "factores salen de figuras, no de una formula ni de una "
-                      "tabla -- dependen de la distancia de la zapata al "
-                      "borde, de la altura del talud y de su inclinacion -- y "
-                      "no hay forma de transcribirlos sin leer los abacos "
-                      "para la geometria concreta de cada punto; cual de las "
-                      "dos figuras aplica lo decide el tipo de suelo de "
-                      "fundacion, que es el dato de 'c_phi_fundacion'. Se "
-                      "deja vacio para que lo lea el proyectista: usar N_c y "
-                      "N_gamma de terreno horizontal aqui seria exactamente "
-                      "la sobrestimacion que la hoja de ruta advierte",
-        fuente="PENDIENTE - Manual de Puentes num. 2.8.1.3.1.2c (Meyerhof "
-               "1957). CADA FIGURA EN SU PAGINA, verificado contra el PDF: "
-               "el texto del numeral en la pag. impresa 272 (PDF 273); la "
-               "Figura 2.8.1.3.1.2c-1, suelos COHESIVOS, en la pag. impresa "
-               "273 (PDF 274); la Figura 2.8.1.3.1.2c-2, suelos NO "
-               "COHESIVOS, en la pag. impresa 274 (PDF 275). El rango que "
-               "este campo declaraba -- 'pags. 272-273' -- dejaba fuera la "
-               "segunda figura (NOR-PUE-13), y son las dos las que hay que "
-               "leer: cual aplica lo decide el tipo de suelo de fundacion, "
-               "que es el dato de 'c_phi_fundacion'",
-        reemplazado_por="Lectura de los abacos para la geometria real de cada "
-                        "cabezal, adjuntada a la memoria",
-        verificacion_pendiente="E.050 Art. 30.1-30.2 exige ADEMAS la "
-                               "verificacion por inclinacion de la superficie "
-                               "y de la base, y el analisis de estabilidad "
-                               "global del talud con la estructura "
-                               "cargandolo: son dos comprobaciones, no una "
-                               "(Sec. 9.3, 'doble verificacion')",
-        resolucion=Libre(
-            que_lo_fija="el proyectista, leyendo las figuras 2.8.1.3.1.2c-1 "
-                        "y -2 del Manual de Puentes (Meyerhof 1957)",
-            dominio="factores adimensionales > 0",
-            tabla_pendiente="Manual de Puentes num. 2.8.1.3.1.2c: son "
-                            "FIGURAS (abacos), no tablas, y el registro no "
-                            "tiene hoy tipo para un abaco",
-        ),
-    ),
-
     "metodo_estabilidad_global": Criterio(
         valor=None,                 # VACIO: bloquea las filas E4 y E5 de Sec. 9.3
         nivel=NIVEL_EXPEDIENTE,
@@ -11310,8 +11246,8 @@ CRITERIOS: Dict[str, Criterio] = {
         #       del cauce, del que la zapata queda D_f por debajo: capacidad
         #       portante de terreno horizontal (AASHTO 10.6.3.1.2a).
         #   talud_descendente   el terreno baja delante de la zapata: zapata
-        #       en talud (Manual de Puentes 2.8.1.3.1.2c), con los factores
-        #       de 'N_cq_N_gammaq_meyerhof'.
+        #       en o junto al talud (AASHTO 10.6.3.1.2c, RC_BC de sus tablas,
+        #       desde VE-5), con la geometria de 'talud_delante_del_cabezal'.
         sensibilidad=("horizontal", "talud_descendente"),
         concepto="Forma del terreno DELANTE de la zapata del cabezal (del "
                  "lado del cauce), que decide si la capacidad portante es la "
@@ -11335,9 +11271,11 @@ CRITERIOS: Dict[str, Criterio] = {
                       "hoya de socavacion cuando la Fase 6 la entrega. La "
                       "otra opcion es para el cabezal que si queda sobre un "
                       "terreno que desciende -- una salida a media ladera "
-                      "--: pide los factores del Manual de Puentes, y sin "
-                      "ellos se detiene. El defecto se reporta contra la "
-                      "hoja de ruta, que esta sesion corrige",
+                      "--: desde VE-5 aplica la reduccion RC_BC de las Tablas "
+                      "10.6.3.1.2c-1 y -2 con la geometria del talud "
+                      "('talud_delante_del_cabezal'), y sin ella se detiene. "
+                      "El defecto se reporta contra la hoja de ruta, que "
+                      "esta sesion corrige",
         fuente="Geometria del cabezal de 'predimensionamiento_cabezal' "
                "(T-7a) y AASHTO LRFD 9a ed., 10.6.3.1.2c y Figura "
                "10.6.3.1.2c-1, pags. impresas 10-74 y 10-75 (PDF 1363 y "
@@ -11347,6 +11285,94 @@ CRITERIOS: Dict[str, Criterio] = {
             que_lo_fija="el proyectista, con el perfil del cauce delante "
                         "del cabezal",
             dominio="una de las dos opciones de la ventana",
+        ),
+    ),
+
+    # --- VE-5 (lote M9, ficha T7B-04) --- La geometria del talud que baja
+    # delante de la zapata, para la RC_BC de AASHTO 10.6.3.1.2c. SUSTITUYE a
+    # 'N_cq_N_gammaq_meyerhof' (los factores de los abacos de Meyerhof del
+    # Manual de Puentes), que se retiro: las tablas de la 9a edicion SI se
+    # transcriben, y lo que falta es la geometria, que es un dato de sitio.
+    # NIVEL: el de la Fase 9 (expediente), su unico consumidor
+    # (`M9._q_nominal`, con 'terreno_delante_del_cabezal' = talud).
+    "talud_delante_del_cabezal": Criterio(
+        valor=None,
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="S",
+        forma=FORMA_DICT_CON_CAMPOS,
+        concepto="Geometria del talud que desciende delante de la zapata del "
+                 "cabezal: altura bajo la base H_s (m), inclinacion beta "
+                 "(grados) y distancia b del borde de la zapata a la "
+                 "coronacion (m; 0 = zapata en el talud)",
+        justificacion="Decide el coeficiente de reduccion RC_BC de la "
+                      "capacidad portante de una zapata en o junto a un "
+                      "talud (AASHTO 10.6.3.1.2c, cita "
+                      "AASHTO_LRFD_9.10.6.3.1.2c#TALUD, Tablas 10.6.3.1.2c-1 "
+                      "y -2 y Figura 10.6.3.1.2c-1), que solo se lee con "
+                      "'terreno_delante_del_cabezal' = 'talud_descendente'. "
+                      "Es la geometria del terreno de ESTE sitio: no hay "
+                      "rango que elegir y se defiende con la trazabilidad "
+                      "del levantamiento",
+        fuente="Levantamiento topografico del terreno delante del cabezal; "
+               "AASHTO LRFD 9a ed., 10.6.3.1.2c, pags. impresas 10-74 a 10-78 "
+               "(PDF 1363 a 1367)",
+        trazabilidad="NO SE HA LEVANTADO. La lectura que hace falta: del "
+                     "perfil del terreno delante de cada cabezal en media "
+                     "ladera, la altura del terreno inclinado bajo la base de "
+                     "la zapata, su inclinacion y la distancia del borde de "
+                     "la zapata a la coronacion, con el levantamiento y la "
+                     "fecha. Es el valor de CORREDOR: vale para un tramo con "
+                     "el mismo talud",
+        reemplazado_por="Levantamiento topografico del terreno delante de "
+                        "cada cabezal",
+        resolucion=DeEnsayo(
+            ensayo="levantamiento topografico del terreno delante del "
+                   "cabezal",
+            trazabilidad_exigida="levantamiento, perfil y fecha",
+        ),
+    ),
+
+    # --- VE-5 (lote M9, ficha T7B-04) --- Los factores de forma y de
+    # profundidad de la capacidad portante (AASHTO Tabla 10.6.3.1.2a-3 y ec.
+    # 10.6.3.1.2a-10), que hasta VE-5 valian 1 sin decirlo en un criterio.
+    # NIVEL: el de la Fase 9 (expediente), `M9._q_nominal`.
+    "factores_forma_profundidad_portante": Criterio(
+        valor="corrida_sin_profundidad",
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        #   corrida_sin_profundidad            s_c = s_q = s_gamma = d_q = 1:
+        #       la zapata del cabezal sigue bajo los aleros (B/L -> 0) y el
+        #       suelo sobre el desplante no se da por competente.
+        #   forma_con_la_longitud_del_cabezal  los de forma con L = la
+        #       longitud del cabezal (Tabla 10.6.3.1.2a-3); d_q = 1.
+        #   forma_y_profundidad                ademas d_q (ec. 10.6.3.1.2a-10,
+        #       <= 1.4): declara el suelo sobre el desplante tan competente
+        #       como el de debajo, que es la condicion de la fuente.
+        sensibilidad=("corrida_sin_profundidad",
+                      "forma_con_la_longitud_del_cabezal",
+                      "forma_y_profundidad"),
+        concepto="Si la capacidad portante del cabezal lleva los factores de "
+                 "forma (con la longitud de la zapata) y el de profundidad",
+        justificacion="Decide s_c, s_q, s_gamma y d_q en la capacidad "
+                      "portante del cabezal. AASHTO 10.6.3.1.2a (Tabla "
+                      "10.6.3.1.2a-3 y ec. 10.6.3.1.2a-10, pag. impresa "
+                      "10-73) los define; d_q «should be used only when the "
+                      "soils above the footing bearing elevation are as "
+                      "competent as the soils beneath», no pasa de 1.4 y se "
+                      "verifico para phi de 32 a 42 grados y D_f/B de 1 a 8. "
+                      "El proyecto adopta la zapata corrida sin profundidad: "
+                      "la zapata continua bajo los aleros y el empotramiento "
+                      "del cabezal es el relleno del cauce, que la avenida "
+                      "socava. Con L finita s_gamma < 1 resta y s_q > 1 "
+                      "suma: ni una ni otra es el lado seguro siempre, y por "
+                      "eso esta en la ventana",
+        fuente="AASHTO LRFD 9a ed., Tabla 10.6.3.1.2a-3 y ec. 10.6.3.1.2a-10, "
+               "pag. impresa 10-73 (PDF 1362)",
+        reemplazado_por="Decision del proyectista con el EMS",
+        resolucion=Libre(
+            que_lo_fija="el proyectista",
+            dominio="una de las tres opciones de la ventana",
         ),
     ),
 

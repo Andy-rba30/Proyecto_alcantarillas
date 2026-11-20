@@ -356,8 +356,7 @@ NO_BARRIBLES: Dict[str, str] = {
     "coeficientes_desborde_plataforma": (
         "la Figura 3.11 del HDS-5 digitalizada (curvas por superficie); "
         + _R_ANALOGIA + "; y el juego no lo lee (umbral sin desborde)"),
-    "capacidad_portante_adm": (_R_SIN_VALOR + "; " + _R_ENSAYO + "; "
-                               + _R_SIN_CONSUMIDOR),
+    "capacidad_portante_adm": (_R_SIN_VALOR + "; " + _R_ENSAYO),
     "Mw_licuefaccion": (_R_SIN_VALOR + "; " + _R_ENSAYO + "; "
                         + _R_SIN_CONSUMIDOR),
     "diametros_normalizados": _R_TABLA,
@@ -390,8 +389,9 @@ NO_BARRIBLES: Dict[str, str] = {
         "(0.4–0.7): dentro de la ventana la zapata sólo puede achicarse, y "
         "una zapata más ancha se declara por punto (`cabezal_declarado`, "
         "variante `zapata_declarada_3m`)"),
-    "N_cq_N_gammaq_meyerhof": (_R_SIN_VALOR + "; condicional que el juego no "
-                               "dispara (terreno en talud delante del cabezal)"),
+    "talud_delante_del_cabezal": (_R_SIN_VALOR + "; " + _R_ENSAYO + "; "
+                                  "condicional que el juego no dispara "
+                                  "(terreno en talud delante del cabezal)"),
     "metodo_estabilidad_global": (_R_SIN_VALOR + "; E4 y E5 no se evalúan "
                                   "(ficha T7B-07)"),
     "categoria_refuerzo_aashto": (

@@ -39,6 +39,7 @@ from tests.test_t7b_cabezal_estabilidad import (_declarar_sitio, _entorno,
 EST = CondicionAnalisis.ESTATICO
 SIS = CondicionAnalisis.SISMICO
 TOL_K = 1e-5       # la cuña se afina a TOL_ANGULO_CUNA: cinco decimales en K
+TOL_KN = 1e-4      # empujes en kN/m a cuatro decimales
 
 
 @pytest.mark.parametrize("beta, k_h, k_v", [
@@ -116,7 +117,7 @@ def test_la_formula_fuera_de_dominio_pasa_a_la_cuna_con_la_superficie_real(
     dP = (P_cE - P_c) * CP["gamma_relleno"]
     inc = next(c for c in cargas if c.codigo == "EQ.dPAE.h")
     assert inc.H == pytest.approx(
-        dP * math.cos(math.radians(CP["delta"])), abs=1e-4)
+        dP * math.cos(math.radians(CP["delta"])), abs=TOL_KN)
     assert datos["metodo_incremento"] == M9.METODO_INCREMENTO_CUNA
 
 

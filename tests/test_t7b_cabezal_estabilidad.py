@@ -1566,6 +1566,8 @@ def test_la_zapata_en_talud_usa_los_factores_declarados_y_no_los_inventa(
     'terreno_delante_del_cabezal' = talud: la ecuacion del Manual de Puentes
     necesita N_cq y N_gamma_q, que salen de figuras y son un criterio SIN
     valor. Se detiene ahi; no sustituye por la del terreno horizontal.
+    (VE-5, ficha T7B-04: desde VE-5 lo que falta es la geometria del talud,
+    'talud_delante_del_cabezal' [S] sin valor; la regla es la misma.)
     """
     ca.establecer_valor_dinamico("terreno_delante_del_cabezal",
                                  "talud_descendente")
@@ -2123,38 +2125,27 @@ def test_si_la_resultante_cae_fuera_de_la_zapata_no_hay_presion_que_dar(
     assert len(e.verificaciones) == 6
 
 
-def test_la_zapata_en_talud_usa_los_factores_que_se_declaren(tanteo):
+def test_la_zapata_en_talud_usa_la_geometria_que_se_declare(tanteo):
     """
-    Manual de Puentes 2.8.1.3.1.2c: q = c·N_cq + 0.5·gamma·B·N_gamma_q, con
-    N_q = 0. Con N_cq = 4.0 y N_gamma_q = 20.0 DE PRUEBA:
-      c = 10, gamma = 18, B = 1.50  ->  40 + 270 = 310 kPa
-    Y en el ensamble (friccionante: c = 0), combinacion de maximos:
-      0.5·18·1.94694·20 = 350.449 kPa; phi_b = 0.45 -> 157.702 kPa
+    REESCRITO DECLARANDOLO (VE-5, ficha T7B-04): hasta VE-5 fijaba la
+    ecuacion del Manual de Puentes con los factores de Meyerhof DE PRUEBA
+    ('N_cq_N_gammaq_meyerhof', retirado). Desde VE-5 la zapata en talud es
+    la RC_BC de AASHTO 10.6.3.1.2c sobre la ecuacion sin empotramiento. En
+    el ensamble (friccionante, phi = 32, c = 0), con un talud de 20 grados,
+    H_s = 2.0 m y b = 0: q_R = phi_b·RC_BC·0.5·gamma·B'·N_gamma·i_gamma, con
+    el RC_BC de la columna c' = 0 de la Tabla 10.6.3.1.2c-1.
     """
-    factores = {"N_cq": 4.0, "N_gamma_q": 20.0}
-    with con_valor("N_cq_N_gammaq_meyerhof", factores,
-                   motivo="factores de prueba: los reales se leen de las "
-                          "figuras del Manual de Puentes"):
-        q = M9.capacidad_portante_zapata_en_talud(
-            B=1.5, H_s=0.0, gamma=18.0, c=10.0, phi_grados=0.0)
-        assert q == pytest.approx(310.0, abs=ABS_CERO)
-        for malo in (dict(B=0.0), dict(gamma=0.0), dict(c=-1.0)):
-            with pytest.raises(DatoInvalidoError):
-                M9.capacidad_portante_zapata_en_talud(
-                    **dict(dict(B=1.5, H_s=0.0, gamma=18.0, c=10.0,
-                                phi_grados=0.0), **malo))
-        ca.establecer_valor_dinamico("terreno_delante_del_cabezal",
-                                     "talud_descendente")
-        e = M9.ensamble_estabilidad(tanteo, EST)
-    assert _v(e, "E1-LRFD.est.e").valor_admisible == pytest.approx(
-        0.45 * 0.5 * 18.0 * 1.94694 * 20.0, abs=TOL_MM)
-    for malos in ({"N_cq": 4.0}, {"N_cq": 4.0, "N_gamma_q": float("nan")},
-                  "4 y 20"):
-        with con_valor("N_cq_N_gammaq_meyerhof", malos,
-                       motivo="segunda linea: factores mal declarados"):
-            with pytest.raises(DatoInvalidoError):
-                M9.capacidad_portante_zapata_en_talud(
-                    B=1.5, H_s=0.0, gamma=18.0, c=10.0, phi_grados=0.0)
+    ca.establecer_valor_dinamico("terreno_delante_del_cabezal",
+                                 "talud_descendente")
+    ca.establecer_valor_dinamico("talud_delante_del_cabezal",
+                                 {"H_s_m": 2.0, "beta_grados": 20.0,
+                                  "b_m": 0.0})
+    e = M9.ensamble_estabilidad(tanteo, EST)
+    v = _v(e, "E1-LRFD.est.e")
+    llano = None
+    ca.establecer_valor_dinamico("terreno_delante_del_cabezal", "horizontal")
+    llano = _v(M9.ensamble_estabilidad(tanteo, EST), "E1-LRFD.est.e")
+    assert 0 < v.valor_admisible < llano.valor_admisible
 
 
 def test_el_portante_sismico_inclina_con_las_cargas_de_servicio_de_su_caso(
