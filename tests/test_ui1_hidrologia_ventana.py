@@ -183,6 +183,9 @@ class _Widget:
     def deshabilitar(self, motivo):
         self.encendido, self.motivo = False, motivo
 
+    def estado(self, encendido, motivo):
+        self.habilitar() if encendido else self.deshabilitar(motivo)
+
     def select(self, cual=None):
         self.seleccion = cual
 
@@ -233,8 +236,11 @@ def _ventana(app, *, csv_=None, cuencas="", estacion="", externos=EXTERNOS):
     for nombre in ("lbl_error_datos", "btn_ejecutar", "nb", "root", "lbl_estado",
                    "lbl_anticipo_criterios", "lbl_anticipo_csv",
                    "lbl_anticipo_diferido", "lbl_anticipo_prevuelo",
+                   # VE-5 (ficha C8-02): la lista de corridas para comparar.
+                   "cmb_corridas", "btn_comparar_corrida",
                    *app.BOTONES_DE_EXPORTACION):
         setattr(v, nombre, _Widget())
+    v.corrida_a_comparar_var = VariableDeTexto("")
     v.tab_datos = object()
     v.tree_anticipo = _Arbol()
     v.tree_prevuelo = _Arbol()

@@ -182,7 +182,11 @@ def test_todo_criterio_de_perfil_sin_valor_tiene_ficha_declarable():
     # dato de ENSAYO que V7 lee con esa alternativa y el nivel sobre la
     # clave: paso de expediente a perfil porque una corrida de perfil se
     # detiene en el. Su VALOR lo da el ensayo del relleno.
-    assert sorted(claves) == ["TW_receptor", "homogeneidad_serie_fen",
+    # --- VE-4f --- 'carga_viva_tubo_concreto_somero' (ficha VE4F-01) y
+    # --- VE-5 (mh) --- 'factores_idf_regional' (ficha T1-05), [S] de un
+    # estudio regional: su VALOR lo da ese estudio.
+    assert sorted(claves) == ["TW_receptor", "carga_viva_tubo_concreto_somero",
+                              "factores_idf_regional", "homogeneidad_serie_fen",
                               "margen_estacional_nf_v7_m",
                               "peso_especifico_saturado_relleno_kn_m3"]
     for clave in claves:
@@ -873,7 +877,11 @@ def test_los_opcionales_declarados_hoy():
                           # los cimientos: sin declarar, caras verticales
                           # conforme a la estructura (EG-2013 501.04); hasta
                           # 0.45 m con encofrado.
-                          "sobreancho_excavacion_estructuras_m"}
+                          "sobreancho_excavacion_estructuras_m",
+                          # Y desde VE-5 gui (ficha T8-11) los techos de
+                          # transcripcion de la Fase 6: sin declarar, ningun
+                          # aviso; declarados, avisan de un dato por encima.
+                          "techos_de_transcripcion_fase_6"}
 
 
 def test_un_opcional_no_figura_entre_los_vacios_que_bloquean():
@@ -1253,8 +1261,12 @@ def test_los_criterios_sin_consumidor_declaran_por_que_nadie_los_invoca():
     """
     sin_consumidor = ca.criterios_sin_consumidor()
     # VE-5 (catlic): la demanda de licuefaccion y la clase de sitio ya
-    # tienen consumidor (ML_licuefaccion).
-    assert "capacidad_portante_adm" in sin_consumidor
+    # tienen consumidor (ML_licuefaccion); y VE-5 (m9, ficha T7B-04) se lo
+    # dio a 'capacidad_portante_adm' (`M9.suelo_de_fundacion`). Quedan las
+    # dos ediciones, que no son magnitudes.
+    assert "capacidad_portante_adm" not in sin_consumidor
+    assert sorted(sin_consumidor) == ["edicion_legal_que_rige_el_expediente",
+                                      "edicion_que_rige_el_expediente"]
     for clave in sin_consumidor:
         assert criterio(clave).sin_consumidor.strip(), clave
 

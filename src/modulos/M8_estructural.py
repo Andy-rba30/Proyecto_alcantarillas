@@ -3911,8 +3911,11 @@ class _ModeloPortico:
             ul = _rotacion(m.c, m.s) @ u[self._gl(a, b)]
             f = _rigidez_local(EA, EI, s1 - s0) @ ul - Fl
             por_s = res.setdefault(m.nombre, {})
-            por_s.setdefault(s0, (-f[_U1], f[_V1], -f[_G1]))
-            por_s[s1] = (f[_U2], -f[_V2], f[_G2])
+            # Los esfuerzos salen como `float` de Python, no `numpy.float64`:
+            # el informe se embebe en la sesion (`serializacion_informe`) y
+            # un `numpy.bool` derivado de ellos (la fisuracion) no se escribe.
+            por_s.setdefault(s0, (float(-f[_U1]), float(f[_V1]), float(-f[_G1])))
+            por_s[s1] = (float(f[_U2]), float(-f[_V2]), float(f[_G2]))
         return res
 
 

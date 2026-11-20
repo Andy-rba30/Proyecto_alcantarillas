@@ -290,7 +290,11 @@ SIN_VENTANA_EN_LA_VENTANA = frozenset({
     # admisible (sin valor: lo da el diseño de la proteccion) y la Figura
     # 3.11 digitalizada (una lectura de figura, sin ventana).
     "caudal_unitario_admisible_desborde_m2s",
-    "coeficientes_desborde_plataforma"})
+    "coeficientes_desborde_plataforma",
+    # --- VE-5 --- (mh, ficha T1-05) los factores K, m, n de la IDF regional,
+    # [S] de un estudio; (met) el incremento de acero del despiece, que lo da
+    # el plano. Ninguno de los dos tiene ventana.
+    "factores_idf_regional", "incremento_acero_por_despiece"})
 # Y de ellos, los que la puerta de la CLI (`barrido.verificar_valores`, la de
 # `cli.py --barrido`) SI deja barrer con el valor de su archivo: la divergencia
 # ventana/CLI, MEDIDA, que UI3-01 deja al dueño. La CLI no se cambia.

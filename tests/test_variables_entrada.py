@@ -371,9 +371,9 @@ def test_el_consumidor_sale_del_codigo_y_no_de_los_comentarios():
     # 'clase_sitio' salio en VE-5 (catlic): la lee la Fase 0-bis
     # (`ML.contrastar_clase_sitio`) cuando el EMS la declara.
     assert ve.variable("clase_sitio").consumido_por == ("ML_licuefaccion",)
-    for clave in ("capacidad_portante_adm",):
-        assert ve.variable(clave).consumido_por == (), clave
-        assert clave in ve.variables_sin_consumidor()
+    # 'capacidad_portante_adm' salio en VE-5 (m9, ficha T7B-04): es la
+    # presion admisible de corredor que lee `M9.suelo_de_fundacion`.
+    assert ve.variable("capacidad_portante_adm").consumido_por == ("M9_cabezal",)
     # `ke_entrada` LLEVA DOS DESDE S21 Y NO ES UNA REGRESION: es el segundo
     # paso de `_consumo_por_modulo`, que sigue el grafo de llamadas. MD llama a
     # `M4.control_de_entrada` en cada escalon del bucle, de modo que MD PUEDE

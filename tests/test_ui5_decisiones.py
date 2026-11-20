@@ -1265,7 +1265,11 @@ SIN_NADA_QUE_BARRER = {
     "incremento_acero_por_despiece",
     # VE-5 (mh, ficha T1-05): los factores K, m, n de la ecuacion (17), [S]
     # sin valor de archivo: un dato de un estudio regional no tiene ventana.
-    "factores_idf_regional"}
+    "factores_idf_regional",
+    # VE-5 (gui, ficha T8-11): los techos de transcripcion de la Fase 6,
+    # opcional sin valor de archivo; su `sensibilidad` explica las dos
+    # lecturas (sin declarar o declarado) y no trae valores que barrer.
+    "techos_de_transcripcion_fase_6"}
 # VE-3.5 lo habia sumado ('dimensionamiento_zapata_cabezal', sin valor de
 # archivo y sin ventana). Desde VE-3.9 tiene valor de archivo y ventana por
 # campo (decision del dueño), y ya hay que barrer.

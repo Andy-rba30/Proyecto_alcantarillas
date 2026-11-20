@@ -191,6 +191,7 @@ def _ventana(app, informe=None):
     for nombre in app.BOTONES_DE_EXPORTACION:
         setattr(v, nombre, _Boton())
     v.txt_cabezal = _Texto()
+    v.txt_metrados = _Texto()          # VE-5 met: la Fase 11 bajo el cabezal
     v.lbl_cabezal = _Rotulo()
     v.lbl_estado = _Rotulo()
     v.lbl_error_datos = _Rotulo()
