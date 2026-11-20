@@ -3624,6 +3624,10 @@ CASO_LS = "LS"
 CASO_WA = "WA"
 CASO_LL = "LL+IM"
 CASOS_PERMANENTES = (CASO_DC, CASO_EV, CASO_EH, CASO_LS, CASO_WA)
+# --- VE-7 lote B, B3 (T5-07 (5)) --- el agua EXTERIOR sobre las paredes, con
+# el nivel freatico sobre el eje de la losa inferior. Solo existe en esos
+# puntos: sin el, los casos y las envolventes son los de antes.
+CASO_WA_EXT = "WA_ext"
 
 ESTADO_RESISTENCIA = "Resistencia I"
 ESTADO_SERVICIO = "Servicio I"
@@ -3643,8 +3647,10 @@ DIFERIDO_PORTICO = (
     "superior con menos de 2.0 ft de relleno (9.7.3.2, que 12.11.2.1 manda) "
     "y las vigas de borde de C12.11.2.1; (3) [desde VE-7 el acero de las "
     "caras que no se traccionan se tabula con el minimo de 5.10.6]; (4) el "
-    "desarrollo y los empalmes de las barras; (5) el empuje "
-    "del agua EXTERIOR con el nivel freatico sobre la losa inferior; y (6) "
+    "desarrollo y los empalmes de las barras; (5) [desde VE-7 el agua "
+    "EXTERIOR entra en las paredes con el nivel sobre la losa inferior; con "
+    "el nivel sobre la losa superior, la carga vertical sobre ella sigue con "
+    "el relleno seco]; y (6) "
     "el V_c de la Eq. 5.12.7.3-1 para las losas con 2.0 ft o mas, que la "
     "fuente PERMITE y el proyecto no toma (rige 5.7)")
 
@@ -4154,9 +4160,43 @@ def _casos_de_carga(*, punto: PuntoCritico, material: Material,
         return gamma_p * min(z, e_paq) + gamma_s * max(0.0, z - e_paq)
     z_sup = H_total + t_sup / 2
     z_inf = H_total + t_sup + g.altura_libre_m + t_inf / 2
-    p_sup, p_inf = k0 * sigma_v(z_sup), k0 * sigma_v(z_inf)
-    casos[CASO_EH] = (_en_la_pared(g, 0, 0.0, h, p_inf, p_sup)
-                      + _en_la_pared(g, N, 0.0, h, -p_inf, -p_sup))
+    # --- VE-7 lote B, B3 --- con el nivel freatico sobre el eje de la losa
+    # inferior, bajo el agua el suelo empuja con su peso SUMERGIDO y el agua
+    # aparte (AASHTO 3.11.3; Manual de Puentes 2.4.4.1.3): el diagrama del
+    # ensamble de M9 (seco, su continuacion y el sumergido).
+    agua = _agua_exterior_del_portico(punto, z_sup=z_sup, z_inf=z_inf)
+    if agua is None:
+        p_sup, p_inf = k0 * sigma_v(z_sup), k0 * sigma_v(z_inf)
+        casos[CASO_EH] = (_en_la_pared(g, 0, 0.0, h, p_inf, p_sup)
+                          + _en_la_pared(g, N, 0.0, h, -p_inf, -p_sup))
+    else:
+        z_nf, gamma_sat = agua
+        gamma_sum = gamma_sat - GAMMA_AGUA_KN_M3
+
+        def sigma_ef(z: float) -> float:
+            return sigma_v(min(z, z_nf)) + gamma_sum * max(0.0, z - z_nf)
+        p_sup, p_inf = k0 * sigma_ef(z_sup), k0 * sigma_ef(z_inf)
+        # La presion efectiva tiene un quiebre en el nivel: dos tramos
+        # lineales, cada uno exacto.
+        y_nf = min(z_inf - z_nf, h)
+        eh = []
+        for (y_a, y_b) in ((0.0, y_nf), (y_nf, h)):
+            if not y_b > y_a + TOL_UMBRAL_NORMATIVO:
+                continue
+            q_a, q_b = k0 * sigma_ef(z_inf - y_a), k0 * sigma_ef(z_inf - y_b)
+            eh += (_en_la_pared(g, 0, y_a, y_b, q_a, q_b)
+                   + _en_la_pared(g, N, y_a, y_b, -q_a, -q_b))
+        casos[CASO_EH] = eh
+        # WA_ext: la presion hidrostatica del agua exterior, gamma_w (z -
+        # z_NF), lineal en la pared mojada (triangular; trapecial si el
+        # nivel pasa el eje de la losa superior). La subpresion bajo la losa
+        # inferior no se aplica: con la reaccion del suelo LINEAL que el
+        # portico supone, una carga uniforme sobre la losa inferior la
+        # equilibra la misma reaccion y no flexa el portico.
+        w_inf = GAMMA_AGUA_KN_M3 * (z_inf - z_nf)
+        w_top = GAMMA_AGUA_KN_M3 * max(z_inf - h - z_nf, 0.0)
+        casos[CASO_WA_EXT] = (_en_la_pared(g, 0, 0.0, y_nf, w_inf, w_top)
+                              + _en_la_pared(g, N, 0.0, y_nf, -w_inf, -w_top))
 
     # LS
     altura_muro = H_total + t_sup + g.altura_libre_m + t_inf
@@ -4227,7 +4267,17 @@ def _casos_de_carga(*, punto: PuntoCritico, material: Material,
         Magnitud("p_WA", p_fondo, "kPa", "presion del agua interior en la "
                  "cara superior de la losa inferior (conducto lleno)",
                  cifras=CIFRAS_MAGNITUD),
-    ) + tuple(
+    ) + (() if agua is None else (
+        Magnitud("z_NF", agua[0], "m", "profundidad del nivel freatico bajo "
+                 "la rasante: cota_rasante - (cota_terreno - "
+                 "NF_profundidad_m)", cifras=CIFRAS_MAGNITUD),
+        Magnitud("gamma_sat", agua[1], "kN/m3",
+                 f"'{CRITERIO_PESO_SATURADO}' [S], el relleno bajo el agua "
+                 "pesa gamma_sat - gamma_w", cifras=CIFRAS_FACTOR),
+        Magnitud("p_WA,ext", GAMMA_AGUA_KN_M3 * (z_inf - agua[0]), "kPa",
+                 "presion del agua exterior en el eje de la losa inferior, "
+                 "gamma_w (z_inf - z_NF)", cifras=CIFRAS_MAGNITUD),
+    )) + tuple(
         Magnitud(f"P_L del {nombre}", P_L, "kPa",
                  f"sobre {l_w:.3f} m paralelos al vano, "
                  f"{len(ejes)} area(s) cargada(s) a {separacion[nombre]:.3f} "
@@ -4235,6 +4285,45 @@ def _casos_de_carga(*, punto: PuntoCritico, material: Material,
                  cifras=CIFRAS_MAGNITUD)
         for nombre, P_L, l_w, ejes in vehiculos)
     return casos, vehiculos, magnitudes, cv, w_ev
+
+
+# --- VE-7 lote B, B3 --- las citas del agua del ensamble de M9: el suelo
+# bajo el agua con su peso sumergido y el agua aparte.
+_CITAS_AGUA_EXTERIOR = ("AASHTO_LRFD_9.3.11.3", "MP.2.4.4.1.3#SUMERGIDO")
+
+
+def _agua_exterior_del_portico(punto: PuntoCritico, *, z_sup: float,
+                               z_inf: float
+                               ) -> Optional[Tuple[float, float]]:
+    """
+    --- VE-7 lote B, B3 (T5-07 (5); decision del consultor Fable, triaje
+    VE-7, 2026-11-20) --- El agua EXTERIOR del portico: (z_NF, gamma_sat),
+    con z_NF la profundidad del nivel freatico bajo la rasante, o None si el
+    nivel no pasa del eje de la losa inferior (o el punto no trae
+    'NF_profundidad_m'): entonces el portico es el de antes.
+
+    El nivel es la columna 'NF_profundidad_m' del CSV, medida bajo el
+    terreno natural del cruce (como en V7 y en el cabezal):
+    z_NF = cota_rasante - (cota_terreno - NF_profundidad_m). Con el agua
+    arriba hace falta el peso del relleno bajo el agua, que es un dato de
+    ensayo: 'peso_especifico_saturado_relleno_kn_m3' (`CriterioPendienteError`
+    sin el; `DatoInvalidoError` si no supera al agua, como en V7).
+    `z_sup` no limita: con el nivel sobre la losa superior el agua de la
+    pared es trapecial.
+    """
+    nf = punto.NF_profundidad_m
+    if nf is None:
+        return None
+    z_nf = punto.cota_rasante - (punto.cota_terreno - nf)
+    if not z_nf < z_inf - TOL_UMBRAL_NORMATIVO:
+        return None
+    gamma_sat = ca.valor(CRITERIO_PESO_SATURADO)     # CriterioPendienteError
+    if not (math.isfinite(gamma_sat) and gamma_sat > GAMMA_AGUA_KN_M3):
+        raise DatoInvalidoError(
+            CRITERIO_PESO_SATURADO, valor=gamma_sat, id_punto=punto.id,
+            motivo="tiene que ser mayor que el peso especifico del agua: "
+                   "el relleno bajo el nivel pesa el saturado menos el agua")
+    return z_nf, float(gamma_sat)
 
 
 def _carga_viva_en(g: GeometriaPortico, P_L: float, l_w: float, ejes,
@@ -4332,11 +4421,15 @@ def combinaciones_del_portico(f: dict):
                        {CASO_DC: eta * g_dc[0], CASO_EV: eta * g_ev[0],
                         CASO_EH: eta * g_eh[0],
                         CASO_LS: eta * g_ll if con_ls else 0.0,
-                        CASO_WA: 0.0}, eta * g_ll, False))
+                        CASO_WA: 0.0, CASO_WA_EXT: eta * g_wa},
+                       eta * g_ll, False))
+    # El agua exterior se opone a la interior: en el horizontal minimo no
+    # entra (VE-7, B3).
     combos.append((f"{ESTADO_RESISTENCIA}, vertical max. y horizontal min. "
                    "(agua interior)", ESTADO_RESISTENCIA,
                    {CASO_DC: eta * g_dc[0], CASO_EV: eta * g_ev[0],
-                    CASO_EH: g_eh[1] / eta, CASO_LS: 0.0, CASO_WA: g_wa},
+                    CASO_EH: g_eh[1] / eta, CASO_LS: 0.0, CASO_WA: g_wa,
+                    CASO_WA_EXT: 0.0},
                    eta * g_ll, True))
     for con_ls in (True, False):
         sufijo = "con LS" if con_ls else "sin LS"
@@ -4345,14 +4438,15 @@ def combinaciones_del_portico(f: dict):
                        {CASO_DC: g_dc[1] / eta, CASO_EV: g_ev[1] / eta,
                         CASO_EH: eta * g_eh[0],
                         CASO_LS: eta * g_ll if con_ls else 0.0,
-                        CASO_WA: 0.0}, 0.0, False))
-    servicio = {caso: 1.0 for caso in CASOS_PERMANENTES}
+                        CASO_WA: 0.0, CASO_WA_EXT: eta * g_wa}, 0.0, False))
+    servicio = {caso: 1.0 for caso in CASOS_PERMANENTES + (CASO_WA_EXT,)}
     combos.append((f"{ESTADO_SERVICIO}, vertical max. y horizontal max.",
                    ESTADO_SERVICIO, dict(servicio, **{CASO_WA: 0.0}), 1.0,
                    False))
     combos.append((f"{ESTADO_SERVICIO}, vertical max. y horizontal min. "
                    "(agua interior)", ESTADO_SERVICIO,
-                   dict(servicio, **{CASO_LS: 0.0}), 1.0, True))
+                   dict(servicio, **{CASO_LS: 0.0, CASO_WA_EXT: 0.0}), 1.0,
+                   True))
     combos.append((f"{ESTADO_SERVICIO}, vertical min. y horizontal max.",
                    ESTADO_SERVICIO, dict(servicio, **{CASO_WA: 0.0}), 0.0,
                    False))
@@ -4371,6 +4465,8 @@ def _envolvente_de_la_combinacion(combo, por_caso, ll, secciones):
     for (sec, _m, _s, _t, _d, centro_sup, _suelo) in secciones:
         M = V_perm = N = 0.0
         for caso, factor in factores.items():
+            if caso not in por_caso:      # WA_ext, solo con el NF arriba
+                continue
             m, v, n = por_caso[caso][sec]
             if caso == CASO_EH and reduce:
                 factor = factor * (_CN.REDUCCION_EMPUJE_3_11_7 if centro_sup
@@ -4439,7 +4535,8 @@ def disenar_portico(*, punto: PuntoCritico, material: Material,
         formula_cita_id="AASHTO_LRFD_9.12.11.2.1#CARGAS",
         citas_textuales=("AASHTO_LRFD_9.12.11.2.3", "AASHTO_LRFD_9.3.11.5.2#K0",
                          "AASHTO_LRFD_9.3.11.6.4#APLICA",
-                         "AASHTO_LRFD_9.T3.11.6.4-1"),
+                         "AASHTO_LRFD_9.T3.11.6.4-1")
+        + (_CITAS_AGUA_EXTERIOR if CASO_WA_EXT in casos else ()),
         sustitucion=mags,
         resultado=Magnitud("w_EV", w_ev, "kPa", "presion de tierra sobre la "
                            "losa superior", cifras=CIFRAS_MAGNITUD),
@@ -4450,7 +4547,11 @@ def disenar_portico(*, punto: PuntoCritico, material: Material,
             "el empuje se toma entre los ejes de las losas; la sobrecarga "
             "viva lateral con la Tabla 3.11.6.4-1 de estribos, por analogia "
             "[N->]; y el agua interior con el conducto lleno. El agua "
-            "EXTERIOR no se considera (ficha T5-07)."))
+            "EXTERIOR entra con el nivel freatico sobre el eje de la losa "
+            "inferior (VE-7): triangular en las paredes y el suelo bajo el "
+            "nivel con su peso sumergido (AASHTO 3.11.3, Manual de Puentes "
+            "2.4.4.1.3); la subpresion no cambia la flexion, porque la "
+            "reaccion lineal del suelo la equilibra en la misma losa."))
     nombres_eta = (f"eta = {f['eta']:g} en las cargas de gamma maximo y "
                    f"1/eta en las de gamma minimo (1.3.2.1)")
     p_combos = paso(
