@@ -8841,9 +8841,8 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   cuatro características del párrafo anterior se presumen para todo cruce de un corredor
   declarado de selva alta.
 - **Qué haría falta:** que Fable o el dueño confirme (1) y (2) o elija aviso sin piso o
-  1200 mm por equivalencia [N→]; pasar la condición `COND-SELVA-ALTA` del registro de
-  `PorExpresion` a `PorDatoDeSitio("region_natural")` (toca la ventana normativa y los
-  manifiestos generados).
+  1200 mm por equivalencia [N→]. La condición `COND-SELVA-ALTA` ya se resuelve con
+  `PorDatoDeSitio("region_natural")` (VE-7, ficha VE7C-03).
 - **Dónde vive:** `src/modulos/M2_material.py::piso_de_selva_alta`
 
 ## VE5-CAT-02 · La cuneta trapezoidal de la Tabla Nº 34 (región > 3000 mm/año): el fondo como campo de `seccion_cuneta` (cierre de lo que T9-01 dejó diferido)
@@ -9227,3 +9226,19 @@ estas fichas dicen cómo se hizo y lo que quedó. Los documentos generados (mani
   eso, los documentos generados que lo transcriben; ningún número cambia.
 - **Qué haría falta:** regenerar `indice_formulas.md` en la integración.
 - **Dónde vive:** `src/normativa/fundamentos.py::LONGITUD_ENTRE_CABEZALES`
+
+## VE7C-03 · `COND-SELVA-ALTA` se resuelve con el [S] `region_natural` (C3; VE5-CAT-01)
+
+- **Cerrado (decisión del consultor Fable, triaje VE-7, 2026-11-20):** la condición del núm.
+  4.1.1.3.7 a) del Manual de Hidrología pasó de `PorExpresion("region == 'selva_alta'")`, sobre
+  un símbolo que nadie entregaba, a `PorDatoDeSitio("region_natural")`, el [S] de corredor que
+  `M2.piso_de_selva_alta` ya lee desde VE-5. El efecto (EXCLUYE) y la cita no cambian; la
+  justificación nombra el dato. La ventana normativa la da por resuelta «por dato de sitio».
+  `test_una_condicion_que_no_bloquea_deja_elegir_con_su_justificacion` pasa a ejercitar
+  `COND-DMIN-CANAL-RIEGO`, que sigue siendo expresión. Test:
+  `tests/test_ve7_lote_c_selva_alta.py`.
+- **Abierto:** `docs/manifiesto_registro_normativo.md` sigue transcribiendo la expresión
+  anterior hasta que se regenere; los puntos (1) y (2) de VE5-CAT-01 (piso del catálogo y no
+  equiparar 1200 mm con Ф 48”) no se tocan aquí.
+- **Qué haría falta:** regenerar los manifiestos en la integración.
+- **Dónde vive:** `src/normativa/citas.py::MC_HHD_4_1_1_3_7a`

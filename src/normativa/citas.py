@@ -462,14 +462,20 @@ MC_HHD_4_1_1_3_7a = _cita(
                        "físicas y geomorfológicos (típicas) sean:"),
                 pagina_pdf=81),
             cita_id="MC_HHD.4.1.1.3.7a",
-            resuelve=PorExpresion(expresion="region == 'selva_alta'",
-                                  simbolos=("region",)),
+            # --- VE-7, lote C (C3; VE5-CAT-01; decision del consultor
+            # Fable, triaje VE-7, 2026-11-20) --- Hasta VE-7, una
+            # `PorExpresion` sobre un simbolo `region` que nadie entregaba.
+            # Desde VE-5 (lote catlic) la region es el [S] de corredor
+            # 'region_natural', que `M2.piso_de_selva_alta` ya lee: la
+            # condicion se resuelve con el mismo dato.
+            resuelve=PorDatoDeSitio(clave="region_natural"),
             efecto_si_indeterminada=Efecto.EXCLUYE,
             justificacion_de_no_bloquear=(
-                "el corredor esta en costa (La Union, Piura) y la "
-                "recomendacion es expresamente para selva alta: la fila queda "
-                "FUERA, que no es lo mismo que pendiente. Ademas es solo para "
-                "TMC")),
+                "la resuelve el dato de sitio 'region_natural' (La Union, "
+                "Piura: costa) y la recomendacion es expresamente para selva "
+                "alta: fuera de ella la fila queda FUERA, que no es lo mismo "
+                "que pendiente. Ademas es solo para TMC, y con el TMC "
+                "candidato M2 lee el dato y se detiene si no tiene valor")),
     ),
 )
 
