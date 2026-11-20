@@ -9020,8 +9020,8 @@ generados (`indice_formulas.md`, línea base) no se regeneran aquí: los regener
   (`estado_del_expediente.discrepancias_abiertas`), con independencia de la corrida. Y la pestaña 4
   ofrece comparar la corrida vigente con una ANTERIOR de la sesión, de una lista derivada de las
   corridas embebidas (`corridas_para_comparar`, la más reciente primero), por el comparador de E14.
-- **Abierto:** la CLI no imprime el estado del expediente (la ventana sí).
-- **Qué haría falta:** una bandera de la CLI, si se pide.
+- **Abierto:** cerrado en VE-7 (ficha VE7C-05): la CLI lo imprime con `--estado-expediente`.
+- **Qué haría falta:** nada en la CLI; la ventana y la CLI leen el mismo módulo.
 - **Dónde vive:** `src/estado_del_expediente.py::discrepancias_abiertas`
 
 ## VE5GUI-47 · El chequeo dimensional llega a M6–M10; los fundamentos sin ejercitar siguen
@@ -9262,3 +9262,19 @@ estas fichas dicen cómo se hizo y lo que quedó. Los documentos generados (mani
 - **Qué haría falta:** la línea de la CLI y el campo del comparador, si se piden; regenerar la
   línea base en la integración.
 - **Dónde vive:** `src/modulos/M11_reporte.py::_bloque_licuefaccion`
+
+## VE7C-05 · `cli.py --estado-expediente`: las discrepancias abiertas y las corridas para comparar (C5; VE5GUI-45)
+
+- **Cerrado (decisión del consultor Fable, triaje VE-7, 2026-11-20):** la bandera imprime lo que
+  `src/estado_del_expediente.py` ofrece: las discrepancias abiertas contra la hoja de ruta
+  (`discrepancias_abiertas`, una línea cada una con `DiscrepanciaAbierta.linea`) y, con
+  `--sesion`, las corridas embebidas que se pueden comparar, la más reciente primero
+  (`corridas_para_comparar`, índice y rótulo). Como `--comparar`, no corre el pipeline ni lee
+  el CSV; la sesión se lee y se valida, pero no se aplica. Sale con 0, o con 2 si la sesión no
+  se pudo leer o no es válida. Test por subprocess: `tests/test_ve7_lote_c_estado_expediente.py`.
+- **Abierto:** sale con 0 aunque haya discrepancias abiertas (es un informe, no una puerta,
+  decisión tomada del lado del uso; pendiente de revisión Fable); la comparación de dos
+  corridas embebidas sigue siendo de la ventana: la CLI compara volcados en disco
+  (`--comparar A.json B.json`).
+- **Qué haría falta:** si se pide, `--comparar` con dos índices de corrida de la sesión.
+- **Dónde vive:** `cli.py::_imprimir_estado_del_expediente`

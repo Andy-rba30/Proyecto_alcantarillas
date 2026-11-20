@@ -2642,6 +2642,16 @@ def _parser() -> argparse.ArgumentParser:
                    help="compara dos volcados informe_json por identidad de punto "
                         "(src/comparador.py) y termina: 0 iguales, 1 difieren, 2 "
                         "no se pudo leer. No corre el pipeline")
+    # --- VE-7, lote C (C5; VE5GUI-45) --- el estado del expediente, el que
+    # la pestaña 4 de la ventana pinta, tambien por la CLI.
+    p.add_argument("--estado-expediente", action="store_true",
+                   dest="estado_expediente",
+                   help="imprime el estado del expediente con independencia "
+                        "de la corrida --las discrepancias abiertas contra "
+                        "la hoja de ruta y, con --sesion, las corridas "
+                        "embebidas que se pueden comparar, la mas reciente "
+                        "primero-- y termina: 0, o 2 si la sesion no se pudo "
+                        "leer. No corre el pipeline ni lee el CSV")
     p.add_argument("--prevuelo", action="store_true", dest="prevuelo",
                    help="imprime el anticipo entero (criterios vacios que el "
                         "alcance puede invocar, contraste del CSV, lo que el "
@@ -3062,6 +3072,43 @@ def _prevuelo(ruta_csv: Path, externos: DatosExternos, alcance: str,
     return 1 if detiene_la_carga or any(e.detiene for e in estimado) else 0
 
 
+def _imprimir_estado_del_expediente(ruta_sesion: Optional[Path]) -> int:
+    """
+    --- VE-7, lote C (C5; VE5GUI-45; decision del consultor Fable, triaje
+    VE-7, 2026-11-20) --- Lo que `src/estado_del_expediente.py` ofrece, por
+    la CLI: las discrepancias abiertas contra la hoja de ruta (el censo de
+    `Registro.discrepancias_abiertas`, que no depende de ninguna corrida) y,
+    con una sesion, las corridas embebidas que la pestaña 4 ofrece comparar.
+    La sesion se LEE y se valida, pero no se aplica: no hay corrida. Sale
+    con 0, o con 2 si la sesion no se pudo leer o no es valida.
+    """
+    from src import estado_del_expediente as _estexp
+    corridas = None
+    if ruta_sesion is not None:
+        try:
+            corridas = cargar_sesion_serializada(ruta_sesion).corridas
+        except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+            print(f"No se pudo leer la sesion: {exc}", file=sys.stderr)
+            return 2
+        except (ValueError, KeyError) as exc:
+            print(f"No se pudo aplicar la sesion: {exc}", file=sys.stderr)
+            return 2
+    abiertas = _estexp.discrepancias_abiertas()
+    lineas = _titulo("Estado del expediente (con independencia de la corrida)")
+    lineas.append(f"Discrepancias abiertas contra la hoja de ruta: "
+                  f"{len(abiertas)}")
+    lineas.extend(f"{SANGRIA}- {d.linea()}" for d in abiertas)
+    if corridas is not None:
+        para_comparar = _estexp.corridas_para_comparar(corridas)
+        lineas.append("")
+        lineas.append("Corridas de la sesion para comparar (la mas reciente "
+                      f"primero): {len(para_comparar)}")
+        lineas.extend(f"{SANGRIA}[{c.indice}] {c.rotulo}"
+                      for c in para_comparar)
+    print("\n".join(lineas))
+    return 0
+
+
 def main(argv: Optional[Sequence[str]] = None) -> int:
     parser = _parser()
     args = parser.parse_args(argv)
@@ -3070,6 +3117,10 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     # lee y el pipeline no corre. El comparador no importa el motor.
     if args.comparar is not None:
         return _comparador.main([str(r) for r in args.comparar])
+
+    # EL ESTADO DEL EXPEDIENTE Y SALIR (VE-7, C5): tampoco corre el pipeline.
+    if args.estado_expediente:
+        return _imprimir_estado_del_expediente(args.sesion)
 
     # LA SESION SERIALIZADA VA PRIMERO (EXT-8, PC-11): repone los criterios
     # con su procedencia y rellena lo que la linea de comandos no trajo. Una
