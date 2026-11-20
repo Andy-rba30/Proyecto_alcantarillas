@@ -7910,6 +7910,78 @@ MC_HHD_T05_ONDA = _cita(
         )),
 )
 
+# --- VE-5 (mh, ficha T1-01) --- La prueba chi-cuadrado del num. 3.7.2 a),
+# pag. impresa 31 (PDF 34). La capa de texto escribe el titulo «a) Prueba 2 χ»
+# (el χ² en dos piezas); el titulo se cita hasta «Prueba» y el simbolo se leyo
+# en la imagen.
+MC_HHD_3_7_2A = _cita(
+    id="MC_HHD.3.7.2a",
+    fuente_id="MC_HHD",
+    numeral="3.7.2 a)",
+    titulo_numeral="a) Prueba",
+    jerarquia_numeral=("3.7.2 Pruebas de bondad de ajuste",),
+    pagina_impresa="31",
+    pagina_pdf=34,
+    pagina_pdf_titulo=33,
+    texto_literal=Verbatim(
+        texto="Para aceptar una función de distribución dada, se debe cumplir:",
+        pagina_pdf=34),
+    caracter=Caracter.EXIGENCIA,
+    metodo=AMBOS,
+    sesion=VE5_MH,
+    nota=("El titulo, en imagen: «a) Prueba χ²». La condicion que sigue, en "
+          "imagen: D ≤ X²(1−α, k−1−m), con D = Σ (θi − εi)² / εi, ecuacion "
+          "(12), θi el numero observado de eventos en el intervalo i, εi = "
+          "n[F(Si) − F(Ii)] el esperado, ν = k − 1 − m grados de libertad y "
+          "m el numero de parametros estimados a partir de los datos. La "
+          "prueba de que se acepta una distribucion con χ² es la del "
+          "numeral; el programa adopta por la de Kolmogorov-Smirnov (cita "
+          "MC_HHD.3.7.2b#ELIGE) e imprime la χ² como contraste."),
+)
+
+MC_HHD_3_7_2A_INTERVALOS = _cita(
+    id="MC_HHD.3.7.2a#INTERVALOS",
+    fuente_id="MC_HHD",
+    numeral="3.7.2 a)",
+    titulo_numeral="a) Prueba",
+    jerarquia_numeral=("3.7.2 Pruebas de bondad de ajuste",),
+    pagina_impresa="31",
+    pagina_pdf=34,
+    pagina_pdf_titulo=33,
+    texto_literal=Verbatim(
+        texto=("Para aplicar la prueba, el primer paso es dividir los datos "
+               "en un número k de intervalos de clase."),
+        pagina_pdf=34),
+    caracter=Caracter.DEFINICION,
+    metodo=AMBOS,
+    sesion=VE5_MH,
+    derivado_de="MC_HHD.3.7.2a",
+    nota=("El numeral no fija k ni como se trazan los intervalos: es el "
+          "vacio que cubre el criterio 'intervalos_de_clase_chi_cuadrado' "
+          "[A]."),
+)
+
+MC_HHD_3_7_2A_ALCANCE = _cita(
+    id="MC_HHD.3.7.2a#ALCANCE",
+    fuente_id="MC_HHD",
+    numeral="3.7.2 a)",
+    titulo_numeral="a) Prueba",
+    jerarquia_numeral=("3.7.2 Pruebas de bondad de ajuste",),
+    pagina_impresa="31",
+    pagina_pdf=34,
+    pagina_pdf_titulo=33,
+    texto_literal=Verbatim(
+        texto=("se aplica para verificar bondad de las distribuciones "
+               "normales y log normales."),
+        pagina_pdf=34),
+    caracter=Caracter.DEFINICION,
+    metodo=AMBOS,
+    sesion=VE5_MH,
+    derivado_de="MC_HHD.3.7.2a",
+    nota=("Por eso el contraste χ² se imprime para la normal y la log normal "
+          "de 2 parametros y no para la Gumbel."),
+)
+
 # --- VE-5 (mh, ficha T1-05) --- La relacion regional de la ecuacion (17).
 MC_HHD_3_8_1_EC17 = _cita(
     id="MC_HHD.3.8.1#EC17",

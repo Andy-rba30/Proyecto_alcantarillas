@@ -1330,8 +1330,9 @@ def test_4_el_barrido_cubre_los_141_y_censa_lo_que_no_barre(candidatos):
     # 'coeficientes_desborde_plataforma' (el desborde admitido de V8).
     # 158 desde VE-4e: 'nivel_agua_relleno_sin_drenaje_bajo_sismo' (ficha
     # VE3-21), sin valor de archivo y con sus dos opciones barribles.
-    # 159 desde VE-5-mh: 'factores_idf_regional' [S] (ficha T1-05), sin valor.
-    assert len(por_clave) == len(ca.CRITERIOS) == 159
+    # 160 desde VE-5-mh: 'factores_idf_regional' [S] (ficha T1-05), sin valor,
+    # e 'intervalos_de_clase_chi_cuadrado' [A] (ficha T1-01).
+    assert len(por_clave) == len(ca.CRITERIOS) == 160
     assert fuera == FILAS_FUERA_DE_SU_VENTANA
     assert {k for k, cs in por_clave.items() if not cs} == SIN_NADA_QUE_BARRER
     # Y el barrido no es de juguete: cada valor de archivo esta, y mas.

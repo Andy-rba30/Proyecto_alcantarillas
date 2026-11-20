@@ -2416,6 +2416,56 @@ CRITERIOS: Dict[str, Criterio] = {
         ),
     ),
 
+    # --- VE-5 (mh, ficha T1-01) --- El numero de intervalos de la prueba
+    # chi-cuadrado, que el num. 3.7.2 a) pide y no fija.
+    "intervalos_de_clase_chi_cuadrado": Criterio(
+        valor="sturges",
+        nivel=NIVEL_PERFIL,         # lo lee la Fase 1-bis (MH) en el paso de
+                                    # la bondad de ajuste (tests/test_ve5_mh.py)
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        sensibilidad=("sturges", "raiz_de_n"),
+        concepto="Regla con que se fija el numero k de intervalos de clase de "
+                 "la prueba chi-cuadrado (num. 3.7.2 a del Manual de "
+                 "Hidrologia), que el programa imprime como contraste de la "
+                 "de Kolmogorov-Smirnov",
+        justificacion="Decide cuantos intervalos de clase tiene la prueba "
+                      "chi-cuadrado. La fuente (num. 3.7.2 a, pag. impresa "
+                      "31, cita MC_HHD.3.7.2a#INTERVALOS) manda «dividir los "
+                      "datos en un número k de intervalos de clase» y no fija "
+                      "k ni como se trazan; ninguna fuente del repositorio de "
+                      "normas lo fija. Se adopta la regla de Sturges, k = 1 + "
+                      "⌈log2 n⌉, que es la regla clasica de los histogramas "
+                      "y la que da menos intervalos con las series cortas de "
+                      "la hidrologia vial (25 años: 6), de modo que cada "
+                      "intervalo tiene eventos esperados suficientes; la "
+                      "alternativa es k = ⌈√n⌉ (25 años: 5). Los intervalos "
+                      "son de igual amplitud entre el menor y el mayor dato, "
+                      "con el primero abierto por abajo y el ultimo por "
+                      "arriba para que los esperados sumen n (lectura del "
+                      "proyecto de «intervalos de clase»). Pesa poco por "
+                      "construccion: la prueba chi-cuadrado no detiene el "
+                      "calculo ni elige la distribucion --lo hace la de "
+                      "Kolmogorov-Smirnov, que el Manual dice que «permite "
+                      "elegir» (cita MC_HHD.3.7.2b#ELIGE)--; se imprime como "
+                      "contraste, solo para la normal y la log normal, que "
+                      "son las que el numeral dice que verifica. "
+                      "Sensibilidad: con 25 años, 6 intervalos y 3 grados de "
+                      "libertad (Sturges) frente a 5 y 2 (raiz de n); el "
+                      "valor critico al 5 % pasa de 7.81 a 5.99",
+        fuente="Manual de Hidrologia, Hidraulica y Drenaje (MTC), num. 3.7.2 "
+               "a) 'Prueba χ²', pag. impresa 31 (PDF 34): citas "
+               "MC_HHD.3.7.2a, MC_HHD.3.7.2a#INTERVALOS y "
+               "MC_HHD.3.7.2a#ALCANCE. La regla de Sturges no esta en el "
+               "repositorio de normas: es adopcion del proyecto",
+        resolucion=Libre(
+            que_lo_fija="el proyectista: el num. 3.7.2 a) pide k intervalos "
+                        "de clase y no fija cuantos",
+            dominio="declaracion de la regla; el conjunto cerrado viaja en "
+                    "`sensibilidad`",
+        ),
+    ),
+
     "relacion_intensidad_duracion": Criterio(
         valor="dick_peschke",
         nivel=NIVEL_PERFIL,         # mismo consumidor y misma medida que

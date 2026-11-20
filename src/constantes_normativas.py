@@ -4281,6 +4281,9 @@ TABLA_03_KS = {
     for f in _T03.filas
 }
 NUMERAL_KS = _reg.cita("MC_HHD.3.7.2b").como_texto()
+# --- VE-5 (mh, ficha T1-01) --- La prueba chi-cuadrado (num. 3.7.2 a),
+# que el programa imprime como contraste de la de Kolmogorov-Smirnov.
+NUMERAL_CHI_CUADRADO = _reg.cita("MC_HHD.3.7.2a").como_texto()
 # num. 3.4: «se recomienda contar con un mínimo de 25 años de registro».
 REGISTRO_MINIMO_RECOMENDADO_ANIOS = 25
 # El menor tamaño de muestra que la Tabla Nº 03 tabula. Por debajo no hay

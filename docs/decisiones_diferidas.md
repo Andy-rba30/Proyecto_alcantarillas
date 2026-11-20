@@ -3978,6 +3978,21 @@ tres más (`T1-07` a `T1-09`) las dejó la auditoría adversarial de la misma se
 
 ## T1-01 · De las ocho distribuciones del núm. 3.7.1 el programa ajusta tres, y la prueba χ² no se implementa
 
+- **En parte en VE-5 (lote mh, 2026-11-20): la χ² se calcula; las cinco siguen sin
+  evaluarse.** La prueba χ² (núm. 3.7.2 a, ecuación 12; citas `MC_HHD.3.7.2a`,
+  `#INTERVALOS`, `#ALCANCE`) se imprime en el paso de la bondad como **contraste** de
+  Kolmogorov-Smirnov —no detiene ni elige— y sólo para la normal y la log normal, que
+  son las que el numeral dice que verifica. k sale del criterio [A]
+  `intervalos_de_clase_chi_cuadrado` (Sturges, 1 + ⌈log2 n⌉; ventana: ⌈√n⌉), con
+  intervalos de igual amplitud entre el menor y el mayor dato y los extremos abiertos; el
+  valor crítico es el cuantil de `scipy.stats.chi2`. Decisión del dueño: las cinco
+  distribuciones sólo con un estimador que una fuente de `NORMAS_DIR` imprima. Barrido
+  hecho (texto de cada PDF): el Manual de Hidrología imprime sólo la densidad de las cinco
+  (págs. impresas 27 a 30); el Manual de Puentes las nombra (PDF 51) sin estimador;
+  WSDOT, HDS-5, HEC-14, USACE, USBR y DG-2018 no las tratan. Las tesis de
+  `ejemplos_resueltos/casos_reales/` no son fuente (sirven para comparar). Siguen
+  `MetodoNoEvaluableError` con el rótulo de la hidrología.
+
 - **Qué se difirió:** el ajuste de Log Normal 3P, Gamma 2P, Gamma 3P, Log Pearson III y
   Log Gumbel, y la prueba de bondad χ² del núm. 3.7.2 a).
 - **Por qué:** el Manual imprime la densidad de las ocho y sólo de tres dice cómo se

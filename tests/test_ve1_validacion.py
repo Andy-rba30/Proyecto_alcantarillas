@@ -686,8 +686,9 @@ def test_h2_guardia_el_valor_de_archivo_de_todos_los_criterios_sigue_pasando():
     # 155 desde VE-4c: 'sobreelevacion_admisible_remanso_m' (ficha T7B-01).
     # 157 desde VE-4d: los dos criterios del desborde admitido de V8.
     # 158 desde VE-4e: 'nivel_agua_relleno_sin_drenaje_bajo_sismo'.
-    # 159 desde VE-5-mh: 'factores_idf_regional' [S] (ficha T1-05).
-    assert len(ca.CRITERIOS) == 159 and barridos > 100, (len(ca.CRITERIOS),
+    # 160 desde VE-5-mh: 'factores_idf_regional' [S] (ficha T1-05) e
+    # 'intervalos_de_clase_chi_cuadrado' [A] (ficha T1-01).
+    assert len(ca.CRITERIOS) == 160 and barridos > 100, (len(ca.CRITERIOS),
                                                           barridos)
 
 

@@ -32,7 +32,7 @@ from scipy.optimize import brentq
 
 from src import modelos
 from src.modulos import MH_hidrologia as MH
-from tests.apoyo.aproximacion import REL_TRANSPORTE
+from tests.apoyo.aproximacion import ABS_CERO, REL_TRANSPORTE
 from tests.apoyo.criterios import declarados
 
 RAIZ = Path(__file__).resolve().parent.parent
@@ -370,3 +370,115 @@ def test_factores_idf_regional_lee_el_criterio_y_lo_comprueba():
             (FACTORES["K"], FACTORES["m"], FACTORES["n"]), rel=REL_TRANSPORTE)
     with pytest.raises(modelos.CriterioPendienteError):
         MH.factores_idf_regional()
+
+
+# ===========================================================================
+# T1-01 — la prueba chi-cuadrado y las cinco distribuciones sin estimador
+# ===========================================================================
+
+CHI2 = "intervalos_de_clase_chi_cuadrado"
+
+
+@pytest.mark.parametrize("n, sturges, raiz", [(5, 4, 3), (16, 5, 4),
+                                              (25, 6, 5), (40, 7, 7)])
+def test_el_numero_de_intervalos_sigue_su_regla(n, sturges, raiz):
+    assert MH.numero_de_intervalos(n, "sturges") == sturges
+    assert MH.numero_de_intervalos(n, "raiz_de_n") == raiz
+    with pytest.raises(modelos.DatoInvalidoError):
+        MH.numero_de_intervalos(n, "otra")
+
+
+def _chi2_a_mano(valores, k, alfa):
+    """La ecuacion (12) por un camino que no pasa por MH: statistics y scipy."""
+    from statistics import NormalDist, fmean, stdev
+    from scipy.stats import chi2
+    F = NormalDist(fmean(valores), stdev(valores)).cdf
+    menor, mayor, n = min(valores), max(valores), len(valores)
+    bordes = [menor + (mayor - menor) * i / k for i in range(1, k)]
+    cdf = [0.0] + [F(b) for b in bordes] + [1.0]
+    obs = [0] * k
+    for x in valores:
+        obs[sum(x > b for b in bordes)] += 1
+    esp = [n * (cdf[i + 1] - cdf[i]) for i in range(k)]
+    D = sum((o - e) ** 2 / e for o, e in zip(obs, esp))
+    return D, obs, chi2.ppf(1 - alfa, k - 3)
+
+
+def test_la_chi_cuadrado_de_la_normal_coincide_con_el_calculo_a_mano(serie):
+    valores = [r.p24_mm for r in serie.registros]
+    k = MH.numero_de_intervalos(len(valores), "sturges")
+    D, obs, critico = _chi2_a_mano(valores, k, 0.05)
+    prueba = MH.prueba_chi_cuadrado(valores, "normal", alfa=0.05,
+                                    regla="sturges")
+    assert prueba.k == k and prueba.nu == k - 3
+    assert list(prueba.observados) == obs and sum(obs) == len(valores)
+    assert sum(prueba.esperados) == pytest.approx(len(valores),
+                                                  rel=REL_ARITMETICA)
+    assert prueba.D == pytest.approx(D, rel=REL_ARITMETICA)
+    assert prueba.critico == pytest.approx(critico, rel=REL_ARITMETICA)
+    assert prueba.acepta == (D <= critico)
+
+
+def test_la_chi_cuadrado_no_se_aplica_a_la_gumbel(serie):
+    valores = [r.p24_mm for r in serie.registros]
+    with pytest.raises(modelos.MetodoNoEvaluableError):
+        MH.prueba_chi_cuadrado(valores, "gumbel", alfa=0.05, regla="sturges")
+
+
+def test_el_paso_de_la_bondad_imprime_el_contraste_sin_decidir(serie):
+    # La serie de prueba solo pasa Kolmogorov-Smirnov con la log normal.
+    with declarados({FEN: "serie_completa",
+                     "distribucion_precipitacion_maxima": "lognormal_2p"}):
+        _, _, _, pasos, _ = MH.precipitacion_de_diseno(serie, 35)
+    ks = next(p for p in pasos if p.codigo == "1b.3")
+    assert "Contraste chi-cuadrado" in ks.nota_del_proyecto
+    assert "MC_HHD.3.7.2a" in ks.citas_textuales
+    assert ks.elecciones[0].clave_criterio == CHI2
+    # La prueba que decide sigue siendo Kolmogorov-Smirnov.
+    assert ks.umbral.cita_id == "MC_HHD.3.7.2b#T03"
+    # Con la Gumbel no se aplica, y no se lee el criterio de los intervalos.
+    valores = [r.p24_mm for r in serie.registros]
+    nota, elecciones, citas = MH._contraste_chi_cuadrado(valores, "gumbel",
+                                                         alfa=0.05)
+    assert "no se aplica" in nota and not elecciones
+    assert citas == ("MC_HHD.3.7.2a#ALCANCE",)
+
+
+def test_el_criterio_de_los_intervalos_es_un_A_de_perfil_con_ventana():
+    from src import criterios_adoptados as ca
+    c = ca.CRITERIOS[CHI2]
+    assert (c.valor, c.etiqueta, c.nivel) == ("sturges", "A", ca.NIVEL_PERFIL)
+    assert c.sensibilidad == ("sturges", "raiz_de_n")
+
+
+@pytest.mark.parametrize("distribucion", [
+    "lognormal_3p", "gamma_2p", "gamma_3p", "log_pearson_3", "log_gumbel"])
+def test_las_cinco_sin_estimador_impreso_siguen_sin_evaluarse(serie,
+                                                              distribucion):
+    """
+    Decision del dueño (VE-5): solo con un estimador que una fuente del
+    repositorio de normas imprima. Ninguna lo imprime (ficha T1-01), y
+    declararlas detiene el calculo con el rotulo de la hidrologia.
+    """
+    from src.constantes_normativas import DISTRIBUCIONES_3_7_1
+    assert distribucion in DISTRIBUCIONES_3_7_1
+    with declarados({FEN: "serie_completa",
+                     "distribucion_precipitacion_maxima": distribucion}):
+        with pytest.raises(modelos.MetodoNoEvaluableError) as exc:
+            MH.precipitacion_de_diseno(serie, 35)
+    assert str(exc.value).startswith(
+        modelos.MOTIVO_METODO_NO_EVALUABLE_HIDROLOGIA)
+
+
+def test_estadistico_chi_cuadrado_con_una_uniforme_a_mano():
+    """
+    Diez datos 0.5, 1.5, …, 9.5 contra la uniforme de 0 a 10, en k = 2
+    intervalos de igual amplitud entre 0.5 y 9.5 (corte en 5.0): observados
+    [5, 5], esperados [5, 5] y D = 0.
+    """
+    valores = [i + 0.5 for i in range(10)]
+    D, obs, esp = MH.estadistico_chi_cuadrado(
+        valores, lambda x: min(max(x / 10, 0.0), 1.0), 2)
+    assert obs == (5, 5)
+    assert esp == pytest.approx((5.0, 5.0), rel=REL_ARITMETICA)
+    assert D == pytest.approx(0.0, abs=ABS_CERO)

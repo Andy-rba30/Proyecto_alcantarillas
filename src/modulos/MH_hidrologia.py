@@ -185,6 +185,13 @@ FEN_SERIE_SIN_FEN = "serie_sin_fen"
 FEN_DOS_POBLACIONES = "dos_poblaciones"
 
 MEJOR_AJUSTE_KS = "mejor_ajuste_ks"
+# --- VE-5 (ficha T1-01) --- La prueba chi-cuadrado (num. 3.7.2 a), como
+# contraste de la de Kolmogorov-Smirnov: la regla de su k es un criterio [A],
+# y solo se aplica a las distribuciones que el numeral dice que verifica.
+CRITERIO_INTERVALOS_CHI2 = "intervalos_de_clase_chi_cuadrado"
+INTERVALOS_STURGES = "sturges"
+INTERVALOS_RAIZ_DE_N = "raiz_de_n"
+DISTRIBUCIONES_CHI2: Tuple[str, ...] = ("normal", "lognormal_2p")
 RELACION_DICK_PESCHKE = "dick_peschke"
 RELACION_TABLA_04 = "tabla_04_coeficientes_de_duracion"
 # --- VE-5 (ficha T1-05) --- La relacion regional de la ecuacion (17):
@@ -1115,6 +1122,105 @@ def valor_critico_ks(n: int, alfa: float) -> Tuple[float, str]:
                "reproduce sus 24 celdas impresas")
 
 
+def numero_de_intervalos(n: int, regla: str) -> int:
+    """
+    El numero k de intervalos de clase de la prueba chi-cuadrado (num. 3.7.2
+    a), que el Manual pide y no fija: la regla la declara el criterio
+    'intervalos_de_clase_chi_cuadrado' [A]. Sturges: k = 1 + ⌈log2 n⌉;
+    raiz de n: k = ⌈√n⌉.
+    """
+    if regla == INTERVALOS_STURGES:
+        return 1 + math.ceil(math.log2(n))
+    if regla == INTERVALOS_RAIZ_DE_N:
+        return math.ceil(math.sqrt(n))
+    raise DatoInvalidoError(
+        CRITERIO_INTERVALOS_CHI2, valor=regla,
+        motivo=f"las reglas admitidas son {INTERVALOS_STURGES} y "
+               f"{INTERVALOS_RAIZ_DE_N}")
+
+
+def estadistico_chi_cuadrado(valores: Sequence[float], F, k: int,
+                             ) -> Tuple[float, Tuple[int, ...],
+                                        Tuple[float, ...]]:
+    """
+    D = Σ (θi − εi)² / εi, ecuacion (12) del num. 3.7.2 a) (pag. impresa
+    31), con εi = n[F(Si) − F(Ii)]: (D, observados, esperados).
+
+    Los k intervalos de clase son de IGUAL AMPLITUD entre el menor y el
+    mayor dato, con el primero abierto por abajo y el ultimo por arriba
+    (F = 0 y F = 1 en los extremos), para que los esperados sumen n: lectura
+    del proyecto de «intervalos de clase», escrita en la justificacion del
+    criterio 'intervalos_de_clase_chi_cuadrado'. Un dato en un limite cae en
+    el intervalo de abajo (intervalos (Ii, Si]).
+    """
+    n = len(valores)
+    menor, mayor = min(valores), max(valores)
+    ancho = (mayor - menor) / k
+    limites = [menor + ancho * i for i in range(1, k)]
+    observados = [0] * k
+    for x in valores:
+        observados[sum(1 for lim in limites if x > lim)] += 1
+    acumulada = [0.0, *(F(lim) for lim in limites), 1.0]
+    esperados = tuple(n * (acumulada[i + 1] - acumulada[i]) for i in range(k))
+    if not all(e > 0 for e in esperados):
+        raise LimiteNumericoError(
+            "D chi-cuadrado", valor=min(esperados),
+            motivo="un intervalo de clase tiene cero eventos esperados y la "
+                   "ecuacion (12) divide por el")
+    D = sum((o - e) ** 2 / e for o, e in zip(observados, esperados))
+    return D, tuple(observados), esperados
+
+
+@dataclass(frozen=True)
+class _ChiCuadrado:
+    """La prueba chi-cuadrado de una distribucion (num. 3.7.2 a)."""
+
+    regla: str
+    k: int
+    nu: int
+    D: float
+    critico: float
+    observados: Tuple[int, ...]
+    esperados: Tuple[float, ...]
+
+    @property
+    def acepta(self) -> bool:
+        return self.D <= self.critico
+
+
+def prueba_chi_cuadrado(valores: Sequence[float], distribucion: str, *,
+                        alfa: float, regla: str) -> Optional[_ChiCuadrado]:
+    """
+    La prueba chi-cuadrado del num. 3.7.2 a) (pag. impresa 31): se acepta si
+    D ≤ X²(1 − alfa, k − 1 − m), con m el numero de parametros estimados de
+    los datos. None si los grados de libertad no son positivos (serie
+    demasiado corta para la regla).
+
+    Solo para las distribuciones de `DISTRIBUCIONES_CHI2`: el numeral dice
+    que la prueba «se aplica para verificar bondad de las distribuciones
+    normales y log normales». El valor critico es el cuantil 1 − alfa de la
+    distribucion chi-cuadrado (`scipy.stats.chi2`), que el Manual no tabula.
+    """
+    if distribucion not in DISTRIBUCIONES_CHI2:
+        raise _no_evaluable(
+            "chi-cuadrado",
+            f"el num. 3.7.2 a) dice que la prueba chi-cuadrado se aplica a "
+            f"las distribuciones normales y log normales, y la "
+            f"«{distribucion}» no lo es",
+            "la prueba de Kolmogorov-Smirnov, que es la que el programa "
+            "aplica a todas")
+    parametros, F, _ = _modelo(distribucion, valores)
+    k = numero_de_intervalos(len(valores), regla)
+    nu = k - 1 - len(parametros)
+    if nu < 1:
+        return None
+    D, observados, esperados = estadistico_chi_cuadrado(valores, F, k)
+    from scipy.stats import chi2   # perezoso: solo si la prueba se hace
+    return _ChiCuadrado(regla=regla, k=k, nu=nu, D=D,
+                        critico=float(chi2.ppf(1 - alfa, nu)),
+                        observados=observados, esperados=esperados)
+
+
 def _ajustar(valores: Sequence[float], distribucion: str, *, TR: float,
              alfa: float) -> AjusteDeDistribucion:
     """
@@ -1215,6 +1321,56 @@ def _elegir_con(valores: Sequence[float], declarada: str, evaluar):
     else:
         adoptado = next(a for a in evaluados if a.distribucion == declarada)
     return adoptado, tuple(evaluados), tuple(excluidas)
+
+
+def _contraste_chi_cuadrado(valores: Sequence[float], distribucion: str, *,
+                            alfa: float,
+                            ) -> Tuple[str, Tuple[EleccionDeProyecto, ...],
+                                       Tuple[str, ...]]:
+    """
+    (nota, elecciones, citas) del contraste chi-cuadrado (num. 3.7.2 a) que
+    el paso de la bondad de ajuste imprime al lado de Kolmogorov-Smirnov
+    (VE-5, ficha T1-01). NO detiene ni elige: la prueba que acepta es la de
+    Kolmogorov-Smirnov. Con una distribucion que no es normal ni log normal
+    no lee el criterio de los intervalos y solo dice que no se aplica.
+    """
+    cita_alcance = "MC_HHD.3.7.2a#ALCANCE"
+    if distribucion not in DISTRIBUCIONES_CHI2:
+        return (f"Contraste chi-cuadrado (num. 3.7.2 a): no se aplica a la "
+                f"«{distribucion}»; el numeral dice que la prueba «se aplica "
+                "para verificar bondad de las distribuciones normales y log "
+                "normales».", (), (cita_alcance,))
+    regla = ca.valor(CRITERIO_INTERVALOS_CHI2)
+    prueba = prueba_chi_cuadrado(valores, distribucion, alfa=alfa, regla=regla)
+    citas = ("MC_HHD.3.7.2a", "MC_HHD.3.7.2a#INTERVALOS", cita_alcance)
+    k = numero_de_intervalos(len(valores), regla)
+    entre = tuple(
+        f"{r}: k = {numero_de_intervalos(len(valores), r)}"
+        for r in ca.criterio(CRITERIO_INTERVALOS_CHI2).sensibilidad)
+    eleccion_k = EleccionDeProyecto(
+        que_se_adopto="regla del numero de intervalos de clase de la prueba "
+                      "chi-cuadrado",
+        valor=f"{regla}: k = {k}", entre=entre,
+        de_donde=f"el criterio adoptado '{CRITERIO_INTERVALOS_CHI2}' [A]",
+        por_que="el num. 3.7.2 a) pide dividir los datos en k intervalos de "
+                "clase y no fija k; la prueba es un contraste y no decide",
+        cita_id="MC_HHD.3.7.2a#INTERVALOS",
+        clave_criterio=CRITERIO_INTERVALOS_CHI2)
+    if prueba is None:
+        return (f"Contraste chi-cuadrado (num. 3.7.2 a): con {len(valores)} "
+                f"años y la regla '{regla}' hay k = {k} intervalos y ningun "
+                "grado de libertad (ν = k − 1 − m < 1): no se evalua.",
+                (eleccion_k,), citas)
+    juicio = ("se aceptaria tambien por esta prueba" if prueba.acepta else
+              "NO se aceptaria por esta prueba; la que decide es la de "
+              "Kolmogorov-Smirnov")
+    return (f"Contraste chi-cuadrado (num. 3.7.2 a, ecuacion 12), que no "
+            f"detiene ni elige: k = {prueba.k} intervalos de igual amplitud "
+            f"entre el menor y el mayor dato (regla '{regla}'), observados "
+            f"{list(prueba.observados)}, esperados "
+            f"[{', '.join(f'{e:.2f}' for e in prueba.esperados)}]; D = "
+            f"{prueba.D:.3f} frente a X²(1 − {alfa:g}, {prueba.nu}) = "
+            f"{prueba.critico:.3f}: {juicio}.", (eleccion_k,), citas)
 
 
 def _registros_por_tratamiento(serie: SerieDeEstacion, tratamiento: str,
@@ -1603,13 +1759,15 @@ def precipitacion_de_diseno(serie: SerieDeEstacion, TR: float, *,
     # --- 1b.3: bondad de ajuste ---
     _, origen_d = valor_critico_ks(adoptado.n, alfa)
     cita_t03 = "MC_HHD.3.7.2b#T03"
+    nota_chi2, elecciones_chi2, citas_chi2 = _contraste_chi_cuadrado(
+        valores, adoptado.distribucion, alfa=alfa)
     paso_ks = paso(
         "FH.KS", codigo=CODIGO_KS,
         que="Bondad de ajuste de Kolmogorov-Smirnov de la distribucion adoptada",
         formula="D = max |Fo(xm) − F(xm)| ; Fo(xm) = 1 − m/(n + 1) ; "
                 "se acepta si D < d",
         formula_cita_id=cita_ks,
-        citas_textuales=(cita_ks, cita_t03),
+        citas_textuales=(cita_ks, cita_t03, *citas_chi2),
         sustitucion=(
             Magnitud("n", adoptado.n, "", "años que entran al ajuste"),
             Magnitud("alfa", alfa, "",
@@ -1635,7 +1793,9 @@ def precipitacion_de_diseno(serie: SerieDeEstacion, TR: float, *,
             margen=adoptado.d_critico - adoptado.D, unidad="",
             explicacion=("se acepta la hipotesis de que la serie sale de la "
                          "distribucion adoptada" if adoptado.acepta else
-                         "la serie no se ajusta a la distribucion adoptada")))
+                         "la serie no se ajusta a la distribucion adoptada")),
+        elecciones=elecciones_chi2,
+        nota_del_proyecto=nota_chi2)
     if not adoptado.acepta:
         raise _no_evaluable_ks(adoptado, evaluados, serie=serie,
                                tratamiento=tratamiento, alfa=alfa,
