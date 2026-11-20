@@ -3833,6 +3833,8 @@ def _fase_9(informe: InformePunto,
 
 ETAPA_REFINAMIENTO_LONGITUD = ("control de salida con la longitud entre "
                                "cabezales (VE-6)")
+# --- VE-7 (lote A, A9) --- la clave que el remedio del bloqueo nombra.
+CLAVE_LONGITUD_FINAL = "longitud_m"
 
 
 def _fase_9_refinamiento(informe: InformePunto,
@@ -3888,6 +3890,21 @@ def _fase_9_refinamiento(informe: InformePunto,
             + ": la corrida no se detiene, y lo dice (hoja de ruta §7.B: "
               "nunca un resultado silencioso)"))
     informe.refinamiento_longitud = refinado
+    if no_se_cumplirian:
+        # --- VE-7 (lote A, A9; triaje VE-7 de Fable, ficha VE6-22) --- lo
+        # que dejaria de cumplirse con la longitud entre cabezales no se
+        # queda en un aviso: el expediente no cierra hasta que el punto
+        # declare la longitud final (HDS-5 3.3.5, «should be close»), y el
+        # remedio es el mismo que el aviso nombra.
+        informe.bloqueos.append(Bloqueo(
+            fase=FASE_CABEZAL, etapa=ETAPA_REFINAMIENTO_LONGITUD,
+            tipo=TipoDeBloqueo.DATO_FALTANTE, campo=CLAVE_LONGITUD_FINAL,
+            mensaje=(f"{informe.punto.id}: con la longitud entre cabezales "
+                     f"L_cab = {L_cab:.3f} m " + "; ".join(no_se_cumplirian)
+                     + f". Remedio: declarar `{CLAVE_LONGITUD_FINAL}` = "
+                       f"{L_cab:.3f} m en el punto (--datos-externos): gana "
+                       "y el punto se verifica entero con ella (ficha "
+                       "VE7A-09)")))
     informe.cabezal = replace(
         cabezal, pasos=cabezal.pasos + (refinado.paso,),
         avisos=cabezal.avisos + ((refinado.aviso,) if refinado.aviso

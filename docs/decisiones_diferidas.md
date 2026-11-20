@@ -9135,7 +9135,7 @@ cambios están aplicados en estas fichas.
   con su margen mezclaría dimensiones); `F9.REFINAMIENTO_LONGITUD` pasa a RECOMIENDA («should
   be close», 3.3.5). `servicio._lo_que_no_se_cumpliria`.
 - **Abierto:** V1, V4 y el tamizado de 7.A siguen juzgados con la carga del diseño; con la
-  refinada sólo se avisa. La coronación de salida sigue fijada con la cota de salida de la
+  refinada se avisa y, desde VE7A-09, el punto se bloquea si V1 o V4 dejarían de cumplirse. La coronación de salida sigue fijada con la cota de salida de la
   aproximada (ficha T7A-06).
 - **Qué haría falta:** declarar `longitud_m` = L_cab en el punto avisado (gana y se verifica
   entero); o, si el dueño lo pide, una segunda pasada completa de MD con L_cab.
@@ -9312,3 +9312,18 @@ el test; lo que la sesión tuvo que decidir sin dictamen va rotulado «pendiente
 - **Abierto:** el borde esviado sigue sin verificarse en M8.
 - **Qué haría falta:** un procedimiento de la fuente para la viga de borde del marco esviado.
 - **Dónde vive:** `src/modulos/M9_cabezal.py::_embocadura_paralela`
+
+## VE7A-09 · Lo que dejaría de cumplirse con la longitud entre cabezales bloquea el expediente (VE6-22)
+
+- **Cerrado:** en `servicio._fase_9_refinamiento`, si `_lo_que_no_se_cumpliria` no está vacío
+  (V4 con Δ = HW(L_cab) − HW(L) mayor que su margen, o V1 re-evaluada que deja de cumplir),
+  además del aviso hay un `Bloqueo` de la Fase 9 (`FASE_CABEZAL`, etapa
+  `ETAPA_REFINAMIENTO_LONGITUD`, sólo a expediente: la Fase 9 no corre a perfil) con el remedio
+  «declarar `longitud_m` = L_cab». A-01 no cambia (sin nada que no se cumpla, sin bloqueo).
+- **Decisión del consultor Fable (triaje VE-7, 2026-11-20):** el bloqueo con ese remedio.
+  **Pendiente de revisión Fable:** el tipo es `DatoFaltanteError` con `campo` = `longitud_m`
+  (el revisor tiene que AÑADIR la longitud final, la regla de CLAUDE.md), no un incumplimiento:
+  V1 y V4 siguen juzgadas con la carga del diseño.
+- **Abierto:** no se itera MD con L_cab (VE6-22).
+- **Qué haría falta:** nada; declarar `longitud_m` lo destraba y verifica el punto entero.
+- **Dónde vive:** `src/servicio.py::_fase_9_refinamiento`
