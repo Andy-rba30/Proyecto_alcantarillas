@@ -187,6 +187,10 @@ FEN_DOS_POBLACIONES = "dos_poblaciones"
 MEJOR_AJUSTE_KS = "mejor_ajuste_ks"
 RELACION_DICK_PESCHKE = "dick_peschke"
 RELACION_TABLA_04 = "tabla_04_coeficientes_de_duracion"
+# --- VE-5 (ficha T1-05) --- La relacion regional de la ecuacion (17):
+# I = K·T^m / t^n, con los tres factores declarados en su criterio [S].
+RELACION_IDF_REGIONAL = "idf_regional_ec17"
+CRITERIO_IDF_REGIONAL = "factores_idf_regional"
 
 # Los metodos de tiempo de concentracion que la columna `metodo_tc` admite:
 # CUATRO de las seis filas de la Tabla N 05 y la ecuacion (30) del num.
@@ -1892,11 +1896,17 @@ def coeficiente_de_duracion(d_h: float) -> float:
 
 
 def _intensidad(*, P24_mm: float, d_min: float,
-                relacion: str) -> Tuple[float, float]:
+                relacion: str, TR: Optional[float] = None,
+                leer=None) -> Tuple[float, float]:
     """
     (Pd en mm, I en mm/h) de una lluvia de duracion `d_min`, desde la
     precipitacion maxima en 24 horas (num. 3.8.1). «La intensidad se halla
     dividiendo la precipitación Pd entre la duración.»
+
+    Con la relacion regional de la ecuacion (17) (VE-5) la intensidad no
+    sale de la P24 sino de I = K·T^m / t^n, con el periodo de retorno `TR` y
+    los factores del criterio 'factores_idf_regional' [S]; Pd = I · d / 60.
+    `leer` es como se lee ese criterio (el pre-vuelo no registra el uso).
 
     PRIVADA A PROPOSITO (auditoria de T-1): toma una P24 cualquiera, sin
     saber de que serie sale ni con que tratamiento FEN, y no aplica la
@@ -1914,15 +1924,65 @@ def _intensidad(*, P24_mm: float, d_min: float,
         Pd = precipitacion_dick_peschke_mm(P24_mm=P24_mm, d_min=d_min)
     elif relacion == RELACION_TABLA_04:
         Pd = coeficiente_de_duracion(d_h) * P24_mm
+    elif relacion == RELACION_IDF_REGIONAL:
+        K, m, n = factores_idf_regional(leer=leer)
+        if TR is None:
+            raise DatoFaltanteError(
+                "TR", detalle="la relacion regional de la ecuacion (17) pide "
+                              "el periodo de retorno")
+        I = intensidad_idf_regional_mm_h(K=K, m=m, n=n, TR=TR, t_min=d_min)
+        return I * d_h, I
     else:
         raise DatoInvalidoError(
             CRITERIO_RELACION, valor=relacion,
-            motivo=f"las relaciones admitidas son {RELACION_DICK_PESCHKE} y "
-                   f"{RELACION_TABLA_04}")
+            motivo=f"las relaciones admitidas son {RELACION_DICK_PESCHKE}, "
+                   f"{RELACION_TABLA_04} y {RELACION_IDF_REGIONAL}")
     return Pd, Pd / d_h
 
 
-def _intensidad_de_diseno(P24_mm: float, tc_min: float) -> float:
+def factores_idf_regional(*, leer=None) -> Tuple[float, float, float]:
+    """
+    (K, m, n) del criterio 'factores_idf_regional' [S], comprobados: las
+    tres claves, numeros finitos y positivos. Sin valor,
+    `CriterioPendienteError` (un dato de un estudio regional no se rellena).
+
+    Positivos porque la ecuacion (17) del num. 3.8.1 es una CURVA IDF: K es
+    su escala, m hace crecer la intensidad con el periodo de retorno y n la
+    hace decrecer con la duracion --la «relación inversa entre la duración
+    de una tormenta y su intensidad» del num. 3.9--. Un n negativo daria
+    mas intensidad a una lluvia mas larga.
+    """
+    valor = (ca.valor if leer is None else leer)(CRITERIO_IDF_REGIONAL)
+    try:
+        factores = tuple(float(valor[clave]) for clave in ("K", "m", "n"))
+    except (KeyError, TypeError, ValueError):
+        raise DatoInvalidoError(
+            CRITERIO_IDF_REGIONAL, valor=valor,
+            motivo="es un diccionario con tres numeros: 'K', 'm' y 'n'"
+                   ) from None
+    if not all(math.isfinite(f) and f > 0 for f in factores):
+        raise DatoInvalidoError(
+            CRITERIO_IDF_REGIONAL, valor=valor,
+            motivo="K, m y n son positivos: la ecuacion (17) es una curva "
+                   "IDF, que crece con el periodo de retorno y decrece con "
+                   "la duracion (num. 3.9)")
+    return factores
+
+
+def intensidad_idf_regional_mm_h(*, K: float, m: float, n: float, TR: float,
+                                 t_min: float) -> float:
+    """
+    Ecuacion (17) del num. 3.8.1 del Manual de Hidrologia (pag. impresa 38):
+    I = K · T^m / t^n, I en mm/h, T = periodo de retorno en años, t =
+    duracion de la precipitacion en MINUTOS («equivalente al tiempo de
+    concentración»). K, m y n son «factores característicos de la zona de
+    estudio».
+    """
+    return K * TR ** m / t_min ** n
+
+
+def _intensidad_de_diseno(P24_mm: float, tc_min: float,
+                          TR: Optional[float] = None) -> float:
     """
     La intensidad de la lluvia de diseño, en mm/h, para un tiempo de
     concentracion en minutos: la MISMA regla que `_paso_intensidad` (la
@@ -1933,25 +1993,50 @@ def _intensidad_de_diseno(P24_mm: float, tc_min: float) -> float:
     minimo = ca.valor(CRITERIO_DURACION_MINIMA)
     d_min = minimo if tc_min < minimo else tc_min
     return _intensidad(P24_mm=P24_mm, d_min=d_min,
-                       relacion=ca.valor(CRITERIO_RELACION))[1]
+                       relacion=ca.valor(CRITERIO_RELACION), TR=TR)[1]
 
 
 def _paso_intensidad(P24_mm: float, tc_min: float,
+                     TR: Optional[float] = None,
                      ) -> Tuple[float, float, PasoDeMemoria, Tuple[str, ...]]:
     """
     (I en mm/h, duracion adoptada en min, paso, avisos). La duracion de la
     lluvia de diseño es el tiempo de concentracion (num. 3.8.1) SALVO que
     este quede por debajo de 'duracion_minima_lluvia_min': entonces dura el
     minimo, y el paso y la corrida lo dicen.
+
+    `TR` (VE-5): el periodo de retorno, que solo la relacion regional de la
+    ecuacion (17) usa (I = K·T^m / t^n).
     """
     relacion = ca.valor(CRITERIO_RELACION)
     minimo = ca.valor(CRITERIO_DURACION_MINIMA)
     corta = tc_min < minimo
     d_min = minimo if corta else tc_min
-    Pd, I = _intensidad(P24_mm=P24_mm, d_min=d_min, relacion=relacion)
+    Pd, I = _intensidad(P24_mm=P24_mm, d_min=d_min, relacion=relacion, TR=TR)
     notas: List[str] = []
     avisos: List[str] = []
-    if relacion == RELACION_DICK_PESCHKE:
+    de_la_relacion: Tuple[Magnitud, ...] = (
+        Magnitud("P24", P24_mm, "mm",
+                 f"precipitacion de diseño del paso {CODIGO_AJUSTE}",
+                 cifras=CIFRAS_MAGNITUD),)
+    if relacion == RELACION_IDF_REGIONAL:
+        K, m, n = factores_idf_regional()
+        formula = ("I = K · T^m / t^n ; Pd = I · d / 60   [I en mm/h, T en "
+                   "años, t = d en min]")
+        cita = "MC_HHD.3.8.1#EC17"
+        procedencia = (f"criterio '{CRITERIO_IDF_REGIONAL}' [S]: factor de la "
+                       "relacion regional, dato del estudio de la zona")
+        de_la_relacion = (
+            Magnitud("K", K, "", procedencia, cifras=CIFRAS_FINA),
+            Magnitud("m", m, "", procedencia, cifras=CIFRAS_FINA),
+            Magnitud("n", n, "", procedencia, cifras=CIFRAS_FINA),
+            Magnitud("T", TR, "años", "periodo de retorno del caudal"))
+        notas.append(
+            "Relacion REGIONAL de la ecuacion (17): la intensidad sale de los "
+            f"factores K, m y n del criterio '{CRITERIO_IDF_REGIONAL}' [S] y "
+            f"no de la lluvia de 24 horas del paso {CODIGO_AJUSTE}, que se "
+            "imprime al lado como contraste (Dick y Peschke con esa P24).")
+    elif relacion == RELACION_DICK_PESCHKE:
         formula = ("Pd = P24 · (d / 1440)^0.25 ; I = Pd / (d / 60)   "
                    "[d en min, I en mm/h]")
         cita = "MC_HHD.3.8.1#DICK_PESCHKE"
@@ -1974,7 +2059,8 @@ def _paso_intensidad(P24_mm: float, tc_min: float,
     alternativa = (RELACION_TABLA_04 if relacion == RELACION_DICK_PESCHKE
                    else RELACION_DICK_PESCHKE)
     try:
-        _, I_alt = _intensidad(P24_mm=P24_mm, d_min=d_min, relacion=alternativa)
+        _, I_alt = _intensidad(P24_mm=P24_mm, d_min=d_min, relacion=alternativa,
+                               TR=TR)
         texto_alt = f"{alternativa}: I = {I_alt:.2f} mm/h"
     except MetodoNoEvaluableError:
         texto_alt = (f"{alternativa}: no cubre una duracion de "
@@ -1989,9 +2075,7 @@ def _paso_intensidad(P24_mm: float, tc_min: float,
         formula=formula, formula_cita_id=cita,
         citas_textuales=("MC_HHD.3.8.1#DURACION", cita),
         sustitucion=(
-            Magnitud("P24", P24_mm, "mm",
-                     f"precipitacion de diseño del paso {CODIGO_AJUSTE}",
-                     cifras=CIFRAS_MAGNITUD),
+            *de_la_relacion,
             Magnitud("tc", tc_min, "min",
                      f"tiempo de concentracion del paso {CODIGO_TC}",
                      cifras=CIFRAS_MAGNITUD),
@@ -2027,10 +2111,15 @@ def _paso_intensidad(P24_mm: float, tc_min: float,
             valor=f"{relacion}: I = {I:.2f} mm/h",
             entre=(f"{relacion}: I = {I:.2f} mm/h", texto_alt),
             de_donde=f"el criterio adoptado '{CRITERIO_RELACION}' [A]",
-            por_que="el num. 3.8.1 del Manual permite las dos relaciones "
-                    "cuando no hay registros pluviograficos y no manda "
-                    "ninguna; la alternativa se imprime al lado para que se "
-                    "vea cuanto pesa la eleccion",
+            por_que=("el num. 3.8.1 del Manual escribe la relacion regional "
+                     "de la ecuacion (17) para cuando hay curvas IDF de la "
+                     "zona; la intensidad que daria la lluvia de 24 horas de "
+                     "la estacion se imprime al lado como contraste"
+                     if relacion == RELACION_IDF_REGIONAL else
+                     "el num. 3.8.1 del Manual permite las dos relaciones "
+                     "cuando no hay registros pluviograficos y no manda "
+                     "ninguna; la alternativa se imprime al lado para que se "
+                     "vea cuanto pesa la eleccion"),
             clave_criterio=CRITERIO_RELACION),),
         nota_del_proyecto=" ".join(notas)), tuple(avisos)
 
@@ -2369,8 +2458,8 @@ def _caudal_calculado(cuenca: Cuenca, serie: SerieDeEstacion, TR: float, *,
     tc, paso_tc, avisos_tc = tiempo_de_concentracion(
         cuenca, C=C,
         intensidad_de=lambda tc_min: _intensidad_de_diseno(adoptado.P_TR_mm,
-                                                           tc_min))
-    I, d_min, paso_i, avisos_i = _paso_intensidad(adoptado.P_TR_mm, tc)
+                                                           tc_min, TR))
+    I, d_min, paso_i, avisos_i = _paso_intensidad(adoptado.P_TR_mm, tc, TR)
 
     # El coeficiente de uniformidad K solo entra con la formula de Temez, que
     # es del metodo que lo define, y lo decide un criterio (uso hibrido).
@@ -3072,7 +3161,10 @@ def anticipar_caudal(cuenca: Cuenca, serie: SerieDeEstacion, *,
     if cuenca.cobertura in SUPERFICIES_VIALES:
         criterio(CRITERIO_C_VIAL)
     tiempo_de_concentracion_(racional_modificado=False)
-    criterio(CRITERIO_RELACION)
+    if criterio(CRITERIO_RELACION) == RELACION_IDF_REGIONAL:
+        # VE-5: la relacion regional pide sus tres factores [S]; los mismos
+        # que lanzaria la corrida (`factores_idf_regional`), sin registrar.
+        compuerta(lambda: factores_idf_regional(leer=_leer_sin_registrar))
     criterio(CRITERIO_DURACION_MINIMA)
     if cuenca.metodo_tc == TC_METODO_TEMEZ:
         criterio(CRITERIO_K_TEMEZ)

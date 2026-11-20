@@ -273,3 +273,82 @@ def test_el_prevuelo_anticipa_el_dato_de_superficie_que_falta(cuencas, serie):
             replace(_cuneta_onda(cuencas), n_manning_superficial=None), serie,
             de_cuneta=True)
     assert [o.dato for o in obstaculos] == ["n_manning_superficial"]
+
+
+# ===========================================================================
+# T1-05, ec. (17) — la puerta de la relacion regional I = K·T^m / t^n
+# ===========================================================================
+
+RELACION = "relacion_intensidad_duracion"
+IDF = "factores_idf_regional"
+FACTORES = {"K": 120.0, "m": 0.2, "n": 0.6}
+
+
+def test_la_ecuacion_17_es_la_de_la_pagina():
+    # I = K·T^m / t^n = 120 · 35^0.2 / 20^0.6 = 120·2.0360/6.0342 = 40.49
+    I = MH.intensidad_idf_regional_mm_h(K=120.0, m=0.2, n=0.6, TR=35, t_min=20)
+    assert I == pytest.approx(120 * 35 ** 0.2 / 20 ** 0.6, rel=REL_ARITMETICA)
+    assert I == pytest.approx(40.49, abs=5e-3)
+
+
+def test_el_criterio_de_los_factores_es_un_dato_de_sitio_sin_valor():
+    from src import criterios_adoptados as ca
+    c = ca.CRITERIOS[IDF]
+    assert c.valor is None and c.etiqueta == "S" and c.nivel == ca.NIVEL_PERFIL
+    assert c.forma == ca.FORMA_DICT_CON_CAMPOS and c.trazabilidad
+    assert "idf_regional_ec17" in ca.CRITERIOS[RELACION].sensibilidad
+    assert "MC_HHD.3.8.1#EC17" in c.justificacion
+
+
+def test_la_relacion_regional_da_la_intensidad_del_caudal(cuencas, serie):
+    with declarados({FEN: "serie_completa", RELACION: "idf_regional_ec17",
+                     IDF: FACTORES}):
+        caudal = MH.caudal_de_diseno(cuencas["A-02"], serie, 35)
+    d = max(caudal.tc_min, 5.0)
+    assert caudal.I_mm_h == pytest.approx(120 * 35 ** 0.2 / d ** 0.6, rel=REL)
+    paso = next(p for p in caudal.pasos if p.codigo == "1b.5")
+    assert paso.formula_cita_id == "MC_HHD.3.8.1#EC17"
+    simbolos = {m.simbolo: m.valor for m in paso.sustitucion}
+    assert simbolos["K"] == 120.0 and simbolos["n"] == 0.6 and simbolos["T"] == 35
+    # La lluvia de 24 horas de la estacion se imprime al lado, como contraste.
+    assert any("dick_peschke" in e for e in paso.elecciones[0].entre)
+
+
+def test_sin_los_factores_la_relacion_regional_se_detiene(cuencas, serie):
+    with declarados({FEN: "serie_completa", RELACION: "idf_regional_ec17"}):
+        with pytest.raises(modelos.CriterioPendienteError) as exc:
+            MH.caudal_de_diseno(cuencas["A-02"], serie, 35)
+        obstaculos = MH.anticipar_caudal(cuencas["A-02"], serie,
+                                         de_cuneta=False)
+    assert exc.value.clave == IDF
+    assert IDF in [o.dato for o in obstaculos]
+
+
+@pytest.mark.parametrize("factores", [
+    {"K": 120.0, "m": 0.2}, {"K": 120.0, "m": 0.2, "n": -0.6},
+    {"K": 0.0, "m": 0.2, "n": 0.6}, {"K": 120.0, "m": "x", "n": 0.6}])
+def test_los_factores_tienen_que_ser_tres_y_positivos(cuencas, serie,
+                                                      factores):
+    with declarados({FEN: "serie_completa", RELACION: "idf_regional_ec17",
+                     IDF: factores}):
+        with pytest.raises(modelos.DatoInvalidoError) as exc:
+            MH.caudal_de_diseno(cuencas["A-02"], serie, 35)
+    assert exc.value.campo == IDF
+
+
+def test_el_punto_fijo_cruza_la_curva_regional(cuencas, serie):
+    """
+    Onda cinematica con la ecuacion (17): I = (K·T^m) / t^n es exactamente la
+    curva a / t^b de la forma cerrada, con a = K·T^m y b = n.
+    """
+    cuenca = replace(_cuneta_onda(cuencas), L_cauce_m=150.0, area_km2=0.01,
+                     n_manning_superficial=0.4)
+    a, b = 120 * 35 ** 0.2, 0.6
+    A = 7 * 150.0 ** 0.6 * 0.4 ** 0.6 * 0.03 ** -0.3 * a ** -0.4
+    esperado = A ** (1 / (1 - 0.4 * b))
+    assert esperado > 5.0                    # por encima de la duracion minima
+    with declarados({FEN: "serie_completa", RELACION: "idf_regional_ec17",
+                     IDF: FACTORES}):
+        caudal = MH.caudal_de_aporte_cuneta(cuenca, serie, 35)
+    assert caudal.tc_min == pytest.approx(esperado, rel=REL)
+    assert caudal.I_mm_h == pytest.approx(a / esperado ** b, rel=REL)

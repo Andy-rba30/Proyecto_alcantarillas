@@ -4073,7 +4073,33 @@ tres más (`T1-07` a `T1-09`) las dejó la auditoría adversarial de la misma se
   (plataforma más talud) no está en el Manual y no se implementa —una fila por obra—,
   y la relación regional I = K·T^m/t^n (ecuación 17) tampoco, porque sus tres factores
   son datos de un estudio regional.
+- **En parte en VE-5 (lote mh, 2026-11-20): la ecuación (17) tiene puerta.** El criterio
+  `relacion_intensidad_duracion` admite una tercera opción, `idf_regional_ec17`, y con
+  ella la intensidad es I = K·T^m / t^n (cita `MC_HHD.3.8.1#EC17`, pág. impresa 38) con
+  t la duración de diseño en minutos (el tc, con la duración mínima) y T el periodo de
+  retorno del caudal. K, m y n son el criterio `factores_idf_regional` [S], **sin valor**
+  (dato de un estudio regional: sin él, `CriterioPendienteError`, y el pre-vuelo lo
+  anticipa); `MH.factores_idf_regional` exige las tres claves y que sean positivos. La
+  serie de la estación se sigue ajustando —la puerta FEN no cambia— y su intensidad por
+  Dick y Peschke se imprime al lado como contraste. Vale también para el punto fijo de
+  Izzard y la onda cinemática.
+- **Sigue abierta la ponderación de C por subáreas**, ya con fuente: ficha VE5-MH-01.
 - **Dónde vive:** `src/normativa/tablas.py::T05`
+
+## VE5-MH-01 · La ponderación de C por subáreas tiene fuente [C] y no se implementa: pide cambiar el contrato
+
+- **Qué se difirió:** el coeficiente de escorrentía ponderado de una cuenca con varias
+  coberturas (plataforma más talud), ΣC·A / ΣA.
+- **Por qué:** el Manual no la trae (ficha T1-05), pero la fuente técnica que el proyecto
+  ya usa para la plataforma sí: WSDOT Hydraulics Manual, Equation 2-4 (pág. impresa 2-8,
+  PDF 44), «When several subareas within a drainage basin have different runoff
+  coefficients, the rational formula can be modified as follows», Q = I·ΣCA / K. Sería
+  [C], no [A]. Lo que falta no es fuente sino forma de entrada: hoy el CSV de cuencas es
+  una fila por obra, con un área que tiene que coincidir con `area_ha`, y varias subáreas
+  por obra cambian el contrato, que decide su dueño.
+- **Qué haría falta:** la forma de las subáreas en `docs/contrato_entradas.md`, la cita de
+  la Eq. 2-4 en el registro y ΣC·A en el paso del coeficiente.
+- **Dónde vive:** `src/modulos/MH_hidrologia.py::_paso_c`
 
 ## T1-06 · `MetodoNoEvaluableError` admite un rótulo propio para la hidrología
 

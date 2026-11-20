@@ -2422,7 +2422,11 @@ CRITERIOS: Dict[str, Criterio] = {
                                     # 'distribucion_precipitacion_maxima'
         etiqueta="A",
         forma=FORMA_CATEGORIA,
-        sensibilidad=("dick_peschke", "tabla_04_coeficientes_de_duracion"),
+        # --- VE-5 (mh, ficha T1-05) --- La tercera opcion es la relacion
+        # regional de la ecuacion (17), con sus factores en
+        # 'factores_idf_regional' [S].
+        sensibilidad=("dick_peschke", "tabla_04_coeficientes_de_duracion",
+                      "idf_regional_ec17"),
         concepto="Relacion con que la precipitacion maxima en 24 horas se "
                  "lleva a la intensidad de una lluvia de duracion igual al "
                  "tiempo de concentracion",
@@ -2446,7 +2450,15 @@ CRITERIOS: Dict[str, Criterio] = {
                       "la lluvia de 24 horas y la Tabla N 04 el 25 %, de "
                       "modo que la intensidad y el caudal son un 81 % "
                       "mayores con el valor adoptado; a 6 horas, 71 % "
-                      "frente a 56 %",
+                      "frente a 56 %. Desde VE-5 hay una tercera opcion, "
+                      "'idf_regional_ec17': la relacion I = K·T^m / t^n de la "
+                      "ecuacion (17) del mismo numeral (cita "
+                      "MC_HHD.3.8.1#EC17), con t la duracion en minutos y K, m "
+                      "y n los factores caracteristicos de la zona, que un "
+                      "estudio regional entrega y se declaran en "
+                      "'factores_idf_regional' [S]; con ella la lluvia de 24 "
+                      "horas de la estacion no da la intensidad y la memoria "
+                      "la imprime al lado como contraste",
         fuente="Manual de Hidrologia, Hidraulica y Drenaje (MTC), num. 3.8.1 "
                "'Curvas Intensidad – Duración – Frecuencia', ecuacion (16) "
                "en la pag. impresa 37 (PDF 40) y Tabla N 04 en las pags. "
@@ -2459,14 +2471,76 @@ CRITERIOS: Dict[str, Criterio] = {
                                "se interpola linealmente por lectura del "
                                "proyecto y una menor de 1 hora detiene el "
                                "calculo. La relacion regional I = K·T^m/t^n "
-                               "(ecuacion 17) no se evalua: sus tres "
-                               "factores son datos de un estudio regional "
-                               "que el expediente no trae",
+                               "(ecuacion 17) se evalua desde VE-5 con los "
+                               "factores declarados en "
+                               "'factores_idf_regional' [S]; sin ellos se "
+                               "detiene",
         resolucion=Libre(
             que_lo_fija="el proyectista: el num. 3.8.1 permite las dos "
                         "relaciones y no manda ninguna",
             dominio="declaracion de la relacion; el conjunto cerrado viaja "
                     "en `sensibilidad`",
+        ),
+    ),
+
+    # --- VE-5 (mh, ficha T1-05) --- LA PUERTA DE LA IDF REGIONAL. Sin valor:
+    # los tres factores son de un estudio regional, no de esta obra ni de
+    # este archivo, y solo se leen cuando 'relacion_intensidad_duracion' =
+    # «idf_regional_ec17».
+    "factores_idf_regional": Criterio(
+        valor=None,                 # VACIO: solo lo lee la relacion ec. (17)
+        nivel=NIVEL_PERFIL,         # lo consume la Fase 1-bis (MH), que corre
+                                    # a perfil; ninguna corrida de archivo lo
+                                    # invoca porque la relacion de archivo es
+                                    # Dick y Peschke (lo mide tests/test_ve5_mh.py)
+        etiqueta="S",
+        # Sin `campos_obligatorios`: la puerta los exige CON TEXTO (EXT-6) y
+        # estos son numeros. Las tres claves y su signo los comprueba el
+        # consumidor, `MH.factores_idf_regional`, con DatoInvalidoError.
+        forma=FORMA_DICT_CON_CAMPOS,
+        concepto="Factores K, m y n de la relacion regional intensidad-"
+                 "duracion-frecuencia I = K·T^m / t^n (ecuacion 17 del Manual "
+                 "de Hidrologia): I en mm/h, T en años y t en minutos",
+        justificacion="Da la intensidad de diseño cuando el proyecto declara "
+                      "'idf_regional_ec17' en 'relacion_intensidad_duracion'. "
+                      "La fuente (num. 3.8.1 del Manual de Hidrologia, pag. "
+                      "impresa 38, cita MC_HHD.3.8.1#EC17) escribe la relacion "
+                      "y llama a K, m y n «factores característicos de la "
+                      "zona de estudio»: no da ningun valor. Es [S] y no [A]: "
+                      "no hay nada que elegir, los tres salen de ajustar la "
+                      "relacion a las curvas IDF de la zona (un estudio "
+                      "regional o las curvas de una estacion pluviografica), "
+                      "y cambian al mover la obra, no al cambiar de "
+                      "proyectista. Vive aqui y no en datos_sitio.py porque "
+                      "sigue pendiente del estudio y comparte tablero con la "
+                      "relacion que lo pide. Los tres tienen que ser numeros "
+                      "positivos: K da la escala, m hace crecer la intensidad "
+                      "con el periodo de retorno y n la hace decrecer con la "
+                      "duracion, que es la «relación inversa entre la "
+                      "duración de una tormenta y su intensidad» del num. 3.9",
+        fuente="PENDIENTE - Estudio regional de curvas intensidad-duracion-"
+               "frecuencia de la zona del corredor (o curvas IDF de una "
+               "estacion pluviografica representativa), con los factores de "
+               "la ecuacion (17) del num. 3.8.1 del Manual de Hidrologia, "
+               "Hidraulica y Drenaje, pag. impresa 38 (PDF 41)",
+        trazabilidad="El estudio que ajusta la relacion I = K·T^m / t^n: su "
+                     "autor y fecha, la estacion o la region de la que salen "
+                     "las curvas, el rango de duraciones y de periodos de "
+                     "retorno del ajuste, y las unidades (I en mm/h, T en "
+                     "años, t en minutos, que son las de la ecuacion 17). La "
+                     "estructura del dato es un diccionario con tres claves "
+                     "obligatorias: 'K', 'm' y 'n', numeros positivos. "
+                     "Ambito: la zona del estudio; si el corredor cruza dos "
+                     "zonas con factores distintos, la relacion regional no "
+                     "vale para el corredor entero y el caudal de las obras "
+                     "de la otra zona se declara en Q_m3s",
+        reemplazado_por="Curvas IDF del estudio hidrologico del expediente",
+        resolucion=DeEnsayo(
+            ensayo="ajuste de la relacion I = K·T^m / t^n a las curvas IDF de "
+                   "la zona del corredor",
+            trazabilidad_exigida="estudio, estacion o region, rango de "
+                                 "duraciones y de periodos de retorno del "
+                                 "ajuste, y unidades",
         ),
     ),
 

@@ -1253,7 +1253,10 @@ SIN_NADA_QUE_BARRER = {
     "margen_estacional_nf_v7_m",
     # VE-4d: el caudal unitario admisible del desborde de V8, sin valor de
     # archivo y sin ventana (lo da el diseño de la proteccion del terraplen).
-    "caudal_unitario_admisible_desborde_m2s"}
+    "caudal_unitario_admisible_desborde_m2s",
+    # VE-5 (mh, ficha T1-05): los factores K, m, n de la ecuacion (17), [S]
+    # sin valor de archivo: un dato de un estudio regional no tiene ventana.
+    "factores_idf_regional"}
 # VE-3.5 lo habia sumado ('dimensionamiento_zapata_cabezal', sin valor de
 # archivo y sin ventana). Desde VE-3.9 tiene valor de archivo y ventana por
 # campo (decision del dueño), y ya hay que barrer.
@@ -1327,7 +1330,8 @@ def test_4_el_barrido_cubre_los_141_y_censa_lo_que_no_barre(candidatos):
     # 'coeficientes_desborde_plataforma' (el desborde admitido de V8).
     # 158 desde VE-4e: 'nivel_agua_relleno_sin_drenaje_bajo_sismo' (ficha
     # VE3-21), sin valor de archivo y con sus dos opciones barribles.
-    assert len(por_clave) == len(ca.CRITERIOS) == 158
+    # 159 desde VE-5-mh: 'factores_idf_regional' [S] (ficha T1-05), sin valor.
+    assert len(por_clave) == len(ca.CRITERIOS) == 159
     assert fuera == FILAS_FUERA_DE_SU_VENTANA
     assert {k for k, cs in por_clave.items() if not cs} == SIN_NADA_QUE_BARRER
     # Y el barrido no es de juguete: cada valor de archivo esta, y mas.

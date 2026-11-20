@@ -120,6 +120,13 @@ de la estación» de la pestaña 1, y la sesión los guarda desde el formato 4 (
 | `p24_mm` | mm | SENAMHI | Precipitación máxima en 24 horas de ese año. Un **0** es un dato y se admite (excluye a la log normal, y la memoria lo dice) | La carga se detiene |
 | `fen` | `si` / `no` | **Estudio hidrológico** | Si ese año fue del fenómeno El Niño. Es un **hecho** que declara quien entrega la serie; el programa no lo deduce del valor | La carga se detiene: la serie tiene que declarar sus años FEN, **año por año**. Una celda vacía no se lee como «no» |
 
+La relación con que la lluvia de 24 horas se lleva a la intensidad tampoco es una
+columna: es el criterio `relacion_intensidad_duracion`. Desde VE-5 admite
+`idf_regional_ec17`, la ecuación (17) del Manual (I = K·T^m / t^n), y entonces los tres
+factores de la zona son el criterio `factores_idf_regional` [S], sin valor de archivo,
+que se declara como diccionario `{"K": …, "m": …, "n": …}` (I en mm/h, T en años, t en
+minutos) con la trazabilidad del estudio regional de curvas IDF del que salen.
+
 Qué se hace con los años FEN **no** es una columna: es el criterio
 `homogeneidad_serie_fen` (`serie_completa`, `serie_sin_fen` o `dos_poblaciones`), sin
 valor de archivo, que se declara con `--declarar`. Rige sólo el caudal que el programa

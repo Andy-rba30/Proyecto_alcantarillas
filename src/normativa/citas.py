@@ -7910,6 +7910,31 @@ MC_HHD_T05_ONDA = _cita(
         )),
 )
 
+# --- VE-5 (mh, ficha T1-05) --- La relacion regional de la ecuacion (17).
+MC_HHD_3_8_1_EC17 = _cita(
+    id="MC_HHD.3.8.1#EC17",
+    fuente_id="MC_HHD",
+    numeral="3.8.1",
+    titulo_numeral="Curvas Intensidad – Duración – Frecuencia",
+    pagina_impresa="38",
+    pagina_pdf=41,
+    pagina_pdf_titulo=36,
+    texto_literal=Verbatim(
+        texto=("Las curvas de intensidad-duración-frecuencia, se han "
+               "calculado indirectamente, mediante la siguiente relación:"),
+        pagina_pdf=41),
+    caracter=Caracter.DEFINICION,
+    metodo=AMBOS,
+    sesion=VE5_MH,
+    nota=("Ecuacion (17), vista en imagen: I = K · T^m / t^n, con «I = "
+          "Intensidad máxima (mm/h)», «K, m, n = factores característicos de "
+          "la zona de estudio», «T = período de retorno en años» y «t = "
+          "duración de la precipitación equivalente al tiempo de "
+          "concentración (min)». La pagina no da ningun valor de K, m ni n: "
+          "son datos de un estudio de la zona (criterio "
+          "'factores_idf_regional' [S])."),
+)
+
 MC_HHD_3_12_2_1_K = _cita(
     id="MC_HHD.3.12.2.1#K",
     fuente_id="MC_HHD",
