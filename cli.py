@@ -1884,7 +1884,9 @@ def _cabezal_del_punto_json(informe: InformePunto) -> Optional[Dict[str, Any]]:
             "M_volcante_kNm_m": _num(k.M_volcante),
             "excentricidad_m": _num(k.excentricidad_publicable)}
             for k in e.combinaciones],
-        "verificaciones": [v.codigo for v in e.verificaciones],
+        # --- VE-4a --- con las E4 y E5 de FS declarado (`globales`), que
+        # tambien van enteras en `verificaciones` del punto.
+        "verificaciones": [v.codigo for v in e.verificaciones + e.globales],
         "pendientes": [{"codigo": codigo, "motivo": motivo}
                        for codigo, motivo in e.pendientes],
         "solicitaciones": [{

@@ -1506,6 +1506,8 @@ _META_CRITERIOS: Dict[str, _Meta] = {
     "umbral_no_colapso_evento_extremo": _Meta(unidad="-"),
     "marco_estabilidad_cabezal": _Meta(unidad="-"),
     "fila_phi_estabilidad_cabezal": _Meta(unidad="-"),
+    # --- VE-4a --- la fila de phi de 11.6.3.7 para el FS declarado de E4/E5.
+    "fila_phi_estabilidad_global": _Meta(unidad="-"),
     "drenaje_trasdos": _Meta(unidad="-"),
     # --- VE-3.14 --- el agua del relleno bajo sismo (la consume M9, Fase 9).
     "agua_del_relleno_bajo_sismo": _Meta(unidad="-"),

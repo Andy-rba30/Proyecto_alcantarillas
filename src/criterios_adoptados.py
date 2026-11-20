@@ -11273,6 +11273,56 @@ CRITERIOS: Dict[str, Criterio] = {
         ),
     ),
 
+    # --- VE-4a --- La fila del factor de resistencia de la estabilidad global
+    # (AASHTO 11.6.3.7) con que el marco LRFD contrasta el FS DECLARADO de E4
+    # y E5. Sin valor de archivo: la calidad de los parametros del EMS la
+    # juzga quien lo lee, y la hoja de ruta no dice nada. Sin declarar, la
+    # fila estatica decide solo si las dos opciones dan lo mismo y sale
+    # INDICADOR «no decidida» si no (el patron de la fila A6 del armado).
+    "fila_phi_estabilidad_global": Criterio(
+        valor=None,                 # VACIO: la decide quien lee el EMS
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        #   parametros_bien_definidos         phi = 0.75 (FS objetivo 1.333)
+        #   parametros_variables_o_limitados  phi = 0.65 (FS objetivo 1.538)
+        sensibilidad=("parametros_bien_definidos",
+                      "parametros_variables_o_limitados"),
+        concepto="Fila del factor de resistencia de AASHTO 11.6.3.7 para la "
+                 "estabilidad global del muro y del talud del cabezal (E4 y "
+                 "E5) en el estado limite de resistencia: parametros "
+                 "geotecnicos y estratigrafia bien definidos (0.75) o muy "
+                 "variables o con informacion limitada (0.65)",
+        justificacion="Decide el minimo del marco LRFD con que se contrasta "
+                      "el factor de seguridad DECLARADO de E4 y E5 "
+                      "(`estabilidad_global_declarada`, VE-4a): FS >= 1/phi, "
+                      "por la lectura del comentario C11.6.3.7 (cita "
+                      "AASHTO_LRFD_9.C11.6.3.7#FS). La fuente da las dos "
+                      "filas y la condicion de cada una (cita "
+                      "AASHTO_LRFD_9.11.6.3.7#PHI), y esa condicion -- si los "
+                      "parametros y la estratigrafia del EMS estan bien "
+                      "definidos -- es un juicio sobre el estudio de suelos "
+                      "real, que el programa no tiene. La hoja de ruta no la "
+                      "fija (§9.3 da solo los FS de E.050, del marco ASD). "
+                      "Por eso no tiene valor de archivo. Sin declarar, la "
+                      "fila estatica CUMPLE si el FS alcanza 1/0.65, NO "
+                      "CUMPLE si no alcanza ni 1/0.75 y sale INDICADOR «no "
+                      "decidida» entre los dos. Bajo sismo no hay eleccion: "
+                      "11.5.8 fija 0.9",
+        fuente="AASHTO LRFD 9a ed., 11.6.3.7 y C11.6.3.7, pag. impresa 11-25 "
+               "(PDF 1494; citas AASHTO_LRFD_9.11.6.3.7#PHI y "
+               "AASHTO_LRFD_9.C11.6.3.7#FS): las dos filas, no cual es la del "
+               "cabezal. Los numeros, en "
+               "constantes_normativas.PHI_ESTABILIDAD_GLOBAL_11_6_3_7",
+        reemplazado_por="La calidad de los parametros geotecnicos que el EMS "
+                        "del expediente declare para cada cruce",
+        resolucion=Libre(
+            que_lo_fija="el proyectista, con el geotecnista, por la calidad "
+                        "de los parametros y de la estratigrafia del EMS",
+            dominio="una de las dos filas de la ventana",
+        ),
+    ),
+
     # --- correcciones de T-7b (H7) --- El regimen del cabezal frente al
     # empuje: la HIPOTESIS de modelacion con que el ensamble calcula la
     # estabilidad externa, dicha como criterio y no escondida en un K_A.

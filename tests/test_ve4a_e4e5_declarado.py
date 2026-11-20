@@ -323,7 +323,6 @@ def test_el_criterio_de_la_fila_de_phi_es_A_de_expediente_y_sin_valor():
 # 5. DE PUNTA A PUNTA, POR LA PUERTA DE `--datos-externos`
 # ===========================================================================
 
-@pytest.mark.lento
 def test_A01_con_E4_E5_declaradas_las_lleva_al_informe_y_al_JSON(tmp_path):
     clave = servicio.CLAVE_ESTABILIDAD_GLOBAL_DECLARADA
     declarado = dict(TRAZA, entrada=dict(FS_AMBOS), salida=dict(FS_AMBOS))
@@ -342,3 +341,25 @@ def test_A01_con_E4_E5_declaradas_las_lleva_al_informe_y_al_JSON(tmp_path):
     assert "E4-LRFD.est.e" in est["verificaciones"]
     assert est["pendientes"] == []
     json.dumps(volcado)
+
+
+def test_la_memoria_del_punto_imprime_el_FS_declarado_con_su_documento(
+        tmp_path):
+    """
+    La memoria HTML del punto lleva las filas E4 y E5 con el paso entero, y
+    el FS sale rotulado como DECLARADO en su documento, nunca como un
+    calculo del programa. Con solo E4 declarada, E5 sigue «diferida».
+    """
+    from src.modulos import M11_reporte as M11
+    clave = servicio.CLAVE_ESTABILIDAD_GLOBAL_DECLARADA
+    declarado = dict(TRAZA, entrada={"E4": FS_AMBOS["E4"]},
+                     salida={"E4": FS_AMBOS["E4"]})
+    _, a01 = _correr_de_prueba(tmp_path, extra_a01={clave: declarado})
+    html = M11.memoria_de_punto(a01)
+    for pieza in ("E4 (LRFD), estabilidad global del muro",
+                  "E4 (ASD), estabilidad global del muro",
+                  TRAZA["documento"], "no lo calcula este programa",
+                  "E5, estabilidad del talud", "diferida al expediente"):
+        assert pieza in html, pieza
+    for e in a01.cabezal.estabilidad:
+        assert [p[0] for p in e.pendientes] == ["E5"]

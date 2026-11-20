@@ -175,6 +175,7 @@ from src.modulos.M9_cabezal import (CONDICIONES_DE_ESTABILIDAD,
                                     incorporar_dimensionado,
                                     incorporar_peralte,
                                     integrar_estabilidad,
+                                    validar_estabilidad_global_declarada,
                                     validar_suelo_fundacion)
 from src.modelos import (DatosDeExpediente, DerechoDeViaDelPunto,
                          EventoExtremoDelPunto, HidraulicaDelEventoExtremo,
@@ -766,6 +767,17 @@ DETALLE_FALTA_DESNIVEL_CANAL = M5.DETALLE_FALTA_DESNIVEL_CANAL
 # en el criterio. Lo valida `M9.validar_suelo_fundacion` al CARGAR.
 CLAVE_SUELO_FUNDACION = "suelo_fundacion"
 CLAVES_DE_CABEZAL += (CLAVE_SUELO_FUNDACION,)
+# --- VE-4a --- EL RESULTADO DECLARADO DE E4 Y E5 (estabilidad global del
+# muro y del talud), POR PUNTO Y POR CABEZAL, con la traza del documento del
+# EMS o del analisis externo (ficha T7B-07): el programa no lo calcula, lo
+# contrasta. Va con `suelo_fundacion`, FUERA de `CLAVES_EXTERNAS`: sin el,
+# E4 y E5 siguen diferidas y nada se detiene. Lo valida
+# `M9.validar_estabilidad_global_declarada` al CARGAR. Y es la unica clave
+# del cabezal que NO admite `globales`: un factor de seguridad es de la
+# seccion analizada de un cabezal concreto, no de todos los puntos.
+CLAVE_ESTABILIDAD_GLOBAL_DECLARADA = "estabilidad_global_declarada"
+CLAVES_DE_CABEZAL += (CLAVE_ESTABILIDAD_GLOBAL_DECLARADA,)
+CLAVES_SOLO_POR_PUNTO: Tuple[str, ...] = (CLAVE_ESTABILIDAD_GLOBAL_DECLARADA,)
 
 # La geometria del cabezal es del proyecto entero, no de un punto: Sec. 9 no
 # dimensiona un cabezal por punto y el criterio que la declara es uno solo.
@@ -780,8 +792,11 @@ NOTA_ESTABILIDAD_CABEZAL = (
     "'marco_estabilidad_cabezal' [A]; las verificaciones del otro informan. "
     "La excentricidad bajo sismo, que antes era la fila suelta E6, es la "
     "fila E2 del marco LRFD en condicion sismica. E4 y E5 -- estabilidad "
-    "global del muro y del talud -- NO se evaluan: quedan diferidas al "
-    "expediente con el estudio de suelos, y cada punto lo dice. Detras de "
+    "global del muro y del talud -- NO las calcula este programa: quedan "
+    "diferidas al expediente con el estudio de suelos, y cada punto lo dice, "
+    "salvo que el punto declare el factor de seguridad del analisis externo "
+    "(`estabilidad_global_declarada`, con su documento), que se contrasta "
+    "en los dos marcos (VE-4a). Detras de "
     "la estabilidad, y con la misma geometria, cada cabezal se ARMA (T-7c, "
     "M9.armar_elemento): la resistencia de la pantalla, de la zapata y de "
     "los aleros se verifica con AASHTO LRFD Seccion 5 y E.060 se calcula al "
@@ -883,6 +898,11 @@ def _dato_externo(clave: str, bruto: Any, origen: str) -> DatoDeclarado:
         return DatoDeclarado(nombre=clave,
                              valor=validar_suelo_fundacion(bruto),
                              origen=origen)
+    if clave == CLAVE_ESTABILIDAD_GLOBAL_DECLARADA:
+        # --- VE-4a --- el FS declarado de E4 y E5, validado en la puerta.
+        return DatoDeclarado(
+            nombre=clave, valor=validar_estabilidad_global_declarada(bruto),
+            origen=origen)
     if clave in CLAVES_TEXTO:
         if not isinstance(bruto, str) or not bruto.strip():
             raise DatoInvalidoError(
@@ -1434,6 +1454,13 @@ def cargar_datos_externos(ruta: Optional[Path],
             )
         for clave, bruto in (crudo.get("globales") or {}).items():
             _exige_clave(clave, f"globales de '{ruta.name}'")
+            if clave in CLAVES_SOLO_POR_PUNTO:
+                raise DatoInvalidoError(
+                    "datos_externos", valor=clave,
+                    motivo=f"'{clave}' va solo por punto, en 'puntos' de "
+                           f"'{ruta.name}': es el resultado del analisis de "
+                           "un cabezal concreto, no un dato de todos los "
+                           "puntos")
             globales[clave] = _dato_externo(clave, bruto,
                                             "datos externos (globales)")
         for id_punto, campos in (crudo.get("puntos") or {}).items():
@@ -1477,7 +1504,8 @@ def _exige_clave(clave: str, donde: str) -> None:
                    + ", ".join(CLAVES_EXTERNAS)
                    + "; y los ensayos de durabilidad, opcionales: "
                    + ", ".join(CLAVES_DE_DURABILIDAD)
-                   + "; y las dimensiones del cabezal, opcionales: "
+                   + "; y los datos del cabezal (dimensiones, suelo de "
+                     "fundacion y FS declarado de E4/E5), opcionales: "
                    + ", ".join(CLAVES_DE_CABEZAL),
         )
 
@@ -3076,13 +3104,17 @@ def _fase_9(informe: InformePunto,
     # E1 a E3 calladas: o estan evaluadas, o hay un bloqueo que lo dice.
     suelo = (None if externos is None else
              externos.valor(informe.punto.id, CLAVE_SUELO_FUNDACION))
+    # --- VE-4a --- el FS declarado de E4 y E5 del punto, si lo hay.
+    global_declarada = (None if externos is None else externos.valor(
+        informe.punto.id, CLAVE_ESTABILIDAD_GLOBAL_DECLARADA))
     entornos = _etapa(
         informe.bloqueos, FASE_CABEZAL,
         "datos de la estabilidad del cabezal (T-7b)",
         lambda: datos_del_cabezal_del_punto(
             punto=informe.punto_de_calculo, cabezal=informe.cabezal,
             geometria=informe.geometria, socavacion=informe.socavacion,
-            suelo_del_punto=suelo, resultado=informe.resultado))
+            suelo_del_punto=suelo, resultado=informe.resultado,
+            estabilidad_global=global_declarada))
     if entornos is None:
         return
     # --- VE-3.5 --- LA GEOMETRIA DE LA REGLA SE EVALUA PRIMERO, y lo que no
@@ -3112,7 +3144,8 @@ def _fase_9(informe: InformePunto,
             lambda: datos_del_cabezal_del_punto(
                 punto=informe.punto_de_calculo, cabezal=informe.cabezal,
                 geometria=informe.geometria, socavacion=informe.socavacion,
-                suelo_del_punto=suelo, resultado=informe.resultado))
+                suelo_del_punto=suelo, resultado=informe.resultado,
+            estabilidad_global=global_declarada))
         if entornos is None:
             informe.bloqueos.extend(del_dimensionado)
             return
@@ -3148,7 +3181,8 @@ def _fase_9(informe: InformePunto,
             lambda: datos_del_cabezal_del_punto(
                 punto=informe.punto_de_calculo, cabezal=informe.cabezal,
                 geometria=informe.geometria, socavacion=informe.socavacion,
-                suelo_del_punto=suelo, resultado=informe.resultado))
+                suelo_del_punto=suelo, resultado=informe.resultado,
+            estabilidad_global=global_declarada))
         if entornos is None:
             informe.bloqueos.extend(del_dimensionado + del_peralte)
             return
@@ -3184,7 +3218,8 @@ def _fase_9(informe: InformePunto,
             lambda: datos_del_cabezal_del_punto(
                 punto=informe.punto_de_calculo, cabezal=informe.cabezal,
                 geometria=informe.geometria, socavacion=informe.socavacion,
-                suelo_del_punto=suelo, resultado=informe.resultado))
+                suelo_del_punto=suelo, resultado=informe.resultado,
+            estabilidad_global=global_declarada))
         if entornos is None:
             informe.bloqueos.extend(del_dimensionado + del_peralte
                                     + del_pantalla)

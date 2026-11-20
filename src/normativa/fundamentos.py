@@ -3799,6 +3799,36 @@ GLOBAL_CABEZAL = _fundamento(
         "que lo soporta."),
 )
 
+# --- VE-4a --- E4 y E5 con el factor de seguridad DECLARADO del analisis
+# externo (ficha T7B-07). El `por_que` dice lo que la fuente exige y de donde
+# sale el numero; lo que el proyecto lee del comentario C11.6.3.7 (FS = 1/phi)
+# va en la `Interpretacion` de su cita y en la nota del paso, no aqui.
+GLOBAL_DECLARADA_CABEZAL = _fundamento(
+    id="F9.GLOBAL_DECLARADA",
+    fase=F9,
+    que_paso=("E4 y E5: el factor de seguridad de la estabilidad global del "
+              "muro y del talud, declarado del estudio de suelos, contra el "
+              "minimo de cada marco"),
+    por_que=(
+        "La fuente manda evaluar la estabilidad global del muro, del talud "
+        "que retiene y del terreno de fundacion con metodos de equilibrio "
+        "limite, y la norma de suelos le pone factores de seguridad minimos. "
+        "Ese analisis lo hace el estudio de suelos con la estratigrafia "
+        "completa y un programa de superficies de falla, y entrega un factor "
+        "de seguridad: este software no lo calcula, lo toma DECLARADO con su "
+        "documento y lo contrasta con el minimo de la norma de suelos y con "
+        "el inverso del factor de resistencia de la especificacion de "
+        "estados limite."),
+    verbo=Verbo.OBLIGA,
+    citas=("AASHTO_LRFD_9.11.6.3.7#GLOBAL", "E050.39.13.6", "E050.30.3",
+           "AASHTO_LRFD_9.11.6.3.7#PHI", "AASHTO_LRFD_9.C11.6.3.7#FS",
+           "AASHTO_LRFD_9.11.5.8#GLOBAL"),
+    que_pasa_si_no_se_hace=(
+        "Un cabezal estable por si mismo puede moverse entero con el talud "
+        "que lo soporta, y la memoria no diria con que factor de seguridad "
+        "se dio por estable."),
+)
+
 # --- VE-3.5 --- El dimensionamiento de la zapata por estabilidad. La fuente
 # EXIGE las tres verificaciones; COMO se llega a una geometria que las
 # cumple no lo dice, y eso -- crecer el talon en pasos hasta un tope -- es

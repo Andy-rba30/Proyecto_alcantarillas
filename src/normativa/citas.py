@@ -15364,4 +15364,119 @@ AASHTO_C11_6_5_3_AGUA_ABIERTO = _cita(
           "por eso el programa se detiene en este caso en vez de inventarla."),
 )
 
+# ===========================================================================
+# --- VE-4a --- E4 y E5 como RESULTADO DECLARADO del EMS (ficha T7B-07)
+# ===========================================================================
+# El programa no calcula la estabilidad global ni la del talud: contrasta el
+# FS que el analisis externo entrega. En el marco LRFD hacen falta tres
+# frases que el registro no tenia: el factor de resistencia de 11.6.3.7 (dos
+# filas, «should»), el puente del comentario entre ese factor y el FS que
+# produce un programa de taludes, y el 0.9 del evento extremo de 11.5.8
+# (que estaba solo en la nota de #EXTREMO). La sesion abrio las tres
+# paginas (1487, 1493 y 1494) por texto.
+FECHA_VE4A = "2026-11-20"
+POR_VE4A = "VE-4a · lectura directa de la pagina por la sesion"
+VE4A = (FECHA_VE4A, POR_VE4A)
+
+AASHTO_11_6_3_7_PHI = _cita(
+    id="AASHTO_LRFD_9.11.6.3.7#PHI",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="11.6.3.7",
+    titulo_numeral="Overall Stability",
+    pagina_impresa="11-25",
+    pagina_pdf=1494,
+    pagina_pdf_titulo=1493,
+    texto_literal=Verbatim(
+        texto=("The evaluation of overall stability of earth slopes with or "
+               "without a foundation unit should be investigated at the "
+               "Strength I Load Combination and an appropriate resistance "
+               "factor."),
+        pagina_pdf=1494),
+    caracter=Caracter.RECOMENDACION,
+    derivado_de="AASHTO_LRFD_9.11.6.3.7#GLOBAL",
+    sesion=VE4A,
+    nota=("Sigue: «The resistance factor, φ, should be taken as: Where the "
+          "geotechnical parameters and subsurface stratigraphy are well "
+          "defined ... 0.75; Where the geotechnical parameters and "
+          "subsurface stratigraphy are highly variable or based on limited "
+          "information ... 0.65» (la extraccion de texto pierde el simbolo "
+          "phi). Las dos filas viven en "
+          "`constantes_normativas.PHI_ESTABILIDAD_GLOBAL_11_6_3_7`; cual "
+          "aplica al cabezal es el criterio [A] 'fila_phi_estabilidad_"
+          "global'. CONTRASTE con el Manual de Puentes (2016), que traduce "
+          "una edicion anterior: su 2.4.5.3.1 (pag. impresa 142, PDF 143) "
+          "pide la estabilidad global con la combinacion de SERVICIO I y «un "
+          "factor de resistencia adecuado», sin cifra; la 9a edicion la "
+          "lleva a Resistencia I. El programa no calcula el FS y no elige "
+          "la combinacion: la declara el documento del analisis externo."),
+)
+
+AASHTO_C11_6_3_7_FS = _cita(
+    id="AASHTO_LRFD_9.C11.6.3.7#FS",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="C11.6.3.7",
+    titulo_numeral="Overall Stability",
+    pagina_impresa="11-25",
+    pagina_pdf=1494,
+    pagina_pdf_titulo=1493,
+    texto_literal=Verbatim(
+        texto=("Available slope stability programs produce a single factor of "
+               "safety, FS. The specified resistance factors are essentially "
+               "the inverse of the FS that should be targeted in the slope "
+               "stability program"),
+        pagina_pdf=1494),
+    caracter=Caracter.DEFINICION,
+    derivado_de="AASHTO_LRFD_9.11.6.3.7#PHI",
+    sesion=VE4A,
+    nota=("La frase sigue: «(i.e., φ = 0.75 approximately corresponds to FS "
+          "= 1.3, and φ = 0.65 approximately corresponds to FS = 1.5). These "
+          "resistance factors address the soil resistance.» Es el comentario "
+          "el que convierte el FS de un programa de taludes en el lenguaje "
+          "del marco LRFD."),
+    interpretacion=Interpretacion(
+        texto=("El proyecto contrasta el FS DECLARADO del analisis externo "
+               "con FS >= 1/phi exacto: 1/0.75 = 1.333 y 1/0.65 = 1.538 en la "
+               "condicion estatica, y 1/0.9 = 1.111 bajo sismo, extendiendo "
+               "al factor del evento extremo de 11.5.8 la misma lectura del "
+               "comentario. Usa el inverso exacto y no las cifras redondeadas "
+               "del comentario (1.3 y 1.5), que quedan por debajo."),
+        en_contra=("el comentario dice «approximately corresponds»: las "
+                   "cifras redondeadas 1.3 y 1.5 son las que la fuente "
+                   "escribe, y el inverso exacto es mas exigente que ellas",
+                   "la frase habla de los factores de 11.6.3.7 (Resistencia "
+                   "I); aplicarla al 0.9 de 11.5.8 es una extension del "
+                   "proyecto, que el comentario no hace",
+                   "el FS del programa de taludes se obtiene con las cargas "
+                   "que el analista elija; el programa no comprueba que sean "
+                   "las de la combinacion que la fuente pide"),
+        a_favor=("«essentially the inverse» es literal: 1/phi es la lectura "
+                 "directa de la frase, y el redondeo del parentesis se dice "
+                 "aproximado",
+                 "el inverso exacto queda del lado exigente frente a las dos "
+                 "cifras redondeadas",
+                 "11.5.8 es el factor de la MISMA verificacion (estabilidad "
+                 "global del muro) cuando entra el sismo")),
+)
+
+AASHTO_11_5_8_GLOBAL = _cita(
+    id="AASHTO_LRFD_9.11.5.8#GLOBAL",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="11.5.8",
+    titulo_numeral="Resistance Factors—Extreme Event Limit State",
+    pagina_impresa="11-18",
+    pagina_pdf=1487,
+    texto_literal=Verbatim(
+        texto=("For overall stability of the retaining wall when earthquake "
+               "loading is included, a resistance factor, φ, of 0.9 shall be "
+               "used."),
+        pagina_pdf=1487),
+    caracter=Caracter.EXIGENCIA,
+    derivado_de="AASHTO_LRFD_9.11.5.8#EXTREMO",
+    sesion=VE4A,
+    nota=("Vive en `constantes_normativas.PHI_EVENTO_EXTREMO_11_5_8` "
+          "('estabilidad_global'). Hasta VE-4a estaba transcrito solo en la "
+          "nota de la cita #EXTREMO; lo consume el contraste del FS sismico "
+          "declarado de E4 y E5 en el marco LRFD."),
+)
+
 CITAS: Dict[str, Cita] = {c.id: c for c in _TODAS}

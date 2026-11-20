@@ -5354,6 +5354,28 @@ PHI_EVENTO_EXTREMO_11_5_8 = {
 NUMERAL_PHI_EVENTO_EXTREMO = ("AASHTO LRFD 9a ed., 11.5.8, pag. impresa "
                               "11-18 (PDF 1487)")
 
+# --- VE-4a --- 11.6.3.7 «Overall Stability», pag. impresa 11-25 (PDF 1494):
+# la estabilidad global del muro y del talud «should be investigated at the
+# Strength I Load Combination and an appropriate resistance factor», y el
+# factor «should be taken as» 0.75 donde los parametros geotecnicos y la
+# estratigrafia estan bien definidos y 0.65 donde son muy variables o se
+# basan en informacion limitada (cita AASHTO_LRFD_9.11.6.3.7#PHI). Son las
+# dos filas de la fuente; CUAL aplica al cabezal la declara el criterio [A]
+# 'fila_phi_estabilidad_global', que no tiene valor de archivo. Bajo sismo
+# no hay eleccion: 0.9 de `PHI_EVENTO_EXTREMO_11_5_8`. El comentario
+# C11.6.3.7 dice que estos factores son «essentially the inverse of the FS
+# that should be targeted in the slope stability program»: es el puente
+# entre el FS que entrega el analisis externo y el marco LRFD (cita
+# AASHTO_LRFD_9.C11.6.3.7#FS, con la lectura del proyecto declarada).
+PHI_GLOBAL_PARAMETROS_DEFINIDOS = "parametros_bien_definidos"
+PHI_GLOBAL_PARAMETROS_VARIABLES = "parametros_variables_o_limitados"
+PHI_ESTABILIDAD_GLOBAL_11_6_3_7 = {
+    PHI_GLOBAL_PARAMETROS_DEFINIDOS: 0.75,
+    PHI_GLOBAL_PARAMETROS_VARIABLES: 0.65,
+}
+NUMERAL_PHI_ESTABILIDAD_GLOBAL = ("AASHTO LRFD 9a ed., 11.6.3.7 y C11.6.3.7, "
+                                  "pag. impresa 11-25 (PDF 1494)")
+
 # 11.6.3.3 «Eccentricity Limits» (pag. impresa 11-24, PDF 1493) y 10.6.3.3
 # (pags. 10-83 y 10-84, PDF 1372 y 1373): la resultante dentro de los dos
 # tercios centrales en suelo (e <= B/3) y de los nueve decimos en roca
