@@ -409,14 +409,16 @@ from src.modelos import (CriterioPendienteError, PisoDeCargaEntrada,
                      MetodoNoEvaluableError,
                      MOTIVO_METODO_NO_EVALUABLE, PerfilLamina, RegimenBarril,
                      RegimenEntrada,
-                     ResultadoHidraulico, SeccionCircular,
+                     ResaltoHidraulico, ResultadoHidraulico, SeccionCircular,
                      SeccionRectangular, SinTiranteNormal, TiranteCritico,
                      TiranteDeBorde, TipoDePerfil,
                      TipoDeVeredicto,
                      TiranteNormal, TransicionEntrada, Umbral, Veredicto,
                      eleccion, paso)
 from src.modulos.M2_material import CRITERIO_N_CELDAS_CAJON, numero_de_celdas
-from src.modulos.M3_hidraulica import (geometria, resolver_manning,
+from src.modulos.M3_hidraulica import (_MomentoDelBarril,
+                                       exigir_dominio_del_resalto, geometria,
+                                       resalto_hidraulico, resolver_manning,
                                        tirante_conjugado_barril)
 from src.tolerancias import (PASOS_PERFIL_LAMINA, TOL_ASINTOTA_PERFIL,
                              TOL_BRENT, TOL_UMBRAL_NORMATIVO)
@@ -2004,11 +2006,11 @@ def _regimen_y_salida(*, Q_celda: float, seccion: Seccion, TW: float,
 # de la escalera no imponga su resolucion al tirante de la entrada.
 #
 # LO QUE NO HACE, dicho para que no se lea de mas: no situa el resalto
-# hidraulico (HY-8 7.3 lo hace por momentum; aqui basta saber que la S1 no
-# llega a la cara de entrada), no calcula perfiles S2 desde la entrada (bajo
-# control de entrada el tramo supercritico se aproxima por el uniforme, como
-# desde EXT-3) y no fabrica dorados: sus dos casos patron son limites de la
-# propia formula (conflicto #7).
+# hidraulico (para el HW basta saber que la S1 no llega a la cara de
+# entrada; desde VE-5, item 17, lo situa aparte `situar_resalto`, por
+# momentum contra la S2 que baja desde la entrada, bajo control de ENTRADA)
+# y no fabrica dorados: sus dos casos patron son limites de la propia
+# formula (conflicto #7).
 
 def _fmt_m(valor: Optional[float]) -> str:
     """Un numero del perfil en el texto de una procedencia, a las cifras de la memoria."""
@@ -3622,43 +3624,248 @@ def hidraulica_a_presion(seccion: Seccion, Q: float, S: float, L: float,
         avisos=tuple(avisos))
 
 
+def _perfil_s2_desde_la_entrada(*, Q_celda: float, seccion: Seccion,
+                                S: float, L: float, n: float,
+                                critico: TiranteCritico, llenado_normal: float,
+                                rungs: int = PASOS_PERFIL_LAMINA
+                                ) -> Optional[Tuple[Tuple[float, float], ...]]:
+    """
+    --- VE-5 (item 17, ficha EA-02) --- La lamina SUPERCRITICA que baja
+    desde la entrada bajo control de entrada: arranca en el tirante critico
+    justo aguas abajo de la boca (HDS-5 num. 3.1.3, pag. impresa 3.2: «the
+    flow just downstream of the inlet is supercritical») y tiende hacia el
+    tirante donde la Ec. 3.7 da Sf = S, la curva S2 de la Section 3.5.1. Paso
+    directo con la MISMA ecuacion y la misma ley de friccion que
+    `perfil_lamina` (dE/dx = S - Sf), pero aguas ABAJO: dx = (E_abajo -
+    E_arriba) / (S - Sf_medio), con x medido desde la ENTRADA.
+
+    Devuelve las estaciones (x desde la entrada, y), en orden aguas abajo,
+    hasta x = L (la ultima estacion puede quedar antes de L cuando la
+    escalera alcanza la asintota: la lamina sigue en ese tirante); `None` si
+    no hay asintota bajo el critico (barril no pronunciado: no hay S2).
+    La asintota se busca entre el llenado del tirante normal de Manning
+    (`llenado_normal`, donde la Ec. 3.7 da Sf = 1.00051·S > S: ver
+    `_llenado_donde_Sf_iguala_S`) y el del critico.
+    """
+    llenado_c = critico.geometria.llenado
+    raiz = _llenado_donde_Sf_iguala_S(seccion, Q_celda, n, S, llenado_normal,
+                                      llenado_c)
+    if raiz is None:
+        return None
+    g0 = critico.geometria
+    E0, Sf0 = _energia_especifica(g0, Q_celda), _pendiente_friccion(g0, Q_celda, n)
+    x = 0.0
+    estaciones = [(x, g0.y)]
+    for k in range(1, rungs):           # la asintota se excluye
+        g1 = seccion.geometria_en(llenado_c + (raiz - llenado_c) * k / rungs)
+        E1 = _energia_especifica(g1, Q_celda)
+        Sf1 = _pendiente_friccion(g1, Q_celda, n)
+        denominador = S - (Sf0 + Sf1) / 2
+        if not abs(denominador) > TOL_ASINTOTA_PERFIL * S:
+            break                       # asintota alcanzada: plano desde aqui
+        dx = (E1 - E0) / denominador
+        if not x + dx < L:
+            # La entrada a la salida queda dentro del escalon: se interpola
+            # el tirante en x = L (la escalera es fina; lo que se busca es
+            # el momentum de la seccion, no una carga).
+            y_L = g0.y + (g1.y - g0.y) * (L - x) / dx
+            estaciones.append((L, y_L))
+            return tuple(estaciones)
+        x += dx
+        estaciones.append((x, g1.y))
+        E0, Sf0, g0 = E1, Sf1, g1
+    return tuple(estaciones)
+
+
+def _tirante_en(estaciones: Tuple[Tuple[float, float], ...], x: float) -> float:
+    """El tirante de una lamina tabulada en x (lineal; plano tras la ultima)."""
+    import numpy as np
+    xs = [e[0] for e in estaciones]
+    ys = [e[1] for e in estaciones]
+    return float(np.interp(x, xs, ys))
+
+
+def situar_resalto(*, Q_celda: float, seccion: Seccion, S: float, L: float,
+                   TW: float, n: float, critico: TiranteCritico,
+                   llenado_normal: float, perfil: PerfilLamina
+                   ) -> Tuple[Optional[ResaltoHidraulico], bool]:
+    """
+    --- VE-5 (lote m45, item 17; fichas EA-02 y VE3-08) --- Bajo control de
+    ENTRADA en pendiente pronunciada, SITUA el resalto hidraulico por
+    cantidad de movimiento (HEC-14 num. 6.2, Ec. 6.1, pag. impresa 6-3): es
+    la estacion en que el momentum de la lamina subcritica que sube desde el
+    receptor (la S1 de `perfil_lamina`, con su tramo lleno si lo hay, cuya
+    «profundidad» es entonces la carga piezometrica, Ec. 6.5) iguala al de
+    la supercritica que baja desde la entrada (`_perfil_s2_desde_la_entrada`).
+    Es el procedimiento que HY-8 aplica (ficha EA-02) con la ecuacion de la
+    fuente que el registro transcribe.
+
+    Devuelve (resalto, en_el_barril):
+      * la S1 alcanza la cara de entrada: (None, True). El resalto se ahoga
+        en la boca y todo el barril va subcritico (Section 3.5.1);
+      * la S1 tiene longitud cero (TW <= y_c) o el momentum del receptor en
+        la salida no alcanza al de la S2 que llega a ella: (None, False). El
+        resalto sale del conducto;
+      * si no: (ResaltoHidraulico con `x_desde_salida_m`, True).
+
+    El tirante supercritico se toma de la S2 con n_max, el mismo del perfil
+    (mas tirante supercritico, menor conjugado: el resalto entra antes, que
+    es el lado conservador de V1). El dominio de la Ec. 6.1 lo exige
+    `M3.exigir_dominio_del_resalto` (HEC-14 num. 6.3: pendiente < 10 %).
+    """
+    if perfil.alcanza_entrada:
+        return None, True
+    D = seccion.altura
+    s1 = list(perfil.estaciones)
+    if perfil.longitud_llena_m > 0:
+        h_salida = TW if TW > D else D
+        s1 = [(0.0, h_salida), (perfil.longitud_llena_m, D)] + s1
+    if len(s1) < 2:
+        return None, False              # S1 de longitud cero: TW <= y_c
+    exigir_dominio_del_resalto(S)
+    s2 = _perfil_s2_desde_la_entrada(Q_celda=Q_celda, seccion=seccion, S=S,
+                                     L=L, n=n, critico=critico,
+                                     llenado_normal=llenado_normal)
+    if s2 is None:
+        return None, False
+    momento = _MomentoDelBarril(Q_celda, seccion)
+
+    def F(x_salida: float, h: float) -> float:
+        return momento.tabulado(h) - momento.tabulado(
+            _tirante_en(s2, L - x_salida))
+
+    previo = None
+    for x_salida, h in s1:
+        f = F(x_salida, h)
+        if previo is None and not f >= 0:
+            return None, False          # el receptor no lo sostiene: sale
+        if not f >= 0:
+            x0, f0 = previo
+            x_j = x0 + (x_salida - x0) * f0 / (f0 - f)
+            break
+        previo = (x_salida, f)
+    else:
+        x_j = previo[0]
+    y1 = _tirante_en(s2, L - x_j)
+    return (resalto_hidraulico(Q=Q_celda, seccion=seccion, y1=y1,
+                               y_c=critico.y_c, S=S, x_desde_salida_m=x_j),
+            True)
+
+
+def _paso_resalto(*, resalto: ResaltoHidraulico, Q_celda: float, S: float,
+                  TW: float, y_c: float, y_n: float):
+    """
+    --- VE-5 (item 17) --- El paso 4.4b de la memoria: donde queda el
+    resalto bajo control de entrada y con que tirantes y velocidades (HEC-14
+    num. 6.2, Ec. 6.1; la Ec. 6.5 cuando la seccion 2 va llena).
+    """
+    return paso(
+        "F4.RESALTO",
+        codigo="4.4b",
+        que="Resalto hidraulico dentro del barril bajo control de entrada, "
+            "situado por cantidad de movimiento",
+        formula="Q^2/(g*A1) + A1*Y1 = Q^2/(g*A2) + A2*Y2 (Ec. 6.1), con y1 la "
+                "lamina S2 que baja desde y_c en la entrada y y2 la que sube "
+                "desde el receptor; Fr1 = V1/(g*y1)^0.5; V2 = Q_celda/A2"
+                + ("; la seccion 2 va LLENA y y2 es la carga piezometrica "
+                   "sobre la solera (Ec. 6.5)" if resalto.lleno else ""),
+        formula_cita_id="HEC14.6.2#MOMENTUM",
+        citas_textuales=("HEC14.6.2#MOMENTUM", "HEC14.6.2.2#FROUDE",
+                         "HEC14.6#V_TRAS_RESALTO", "HEC14.6.3#PENDIENTE",
+                         *(("HEC14.6.2.2#LLENO",) if resalto.lleno else ()),
+                         "HDS5_3ED.3.1.3#SUMERGENCIA"),
+        sustitucion=(
+            Magnitud("Q_celda", Q_celda, "m3/s",
+                     "caudal de UNA celda, el de los pasos 4.1 a 4.3",
+                     cifras=CIFRAS_MAGNITUD),
+            Magnitud("S", S, "m/m",
+                     "pendiente del barril, menor que el 10 % en que HEC-14 "
+                     "num. 6.3 deja analizar el resalto como en fondo "
+                     "horizontal", cifras=CIFRAS_FACTOR),
+            Magnitud("y_c", y_c, "m", "tirante critico del paso 4.2, donde "
+                     "arranca la S2 en la entrada", cifras=CIFRAS_MAGNITUD),
+            Magnitud("y_n", y_n, "m", "tirante normal del paso 4.1 (n_max), "
+                     "la asintota de la S2", cifras=CIFRAS_MAGNITUD),
+            Magnitud("TW", TW, "m", "tirante en el receptor, donde arranca la "
+                     "S1 en la salida", cifras=CIFRAS_MAGNITUD),
+            Magnitud("y1", resalto.y1_m, "m",
+                     "tirante de la S2 en el resalto (paso directo desde la "
+                     "entrada con la Ec. 3.7 y n_max)", cifras=CIFRAS_MAGNITUD),
+            Magnitud("V1", resalto.V1_m_s, "m/s", "Q_celda / A1",
+                     cifras=CIFRAS_MAGNITUD),
+            Magnitud("Fr1", resalto.Fr1, "",
+                     "V1 / (g*y1)^0.5, con el tirante maximo (HEC-14 pag. "
+                     "impresa 6-9)", cifras=CIFRAS_FACTOR),
+            Magnitud("y2", resalto.y2_m, "m",
+                     "conjugado de y1 por la Ec. 6.1: el tirante de la S1 en "
+                     "el resalto", cifras=CIFRAS_MAGNITUD)),
+        resultado=Magnitud(
+            "x_resalto", resalto.x_desde_salida_m, "m",
+            f"distancia del resalto a la salida; tras el resalto V2 = "
+            f"{resalto.V2_m_s:.3f} m/s (reduccion de "
+            f"{resalto.reduccion_de_velocidad:.0%})",
+            cifras=CIFRAS_MAGNITUD),
+        veredicto=Veredicto(
+            tipo=TipoDeVeredicto.SIN_VEREDICTO,
+            explicacion=("situa el resalto; V1 y V2 juzgan el tramo aguas "
+                         "abajo de el con el tirante maximo y la velocidad "
+                         "minima del perfil (paso 4.3d)")),
+        nota_del_proyecto=(
+            "HEC-14 da el resalto en canal de fondo horizontal; donde queda "
+            "dentro del barril lo decide el proyecto igualando el momentum de "
+            "las dos laminas estacion a estacion (el procedimiento de HY-8, "
+            "ficha EA-02). La S2 se integra con la misma ecuacion y la misma "
+            "ley de friccion que el perfil del paso 4.3c, y se interpola "
+            "linealmente entre estaciones."),
+    )
+
+
 def _receptor_en_el_barril(*, Q_celda: float, seccion: Seccion, TW: float,
+                           S: float, L: float, n: float,
                            critico: TiranteCritico,
                            normal: Union[TiranteNormal, SinTiranteNormal],
-                           control: ControlGobernante
-                           ) -> Tuple[Optional[float], bool, bool]:
+                           control: ControlGobernante, perfil: PerfilLamina
+                           ) -> Tuple[Optional[float], bool, bool,
+                                      Optional[ResaltoHidraulico]]:
     """
     --- VE-3.11 (H2) --- (y_conjugado, resalto_en_el_barril,
-    receptor_en_el_barril) bajo control de ENTRADA: si el TW del receptor
-    fija el tirante maximo DENTRO del barril.
+    receptor_en_el_barril, resalto) bajo control de ENTRADA: si el TW del
+    receptor fija el tirante maximo DENTRO del barril.
 
     HDS-5 num. 3.1.3, pag. impresa 3.2 (`HDS5_3ED.3.1.3#SUMERGENCIA`): bajo
     control de entrada la sumergencia de la salida «does not assure outlet
     control»; el tramo de aguas arriba es supercritico y «a hydraulic jump
-    forms in the culvert barrel». El resalto entra al barril cuando el TW
-    alcanza el CONJUGADO del tirante normal supercritico
-    (`M3.tirante_conjugado_barril`); con un TW menor el resalto sale y el
-    barril va a tirante normal. Con el barril SUBCRITICO bajo control de
-    entrada (y_n >= y_c) no hay resalto: el remanso M1 llega a la salida con
-    el tirante del TW en cuanto TW > y_n. En los dos casos el receptor fija
-    el tirante maximo del barril, y es lo que V1 necesita para no juzgar el
-    borde libre con el tirante normal donde la lamina esta al nivel del TW
-    (nota T-2 de la hoja de ruta: la lectura es una sola a lo largo del TW).
+    forms in the culvert barrel». Desde VE-5 (item 17, ficha EA-02) el
+    resalto se SITUA por cantidad de movimiento (`situar_resalto`, HEC-14
+    Ec. 6.1) entre la S1 que sube desde el receptor y la S2 que baja desde
+    la entrada; hasta VE-5 entraba al barril solo si el TW alcanzaba el
+    conjugado del tirante NORMAL, que es la cota de la S2 lejos de la boca,
+    y un TW entre el conjugado de la S2 real en la salida y el del normal
+    dejaba el resalto afuera estando dentro. `y_conjugado` sigue siendo el
+    conjugado del tirante normal (`M3.tirante_conjugado_barril`), para la
+    memoria. Con el barril SUBCRITICO bajo control de entrada (y_n >= y_c)
+    no hay resalto: el remanso M1 llega a la salida con el tirante del TW en
+    cuanto TW > y_n. En los dos casos el receptor fija el tirante maximo del
+    barril, y es lo que V1 y V2 necesitan para no juzgar con el tirante
+    normal donde la lamina esta al nivel del TW (nota T-2 de la hoja de
+    ruta: la lectura es una sola a lo largo del TW).
 
-    Bajo control de SALIDA, con barril horizontal o sin TW no aplica: V1 ya
-    lee el perfil de la lamina (`M5._regimen_de_v1_v2`).
+    Bajo control de SALIDA, con barril horizontal o sin TW no aplica: V1 y
+    V2 ya leen el perfil de la lamina (`M5._regimen_de_v1_v2`).
     """
     if (control is not ControlGobernante.ENTRADA
             or isinstance(normal, SinTiranteNormal) or TW is None):
-        return None, False, False
+        return None, False, False, None
     y_n = normal.geometria.y
     if y_n < critico.y_c - TOL_UMBRAL_NORMATIVO:
         y_conj = tirante_conjugado_barril(Q=Q_celda, seccion=seccion, y=y_n,
                                           y_c=critico.y_c)
-        resalto = (y_conj is not None
-                   and not TW < y_conj - TOL_UMBRAL_NORMATIVO)
-        return y_conj, resalto, resalto
-    return None, False, TW > y_n + TOL_UMBRAL_NORMATIVO
+        resalto, dentro = situar_resalto(
+            Q_celda=Q_celda, seccion=seccion, S=S, L=L, TW=TW, n=n,
+            critico=critico, llenado_normal=normal.geometria.llenado,
+            perfil=perfil)
+        return y_conj, dentro, dentro, resalto
+    return None, False, TW > y_n + TOL_UMBRAL_NORMATIVO, None
 
 
 def resolver_control(seccion: Seccion, Q: float, S: float, L: float, TW: float,
@@ -3754,9 +3961,10 @@ def resolver_control(seccion: Seccion, Q: float, S: float, L: float, TW: float,
                           else salida.HW)
 
     horizontal = isinstance(normal, SinTiranteNormal)
-    y_conjugado, resalto, receptor = _receptor_en_el_barril(
-        Q_celda=Q_celda, seccion=seccion, TW=TW, critico=critico,
-        normal=normal, control=control)
+    y_conjugado, resalto, receptor, situado = _receptor_en_el_barril(
+        Q_celda=Q_celda, seccion=seccion, TW=TW, S=S, L=L,
+        n=material.n_para_capacidad, critico=critico, normal=normal,
+        control=control, perfil=perfil)
     return ResultadoHidraulico(
         # Sin tirante normal (barril horizontal) los tres van en None: no
         # existen, y no se les pone un sustituto (T-2).
@@ -3817,11 +4025,15 @@ def resolver_control(seccion: Seccion, Q: float, S: float, L: float, TW: float,
         y_conjugado_m=y_conjugado,
         resalto_en_el_barril=resalto,
         receptor_en_el_barril=receptor,
+        resalto=situado,
         pasos=_pasos_hidraulicos(
             seccion=seccion, Q=Q, S=S, L=L, TW=TW, material=material, normal=normal,
             critico=critico, entrada=entrada, salida=salida, control=control,
             gobierna_salida=gobierna_salida, Q_celda=Q_celda, celdas=celdas,
-            regimen=regimen, perfil=perfil),
+            regimen=regimen, perfil=perfil)
+        + ((_paso_resalto(resalto=situado, Q_celda=Q_celda, S=S, TW=TW,
+                          y_c=critico.y_c, y_n=normal.geometria.y),)
+           if situado is not None else ()),
     )
 
 

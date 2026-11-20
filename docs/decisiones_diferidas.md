@@ -2587,6 +2587,13 @@ cada una lleva su argumento y su símbolo.
   para la sección circular y el marco (Chow o HY-8) con su cita, y una
   corrida de referencia que la valide.
 - **Dónde vive:** `src/modulos/M4_control.py::perfil_lamina`
+- **Cerrado (VE-5, lote m45, ítem 17):** `M4.situar_resalto` lo sitúa por momentum
+  (HEC-14 Ec. 6.1; Ec. 6.5 con la sección 2 llena) entre la S2 que baja desde y_c en la
+  entrada y la S1 que sube desde el receptor; viaja en `ResultadoHidraulico.resalto` y en
+  el paso 4.4b. Oráculo: ejemplos SI de HEC-14 Cap. 6 (`tests/test_ve5_m45_resalto.py`).
+  Dominio S < 10 % (núm. 6.3). E13: con TW = 0.70 m el resalto queda dentro.
+- **Sigue diferido:** la S2 no sustituye al uniforme en V3 ni en la Fase 6, y la longitud
+  del resalto (sólo gráfica) no se calcula.
 
 ## EA-03 · En la banda 0.75 ≤ HW/D < 1.2 la aproximación es el método y la comprobación manda sólo si pide más carga; el paso 4.3c puede decir NO CUMPLE sin rechazar el punto
 
@@ -8117,12 +8124,18 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   lo largo del TW (nota T-2). (H6) El titular de un «no factible» nombra V2, V2b o V10 cuando
   fallan en todo escalón evaluado. (H3 b) El delta de 7.A se rotula si V7 seguiría sin cumplir.
   Línea base §25: ningún diámetro, sección ni material (B-01 pasa a «NO FACTIBLE POR V2»).
+- **Cerrado (VE-5, lote m45, ítem 17):** V2 adopta la velocidad aguas abajo del resalto. Con
+  el resalto dentro del barril bajo control de entrada (o el barril subcrítico con el remanso
+  M1 en la salida) V2 juzga la velocidad MÍNIMA del perfil, Q_celda / A(y_max), por la misma
+  bifurcación que V1 (`M5._entrada_con_receptor`): el numeral pide «la velocidad mínima del
+  flujo dentro del conducto», y tras el resalto la lámina sube hasta el TW. El paso imprime
+  al lado la velocidad tras el resalto de HEC-14 (V2 = Q/A2, paso 3 de los ejemplos, cita
+  `HEC14.6#V_TRAS_RESALTO`), que no se compara. El resalto lo sitúa M4 (ficha EA-02).
 - **Abierto:** (H3 a) el delta con V4 gobernada por el resguardo sigue sin darse (regla de
-  T11-03: el HW depende de la longitud); si V2 adopta la velocidad aguas abajo del resalto; E06
+  T11-03: el HW depende de la longitud); E06
   (titular por V3), H7 (la progresión sigue tras una falla que sólo empeora) y H8 (cobertura G1
   fuera del bucle).
-- **Qué haría falta:** decidir si V2 adopta el régimen del resalto; iterar 7.A con el HW para
-  dar el delta de resguardo.
+- **Qué haría falta:** iterar 7.A con el HW para dar el delta de resguardo.
 - **Dónde vive:** `src/modulos/M5_verificaciones.py::v1_borde_libre`
 
 ## VE3-09 · El diámetro gobernado por el nivel del receptor se dice (decisión 8 del dueño, VE-3.13)

@@ -15827,4 +15827,116 @@ AASHTO_C11_6_5_3_NIVEL_MEDIO = _cita(
                  "pueda sostener que el relleno se vacia la declara")),
 )
 
+
+# ===========================================================================
+# --- VE-5 (lote m45, item 17; fichas EA-02 y VE3-08) --- HEC-14 Cap. 6, el
+# resalto hidraulico por cantidad de movimiento. Paginas leidas en la capa de
+# texto por la sesion (PDF 64-76 de hec14.pdf); los ejemplos resueltos de las
+# pags. impresas 6-6 y 6-11 son el oraculo de `M3.resalto_hidraulico`.
+# ===========================================================================
+FECHA_VE5_M45 = "2026-11-20"
+POR_VE5_M45 = "validacion/VE-5 m45 · lectura directa de la pagina por la sesion"
+VE5_M45 = (FECHA_VE5_M45, POR_VE5_M45)
+
+HEC14_6_2_MOMENTUM = _cita(
+    id="HEC14.6.2#MOMENTUM",
+    fuente_id="HEC14",
+    numeral="6.2",
+    titulo_numeral="6.2 HYDRAULIC JUMP IN HORIZONTAL CHANNELS",
+    pagina_impresa="6-3",
+    pagina_pdf=66,
+    texto_literal=Verbatim(
+        texto=("The general form of the momentum equation can be used for the "
+               "solution of the hydraulic jump sequent-depth relationship in "
+               "any shape of channel with a horizontal floor."),
+        pagina_pdf=66),
+    caracter=Caracter.DEFINICION,
+    sesion=VE5_M45,
+    nota=("Sigue la Ec. (6.1): «Defining a momentum quantity as, M = Q2/(gA) "
+          "+ AY and recognizing that momentum is conserved through a "
+          "hydraulic jump, the following can be written: Q2/(gA1) + A1Y1 = "
+          "Q2/(gA2) + A2Y2», con «Y1,Y2 = depth from water surface to "
+          "centroid of cross-section area». `M3._MomentoDelBarril` integra "
+          "A·Y sobre la propia seccion en vez de leer los K y C de Sylvester "
+          "de la Tabla 6.1."),
+)
+
+HEC14_6_2_2_LLENO = _cita(
+    id="HEC14.6.2.2#LLENO",
+    fuente_id="HEC14",
+    numeral="6.2.2",
+    titulo_numeral="6.2.2 Circular Channels",
+    pagina_impresa="6-8",
+    pagina_pdf=71,
+    texto_literal=Verbatim(
+        texto=("Circular channels are divided into two cases: where y2 is "
+               "greater than the diameter, D, and where y2 is less than D."),
+        pagina_pdf=71),
+    caracter=Caracter.DEFINICION,
+    sesion=VE5_M45,
+    nota=("La Ec. (6.5), «For y2 greater than or equal to D», resta "
+          "0.5 C2 D / (C1 y1): la seccion 2 va llena, con el centroide a D/2 "
+          "y y2 como carga piezometrica sobre la solera. `M3._MomentoDelBarril` "
+          "lo escribe para cualquier forma: por encima de la clave el primer "
+          "momento crece A_llena por metro de carga."),
+)
+
+HEC14_6_2_2_FROUDE = _cita(
+    id="HEC14.6.2.2#FROUDE",
+    fuente_id="HEC14",
+    numeral="6.2.2",
+    titulo_numeral="6.2.2 Circular Channels",
+    pagina_impresa="6-9",
+    pagina_pdf=72,
+    pagina_pdf_titulo=71,
+    texto_literal=Verbatim(
+        texto=("In Equations 6.4 and 6.5, Fr1 is computed using the maximum "
+               "depth in the channel."),
+        pagina_pdf=72),
+    caracter=Caracter.DEFINICION,
+    sesion=VE5_M45,
+    nota=("Es el Fr1 = V1 / (g y1)^0.5 que imprime el paso del resalto; la "
+          "alternativa que la misma pagina ofrece, el Froude con el tirante "
+          "hidraulico (Figura 6.7), no se usa."),
+)
+
+HEC14_6_V_TRAS_RESALTO = _cita(
+    id="HEC14.6#V_TRAS_RESALTO",
+    fuente_id="HEC14",
+    numeral="6.2.1",
+    titulo_numeral="6.2.1 Rectangular Channels",
+    pagina_impresa="6-6",
+    pagina_pdf=69,
+    pagina_pdf_titulo=67,
+    texto_literal=Verbatim(
+        texto="Step 3. Calculate the after jump velocity",
+        pagina_pdf=69),
+    caracter=Caracter.DEFINICION,
+    sesion=VE5_M45,
+    nota=("El ejemplo resuelto (SI) sigue: «V2 = Q/A2 = 11.33/ [2.134(2.011)] "
+          "= 2.64 m/s». El del circular (pag. impresa 6-11, PDF 74) hace lo "
+          "mismo con el area de y2/D = 0.78: «V2 = Q/A2 = 5.664/2.99 = 1.89 "
+          "m/s». Es la velocidad tras el resalto que imprime V2."),
+)
+
+HEC14_6_3_PENDIENTE = _cita(
+    id="HEC14.6.3#PENDIENTE",
+    fuente_id="HEC14",
+    numeral="6.3",
+    titulo_numeral="6.3 HYDRAULIC JUMP IN SLOPING CHANNELS",
+    pagina_impresa="6-13",
+    pagina_pdf=76,
+    texto_literal=Verbatim(
+        texto=("This volume may be neglected for slopes less than 10 percent "
+               "and the jump analyzed as a horizontal channel."),
+        pagina_pdf=76),
+    caracter=Caracter.PERMISO,
+    sesion=VE5_M45,
+    nota=("El volumen es el del agua dentro del resalto, cuyo peso entra a "
+          "la ecuacion de cantidad de movimiento en un canal inclinado. Es "
+          "el dominio de `M3.resalto_hidraulico` "
+          "(`HEC14_RESALTO_PENDIENTE_HORIZONTAL_MAX`); por encima, la fuente "
+          "remite a Bradley (1961) y a ensayos de modelo."),
+)
+
 CITAS: Dict[str, Cita] = {c.id: c for c in _TODAS}

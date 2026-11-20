@@ -362,6 +362,20 @@ def _regimen_de_v1_v2(codigo: str, resultado: ResultadoHidraulico,
         return REGIMEN_PERFIL
     return REGIMEN_UNIFORME
 
+
+def _entrada_con_receptor(regimen: str, resultado: ResultadoHidraulico) -> bool:
+    """
+    --- VE-3.11 (V1) y VE-5 (V2, item 17) --- True cuando el barril va
+    parcialmente lleno bajo control de ENTRADA y aun asi el receptor fija el
+    tirante dentro de el: el resalto queda dentro del conducto (M4 lo situa
+    por momentum, HEC-14 Ec. 6.1) o el barril va subcritico y el remanso M1
+    llega a la salida. Entonces V1 y V2 leen el perfil de la lamina --su
+    tirante maximo y su velocidad minima-- en vez del flujo uniforme, que
+    no describe el tramo aguas abajo del resalto.
+    """
+    return (regimen == REGIMEN_UNIFORME and resultado.receptor_en_el_barril
+            and resultado.perfil is not None)
+
 # Los TRES numerales de las verificaciones hidraulicas se escriben largos, y
 # por el mismo motivo: son lo UNICO que la memoria imprime de cada
 # verificacion (M11 los vuelca en la columna "numeral"), de modo que el
@@ -1010,12 +1024,10 @@ def v1_borde_libre(*, D: float, material: Material, punto: PuntoCritico,
     # «La lectura es una sola a lo largo del TW: no cambia al cruzar TW = D»).
     # Hasta VE-3.11 V1 tomaba aqui el tirante normal y el rechazo saltaba
     # recien en TW = D (E13 del revisor: Ø 0.90 con 0.80 m de agua en el
-    # barril). SOLO V1: V2 sigue con su regimen (`_regimen_de_v1_v2`), y si
-    # el resalto dentro del barril deberia cambiar tambien la velocidad que
-    # V2 juzga es otra pregunta, no tocada aqui.
-    entrada_con_receptor = (regimen == REGIMEN_UNIFORME
-                            and resultado.receptor_en_el_barril
-                            and resultado.perfil is not None)
+    # barril). Desde VE-5 (item 17, ficha VE3-08) V2 lee la misma
+    # bifurcacion (`_entrada_con_receptor`): la velocidad que juzga es la
+    # minima del tramo que el receptor fija.
+    entrada_con_receptor = _entrada_con_receptor(regimen, resultado)
     if entrada_con_receptor:
         regimen = REGIMEN_PERFIL
     lleno = regimen == REGIMEN_LLENO
@@ -1370,6 +1382,19 @@ def v2_velocidad_minima(*, resultado: ResultadoHidraulico) -> Verificacion:
         `_regimen_de_v1_v2`).
     """
     regimen = _regimen_de_v1_v2("V2", resultado, None)
+    # --- VE-5 (item 17, fichas VE3-08 y EA-02) --- EL RESALTO DENTRO DEL
+    # BARRIL BAJO CONTROL DE ENTRADA. El numeral pide verificar «la velocidad
+    # minima del flujo dentro del conducto», y aguas abajo de un resalto esa
+    # velocidad no es la supercritica del uniforme: tras el resalto la
+    # lamina sube hasta el nivel del receptor (HEC-14 num. 6.2; HDS-5 num.
+    # 3.1.3) y la velocidad minima es Q_celda / A(y_max) del perfil, menor
+    # aun que la velocidad tras el resalto de HEC-14 (V2 = Q / A2, pag.
+    # impresa 6-6), que el paso imprime al lado. Hasta VE-5 V2 juzgaba aqui
+    # la velocidad uniforme supercritica de un tramo que va lento.
+    entrada_con_receptor = _entrada_con_receptor(regimen, resultado)
+    if entrada_con_receptor:
+        regimen = REGIMEN_PERFIL
+    resalto = resultado.resalto if entrada_con_receptor else None
     lleno = regimen == REGIMEN_LLENO
     if lleno:
         if resultado.V_llena_m_s is None:
@@ -1391,7 +1416,19 @@ def v2_velocidad_minima(*, resultado: ResultadoHidraulico) -> Verificacion:
         procedencia_V = (
             "M4 (paso 4.3c/4.3d): Q_celda / A(y_max), la velocidad MINIMA del "
             "perfil de la lamina de agua, con n_max. "
-            + ("El barril es HORIZONTAL (S = 0): no hay velocidad uniforme, "
+            + (("Bajo control de ENTRADA el receptor fija el tirante del "
+                "barril: "
+                + ("el resalto se forma DENTRO del conducto (M4, paso 4.4b, "
+                   "situado por cantidad de movimiento, HEC-14 Ec. 6.1) y "
+                   "aguas abajo de el la lamina sube hasta el nivel del TW"
+                   if resultado.resalto_en_el_barril else
+                   "el barril va subcritico y el remanso M1 llega a la "
+                   "salida")
+                + "; la velocidad uniforme supercritica de M3 no describe "
+                "ese tramo, y el piso de autolimpieza se juzga donde la "
+                "velocidad es menor")
+               if entrada_con_receptor else
+               "El barril es HORIZONTAL (S = 0): no hay velocidad uniforme, "
                "y el piso de autolimpieza se juzga donde la velocidad es "
                "menor" if resultado.sin_tirante_normal else
                "El barril va parcialmente "
@@ -1430,10 +1467,23 @@ def v2_velocidad_minima(*, resultado: ResultadoHidraulico) -> Verificacion:
             # LAS DOS MITADES DEL PARRAFO, y en este orden: primero la que
             # obliga a verificar, despues la que recomienda el valor. Leida
             # sola, la segunda hace parecer opcional lo que el Manual manda.
-            citas_textuales=("MC_HHD.4.1.1.3.6#VMIN_INICIO",),
+            citas_textuales=("MC_HHD.4.1.1.3.6#VMIN_INICIO",
+                             *(("HEC14.6#V_TRAS_RESALTO",)
+                               if resalto is not None else ())),
             sustitucion=(
                 Magnitud(simbolo_V, V, "m/s", procedencia_V,
-                         cifras=CIFRAS_MAGNITUD),),
+                         cifras=CIFRAS_MAGNITUD),
+                *((Magnitud("V_tras_resalto", resalto.V2_m_s, "m/s",
+                            f"Q_celda / A2, la velocidad inmediatamente "
+                            f"tras el resalto (HEC-14, paso 3 de los "
+                            f"ejemplos resueltos), con y2 = "
+                            f"{resalto.y2_m:.3f} m a "
+                            f"{resalto.x_desde_salida_m:.2f} m de la salida "
+                            "(M4, paso 4.4b). No es la que se compara: "
+                            "aguas abajo la lamina sigue subiendo hasta el "
+                            "TW y la velocidad baja a V_min",
+                            cifras=CIFRAS_MAGNITUD),)
+                  if resalto is not None else ())),
             resultado=Magnitud(simbolo_V, V,
                                "m/s", "la misma velocidad, contrastada contra "
                                "el piso", cifras=CIFRAS_MAGNITUD),
