@@ -5630,6 +5630,21 @@ BANDAS_ESVIAJE_CABEZAL_CAJON_A1: "dict[str, Tuple[Tuple[float, float], ...]]" = 
     "cajon_concreto_chaflan_esviaje_15": ((15.0, 15.0),),
     "cajon_concreto_bisel_45_esviaje_10_45": ((10.0, 45.0),),
 }
+# --- dictamen Fable (2026-11-20) --- EL BORDE DE LA FILA DE LA CARTA 11
+# EMPAREJA EL KE de la Tabla C.2 («Headwall parallel to embankment (no
+# wingwalls)»). Es LECTURA DE LOS ROTULOS, no una frase literal de la fuente:
+# la Tabla A.1 separa «3/4" chamfers» de «45° bevels», y la C.2 da 0.2 solo a
+# «Rounded on 3 edges ... or beveled edges on 3 sides» y 0.5 a «Square-edged
+# on 3 edges». El chaflan de 3/4" no es un borde redondeado ni biselado en
+# esos terminos: solo la escuadra. El bisel de 45°: la de bordes biselados y
+# tambien la escuadra, que es la conservadora (mas perdida).
+KE_C2_POR_FILA_CARTA_11: "dict[str, frozenset]" = {
+    "cajon_concreto_chaflan_esviaje_45": frozenset({"cajon_sin_aletas_escuadra_3"}),
+    "cajon_concreto_chaflan_esviaje_30": frozenset({"cajon_sin_aletas_escuadra_3"}),
+    "cajon_concreto_chaflan_esviaje_15": frozenset({"cajon_sin_aletas_escuadra_3"}),
+    "cajon_concreto_bisel_45_esviaje_10_45": frozenset(
+        {"cajon_sin_aletas_redondeado_3", "cajon_sin_aletas_escuadra_3"}),
+}
 
 
 # ===========================================================================

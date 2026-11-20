@@ -228,3 +228,41 @@ def test_el_factor_de_la_cara_del_muro():
     assert M9.factor_cara_del_muro(nor) == 1
     assert M9.factor_cara_del_muro(par) == pytest.approx(
         1 / math.cos(math.radians(30.0)), rel=REL)
+
+
+# ===========================================================================
+# Dictamen Fable (2026-11-20), cambio 2 A: el borde de la Carta 11 empareja
+# el ke de la Tabla C.2
+# ===========================================================================
+
+@pytest.mark.parametrize("fila_a1, ke, vale", [
+    # «3/4" chamfers»: borde en escuadra, ke 0.5; el 0.2 es de bordes
+    # redondeados o biselados en 3 lados y NO le corresponde
+    ("cajon_concreto_chaflan_esviaje_30", "cajon_sin_aletas_escuadra_3", True),
+    ("cajon_concreto_chaflan_esviaje_30", "cajon_sin_aletas_redondeado_3",
+     False),
+    # «45° bevels»: el 0.2 de «beveled edges on 3 sides», y la escuadra
+    # (0.5), conservadora
+    ("cajon_concreto_bisel_45_esviaje_10_45", "cajon_sin_aletas_redondeado_3",
+     True),
+    ("cajon_concreto_bisel_45_esviaje_10_45", "cajon_sin_aletas_escuadra_3",
+     True),
+])
+def test_el_borde_de_la_carta_11_empareja_el_ke(fila_a1, ke, vale):
+    # el rotulo de la C.2 que da 0.2 nombra el bisel; el de la A.1, el borde
+    tc2 = tablas.TABLAS["HDS5_3ED.TC2"]
+    redondeado = next(f for f in tc2.filas
+                      if f.id == "HDS5_3ED.TC2#cajon_sin_aletas_redondeado_3")
+    assert "beveled edges on 3 sides" in redondeado.etiqueta_literal
+    assert "chamfer" in _fila_ta1(
+        "cajon_concreto_chaflan_esviaje_30").etiqueta_literal
+    assert "bevels" in _fila_ta1(
+        "cajon_concreto_bisel_45_esviaje_10_45").etiqueta_literal
+    with declarados({"embocadura_cajon": fila_a1, "ke_entrada_cajon": ke}):
+        e = M9.embocadura_del_punto(esviaje_grados=30.0, familia=Familia.C)
+        if vale:
+            assert M9.verificar_coherencia_embocadura_cajon(e)
+        else:
+            with pytest.raises(DatoInvalidoError) as exc:
+                M9.verificar_coherencia_embocadura_cajon(e)
+            assert "cajon_sin_aletas_escuadra_3" in str(exc.value)

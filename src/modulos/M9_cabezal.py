@@ -4029,6 +4029,7 @@ def condicion_normativa_cabezal() -> Tuple[str, ...]:
 from src.constantes_normativas import (BANDAS_ALETAS_CAJON_A1,  # noqa: E402
                                        BANDAS_ALETAS_CAJON_C2,
                                        BANDAS_ESVIAJE_CABEZAL_CAJON_A1,
+                                       KE_C2_POR_FILA_CARTA_11,
                                        CAJON_A1_SIN_ALETAS,
                                        CAJON_C2_SIN_ALETAS,
                                        NUMERAL_ZAPATA_CONCRETO_SIMPLE)
@@ -4340,7 +4341,14 @@ def filas_hds5_del_cajon(embocadura: EmbocaduraDelPunto
         a1 = frozenset(k for k, bandas in
                        BANDAS_ESVIAJE_CABEZAL_CAJON_A1.items()
                        if any(_en_banda(theta, b) for b in bandas))
-        return a1, CAJON_C2_SIN_ALETAS
+        # --- dictamen Fable (2026-11-20) --- el ke se empareja con el
+        # BORDE de la fila declarada (`KE_C2_POR_FILA_CARTA_11`, lectura de
+        # los rotulos): el chaflan, solo la escuadra; el bisel, la de bordes
+        # biselados y la escuadra.
+        declarada = ca.valor_si_declarado(CRITERIO_EMBOCADURA_CAJON)
+        c2 = (KE_C2_POR_FILA_CARTA_11[declarada] if declarada in a1
+              else CAJON_C2_SIN_ALETAS)
+        return a1, c2
     if embocadura.angulo_aletas is None:
         return CAJON_A1_SIN_ALETAS, CAJON_C2_SIN_ALETAS
     angulo = embocadura.angulo_aletas
