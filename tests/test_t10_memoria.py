@@ -701,7 +701,13 @@ def test_h1_cada_combinacion_lleva_su_excentricidad_en_su_columna(expediente):
 def test_h1_el_bloque_del_proyecto_se_censa_por_clave(expediente):
     informe, js, _cli, html = expediente
     i = html.index(f'id="{M11.ANCLA_CABEZAL_PROYECTO}"')
-    filas = _filas(html[i:html.index("<h2", i)])
+    # Hasta el siguiente <h2> o, desde VE-5 met, hasta la Fase 11 del
+    # proyecto, que va detras dentro de la misma seccion y tiene sus propias
+    # filas por punto (el cuadro de compatibilidad).
+    fin = html.index("<h2", i)
+    if f'id="{M11.ANCLA_METRADOS_PROYECTO}"' in html[i:fin]:
+        fin = html.index(f'id="{M11.ANCLA_METRADOS_PROYECTO}"', i)
+    filas = _filas(html[i:fin])
     por_clave = {f[0]: f for f in filas if f}
     cab = js["cabezal"]
     for x in cab["por_punto"]:

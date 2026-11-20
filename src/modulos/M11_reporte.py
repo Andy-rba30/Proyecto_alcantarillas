@@ -2858,7 +2858,9 @@ def _bloques_fases_finales(informe: Any) -> str:
             + bloque_pasos(traza_espaciamiento(informe),
                            TITULO_TRAZA_ESPACIAMIENTO))
 
-    # --- VE-5 met --- Fase 11, entregable 8: el metrado del punto.
+    # --- VE-5 met --- Fase 11: la fila del punto en el cuadro de
+    # compatibilidad (entregable 9) y su metrado (entregable 8).
+    partes.append(_bloque_compatibilidad_punto(informe))
     partes.append(_bloque_metrado(informe))
     return "".join(partes)
 
@@ -2884,16 +2886,45 @@ def traza_metrado(informe: Any) -> Tuple[Any, ...]:
 
 
 def _tabla_renglones(renglones: Sequence[Any]) -> str:
+    """
+    Los renglones del metrado del punto, con su desglose (las partes que
+    `M12_metrados` multiplica o suma, con su cantidad) debajo de la
+    descripcion: el JSON lo lleva y la memoria lo imprime igual.
+    """
     filas = [_fila(["<th>Partida</th>", "<th>Descripcion</th>",
                     "<th>Elemento</th>", "<th>Und.</th>",
                     "<th>Cantidad</th>"])]
     for r in renglones:
         partida = (_esc(r.partida) if r.partida
                    else f"{_etiqueta_html(r.etiqueta_partida)} especial")
-        filas.append(_fila([_td(partida), _td(_esc(r.descripcion)),
+        desglose = "".join(f"<br><small>{_esc(parte)}: {_num(c)}</small>"
+                           for parte, c in r.desglose)
+        filas.append(_fila([_td(partida), _td(_esc(r.descripcion) + desglose),
                             _td(_esc(r.elemento)), _td(_esc(r.unidad)),
                             _td(_num(r.cantidad, FMT_2), "num")]))
     return '<table class="compacta">' + "".join(filas) + "</table>"
+
+
+def _bloque_compatibilidad_punto(informe: Any) -> str:
+    """
+    La fila del punto en el cuadro de compatibilidad rasante-alcantarilla
+    (Fase 11, entregable 9): la seccion que se juzga y el estado. Los numeros
+    estan en el cuadro del proyecto (`bloque_metrados_proyecto`), y se
+    repiten aqui sin calcular nada. Vacio si el punto no tiene fila.
+    """
+    f = getattr(informe, "compatibilidad_rasante", None)
+    if f is None:
+        return ""
+    estado = _esc(f.estado)
+    if f.delta_rasante_m is not None:
+        estado += f" {_num(f.delta_rasante_m, FMT_2)} m"
+    if f.provisional:
+        estado += " (provisional)"
+    return ("<h4>Fase 11 &mdash; Compatibilidad rasante-alcantarilla "
+            "(entregable 9)</h4>"
+            f"<p>Seccion: {_esc(f.seccion) or VACIO}. Rasante actual "
+            f"{_cota(f.cota_rasante_actual)} msnm; rasante minima de 7.A "
+            f"{_cota(f.cota_rasante_min)} msnm. Estado: {estado}.</p>")
 
 
 def _bloque_metrado(informe: Any) -> str:
@@ -4769,6 +4800,7 @@ def pasos_impresos(informe: Any) -> Tuple[Any, ...]:
         if estructural is not None:
             vistos.extend(estructural.pasos)
         vistos.extend(traza_espaciamiento(punto))
+        vistos.extend(traza_metrado(punto))               # --- VE-5 met ---
     for recubrimiento in informe.cabezal.recubrimientos:     # --- T-10 ---
         if getattr(recubrimiento, "paso", None) is not None:
             vistos.append(recubrimiento.paso)
