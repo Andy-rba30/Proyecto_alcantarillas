@@ -100,6 +100,7 @@ import math
 from typing import Optional, Sequence, Tuple
 
 from src import criterios_adoptados as ca
+from src import datos_sitio as ds
 from src.constantes_normativas import (CUNETA_STRICKLER_T32,
                                        CUNETA_T32_ROTULO, CUNETA_T33_ROTULO,
                                        CUNETA_T33_MUY_CORTA_DURACION,
@@ -112,7 +113,8 @@ from src.constantes_normativas import (CUNETA_STRICKLER_T32,
 # --- VE-5 (catlic, T9-01) --- el minimo de la seccion trapezoidal (Tabla Nº 34).
 from src.constantes_normativas import (CUNETA_DIMENSIONES_MINIMAS_T34,
                                        CUNETA_FILA_TRAPEZOIDAL_T34,
-                                       CUNETA_FONDO_MIN_TRAPEZOIDAL_T34)
+                                       CUNETA_FONDO_MIN_TRAPEZOIDAL_T34,
+                                       CUNETA_PRECIPITACION_MIN_FILA_T34)
 from src.dominios import METROS_POR_KM
 from src.modelos import (CAPACIDAD_CUNETA_LLENA, CAPACIDAD_VELOCIDAD_LIMITE,
                          CIFRAS_FACTOR, CIFRAS_FINA, CIFRAS_MAGNITUD,
@@ -324,6 +326,100 @@ def _exigir_minimo_trapezoidal(d: float, a: float, b: float,
                        f"{minimo:g} m (nota «*»: fondo minimo 0.30)")
 
 
+# --- VE-7 lote B, B11 (ficha VE5-CAT-02) --- la region pluvial del corredor.
+DATO_PRECIPITACION_ANUAL = "precipitacion_anual_corredor_mm"
+# La fila que 'seccion_cuneta' supone para la triangular mientras el dato no
+# se declare: la region muy lluviosa que el proyecto adopta por el FEN (la
+# misma de 'long_max_cuneta').
+FILA_SUPUESTA_TRIANGULAR_T34 = "muy_lluviosa_1600_3000"
+
+
+def fila_de_la_tabla_34(P_anual_mm: float) -> str:
+    """
+    --- VE-7 lote B, B11 --- La fila de la Tabla Nº 34 (num. 4.1.2.1 c), pag.
+    impresa 178) de la region pluvial con precipitacion anual `P_anual_mm`:
+    la del mayor limite inferior que P alcanza
+    (`CUNETA_PRECIPITACION_MIN_FILA_T34`). La fuente deja fuera exactamente
+    3000 mm/año («<3000» y «>3000»): cae en la fila trapezoidal, la mas
+    exigente (lado seguro).
+    """
+    fila = CUNETA_PRECIPITACION_MIN_FILA_T34[0][0]
+    for clave, minimo in CUNETA_PRECIPITACION_MIN_FILA_T34:
+        if P_anual_mm >= minimo:
+            fila = clave
+    return fila
+
+
+def _contrastar_con_la_tabla_34(d: float, a: float, b: float,
+                                id_punto: Optional[str]
+                                ) -> Tuple[str, Optional[float], str]:
+    """
+    --- VE-7 lote B, B11 (VE5-CAT-02; decision del consultor Fable, triaje
+    VE-7, 2026-11-20) --- La seccion declarada contra SU fila de la Tabla Nº
+    34. Devuelve (fila, P o None, aviso o "").
+
+    Con [S] 'precipitacion_anual_corredor_mm' declarado, la fila sale de la
+    precipitacion (`fila_de_la_tabla_34`) y la tabla EXIGE sus minimos («las
+    dimensiones mínimas serán»): en la fila de mas de 3000 mm/año la seccion
+    es TRAPEZOIDAL (una triangular es `DatoInvalidoError`) con 0.30 de
+    profundidad, 1.20 de ancho y 0.30 de fondo; en las demas, la profundidad
+    y el ancho de la fila. Sin el dato, lo de siempre y un aviso de que la
+    fila no se verifico: la trapezoidal contra la fila de mas de 3000, y la
+    triangular contra la ventana del criterio, que es la de la fila que
+    supone (`FILA_SUPUESTA_TRIANGULAR_T34`; con fondo, la puerta baja el
+    piso a 0.30, `criterios_adoptados._PISO_CONDICIONADO`).
+    """
+    P = ds.valor_si_declarado(DATO_PRECIPITACION_ANUAL)
+    if P is None:
+        fila = (CUNETA_FILA_TRAPEZOIDAL_T34 if b > 0
+                else FILA_SUPUESTA_TRIANGULAR_T34)
+        aviso = (f"fila de la Tabla Nº 34 no verificada: falta el dato de "
+                 f"sitio '{DATO_PRECIPITACION_ANUAL}' [S] (estudio "
+                 f"hidrologico); la seccion declarada supone la fila "
+                 f"«{_rotulo_t34(fila)}», cuyo minimo exige la ventana del "
+                 "criterio y no esta verificado contra la region pluvial")
+        if b > 0:
+            _exigir_minimo_trapezoidal(d, a, b, id_punto)
+        return fila, None, aviso
+    else:
+        fila = fila_de_la_tabla_34(P)
+        aviso = ""
+        if fila == CUNETA_FILA_TRAPEZOIDAL_T34 and not b > 0:
+            raise DatoInvalidoError(
+                f"{CRITERIO_SECCION_CUNETA}.ancho_fondo_m", valor=b,
+                id_punto=id_punto,
+                motivo=f"con {P:g} mm/año ('{DATO_PRECIPITACION_ANUAL}') la "
+                       f"fila de la Tabla Nº 34 es «{_rotulo_t34(fila)}», "
+                       "cuyo minimo es la seccion TRAPEZOIDAL (nota «*»: "
+                       f"fondo minimo {CUNETA_FONDO_MIN_TRAPEZOIDAL_T34:g}); "
+                       "la cuneta declarada es triangular (ancho_fondo_m = 0)")
+    if b > 0:
+        _exigir_minimo_trapezoidal(d, a, b, id_punto)
+    if fila != CUNETA_FILA_TRAPEZOIDAL_T34:
+        d_min, a_min = CUNETA_DIMENSIONES_MINIMAS_T34[fila]
+        for campo, valor, minimo in (("profundidad_m", d, d_min),
+                                     ("ancho_m", a, a_min)):
+            if not valor >= minimo - TOL_UMBRAL_NORMATIVO:
+                raise DatoInvalidoError(
+                    f"{CRITERIO_SECCION_CUNETA}.{campo}", valor=valor,
+                    id_punto=id_punto,
+                    motivo=f"la fila «{_rotulo_t34(fila)}» de la Tabla Nº 34 "
+                           f"exige {campo} >= {minimo:g} m"
+                           + (f" (precipitacion de {P:g} mm/año)"
+                              if P is not None else
+                              " (la que la seccion supone; sin el dato "
+                              f"'{DATO_PRECIPITACION_ANUAL}')"))
+    return fila, P, aviso
+
+
+def _rotulo_t34(fila: str) -> str:
+    """El rotulo literal de la fila de la Tabla Nº 34, leido del registro."""
+    from src.normativa import registro as _registro    # perezoso: ciclo
+    tabla = _registro.construir().tabla("MC_HHD.T34")
+    return next(f.etiqueta_literal for f in tabla.filas
+                if tabla.clave_corta(f) == fila)
+
+
 def _seccion_declarada(id_punto: Optional[str]) -> dict:
     seccion = ca.valor(CRITERIO_SECCION_CUNETA)
     if not isinstance(seccion, dict):
@@ -498,8 +594,9 @@ def capacidad_cuneta(*, S_cuneta: float,
     Z2 = float(seccion["talud_exterior_HV"])
     borde = float(seccion["borde_libre_m"])
     b = _fondo_declarado(seccion, id_punto)
-    if b > 0:
-        _exigir_minimo_trapezoidal(d, a, b, id_punto)
+    # --- VE-7 lote B, B11 --- la fila de la Tabla Nº 34 que rige.
+    fila_t34, P_anual, aviso_t34 = _contrastar_con_la_tabla_34(d, a, b,
+                                                               id_punto)
     # El ancho se mide del borde de la rasante a la vertical del vertice
     # (Figura Nº 27); con fondo, a la vertical del pie del talud exterior: el
     # talud interior cubre a − b. Lectura del proyecto (VE-5, T9-01), la
@@ -536,6 +633,8 @@ def capacidad_cuneta(*, S_cuneta: float,
         avisos.append(pendiente)
     if aviso_talud:
         avisos.append(aviso_talud)
+    if aviso_t34:
+        avisos.append(aviso_t34)
     notas = [
         (f"Talud interior Z1 = a / d = {a:g} / {d:g} = {Z1:.3f} (Figura Nº 27: "
          "el ancho se mide del borde de la rasante a la vertical del vertice)."
@@ -547,6 +646,11 @@ def capacidad_cuneta(*, S_cuneta: float,
          "ancho se mide del borde de la rasante a la vertical del pie del "
          "talud exterior (con ella la fila da Z1 = 3, como la triangular de "
          "1600 a <3000 mm/año); la fuente no dibuja la seccion trapezoidal."),
+        (f"Tabla Nº 34: fila «{_rotulo_t34(fila_t34)}» con la precipitacion "
+         f"anual de {P_anual:g} mm/año del dato de sitio "
+         f"'{DATO_PRECIPITACION_ANUAL}' [S]; la seccion cumple su minimo."
+         if P_anual is not None else aviso_t34[0].upper() + aviso_t34[1:]
+         + "."),
         "A, P y Rh salen de la geometria declarada; las ecuaciones (4.1), "
         "(4.3), (4.4) y (4.6) del ejemplo del Manual no se usan porque no "
         "reproducen la seccion que nombran.",

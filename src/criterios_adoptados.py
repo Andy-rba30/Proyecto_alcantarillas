@@ -88,6 +88,8 @@ from src.constantes_normativas import (  # --- VE-5 met ---
     SOBREANCHO_MAX_ENCOFRADO_EG2013_M)
 from src.constantes_normativas import K_CD_DESBORDE_SI  # --- VE-5 fixve4 ---
 from src.constantes_normativas import CUANTIA_MIN_MURO_E060_14_3_1  # VE-6
+from src.constantes_normativas import (CUNETA_DIMENSIONES_MINIMAS_T34,  # VE-7 B11
+                                       CUNETA_FILA_TRAPEZOIDAL_T34)
 from src.dominios import MILIMETROS_POR_METRO
 from src.normativa import esquema as _esquema
 from src.normativa import registro as _registro_normativo
@@ -4512,6 +4514,11 @@ CRITERIOS: Dict[str, Criterio] = {
         #   borde_libre_m       0.0 = la «cuneta llena» del num. 4.1.2.1 a); el
         #                       techo de 0.10 m es adopcion del proyecto (la
         #                       fuente no da borde libre para cunetas).
+        # VE-7 lote B, B11 (ficha VE5-CAT-02): con fondo (la trapezoidal de
+        # la fila de mas de 3000 mm/año) el piso de la profundidad BAJA a
+        # 0.30, su minimo (`_PISO_CONDICIONADO`); la triangular sigue en
+        # 0.40. La fila que rige la contrasta M10 con la precipitacion del
+        # corredor declarada (`M10._contrastar_con_la_tabla_34`).
         sensibilidad={"profundidad_m": (0.40, 0.60),     # m
                       "ancho_m": (1.20, 2.40),           # m
                       "talud_exterior_HV": (0.10, 2.0),  # H:V
@@ -13713,6 +13720,33 @@ def _verificar_sensibilidad(clave: str, c: Criterio) -> None:
         )
 
 
+# --- VE-7 lote B, B11 (ficha VE5-CAT-02; decision del consultor Fable,
+# triaje VE-7, 2026-11-20) --- El PISO de un campo de la ventana que baja
+# cuando otro campo del mismo valor lo dice: {clave: {campo: (campo que lo
+# condiciona, piso)}}. Hoy uno: la profundidad de 'seccion_cuneta' baja a
+# 0.30 con fondo, el minimo de la trapezoidal de la fila de mas de 3000
+# mm/año de la Tabla Nº 34 (nota «*»). Las esquinas de la ventana siguen
+# siendo valores validos: el piso propio del campo no cambia.
+_PISO_CONDICIONADO = {
+    "seccion_cuneta": {
+        "profundidad_m": ("ancho_fondo_m", CUNETA_DIMENSIONES_MINIMAS_T34[
+            CUNETA_FILA_TRAPEZOIDAL_T34][0]),
+    },
+}
+
+
+def _piso_condicionado(clave: str, campo: str, valor: dict,
+                       minimo: float) -> float:
+    """El piso del campo con `_PISO_CONDICIONADO`: el alternativo si el
+    campo que lo condiciona es un real positivo, el de la ventana si no."""
+    regla = _PISO_CONDICIONADO.get(clave, {}).get(campo)
+    if regla is None:
+        return minimo
+    condicion, piso = regla
+    x = valor.get(condicion)
+    return piso if _es_real(x) and x > 0 else minimo
+
+
 def _verificar_dict(clave: str, c: Criterio) -> None:
     """
     La ventana ESTRUCTURADA {campo: (min, max)} de un criterio de valor dict
@@ -13760,6 +13794,7 @@ def _verificar_dict(clave: str, c: Criterio) -> None:
     for campo, rango in s.items():
         x = c.valor[campo]
         minimo, maximo = rango
+        minimo = _piso_condicionado(clave, campo, c.valor, minimo)
         if not _es_real(x):
             raise ValueError(
                 f"'{clave}' declara {campo!r} = {x!r}, que no es un numero, "

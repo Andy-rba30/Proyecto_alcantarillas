@@ -170,6 +170,10 @@ class DatoSitio:
     opciones: tuple = ()                       # el conjunto cerrado de una categoria
     positivo: bool = False                     # la magnitud tiene que ser > 0
     no_negativo: bool = False                  # la magnitud tiene que ser >= 0
+    # --- VE-7 lote B, B11 --- valor=None NO bloquea: el consumidor lo lee
+    # con `valor_si_declarado` y, sin el, avisa de lo que no pudo verificar.
+    # No entra en `datos_sin_valor()` (no detiene el calculo).
+    opcional: bool = False
 
     # `forma`, `opciones`, `positivo` y `no_negativo` son la ESTRUCTURA y el
     # signo del valor, no su dominio de proyecto: que un PGA sea un real
@@ -966,6 +970,53 @@ DATOS_SITIO: Dict[str, DatoSitio] = {
         ),
     ),
 
+    # --- VE-7 lote B, B11 (ficha VE5-CAT-02; decision del consultor Fable,
+    # triaje VE-7, 2026-11-20) --- LA REGION PLUVIAL DEL CORREDOR, que la
+    # Tabla Nº 34 usa para fijar la seccion minima de la cuneta. Es un hecho
+    # del sitio (cambia al mover la obra, no al cambiar de proyectista) que
+    # entrega el estudio hidrologico, y OPCIONAL: sin el, la Fase 10 sigue
+    # con la fila que 'seccion_cuneta' supone y avisa de que no la verifico.
+    "precipitacion_anual_corredor_mm": DatoSitio(
+        valor=None,
+        concepto="Precipitacion anual del corredor, en mm/año, con la que se "
+                 "lee la region pluvial de la Tabla Nº 34 (seca, lluviosa, "
+                 "muy lluviosa de 1600 a 3000 o mas de 3000 mm/año) y con "
+                 "ella la seccion minima de la cuneta",
+        procedimiento="Precipitacion total anual del corredor del estudio "
+                      "hidrologico (serie de las estaciones de la zona, con "
+                      "el regimen que el proyecto adopte para la cuneta: el "
+                      "del año del fenomeno El Niño si asi lo fija, como "
+                      "hace 'long_max_cuneta')",
+        fuente="Manual de Hidrologia, Hidraulica y Drenaje (MTC), num. "
+               "4.1.2.1 c), Tabla Nº 34, pag. impresa 178 (PDF 181), cita "
+               "MC_HHD.4.1.2.1c#T34: las cuatro filas por region pluvial en "
+               "mm/año",
+        trazabilidad=(
+            "SIN LECTURA EN EL REPOSITORIO: el expediente no trae el estudio "
+            "hidrologico que la daria. Se declara por sesion (sitio.json) con "
+            "la estacion, el periodo de la serie y si es el año FEN o el "
+            "promedio"),
+        ambito=AMBITO_CORREDOR,
+        verificacion_pendiente=(
+            "Declarar la precipitacion anual del estudio hidrologico; sin "
+            "ella la Fase 10 avisa «fila no verificada»"),
+        # nivel: lo consume `M10.capacidad_cuneta`, de la Fase 10, que corre a
+        #        perfil. Es OPCIONAL y sin valor de archivo: ninguna corrida
+        #        lo invoca hasta que se declara (censo de
+        #        tests/test_ext10_multiobra.py, DATOS_OPCIONALES_SIN_VALOR).
+        nivel=NIVEL_PERFIL,
+        forma=FORMA_FLOAT,
+        positivo=True,
+        opcional=True,
+        resolucion=DeEnsayo(
+            ensayo="precipitacion anual del corredor del estudio "
+                   "hidrologico",
+            trazabilidad_exigida="la estacion o estaciones, el periodo de la "
+                                 "serie y si es la del año FEN o la "
+                                 "promedio",
+        ),
+    ),
+
     "existe_informacion_secundaria_tramo": DatoSitio(
         valor=None,
         concepto="Si existe informacion secundaria (estudios geotecnicos "
@@ -1218,6 +1269,24 @@ def valor(clave: str) -> Any:
     return dato_.valor
 
 
+def valor_si_declarado(clave: str) -> Any:
+    """
+    --- VE-7 lote B, B11 --- El valor de un [S] OPCIONAL si esta declarado
+    (por sesion o en el archivo), registrando el uso; None si no, SIN
+    registrarlo --- como `criterios_adoptados.valor_si_declarado` ---: un
+    opcional vacio no se uso. Solo para los `opcional=True`: un [S]
+    obligatorio se lee con `valor`, que detiene si falta.
+    """
+    dato_ = dato(clave)
+    if not dato_.opcional:
+        raise ValueError(
+            f"'{clave}' no es un dato de sitio opcional: se lee con "
+            "`valor`, que detiene el calculo si falta")
+    if clave not in _OVERRIDES and dato_.valor is None:
+        return None
+    return valor(clave)
+
+
 def dato(clave: str) -> DatoSitio:
     """El registro completo, sin registrar uso ni exigir valor."""
     if clave not in DATOS_SITIO:
@@ -1254,7 +1323,8 @@ def datos_sin_valor() -> List[str]:
     obra rellena deja de bloquear en esa corrida, y `ContextoCorrida` lo
     fotografia al salir para que el JSON no lo lea del estado vivo.
     """
-    return sorted(k for k in DATOS_SITIO if dato_efectivo(k).valor is None)
+    return sorted(k for k in DATOS_SITIO if dato_efectivo(k).valor is None
+                  and not DATOS_SITIO[k].opcional)
 
 
 def datos_con_verificacion_pendiente() -> List[str]:

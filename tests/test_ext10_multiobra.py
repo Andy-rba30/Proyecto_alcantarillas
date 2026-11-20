@@ -90,6 +90,13 @@ DATOS_SIN_CONSUMIDOR_Y_SIN_MEDIDA = ("ZONA_SISMICA_LA_UNION", "Z_E030",
                                      "corredor_del_proyecto", "carriles_por_sentido",
                                      "clase_de_via", "existe_informacion_secundaria_tramo")
 
+# --- VE-7 lote B, B11 --- Los [S] OPCIONALES sin valor de archivo: su
+# consumidor los lee con `ds.valor_si_declarado`, que no registra el uso
+# mientras sigan vacios, de modo que ninguna corrida los invoca hasta que
+# una sesion los declara. Su `nivel` es el de su consumidor (M10, perfil),
+# argumentado junto al campo.
+DATOS_OPCIONALES_SIN_VALOR = ("precipitacion_anual_corredor_mm",)
+
 FECHA = "2026-09-21"
 TRAZ_A = "lectura del mapa A3 sobre la coordenada X de la obra A"
 TRAZ_B = "lectura del mapa A3 sobre la coordenada Y de la obra B"
@@ -215,7 +222,8 @@ def test_a_el_nivel_se_mide_en_las_dos_direcciones():
     # marcado PERFIL -> la corrida de perfil TIENE que invocarlo, salvo lo que
     # ninguna corrida puede invocar (sin consumidor: nivel argumentado).
     for clave, dato in ds.DATOS_SITIO.items():
-        if dato.nivel == NIVEL_PERFIL and clave not in DATOS_SIN_CONSUMIDOR_Y_SIN_MEDIDA:
+        if dato.nivel == NIVEL_PERFIL and clave not in (
+                DATOS_SIN_CONSUMIDOR_Y_SIN_MEDIDA + DATOS_OPCIONALES_SIN_VALOR):
             assert clave in usados_perfil, f"{clave} dice perfil y perfil no lo invoca"
     # marcado EXPEDIENTE -> la corrida de perfil NO puede invocarlo.
     for clave in usados_perfil:

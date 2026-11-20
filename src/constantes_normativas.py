@@ -5496,6 +5496,20 @@ CUNETA_DIMENSIONES_MINIMAS_T34 = {
 # escribe la unidad; la tabla entera esta en metros (encabezados «(M)»).
 CUNETA_FILA_TRAPEZOIDAL_T34 = "muy_lluviosa_mas_de_3000"
 CUNETA_FONDO_MIN_TRAPEZOIDAL_T34 = 0.30                       # m
+# --- VE-7 lote B, B11 (ficha VE5-CAT-02) --- las REGIONES PLUVIALES de las
+# cuatro filas, como las escriben sus rotulos (pag. impresa 178, PDF 181):
+# «Seca (<400 mm/año)», «Lluviosa (De 400 a <1600 mm/año)», «Muy lluviosa
+# (De 1600 a <3000 mm/año)» y «Muy lluviosa (>3000 mm/año)». Limite inferior
+# de cada fila, en mm/año, en el orden de la tabla; la fila es la del mayor
+# limite que la precipitacion alcanza. La fuente deja fuera EXACTAMENTE 3000
+# («<3000» y «>3000»): el consumidor lo lleva a la fila trapezoidal, la mas
+# exigente (lado seguro; `M10.fila_de_la_tabla_34`).
+CUNETA_PRECIPITACION_MIN_FILA_T34 = (
+    ("seca", 0.0),
+    ("lluviosa", 400.0),
+    ("muy_lluviosa_1600_3000", 1600.0),
+    ("muy_lluviosa_mas_de_3000", 3000.0),
+)                                                             # mm/año
 
 # --- num. 4.1.2 c), pag. impresa 172, PDF 175 ------------------------------
 # «La pendiente longitudinal (i) debe estar comprendida entre la condición de

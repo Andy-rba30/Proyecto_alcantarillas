@@ -379,6 +379,7 @@ lectura (`CLAUDE.md`, «Taxonomía de etiquetas»).
 | `existe_informacion_secundaria_tramo` | EMS | Si hay estudios geotécnicos previos en el tramo (Manual de Suelos, num. 4.2) |
 | `region_natural` | Ubicación de gabinete (VE-5) | Costa, sierra, selva alta o selva baja; en selva alta el catálogo del TMC arranca en Ф 48" (Manual de Hidrología, num. 4.1.1.3.7 a), recomendación) |
 | `zona_sismica_aashto` | Lectura de mapa (S_1) y clase de sitio (AASHTO 3.10.4.2 y 3.10.6) | Zona sísmica de AASHTO (1 a 4) por S_D1, Tabla 3.10.6-1; no es la de E.030. Sin leer: la Fase 0-bis no supone zona 1 ni 2 |
+| `precipitacion_anual_corredor_mm` | Estudio hidrológico (VE-7, ficha VE7B-07) | **Opcional, sin valor de archivo.** Precipitación anual del corredor, mm/año: elige la fila de la Tabla Nº 34 (seca, lluviosa, muy lluviosa de 1600 a <3000, o más de 3000 —trapezoidal—) contra la que la Fase 10 contrasta `seccion_cuneta`. Sin declarar, la cuneta se contrasta con la fila que la sección supone y la Fase 10 avisa «fila no verificada» |
 
 ### 4.2 Pendientes de ensayo — en `src/criterios_adoptados.py`, con `trazabilidad`
 

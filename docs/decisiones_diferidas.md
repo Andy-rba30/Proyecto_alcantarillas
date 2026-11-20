@@ -8627,8 +8627,8 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   longitudes del despiece (504.03) y ninguna fuente del repositorio da una fracción de
   anclajes y empalmes; la Tabla 503-07 da clases, no usos, y heredar la del cabezal fijaría
   sin diseño si la losa es simple o reforzada.
-- **Abierto:** el relleno para estructuras (502.A) y la cama no se metran; el acero del marco
-  (`armado_seccion_marco`); el emboquillado sin geometría; la zanja de varios tubos y el
+- **Abierto:** el relleno para estructuras (502.A), la cama y el emboquillado no se metran, y desde
+  VE-7 lo dicen como bloqueos «no medido» (ficha VE7B-08); el acero del marco (ficha VE7B-12); la zanja de varios tubos y el
   enrocado de varios barriles, no evaluables. La hoja de ruta (Fase 11, ítem 8) cita una
   «Sección 500» que no existe y omite 501, 511 y la falta de partida del enrocado.
 - **Qué haría falta:** para el acero, que el programa calcule ganchos, desarrollo y empalmes
@@ -8860,9 +8860,9 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   `seccion_cuneta` antes de VE-5 tiene que añadirlo; (3) la región pluvial sigue sin ser
   dato: la ventana de profundidad empieza en 0.40 (fila de 1600 a < 3000), de modo que la
   trapezoidal mínima exacta (0.30 de profundidad) no se puede declarar y una más honda sí.
-- **Qué haría falta:** la región pluvial del corredor en año FEN como dato (el estudio
-  hidrológico), para elegir la fila de la Tabla Nº 34 que rige en vez de deducirla de la
-  forma declarada; la sección rectangular sigue sin implementarse.
+- **Cerrado en VE-7 (lote B, B11; ficha VE7B-07):** la región pluvial es el [S] opcional
+  `precipitacion_anual_corredor_mm`; declarado, la fila de la Tabla Nº 34 sale de él.
+- **Qué haría falta:** la sección rectangular sigue sin implementarse.
 - **Dónde vive:** `src/modulos/M10_espaciamiento.py::geometria_cuneta`
 
 ## VE5-CAT-03 · Fase 0-bis: la licuefacción como resultado declarado del EMS, con bloqueo de expediente donde AASHTO 10.5.4.2 la exige
@@ -9293,3 +9293,44 @@ cambios están aplicados en estas fichas.
   entran en C; tampoco se aplica el incremento por periodo de retorno de las superficies viales.
 - **Qué haría falta:** registrar la cita; la decisión sobre (2).
 - **Dónde vive:** `src/modulos/MH_hidrologia.py::coeficiente_ponderado`
+
+## VE7B-07 · La región pluvial de la Tabla Nº 34 como [S] opcional (cierre de VE5-CAT-02)
+
+- **Cerrado (VE-7 lote B, B11):** `precipitacion_anual_corredor_mm` es un [S] de corredor OPCIONAL
+  (estudio hidrológico, sin valor; `DatoSitio.opcional`, fuera de `datos_sin_valor()`, leído con
+  `ds.valor_si_declarado`). Declarado, `M10.capacidad_cuneta` toma SU fila
+  (`fila_de_la_tabla_34`, límites [N] `CUNETA_PRECIPITACION_MIN_FILA_T34` de los rótulos) y exige
+  sus mínimos (`_contrastar_con_la_tabla_34`): con > 3000 mm/año la triangular es
+  `DatoInvalidoError` y la trapezoidal pide 0.30 × 1.20 con fondo 0.30; con 500 mm/año, 0.30 ×
+  0.75. Sin declarar: aviso «fila de la Tabla Nº 34 no verificada» y lo de siempre. Con fondo,
+  el piso de `profundidad_m` baja a 0.30 en la puerta (`criterios_adoptados._PISO_CONDICIONADO`);
+  la triangular sigue en 0.40 y las esquinas de la ventana siguen siendo válidas.
+- **Decisión del consultor Fable (triaje VE-7, 2026-11-20):** [S] opcional, contraste contra su
+  fila y aviso sin él.
+- **Abierto:** (1) **Pendiente de revisión Fable:** la fuente deja fuera exactamente 3000 mm/año
+  («<3000» y «>3000»); se lleva a la fila trapezoidal, la más exigente (lado seguro). (2) Con la
+  precipitación de una fila seca o lluviosa, una triangular más chica que 0.40 × 1.20 sólo entra
+  pisando la ventana del criterio (la puerta no ve el [S]). (3) Una trapezoidal con menos de 3000
+  mm/año se contrasta con los mínimos de su fila y con el fondo de la nota «*». (4) El editor de la
+  pestaña 2 valida cada campo con la ventana propia (0.40): la trapezoidal de 0.30 entra por el
+  literal y por la CLI.
+- **Qué haría falta:** una ventana del criterio que dependa de un [S] declarado por sesión.
+- **Dónde vive:** `src/modulos/M10_espaciamiento.py::fila_de_la_tabla_34`
+
+## VE7B-08 · Lo que la Fase 11 no metra sale como renglón «no medido» (VE5-MET-01)
+
+- **Cerrado (VE-7 lote B, B7):** el relleno para estructuras (502.A), la cama de apoyo y el
+  revestimiento de la entrada (emboquillado, sólo si el punto tiene protección de entrada) salen,
+  en cada punto metrado, como `Bloqueo` de `servicio.FASE_METRADOS` con la etapa
+  «metrado de …: no medido» (`M12.etapa_no_medido`), `MetodoNoEvaluableError` con
+  `MOTIVO_METODO_NO_EVALUABLE_METRADO`, el motivo («no medido: …») y lo que haría falta para medirlo
+  (`M12.RENGLONES_NO_MEDIDOS`). Es la regla de `modelos.MetradoDelPunto` («un renglón que no se pudo
+  medir … es un `Bloqueo`»): el cuadro ya no los omite en silencio y los demás rubros siguen.
+  `servicio._fase_11_metrados` suma el bucle (cambio mínimo en `servicio.py`).
+- **Decisión del consultor Fable (triaje VE-7, 2026-11-20):** renglón explícito «no medido» con
+  motivo en la fase de los metrados.
+- **Abierto:** a expediente el punto con cabezal ya no queda sin bloqueos de la Fase 11 mientras
+  estas tres partes no se metren: es lo que la decisión pide decir. Su medición sigue sin hacerse.
+- **Qué haría falta:** la sección del relleno y de la cama de los planos; la geometría del
+  zampeado y del dentellón de la entrada (ficha T8-03).
+- **Dónde vive:** `src/modulos/M12_metrados.py::renglon_no_medido`

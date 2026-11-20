@@ -385,7 +385,10 @@ def test_la_capacidad_de_la_cuneta_llena_es_la_de_la_aritmetica(seccion):
     assert c.Q_admisible_m3s == pytest.approx(c.Q_llena_m3s, rel=REL_FORMULA)
     # REESCRITO (H5): antes `avisos == ()`. Z1 = 2.5 cae entre 1:2 y 1:3 de
     # la Tabla 304.12, y desde las correcciones eso se avisa; es el unico.
-    assert len(c.avisos) == 1 and "talud interior" in c.avisos[0]
+    # VE-7 lote B, B11: y el de la fila de la Tabla Nº 34 sin verificar
+    # (sin 'precipitacion_anual_corredor_mm').
+    assert len(c.avisos) == 2 and "talud interior" in c.avisos[0]
+    assert "no verificada" in c.avisos[1]
 
 
 def test_en_tierra_gobierna_la_velocidad_limite_y_se_avisa(seccion):
