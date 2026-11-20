@@ -23,5 +23,9 @@
    "cloruros": false
   }
  },
- "homogeneidad_serie_fen": "serie_completa"
+ "homogeneidad_serie_fen": "serie_completa",
+ "Mw_licuefaccion": 8.0,
+ "incremento_acero_por_despiece": 0.1,
+ "clase_concreto_losa_entrega": "E",
+ "espesor_pared_cajon": 0.3
 }

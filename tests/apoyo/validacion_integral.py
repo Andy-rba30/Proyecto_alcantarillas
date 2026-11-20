@@ -1244,6 +1244,11 @@ def lista_exacta(por_defecto: Any,
 # test exige que la §7 del contrato las nombre-- en vez de callarlas: la
 # lista exacta es la medida, y lo que la medida no alcanza se dice.
 CONDICIONALES_NO_MEDIDAS: Dict[str, str] = {
+    # --- VE-5 (m45, fichas EXT-2-01 y T3-05) ---
+    "arrastre_de_solidos": (
+        "solo con un marco de mas de una celda (`n_celdas_cajon` > 1): sin el "
+        "dato V6 no acepta la multicelda; el juego no tiene marcos "
+        "multicelda"),
     "homogeneidad_serie_fen": (
         "solo con el caudal CALCULADO (celda `Q_m3s` vacia y `--cuencas` / "
         "`--estacion`): la mide la variante `caudal_calculado_sin_fen`"),

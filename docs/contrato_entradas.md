@@ -355,6 +355,9 @@ ciclópeo. **Ninguna entrada nueva es obligatoria**: el armado corre con las mis
 | Clase de exposición para el control de fisuración (AASHTO 5.6.7) | criterio `clase_exposicion_fisuracion_cabezal` [A], **sin valor de archivo**: `clase_1` (γe 1.00) o `clase_2` (γe 0.75) | **Propietario** | **No se rellena.** La fila A6 se evalúa igual: la barra propuesta respeta la Clase 1 (la menos exigente) y A6 imprime los dos espaciamientos máximos y sale INDICADOR «no decidida» cuando el propuesto solo cumple la Clase 1 (ficha T7C-06) |
 | Concreto ciclópeo del cabezal de gravedad: f'c de la matriz y fracción de piedra | criterio `concreto_ciclopeo_cabezal` [A]: 14 MPa y 30 % | **Proyectista** | Rigen los dos límites de la Clase G del EG-2013 |
 | Cómo se vacía el arranque del cuerpo ciclópeo sobre su zapata | criterio `junta_arranque_cabezal_ciclopeo` [A]: `junta_de_construccion` (archivo) o `vaciado_monolitico` | **Proyectista** · especificación de obra | Rige la junta de construcción: la fila C2 decide siempre (E.060 22.4.7) |
+| Lo que agregan al peso de las barras del cabezal los anclajes, ganchos y empalmes del despiece (fracción) | criterio `incremento_acero_por_despiece` [A], **sin valor de archivo** (VE-5 met; dictamen Fable de VE-7: lo declara quien tiene el despiece) | **Proyectista** · despiece de los planos (EG-2013 504.10) | **No se rellena.** El metrado del acero de los cabezales (partida 504.A, Fase 11) se detiene («criterio pendiente») en cada punto |
+| Clase de concreto de la losa de entrega (zampeado) y su dentellón, Tabla 503-07 del EG-2013 | criterio `clase_concreto_losa_entrega` [A], **sin valor de archivo**, ventana C a G (VE-5 met; dictamen Fable de VE-7) | **Proyectista** · especificación del zampeado | **No se rellena.** El metrado de la losa de entrega (partida 503.A, Fase 11) se detiene («criterio pendiente») en cada punto |
+| Canto del pórtico del marco de concreto (Familia C): uno solo para losas, paredes y tabiques | criterio `espesor_pared_cajon` [A]: 0.20 m de archivo | **Proyectista** | Rige 0.20 m. Si con él el pórtico no cumple (A1 a A6), la etapa del pórtico se detiene con `DatoInvalidoError` que **nombra** el menor canto de la grilla que lo cierra («declarar `espesor_pared_cajon` = X m y repetir»), sin adoptarlo, porque el canto mueve la clave, V4, V7 y G1 (VE-7, ficha VE7B-11); el acero del pórtico tampoco se metra. Es un criterio que se declara: el juego de prueba de T-11 declara el 0.30 m que la app pide para C-01 |
 
 Desde el cierre de T-7c el armado imprime además tres filas que dependen de estas
 entradas: **A6** (fisuración), **A7** (el f'c frente al mínimo por durabilidad, solo con
@@ -530,7 +533,11 @@ tabla: detienen sólo en una rama que ninguna de las dos bases recorre.
 | `distancia_borde_calzada_al_trasdos_m` | entrada del proyecto ([S] de corredor) | Trazo | Ídem |
 | `exposicion_quimica_ems` | entrada del proyecto ([S] pendiente de ensayo) | EMS | Las cuatro etapas de la 9.4 de la Fase 9 del proyecto (§3.4) |
 | `desnivel_perfil_canal_m` | entrada del proyecto (del canal) | ANA / Junta de Usuarios (perfil del canal) | VC3 de la Familia C, y con ella el punto, a los dos alcances (desde VE-3.10; hasta entonces sólo un aviso de 7.B) |
-| `arrastre_de_solidos` | entrada del proyecto ([S] por punto) | Estudio hidrológico · reconocimiento del cauce | Que V6 acepte un marco multicelda (sin el dato, la multicelda no se acepta) |
+| `licuefaccion_ems` | entrada del proyecto | EMS (E.050 38.3) | La Fase 0-bis de cada punto (VE-5): con la zona sísmica de AASHTO sin leer y el NF en los 50 ft superiores, AASHTO 10.5.4.2 exige el resultado del EMS (§3.3) |
+| `Mw_licuefaccion` | entrada del proyecto (estudio de peligro) | Desagregación del peligro sísmico (o la adopción justificada del sismo de subducción) | El contraste del resultado del EMS en la Fase 0-bis de cada punto |
+| `incremento_acero_por_despiece` | criterio que se declara | Proyectista (despiece de los planos) | El metrado del acero de los cabezales de cada punto (Fase 11, §3.4) |
+| `clase_concreto_losa_entrega` | criterio que se declara | Proyectista (especificación del zampeado) | El metrado de la losa de entrega de cada punto (Fase 11, §3.4) |
+| `espesor_pared_cajon` | criterio que se declara | Proyectista | El pórtico del marco de C-01 (y con él el metrado de su acero): con el de archivo, 0.20 m, el pórtico no cumple y la app pide declarar 0.30 m (§3.4; ficha VE7B-11). Lo mide quitar la declaración del juego |
 | `Q_evento_extremo_m3s` | entrada del proyecto | Estudio hidrológico | V8, y con ella el punto (sólo con `TR_evento_extremo` declarado) |
 | `TW_evento_extremo_m` | entrada del proyecto | Estudio hidrológico · hidráulico del receptor | Ídem |
 | `cota_afectacion_aguas_arriba_msnm` | entrada del proyecto | Topografía | V5 con el método `cota_de_afectacion`, y con ella el punto (Familias A y B) |
@@ -544,6 +551,10 @@ que **ninguna de las dos bases** recorre, y por eso no salen de la medida; cada 
 el test de su prompt (`tests/apoyo/validacion_integral.py::CONDICIONALES_NO_MEDIDAS`, y un
 test exige que esta lista las nombre):
 
+- `arrastre_de_solidos` ([S] por punto, estudio hidrológico · reconocimiento del cauce) —
+  sólo con un marco de más de una celda (`n_celdas_cajon` > 1): sin el dato, V6 no acepta
+  la multicelda (VE-5). El juego no tiene marcos multicelda, y por eso no sale de la medida
+  (hasta VE-7 figuraba por error en la tabla de arriba).
 - `homogeneidad_serie_fen` — sólo con el caudal **calculado** (`--cuencas` y `--estacion`
   con la celda `Q_m3s` vacía): sin declararlo, detiene el cálculo hidrológico del punto
   (T-1). La validación lo mide con la variante `caudal_calculado_sin_fen`.

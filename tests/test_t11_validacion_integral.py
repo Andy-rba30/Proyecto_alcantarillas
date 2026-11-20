@@ -356,7 +356,10 @@ def test_cada_metodo_no_evaluable_nombra_una_ficha_que_existe(una, variantes,
     # Y hasta VE-3.14 tambien T7B-05 y T7B-06 (el sismo con agua en el
     # plano de empuje): desde VE-3.14 se evalua con el peso total bajo el
     # agua (C11.6.5.3, 'agua_del_relleno_bajo_sismo' [C]) y ya no se detiene.
-    assert fichas == {"VC1-01"}
+    # VE-5 met (VE-7 fix-suite): mas VE5-MET-01, los rubros de la Fase 11
+    # que el programa no tiene con que medir (relleno, revestimiento de la
+    # entrada, cama del marco) y el acero de un portico que no cierra.
+    assert fichas == {"VC1-01", "VE5-MET-01"}
     for ficha in fichas:
         assert f"## {ficha} · " in texto, ficha
 
@@ -421,9 +424,13 @@ def test_la_lista_exacta_esta_nombrada_en_el_contrato_de_entradas(
         fila = next(l for l in texto.splitlines()
                     if l.startswith(f"| `{nombre}` |"))
         clase_impresa = fila.split("|")[2].strip()
+        # VE-7 fix-suite: una entrada quitada puede detener con DOS clases
+        # (`espesor_pared_cajon`: el portico, criterio que se declara, y el
+        # metrado de su acero, metodo con ficha); si una es «criterio», la
+        # §7 la imprime como criterio.
         if clases[nombre] == V.CLASE_METODO:
             assert clase_impresa.startswith("método diferido"), fila
-        elif clases[nombre] == V.CLASE_CRITERIO:
+        elif V.CLASE_CRITERIO in clases[nombre].split(" / "):
             assert clase_impresa == "criterio que se declara", fila
         else:
             assert clase_impresa.startswith("entrada del proyecto"), fila
