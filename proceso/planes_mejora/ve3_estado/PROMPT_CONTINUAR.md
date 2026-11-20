@@ -8,9 +8,9 @@ Retoma VE-3 del repositorio Andy-rba30/Proyecto_alcantarillas. Lee enteros CLAUD
 
 Entorno: python 3.12 con tkinter (si el del sistema no lo trae, `uv python install 3.12` y un venv), `pip install -r requirements.txt PyMuPDF "pillow<13"` (openpyxl sólo para leer las hojas de CDOT), xvfb; clona Andy-rba30/Normas y export NORMAS_DIR=<clon> (trae normas/ y ejemplos_resueltos/). Suite: `xvfb-run -a python -m pytest -q -p no:cacheprovider --no-header` en un clon LIMPIO fuera del repositorio (los worktrees bajo .claude/ hacen fallar test_sin_literales) y en una exportación (git archive HEAD). Para regenerar la línea base pon el python del venv primero en el PATH (sh tests/linea_base_familia_c/regenerar.sh).
 
-Qué falta, en orden (al día 2026-11-18, ~16:00 UTC; VE-3.1 a VE-3.16 hechos en la rama):
-1. Medir la suite completa en un clon limpio y en la exportación (`git archive HEAD`) sobre la punta de la rama; si algo falla, corregirlo declarando la causa (los fallos de la sesión cortada ya están resueltos: ver «Avance de esta sesión» en el LEEME).
-2. Sellar con el par medido: `python -m src.normativa.manifiesto --escribir --suite "<N> passed, <M> skipped (PyMuPDF sí · ventana Tk sí · repositorio de normas enlazado)"` y `python -m src.indice_formulas --escribir --suite "<lo mismo>"` (hoy llevan un sello PROVISIONAL «0 passed, 0 skipped»); fila en proceso/bitacora_conteos_y_entorno.md con los dos pares.
-3. LEEME al día y aviso de integración; integrar en main SOLO con autorización expresa del dueño.
-4. Decisiones abiertas del dueño (no se toman solas): corregir la §9.2 de la hoja de ruta (ficha VE3-20) y la viñeta «El agua una sola vez» de la Fase 9 (ficha VE3-21); con los valores de archivo el sismo del cabezal sigue sin cerrar (E1 sísmica de salida y E3 sísmica) y lo único que lo cierra es declarar por obra el muro que cede (0.5·k_h0 con el armado «cedente»), que exige la aceptación del Propietario.
+Qué falta, en orden (al día 2026-11-20; VE-3.1 a VE-3.16 hechos y la hoja de ruta corregida por el dueño en VE3-20 y VE3-21, ver el bloque «ESTADO (2026-11-20 ...)» del LEEME):
+1. Si la bitácora no tiene la fila de 2026-11-20: medir la suite completa en un clon limpio y en la exportación (`git archive HEAD`) sobre la punta de la rama; si algo falla, corregirlo declarando la causa.
+2. Sellar con el par medido: `python -m src.normativa.manifiesto --escribir --suite "<N> passed, <M> skipped (PyMuPDF sí · ventana Tk sí · repositorio de normas enlazado)"` y `python -m src.indice_formulas --escribir --suite "<lo mismo>"` (si llevan el sello PROVISIONAL «0 passed, 0 skipped»); fila en proceso/bitacora_conteos_y_entorno.md con los dos pares.
+3. Integrar en main SOLO con autorización expresa del dueño (fast-forward; la rama no está por detrás de main).
+4. Abierto por obra, no del programa: el sismo del cabezal se cierra declarando reduccion_por_desplazamiento + cedente con detalle de juntas, aceptación del Propietario y el EMS real.
 ```

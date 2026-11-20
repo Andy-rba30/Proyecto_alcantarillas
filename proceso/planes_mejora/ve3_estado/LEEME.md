@@ -1,7 +1,30 @@
 # Estado de VE-3 (para retomar si la sesión se corta)
 
 Material de proceso, no del entregable. Lo mantiene la sesión orquestadora y se actualiza
-cada vez que se integra algo. Fecha de esta versión: 2026-11-17.
+cada vez que se integra algo. Fecha de esta versión: 2026-11-20.
+
+> **ESTADO (2026-11-20, sesión `claude/jolly-clarke-qojnbj` trabajando sobre la rama
+> `claude/cool-euler-tpoj7o`).** Retoma desde `ba63b8a` (VE-3.15 y VE-3.16 hechos, sellos
+> PROVISIONAL). Decisiones del dueño en el chat de esta sesión (2026-11-20): **seguir las
+> recomendaciones** sobre las decisiones abiertas y «terminar todo».
+>
+> - **Hecho:** la hoja de ruta corregida por el dueño (`24e7c0b`): la §9.2 (ficha VE3-20,
+>   «No se asume de archivo: se declara por obra») y la Fase 9 «El agua una sola vez»
+>   (ficha VE3-21, `drenado` de archivo), cada una con su nota «Corregido» verificada contra
+>   AASHTO LRFD 9.ª; revisión independiente con Fable (`verificaciones_del_dueno/
+>   revision_fable_hoja_de_ruta_ve3_20_21.md`, «integrar con correcciones», H1 a H5
+>   aplicadas). Los valores de archivo NO cambian. Línea base regenerada (sólo huellas y el
+>   texto de la ficha de `factor_muro_eleccion`); manifiesto, trazabilidad e índice
+>   regenerados con sello PROVISIONAL (`5d8ed52`).
+> - **En curso:** la suite completa sobre `5d8ed52` en clon limpio y en exportación
+>   (`git archive HEAD`), con Python 3.12 + Tk, xvfb y `NORMAS_DIR` enlazado. La medición
+>   previa sobre `ba63b8a` llegó al 55 % sin un fallo antes de detenerla.
+> - **Falta:** sellar con el par medido, fila en la bitácora, y la **autorización expresa del
+>   dueño para integrar en `main`** (la rama va 42 commits por delante y 0 por detrás).
+> - **Sigue abierto, para cada obra (no es del programa):** con los valores de archivo el
+>   sismo del cabezal no cierra; se cierra declarando por obra `reduccion_por_desplazamiento`
+>   + `cedente`, con el detalle de juntas, la aceptación escrita del Propietario y el EMS real
+>   (φ de fundación, clase de sitio, licuefacción; la Zona 4 de AASHTO es una estimación).
 
 > **ESTADO (2026-11-18, ~12:30 UTC, sesión `claude/cool-euler-tpoj7o`).** La sesión del dueño
 > en `claude/festive-bell-wrmps1` **se cortó** después de `b3a8831` (04:49 UTC; el último
