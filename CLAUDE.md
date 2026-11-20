@@ -250,7 +250,13 @@ el 0.5 es [N] y cuál de las dos declaraciones aplica a esta obra es [A].
   propio armado, no copiando el de la pantalla (ficha VE6M9-03); y la
   orientación del muro frente al tráfico y la distancia al borde de calzada
   se declaran también por punto (`orientacion_muro_del_punto`,
-  `distancia_borde_calzada_del_punto_m`, ficha VE6M9-04).
+  `distancia_borde_calzada_del_punto_m`, ficha VE6M9-04). Y desde VE-7 el
+  alero se VERIFICA como muro en voladizo con su propia zapata: su franja
+  del arranque pasa por el ensamble del cabezal (E1 a E3, estático y
+  sísmico, `M9.estabilidad_del_alero`, códigos `.alero`), su zapata crece
+  por el talón con la misma regla y tope (al tope, NO FACTIBLE) y su
+  peralte por el armado de su talón, que se arma como la zapata del
+  cabezal (`ELEMENTO_ZAPATA_ALEROS`); ficha VE7-01.
 - **Y desde T-7c cada cabezal se ARMA detrás de su estabilidad, con la
   geometría final —la de la regla, la declarada o, desde VE-3.5, la
   dimensionada por estabilidad o por armado— y sin iterarla en el armado** (`servicio._fase_9_armado`: una etapa por las

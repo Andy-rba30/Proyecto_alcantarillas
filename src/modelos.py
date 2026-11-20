@@ -2590,6 +2590,17 @@ ALCANCE_DECLARADO: Tuple[AlcanceDeclarado, ...] = (
                "como llega; los parametros son los de prueba hasta el EMS"),
         ficha="T7B-09",
         simbolo="M9_cabezal.dimensionar_zapata_por_estabilidad"),
+    AlcanceDeclarado(
+        clave="aleros_como_muro",
+        # --- VE-7 (ficha VE7-01, cierre de T7C-04) --- el alero ya se
+        # verifica como muro y su zapata se dimensiona y se arma; lo que
+        # sigue fuera es lo que el texto dice.
+        texto=("Los aleros del cabezal de voladizo se verifican como muro en "
+               "voladizo (E1 a E3) solo en su franja del ARRANQUE, la mas "
+               "alta, con la zapata toda talon; las franjas intermedias no se "
+               "verifican, y los aleros del cabezal de gravedad no se "
+               "verifican como muro"),
+        ficha="VE7-01", simbolo="M9_cabezal.estabilidad_del_alero"),
     # --- VE-5 (m8, item 26 del censo) --- 'flotacion_marco_sin_peso_propio'
     # SALIO: V7 pesa el concreto del marco (`M5.peso_propio_conducto_kn_m`,
     # con 'peso_especifico_concreto_kn_m3'); ficha T3-08 cerrada.
