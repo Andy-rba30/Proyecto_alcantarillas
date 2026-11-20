@@ -8739,21 +8739,22 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   solicitaciones del armado (presión lineal, subpresión) y las dos combinaciones de E.060
   9.2.5 por cada empuje del régimen; decide. **C8** (arranque y media altura): e ≤ t/6 con el
   Evento Extremo I sin factorar. Dorados a mano: `tests/test_ve5_m9_ciclopeo.py`.
-- **Decisiones de la sesión** (Fable no se pudo consultar: la sesión no tenía la
-  herramienta; se tomó el lado que sostiene la fuente): (1) los dos casos de 11.6.5.1
-  («el resultado más conservador de estos dos análisis se usará para el diseño del
-  muro»), los de E2, y no el 100 % del incremento y de la inercia que suponía el test
-  escrito en VE-5; (2) la inercia del cuerpo en el centroide del trapecio; (3) el diagrama
-  estático es el del plano virtual de C2/C3 (no la cuña sobre la cara); (4) con
-  `no_cedente_k0`, k_h = 1.0·k_h0 y la resultante total no bajo h/2 (C11.6.5.4), como la
-  pantalla armada; (5) la junta del arranque decide siempre (22.4.7), media altura con
-  `tracciones_nulas`; (6) el cortante de C7 en la cara del cuerpo (lado seguro); (7) sin
-  presión de contacto en ninguna combinación de E.060, `MetodoNoEvaluableError` (Bloqueo).
-- **Abierto:** (a) sin inercia vertical del cuerpo (el ensamble no la aplica a pesos); (b)
-  con `traccion_admisible_e060` el sismo a media altura sólo informa: E.060 9.2 no combina
-  sismo con empuje; (c) el texto de 22.10.2.2 vive en la nota de `E060.22.10.2#CICLOPEO`:
-  no se firmó cita propia sin `NORMAS_DIR`.
-- **Qué haría falta:** el PDF de E.060 para firmar la cita de 22.10.2.2.
+- **Decisiones:** (1) los dos casos de 11.6.5.1 (MP 2.8.1.1.14.1: «el resultado más
+  conservador … para el diseño del muro»), los de E2; (2) inercia en el centroide del
+  trapecio; (3) diagrama estático del plano virtual de C2/C3; (4) con `no_cedente_k0`,
+  1.0·k_h0 y resultante total no bajo h/2; (5) cortante de C7 en la cara; (6) sin presión
+  en ninguna combinación, `MetodoNoEvaluableError`.
+- **Revisado por Fable (dictamen del consultor, 2026-11-20):** aprobado con cambios, aplicados: la sobrecarga de C8 va con γ_EQ
+  (`gamma_EQ`), como E2; el arranque bajo sismo decide con cualquier criterio
+  (`criterio_traccion_cabezal_ciclopeo`); C7 avisa las combinaciones de E.060 descartadas
+  por sacar la resultante de la base y decide con las demás; C8 cita `MP.2.8.1.1.14.1#EXC`
+  (el numeral de los dos casos: su texto no tiene cita propia, vive en `P_SEIS_TEXTO`).
+- **Abierto:** (a) no procede mientras k_v = 0; con k_v ≠ 0, C8 debe afectar W con
+  (1 − k_v); (b) a media altura, con `traccion_admisible_e060`, C8 informa; (c) firmar
+  `E060.22.10.2.2#VOLADIZO` cuando haya PDF y pasar a ella la cita principal de C7 (hoy
+  en la nota de `E060.22.10.2#CICLOPEO`); (d) C7 no se evalúa bajo sismo (E.060 9.2.3 no
+  combina CS con CE): la punta bajo Evento Extremo I queda cubierta sólo por E2.
+- **Qué haría falta:** el PDF de E.060 para (c).
 - **Dónde vive:** `src/modulos/M9_cabezal.py::_verificar_cuerpo_bajo_sismo`
 
 ## VE6M9-02 · Las cuantías mínimas de muro de E.060 14.3.1 pasan a criterio [N→] (VE-6, ítem 29; T7C-10)
@@ -8767,8 +8768,15 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   manifiesto, `variables_entrada` y los censos (169 criterios) se resincronizaron.
 - **Por qué:** E.060 es norma de edificaciones; la excepción de la §0.2 de la hoja de ruta
   cubre la durabilidad, no los mínimos estructurales.
-- **Qué haría falta:** nada; una norma vial con mínimos propios lo sustituiría.
+- **Revisado por Fable (dictamen del consultor, 2026-11-20):** aprobado con cambios, aplicados: el número de la norma queda en
+  `constantes_normativas.CUANTIA_MIN_MURO_E060_14_3_1` [N] (tabla y elección separadas) y
+  el criterio lo toma de ahí; `M9.cuantia_minima` rechaza un valor por debajo (bajaría de
+  la norma con etiqueta [N→]); `fuente` cita 14.8.1/14.8.2 y `reemplazado_por` dice «el
+  retiro del contraste de E.060 si el proyecto adopta sólo AASHTO 5.10.6, o el ejercicio
+  declarado de 14.8.2».
+- **Qué haría falta:** nada.
 - **Dónde vive:** `src/criterios_adoptados.py::cuantia_minima_muro_e060`
+
 ## VE6M9-03 · El alero se arma por sus propias secciones y su espesor se dimensiona por su armado (VE-6, ítem 9; VE3-14 H-13, T7B-08 (3), T7C-04)
 
 - **Cerrado:** cada franja vertical del alero es el fuste de un muro en voladizo que baja
@@ -8786,6 +8794,9 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   sobre la cara, la de archivo, no cambia); (2) detrás de la franja el relleno sube con el
   talud entero (normal al alero sube menos); (3) la sobrecarga es la del cabezal; (4) dos
   tramos, porque la altura baja monótona y cada tramo se arma con su sección más alta.
+- **Revisado por Fable (dictamen del consultor, 2026-11-20):** aprobado con cambios, aplicados: el ancho de la sección de la mitad es la
+  altura de su franja; el armado avisa «alero armado, no verificado como muro (E1–E3 de
+  11.6), ficha T7C-04».
 - **Abierto:** la zapata del alero y su estabilidad (T7C-04): siguen sin ensamble; con
   esviaje alto el alero largo (H-13, 13 m) queda armado, no verificado como muro.
 - **Qué haría falta:** el ensamble de estabilidad del alero por franjas (E1–E3 de 11.6) y
@@ -8804,6 +8815,11 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   declara sale del [S] de corredor; las secciones del alero lo heredan.
 - **Por qué no una regla:** AASHTO 3.11.6.4 no tiene tabla para el muro oblicuo; deducir
   la orientación del esviaje sería inventar un umbral (T7B-11).
+- **Revisado por Fable (dictamen del consultor, 2026-11-20):** aprobado con cambios, aplicados: el ensamble avisa
+  (`M9.avisos_de_la_sobrecarga_del_punto`) si el cruce tiene esviaje y el punto no declara
+  la orientación (rige la de corredor, sin deducir nada), y si se declara la distancia con
+  la orientación perpendicular vigente (no se usa). El aviso vive en el ensamble y no en
+  `fundir_sobrecarga_del_punto`: sólo allí se conoce la orientación vigente.
 - **Qué haría falta:** nada; un muro oblicuo con tabla propia necesitaría una fuente.
 - **Dónde vive:** `src/modulos/M9_cabezal.py::validar_sobrecarga_del_punto`
 

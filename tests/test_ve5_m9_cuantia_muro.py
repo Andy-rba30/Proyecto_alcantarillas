@@ -42,3 +42,29 @@ def test_declarar_otra_cuantia_la_cambia():
                    motivo="el minimo de 11.10.10.2, de prueba"):
         assert M9.cuantia_minima(direccion="horizontal") == pytest.approx(
             0.0025, abs=ABS_CERO)
+
+
+
+@pytest.mark.parametrize("valor", [
+    {"horizontal": 0.0019, "vertical": 0.0015},
+    {"horizontal": 0.0020, "vertical": 0.0010},
+])
+def test_por_debajo_de_la_norma_se_rechaza(valor):
+    """
+    Dictamen Fable de VE-6: con etiqueta [N→] el criterio aplica la norma;
+    un valor por debajo de 14.3.1 la bajaria, y se rechaza.
+    """
+    from src.modelos import DatoInvalidoError
+    from tests.apoyo.criterios import con_valor
+    with con_valor(CLAVE, valor, motivo="por debajo de 14.3.1, de prueba"):
+        for direccion in M9.DIRECCIONES_CUANTIA_MURO:
+            if valor[direccion] < cn.CUANTIA_MIN_MURO_E060_14_3_1[direccion]:
+                with pytest.raises(DatoInvalidoError):
+                    M9.cuantia_minima(direccion=direccion)
+
+
+def test_la_ficha_dice_que_la_reemplazaria_y_cita_14_8():
+    c = ca.CRITERIOS[CLAVE]
+    assert "14.8.1" in c.fuente and "14.8.2" in c.fuente
+    assert "5.10.6" in c.reemplazado_por and "14.8.2" in c.reemplazado_por
+    assert c.valor == cn.CUANTIA_MIN_MURO_E060_14_3_1

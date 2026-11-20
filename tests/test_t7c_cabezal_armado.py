@@ -1929,9 +1929,13 @@ def test_con_la_traccion_admisible_de_E060_decide_C6_y_las_nulas_informan(
     # voladizo de concreto simple (C7, E.060 22.10.2.2) y no pasa; es lo
     # UNICO que decide en contra, y C8 en el arranque tambien informa con
     # el vaciado monolitico.
+    # CAMBIADO DECLARANDOLO (dictamen Fable de VE-6): el arranque bajo sismo
+    # (C8) decide tambien sin junta y con la traccion admisible -- E.060 9.2
+    # no da contraste para el sismo --; la media altura sigue informando.
     assert {v.codigo for v in a.verificaciones
-            if v.estado is EstadoDeVerificacion.NO_CUMPLE} == {"C7.punta.e"}
-    assert _v(a, "C8.arranque.e").estado is EstadoDeVerificacion.INDICADOR
+            if v.estado is EstadoDeVerificacion.NO_CUMPLE} == {
+        "C7.punta.e", "C8.arranque.e"}
+    assert _v(a, "C8.media.e").estado is EstadoDeVerificacion.INDICADOR
 
 
 def test_C1_la_base_en_el_tercio_central_con_cargas_de_servicio(tanteo):
@@ -2716,7 +2720,8 @@ def test_el_agua_entra_con_su_signo_a_las_filas_del_ciclopeo(tanteo):
     with pytest.raises(MetodoNoEvaluableError, match="C7"):
         M9.verificar_cabezal_ciclopeo(entorno)
     with pytest.MonkeyPatch.context() as mp:
-        mp.setattr(M9, "_verificar_zapata_ciclopea", lambda *a, **k: [])
+        mp.setattr(M9, "_verificar_zapata_ciclopea",
+                   lambda *a, **k: ([], []))
         armado = M9.verificar_cabezal_ciclopeo(entorno)
     f_t = 0.5 * 0.42 * math.sqrt(10.0) * 1000.0         # kPa (22-7, phi 0,5)
     usos, excentricidades, cortantes = [], {}, []

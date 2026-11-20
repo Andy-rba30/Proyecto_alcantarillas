@@ -87,6 +87,7 @@ from src.constantes_normativas import (  # --- T11-10 ---
 from src.constantes_normativas import (  # --- VE-5 met ---
     SOBREANCHO_MAX_ENCOFRADO_EG2013_M)
 from src.constantes_normativas import K_CD_DESBORDE_SI  # --- VE-5 fixve4 ---
+from src.constantes_normativas import CUANTIA_MIN_MURO_E060_14_3_1  # VE-6
 from src.dominios import MILIMETROS_POR_METRO
 from src.normativa import esquema as _esquema
 from src.normativa import registro as _registro_normativo
@@ -12422,7 +12423,7 @@ CRITERIOS: Dict[str, Criterio] = {
 
     # --- VE-6 (lote M9, item 29 del censo; ficha T7C-10) -------------------
     "cuantia_minima_muro_e060": Criterio(
-        valor={"horizontal": 0.0020, "vertical": 0.0015},
+        valor=dict(CUANTIA_MIN_MURO_E060_14_3_1),
         # NIVEL MEDIDO: lo invoca la Fase 9 (`servicio._fase_9`, la etapa
         # «cuantia minima ... (9.4, referencia)», y `M9.cuantia_de_diseno`
         # por el armado), que solo corre a `--alcance expediente`.
@@ -12449,11 +12450,13 @@ CRITERIOS: Dict[str, Criterio] = {
                       "cambia. El minimo se aplica ENTERO porque el "
                       "expediente no ejerce la excepcion de 14.8.2 "
                       "(`M9.nota_excepcion_refuerzo_minimo`)",
-        fuente="E.060, num. 14.3.1, pag. 133, por analogia; la excepcion de "
-               "los muros de contencion en 14.8.2",
-        reemplazado_por="Una norma vial que fije las cuantias minimas de un "
-                        "muro de contencion, o el ejercicio declarado de la "
-                        "excepcion de E.060 14.8.2",
+        fuente="E.060, num. 14.3.1, pag. 133, por analogia; los muros de "
+               "contencion en 14.8.1 y su excepcion en 14.8.2. Un valor por "
+               "debajo de 14.3.1 se rechaza: bajaria de la norma que el "
+               "criterio aplica",
+        reemplazado_por="El retiro del contraste de E.060 si el proyecto "
+                        "adopta solo AASHTO 5.10.6, o el ejercicio declarado "
+                        "de 14.8.2",
         resolucion=Libre(
             que_lo_fija="E.060 14.3.1, aplicado por analogia",
             dominio="dict con 'horizontal' y 'vertical', cuantias positivas",

@@ -65,11 +65,15 @@ C7_PUNTA = 1.138101
 # incremento: f = 0.73476 > 2/3 -> resultante entera a 1.17561 m:
 #   M_dPAE = 4.56622·(1.17561 - 0.95) = 1.030196
 # a h/2 (no cede): (6.431735 + 4.56622)·0.65²/(2·1.60) = 1.452067 > 1.260185
-# caso 100 % P_AE + 50 % P_IR: M_H = 1.452067 + 0.689050 + 0.5·0.414754
-#   = 2.348494;  caso 50 % P_AE (rige el piso: EH 1, incremento 0) + 100 %
-#   P_IR: 6.431735·0.132031 + 0.689050 + 0.414754 = 1.952994
-# e = (2.348494 - 5.3599·(0.20 - 0.176190))/5.3599 = 0.414352 > t/6
-C8_MEDIA = 0.414352
+# la sobrecarga viva con gamma_EQ = 0.50 (criterio 'gamma_EQ', como E2;
+# dictamen Fable de VE-6): 0.5·0.689050 = 0.344525
+# caso 100 % P_AE + 50 % P_IR: M_H = 1.452067 + 0.344525 + 0.5·0.414754
+#   = 2.003969;  caso 50 % P_AE (rige el piso: EH 1, incremento 0) + 100 %
+#   P_IR: 6.431735·0.132031 + 0.344525 + 0.414754 = 1.608469
+# e = (2.003969 - 5.3599·(0.20 - 0.176190))/5.3599 = 0.350074 > t/6
+# (antes del dictamen, con la sobrecarga entera: 0.414352)
+GAMMA_EQ = 0.50
+C8_MEDIA = 0.350074
 
 
 def _v(a, codigo):
@@ -146,7 +150,10 @@ def test_C8_el_cuerpo_bajo_sismo_lleva_el_incremento_y_la_inercia(tanteo):
     assert sus["k_h·W·y_W"] == pytest.approx(0.25 * W * y_W, abs=TOL)
     assert sus["M_EH"] == pytest.approx(0.229989, abs=TOL_DORADO)
     assert sus["M_dPAE"] == pytest.approx(1.030196, abs=TOL_DORADO)
-    assert sus["M_LS + M_WA"] == pytest.approx(0.689050, abs=TOL_DORADO)
+    assert sus["M_LS"] == pytest.approx(0.689050, abs=TOL_DORADO)
+    assert sus["gamma_EQ"] == pytest.approx(GAMMA_EQ, abs=ABS_CERO)
+    assert sus["M_WA"] == pytest.approx(0.0, abs=ABS_CERO)
+    assert "MP.2.8.1.1.14.1#EXC" in c8.paso.citas_textuales
     assert c8.valor_obtenido == pytest.approx(C8_MEDIA, abs=TOL_DORADO)
     assert "h/2" in c8.paso.resultado.procedencia
     assert "100% P_AE + 50% P_IR" in c8.paso.resultado.procedencia
@@ -181,7 +188,7 @@ def test_C8_los_dos_casos_de_11_6_5_1_por_un_camino_independiente(tanteo):
         tierra = max(f_eh * M_EH + f_inc * M_dP,
                      (f_eh * H["EH.h"] + f_inc * H["EQ.dPAE.h"])
                      * arriba ** 2 / (2 * h))
-        M_H = tierra + M_LS + f_ir * d["k_h"] * W * y_W
+        M_H = tierra + GAMMA_EQ * M_LS + f_ir * d["k_h"] * W * y_W
         excentricidades.append(abs((M_H - W * (t / 2 - x_W)) / W))
     a = M9.verificar_cabezal_ciclopeo(entorno)
     assert _v(a, "C8.media.e").valor_obtenido == pytest.approx(
@@ -223,3 +230,49 @@ def test_C8_sin_condicion_sismica_evaluable_no_hay_filas_y_se_avisa(
     assert not a.sismico
     assert not any(v.codigo.startswith("C8") for v in a.verificaciones)
     assert any("NO se verifico bajo sismo" in x for x in a.avisos)
+
+
+# ===========================================================================
+# Dictamen Fable de VE-6 sobre C7 y C8
+# ===========================================================================
+
+def test_C8_el_arranque_decide_aunque_no_haya_junta_ni_tracciones_nulas(
+        tanteo):
+    """
+    Con el vaciado monolitico y la traccion admisible de E.060 el arranque
+    bajo sismo DECIDE igual, atribuido al criterio de traccion del proyecto
+    (E.060 9.2 no combina sismo con empuje: no hay contraste que lo cubra);
+    la media altura sigue informando.
+    """
+    ca.establecer_valor_dinamico("criterio_traccion_cabezal_ciclopeo",
+                                 "traccion_admisible_e060")
+    ca.establecer_valor_dinamico("junta_arranque_cabezal_ciclopeo",
+                                 "vaciado_monolitico")
+    a = M9.verificar_cabezal_ciclopeo(_gravedad())
+    arranque = _v(a, "C8.arranque.e")
+    assert arranque.estado is EstadoDeVerificacion.NO_CUMPLE
+    assert arranque.paso.umbral.criterio_aplicado == \
+        "criterio_traccion_cabezal_ciclopeo"
+    assert arranque.paso.umbral.cita_id == "E060.22.6.3#TERCIO"
+    assert _v(a, "C8.media.e").estado is EstadoDeVerificacion.INDICADOR
+
+
+def test_C7_avisa_las_combinaciones_sin_presion_y_decide_con_las_demas(
+        tanteo, monkeypatch):
+    """
+    Si una combinacion de E.060 saca la resultante de la base y otras no, la
+    fila sigue decidiendo con las evaluables y el cabezal lo AVISA nombrando
+    las descartadas.
+    """
+    original = M9.solicitaciones_de_la_zapata
+
+    def sin_la_9_7(g, juego, combo, datos):
+        if combo.nombre == "E.060 (9-7)":
+            return None
+        return original(g, juego, combo, datos)
+
+    monkeypatch.setattr(M9, "solicitaciones_de_la_zapata", sin_la_9_7)
+    a = M9.verificar_cabezal_ciclopeo(_gravedad())
+    assert _v(a, "C7.punta.e").estado is EstadoDeVerificacion.NO_CUMPLE
+    avisos = [x for x in a.avisos if "C7" in x and "E.060 (9-7)" in x]
+    assert avisos and "fuera de la base" in avisos[0]

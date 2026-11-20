@@ -176,3 +176,32 @@ def test_el_servicio_lleva_las_dos_claves_al_cabezal_declarado():
     assert set(fundido["salida"]) == {DIS}
     assert servicio.fundir_sobrecarga_del_punto(None, orientacion=None,
                                                 distancia=None) is None
+
+
+
+def test_con_esviaje_y_sin_orientacion_del_punto_se_avisa(tanteo):
+    """
+    Dictamen Fable de VE-6: un cruce esviado sin orientacion declarada por
+    punto lee la de corredor, y el ensamble lo AVISA (no deduce nada).
+    """
+    esviado = replace(tanteo, esviaje_grados=30.0)
+    assert M9.avisos_de_la_sobrecarga_del_punto(esviado)
+    assert not M9.avisos_de_la_sobrecarga_del_punto(tanteo)
+    e = M9.ensamble_estabilidad(esviado, EST)
+    assert any("esviaje" in x and ORI in x for x in e.avisos)
+    g = replace(tanteo.geometria, orientacion_trafico="paralelo_al_trafico")
+    e = M9.ensamble_estabilidad(replace(esviado, geometria=g), EST)
+    assert not any("esviaje" in x and ORI in x for x in e.avisos)
+    assert not any("esviaje" in x and ORI in x
+                   for x in M9.ensamble_estabilidad(tanteo, EST).avisos)
+
+
+def test_la_distancia_del_punto_con_orientacion_perpendicular_no_se_usa(
+        tanteo):
+    """La distancia solo la pide la tabla del muro paralelo: se avisa."""
+    g = replace(tanteo.geometria, orientacion_trafico="perpendicular_al_trafico",
+                distancia_borde_calzada_m=0.0)
+    e = M9.ensamble_estabilidad(replace(tanteo, geometria=g), EST)
+    assert any(DIS in x and "no se usa" in x for x in e.avisos)
+    _, d = M9.cargas_del_cabezal(replace(tanteo, geometria=g), EST)
+    assert d["h_eq"] == pytest.approx(H_EQ_PERPENDICULAR, abs=TOL)

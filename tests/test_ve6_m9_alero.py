@@ -180,3 +180,36 @@ def test_un_alero_mas_grueso_que_su_zapata_se_rechaza(tanteo):
     ancho = _con_aleros(tanteo, replace(ALEROS, espesor=1.30))
     with pytest.raises(DatoInvalidoError):
         M9.entorno_de_la_seccion_del_alero(ancho, M9.FRACCION_MITAD_ALERO)
+
+
+
+def test_el_ancho_de_la_seccion_de_la_mitad_es_el_de_su_franja(tanteo,
+                                                              monkeypatch):
+    """
+    Dictamen Fable de VE-6: el ancho con que se arma la seccion de la mitad
+    (el del acero de temperatura de 5.10.6) es min(H de SU franja, longitud
+    del alero), no el de la altura inicial.
+    """
+    entorno = _con_aleros(tanteo)
+    vistos = {}
+    original = M9.diseno_flexion_corte
+
+    def espia(**kw):
+        vistos[kw["clave"]] = kw["ancho_seccion"]
+        return original(**kw)
+
+    monkeypatch.setattr(M9, "diseno_flexion_corte", espia)
+    M9.armar_elemento(entorno, ELEMENTO_ALEROS)
+    x = M9.entorno_de_la_seccion_del_alero(entorno, M9.FRACCION_MITAD_ALERO)
+    assert vistos[M9.SECCION_ALERO_MITAD] == pytest.approx(
+        min(x.geometria.H, max(ALEROS.longitudes)), abs=TOL)
+    assert vistos[SECCION_ALERO] == pytest.approx(
+        min(ALEROS.altura_inicial, max(ALEROS.longitudes)), abs=TOL)
+
+
+def test_el_armado_avisa_que_el_alero_no_se_verifica_como_muro(tanteo):
+    a = M9.armado_del_cabezal(_con_aleros(tanteo))
+    assert any("no verificado como muro" in x and "T7C-04" in x
+               for x in a.avisos)
+    assert not any("no verificado como muro" in x
+                   for x in M9.armado_del_cabezal(tanteo).avisos)

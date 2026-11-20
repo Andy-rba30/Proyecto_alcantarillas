@@ -276,6 +276,7 @@ from src.constantes_normativas import (AMBIENTE_CORROSIVO_AUMENTAR,
                                    FS_CODIGO,
                                    NUMERAL_K_H0,
                                    NUMERAL_P_IR,
+                                   CUANTIA_MIN_MURO_E060_14_3_1,  # VE-6
                                    NUMERAL_PRESION_CONTACTO,
                                    NUMERAL_RECUBRIMIENTO,
                                    NUMERAL_RECUBRIMIENTO_MP,
@@ -3382,6 +3383,16 @@ def cuantia_minima(*, direccion: str) -> float:
             campo=CRITERIO_CUANTIA_MIN_MURO, valor=tabla,
             motivo="se espera un dict con 'horizontal' y 'vertical', cada "
                    "una una cuantia positiva")
+    # --- dictamen Fable de VE-6 --- con etiqueta [N→] el criterio APLICA la
+    # norma: un valor por debajo del de 14.3.1 la bajaria, y se rechaza
+    # (bajar el minimo es ejercer 14.8.2, que se declara aparte).
+    norma = CUANTIA_MIN_MURO_E060_14_3_1[direccion]
+    if rho < norma - TOL_UMBRAL_NORMATIVO:
+        raise DatoInvalidoError(
+            campo=CRITERIO_CUANTIA_MIN_MURO, valor=tabla,
+            motivo=f"la cuantia {direccion} ({rho:g}) baja del minimo de "
+                   f"E.060 14.3.1 ({norma:g}) que el criterio [N→] aplica; "
+                   "exceptuarlo es ejercer 14.8.2")
     return float(rho)
 
 
@@ -6173,6 +6184,47 @@ def validar_sobrecarga_del_punto(clave: str, valor: Any, *,
                 for e in EXTREMOS}
     limpio = _uno(valor, "")
     return {e: limpio for e in EXTREMOS}
+
+
+def avisos_de_la_sobrecarga_del_punto(entorno: EntornoDelCabezal
+                                      ) -> List[str]:
+    """
+    --- dictamen Fable de VE-6 --- Lo que la sobrecarga del cabezal no puede
+    leer de su tabla y la corrida tiene que decir:
+
+      - el cruce tiene esviaje y el punto no declara su orientacion: rige
+        la de corredor (AASHTO no tabula el muro oblicuo y el programa no
+        deduce nada del esviaje);
+      - el punto declara la distancia al borde y la orientacion vigente es
+        la perpendicular: la Tabla 3.11.6.4-1 no tiene columna de distancia,
+        y la declarada no se usa.
+    """
+    g = entorno.geometria
+    quien = f"Cabezal de {entorno.extremo} de {entorno.id_punto}"
+    avisos = []
+    if (g.orientacion_trafico is None and _finito(entorno.esviaje_grados)
+            and abs(entorno.esviaje_grados) > TOL_UMBRAL_NORMATIVO):
+        avisos.append(
+            f"{quien}: el cruce tiene esviaje ({entorno.esviaje_grados:g} "
+            "grados) y el punto no declara "
+            f"`{CAMPO_ORIENTACION_DEL_PUNTO}`: rige la orientacion de "
+            "corredor ('orientacion_muro_respecto_al_trafico'). AASHTO "
+            "3.11.6.4 no tiene tabla para el muro oblicuo y el programa no la "
+            "deduce del esviaje")
+    if g.distancia_borde_calzada_m is not None:
+        vigente = g.orientacion_trafico
+        if vigente is None:
+            try:
+                vigente = ds.valor("orientacion_muro_respecto_al_trafico")
+            except CriterioPendienteError:
+                vigente = None      # el ensamble ya se detuvo por el corredor
+        if vigente == ORIENTACION_PERPENDICULAR_AL_TRAFICO:
+            avisos.append(
+                f"{quien}: `{CAMPO_DISTANCIA_BORDE_DEL_PUNTO}` = "
+                f"{g.distancia_borde_calzada_m:g} m declarada, pero la "
+                "orientacion vigente es perpendicular al trafico: la Tabla "
+                "3.11.6.4-1 no tiene columna de distancia y el dato no se usa")
+    return avisos
 
 
 def _texto_de_la_sobrecarga(g: GeometriaCabezal) -> str:
@@ -9850,6 +9902,7 @@ def ensamble_estabilidad(entorno: EntornoDelCabezal,
                 "marco LRFD supone al menos 6.0 in (0.15 m) de material "
                 "granular compactado bajo la zapata (AASHTO 10.6.3.4), que "
                 "tiene que estar en los planos")
+    avisos.extend(avisos_de_la_sobrecarga_del_punto(entorno))
     # --- VE-5 fixve4 --- lo declarado que su criterio sin valor no deja
     # decidir VUELVE a `pendientes`, con el motivo, y viaja aparte para que
     # el servicio lo lleve como `Bloqueo` (CriterioPendienteError).
@@ -13715,15 +13768,18 @@ def armar_elemento(entorno: EntornoDelCabezal, elemento: str,
                 f"mitad de la longitud de los aleros del {lugar} (arma el "
                 "tramo de L/2 a L)"))
         for clave, fraccion, rotulo in secciones:
-            sol_x = solicitaciones_de_resistencia(
-                entorno_de_la_seccion_del_alero(entorno, fraccion))
+            franja = entorno_de_la_seccion_del_alero(entorno, fraccion)
+            sol_x = solicitaciones_de_resistencia(franja)
+            # --- dictamen Fable de VE-6 --- el ancho de la seccion de la
+            # mitad es la altura de SU franja; el del arranque, el de siempre.
+            alto = (g.aleros.altura_inicial if clave == SECCION_ALERO
+                    else franja.geometria.H)
             piezas.append(diseno_flexion_corte(
                 solicitaciones=sol_x["secciones"][SECCION_PANTALLA],
                 espesor=g.aleros.espesor, elemento=ELEMENTO_ALEROS,
                 clave=clave, seccion=rotulo,
                 cara="trasdos (contra el relleno), armadura vertical",
-                ancho_seccion=min(g.aleros.altura_inicial,
-                                  max(g.aleros.longitudes)),
+                ancho_seccion=min(alto, max(g.aleros.longitudes)),
                 contraste_e060=sol_x["e060"].get(SECCION_PANTALLA),
                 momento_servicio=sol_x.get("servicio", {}).get(
                     SECCION_PANTALLA), **comun))
@@ -14078,6 +14134,11 @@ def ensamblar_armado(entorno: EntornoDelCabezal,
             es_zapata=True, direccion="reparto", espesor=g.espesor_zapata,
             ancho=g.B, **comun))
     if SECCION_ALERO in claves:
+        # --- dictamen Fable de VE-6 --- lo que el armado del alero NO es.
+        avisos.append(
+            f"{quien}: el alero esta ARMADO por sus secciones y no verificado "
+            "como muro: su zapata y su estabilidad (E1 a E3 de AASHTO 11.6) "
+            "no se calculan (ficha T7C-04)")
         tabla.append(_fila_de_reparto(
             elemento=ELEMENTO_ALEROS,
             posicion="aleros: armadura horizontal, cada cara",
@@ -14706,8 +14767,7 @@ def verificar_cabezal_ciclopeo(entorno: EntornoDelCabezal
 
     # --- C7: la zapata como voladizo de concreto simple (VE-6, ficha
     # T7C-09 (3)) ---------------------------------------------------------
-    avisos = []
-    voladizos = _verificar_zapata_ciclopea(
+    voladizos, avisos = _verificar_zapata_ciclopea(
         entorno, juegos, datos, fc_dis=fc_dis, f_t=f_t, mag=mag, ext=ext)
     verificaciones.extend(voladizos)
 
@@ -14754,7 +14814,8 @@ def verificar_cabezal_ciclopeo(entorno: EntornoDelCabezal
 
 def _verificar_zapata_ciclopea(entorno: EntornoDelCabezal, juegos: list,
                                datos: dict, *, fc_dis: float, f_t: float,
-                               mag, ext: str) -> List[Verificacion]:
+                               mag, ext: str
+                               ) -> Tuple[List[Verificacion], List[str]]:
     """
     --- VE-6 (ficha T7C-09 (3)) --- C7: la punta y el talon de la zapata de
     un cabezal de gravedad en ciclopeo, como VOLADIZOS de concreto simple,
@@ -14781,11 +14842,16 @@ def _verificar_zapata_ciclopea(entorno: EntornoDelCabezal, juegos: list,
     Solo estatica: E.060 9.2 no combina el sismo con el empuje del suelo.
     Esta fila DECIDE: es la unica verificacion de la flexion y el corte de
     la zapata, y la pide la norma (por analogia).
+
+    --- dictamen Fable de VE-6 --- Devuelve (filas, avisos): si alguna
+    combinacion saca la resultante de la base y otras no, la fila decide con
+    las evaluables y el aviso nombra las descartadas.
     """
     g = entorno.geometria
     h_r = g.espesor_zapata - REDUCCION_PERALTE_CONTRA_SUELO_M
     vuelos = (("punta", datos["punta"]), ("talon", datos["talon"]))
     salida: List[Verificacion] = []
+    avisos: List[str] = []
     for rotulo, vuelo in vuelos:
         if not vuelo > g.espesor_zapata / 2 + TOL_UMBRAL_NORMATIVO:
             continue
@@ -14825,6 +14891,14 @@ def _verificar_zapata_ciclopea(entorno: EntornoDelCabezal, juegos: list,
                 "zapata no tiene reaccion con que verificarse",
                 entorno.id_punto, rotulo=MOTIVO_METODO_NO_EVALUABLE_CABEZAL)
         uso, M, V, de_donde = peor
+        if fuera:
+            avisos.append(
+                f"{_aviso_cabezal(entorno)}: C7 ({rotulo} de la zapata como "
+                "voladizo) se evaluo sin " + "; ".join(fuera)
+                + ": con esas cargas de E.060 la resultante cae fuera de la "
+                "base y no hay presion de contacto; la fila decide con las "
+                "demas combinaciones, y ese cabezal vuelca con las "
+                "descartadas")
         salida.append(_verificacion_de_armado(
             fundamento="F9.CICLOPEO", codigo=f"C7.{rotulo}.{ext}",
             que=f"C7, la {rotulo} de la zapata como voladizo de concreto "
@@ -14872,7 +14946,7 @@ def _verificar_zapata_ciclopea(entorno: EntornoDelCabezal, juegos: list,
                    "E060.22.5.4#CORTANTE", "E060.22.4.8#PERALTE",
                    "E060.9.2.5#EMPUJE"),
             numeral=NUMERAL_9_4_CICLOPEO))
-    return salida
+    return salida, avisos
 
 
 def _verificar_cuerpo_bajo_sismo(entorno: EntornoDelCabezal, *, regimen: str,
@@ -14922,6 +14996,13 @@ def _verificar_cuerpo_bajo_sismo(entorno: EntornoDelCabezal, *, regimen: str,
             "el cuerpo NO se verifico bajo sismo (C8): la condicion sismica "
             f"no es evaluable -- {motivo}")
     casos = _casos_sismicos(datos_s)
+    # --- dictamen Fable de VE-6 --- la sobrecarga viva con gamma_EQ, el
+    # factor de la carga viva del Evento Extremo I ('gamma_EQ' [A]), como la
+    # fila E2 (`combinaciones_de_estabilidad`), y no con 1.
+    g_eq = gamma_eq()
+    if not (_finito(g_eq) and 0 <= g_eq <= 1):
+        raise DatoInvalidoError(CRITERIO_GAMMA_EQ, valor=g_eq,
+                                motivo="gamma_EQ entre 0 y 1")
     e_c, e_z = g.espesor_corona, g.espesor_zapata
     salida: List[Verificacion] = []
     for codigo, rotulo, z in (("arranque", "arranque del cuerpo", e_z),
@@ -14968,20 +15049,25 @@ def _verificar_cuerpo_bajo_sismo(entorno: EntornoDelCabezal, *, regimen: str,
                     M_tierra, posicion = M_medios, ("con la resultante del "
                                                     "empuje total a h/2 "
                                                     "(C11.6.5.4)")
-            M_H = M_tierra + M_LS + M_WA + f_ir * M_PIR
+            M_H = M_tierra + g_eq * M_LS + M_WA + f_ir * M_PIR
             e = (M_H - palanca) / W
             if peor is None or abs(e) > abs(peor[1]):
                 peor = (nombre, e, M_H, f_eh, f_inc, f_ir, posicion)
         nombre, e, M_H, f_eh, f_inc, f_ir, posicion = peor
         limite = t / NUCLEO_CENTRAL_DIVISOR
         en_la_junta = codigo == "arranque" and con_junta
+        # --- dictamen Fable de VE-6 --- el arranque bajo sismo DECIDE
+        # siempre: sin junta y con la traccion admisible de E.060 no hay
+        # contraste que lo cubra (E.060 9.2 no combina sismo con empuje), y
+        # se atribuye al criterio de traccion del proyecto.
+        decide = nulas or en_la_junta or codigo == "arranque"
         salida.append(_verificacion_de_armado(
             fundamento="F9.CICLOPEO", codigo=f"C8.{codigo}.{ext}",
             que=f"C8, tracciones nulas en el {rotulo} bajo sismo: cabezal de "
                 f"{entorno.extremo}"
                 + (" (junta de construccion, E.060 22.4.7)" if en_la_junta
                    else ""),
-            formula="e = [f_EH·M_EH + M_LS + M_WA + f_inc·M_dPAE + "
+            formula="e = [f_EH·M_EH + gamma_EQ·M_LS + M_WA + f_inc·M_dPAE + "
                     "f_IR·k_h·W·y_W - W·(t/2 - x_W)] / W <= t/6, Evento "
                     "Extremo I sin factorar, el caso de AASHTO 11.6.5.1 que "
                     "mas excentrica"
@@ -15003,8 +15089,13 @@ def _verificar_cuerpo_bajo_sismo(entorno: EntornoDelCabezal, *, regimen: str,
                     "encima de la seccion"),
                 mag("M_dPAE", M_dP, "kN·m/m", "incremento sismico del "
                     "empuje por encima de la seccion"),
-                mag("M_LS + M_WA", M_LS + M_WA, "kN·m/m", "sobrecarga viva y "
-                    "agua del relleno, factor 1"),
+                mag("gamma_EQ", g_eq, "", f"'{CRITERIO_GAMMA_EQ}' [A]: la "
+                    "carga viva del Evento Extremo I, como en E2",
+                    CIFRAS_FACTOR),
+                mag("M_LS", M_LS, "kN·m/m", "sobrecarga viva por encima de "
+                    "la seccion, sin factorar"),
+                mag("M_WA", M_WA, "kN·m/m", "agua del relleno por encima de "
+                    "la seccion, factor 1"),
             ),
             resultado=mag("e", abs(e), "m", "excentricidad de la resultante "
                           f"en la seccion: {nombre}, con f_EH = {f_eh:g}, "
@@ -15020,24 +15111,30 @@ def _verificar_cuerpo_bajo_sismo(entorno: EntornoDelCabezal, *, regimen: str,
                         "con cualquier criterio de traccion"
                         if en_la_junta else
                         "criterio del proyecto, mas exigente que la fuente "
-                        f"('{CRITERIO_TRACCION_CICLOPEO}' [A])"),
+                        f"('{CRITERIO_TRACCION_CICLOPEO}' [A])"
+                        + ("; en el arranque decide con cualquier criterio: "
+                           "bajo sismo E.060 9.2 no da contraste que lo "
+                           "cubra" if codigo == "arranque" and not nulas
+                           else "")),
             criterio=(CRITERIO_JUNTA_CICLOPEO if en_la_junta
                       else CRITERIO_TRACCION_CICLOPEO),
             cumple=abs(e) <= limite + TOL_UMBRAL_NORMATIVO,
-            margen=limite - abs(e), decide=nulas or en_la_junta,
+            margen=limite - abs(e), decide=decide,
             obtenido=abs(e),
             nota=("Los dos casos de AASHTO 11.6.5.1 (100 % P_AE con 50 % "
                   "P_IR; 50 % P_AE, no menos que el estatico, con 100 % P_IR), "
                   "los de la fila E2, con las cargas sin factorar. La "
                   "componente vertical del empuje, que estabiliza, no se "
                   "cuenta; ni la inercia vertical del cuerpo, que el ensamble "
-                  "no aplica a los pesos."),
+                  "no aplica a los pesos (con k_v = 0 no procede; con k_v "
+                  "distinto de 0, W tendria que ir con (1 - k_v)). Los dos "
+                  "casos son los de " + NUMERAL_P_IR + "."),
             explicacion_falla=("bajo sismo la junta del arranque transmitiria "
                                "traccion, que E.060 22.4.7 prohibe: aumentar "
                                "el espesor del cuerpo" if en_la_junta else
                                "bajo sismo hay traccion en el trasdos del "
                                "cuerpo: aumentar su espesor"),
-            citas=("AASHTO_LRFD_9.11.6.5.1#EXC",),
+            citas=("MP.2.8.1.1.14.1#EXC", "AASHTO_LRFD_9.11.6.5.1#EXC"),
             numeral=NUMERAL_9_4_CICLOPEO))
     return salida, True, ""
 
