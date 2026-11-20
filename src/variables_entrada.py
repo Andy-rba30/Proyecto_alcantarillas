@@ -1385,7 +1385,12 @@ _EXTERNOS: Dict[str, _Externo] = {
              "«desborde_admitido_con_terraplen_protegido» y a nivel de "
              "expediente; sin el dato, V8 se detiene con DatoFaltanteError. "
              "La lee `servicio._datos_de_expediente` y se la pasa a "
-             "`M5.v8_evento_extremo`",
+             "`M5.v8_evento_extremo`. El reparto mide HW_r sobre la cota de "
+             "desborde (el punto bajo), no el tirante hidraulico del "
+             "columpio que la fuente usa con un solo tramo (area de "
+             "desborde / ancho superficial, HDS-5 pag. 3.16): la longitud "
+             "tiene que ser coherente con ese tirante -- con el ancho "
+             "superficial, Q_o sale sobrestimado -- (VE-5 fixve4)",
     ),
 }
 
