@@ -35,6 +35,13 @@ EJERCITA_LA_CUARTA = frozenset({
     "F9.DIMENSIONADO_PANTALLA", "F9.GLOBAL_DECLARADA",
 })
 
+# VE-7 fix-suite: desde que el juego de T-11 declara la licuefaccion del EMS
+# y los dos criterios de los metrados (datos de prueba: sin ellos la
+# validacion integral no cerraba), la TERCERA corrida (`hidrologia_calculada`,
+# que es ese juego materializado) tambien emite estos dos. La cuarta los
+# sigue ejercitando; ya no es la unica.
+TAMBIEN_LA_TERCERA = frozenset({"F0.LICUEFACCION", "F11.ACERO"})
+
 # Los que ninguna de las cuatro emite como PASO, con la razon.
 # (a) Entran como `EleccionDeProyecto.fundamento_id` y no como paso: las
 #     corridas los EMITEN, pero el indice solo cuenta pasos.
@@ -119,7 +126,7 @@ def test_C6_la_cuarta_ejercita_lo_que_las_tres_primeras_no(emitidos):
                           if n not in (NOMBRE, QUINTA)))
     propios, _el, _i = emitidos[NOMBRE]
     assert EJERCITA_LA_CUARTA <= propios
-    assert not (EJERCITA_LA_CUARTA & otras)
+    assert EJERCITA_LA_CUARTA & otras == TAMBIEN_LA_TERCERA
 
 
 def test_ic_la_quinta_es_de_prueba_y_ejercita_lo_que_las_cuatro_no(emitidos):
