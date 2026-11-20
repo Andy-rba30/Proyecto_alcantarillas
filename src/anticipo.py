@@ -463,14 +463,18 @@ _CONSUMO_CONDICIONAL = {
 
 
 def _consumidores_de_calculo(clave: str, alcance: str) -> Tuple[str, ...]:
-    diferidos = set(servicio.MODULOS_DIFERIDOS_POR_ALCANCE.get(alcance, ()))
+    # --- VE-6 --- `servicio.consumo_diferido` y no solo los modulos
+    # diferidos: M12 corre a perfil (el cuadro de compatibilidad) y lo que
+    # lee de la entrada lo leen sus metrados, que van detras de M9. Es el
+    # MISMO dato que decide el salto en `correr_punto`.
     inactivos: Tuple[str, ...] = ()
     if clave in _CONSUMO_CONDICIONAL:
         modulos, lo_lee = _CONSUMO_CONDICIONAL[clave]
         if not lo_lee():
             inactivos = modulos
     return tuple(m for m in _ve.variable(clave).consumido_por
-                 if m not in _LECTORES_SIN_CALCULO and m not in diferidos
+                 if m not in _LECTORES_SIN_CALCULO
+                 and not servicio.consumo_diferido(alcance, m)
                  and m not in inactivos)
 
 

@@ -801,8 +801,8 @@ _COLUMNAS: Dict[str, _Columna] = {
         # condicion) se declaraba aqui hasta que el dueño la corrigio
         # (2026-11-18, ficha VE1-01, D3, cerrada).
         concepto="Profundidad del nivel freatico bajo el terreno natural en "
-                 "el cruce. La leen el cabezal (Fase 9), la presion del agua "
-                 "sobre un TMC o un HDPE (Fase 8) y V7 solo con "
+                 "el cruce. La leen el cabezal (Fase 9) y su metrado (Fase "
+                 "11), el agua sobre un TMC o un HDPE (Fase 8) y V7 solo con "
                  "'nivel_agua_diseno_v7' = 'nf_del_punto', no con el de "
                  "archivo: ficha VE2-C",
         unidad="m",

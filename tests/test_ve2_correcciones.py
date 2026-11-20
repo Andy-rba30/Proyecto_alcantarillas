@@ -126,6 +126,19 @@ def test_el_dato_que_falta_antes_de_la_fase_5_sigue_como_hasta_hoy():
                          verificar=verificar)
 
 
+def _del_dimensionado(bloqueos):
+    """
+    --- VE-6 --- Los bloqueos del punto menos los de las fases que se
+    registran al lado del dimensionado sin detenerlo
+    (`servicio.FASES_AL_MARGEN_DEL_DIMENSIONADO`): desde VE-5 (catlic) el
+    juego, a expediente, lleva el de la Fase 0-bis (`licuefaccion_ems`, que
+    el juego no declara; ficha VE5-CAT-03). Estos tests hablan del bucle de
+    MD, y la licuefaccion no lo detiene ni se antepone a sus faltas.
+    """
+    return [b for b in bloqueos
+            if b.fase not in servicio.FASES_AL_MARGEN_DEL_DIMENSIONADO]
+
+
 def _b01(cambios):
     informe = V.correr_juego(V.aplicar(V.juego_completo(), cambios))
     return next(p for p in informe.puntos if p.punto.id == "B-01")
@@ -142,7 +155,7 @@ def test_la_variante_caudal_calculado_dice_que_a_B01_le_falta_un_dato():
     assert not b01.dimensionado
     tipos = {b.tipo for b in b01.bloqueos}
     assert TipoDeBloqueo.DISENO_NO_FACTIBLE not in tipos
-    b = next(b for b in b01.bloqueos
+    b = next(b for b in _del_dimensionado(b01.bloqueos)
              if b.tipo is TipoDeBloqueo.DATO_FALTANTE)
     assert b.campo == "Q_evento_extremo_m3s"
     assert b.etapa == servicio.ETAPA_BUCLE_DE_MD
@@ -222,7 +235,7 @@ def test_el_caso_real_de_la_pared_sigue_no_factible_por_rasante_con_su_delta():
     informe = V.correr_juego(V.aplicar(V.juego_completo(), cambios))
     a01 = next(p for p in informe.puntos if p.punto.id == "A-01")
     assert not a01.dimensionado
-    tipos = {b.tipo for b in a01.bloqueos}
+    tipos = {b.tipo for b in _del_dimensionado(a01.bloqueos)}
     assert TipoDeBloqueo.DATO_FALTANTE not in tipos
     b = next(b for b in a01.bloqueos
              if b.tipo is TipoDeBloqueo.DISENO_NO_FACTIBLE)
@@ -248,6 +261,6 @@ def test_otro_dato_del_punto_de_V8_tambien_decide():
     a01 = next(p for p in informe.puntos if p.punto.id == "A-01")
     assert not a01.dimensionado
     assert TipoDeBloqueo.DISENO_NO_FACTIBLE not in {b.tipo for b in a01.bloqueos}
-    b = next(b for b in a01.bloqueos
+    b = next(b for b in _del_dimensionado(a01.bloqueos)
              if b.tipo is TipoDeBloqueo.DATO_FALTANTE)
     assert b.campo == "TW_evento_extremo_m"

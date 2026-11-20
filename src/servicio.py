@@ -283,6 +283,38 @@ def _difiere(alcance: str, modulo: str) -> bool:
     return modulo in MODULOS_DIFERIDOS_POR_ALCANCE[alcance]
 
 
+# --- VE-6 (pre-vuelo) --- LO QUE UN MODULO LEE, DETRAS DE OTRO MODULO.
+#
+# M12 no se difiere entero: la fila del cuadro de compatibilidad rasante-
+# alcantarilla (entregable 9, salida de 7.A) corre en los dos alcances, y por
+# eso M12 no puede ir en `MODULOS_DIFERIDOS_POR_ALCANCE` sin que el anticipo
+# diga una falsedad («modulos que esta corrida no ejecuta»). Pero todo lo que
+# M12 LEE de la entrada --la columna `NF_profundidad_m` (partida 501.C/D de
+# la excavacion, EG-2013 501.01) y sus tres criterios de metrado-- lo leen
+# los METRADOS (entregable 8), que miden el cabezal de la Fase 9 y corren
+# solo donde corre M9 (ficha VE5-MET-01: «los metrados, solo a
+# expediente»). Hasta VE-6 ese salto estaba escrito solo como un `if` dentro
+# del de la Fase 9, y el pre-vuelo, que lee `consumido_por` modulo a modulo,
+# le atribuia a M12 la columna a nivel de perfil: anunciaba
+# `NF_profundidad_m` como dato que DETIENE en todos los puntos y la corrida
+# real no se detenia por el. Este dato lo consultan los dos --el salto de
+# `correr_punto` y `anticipo._consumidores_de_calculo`--, de modo que no
+# pueden volver a decir cosas distintas. `tests/test_nivel_medido.py`
+# (`DETRAS_DEL_CABEZAL`) clasifica por la misma relacion los criterios de M12.
+CONSUMO_DETRAS_DE: Dict[str, str] = {"M12_metrados": "M9_cabezal"}
+
+
+def consumo_diferido(alcance: str, modulo: str) -> bool:
+    """
+    Si esta corrida NO llega a la parte de `modulo` que lee datos de entrada
+    y criterios: porque difiere el modulo entero, o porque difiere el modulo
+    detras del cual lee (`CONSUMO_DETRAS_DE`). Un alcance desconocido no
+    difiere nada.
+    """
+    diferidos = MODULOS_DIFERIDOS_POR_ALCANCE.get(alcance, ())
+    return modulo in diferidos or CONSUMO_DETRAS_DE.get(modulo) in diferidos
+
+
 # LAS FAMILIAS PARA LAS QUE CADA DATO DECLARADO CAMBIA ALGO.
 #
 # Los datos de `CLAVES_EXTERNAS` no son columna del CSV y la ventana los pide
@@ -878,6 +910,16 @@ CLAVE_LICUEFACCION_EMS = ML.CLAVE_LICUEFACCION_EMS
 CLAVES_DE_LICUEFACCION: Tuple[str, ...] = (CLAVE_LICUEFACCION_EMS,)
 FASE_LICUEFACCION = "Fase 0-bis - Licuefaccion (ML)"
 ETAPA_LICUEFACCION = ML.ETAPA_LICUEFACCION
+# --- VE-6 --- LAS FASES QUE SE REGISTRAN AL LADO DEL DIMENSIONADO, sin
+# detenerlo. La Fase 0-bis es la primera de ellas y la unica hoy: el riesgo
+# de licuefaccion es del terreno de fundacion y del terraplen (AASHTO LRFD
+# 10.5.4.2, PDF 1323; E.050 38.3), no del conducto, y su falta es un
+# `Bloqueo` que impide cerrar el EXPEDIENTE sin anteponerse a las demas
+# faltas del punto: la corrida sigue y dice tambien las de las Fases 2 a 11
+# (ficha VE5-CAT-03, decision de VE-6). Quien busca POR QUE un punto no
+# llego a 7.A --la fila del cuadro de compatibilidad-- salta estas fases;
+# un bloqueo de ellas nunca es el motivo de un punto sin tamizado.
+FASES_AL_MARGEN_DEL_DIMENSIONADO: Tuple[str, ...] = (FASE_LICUEFACCION,)
 # A nivel de perfil la Fase 0-bis declara el condicionante y remite la
 # solucion al expediente (v8, Fase 0-bis, punto 3).
 MENSAJE_LICUEFACCION_DIFERIDA = (
@@ -4545,7 +4587,9 @@ def correr_punto(punto: PuntoCritico, externos: DatosExternos,
             # la difiere entera `_cabezal_diferido`, una vez por corrida).
             if not _difiere(alcance, "M9_cabezal"):
                 _fase_9(informe, externos)
-                # --- VE-5 met --- los metrados leen el cabezal: van detras.
+            # --- VE-5 met --- los metrados leen el cabezal: van detras. Lo
+            # decide el dato que consulta tambien el pre-vuelo (VE-6).
+            if not consumo_diferido(alcance, "M12_metrados"):
                 _fase_11_metrados(informe)
     # --- VE-5 met --- la fila del cuadro de compatibilidad, de todo punto.
     _fase_11_compatibilidad(informe)
@@ -4589,7 +4633,8 @@ def _fase_11_compatibilidad(informe: InformePunto) -> None:
                   and b.delta_rasante_m is not None), None)
     motivo = next((f"detenido en {b.fase}, {b.etapa}"
                    for b in informe.bloqueos
-                   if not b.diferido_por_alcance), "")
+                   if not b.diferido_por_alcance
+                   and b.fase not in FASES_AL_MARGEN_DEL_DIMENSIONADO), "")
     informe.compatibilidad_rasante = M12.fila_compatibilidad(
         punto=informe.punto, delta_no_factible=delta, seccion=seccion,
         motivo=motivo)

@@ -8601,6 +8601,8 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   504.11). Lo que no se mide es un `Bloqueo` de `servicio.FASE_METRADOS` y los demás rubros
   siguen. Tres criterios: `sobreancho_excavacion_estructuras_m` [A] opcional (0–0.45 m),
   `incremento_acero_por_despiece` y `clase_concreto_losa_entrega`, [A] sin valor.
+- **Cerrado por VE-6:** el NF en M12 es de expediente y detiene sólo el rubro de excavación,
+  y el signo de dos criterios de metrado queda censado (ficha VE6-01).
 - **Decisión de Fable (VE-6, 2026-11-20):** los dos sin valor se quedan así. 504.10 mide las
   longitudes del despiece (504.03) y ninguna fuente del repositorio da una fracción de
   anclajes y empalmes; la Tabla 503-07 da clases, no usos, y heredar la del cabezal fijaría
@@ -8779,6 +8781,7 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   para la Fase 0-bis (hoy viaja como `InformePunto.licuefaccion`, su paso y sus avisos);
   y corregir la hoja de ruta (Fase 0-bis y §0.5 dicen que la licuefacción queda fuera del
   script, sin el bloqueo de expediente).
+- **Cerrado por VE-6:** la falta se registra al lado de las demás, no delante (ficha VE6-02).
 - **Dónde vive:** `src/modulos/ML_licuefaccion.py::evaluar_licuefaccion`
 
 
@@ -8929,3 +8932,57 @@ generados (`indice_formulas.md`, línea base) no se regeneran aquí: los regener
 - **Abierto:** sin `NORMAS_DIR` (repositorio privado) los tests que abren un PDF se saltan allí.
 - **Qué haría falta:** un secreto con acceso al repositorio de normas, si el dueño lo quiere en CI.
 - **Dónde vive:** `tests/test_ve5_gui.py::test_48_la_integracion_continua_corre_la_suite_bajo_un_servidor_x`
+
+
+# Parte LXII — Lo que VE-6 (pre-vuelo) dejó escrito: el pre-vuelo y la corrida dicen lo mismo
+
+VE-6 (2026-11-20, rama `claude/ve6-prevuelo`, sobre `cc106ce`) corrige las dos causas que la
+integración de VE-5 (lotes met y catlic) dejó en rojo. El subagente Fable no se pudo lanzar
+en la sesión (la herramienta no estaba disponible): las dos decisiones salen del código y de
+las fichas VE5-MET-01 y VE5-CAT-03, que ya las sostenían.
+
+## VE6-01 · El nivel freático en M12 es de expediente y detiene el rubro, no el punto
+
+- **Cerrado:** el censo le encuentra `NF_profundidad_m` a M12 (`renglones_excavacion`) y
+  M12 no se difiere entero a perfil (la fila del cuadro de compatibilidad corre en los dos
+  alcances). El pre-vuelo leía `consumido_por` módulo a módulo y anunciaba la columna como
+  dato que DETIENE en todo punto («la exige M12_metrados»); la corrida de perfil no se
+  detenía. Ahora los dos leen `servicio.CONSUMO_DETRAS_DE` (M12 → M9_cabezal) por
+  `servicio.consumo_diferido`: gobierna el salto de los metrados en `correr_punto` y
+  `anticipo._consumidores_de_calculo`. A perfil M12 no exige el NF; a expediente sí.
+- **Por qué así:** los metrados miden el cabezal de la Fase 9, que el perfil difiere. A
+  expediente la falta es un `Bloqueo` de la Fase 11 sólo del rubro de excavación, y no un
+  volumen sin partida: el EG-2013 501.01 separa la excavación en seco de la excavación bajo
+  agua y 501.09 la paga por partida, de modo que un volumen único se asignaría en silencio
+  a la partida en seco. «DETIENE» en el pre-vuelo es eso: detiene una etapa, no el punto.
+  Y VE-5 met extendió `Criterio.no_negativo` (nacido en VE-2, M4) a
+  `sobreancho_excavacion_estructuras_m` e `incremento_acero_por_despiece` sin escribirlo:
+  un sobreancho negativo excavaría dentro de las caras (501.04) y un incremento negativo
+  mediría menos acero que las barras de cada elemento (504.10). Censado en
+  `tests/test_ve2_revision_m3_m4.py` (`CON_SIGNO_DE_METRADO`), sin tope inventado.
+- **Qué haría falta:** nada para el pre-vuelo. Si otro módulo llega a leer la entrada
+  detrás de otro, se añade a `CONSUMO_DETRAS_DE` (lo fija `tests/test_ve6_prevuelo.py`).
+- **Dónde vive:** `src/servicio.py::consumo_diferido`
+
+## VE6-02 · La licuefacción se registra al lado de las demás faltas, no delante
+
+- **Cerrado:** el `Bloqueo` de la Fase 0-bis (`licuefaccion_ems` sin declarar, ficha
+  VE5-CAT-03) no detiene el dimensionado y así se queda: la corrida sigue y dice también
+  las faltas de las Fases 2 a 11. Lo que estaba mal eran los lectores que tomaban el
+  primer bloqueo del punto por el motivo del dimensionado: la fila del cuadro de
+  compatibilidad (`servicio._fase_11_compatibilidad`, que a expediente decía «detenido en
+  Fase 0-bis» en todo punto sin tamizado, también en un «subir rasante» con delta) y
+  cuatro tests (`tests/test_ve2_correcciones.py`, `tests/test_ve3_vc3_bloquea.py`) que
+  buscaban el primer `DATO_FALTANTE` del bucle de MD. Los dos saltan
+  `servicio.FASES_AL_MARGEN_DEL_DIMENSIONADO` (hoy sólo la Fase 0-bis).
+- **Por qué así:** el riesgo de licuefacción es del terreno de fundación y del terraplén
+  (AASHTO LRFD 10.5.4.2, PDF 1323) y su resultado lo declara el EMS (E.050 38.3): no cambia
+  la sección hidráulica. Anteponerlo escondería las faltas reales del punto y repetiría lo
+  que PF-2 corrigió (cuatro corridas para ver cuatro bloqueos). La falta sigue en los
+  bloqueos y sigue impidiendo cerrar el expediente.
+- **Abierto:** el bloqueo de los techos de transcripción de la Fase 6 (`_etapa` con
+  «techos de transcripcion») tampoco detiene el dimensionado y no está en la tupla; no
+  aparece en el juego.
+- **Qué haría falta:** decidir si ese bloqueo entra en la tupla (una constante para su
+  etapa).
+- **Dónde vive:** `src/servicio.py::FASES_AL_MARGEN_DEL_DIMENSIONADO`
