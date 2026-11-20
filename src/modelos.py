@@ -7546,6 +7546,10 @@ class DisenoPortico:
     pasos: Tuple["PasoDeMemoria", ...]
     avisos: Tuple[str, ...] = ()
     diferido: Tuple[str, ...] = ()
+    # --- VE-7 lote B, B4 (T5-07 (3)) --- las caras que ninguna combinacion
+    # tracciona, con el minimo de retraccion y temperatura de AASHTO 5.10.6
+    # que 12.11.5.3.1 manda (`FilaDeArmado`, la fila de reparto del cabezal).
+    minimos: Tuple[Any, ...] = ()
 
     @property
     def cumple(self) -> bool:

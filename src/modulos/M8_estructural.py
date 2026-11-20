@@ -3609,6 +3609,7 @@ ELEMENTO_PORTICO = "portico"
 CODIGO_PASO_PORTICO_CARGAS = "F8.PORTICO_CARGAS"
 CODIGO_PASO_PORTICO_COMBINACIONES = "F8.PORTICO_COMBINACIONES"
 CODIGO_PASO_PORTICO_ANALISIS = "F8.PORTICO_ANALISIS"
+CODIGO_PASO_PORTICO_MINIMOS = "F8.PORTICO_MINIMOS"      # VE-7 lote B, B4
 NUMERAL_F8_PORTICO = ("AASHTO LRFD 12.11 (12.11.2, 12.11.4, 12.11.5) y "
                       "Seccion 5; Tabla 3.4.1-1 del Manual de Puentes")
 
@@ -3640,9 +3641,9 @@ DIFERIDO_PORTICO = (
     "con 'espesor_pared_cajon', y el portico se analiza con ese espesor en "
     "losas, paredes y tabiques); (2) el refuerzo de distribucion de la losa "
     "superior con menos de 2.0 ft de relleno (9.7.3.2, que 12.11.2.1 manda) "
-    "y las vigas de borde de C12.11.2.1; (3) el acero de las caras que no "
-    "se traccionan en ninguna combinacion (lleva el de 5.10.6, que no se "
-    "tabula); (4) el desarrollo y los empalmes de las barras; (5) el empuje "
+    "y las vigas de borde de C12.11.2.1; (3) [desde VE-7 el acero de las "
+    "caras que no se traccionan se tabula con el minimo de 5.10.6]; (4) el "
+    "desarrollo y los empalmes de las barras; (5) el empuje "
     "del agua EXTERIOR con el nivel freatico sobre la losa inferior; y (6) "
     "el V_c de la Eq. 5.12.7.3-1 para las losas con 2.0 ft o mas, que la "
     "fuente PERMITE y el proyecto no toma (rige 5.7)")
@@ -4524,6 +4525,7 @@ def disenar_portico(*, punto: PuntoCritico, material: Material,
             "solucion cerrada del marco cerrado (tests/test_ve5_portico_"
             "marco.py)."))
     armados, verificaciones, pasos_armado, avisos = [], [], [], []
+    minimos = []
     for (sec, _m, _s, t, desc, _c, contra_suelo) in secciones:
         for signo, cara in ((1, CARA_INTERIOR), (-1, CARA_EXTERIOR)):
             indice = 0 if signo > 0 else 1
@@ -4538,6 +4540,16 @@ def disenar_portico(*, punto: PuntoCritico, material: Material,
                     V_u_cedente=envolventes[c[0]][sec][2])
                 for c in resistencia)
             if not max(s.M_u for s in sols) > TOL_UMBRAL_NORMATIVO:
+                # --- VE-7 lote B, B4 (T5-07 (3); decision del consultor
+                # Fable, triaje VE-7, 2026-11-20) --- la cara que ninguna
+                # combinacion tracciona lleva el acero de retraccion y
+                # temperatura (12.11.5.3.1: «Shrinkage and temperature
+                # reinforcement shall be provided near the inside surfaces
+                # of walls and slabs in accordance with Article 5.10.6»).
+                # La fila es la de REPARTO del cabezal, la MISMA funcion de
+                # M9 (5.10.6 con el ancho de la seccion por metro, y E.060
+                # 9.7.2 con la regla del mas exigente): no se duplica.
+                minimos.append(_minimo_de_la_cara(M9, sec, cara, desc, t))
                 continue
             M_s = extremo(sec, signo, servicio)
             a = M9.diseno_flexion_corte(
@@ -4550,6 +4562,11 @@ def disenar_portico(*, punto: PuntoCritico, material: Material,
             verificaciones.extend(a.verificaciones)
             pasos_armado.extend(a.pasos)
             avisos.extend(a.avisos)
+    p_minimos = _paso_de_los_minimos(minimos)
+    avisos.extend(
+        f"portico del marco, {f.posicion}: ninguna barra del catalogo da el "
+        f"minimo de {f.As_minimo:.0f} mm2/m con s <= {f.s_max:.3f} m"
+        for f in minimos if f.barra is None)
     return DisenoPortico(
         geometria=g,
         casos=tuple((caso, tuple(EsfuerzoDeSeccion(s, m, *por_caso[caso][s])
@@ -4564,5 +4581,62 @@ def disenar_portico(*, punto: PuntoCritico, material: Material,
                 for (s, m, *_r) in secciones))
             for c in combos),
         armados=tuple(armados), verificaciones=tuple(verificaciones),
-        pasos=(p_cargas, p_combos, p_analisis) + tuple(pasos_armado),
-        avisos=tuple(dict.fromkeys(avisos)), diferido=(DIFERIDO_PORTICO,))
+        pasos=(p_cargas, p_combos, p_analisis) + tuple(pasos_armado)
+        + ((p_minimos,) if p_minimos is not None else ()),
+        avisos=tuple(dict.fromkeys(avisos)), diferido=(DIFERIDO_PORTICO,),
+        minimos=tuple(minimos))
+
+
+def _minimo_de_la_cara(M9, sec: str, cara: str, desc: str, t: float):
+    """
+    --- VE-7 lote B, B4 --- La `FilaDeArmado` de una cara del portico que no
+    se tracciona en ninguna combinacion: `M9._fila_de_reparto`, la fila de
+    reparto del cabezal (AASHTO 5.10.6 por cara y por direccion, con el
+    ancho de la seccion por metro como en el resto del portico, y E.060
+    9.7.2 con la regla del mas exigente). La posicion empieza por la clave
+    de la cara («seccion.cara»), la misma de `ArmadoDeSeccion.clave`.
+    """
+    mat = M9.materiales_del_armado()
+    return M9._fila_de_reparto(
+        elemento=ELEMENTO_PORTICO,
+        posicion=f"{sec}.{cara}: {desc}, cara {cara} sin traccion en ninguna "
+                 "combinacion (12.11.5.3.1: retraccion y temperatura)",
+        es_zapata=True, direccion="reparto", espesor=t, ancho=t,
+        fy=mat["fy"], regla=M9._regla_de_minimos(),
+        catalogo=M9.catalogo_de_barras(), hm=None, lm=None)
+
+
+def _paso_de_los_minimos(minimos) -> Optional[PasoDeMemoria]:
+    """--- VE-7 lote B, B4 --- El paso que imprime las caras con minimo."""
+    if not minimos:
+        return None
+    return paso(
+        "F8.PORTICO", codigo=CODIGO_PASO_PORTICO_MINIMOS,
+        que=("Portico del marco: acero de retraccion y temperatura en las "
+             "caras que ninguna combinacion tracciona"),
+        formula=("A_s >= 1.30 b h / [2 (b + h) f_y], 0.11 <= A_s <= 0.60 "
+                 "in2/ft por cara y direccion (5.10.6); con la regla del mas "
+                 "exigente, y E.060 9.7.2"),
+        formula_cita_id="AASHTO_LRFD_9.5.10.6#TEMPERATURA",
+        citas_textuales=("AASHTO_LRFD_9.12.11.5.3.1",
+                         "AASHTO_LRFD_9.5.10.6#TEMPERATURA"),
+        sustitucion=tuple(
+            Magnitud(f"A_s {f.posicion.split(':', 1)[0]}", f.As_adoptado,
+                     "mm2/m", f"{f.gobierna}; "
+                     + (f"{f.barra.designacion} @ "
+                        f"{f.barra.espaciamiento:.3f} m"
+                        if f.barra is not None else "sin barra del catalogo"),
+                     cifras=CIFRAS_MAGNITUD)
+            for f in minimos),
+        resultado=Magnitud("caras con minimo", len(minimos), "",
+                           "caras del portico sin traccion en ninguna "
+                           "combinacion"),
+        veredicto=Veredicto(
+            tipo=TipoDeVeredicto.SIN_VEREDICTO,
+            explicacion="minimo constructivo, no verificacion: la cara no "
+                        "tiene solicitacion que juzgar"),
+        nota_del_proyecto=(
+            "El acero de estas caras es el minimo de retraccion y "
+            "temperatura de la fila de reparto del cabezal "
+            "(`M9._fila_de_reparto`), con el ancho de la seccion por metro "
+            "como en el resto del portico."))
