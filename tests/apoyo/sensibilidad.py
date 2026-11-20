@@ -179,10 +179,13 @@ BARRIDOS_A_MANO: Tuple[Barrido, ...] = (
             "la ficha dice que se declara «como el par de la especificación "
             "del encofrado», y la puerta lo rechaza (la forma del criterio es "
             "`str`). C-01 lo gobierna la salida, que es donde n pesa"),
+    # VE-7 fix-suite: el primer valor es el EFECTIVO del juego, que desde
+    # entonces declara 0.30 m (el canto que la app pide para cerrar el
+    # portico de C-01, ficha VE7B-11); hasta entonces era el de archivo.
     Barrido("espesor_pared_cajon", GRUPO_CONDUCTO,
             "espesor de pared del marco (correcciones de T-11, H3); la "
             "ventana está en prosa (0.20 a 0.30 m, ficha T3-08)",
-            valores=(0.20, 0.25, 0.30)),
+            valores=(0.30, 0.25, 0.20)),
     # --- los que T-11 añadio por gobernar una fila de la Fase 5 ---------
     Barrido("borde_libre_y_sobre_d_max", GRUPO_CONDUCTO,
             "umbral de V1, sólo endurecible (T-11). Se barre además un valor "
@@ -367,8 +370,25 @@ NO_BARRIBLES: Dict[str, str] = {
         "la Figura 3.11 del HDS-5 digitalizada (curvas por superficie); "
         + _R_ANALOGIA + "; y el juego no lo lee (umbral sin desborde)"),
     "capacidad_portante_adm": (_R_SIN_VALOR + "; " + _R_ENSAYO),
-    "Mw_licuefaccion": (_R_SIN_VALOR + "; " + _R_ENSAYO + "; "
-                        + _R_SIN_CONSUMIDOR),
+    # VE-7 fix-suite: el juego lo declara (8.0, dato de prueba, para
+    # contrastar `licuefaccion_ems`) y desde VE-5 lo lee la Fase 0-bis.
+    "Mw_licuefaccion": ("el juego lo declara (8.0, dato de prueba) pero no "
+                        "tiene ventana: " + _R_ENSAYO),
+    # --- VE-5 (mh, ficha T1-05) --- los K, m y n de la IDF regional.
+    "factores_idf_regional": (
+        _R_SIN_VALOR + "; " + _R_ENSAYO + "; y sólo los lee el caudal "
+        "calculado con 'relacion_intensidad_duracion' = 'idf_regional_ec17'"),
+    # --- VE-5 met / VE-7 --- los de los metrados de la Fase 11.
+    "incremento_acero_por_despiece": (
+        "el juego lo declara (0.10, dato de prueba) pero la ficha no tiene "
+        "ventana (lo fija el despiece de los planos); y sólo mueve el "
+        "metrado del acero, que el anexo no compara"),
+    "sobreancho_excavacion_estructuras_m": (
+        _R_OPCIONAL + "; y sólo mueve el metrado de la excavación, que el "
+        "anexo no compara"),
+    "techos_de_transcripcion_fase_6": (
+        _R_OPCIONAL + "; sin declarar no emite ningún aviso de "
+        "transcripción"),
     "diametros_normalizados": _R_TABLA,
     "secciones_cajon_normalizadas": _R_TABLA,
     "embocadura_cajon": _R_TABLA,

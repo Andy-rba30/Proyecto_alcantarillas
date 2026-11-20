@@ -127,6 +127,20 @@ EXTERNOS: Dict[str, Any] = {
         "pH": 7.5,
         "resistividad_ohm_cm": 3500,
         "abrasion": "poco_abrasivo",
+        # --- VE-5 (Fase 0-bis) / VE-7 fix-suite --- El resultado de la
+        # evaluacion de licuefaccion del EMS (E.050 38.3), GLOBAL: desde
+        # VE-5 la Fase 0-bis lo exige en los cuatro puntos (la zona sismica
+        # de AASHTO no esta leida y el NF del juego, 3.0 m, queda dentro de
+        # los 50 ft de 10.5.4.2). DATO DE PRUEBA: «no licua», evaluado con
+        # M_w 8.0 (la que el juego declara en `Mw_licuefaccion`) y Tr de
+        # 1000 años (el de archivo de `demanda_sismica_licuefaccion`): ni
+        # uno ni otro por debajo de lo adoptado, que es lo que
+        # `ML._contrastar_declarada` exige. Ningun EMS lo dijo.
+        "licuefaccion_ems": {
+            "resultado": "no_licua", "Mw": 8.0, "periodo_retorno_anios": 1000,
+            "documento": f"EMS de {ROTULO} (validacion integral, T-11)",
+            "fecha": "2026-11-20",
+            "metodo": "procedimiento simplificado de PRUEBA (ningun ensayo)"},
     },
     "puntos": {
         "A-01": {
@@ -317,6 +331,31 @@ DECLARACIONES: Dict[str, Any] = {
     # este juego como datos de prueba (0.10 m y 1.5·H_c) mientras el
     # criterio no tenia valor. Desde VE-3.9 son su valor de archivo
     # (decision del dueño del 2026-11-17) y el juego ya no los declara.
+    # --- VE-5 (Fase 0-bis) / VE-7 fix-suite --- La M_w con que el proyecto
+    # contrasta el resultado del EMS (`licuefaccion_ems`, arriba). El
+    # criterio no tiene valor de archivo (lo da la desagregacion del peligro
+    # sismico: `DeEnsayo`); 8.0 es el orden de magnitud del sismo de
+    # subduccion del norte peruano, DATO DE PRUEBA, el mismo de las corridas
+    # de referencia cuarta y quinta.
+    "Mw_licuefaccion": 8.0,
+    # --- VE-5 met / VE-7 (dictamen Fable: sin valor de archivo, el juego
+    # los declara) --- Los dos criterios de los metrados de la Fase 11 que
+    # el archivo deja sin valor a proposito. 10 % de anclajes y empalmes
+    # sobre el acero medido dentro de cada elemento del cabezal, y la Clase
+    # E de la Tabla 503-07 del EG-2013 para la losa de entrega: los de las
+    # corridas de referencia cuarta y quinta, DATOS DE PRUEBA (ningun
+    # despiece ni especificacion los fijo).
+    "incremento_acero_por_despiece": 0.10,
+    "clase_concreto_losa_entrega": "E",
+    # --- VE-7 (lote B, ficha VE7B-11) / fix-suite --- El canto del marco de
+    # C-01. Con el de archivo (0.20 m) el portico no cumple A2 y la etapa se
+    # detiene diciendo «declarar 'espesor_pared_cajon' = 0.30 m (el menor de
+    # la grilla que cierra) y repetir»: la app no se lo auto-adopta porque
+    # el canto mueve la clave, V4, V7 y G1. El juego declara EXACTAMENTE el
+    # valor que la app pide, y con el el marco sigue siendo 1.20 x 0.90 m y
+    # el portico cierra. Pisa un valor de archivo: ver
+    # `PISA_EL_ARCHIVO_PORQUE` y `LA_TITULAR_CONSERVA`.
+    "espesor_pared_cajon": 0.30,
 }
 
 # Por que el juego PISA un valor de archivo (correcciones de T-11, H2): es
@@ -348,7 +387,24 @@ PISA_EL_ARCHIVO_PORQUE: Dict[str, str] = {
         "'cedente' acompaña a la reduccion de k_h: desde VE-3.15 (decision "
         "12 del dueño) la reduccion solo se acepta con el armado del muro "
         "que cede, un solo regimen"),
+    "espesor_pared_cajon": (
+        "lo PIDE la app (ficha VE7B-11): con 0.20 m el portico del marco de "
+        "C-01 no cumple A2 y la etapa se detiene con «declarar "
+        "'espesor_pared_cajon' = 0.30 m (el menor de la grilla que cierra) "
+        "y repetir»; el juego declara ese valor y el marco no cambia "
+        "(1.20 x 0.90 m)"),
 }
+
+# Las declaraciones que PISAN el archivo y que la corrida TITULAR CONSERVA
+# (VE-7 fix-suite). La titular deja en su valor de archivo las decisiones que
+# el juego cambia para EJERCITAR una rama (`factor_muro_eleccion` y su
+# armado); el canto del marco no es una de ellas: con el de archivo la app
+# misma detiene el portico y nombra el valor que hay que declarar
+# (VE7B-11), de modo que «volver al archivo» no daria el resultado de una
+# decision sino una corrida que la app manda repetir. Que el 0.20 m
+# detiene, y que lo que se declara es un criterio, lo mide §4 (quitar la
+# declaracion de cualquiera de las dos bases).
+LA_TITULAR_CONSERVA: Tuple[str, ...] = ("espesor_pared_cajon",)
 
 # ---------------------------------------------------------------------------
 # 6. Lo que el juego deja fuera A PROPOSITO, con su razon

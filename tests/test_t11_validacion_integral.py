@@ -134,7 +134,10 @@ def test_ningun_vacio_del_proyecto_se_relleno_en_los_archivos_de_valores():
         "umbral_no_colapso_evento_extremo", "phi_relleno_trasdos",
         "c_phi_fundacion", "peso_especifico_saturado_relleno_kn_m3",
         "categoria_refuerzo_aashto", "clase_exposicion_fisuracion_cabezal",
-        "exposicion_quimica_ems", "homogeneidad_serie_fen"}
+        "exposicion_quimica_ems", "homogeneidad_serie_fen",
+        # VE-5 / VE-7 (fix-suite): los de la Fase 0-bis y de los metrados.
+        "Mw_licuefaccion", "incremento_acero_por_despiece",
+        "clase_concreto_losa_entrega"}
     assert sin_valor_que_el_juego_declara <= set(J.DECLARACIONES)
     for clave in sin_valor_que_el_juego_declara:
         assert ca.CRITERIOS[clave].valor is None, clave
@@ -196,6 +199,15 @@ def test_las_tres_familias_llegan_a_la_fase_11_con_diseno(base):
         assert fase11[r["id"]] == (True, True), r["id"]
 
 
+RUBRO_RELLENO = ("metrado de relleno para estructuras (EG-2013 502.A): no "
+                 "medido")
+RUBRO_REVESTIMIENTO = ("metrado de revestimiento de la entrada (emboquillado): "
+                       "no medido")
+RUBRO_CAMA_DEL_MARCO = "metrado de cama de apoyo del conducto: no medido"
+ETAPA_VC1 = ("VC1 - alcance del requisito de la Sec. 2.3 (borde libre "
+             "verificado; rasante hidraulica, no)")
+
+
 def test_el_unico_bloqueo_de_la_corrida_completa_es_un_alcance_con_ficha(base):
     """
     Con el juego completo no queda ningun bloqueo por entrada ni por
@@ -204,8 +216,19 @@ def test_el_unico_bloqueo_de_la_corrida_completa_es_un_alcance_con_ficha(base):
     lleva aunque dimensione.
     """
     bloqueos = V.todos_los_bloqueos(base)
-    assert [(b.punto, b.clase, b.que) for b in bloqueos] == [
-        ("C-01", V.CLASE_METODO, "VC1-01")]
+    # CAMBIADO DECLARANDOLO (VE-5 met, ficha VE5-MET-01; VE-7 fix-suite):
+    # desde que la Fase 11 MIDE, los rubros que el EG-2013 mide y el
+    # programa no tiene con que medir (la seccion del relleno, la geometria
+    # del revestimiento de la entrada, la cama del marco) salen como «metodo
+    # no evaluable (metrados, Fase 11)» con su ficha. Son tambien ALCANCE
+    # con ficha, no una entrada ni un criterio: el juicio del test no
+    # cambia. Medido: los dos de cada punto, y la cama solo en el marco.
+    assert all(b.clase == V.CLASE_METODO for b in bloqueos), bloqueos
+    assert sorted((b.punto, b.que, b.etapa) for b in bloqueos) == sorted(
+        [(i, "VE5-MET-01", etapa) for i in ("A-01", "A-02", "B-01", "C-01")
+         for etapa in (RUBRO_RELLENO, RUBRO_REVESTIMIENTO)]
+        + [("C-01", "VE5-MET-01", RUBRO_CAMA_DEL_MARCO),
+           ("C-01", "VC1-01", ETAPA_VC1)])
     assert _punto(base, "C-01").bloqueos[0].tipo \
         is TipoDeBloqueo.DIFERIDO_POR_ALCANCE
 
@@ -234,15 +257,29 @@ def test_el_cabezal_se_dimensiona_y_pasa_E3_estatico_y_E1_sismico(base):
     `tests/test_ve3_dimensionamiento_cabezal.py` (sin el criterio) y la §3.1
     de la sensibilidad (base `juego_cabezal_de_la_regla`).
     """
-    from src.modelos import ORIGEN_DIMENSION_ESTABILIDAD
+    from src.modelos import ORIGEN_DIMENSION_ESTABILIDAD, ORIGEN_DIMENSION_REGLA
+    origenes = {}
     for p in base.puntos:
         v = V.verificaciones_del_punto(base, p.punto.id)
         assert v["E3-LRFD.est.e"] == "cumple", p.punto.id
         assert v["E1-LRFD.sis.e"] == "cumple", p.punto.id
-        g = p.cabezal.entrada
-        b = next(d for d in g.dimensiones
-                 if d.nombre == "ancho de la zapata (B)")
-        assert b.origen == ORIGEN_DIMENSION_ESTABILIDAD, p.punto.id
+        for lado in ("entrada", "salida"):
+            g = getattr(p.cabezal, lado)
+            b = next(d for d in g.dimensiones
+                     if d.nombre == "ancho de la zapata (B)")
+            origenes[(p.punto.id, lado)] = b.origen
+    # CAMBIADO DECLARANDOLO (VE-7 fix-suite): el juego declara el canto del
+    # marco que la app pide (`espesor_pared_cajon` = 0.30 m, VE7B-11). Con
+    # el la clave de C-01 sube 0.10 m, el cabezal de ENTRADA crece con ella
+    # (H_c 2.35 -> 2.45 m, L_c 2.20 -> 2.40 m) y la zapata que la regla de
+    # T-7a propone para esa altura (B = 1.715 m) ya pasa la estabilidad: no
+    # hace falta dimensionarla (con 0.20 m crecia de la regla a 1.745 m).
+    # Las otras siete zapatas crecen por estabilidad, como desde VE-3.5.
+    assert {k for k, o in origenes.items()
+            if o == ORIGEN_DIMENSION_REGLA} == {("C-01", "entrada")}
+    assert {k for k, o in origenes.items()
+            if o != ORIGEN_DIMENSION_REGLA} == {
+        k for k, o in origenes.items() if o == ORIGEN_DIMENSION_ESTABILIDAD}
 
 
 @pytest.mark.lento
@@ -549,14 +586,22 @@ def test_la_corrida_titular_es_la_de_las_decisiones_de_archivo(titular):
     # dos criterios (la reduccion de k_h y el armado «cedente»).
     # VE-3.16: `drenaje_trasdos` sale del grupo (su archivo es 'drenado',
     # lo que el juego declaraba) y el juego ya no lo declara.
+    # VE-7 fix-suite (CAMBIADO DECLARANDOLO): el juego pisa ademas el canto
+    # del marco con el valor que la app pide (VE7B-11), y la titular lo
+    # CONSERVA (`J.LA_TITULAR_CONSERVA`): con el de archivo la app detiene
+    # el portico y manda repetir con 0.30 m.
     assert pisadas == set(J.PISA_EL_ARCHIVO_PORQUE) == {
-        "factor_muro_eleccion", "regimen_resistencia_elementos_cabezal"}
+        "factor_muro_eleccion", "regimen_resistencia_elementos_cabezal",
+        "espesor_pared_cajon"}
+    assert set(J.LA_TITULAR_CONSERVA) == {"espesor_pared_cajon"}
     assert "drenaje_trasdos" not in J.DECLARACIONES
     assert [c for c, *_ in V.pisa_el_archivo()] == sorted(
         pisadas, key=list(J.DECLARACIONES).index)
     cambios = dict(((c[1], c[2]) for c in J.VARIANTES[V.VARIANTE_TITULAR][1]))
     assert cambios["factor_muro_eleccion"] is None
     assert cambios["regimen_resistencia_elementos_cabezal"] is None
+    assert not set(J.LA_TITULAR_CONSERVA) & set(cambios)
+    assert set(cambios) == pisadas - set(J.LA_TITULAR_CONSERVA)
     # VE-3.16 (CAMBIADO DECLARANDOLO): la titular ya no toca el drenaje ni
     # redeclara el γ saturado de prueba: con el relleno drenado de archivo
     # no se lee.
@@ -576,7 +621,11 @@ def test_la_corrida_titular_es_la_de_las_decisiones_de_archivo(titular):
     bloqueos = [(b.punto, b.que) for b in V.todos_los_bloqueos(titular)]
     # CAMBIADO DECLARANDOLO (VE-3.14, H-3): sin los dos T7B-05 por punto
     # (el sismo de los dos cabezales con el relleno saturado se evalua).
-    assert sorted(bloqueos) == [("C-01", "VC1-01")]
+    # VE-5 met (VE-7 fix-suite): mas los rubros de la Fase 11 que no se
+    # miden (VE5-MET-01), los mismos que en la corrida completa.
+    assert sorted(set(bloqueos)) == [
+        ("A-01", "VE5-MET-01"), ("A-02", "VE5-MET-01"),
+        ("B-01", "VE5-MET-01"), ("C-01", "VC1-01"), ("C-01", "VE5-MET-01")]
 
 
 def test_el_documento_presenta_primero_la_titular():
@@ -648,7 +697,9 @@ def test_el_censo_del_paragrafo_6_dice_que_criterio_no_tiene_consumidor():
     """
     from tests.test_nivel_medido import SIN_CONSUMIDOR_Y_SIN_MEDIDA
     assert set(V._sin_consumidor()) == set(SIN_CONSUMIDOR_Y_SIN_MEDIDA)
-    assert len(SIN_CONSUMIDOR_Y_SIN_MEDIDA) == 3    # 7 hasta VE-5 (catlic)
+    # 7 hasta VE-5 (catlic), 3 hasta VE-7: las dos ediciones que rigen el
+    # expediente (medido con `V._sin_consumidor()`).
+    assert len(SIN_CONSUMIDOR_Y_SIN_MEDIDA) == 2
     texto = V.DOCUMENTO.read_text(encoding="utf-8")
     seccion_6 = texto[texto.index("## 6. Criterios sin valor de archivo"):]
     no_censados = {l.split("|")[1].strip().strip("`")
@@ -739,6 +790,14 @@ def test_la_hidrologia_calculada_entra_al_indice_de_formulas():
 # 1d. El defecto que la validacion destapo, CORREGIDO (T11-03)
 # ===========================================================================
 
+def _bloqueo_de_diseno(informe, id_punto):
+    """El UNICO bloqueo de diseño (no factible) del punto."""
+    de_diseno = [b for b in _punto(informe, id_punto).bloqueos
+                 if b.tipo is TipoDeBloqueo.DISENO_NO_FACTIBLE]
+    assert len(de_diseno) == 1, _punto(informe, id_punto).bloqueos
+    return de_diseno[0]
+
+
 def test_el_escalon_que_no_cabe_bajo_la_subrasante_es_no_factible_por_rasante():
     """
     T-11 lo dejo reproducido en `xfail(strict=True)` y lo corrigio la sesion
@@ -762,16 +821,17 @@ def test_el_escalon_que_no_cabe_bajo_la_subrasante_es_no_factible_por_rasante():
     """
     informe = V.correr_juego(V.aplicar(V.juego_completo(),
                                        (("externo", "globales", "TW_m", None),)))
-    b = _punto(informe, "A-01").bloqueos[0]
-    assert b.tipo is TipoDeBloqueo.DISENO_NO_FACTIBLE
+    # VE-7 fix-suite: el punto lleva tambien los bloqueos de las etapas que
+    # corren al lado del diseño (VE6-02: la Fase 0-bis, los metrados); el
+    # que se juzga es el de DISEÑO, no el primero de la lista.
+    b = _bloqueo_de_diseno(informe, "A-01")
     assert "Dato invalido en 'cota_subrasante'" not in b.mensaje
     assert "material no evaluable" not in b.mensaje
     assert "NO FACTIBLE POR RASANTE" in b.mensaje
     assert "Ø 1.80 m no cabe bajo la subrasante" in b.mensaje
     assert b.delta_rasante_m == pytest.approx(
         42.10 + 1.95 + 0.01501 + 0.3048 + 0.15 - 44.20, rel=REL_TRANSPORTE)
-    b = _punto(informe, "A-02").bloqueos[0]
-    assert b.tipo is TipoDeBloqueo.DISENO_NO_FACTIBLE
+    b = _bloqueo_de_diseno(informe, "A-02")
     assert b.delta_rasante_m == pytest.approx(
         39.85 + 1.95 + 0.188 + 0.3048 + 0.15 - 42.00, rel=REL_TRANSPORTE)
 
@@ -807,6 +867,14 @@ PERFIL_SIN_VALOR_QUE_ESPERA_UNA_ENTRADA = {
         "el ensayo del material de cantera del relleno (lo lee el cabezal "
         "con agua en el relleno, y V7 solo con 'nivel_agua_diseno_v7' = "
         "'nf_del_punto' y el nivel sobre la clave)"),
+    # --- VE-5 (mh, ficha T1-05) --- medido con
+    # `ca.criterios_de_perfil_sin_valor()`.
+    "factores_idf_regional": (
+        "el estudio regional de curvas IDF de la zona (o las curvas de una "
+        "estacion pluviografica): K, m y n de la ecuacion (17) del Manual "
+        "(num. 3.8.1). Solo los lee el caudal CALCULADO con "
+        "'relacion_intensidad_duracion' = 'idf_regional_ec17'; con el valor "
+        "de archivo ('dick_peschke') nunca se leen"),
 }
 
 
@@ -815,6 +883,7 @@ def test_ningun_criterio_de_perfil_sin_valor_salvo_los_que_esperan_una_entrada()
                   if c.valor is None and c.nivel == ca.NIVEL_PERFIL
                   and not getattr(c, "opcional", False)}
     assert pendientes == set(PERFIL_SIN_VALOR_QUE_ESPERA_UNA_ENTRADA)
+    assert pendientes == set(ca.criterios_de_perfil_sin_valor())
     contrato = V.CONTRATO.read_text(encoding="utf-8")
     for clave in pendientes:
         assert f"`{clave}`" in contrato, clave

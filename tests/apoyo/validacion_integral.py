@@ -107,6 +107,20 @@ CRITERIOS_QUE_SON_DATO_POR_CONTRATO: Dict[str, str] = {
     "TW_receptor": "dato del receptor (ANA / Junta)",
 }
 
+# Los `DatoInvalidoError` sobre un CRITERIO con valor de archivo que la app
+# rechaza NOMBRANDO el valor que hay que declarar (VE-7 fix-suite). No es una
+# cuarta clase: es un criterio que el proyectista declara, y la etapa lo dice
+# con su valor. Solo cuenta si el mensaje trae la marca de la busqueda (la
+# frase con que la app nombra el valor); cualquier otro `DatoInvalidoError`
+# sigue siendo un hallazgo (`ValueError` en `clasificar`).
+# clave -> (marca que el mensaje contiene, ficha).
+CRITERIOS_QUE_LA_APP_PIDE_DECLARAR: Dict[str, Tuple[str, str]] = {
+    # VE7B-11: el portico que no cumple busca el menor canto de la grilla
+    # que lo cierra y lo pide (`M8.exigir_canto_del_portico`), sin
+    # adoptarlo.
+    "espesor_pared_cajon": ("(el menor de la grilla que cierra)", "VE7B-11"),
+}
+
 # Cada bloqueo de «metodo no evaluable» o «diferido por alcance» se nombra
 # por su ficha. La tabla es de este modulo y el test exige que (a) todo
 # bloqueo de esas dos clases que cualquier corrida de la validacion produzca
@@ -172,6 +186,10 @@ def clasificar(id_punto: str, b: Any) -> BloqueoClasificado:
     Lanza `ValueError` para un tipo que no cae en ninguna de las tres
     clases: un `DisenoNoFactibleError`, un `DatoInvalidoError` o un
     `LimiteNumericoError` en la validacion son un hallazgo, no una clase.
+    La unica excepcion (VE-7 fix-suite) es el `DatoInvalidoError` sobre un
+    criterio en el que la app NOMBRA el valor que hay que declarar
+    (`CRITERIOS_QUE_LA_APP_PIDE_DECLARAR`): es un criterio que se declara.
+    (El `DisenoNoFactibleError` es la cuarta salida, solo de §4 y §5.)
     """
     tipo = b.tipo
     if tipo is TipoDeBloqueo.DATO_FALTANTE:
@@ -194,6 +212,13 @@ def clasificar(id_punto: str, b: Any) -> BloqueoClasificado:
     if tipo is TipoDeBloqueo.DISENO_NO_FACTIBLE:
         return BloqueoClasificado(id_punto, CLASE_NO_FACTIBLE, tipo.value,
                                   b.etapa, "Fase 5", _primera_frase(b.mensaje))
+    if tipo is TipoDeBloqueo.DATO_INVALIDO:
+        pide = CRITERIOS_QUE_LA_APP_PIDE_DECLARAR.get(str(b.campo))
+        if pide is not None and pide[0] in str(b.mensaje):
+            return BloqueoClasificado(id_punto, CLASE_CRITERIO, tipo.value,
+                                      b.etapa, str(b.campo),
+                                      f"decision (ficha {pide[1]}): "
+                                      + _primera_frase(b.mensaje))
     raise ValueError(f"bloqueo fuera de las tres clases en {id_punto}: "
                      f"{tipo.value} -- {b.etapa} -- {b.mensaje[:200]}")
 
@@ -863,7 +888,11 @@ def generar(*, base: Any = None, por_defecto: Any = None,
     A("")
     A("El juego declara, sobre criterios que **tienen valor de archivo**, lo "
       "que esta tabla dice. La corrida titular los deja en su valor de "
-      "archivo (variante `decisiones_de_archivo`). El trasdós es **drenado** "
+      "archivo (variante `decisiones_de_archivo`), **salvo** "
+      + ", ".join(f"`{c}`" for c in J.LA_TITULAR_CONSERVA)
+      + ": con su valor de archivo la propia app detiene la etapa y nombra "
+      "el valor que hay que declarar (ficha VE7B-11), y la titular conserva "
+      "el que la app pide (`LA_TITULAR_CONSERVA` del juego). El trasdós es **drenado** "
       "de archivo desde VE-3.16 (AASHTO 11.6.6, «shall be drained»; "
       "compromete filtro y lloraderos en los planos), y con el freático del "
       "juego bajo las zapatas la titular no lee el peso específico saturado "
