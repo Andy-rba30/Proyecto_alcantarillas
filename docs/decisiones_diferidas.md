@@ -8957,49 +8957,48 @@ estas fichas.
 
 ## VE6-01 · El nivel freático en M12 es de expediente y detiene el rubro, no el punto
 
-- **Cerrado:** el censo le encuentra `NF_profundidad_m` a M12 (`renglones_excavacion`) y
-  M12 no se difiere entero a perfil (la fila del cuadro de compatibilidad corre en los dos
-  alcances). El pre-vuelo leía `consumido_por` módulo a módulo y anunciaba la columna como
-  dato que DETIENE en todo punto («la exige M12_metrados»); la corrida de perfil no se
-  detenía. Ahora los dos leen `servicio.CONSUMO_DETRAS_DE` (M12 → M9_cabezal) por
-  `servicio.consumo_diferido`: gobierna el salto de los metrados en `correr_punto` y
-  `anticipo._consumidores_de_calculo`. A perfil M12 no exige el NF; a expediente sí.
-- **Por qué así:** los metrados miden el cabezal de la Fase 9, que el perfil difiere. A
-  expediente la falta es un `Bloqueo` de la Fase 11 sólo del rubro de excavación, y no un
-  volumen sin partida: el EG-2013 501.01 separa la excavación en seco de la excavación bajo
-  agua y 501.09 la paga por partida, de modo que un volumen único se asignaría en silencio
-  a la partida en seco. «DETIENE» en el pre-vuelo es eso: detiene una etapa, no el punto.
-  Y VE-5 met extendió `Criterio.no_negativo` (nacido en VE-2, M4) a
-  `sobreancho_excavacion_estructuras_m` e `incremento_acero_por_despiece` sin escribirlo:
-  un sobreancho negativo excavaría dentro de las caras (501.04) y un incremento negativo
-  mediría menos acero que las barras de cada elemento (504.10). Censado en
-  `tests/test_ve2_revision_m3_m4.py` (`CON_SIGNO_DE_METRADO`), sin tope inventado.
-- **Qué haría falta:** nada para el pre-vuelo. Si otro módulo llega a leer la entrada
-  detrás de otro, se añade a `CONSUMO_DETRAS_DE` (lo fija `tests/test_ve6_prevuelo.py`).
+- **Cerrado:** el pre-vuelo anunciaba `NF_profundidad_m` como dato que DETIENE en todo
+  punto («la exige M12_metrados»): M12 no se difiere entero a perfil (el cuadro de
+  compatibilidad corre en los dos alcances) y la corrida de perfil no la pedía. Los dos
+  leen ahora `servicio.CONSUMO_DETRAS_DE` (M12 → M9_cabezal) por
+  `servicio.consumo_diferido`, que falla como `_difiere` ante un alcance desconocido. A
+  expediente la falta es un `Bloqueo` de la Fase 11 sólo del rubro de excavación.
+  Dictamen Fable («aprobar con cambios»): (1) todo renglón bajo agua (501.B, 501.D) lleva
+  `M12.AVISO_PARTIDA_BAJO_AGUA`: el reparto sale de la lectura de campo del EMS, no del
+  freático más alto previsto, y la partida la fija el Supervisor (EG-2013 501.09, «aprobadas
+  por el Supervisor»; 501.01, pág. impresa 886, «la presencia permanente de agua dificulte
+  los trabajos»), sin margen ni corrección numérica; (2) un punto dimensionado sin cabezal
+  lleva su `Bloqueo` de la Fase 11 («metrados no medidos: sin cabezal»), que remite al de
+  la Fase 9 o al que lo dejó sin 7.B.
+- **Por qué así:** los metrados miden el cabezal de la Fase 9, que el perfil difiere. Un
+  volumen único sin partida se asignaría en silencio a la partida en seco (501.01 separa
+  las dos y 501.09 las paga aparte). VE-5 met extendió `Criterio.no_negativo` a
+  `sobreancho_excavacion_estructuras_m` e `incremento_acero_por_despiece` (501.04, 504.10):
+  censado en `tests/test_ve2_revision_m3_m4.py` (`CON_SIGNO_DE_METRADO`).
+- **Qué haría falta:** el freático más alto previsto del EMS, si el dueño quiere que el
+  reparto lo use; hoy lo resuelve el Supervisor en obra.
 - **Dónde vive:** `src/servicio.py::consumo_diferido`
 
 ## VE6-02 · La licuefacción se registra al lado de las demás faltas, no delante
 
-- **Cerrado:** el `Bloqueo` de la Fase 0-bis (`licuefaccion_ems` sin declarar, ficha
-  VE5-CAT-03) no detiene el dimensionado y así se queda: la corrida sigue y dice también
-  las faltas de las Fases 2 a 11. Lo que estaba mal eran los lectores que tomaban el
-  primer bloqueo del punto por el motivo del dimensionado: la fila del cuadro de
-  compatibilidad (`servicio._fase_11_compatibilidad`, que a expediente decía «detenido en
-  Fase 0-bis» en todo punto sin tamizado, también en un «subir rasante» con delta) y
-  cuatro tests (`tests/test_ve2_correcciones.py`, `tests/test_ve3_vc3_bloquea.py`) que
-  buscaban el primer `DATO_FALTANTE` del bucle de MD. Los dos saltan
-  `servicio.FASES_AL_MARGEN_DEL_DIMENSIONADO` (hoy sólo la Fase 0-bis).
+- **Cerrado:** el `Bloqueo` de la Fase 0-bis (ficha VE5-CAT-03) no detiene el dimensionado:
+  la corrida sigue y dice también las faltas de las Fases 2 a 11. Lo que fallaba eran los
+  lectores que tomaban el primer bloqueo por motivo del dimensionado (la fila del cuadro de
+  compatibilidad y cuatro tests del bucle de MD). Dictamen Fable («aprobar con cambios»):
+  el motivo del cuadro es por SELECCIÓN POSITIVA, el primer bloqueo no diferido de
+  `servicio.FASES_QUE_LLEVAN_A_7A` (carga, clasificación, hidrología, bucle de MD y 7.B) y,
+  sin ninguno, el texto por defecto de M12; `FASES_AL_MARGEN_DEL_DIMENSIONADO` es su
+  complemento, para los tests. Y con la Fase 0-bis abierta el punto avisa
+  (`servicio.AVISO_CIMENTACION_PROVISIONAL`) que la cimentación del cabezal es provisional.
 - **Por qué así:** el riesgo de licuefacción es del terreno de fundación y del terraplén
   (AASHTO LRFD 10.5.4.2, PDF 1323) y su resultado lo declara el EMS (E.050 38.3): no cambia
-  la sección hidráulica. Anteponerlo escondería las faltas reales del punto y repetiría lo
-  que PF-2 corrigió (cuatro corridas para ver cuatro bloqueos). La falta sigue en los
-  bloqueos y sigue impidiendo cerrar el expediente.
-- **Abierto:** el bloqueo de los techos de transcripción de la Fase 6 (`_etapa` con
-  «techos de transcripcion») tampoco detiene el dimensionado y no está en la tupla; no
-  aparece en el juego.
-- **Qué haría falta:** decidir si ese bloqueo entra en la tupla (una constante para su
-  etapa).
-- **Dónde vive:** `src/servicio.py::FASES_AL_MARGEN_DEL_DIMENSIONADO`
+  la sección hidráulica. Anteponerlo escondería las faltas reales (la lección de PF-2). La
+  exclusión dejaba pasar por motivo cualquier bloqueo lateral —los techos de transcripción
+  de la Fase 6, que se anotan antes que nada; la protección, antes de 7.B—: la selección
+  positiva cierra el «Abierto» de los techos sin una constante por etapa.
+- **Qué haría falta:** nada; una fase nueva que pueda dejar un punto sin 7.A se añade a
+  `FASES_QUE_LLEVAN_A_7A` (lo fija `tests/test_ve6_prevuelo.py`).
+- **Dónde vive:** `src/servicio.py::FASES_QUE_LLEVAN_A_7A`
 # Parte LXIII — Lo que VE-6 (integrador) dejó escrito: ítems 22 y 34 y el cabezal paralelo (T7A-03)
 
 VE-6 (2026-11-20, rama `claude/ve6-integrador`, base `3ce07b5` con VE-5 integrado) cierra lo que el

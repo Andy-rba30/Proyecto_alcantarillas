@@ -308,10 +308,10 @@ def consumo_diferido(alcance: str, modulo: str) -> bool:
     """
     Si esta corrida NO llega a la parte de `modulo` que lee datos de entrada
     y criterios: porque difiere el modulo entero, o porque difiere el modulo
-    detras del cual lee (`CONSUMO_DETRAS_DE`). Un alcance desconocido no
-    difiere nada.
+    detras del cual lee (`CONSUMO_DETRAS_DE`). Un alcance desconocido falla
+    como en `_difiere` (KeyError): no se supone que no difiere nada.
     """
-    diferidos = MODULOS_DIFERIDOS_POR_ALCANCE.get(alcance, ())
+    diferidos = MODULOS_DIFERIDOS_POR_ALCANCE[alcance]
     return modulo in diferidos or CONSUMO_DETRAS_DE.get(modulo) in diferidos
 
 
@@ -577,6 +577,11 @@ ETAPA_METRADO_ACERO = "metrado del acero de los cabezales (EG-2013 504)"
 ETAPA_METRADO_LOSA = "metrado de la losa de entrega (EG-2013 503)"
 ETAPA_METRADO_PROTECCION = ("metrado del enrocado de salida y el geotextil "
                             "(EG-2013 511)")
+# --- VE-6 (dictamen Fable) --- el punto dimensionado que llega sin cabezal.
+ETAPA_METRADOS_SIN_CABEZAL = "metrados del punto (sin cabezal de la Fase 9)"
+MENSAJE_METRADOS_SIN_CABEZAL = (
+    "metrados no medidos: sin cabezal no hay longitud entre caras "
+    "exteriores ni cimientos que medir")
 AVISO_ACERO_DEL_MARCO = (
     "el acero del marco no se metra: el armado de la seccion del marco esta "
     "fuera del alcance declarado (armado_seccion_marco, ficha T5-07)")
@@ -933,6 +938,14 @@ FASES_QUE_LLEVAN_A_7A: Tuple[str, ...] = (
 FASES_AL_MARGEN_DEL_DIMENSIONADO: Tuple[str, ...] = (
     FASE_LICUEFACCION, FASE_PROTECCION, FASE_ESTRUCTURAL, FASE_CABEZAL,
     FASE_ALIVIO, FASE_METRADOS)
+# --- VE-6 (dictamen Fable) --- Lo que el punto dice de su cabezal mientras
+# la Fase 0-bis siga abierta. Solo un aviso: no cambia ningun resultado.
+AVISO_CIMENTACION_PROVISIONAL = (
+    "la verificacion de la cimentacion del cabezal (Fase 9: capacidad "
+    "portante y deslizamiento) es PROVISIONAL mientras la Fase "
+    "0-bis siga abierta: AASHTO LRFD 10.5.4.2 exige evaluar la licuefaccion "
+    "y el EMS no ha declarado su resultado (o declara que licua sin "
+    "mitigacion); un suelo que licua invalida esa verificacion")
 # A nivel de perfil la Fase 0-bis declara el condicionante y remite la
 # solucion al expediente (v8, Fase 0-bis, punto 3).
 MENSAJE_LICUEFACCION_DIFERIDA = (
@@ -3324,6 +3337,12 @@ def _fase_licuefaccion(informe: InformePunto, externos: DatosExternos) -> None:
         lambda: ML.evaluar_licuefaccion(
             id_punto=punto.id, NF_profundidad_m=punto.NF_profundidad_m,
             declarada=externos.valor(punto.id, CLAVE_LICUEFACCION_EMS)))
+    # --- VE-6 (dictamen Fable) --- con la Fase 0-bis abierta (sin el
+    # resultado del EMS, o «licua» sin mitigacion) la cimentacion del
+    # cabezal de la Fase 9 se verifico sin saber si el suelo licua: aviso.
+    if informe.licuefaccion is None and \
+            AVISO_CIMENTACION_PROVISIONAL not in informe.avisos_de_expediente:
+        informe.avisos_de_expediente.append(AVISO_CIMENTACION_PROVISIONAL)
     # --- VE-5 (catlic, censo Sec. 5) --- la clase de sitio MEDIDA, si el EMS
     # la declara, contra las filas de 'F_pga' (`ML.contrastar_clase_sitio`).
     avisos_sitio = _etapa(informe.bloqueos, FASE_LICUEFACCION,
@@ -4795,6 +4814,27 @@ def _fase_11_compatibilidad(informe: InformePunto) -> None:
         motivo=motivo)
 
 
+def _sin_cabezal_no_hay_metrado(informe: InformePunto) -> None:
+    """
+    --- VE-6 (dictamen Fable) --- Lanza la falta del cabezal para el metrado,
+    con la remision al bloqueo que la explica: el primero no diferido de la
+    Fase 9 o, si no lo hay, el primero de una fase que lleva a 7.A.
+    """
+    previo = next((b for b in informe.bloqueos
+                   if b.fase == FASE_CABEZAL and not b.diferido_por_alcance),
+                  None)
+    if previo is None:
+        previo = next((b for b in informe.bloqueos
+                       if b.fase in FASES_QUE_LLEVAN_A_7A
+                       and not b.diferido_por_alcance), None)
+    remision = (f"vease el bloqueo de {previo.fase}, {previo.etapa}"
+                if previo is not None else
+                f"{FASE_CABEZAL} no propuso cabezal para el punto")
+    raise DatoFaltanteError(
+        "cabezal", id_punto=informe.punto.id,
+        detalle=f"{MENSAJE_METRADOS_SIN_CABEZAL}: {remision}")
+
+
 def _fase_11_metrados(informe: InformePunto) -> None:
     """
     Los METRADOS del punto referidos al EG-2013 (v8 Fase 11, entregable 8),
@@ -4804,10 +4844,17 @@ def _fase_11_metrados(informe: InformePunto) -> None:
     se puede medir (un criterio [A] sin declarar, el nivel freatico que
     falta) queda como `Bloqueo` de FASE_METRADOS y los demas rubros siguen.
     Sin cabezal no hay metrado: la longitud del barril entre caras
-    exteriores es la de la Fase 9.
+    exteriores es la de la Fase 9. Y desde el dictamen Fable de VE-6 eso no
+    se calla: un punto dimensionado sin cabezal lleva su propio `Bloqueo` de
+    FASE_METRADOS («metrados no medidos: sin cabezal»), que remite al de la
+    Fase 9 o, si la 9 no llego a correr, al que dejo al punto sin 7.B.
     """
     c, r, g = informe.cabezal, informe.resultado, informe.geometria
-    if c is None or r is None or g is None or not r.aceptado:
+    if r is None or not r.aceptado:
+        return
+    if c is None or g is None:
+        _etapa(informe.bloqueos, FASE_METRADOS, ETAPA_METRADOS_SIN_CABEZAL,
+               lambda: _sin_cabezal_no_hay_metrado(informe))
         return
     material, seccion = r.material, r.seccion
     celdas = r.resultado_hidraulico.numero_celdas

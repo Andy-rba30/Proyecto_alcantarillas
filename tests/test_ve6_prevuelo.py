@@ -189,3 +189,58 @@ def test_todo_renglon_bajo_agua_lleva_el_aviso_y_el_seco_no(juego_expediente):
     for necesario in ("NF_profundidad_m", "Supervisor", "501.09", "501.01",
                       "886"):
         assert necesario in M12.AVISO_PARTIDA_BAJO_AGUA, necesario
+
+
+# --- 3: un alcance desconocido falla igual que en `_difiere` --------------
+
+def test_consumo_diferido_con_un_alcance_desconocido_falla_como_difiere():
+    with pytest.raises(KeyError):
+        servicio._difiere("otro", "M12_metrados")
+    with pytest.raises(KeyError):
+        servicio.consumo_diferido("otro", "M12_metrados")
+
+
+# --- 4: sin cabezal, la Fase 11 lo dice ------------------------------------
+
+def _sin_cabezal(juego_expediente, previos=()):
+    informe = copy.copy(next(p for p in juego_expediente.puntos
+                             if p.punto.id == "A-01"))
+    informe.cabezal, informe.metrado = None, None
+    informe.bloqueos = list(previos)
+    servicio._fase_11_metrados(informe)
+    return informe
+
+
+def test_sin_cabezal_la_fase_11_registra_su_bloqueo(juego_expediente):
+    informe = _sin_cabezal(juego_expediente)
+    propios = [b for b in informe.bloqueos if b.fase == servicio.FASE_METRADOS]
+    assert len(propios) == 1
+    assert propios[0].etapa == servicio.ETAPA_METRADOS_SIN_CABEZAL
+    assert informe.metrado is None
+
+
+def test_sin_cabezal_con_bloqueo_de_la_fase_9_remite_a_el(juego_expediente):
+    previo = _bloqueo(servicio.FASE_CABEZAL, "estabilidad del cabezal (prueba)")
+    informe = _sin_cabezal(juego_expediente, (previo,))
+    propios = [b for b in informe.bloqueos if b.fase == servicio.FASE_METRADOS]
+    assert len(propios) == 1
+    assert servicio.FASE_CABEZAL in propios[0].mensaje
+    assert "estabilidad del cabezal (prueba)" in propios[0].mensaje
+
+
+# --- 5: la cimentacion del cabezal es provisional con la 0-bis abierta -----
+
+def test_con_la_0bis_abierta_la_cimentacion_del_cabezal_es_provisional(
+        juego_expediente):
+    for p in juego_expediente.puntos:
+        abierta = any(b.fase == servicio.FASE_LICUEFACCION
+                      and not b.diferido_por_alcance for b in p.bloqueos)
+        assert abierta, p.punto.id          # el juego no declara el EMS
+        assert servicio.AVISO_CIMENTACION_PROVISIONAL in p.avisos_de_expediente
+    assert "10.5.4.2" in servicio.AVISO_CIMENTACION_PROVISIONAL
+
+
+def test_a_perfil_no_hay_aviso_de_cimentacion_provisional():
+    informe = V.correr_juego(V.juego_completo(), alcance=cli.ALCANCE_PERFIL)
+    for p in informe.puntos:
+        assert servicio.AVISO_CIMENTACION_PROVISIONAL not in p.avisos_de_expediente
