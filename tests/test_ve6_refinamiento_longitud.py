@@ -168,7 +168,7 @@ def test_el_aviso_cuando_la_carga_sube_con_la_formula_escrita(a01):
     H = (1 + ke + K_FRICCION_SI * n ** 2 * L_cab / R ** (4 / 3)) \
         * V ** 2 / (2 * G)
     esperado = H + TW_cab - S * L_cab
-    assert ref.HW_salida_cabezales_m == pytest.approx(esperado, rel=1e-6)
+    assert ref.HW_salida_cabezales_m == pytest.approx(esperado, rel=REL)
     assert ref.HW_cabezales_m > ref.HW_diseno_m
     assert "declarar `longitud_m`" in ref.aviso
     assert f"{L_cab:.3f}" in ref.aviso

@@ -202,7 +202,7 @@ def test_c01_con_cabezal_paralelo_calcula_con_la_carta_11(csv_c01):
             q = KU_SI * h.Q_celda_m3s / (B * D * D ** 0.5)
             assert q < Q_LIM_NO_SUMERGIDO
             assert h.HW_entrada == pytest.approx(
-                D * fila["K"] * q ** fila["M"], rel=1e-6)
+                D * fila["K"] * q ** fila["M"], rel=REL)
             # la Fase 9: muro paralelo, sin aleros, sin el aviso de Δz
             servicio._fase_9(c01, externos)
             cab = c01.cabezal
@@ -216,3 +216,15 @@ def test_c01_con_cabezal_paralelo_calcula_con_la_carta_11(csv_c01):
     assert not any("Δz" in a for a in cab.avisos)
     assert all(v.cumple for v in cab.verificaciones
                if v.codigo and v.codigo.startswith("CB1"))
+
+
+def test_el_factor_de_la_cara_del_muro():
+    """1 con el muro normal al eje; 1/cos(theta) con el paralelo a la via."""
+    with declarados(PARALELO):
+        par = M9.embocadura_del_punto(esviaje_grados=30.0, familia=Familia.C)
+    with declarados(DECLARACIONES_DEL_CAJON):
+        nor = M9.embocadura_del_punto(esviaje_grados=30.0, familia=Familia.C)
+    assert M9.es_paralelo_a_la_via(par) and not M9.es_paralelo_a_la_via(nor)
+    assert M9.factor_cara_del_muro(nor) == 1
+    assert M9.factor_cara_del_muro(par) == pytest.approx(
+        1 / math.cos(math.radians(30.0)), rel=REL)
