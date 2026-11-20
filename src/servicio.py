@@ -3192,7 +3192,23 @@ def _estabilidades(informe: InformePunto, entornos, bloqueos) -> list:
                 lambda e=entorno, c=condicion: ensamble_estabilidad(e, c))
             if resultado is not None:
                 estabilidades.append(resultado)
+                # --- VE-5 fixve4 --- una fila E4/E5 declarada que su
+                # criterio sin valor no deja decidir es un `Bloqueo` del
+                # punto (CriterioPendienteError), sin tumbar E1 a E3.
+                for codigo, clave in resultado.pendientes_por_criterio:
+                    _etapa(bloqueos, FASE_CABEZAL,
+                           etapa_de_global_declarada(entorno.extremo, codigo,
+                                                     condicion.value),
+                           lambda k=clave: ca.valor(k))
     return estabilidades
+
+
+def etapa_de_global_declarada(extremo: str, codigo: str,
+                              condicion: str) -> str:
+    """--- VE-5 fixve4 --- El rotulo del contraste del FS declarado de E4 o
+    E5 que espera un criterio (sin la palabra de las etapas E1-E3)."""
+    return (f"contraste del FS declarado de {codigo} del cabezal de "
+            f"{extremo}, condicion {condicion} (VE-4a)")
 
 
 def _fase_9(informe: InformePunto,

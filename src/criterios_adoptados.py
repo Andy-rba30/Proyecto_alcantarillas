@@ -11382,10 +11382,14 @@ CRITERIOS: Dict[str, Criterio] = {
                       "real, que el programa no tiene. La hoja de ruta no la "
                       "fija (§9.3 da solo los FS de E.050, del marco ASD). "
                       "Por eso no tiene valor de archivo. Sin declarar, la "
-                      "fila estatica cumple si el FS alcanza 1/0.65, no "
-                      "cumple si no alcanza ni 1/0.75 y sale como indicador «no "
-                      "decidida» entre los dos. Bajo sismo no hay eleccion: "
-                      "11.5.8 fija 0.9",
+                      "fila estatica cumple si el FS alcanza 1/0.65 y no "
+                      "cumple si no alcanza ni 1/0.75; entre los dos el "
+                      "veredicto depende de esta fila y se DETIENE: la fila "
+                      "LRFD no se emite, E4 o E5 vuelve a pendientes y el "
+                      "punto lleva el Bloqueo de este criterio (VE-5 fixve4; "
+                      "hasta ahi salia indicador «no decidida» y contaba "
+                      "como cumplida). Bajo sismo no hay eleccion: 11.5.8 "
+                      "fija 0.9",
         fuente="AASHTO LRFD 9a ed., 11.6.3.7 y C11.6.3.7, pag. impresa 11-25 "
                "(PDF 1494; citas AASHTO_LRFD_9.11.6.3.7#PHI y "
                "AASHTO_LRFD_9.C11.6.3.7#FS): las dos filas, no cual es la del "

@@ -7872,6 +7872,12 @@ class EstabilidadDelCabezal:
     regimen: str = ""
     K0: Optional[float] = None
     globales: Tuple["Verificacion", ...] = ()
+    # --- VE-5 fixve4 --- (codigo, clave del criterio) de las filas E4/E5
+    # DECLARADAS cuyo veredicto depende de un criterio sin valor (la fila de
+    # phi de 11.6.3.7 con el FS entre 1/0.75 y 1/0.65): no van en
+    # `globales`, vuelven a `pendientes` con su motivo y el servicio las
+    # lleva como `Bloqueo` del punto (`servicio._estabilidades`).
+    pendientes_por_criterio: Tuple[Tuple[str, str], ...] = ()
 
     def del_marco(self, marco: str) -> Tuple["Verificacion", ...]:
         return tuple(v for v in self.verificaciones
