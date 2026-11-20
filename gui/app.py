@@ -1486,9 +1486,12 @@ class ExpedienteApp:
         try:
             externos = cli.cargar_datos_externos(
                 Path(ruta_externos) if ruta_externos else None, self._leer_banderas())
+            # VE-4b (ficha T1-04): con la hidrologia entera, el anticipo
+            # dice tambien lo que detendria la Fase 1-bis; aqui se pinta.
             estimado = antc.datos_faltantes_por_punto(
                 Path(ruta), externos, alcance,
-                ids_con_caudal_calculable=cli.ids_con_caudal_calculable(hidrologia))
+                ids_con_caudal_calculable=cli.ids_con_caudal_calculable(hidrologia),
+                hidrologia=hidrologia)
         except (OSError, UnicodeDecodeError, ValueError) as exc:
             self.lbl_anticipo_prevuelo.config(
                 text=f"El pre-vuelo no pudo armar los datos externos: {exc}",

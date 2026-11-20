@@ -2772,10 +2772,13 @@ def _prevuelo(ruta_csv: Path, externos: DatosExternos, alcance: str,
     # LAS DOS ENTRADAS DE LA HIDROLOGIA (T-1, auditoria): con --cuencas y
     # --estacion el pre-vuelo las CARGA --un archivo mal escrito sale aqui--
     # y deja de llamar falta a un Q_m3s vacio que la corrida va a calcular;
-    # lo que NO hace es calcularlo, y lo dice en vez de callarlo.
+    # lo que NO hace es calcularlo, y lo dice en vez de callarlo. Desde
+    # VE-4b (ficha T1-04) anticipa lo que detendria la Fase 1-bis: recibe
+    # la hidrologia entera, y las filas las produce `src/anticipo.py`.
     calculables = ids_con_caudal_calculable(hidrologia)
     estimado = _antc.datos_faltantes_por_punto(
-        ruta_csv, externos, alcance, ids_con_caudal_calculable=calculables)
+        ruta_csv, externos, alcance, ids_con_caudal_calculable=calculables,
+        hidrologia=hidrologia)
     for linea in _antc.lineas_del_prevuelo(estimado):
         print(f"  {linea}")
     if hidrologia is not None:

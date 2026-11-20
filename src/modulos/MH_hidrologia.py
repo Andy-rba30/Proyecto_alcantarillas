@@ -98,6 +98,7 @@ from __future__ import annotations
 import csv
 import io
 import math
+from dataclasses import dataclass
 from pathlib import Path
 from statistics import NormalDist, fmean, median, stdev
 from typing import Any, Dict, List, Optional, Sequence, Tuple
@@ -138,11 +139,12 @@ from src.modelos import (CIFRAS_FINA, CIFRAS_MAGNITUD, LEYENDA_CAUDAL_CALCULADO,
                          LEYENDA_CAUDAL_DECLARADO,
                          MOTIVO_METODO_NO_EVALUABLE_HIDROLOGIA,
                          ORIGEN_CAUDAL_CALCULADO, ORIGEN_CAUDAL_DECLARADO,
-                         AjusteDeDistribucion, CaudalDeDiseno, Cuenca,
+                         AjusteDeDistribucion, CaudalDeDiseno,
+                         CriterioPendienteError, Cuenca,
                          DatoFaltanteError, DatoInvalidoError,
                          EleccionDeProyecto, EntradaHidrologica, ErrorProyecto,
                          LimiteNumericoError, Magnitud, MetodoNoEvaluableError,
-                         PasoDeMemoria, RegistroDeLluvia, SerieDeEstacion,
+                         ObstaculoAnticipado, PasoDeMemoria, RegistroDeLluvia, SerieDeEstacion,
                          TipoDeVeredicto, Umbral, Veredicto, eleccion, paso)
 from src.normativa import registro as _registro_normativo
 from src.tolerancias import (TOL_ABS_MISMO_MAXIMO_ANUAL_MM,
@@ -299,7 +301,8 @@ def poblacion_del_metodo(metodo: str, *, pendiente: Optional[float] = None,
 
 def _exigir_poblacion(metodo: str, *, pendiente: Optional[float] = None,
                       area_km2: Optional[float] = None,
-                      id_punto: Optional[str] = None) -> Optional[str]:
+                      id_punto: Optional[str] = None,
+                      leer=None) -> Optional[str]:
     """
     La compuerta de la poblacion de desarrollo. Dentro de ella, None. Fuera,
     lee el criterio 'tc_fuera_de_la_poblacion_del_metodo': con «no_evaluable»
@@ -309,6 +312,10 @@ def _exigir_poblacion(metodo: str, *, pendiente: Optional[float] = None,
     El trato es UNO para todos los metodos que tienen poblacion descrita:
     hasta la auditoria de T-1 Kirpich se detenia y California no, de modo que
     el limite de una se saltaba cambiando el nombre del metodo.
+
+    `leer` (VE-4b): como se lee el criterio. La corrida, con `ca.valor`, que
+    registra el uso; el pre-vuelo (`anticipar_caudal`), con
+    `_leer_sin_registrar`, que lanza lo mismo y no lo registra.
     """
     poblacion = poblacion_del_metodo(metodo, pendiente=pendiente,
                                      area_km2=area_km2)
@@ -317,7 +324,7 @@ def _exigir_poblacion(metodo: str, *, pendiente: Optional[float] = None,
     _, describe, tiene = poblacion
     hecho = (f"la Tabla N 05 dice que la formula «{metodo}» salio de "
              f"{describe}, y esta cuenca tiene {tiene}")
-    trato = ca.valor(CRITERIO_POBLACION_TC)
+    trato = (ca.valor if leer is None else leer)(CRITERIO_POBLACION_TC)
     if trato == POBLACION_INDICADOR:
         return (f"Tiempo de concentracion EXTRAPOLADO: {hecho}. Se evalua "
                 f"igual porque el criterio '{CRITERIO_POBLACION_TC}' = "
@@ -514,6 +521,24 @@ def _juicio_de_poblacion(metodo: str, cita: str, aviso: Optional[str], *,
     return umbral, veredicto
 
 
+def _falta_desnivel_california(cuenca: Cuenca) -> DatoFaltanteError:
+    return DatoFaltanteError(
+        "H_desnivel_m", id_punto=cuenca.id,
+        detalle="el metodo de California Culverts Practice (Tabla "
+                "N 05) pide el desnivel H entre la divisoria de "
+                "aguas y la salida, en metros: es columna opcional "
+                "del CSV de cuencas y no se deduce de S por L")
+
+
+def _falta_cn_retardo(cuenca: Cuenca) -> DatoFaltanteError:
+    return DatoFaltanteError(
+        "CN", id_punto=cuenca.id,
+        detalle="la ecuacion de retardo (Tabla N 05) pide el numero "
+                "de curva de la cuenca: es columna opcional del CSV "
+                "de cuencas, lo entrega el estudio hidrologico y el "
+                "programa no tiene tabla de la que leerlo")
+
+
 def tiempo_de_concentracion(cuenca: Cuenca, *, C: Optional[float] = None,
                             racional_modificado: bool = False,
                             ) -> Tuple[float, PasoDeMemoria, Tuple[str, ...]]:
@@ -554,12 +579,7 @@ def tiempo_de_concentracion(cuenca: Cuenca, *, C: Optional[float] = None,
         notas.append(_lectura_del_proyecto(cita))
     elif metodo == TC_METODO_CALIFORNIA:
         if cuenca.H_desnivel_m is None:
-            raise DatoFaltanteError(
-                "H_desnivel_m", id_punto=cuenca.id,
-                detalle="el metodo de California Culverts Practice (Tabla "
-                        "N 05) pide el desnivel H entre la divisoria de "
-                        "aguas y la salida, en metros: es columna opcional "
-                        "del CSV de cuencas y no se deduce de S por L")
+            raise _falta_desnivel_california(cuenca)
         cita = "MC_HHD.3.9#T05_CALIFORNIA"
         pendiente = cuenca.H_desnivel_m / cuenca.L_cauce_m
         aviso = _exigir_poblacion(metodo, pendiente=pendiente,
@@ -608,12 +628,7 @@ def tiempo_de_concentracion(cuenca: Cuenca, *, C: Optional[float] = None,
             "magnitudes en esas dos columnas.")
     elif metodo == TC_METODO_RETARDO_SCS:
         if cuenca.CN is None:
-            raise DatoFaltanteError(
-                "CN", id_punto=cuenca.id,
-                detalle="la ecuacion de retardo (Tabla N 05) pide el numero "
-                        "de curva de la cuenca: es columna opcional del CSV "
-                        "de cuencas, lo entrega el estudio hidrologico y el "
-                        "programa no tiene tabla de la que leerlo")
+            raise _falta_cn_retardo(cuenca)
         cita = "MC_HHD.3.9#T05_SCS"
         aviso = _exigir_poblacion(metodo, area_km2=cuenca.area_km2,
                                   id_punto=cuenca.id)
@@ -850,13 +865,41 @@ def _ajustar(valores: Sequence[float], distribucion: str, *, TR: float,
     con ellos. La puerta publica es `precipitacion_de_diseno`, que no ajusta
     nada sin el criterio 'homogeneidad_serie_fen' declarado.
     """
+    bondad, cuantil = _bondad(valores, distribucion, alfa=alfa)
+    return AjusteDeDistribucion(
+        distribucion=distribucion, parametros=bondad.parametros, n=bondad.n,
+        D=bondad.D, d_critico=bondad.d_critico, alfa=alfa,
+        acepta=bondad.acepta, P_TR_mm=cuantil(TR))
+
+
+@dataclass(frozen=True)
+class _Bondad:
+    """
+    La prueba de bondad de una distribucion ajustada, SIN cuantil (VE-4b):
+    lo que `_ajustar` calcula antes de saber el periodo de retorno. Lo usa
+    tambien el pre-vuelo (`anticipar_caudal`), que no tiene TR: que una
+    distribucion pase o no la prueba de Kolmogorov-Smirnov no depende de el.
+    """
+
+    distribucion: str
+    parametros: Tuple[Tuple[str, float], ...]
+    n: int
+    D: float
+    d_critico: float
+
+    @property
+    def acepta(self) -> bool:
+        return self.D < self.d_critico
+
+
+def _bondad(valores: Sequence[float], distribucion: str, *,
+            alfa: float) -> Tuple[_Bondad, Any]:
+    """(prueba de bondad, funcion cuantil de TR) de una distribucion (num. 3.7.2)."""
     parametros, F, cuantil = _modelo(distribucion, valores)
     n = len(valores)
-    D = estadistico_ks(valores, F)
     d, _ = valor_critico_ks(n, alfa)
-    return AjusteDeDistribucion(
-        distribucion=distribucion, parametros=parametros, n=n, D=D,
-        d_critico=d, alfa=alfa, acepta=D < d, P_TR_mm=cuantil(TR))
+    return _Bondad(distribucion=distribucion, parametros=parametros, n=n,
+                   D=estadistico_ks(valores, F), d_critico=d), cuantil
 
 
 def _elegir(valores: Sequence[float], declarada: str, *, TR: float,
@@ -873,6 +916,19 @@ def _elegir(valores: Sequence[float], declarada: str, *, TR: float,
     0 mm-- queda EXCLUIDA diciendolo, y no detiene a las demas; si es la
     declarada, se detiene.
     """
+    return _elegir_con(
+        valores, declarada,
+        lambda distribucion: _ajustar(valores, distribucion, TR=TR, alfa=alfa))
+
+
+def _elegir_con(valores: Sequence[float], declarada: str, evaluar):
+    """
+    La REGLA de eleccion de `_elegir`, con la evaluacion de cada distribucion
+    como argumento (VE-4b): `_elegir` la evalua con su cuantil
+    (`_ajustar`) y el pre-vuelo solo con su prueba de bondad (`_bondad`),
+    porque no tiene periodo de retorno. Una sola regla para los dos: el
+    pre-vuelo no puede adoptar otra distribucion que la corrida.
+    """
     n = len(valores)
     if n < KS_N_MINIMO_TABULADO:
         raise _no_evaluable(
@@ -885,11 +941,11 @@ def _elegir(valores: Sequence[float], declarada: str, *, TR: float,
     if declarada not in DISTRIBUCIONES_CON_ESTIMADOR_IMPRESO \
             and declarada != MEJOR_AJUSTE_KS:
         _modelo(declarada, valores)          # lanza: no evaluable o invalida
-    evaluados: List[AjusteDeDistribucion] = []
+    evaluados: List[Any] = []
     excluidas: List[Tuple[str, str]] = []
     for distribucion in DISTRIBUCIONES_CON_ESTIMADOR_IMPRESO:
         try:
-            evaluados.append(_ajustar(valores, distribucion, TR=TR, alfa=alfa))
+            evaluados.append(evaluar(distribucion))
         except MetodoNoEvaluableError as error:
             if distribucion == declarada:
                 raise
@@ -932,6 +988,57 @@ def _cubre_lo_observado(registros: Sequence[RegistroDeLluvia], TR: float,
     return ordenados[m - 1], m, (n + 1) / m
 
 
+# --- VE-4b --- LAS COMPUERTAS DEL AJUSTE, ESCRITAS UNA VEZ. Las levanta
+# `precipitacion_de_diseno` y las anticipa el pre-vuelo (`anticipar_caudal`):
+# el mensaje del `Bloqueo` real y el de la fila del pre-vuelo son el mismo
+# texto, construido aqui.
+
+def _no_evaluable_dos_poblaciones(id_punto: Optional[str]) -> MetodoNoEvaluableError:
+    return _no_evaluable(
+        "P24(TR)",
+        "el tratamiento 'dos_poblaciones' pide un analisis de poblacion "
+        "mixta (una distribucion para los años FEN, otra para los "
+        "neutros, combinadas por su probabilidad de ocurrencia) y ni el "
+        "Manual de Hidrologia ni ninguna fuente de normas/ da ese "
+        "procedimiento",
+        f"declarar '{FEN_SERIE_COMPLETA}' o '{FEN_SERIE_SIN_FEN}' en "
+        f"'{CRITERIO_FEN}', o el caudal de un estudio hidrologico que "
+        "haga el analisis de poblacion mixta, en la columna Q_m3s",
+        id_punto)
+
+
+def _no_evaluable_ks(adoptado, evaluados, *, serie: SerieDeEstacion,
+                     tratamiento: str, alfa: float,
+                     id_punto: Optional[str]) -> MetodoNoEvaluableError:
+    """La distribucion adoptada no pasa K-S (`adoptado` con .D, .d_critico, .n)."""
+    return _no_evaluable(
+        "P24(TR)",
+        f"la distribucion «{adoptado.distribucion}» no pasa la prueba de "
+        f"Kolmogorov-Smirnov sobre la serie de «{serie.estacion}» con el "
+        f"tratamiento '{tratamiento}': D = {adoptado.D:.4f} no es menor "
+        f"que d = {adoptado.d_critico:.4f} (n = {adoptado.n}, alfa = "
+        f"{alfa:g}). Las evaluadas: "
+        + "; ".join(f"{a.distribucion} D = {a.D:.4f}" for a in evaluados),
+        f"otra distribucion o regla en '{CRITERIO_DISTRIBUCION}', otro "
+        f"tratamiento en '{CRITERIO_FEN}', o el caudal de un estudio "
+        "hidrologico en la columna Q_m3s",
+        id_punto)
+
+
+def _procedimiento_del_otro_tratamiento(otro: str) -> str:
+    return (f"declarar '{otro}' en '{CRITERIO_FEN}', o traer el caudal "
+            "del estudio hidrologico en la columna Q_m3s")
+
+
+def _serie_con_factor(serie: SerieDeEstacion, factor: float) -> SerieDeEstacion:
+    """La serie con cada maximo anual multiplicado por el factor de intervalo fijo."""
+    return SerieDeEstacion(
+        estacion=serie.estacion, origen=serie.origen,
+        registros=tuple(RegistroDeLluvia(anio=r.anio, p24_mm=r.p24_mm * factor,
+                                         fen=r.fen)
+                        for r in serie.registros))
+
+
 def precipitacion_de_diseno(serie: SerieDeEstacion, TR: float, *,
                             id_punto: Optional[str] = None,
                             ) -> Tuple[AjusteDeDistribucion,
@@ -966,17 +1073,7 @@ def precipitacion_de_diseno(serie: SerieDeEstacion, TR: float, *,
                    "ninguna distribucion tiene cuantil")
     tratamiento = ca.valor(CRITERIO_FEN)            # CriterioPendienteError
     if tratamiento == FEN_DOS_POBLACIONES:
-        raise _no_evaluable(
-            "P24(TR)",
-            "el tratamiento 'dos_poblaciones' pide un analisis de poblacion "
-            "mixta (una distribucion para los años FEN, otra para los "
-            "neutros, combinadas por su probabilidad de ocurrencia) y ni el "
-            "Manual de Hidrologia ni ninguna fuente de normas/ da ese "
-            "procedimiento",
-            f"declarar '{FEN_SERIE_COMPLETA}' o '{FEN_SERIE_SIN_FEN}' en "
-            f"'{CRITERIO_FEN}', o el caudal de un estudio hidrologico que "
-            "haga el analisis de poblacion mixta, en la columna Q_m3s",
-            id_punto)
+        raise _no_evaluable_dos_poblaciones(id_punto)
     if tratamiento not in (FEN_SERIE_COMPLETA, FEN_SERIE_SIN_FEN):
         raise DatoInvalidoError(
             CRITERIO_FEN, valor=tratamiento, id_punto=id_punto,
@@ -1001,11 +1098,7 @@ def precipitacion_de_diseno(serie: SerieDeEstacion, TR: float, *,
             motivo="el factor multiplica la lluvia de la serie y tiene que "
                    "ser positivo")
     serie_registrada = serie
-    serie = SerieDeEstacion(
-        estacion=serie.estacion, origen=serie.origen,
-        registros=tuple(RegistroDeLluvia(anio=r.anio, p24_mm=r.p24_mm * factor,
-                                         fen=r.fen)
-                        for r in serie.registros))
+    serie = _serie_con_factor(serie, factor)
 
     anios_fen = serie.anios_fen
     registros = _registros_por_tratamiento(serie, tratamiento)
@@ -1284,18 +1377,9 @@ def precipitacion_de_diseno(serie: SerieDeEstacion, TR: float, *,
                          "distribucion adoptada" if adoptado.acepta else
                          "la serie no se ajusta a la distribucion adoptada")))
     if not adoptado.acepta:
-        raise _no_evaluable(
-            "P24(TR)",
-            f"la distribucion «{adoptado.distribucion}» no pasa la prueba de "
-            f"Kolmogorov-Smirnov sobre la serie de «{serie.estacion}» con el "
-            f"tratamiento '{tratamiento}': D = {adoptado.D:.4f} no es menor "
-            f"que d = {adoptado.d_critico:.4f} (n = {adoptado.n}, alfa = "
-            f"{alfa:g}). Las evaluadas: "
-            + "; ".join(f"{a.distribucion} D = {a.D:.4f}" for a in evaluados),
-            f"otra distribucion o regla en '{CRITERIO_DISTRIBUCION}', otro "
-            f"tratamiento en '{CRITERIO_FEN}', o el caudal de un estudio "
-            "hidrologico en la columna Q_m3s",
-            id_punto)
+        raise _no_evaluable_ks(adoptado, evaluados, serie=serie,
+                               tratamiento=tratamiento, alfa=alfa,
+                               id_punto=id_punto)
 
     # --- 1b.3b: el tratamiento FEN contra la regla de la hoja de ruta ---
     cita_fen = "MC_HHD.3.4#FEN"
@@ -1346,9 +1430,7 @@ def precipitacion_de_diseno(serie: SerieDeEstacion, TR: float, *,
                 "manda reportar el ajuste con los años FEN y sin ellos y "
                 "adoptar el mas conservador, y el num. 3.4 del Manual manda "
                 "que la serie incluya los años del fenomeno El Niño",
-                f"declarar '{otro}' en '{CRITERIO_FEN}', o traer el caudal "
-                "del estudio hidrologico en la columna Q_m3s",
-                id_punto)
+                _procedimiento_del_otro_tratamiento(otro), id_punto)
         umbral_fen = Umbral(
             descripcion=f"precipitacion de diseño con '{otro}', el otro "
                         "ajuste que la regla manda reportar",
@@ -2277,6 +2359,32 @@ def caudal_racional_modificado(*, C: float, I_mm_h: float, area_km2: float,
     return RACIONAL_COEFICIENTE_SI * C * I_mm_h * area_km2 * K
 
 
+def _tc_ajeno_al_racional_modificado(cuenca: Cuenca) -> MetodoNoEvaluableError:
+    return _no_evaluable(
+        "tc",
+        f"desde {RACIONAL_AREA_MAX_KM2:g} km2 el caudal se calcula por el "
+        f"metodo racional modificado ({NUMERAL_RACIONAL_MODIFICADO}), "
+        "cuyo tiempo de concentracion es el de su ecuacion (30), la de "
+        f"Temez; la fila de la cuenca declara metodo_tc = "
+        f"{cuenca.metodo_tc}",
+        f"declarar metodo_tc = {TC_METODO_TEMEZ} en la fila de la cuenca "
+        "(con ajuste_kirpich vacio), o el caudal declarado en Q_m3s",
+        cuenca.id)
+
+
+def _falta_cn_racional_modificado(cuenca: Cuenca) -> DatoFaltanteError:
+    return DatoFaltanteError(
+        "CN", id_punto=cuenca.id,
+        detalle=f"desde {RACIONAL_AREA_MAX_KM2:g} km2 el caudal se calcula "
+                "por el metodo racional modificado, cuyo coeficiente de "
+                "escorrentia --ecuacion (35) del num. 3.12.2.1-- pide el "
+                "numero de curva de la cuenca. Es la columna opcional CN "
+                "del CSV de cuencas (la misma de la ecuacion de retardo); "
+                "la lee el estudio hidrologico en la Tabla N 07 "
+                f"({NUMERAL_TABLA_07}) y el programa no tiene tabla de la "
+                "que leerla")
+
+
 def _caudal_racional_modificado(cuenca: Cuenca, serie: SerieDeEstacion,
                                 TR: float) -> CaudalDeDiseno:
     """
@@ -2299,27 +2407,9 @@ def _caudal_racional_modificado(cuenca: Cuenca, serie: SerieDeEstacion,
     """
     exigir_alcance_del_racional_modificado(cuenca.area_km2, cuenca.id)
     if cuenca.metodo_tc != TC_METODO_TEMEZ:
-        raise _no_evaluable(
-            "tc",
-            f"desde {RACIONAL_AREA_MAX_KM2:g} km2 el caudal se calcula por el "
-            f"metodo racional modificado ({NUMERAL_RACIONAL_MODIFICADO}), "
-            "cuyo tiempo de concentracion es el de su ecuacion (30), la de "
-            f"Temez; la fila de la cuenca declara metodo_tc = "
-            f"{cuenca.metodo_tc}",
-            f"declarar metodo_tc = {TC_METODO_TEMEZ} en la fila de la cuenca "
-            "(con ajuste_kirpich vacio), o el caudal declarado en Q_m3s",
-            cuenca.id)
+        raise _tc_ajeno_al_racional_modificado(cuenca)
     if cuenca.CN is None:
-        raise DatoFaltanteError(
-            "CN", id_punto=cuenca.id,
-            detalle=f"desde {RACIONAL_AREA_MAX_KM2:g} km2 el caudal se calcula "
-                    "por el metodo racional modificado, cuyo coeficiente de "
-                    "escorrentia --ecuacion (35) del num. 3.12.2.1-- pide el "
-                    "numero de curva de la cuenca. Es la columna opcional CN "
-                    "del CSV de cuencas (la misma de la ecuacion de retardo); "
-                    "la lee el estudio hidrologico en la Tabla N 07 "
-                    f"({NUMERAL_TABLA_07}) y el programa no tiene tabla de la "
-                    "que leerla")
+        raise _falta_cn_racional_modificado(cuenca)
     tc, paso_tc, avisos_tc = tiempo_de_concentracion(cuenca,
                                                      racional_modificado=True)
     adoptado, evaluados, tratamiento, pasos_lluvia, avisos_lluvia = \
@@ -2520,6 +2610,193 @@ def caudal_de_aporte_cuneta(cuenca: Cuenca, serie: SerieDeEstacion,
     Tabla N 08. NUNCA se rellena una cobertura por omision.
     """
     return _caudal_calculado(cuenca, serie, TR, de_cuneta=True)
+
+
+# ===========================================================================
+# 5-ter. Lo que detendria el calculo, anticipado sin TR (pre-vuelo) — VE-4b
+# ===========================================================================
+#
+# EL PRE-VUELO NO CALCULA EL CAUDAL (ficha T1-04). Lo que anticipa son las
+# COMPUERTAS del calculo que no dependen del periodo de retorno de la Fase 2
+# --que el pre-vuelo no tiene, porque es de M1 y pide la luz y el punto
+# cargado--, con las MISMAS funciones o los MISMOS constructores de la
+# excepcion que la corrida levanta, para que la fila del pre-vuelo y el
+# `Bloqueo` real digan el mismo texto. Y sin registrar el uso de ningun
+# criterio: un pre-vuelo no es una corrida y M11 imprime solo los usados.
+#
+# Lo que SI depende del TR se anuncia con `depende_del_tr` y un mensaje que
+# dice la condicion (hoy, `serie_sin_fen` con años FEN: se detiene si da menos
+# lluvia que la serie completa en el TR de diseño). Lo que no se anticipa, y
+# por que, esta en la ficha T1-04 de `docs/decisiones_diferidas.md`.
+
+def _leer_sin_registrar(clave: str) -> Any:
+    """
+    `ca.valor` SIN registrar el uso: el valor efectivo (declarado en caliente
+    o de archivo), o `CriterioPendienteError` con el mismo concepto y la misma
+    fuente que `ca.valor` pondria.
+    """
+    criterio = ca.criterio_efectivo(clave)
+    if criterio.valor is None:
+        raise CriterioPendienteError(clave, concepto=criterio.concepto,
+                                     fuente=criterio.fuente)
+    return criterio.valor
+
+
+def _dato_de(exc: ErrorProyecto) -> str:
+    """Lo que hay que tocar: la clave, el campo o la magnitud no evaluable."""
+    if isinstance(exc, CriterioPendienteError):
+        return exc.clave
+    if isinstance(exc, MetodoNoEvaluableError):
+        return exc.que
+    return str(getattr(exc, "campo", "") or type(exc).__name__)
+
+
+def anticipar_caudal(cuenca: Cuenca, serie: SerieDeEstacion, *,
+                     de_cuneta: bool) -> Tuple[ObstaculoAnticipado, ...]:
+    """
+    Lo que DETENDRIA `caudal_de_diseno` (o `caudal_de_aporte_cuneta`, con
+    `de_cuneta`) para esta cuenca y esta serie, sin calcular la lluvia ni el
+    caudal y sin registrar el uso de ningun criterio (VE-4b, ficha T1-04).
+
+    Recorre las compuertas en el orden del calculo y las dice TODAS: la
+    corrida se detiene en la primera, el pre-vuelo estima de mas a proposito.
+    Las que anticipa, por metodo (num. 3.12.2 y 3.12.2.1 del Manual de
+    Hidrologia):
+
+      * el area contra el metodo: el racional desde 10 km2 en una cuneta, el
+        racional modificado desde 770 km2; y desde 10 km2 en una obra, que su
+        Tc sea el de Temez y que traiga numero de curva;
+      * la serie (num. 3.4 y 3.7): los cuatro criterios del ajuste, el
+        tratamiento 'dos_poblaciones', la serie mas corta que la Tabla N 03,
+        la distribucion sin estimador impreso y la prueba de Kolmogorov-
+        Smirnov de la adoptada (no depende del TR: `_bondad`, con la MISMA
+        regla de eleccion, `_elegir_con`);
+      * el tiempo de concentracion (num. 3.9, Tabla N 05; num. 3.12.2.1): la
+        poblacion del metodo con su criterio, el desnivel de California, el
+        numero de curva de la ecuacion de retardo, el area y el rango de Tc
+        de Temez;
+      * los criterios del coeficiente vial, de la intensidad y del
+        coeficiente de uniformidad, cuando la ruta los lee.
+
+    Y una que depende del TR, marcada: `serie_sin_fen` sobre una serie con
+    años FEN «puede detener».
+    """
+    obstaculos: List[ObstaculoAnticipado] = []
+
+    def anotar(exc: ErrorProyecto, *, depende_del_tr: bool = False) -> None:
+        obstaculos.append(ObstaculoAnticipado.de_excepcion(
+            exc, _dato_de(exc), depende_del_tr=depende_del_tr))
+
+    def criterio(clave: str) -> Any:
+        try:
+            return _leer_sin_registrar(clave)
+        except CriterioPendienteError as exc:
+            anotar(exc)
+            return None
+
+    def compuerta(fn) -> bool:
+        try:
+            fn()
+        except ErrorProyecto as exc:
+            anotar(exc)
+            return False
+        return True
+
+    def tiempo_de_concentracion_(racional_modificado: bool) -> None:
+        metodo = cuenca.metodo_tc
+        if metodo == TC_METODO_KIRPICH:
+            compuerta(lambda: _exigir_poblacion(
+                metodo, pendiente=cuenca.S_cauce_cuenca, id_punto=cuenca.id,
+                leer=_leer_sin_registrar))
+        elif metodo == TC_METODO_CALIFORNIA:
+            if cuenca.H_desnivel_m is None:
+                anotar(_falta_desnivel_california(cuenca))
+            else:
+                compuerta(lambda: _exigir_poblacion(
+                    metodo, pendiente=cuenca.H_desnivel_m / cuenca.L_cauce_m,
+                    id_punto=cuenca.id, leer=_leer_sin_registrar))
+        elif metodo == TC_METODO_RETARDO_SCS:
+            if cuenca.CN is None:
+                anotar(_falta_cn_retardo(cuenca))
+            compuerta(lambda: _exigir_poblacion(
+                metodo, area_km2=cuenca.area_km2, id_punto=cuenca.id,
+                leer=_leer_sin_registrar))
+        elif metodo == TC_METODO_TEMEZ:
+            compuerta(lambda: tc_temez_h(
+                L_km=cuenca.L_cauce_m / METROS_POR_KM, S=cuenca.S_cauce_cuenca,
+                area_km2=cuenca.area_km2, id_punto=cuenca.id,
+                procedimiento=(PROCEDIMIENTO_FUERA_DEL_RACIONAL_MODIFICADO
+                               if racional_modificado else None)))
+        # La formula de la FAA no tiene poblacion descrita ni rango propio, y
+        # su C de la Tabla N 08 cae siempre dentro de (0, 1.1).
+
+    def lluvia() -> None:
+        tratamiento = criterio(CRITERIO_FEN)
+        if tratamiento == FEN_DOS_POBLACIONES:
+            anotar(_no_evaluable_dos_poblaciones(cuenca.id))
+        declarada = criterio(CRITERIO_DISTRIBUCION)
+        alfa = criterio(CRITERIO_ALFA)
+        factor = criterio(CRITERIO_FACTOR_P24)
+        if (tratamiento not in (FEN_SERIE_COMPLETA, FEN_SERIE_SIN_FEN)
+                or declarada is None or alfa is None or factor is None
+                or not factor > 0):
+            # Sin tratamiento evaluable no hay serie que ajustar; un factor
+            # que no es positivo lo rechaza ya la ventana del criterio.
+            return
+        serie_ajustada = _serie_con_factor(serie, factor)
+        valores = tuple(r.p24_mm for r in
+                        _registros_por_tratamiento(serie_ajustada, tratamiento))
+        try:
+            adoptado, evaluados, _ = _elegir_con(
+                valores, declarada,
+                lambda distribucion: _bondad(valores, distribucion, alfa=alfa)[0])
+        except ErrorProyecto as exc:
+            anotar(exc)
+            return
+        if not adoptado.acepta:
+            anotar(_no_evaluable_ks(adoptado, evaluados, serie=serie_ajustada,
+                                    tratamiento=tratamiento, alfa=alfa,
+                                    id_punto=cuenca.id))
+            return
+        if tratamiento == FEN_SERIE_SIN_FEN and serie_ajustada.anios_fen:
+            anotar(_no_evaluable(
+                "P24(TR)",
+                f"PUEDE detenerse: con '{FEN_SERIE_SIN_FEN}' el calculo se "
+                "detiene si la precipitacion de diseño da MENOS que con "
+                f"'{FEN_SERIE_COMPLETA}' (regla de la Fase 1-bis de la hoja "
+                "de ruta y num. 3.4 del Manual), y esa comparacion se hace "
+                "con el periodo de retorno de la Fase 2, que el pre-vuelo no "
+                f"calcula; la serie de «{serie.estacion}» declara "
+                f"{len(serie_ajustada.anios_fen)} años FEN",
+                _procedimiento_del_otro_tratamiento(FEN_SERIE_COMPLETA),
+                cuenca.id), depende_del_tr=True)
+
+    if not de_cuneta and \
+            metodo_de_caudal(cuenca.area_km2) == METODO_RACIONAL_MODIFICADO:
+        # El orden de `_caudal_racional_modificado`. Desde 770 km2 el area
+        # detiene el metodo entero: el limite de area de Temez seria el MISMO
+        # hecho dicho dos veces, y no se repite.
+        area_en_rango = compuerta(lambda: exigir_alcance_del_racional_modificado(
+            cuenca.area_km2, cuenca.id))
+        if cuenca.metodo_tc != TC_METODO_TEMEZ:
+            anotar(_tc_ajeno_al_racional_modificado(cuenca))
+        if cuenca.CN is None:
+            anotar(_falta_cn_racional_modificado(cuenca))
+        if cuenca.metodo_tc == TC_METODO_TEMEZ and area_en_rango:
+            tiempo_de_concentracion_(racional_modificado=True)
+        lluvia()
+        return tuple(obstaculos)
+    # El orden de `_caudal_calculado`: area, lluvia, C, Tc, intensidad, K.
+    compuerta(lambda: exigir_alcance_del_racional(cuenca.area_km2, cuenca.id))
+    lluvia()
+    if cuenca.cobertura in SUPERFICIES_VIALES:
+        criterio(CRITERIO_C_VIAL)
+    tiempo_de_concentracion_(racional_modificado=False)
+    criterio(CRITERIO_RELACION)
+    criterio(CRITERIO_DURACION_MINIMA)
+    if cuenca.metodo_tc == TC_METODO_TEMEZ:
+        criterio(CRITERIO_K_TEMEZ)
+    return tuple(obstaculos)
 
 
 def exigir_areas_coherentes(*, area_ha: float, area_km2: float,

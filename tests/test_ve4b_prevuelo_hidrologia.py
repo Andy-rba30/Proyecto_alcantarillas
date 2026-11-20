@@ -61,9 +61,6 @@ DISTRIBUCION = "distribucion_precipitacion_maxima"
 LUZ_DEL_CASO = 2.75          # m: la de la linea base
 TW_DEL_CASO = 0.30           # m
 
-# EN ROJO hasta implementar el estimador (medido: 26 failed antes de tocar
-# codigo). Se retira en el commit que lo implementa.
-pytestmark = pytest.mark.xfail(strict=True, reason="VE-4b: estimador sin implementar")
 
 
 # ---------------------------------------------------------------------------
@@ -223,13 +220,31 @@ def test_el_area_escrita_dos_veces_se_anuncia_tambien_con_el_caudal_declarado(tm
     assert all(any(_cubre(e, b) for e in estimado) for b in reales["A-02"])
 
 
-def test_el_prevuelo_no_registra_el_uso_de_ningun_criterio(tmp_path, declarar):
+def test_el_anticipo_de_la_fase_1bis_no_registra_el_uso_de_ningun_criterio(
+        tmp_path, declarar):
+    """
+    Lo que el pre-vuelo registra CON la hidrologia es lo mismo que SIN ella:
+    el anticipo de la Fase 1-bis lee los criterios sin registrarlos. (El
+    pre-vuelo de PF-2 ya registraba antes de VE-4b el criterio del extremo
+    del tramo de cuneta, por `servicio.extremos_de_los_tramos`; no es de
+    esta fase y no se toca aqui.)
+    """
+    from src.modulos import MH_hidrologia as MH
     declarar(FEN, "serie_completa")
     ruta = _puntos(tmp_path)
-    h = _hidro()
     ca.reiniciar_usos()
-    _estimar(ruta, h)
-    assert ca.criterios_usados() == []
+    antc.datos_faltantes_por_punto(ruta, _externos(), cli.ALCANCE_PERFIL)
+    sin = set(ca.criterios_usados())
+    ca.reiniciar_usos()
+    _estimar(ruta, _hidro())
+    con = set(ca.criterios_usados())
+    ca.reiniciar_usos()
+    assert con == sin
+    del_calculo = {MH.CRITERIO_FEN, MH.CRITERIO_DISTRIBUCION, MH.CRITERIO_ALFA,
+                   MH.CRITERIO_RELACION, MH.CRITERIO_DURACION_MINIMA,
+                   MH.CRITERIO_POBLACION_TC, MH.CRITERIO_K_TEMEZ,
+                   MH.CRITERIO_C_VIAL, MH.CRITERIO_FACTOR_P24}
+    assert not con & del_calculo
 
 
 # ===========================================================================
@@ -304,11 +319,12 @@ def test_todo_bloqueo_real_de_la_fase_1bis_estaba_en_el_prevuelo(
         estacion, sobra):
     for clave, valor in criterios.items():
         declarar(clave, valor)
-    ruta = _puntos(tmp_path, **en_puntos)
     cuencas = _cuencas(tmp_path, base=base, **en_cuencas)
     if estacion is None:
         estacion = _serie_que_no_pasa_ks(tmp_path)
     h = _hidro(cuencas, estacion)
+    # El Q se vacia solo en las obras que traen cuenca: sin ella M0 no carga.
+    ruta = _puntos(tmp_path, sin_q=tuple(h.cuencas), **en_puntos)
     estimado = _de_la_hidrologia(_estimar(ruta, h))
     reales = _bloqueos_reales(ruta, h)
     for id_punto, bloqueos in reales.items():
