@@ -188,3 +188,82 @@ def test_C4_a_perfil_no_hay_seccion_y_la_clave_es_nula(tmp_path):
     js, html = _vistas(informe)
     assert all(pj["licuefaccion"] is None for pj in js["puntos"])
     assert _html.escape(M11.TITULO_LICUEFACCION) not in html
+
+
+# ===========================================================================
+# Dictamen Fable del 2026-11-20, abierto (iii): la linea del volcado de texto
+# ===========================================================================
+
+def _partes_de_la_linea(v):
+    """Los textos que la linea de la CLI imprime de la Fase 0-bis."""
+    partes = [v.codigo, str(v.numeral), v.estado.value]
+    for x in (v.valor_obtenido, v.valor_admisible, v.criterio_aplicado,
+              v.motivo_no_aplica):
+        if x:
+            partes.append(str(x))
+    return partes
+
+
+@pytest.fixture(scope="module")
+def cuarta():
+    from src import indice_formulas as ind
+    corrida = next(c for c in ind.CORRIDAS_DE_REFERENCIA
+                   if c.nombre == "materiales_y_ramas")
+    informe = ind.correr_referencia(corrida)
+    return (informe, *_vistas(informe))
+
+
+def test_iii_la_cli_imprime_la_fase_0_bis_de_los_cuatro_puntos(cuarta):
+    informe, _js, html = cuarta
+    texto = cli.volcar(informe)
+    bloques = _bloques(html)
+    assert len(informe.puntos) == 4
+    for p in informe.puntos:
+        lineas = cli._lineas_licuefaccion(p)
+        v = p.licuefaccion
+        assert v is not None, p.punto.id
+        assert lineas[0].strip().startswith(f"Fase 0-bis {v.codigo} ")
+        assert " · EMS: no_licua" in lineas[0]
+        for linea in lineas:
+            assert linea in texto
+        # guardia T-10: lo que la linea dice esta en el bloque de la memoria
+        plano = _texto_del_punto(html, p.punto.id)
+        assert p.punto.id in bloques
+        for parte in _partes_de_la_linea(v):
+            assert " ".join(parte.split()) in plano, (p.punto.id, parte)
+
+
+def test_iii_la_cli_dice_la_fase_0_bis_bloqueada(tmp_path):
+    informe = cli.correr(CSV_PERFIL, _externos(tmp_path, {}),
+                         alcance=cli.ALCANCE_EXPEDIENTE)
+    texto = cli.volcar(informe)
+    bloqueados = [p for p in informe.puntos
+                  if any(b.etapa == ML.ETAPA_LICUEFACCION
+                         and not b.diferido_por_alcance for b in p.bloqueos)]
+    assert bloqueados
+    for p in bloqueados:
+        assert cli._lineas_licuefaccion(p) == [
+            f"{cli.SANGRIA}Fase 0-bis licuefaccion: no evaluada (ver bloqueos)"]
+    assert "Fase 0-bis licuefaccion: no evaluada (ver bloqueos)" in texto
+
+
+def test_iii_no_aplica_imprime_el_motivo_en_la_segunda_linea(no_aplica):
+    informe, _js, html = no_aplica
+    for p in informe.puntos:
+        if p.licuefaccion is None:
+            continue
+        lineas = cli._lineas_licuefaccion(p)
+        assert len(lineas) == 2
+        assert lineas[1].strip() == p.licuefaccion.motivo_no_aplica
+        plano = _texto_del_punto(html, p.punto.id)
+        for parte in _partes_de_la_linea(p.licuefaccion):
+            assert " ".join(parte.split()) in plano, (p.punto.id, parte)
+
+
+def test_iii_a_perfil_no_hay_linea(tmp_path):
+    informe = cli.correr(CSV_PERFIL, _externos(tmp_path, {}),
+                         alcance=cli.ALCANCE_PERFIL)
+    assert all(cli._lineas_licuefaccion(p) == [] for p in informe.puntos)
+    texto = cli.volcar(informe)
+    assert "Fase 0-bis 0B.1" not in texto
+    assert "Fase 0-bis licuefaccion: no evaluada" not in texto

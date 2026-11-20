@@ -331,7 +331,7 @@ from src.modulos.M11_reporte import (CriterioBloqueante,  # noqa: F401
 # que es donde se resuelve el nombre: en EXT-9 los tres sitios de la suite
 # que lo hacian sobre `cli` migraron.
 from src.servicio import (ALCANCE_EXPEDIENTE, ALCANCE_PERFIL, DECIMALES_FACTOR,
-                          ETAPA_DURABILIDAD,
+                          ETAPA_DURABILIDAD, ETAPA_LICUEFACCION,
                           FASE_CABEZAL, DatoDeclarado, Informe, InformeCabezal,
                           InformePunto, _fmt, advertencia_de_corredor_de,
                           cargar_datos_externos, cargar_datos_sitio,
@@ -1602,6 +1602,36 @@ def _lineas_bloqueos(bloqueos: Sequence[Bloqueo]) -> List[str]:
     return out
 
 
+def _lineas_licuefaccion(informe: InformePunto) -> List[str]:
+    """
+    --- VE-7, lote C (dictamen Fable del 2026-11-20, abierto (iii)) --- La
+    Fase 0-bis en el volcado de texto, con los MISMOS textos que la seccion
+    de la memoria y la clave `licuefaccion` del JSON: codigo, numeral,
+    estado y, cuando los hay, el resultado del EMS, lo exigido y el
+    criterio; el motivo de «no aplica» en una segunda linea. Con la etapa
+    bloqueada (no diferida) lo dice y remite a los bloqueos; sin la fase
+    (perfil, punto sin clasificar), nada. Sus avisos salen con los demas.
+    """
+    v = informe.licuefaccion
+    if v is None:
+        if any(b.etapa == ETAPA_LICUEFACCION and not b.diferido_por_alcance
+               for b in informe.bloqueos):
+            return [f"{SANGRIA}Fase 0-bis licuefaccion: no evaluada (ver "
+                    "bloqueos)"]
+        return []
+    linea = f"{SANGRIA}Fase 0-bis {v.codigo} ({v.numeral}): {v.estado.value}"
+    if v.valor_obtenido is not None:
+        linea += f" · EMS: {v.valor_obtenido}"
+    if v.valor_admisible is not None:
+        linea += f" · exige: {v.valor_admisible}"
+    if v.criterio_aplicado:
+        linea += f" · criterio {v.criterio_aplicado}"
+    out = [linea]
+    if v.motivo_no_aplica:
+        out.append(f"{SANGRIA_DETALLE}{v.motivo_no_aplica}")
+    return out
+
+
 def _lineas_punto(informe: InformePunto) -> List[str]:
     punto = informe.punto
     out = ["-" * ANCHO,
@@ -1617,6 +1647,8 @@ def _lineas_punto(informe: InformePunto) -> List[str]:
         out.append(f"{SANGRIA}Fase 2  {c.denominacion.value} "
                    f"(luz {_fmt(c.luz_m)} m, num. {c.verificacion_luz.numeral}) "
                    f"| {tr}")
+
+    out.extend(_lineas_licuefaccion(informe))         # --- VE-7 (dictamen Fable, iii) ---
 
     if informe.caudal is not None:
         c = informe.caudal
