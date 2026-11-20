@@ -290,6 +290,7 @@ from src.modulos.M2_material import (CRITERIO_CALIBRE_TMC,
                                  CRITERIO_D_MAX_NORMA,
                                  CRITERIO_N_CELDAS_CAJON,
                                  CRITERIO_SECCIONES_CAJON, CRITERIO_V_MAX,
+                                 diametro_designado,
                                  espesor_pared,
                                  numero_de_celdas,
                                  procedencia_del_espesor)
@@ -4362,8 +4363,16 @@ def v9_disponibilidad_diametro(*, D: float, material: Material) -> Verificacion:
     de_cajon = material.forma is FormaSeccion.RECTANGULAR
     criterio = (CRITERIO_SECCIONES_CAJON if de_cajon
                 else material.D_max_criterio or CRITERIO_D_MAX_NORMA)
-    cumple = D <= material.D_max + TOL_UMBRAL_NORMATIVO
-    margen = material.D_max - D
+    # --- VE-5 (lote m45, item 24; ficha VE2-G) --- CON LA SERIE INGLESA SE
+    # COMPARA EL DESIGNADO: el tubo de 108 in (2.7432 m) es el designado de
+    # 2700 mm de AASHTO M 170M Table 6, y el num. 12.1 deja diseñarlo con
+    # cualquiera de los dos diametros; la serie a la que pertenece es la del
+    # designado. Hasta VE-5 V9 comparaba el de calculo y lo dejaba fuera de
+    # su propia serie. Sin la opcion inglesa, o en el marco, son el mismo.
+    D_comparado = D if de_cajon else diametro_designado(material.tipo, D)
+    ingles = abs(D_comparado - D) > TOL_UMBRAL_NORMATIVO
+    cumple = D_comparado <= material.D_max + TOL_UMBRAL_NORMATIVO
+    margen = material.D_max - D_comparado
     # --- T-10 --- EL PASO, que V9 no tenia (censo `SIN_FUNDAMENTO`: «un
     # catalogo no tiene numeral»). Desde T-4 el tope del TUBO sale de su
     # norma de producto y tiene cita: entonces el paso juzga contra ella. Si
@@ -4386,7 +4395,7 @@ def v9_disponibilidad_diametro(*, D: float, material: Material) -> Verificacion:
     return Verificacion(
         cumple=cumple,
         numeral=NUMERAL_V9,
-        valor_obtenido=D,
+        valor_obtenido=D_comparado,
         valor_admisible=material.D_max,
         criterio_aplicado=criterio,
         codigo="V9",
@@ -4394,14 +4403,25 @@ def v9_disponibilidad_diametro(*, D: float, material: Material) -> Verificacion:
             "F5.V9",
             codigo="V9",
             que="Seccion requerida frente al tope de la serie de su material",
-            formula="D <= D_max",
+            formula=("D_designado <= D_max, con D_designado el designado de "
+                     "la fila de AASHTO M 170M Table 6 cuyo diametro ingles "
+                     "convertido es D" if ingles else "D <= D_max"),
+            citas_textuales=(("AASHTO_M170M.12.1",) if ingles else ()),
             sustitucion=(
                 Magnitud("D", D, "m",
-                         "altura interior de la seccion candidata",
+                         "altura interior de la seccion candidata"
+                         + (" (diametro ingles convertido, AASHTO M 170M "
+                            "num. 12.1)" if ingles else ""),
                          cifras=CIFRAS_MAGNITUD),
+                *((Magnitud("D_designado", D_comparado, "m",
+                            "diametro DESIGNADO del mismo tubo (AASHTO M "
+                            "170M Table 6): es el que pertenece a la serie y "
+                            "el que se compara con el tope",
+                            cifras=CIFRAS_MAGNITUD),) if ingles else ()),
                 Magnitud("D_max", material.D_max, "m", rotulo,
                          cifras=CIFRAS_MAGNITUD)),
-            resultado=Magnitud("D_max - D", margen, "m",
+            resultado=Magnitud("D_max - D_designado" if ingles
+                               else "D_max - D", margen, "m",
                                "holgura respecto del tope: negativa es fuera "
                                "de la serie", cifras=CIFRAS_MAGNITUD),
             umbral=umbral,

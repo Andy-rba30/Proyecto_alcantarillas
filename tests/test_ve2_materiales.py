@@ -64,9 +64,12 @@ COLUMNA = "columna_n_manning_concreto"
 DIAMETRO_DE_DISENO = "diametro_de_diseno_concreto"
 
 SERIE_6_IN = {"inicio": 0.9144, "paso": 0.1524}
+# REESCRITO DECLARANDOLO (VE-5, lote m45, item 24): el tope se compara con
+# el DESIGNADO del escalon, y el de 108 in (2.7432 m) es el tubo designado de
+# 2700 mm de M 170M Table 6: entra. Hasta VE-5 la serie terminaba en 2.5908.
 SEIS_IN_CONCRETO = ["0.9144", "1.0668", "1.2192", "1.3716", "1.524",
                     "1.6764", "1.8288", "1.9812", "2.1336", "2.286",
-                    "2.4384", "2.5908"]
+                    "2.4384", "2.5908", "2.7432"]
 ARCHIVO = ["0.9", "1.05", "1.2", "1.35", "1.5", "1.65", "1.8", "1.95",
            "2.1", "2.25", "2.4", "2.55", "2.7"]
 

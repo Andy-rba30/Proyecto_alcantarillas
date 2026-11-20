@@ -3790,6 +3790,7 @@ lo que la cadena suponía y la fuente no sostiene.
   basta, porque el tope no pasa de 2.70 m—; y, de quien conozca el mercado, el valor
   de `D_max_catalogo`.
 - **Dónde vive:** `src/modulos/M2_material.py::tope_de_diametro`
+- **VE-5 (ítem 24):** sigue igual, ver VE2-G.
 
 ## T4-03 · `v_max_tmc` es [A] con ventana y `v_max_hdpe` sigue [C]: los dos valen 4.572 m/s y no son la misma cosa
 
@@ -7753,15 +7754,15 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   (VE-1 H2). Tolerancia `TOL_UMBRAL_NORMATIVO` en metros, no de centímetro: 375, 525, 675
   y 825 mm son designados. Un escalón no positivo lo sigue rechazando la hidráulica
   (rama de error de la línea base). Con los valores de archivo ningún número se mueve.
-- **Abierto:** (1) con la opción inglesa, el escalón de 108 in (2.7432 m, designado
-  2700) queda fuera del tope de 2.70 m: el tope y V9 comparan el diámetro de cálculo y
-  no el designado; cambiarlo toca V9 (`M5_verificaciones`), fuera del permiso.
-  (2) Con la opción inglesa, 'espesor_pared_conducto' necesita las filas 914, 1067…
+- **Abierto:** (1) cerrado en VE-5 (abajo). (2) Con la opción inglesa, 'espesor_pared_conducto' necesita las filas 914, 1067…
   (su clave es el diámetro redondeado al mm, `M2.espesor_pared`); leer la pared de la
   fila designada sería otra decisión, no tomada. (3) Las seis filas de 2850 a 3600 de la
   Table 6 no se transcriben (`Acotada`).
-- **Qué haría falta:** (1) decisión del dueño y un cambio en V9; (2) decidir si la pared
-  del diámetro inglés es la del designado; (3) otro ejemplar de M 170M, no recompuesto.
+- **Cerrado (VE-5, ítem 24), (1):** el tope y V9 comparan el designado
+  (`M2.diametro_designado`); 108 in entra como 2700 mm. (3) releída por imagen: sigue
+  ilegible (2830, iM8, 3333, U38, 3S05 y la última fila).
+- **Qué haría falta:** (2) decidir si la pared del diámetro inglés es la del designado;
+  (3) otro ejemplar de M 170M, no recompuesto.
 - **Dónde vive:** `src/modulos/M2_material.py::_exigir_escalon_designado`
 
 ## VE2-C · V7: el nivel de agua de diseño es una elección [A] del Propietario
