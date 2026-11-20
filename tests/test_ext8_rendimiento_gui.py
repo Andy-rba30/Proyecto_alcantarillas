@@ -210,7 +210,12 @@ CORRIDAS_IMPORTTIME = 3
 # y T8-09): +0.08 KB por los textos de las decisiones 9 a 14 del cabezal y
 # del n del encofrado del cajon. El techo sube a la medida nueva, pegado como
 # los anteriores.
-KB_POR_PUNTO_MAX = 109.6
+# --- VE-5 met (2026-11-20) --- 109.9 KB por punto, medidos con este mismo
+# metodo sobre la rama de los metrados: +0.3 KB por la fila del cuadro de
+# compatibilidad rasante-alcantarilla de cada punto (Fase 11, entregable 9),
+# que la memoria imprime en los dos alcances. El techo sube a la medida
+# nueva, pegado como los anteriores.
+KB_POR_PUNTO_MAX = 109.9
 # Paginas por punto: 14.0 medidas en EXT-8; 16.0 en E-A con los dos pasos
 # del perfil por escalon; 18.7 sobre `5bca7c6` y 20.7 con T-6, 31.7 con
 # T-3, 32.3 con T-9 y 31.0 con T-10 (ver arriba).
