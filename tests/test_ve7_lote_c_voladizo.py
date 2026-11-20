@@ -17,7 +17,8 @@ El cambio de la cita principal de C7 en M9 lo hace el integrador.
 
 --- VE-7, A11 (cierre, 2026-11-20) --- la sesion de cierre enlazo
 `NORMAS_DIR`, comparo el Verbatim con la pagina 195 y FIRMO la cita; salio
-del censo y es la cita principal de C7 en M9.
+del censo y es la cita principal de C7 en M9 (el orden lo comprueba
+`tests/test_ve5_m9_ciclopeo.py` sobre el paso emitido).
 """
 
 from src.normativa import registro as _registro
@@ -62,15 +63,6 @@ def test_A11_la_cita_esta_firmada_y_fuera_del_censo():
     assert "SIN FIRMA A PROPOSITO" not in c.nota
     assert ("dictamen Fable 2026-11-20: aprobada con caducidad, se firma "
             "en la primera sesion con NORMAS_DIR") in c.nota
-
-
-def test_A11_la_cita_principal_de_C7_es_la_del_voladizo():
-    """C7 de M9 cita primero el 22.10.2.2 y conserva la del ciclopeo."""
-    import inspect
-    from src.modulos import M9_cabezal as M9
-    fuente = inspect.getsource(M9._verificar_zapata_ciclopea)
-    assert 'citas=("E060.22.10.2.2#VOLADIZO", "E060.22.10.2#CICLOPEO",' \
-        in fuente
 
 
 def test_C1_el_fundamento_del_ciclopeo_la_cita():

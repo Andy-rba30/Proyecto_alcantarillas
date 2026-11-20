@@ -273,6 +273,40 @@ def _veredictos(cab, codigos):
 
 
 def test_ic_el_peralte_sin_puerta_es_por_el_metodo_del_talon(emitidos):
+    """
+    VE-7 (ficha VE7C-06): LA DIVERGENCIA DEL PERALTE, explicada (depuracion VE-7, 2026-11-20; medido).
+
+    no era pytest contra fuera de pytest ni `conftest.py` (sus
+    declaraciones las vacían `correr_referencia` y
+    `validacion_integral.correr`: la misma corrida con y sin `import
+    conftest` da lo mismo). Es el criterio `momento_talon_cabezal`:
+    `tests/test_ve3_peralte_cabezal.py` corre con los valores de archivo
+    PREVIOS a VE-3.15 (fixture de módulo `valores_previos_ve3_15`, ficha
+    VE3-18), y de sus cinco sólo «peso_entero» hace crecer el peralte
+    (medido clave a clave). Con el valor de archivo «exacto» (decisión 9
+    del dueño; AASHTO 11.6.1.2 «more exact method» y la presión lineal de
+    10.6.5) el talón de la salida de A-01 del juego pide M_u = 64.8 a 76.8
+    kN·m/m según la combinación, frente a 143.0 a 239.3 del peso entero
+    (envolventes 76.8 y 239.3: 3.1 veces; combinación a combinación, 2.0 a
+    3.7), A1 y A2 del talón cumplen con el peralte de la regla (0.404 m) y
+    el bucle de `M9.dimensionar_peralte_por_armado` no entra (`if not
+    estado: return None`). Ni con φ = 30° ni con `drenaje_trasdos` =
+    'sin_drenaje' crece. **Diferencia legítima de datos, no defecto**: la
+    corrida real dimensiona lo que hace falta, y el test mide el MÉTODO
+    con la otra opción de la ventana. Dos hallazgos más: (1) por
+    `correr_referencia`, el A-01 de `hidrologia_calculada` ni siquiera
+    llega al cabezal (su caudal calculado detiene el bucle de MD); el A-01
+    del juego con cabezal es el de la quinta; (2) desde la integración del
+    lote A, el fundamento SÍ tiene puerta: lo emite la zapata de los
+    ALEROS (`9.3.e.s.alero`, A-04 de la quinta y de la cuarta), y salió
+    del censo; la zapata del cabezal (`9.3.p.*`) sigue sin ella. El
+    docstring de `M9.solicitaciones_de_resistencia` decía «rige el mayor»
+    del peso entero y el que descuenta la reacción, anterior a la opción
+    9; se corrigió (el código ya hacía lo de la ficha del criterio). Lo
+    fija `tests/test_ve7_lote_c_cuarta_corrida.py::test_ic_el_peralte_sin_
+    puerta_es_por_el_metodo_del_talon` (referencia sin crecer; el mismo
+    juego con «peso_entero» declarado crece un paso y emite `9.3.p.s`).
+    """
     from src import criterios_adoptados as ca
     from src.modelos import ORIGEN_DIMENSION_ARMADO, ORIGEN_DIMENSION_REGLA
     from src.modulos import M9_cabezal as M9

@@ -9476,40 +9476,16 @@ Fable (triaje VE-7, 2026-11-20): Fable decidió QUÉ hacer; estas fichas dicen c
 - **Abierto:** sin puerta quedan `F6.TW_ALTO` (V1 con `no_cumple` no deja TW sobre la clave) y,
   desde la integración del lote B, `FH.C_SUBAREAS` (ningún `cuencas.csv` de referencia trae la
   columna `subareas`). Trinquete `MAX_SIN_EJERCITAR` = 2.
-- **La divergencia del peralte, explicada (depuración VE-7, 2026-11-20; medido):** no era pytest
-  contra fuera de pytest ni `conftest.py` (sus declaraciones las vacían `correr_referencia` y
-  `validacion_integral.correr`: la misma corrida con y sin `import conftest` da lo mismo). Es
-  el criterio `momento_talon_cabezal`: `tests/test_ve3_peralte_cabezal.py` corre con los
-  valores de archivo PREVIOS a VE-3.15 (fixture de módulo `valores_previos_ve3_15`, ficha
-  VE3-18), y de sus cinco sólo «peso_entero» hace crecer el peralte (medido clave a clave). Con
-  el valor de archivo «exacto» (decisión 9 del dueño; AASHTO 11.6.1.2 «more exact method» y la
-  presión lineal de 10.6.5) el talón de la salida de A-01 del juego pide M_u = 64.8 a 76.8
-  kN·m/m según la combinación, frente a 143.0 a 239.3 del peso entero (envolventes 76.8 y 239.3:
-  3.1 veces; combinación a combinación, 2.0 a 3.7), A1 y A2 del talón cumplen con el peralte de la regla (0.404 m) y
-  el bucle de `M9.dimensionar_peralte_por_armado` no entra (`if not estado: return None`). Ni
-  con φ = 30° ni con `drenaje_trasdos` = 'sin_drenaje' crece. **Diferencia legítima de datos, no
-  defecto**: la corrida real dimensiona lo que hace falta, y el test mide el MÉTODO con la otra
-  opción de la ventana. Dos hallazgos más: (1) por `correr_referencia`, el A-01 de
-  `hidrologia_calculada` ni siquiera llega al cabezal (su caudal calculado detiene el bucle de
-  MD); el A-01 del juego con cabezal es el de la quinta; (2) desde la integración del lote A, el
-  fundamento SÍ tiene puerta: lo emite la zapata de los ALEROS (`9.3.e.s.alero`, A-04 de la
-  quinta y de la cuarta), y salió del censo; la zapata del cabezal (`9.3.p.*`) sigue sin ella.
-  El docstring de `M9.solicitaciones_de_resistencia` decía «rige el mayor» del peso entero y el
-  que descuenta la reacción, anterior a la opción 9; se corrigió (el código ya hacía lo de la
-  ficha del criterio). Lo fija
-  `tests/test_ve7_lote_c_cuarta_corrida.py::test_ic_el_peralte_sin_puerta_es_por_el_metodo_del_talon`
-  (referencia sin crecer; el mismo juego con «peso_entero» declarado crece un paso y emite
-  `9.3.p.s`).
+- **La divergencia del peralte (depuración VE-7, medido):** diferencia legítima de datos, no
+  defecto: con «exacto» de archivo (decisión 9) el talón de A-01 no hace crecer el peralte; sólo
+  «peso_entero» lo hace. La medición, los dos hallazgos y la corrección del docstring de
+  `M9.solicitaciones_de_resistencia` están en el docstring de
+  `tests/test_ve7_lote_c_cuarta_corrida.py::test_ic_el_peralte_sin_puerta_es_por_el_metodo_del_talon`.
 - **Cerrado (VE-7 fix-suite, medido; dictamen Fable: la corrida ejercita fórmulas, no es un
-  diseño válido):** A-04 de la quinta tampoco cumple E3-LRFD. El cabezal de salida tiene
-  H_c = 6.03 m (B = 6.62 m, dimensionado por estabilidad); la zapata de sus **aleros** crece por
-  el talón hasta el tope 1.5·H_c (B = 9.02 m, `al_tope`) y la franja del extremo (1·L) sigue sin
-  cumplir el deslizamiento sísmico: `E3-LRFD.sis.s.alero.100`, 251.2 kN/m de demanda contra
-  224.1 de resistencia factorada. La app lo dice («ZAPATA DE LOS ALEROS NO FACTIBLE con estos
-  criterios»). Censado por igualdad como el resto: la quinta no cumple A2 (C-01) y E3-LRFD
-  (A-04), y de A-04 sólo esa franja (`NO_CUMPLE_EN_LA_QUINTA`,
-  `CODIGOS_QUE_NO_CUMPLEN_EN_A04_DE_LA_QUINTA`). No se cambian los datos de la corrida para
-  que cumpla: lo que ejercita (la caída recta de HEC-14) necesita ese receptor.
+  diseño válido):** A-04 de la quinta no cumple `E3-LRFD.sis.s.alero.100` (zapata de los aleros
+  al tope 1.5·H_c; la app avisa «ZAPATA DE LOS ALEROS NO FACTIBLE»). Censado por igualdad
+  (`NO_CUMPLE_EN_LA_QUINTA`, `CODIGOS_QUE_NO_CUMPLEN_EN_A04_DE_LA_QUINTA`); los datos no se
+  cambian.
 - **Qué haría falta:** regenerar y sellar `docs/indice_formulas.md`; si se quiere puerta para
   `9.3.p.*` en una corrida de referencia, declarar «peso_entero» en la quinta (su ventana lo
   admite) y re-medir su censo de lo que no cumple — decisión del consultor.
