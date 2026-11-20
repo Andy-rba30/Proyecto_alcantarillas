@@ -280,3 +280,17 @@ def test_b6_sin_el_incremento_el_acero_del_portico_se_detiene():
             M12.renglones_acero_portico(
                 portico=d, cabezal=SimpleNamespace(longitud_metrado=10.0,
                                                    id_punto="A-01"), S=0.01)
+
+
+def test_b6_los_largos_y_los_miembros_de_la_geometria_a_mano():
+    """Una celda de 2.0 x 1.5 m con t = 0.20: losas de B + t, paredes de
+    H + t entre ejes; cada seccion pertenece al miembro de su prefijo."""
+    from tests.fixtures.casos_patron import CP_FASE_8_ESTRUCTURAL as CP
+    g = _disenar(CP["punto_A01"]()).geometria
+    largos = M8.largos_de_los_miembros(g)
+    assert largos == pytest.approx({"losa_superior_1": 2.20,
+                                    "losa_inferior_1": 2.20,
+                                    "pared_0": 1.70, "pared_1": 1.70},
+                                   rel=REL_CONVERSION)
+    for sec, miembro in M8.miembros_de_las_secciones(g).items():
+        assert sec.startswith(miembro + "_")
