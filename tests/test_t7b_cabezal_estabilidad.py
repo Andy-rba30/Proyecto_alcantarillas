@@ -1567,6 +1567,8 @@ def test_la_zapata_en_talud_usa_los_factores_declarados_y_no_los_inventa(
     'terreno_delante_del_cabezal' = talud: la ecuacion del Manual de Puentes
     necesita N_cq y N_gamma_q, que salen de figuras y son un criterio SIN
     valor. Se detiene ahi; no sustituye por la del terreno horizontal.
+    (VE-5, ficha T7B-04: desde VE-5 lo que falta es la geometria del talud,
+    'talud_delante_del_cabezal' [S] sin valor; la regla es la misma.)
     """
     ca.establecer_valor_dinamico("terreno_delante_del_cabezal",
                                  "talud_descendente")
@@ -1664,16 +1666,17 @@ def test_sin_talon_el_plano_de_empuje_es_el_trasdos_y_beta_el_del_muro(
     inclinacion, y no hay relleno sobre la zapata.
 
     REESCRITO DECLARANDOLO (correcciones de T-7b, H4): la cuña de tanteo de
-    archivo es la del plano VERTICAL del talon; sobre un trasdos inclinado
-    se detiene con «metodo no evaluable» y dice que regla declarar. Lo que
-    este test fijaba -- el plano y la inclinacion del empuje -- se fija con
-    la formula cerrada, declarando la regla.
+    archivo era la del plano VERTICAL del talon; sobre un trasdos inclinado
+    se detenia con «metodo no evaluable». Lo que este test fijaba -- el
+    plano y la inclinacion del empuje -- se fija con la formula cerrada,
+    declarando la regla. REESCRITO DE NUEVO (VE-5, ficha T7B-06): desde VE-5
+    la cuña va sobre el trasdos inclinado y ya no se detiene; su K_A contra
+    Coulomb con beta lo fija tests/test_ve5_m9_cuna_sismica.py.
     """
     g = _geometria(ancho_talon=0.0, ancho_punta=1.70, beta_grados=5.0)
     entorno = _entorno(geometria=g)
-    with pytest.raises(MetodoNoEvaluableError) as exc:
-        M9.cargas_del_cabezal(entorno, EST)
-    assert "talud_quebrado_2h" in str(exc.value)
+    _cargas, datos = M9.cargas_del_cabezal(entorno, EST)
+    assert datos["metodo_empuje"] == M9.METODO_EMPUJE_CUNA
     ca.establecer_valor_dinamico("regla_pendiente_relleno_trasdos",
                                  "talud_quebrado_2h")
     angulos = M9.angulos_del_empuje(entorno, M9.geometria_del_relleno(entorno))
@@ -2123,38 +2126,27 @@ def test_si_la_resultante_cae_fuera_de_la_zapata_no_hay_presion_que_dar(
     assert len(e.verificaciones) == 6
 
 
-def test_la_zapata_en_talud_usa_los_factores_que_se_declaren(tanteo):
+def test_la_zapata_en_talud_usa_la_geometria_que_se_declare(tanteo):
     """
-    Manual de Puentes 2.8.1.3.1.2c: q = c·N_cq + 0.5·gamma·B·N_gamma_q, con
-    N_q = 0. Con N_cq = 4.0 y N_gamma_q = 20.0 DE PRUEBA:
-      c = 10, gamma = 18, B = 1.50  ->  40 + 270 = 310 kPa
-    Y en el ensamble (friccionante: c = 0), combinacion de maximos:
-      0.5·18·1.94694·20 = 350.449 kPa; phi_b = 0.45 -> 157.702 kPa
+    REESCRITO DECLARANDOLO (VE-5, ficha T7B-04): hasta VE-5 fijaba la
+    ecuacion del Manual de Puentes con los factores de Meyerhof DE PRUEBA
+    ('N_cq_N_gammaq_meyerhof', retirado). Desde VE-5 la zapata en talud es
+    la RC_BC de AASHTO 10.6.3.1.2c sobre la ecuacion sin empotramiento. En
+    el ensamble (friccionante, phi = 32, c = 0), con un talud de 20 grados,
+    H_s = 2.0 m y b = 0: q_R = phi_b·RC_BC·0.5·gamma·B'·N_gamma·i_gamma, con
+    el RC_BC de la columna c' = 0 de la Tabla 10.6.3.1.2c-1.
     """
-    factores = {"N_cq": 4.0, "N_gamma_q": 20.0}
-    with con_valor("N_cq_N_gammaq_meyerhof", factores,
-                   motivo="factores de prueba: los reales se leen de las "
-                          "figuras del Manual de Puentes"):
-        q = M9.capacidad_portante_zapata_en_talud(
-            B=1.5, H_s=0.0, gamma=18.0, c=10.0, phi_grados=0.0)
-        assert q == pytest.approx(310.0, abs=ABS_CERO)
-        for malo in (dict(B=0.0), dict(gamma=0.0), dict(c=-1.0)):
-            with pytest.raises(DatoInvalidoError):
-                M9.capacidad_portante_zapata_en_talud(
-                    **dict(dict(B=1.5, H_s=0.0, gamma=18.0, c=10.0,
-                                phi_grados=0.0), **malo))
-        ca.establecer_valor_dinamico("terreno_delante_del_cabezal",
-                                     "talud_descendente")
-        e = M9.ensamble_estabilidad(tanteo, EST)
-    assert _v(e, "E1-LRFD.est.e").valor_admisible == pytest.approx(
-        0.45 * 0.5 * 18.0 * 1.94694 * 20.0, abs=TOL_MM)
-    for malos in ({"N_cq": 4.0}, {"N_cq": 4.0, "N_gamma_q": float("nan")},
-                  "4 y 20"):
-        with con_valor("N_cq_N_gammaq_meyerhof", malos,
-                       motivo="segunda linea: factores mal declarados"):
-            with pytest.raises(DatoInvalidoError):
-                M9.capacidad_portante_zapata_en_talud(
-                    B=1.5, H_s=0.0, gamma=18.0, c=10.0, phi_grados=0.0)
+    ca.establecer_valor_dinamico("terreno_delante_del_cabezal",
+                                 "talud_descendente")
+    ca.establecer_valor_dinamico("talud_delante_del_cabezal",
+                                 {"H_s_m": 2.0, "beta_grados": 20.0,
+                                  "b_m": 0.0})
+    e = M9.ensamble_estabilidad(tanteo, EST)
+    v = _v(e, "E1-LRFD.est.e")
+    llano = None
+    ca.establecer_valor_dinamico("terreno_delante_del_cabezal", "horizontal")
+    llano = _v(M9.ensamble_estabilidad(tanteo, EST), "E1-LRFD.est.e")
+    assert 0 < v.valor_admisible < llano.valor_admisible
 
 
 def test_el_portante_sismico_inclina_con_las_cargas_de_servicio_de_su_caso(
@@ -2852,12 +2844,20 @@ def test_H7_el_regimen_es_un_criterio_y_cedente_es_la_hipotesis_de_archivo():
         assert cita in c.justificacion or cita in c.fuente
 
 
-def test_H7_declarar_no_cedente_detiene_la_estabilidad_sin_cifra(tanteo):
-    with con_valor("regimen_cabezal", "no_cedente",
-                   motivo="el regimen que no esta implementado"):
-        with pytest.raises(MetodoNoEvaluableError) as exc:
-            M9.ensamble_estabilidad(tanteo, EST)
-    assert "11.6.5.4" in str(exc.value)
+def test_H7_declarar_no_cedente_calcula_la_estabilidad_en_reposo(tanteo):
+    """
+    REESCRITO DECLARANDOLO (VE-5, lote M9, ficha T7B-14). Hasta VE-5 el
+    muro que no cede detenia el ensamble con `MetodoNoEvaluableError`; desde
+    VE-5 lo calcula con el empuje en reposo (AASHTO 3.11.5.2-1 y C11.6.5.4).
+    Los dorados a mano estan en tests/test_ve5_m9_no_cedente.py; aqui, que
+    ya no se detiene y que el empuje horizontal es el de K0.
+    """
+    ca.establecer_valor_dinamico("regimen_cabezal", "no_cedente")
+    est = M9.ensamble_estabilidad(tanteo, EST)
+    assert est.regimen == "no_cedente"
+    K0 = 1 - math.sin(math.radians(CP["phi_relleno"]))
+    assert _carga(est, "EH.h").H == pytest.approx(
+        K0 * CP["gamma_relleno"] * CP["h"] ** 2 / 2, abs=TOL)
 
 
 def test_H7_las_solicitaciones_dicen_con_que_coeficiente_salen(tanteo):

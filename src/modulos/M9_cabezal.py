@@ -104,8 +104,14 @@ Lo que se detiene, y por que no se rellena
     friccion_muro_suelo_delta    cuarto, phi, ya estaba vacio en GEOTECNIA
                                  ('phi_relleno_trasdos').
     punto_aplicacion_...         Mononobe-Okabe da el empuje, no su brazo.
-    N_cq_N_gammaq_meyerhof       Salen de FIGURAS (2.8.1.3.1.2c-1 y -2), no de
-                                 una formula transcribible.
+    talud_delante_del_cabezal    La geometria del talud que desciende delante
+                                 de la zapata (H_s, beta, b), con
+                                 'terreno_delante_del_cabezal' = talud: dato
+                                 de topografia [S]. Desde VE-5 sustituye a
+                                 'N_cq_N_gammaq_meyerhof' (las figuras de
+                                 Meyerhof), retirado: la reduccion es la
+                                 RC_BC de AASHTO 10.6.3.1.2c, que si se
+                                 transcribe (tablas).
     metodo_estabilidad_global    E4 y E5: el FS esta, el metodo con que
                                  producir el valor a comparar no.
     cortante_alto_muro_...       El escalon de cuantia horizontal minima a
@@ -177,7 +183,7 @@ Uso
 from __future__ import annotations
 
 import math
-from typing import Optional, Sequence, Tuple
+from typing import Any, Optional, Sequence, Tuple
 
 from src import criterios_adoptados as ca
 from src import datos_sitio as ds
@@ -304,7 +310,15 @@ from src.constantes_normativas import (AMBIENTE_CORROSIVO_AUMENTAR,
                                    H_EQ_MURO_PARALELO_FT,
                                    SULFATOS,
                                    TABLA_COMBINACIONES_FILAS,
-                                   TABLA_GAMMA_P_FILAS)
+                                   TABLA_GAMMA_P_FILAS,
+                                   # --- VE-5 (ficha T7B-04) ---
+                                   DQ_MAXIMO_10_6_3_1_2A_10,
+                                   FORMA_SC_PHI_CERO_DIVISOR,
+                                   FORMA_SGAMMA_COEFICIENTE,
+                                   NUMERAL_FORMA_PROFUNDIDAD, NUMERAL_RCBC,
+                                   RCBC_BETAS_GRADOS, RCBC_COLUMNAS_NS,
+                                   RCBC_EN_TALUD_T10_6_3_1_2C_1,
+                                   RCBC_JUNTO_AL_TALUD_T10_6_3_1_2C_2)
 from src.modelos import (CIFRAS_FACTOR, CadenaSismica, CasoDemandaSismica,
                      CombinacionCarga, EleccionDeProyecto, Magnitud,
                      TipoDeVeredicto, Umbral, Veredicto, paso,
@@ -388,7 +402,18 @@ CRITERIO_DIMENSIONAMIENTO_ZAPATA = "dimensionamiento_zapata_cabezal"
 # El NF ya no es criterio: es la columna 'NF_profundidad_m' del CSV, medida en
 # cada cruce. Entra por argumento a las funciones que lo necesitan.
 
-CRITERIO_MEYERHOF = "N_cq_N_gammaq_meyerhof"
+# --- VE-5 (ficha T7B-04) --- 'N_cq_N_gammaq_meyerhof' se RETIRO: la zapata
+# en talud se calcula con la RC_BC de AASHTO 10.6.3.1.2c (tablas transcritas)
+# sobre la geometria del talud de 'talud_delante_del_cabezal' [S].
+CRITERIO_TALUD_DELANTE = "talud_delante_del_cabezal"
+CRITERIO_PORTANTE_ADMISIBLE = "capacidad_portante_adm"
+CRITERIO_FORMA_PROFUNDIDAD = "factores_forma_profundidad_portante"
+FORMA_CORRIDA = "corrida_sin_profundidad"
+FORMA_CON_LONGITUD = "forma_con_la_longitud_del_cabezal"
+FORMA_Y_PROFUNDIDAD = "forma_y_profundidad"
+OPCIONES_FORMA_PROFUNDIDAD = (FORMA_CORRIDA, FORMA_CON_LONGITUD,
+                              FORMA_Y_PROFUNDIDAD)
+CAMPOS_TALUD_DELANTE = ("H_s_m", "beta_grados", "b_m")
 CRITERIO_ESTABILIDAD_GLOBAL = "metodo_estabilidad_global"
 CRITERIO_TABLA_RECUBRIMIENTO = "tabla_recubrimiento_aashto_mm"
 # Las dos lagunas de las tablas de h_eq de AASHTO 3.11.6.4, que el registro
@@ -2400,93 +2425,232 @@ def _es_numero_finito(x: object) -> bool:
             and math.isfinite(x))
 
 
-def n_s_zapata_en_talud(*, B: float, H_s: float, gamma: float,
-                        c: float) -> float:
+def n_s_zapata_en_talud(*, H_s: float, gamma: float, c: float) -> float:
     """
-    Numero de estabilidad N_s de la zapata proxima al talud (Manual de
-    Puentes num. 2.8.1.3.1.2c):
+    Factor de estabilidad del talud N_s de AASHTO LRFD 10.6.3.1.2c (ec.
+    10.6.3.1.2c-2, pag. impresa 10-75):
 
-        N_s = 0            si B <  H_s
-        N_s = gamma*H_s/c  si B >= H_s
+        N_s = gamma·H_s / c
 
-    Con c = 0 la segunda rama no esta definida. No es un caso raro: E.050
-    Art. 20 obliga a c = 0 en todo suelo friccionante, y ahi el caso no se
-    resuelve con N_s sino con el abaco de N_gamma_q, que es el vacio del
-    criterio 'N_cq_N_gammaq_meyerhof'. Se levanta `DatoInvalidoError` en vez
-    de devolver infinito, para que el mensaje diga que hay que hacer.
+    --- VE-5 (ficha T7B-04) --- Hasta VE-5 era la del Manual de Puentes
+    2.8.1.3.1.2c (N_s = 0 si B < H_s), la de los abacos de Meyerhof que el
+    proyecto ya no lee. Con c = 0 (suelo friccionante, E.050 Art. 20) N_s no
+    esta definido: las tablas tienen para ese caso su columna «c' = 0», que
+    elige `coeficiente_rcbc`; aqui se levanta `DatoInvalidoError` en vez de
+    devolver infinito.
     """
-    if B < H_s:
-        return 0.0
-    if c <= 0:
+    if not c > 0:
         raise DatoInvalidoError(
-            campo="c",
-            valor=c,
-            motivo=("N_s = gamma*H_s/c no esta definido con c = 0 (suelo "
-                    f"friccionante, {NUMERAL_C_PHI}). Ese caso se resuelve "
-                    f"con el abaco de N_gamma_q: ver el criterio "
-                    f"'{CRITERIO_MEYERHOF}' ({NUMERAL_ZAPATA_EN_TALUD})"),
-        )
+            campo="c", valor=c,
+            motivo=("N_s = gamma·H_s/c no esta definido con c = 0 (suelo "
+                    f"friccionante, {NUMERAL_C_PHI}): las tablas de "
+                    f"{NUMERAL_RCBC} lo resuelven con su columna c' = 0"))
     return gamma * H_s / c
 
 
 def n_q_zapata_en_talud() -> float:
     """
-    N_q = 0.0 para zapata proxima al talud (Manual de Puentes num.
-    2.8.1.3.1.2c). [N] literal de `constantes_normativas`.
+    N_q = 0.0 para la zapata en talud. [N] literal de `constantes_normativas`.
 
-    Es el unico de los tres factores de capacidad de carga que la hoja de
-    ruta entrega como NUMERO, y anularlo no es un detalle: el termino de
-    sobrecarga desaparece por completo, que es la forma de escribir la
-    perdida de confinamiento del borde del terraplen.
+    --- VE-5 --- La ec. 10.6.3.1.2c-1 de AASHTO tampoco lleva el termino de
+    sobrecarga (q_n = RC_BC·(c·N_cm + 0.5·gamma·B·N_gamma_m)): sus
+    coeficientes son de zapatas sin empotramiento, y la perdida de
+    confinamiento del borde se escribe anulando ese termino, como en el
+    Manual de Puentes.
     """
     return NQ_ZAPATA_EN_TALUD
 
 
-def capacidad_portante_zapata_en_talud(*, B: float, H_s: float,
-                                       gamma: float, c: float,
-                                       phi_grados: float) -> float:
+def _interpolar_en(nodo: dict, x: float) -> Tuple[Any, Any, float]:
+    """(inferior, superior, fraccion) de `x` entre las claves de `nodo`."""
+    claves = sorted(nodo)
+    if x <= claves[0] + TOL_UMBRAL_NORMATIVO:
+        return nodo[claves[0]], nodo[claves[0]], 0.0
+    for a, b in zip(claves, claves[1:]):
+        if x <= b + TOL_UMBRAL_NORMATIVO:
+            f = min(max((x - a) / (b - a), 0.0), 1.0)
+            return nodo[a], nodo[b], f
+    return nodo[claves[-1]], nodo[claves[-1]], 0.0
+
+
+def _multilineal(nodo, coordenadas: Tuple[float, ...]):
+    """Interpolacion lineal anidada sobre las claves de un dict de tablas;
+    la hoja es una tupla, que se interpola componente a componente."""
+    if not coordenadas:
+        return nodo
+    a, b, f = _interpolar_en(nodo, coordenadas[0])
+    va = _multilineal(a, coordenadas[1:])
+    vb = _multilineal(b, coordenadas[1:])
+    return tuple(x + (y - x) * f for x, y in zip(va, vb))
+
+
+def _fuera_de_la_tabla(que: str, id_punto: Optional[str]
+                       ) -> MetodoNoEvaluableError:
+    return MetodoNoEvaluableError(
+        "reduccion por talud de la capacidad portante del cabezal",
+        "analisis limite o de equilibrio limite de la zapata en el talud "
+        "(AASHTO C10.6.3.1.2c)",
+        f"{que}: fuera de las Tablas 10.6.3.1.2c-1 y -2 ({NUMERAL_RCBC}). "
+        "El comentario pide entonces el analisis limite; la tabla no se "
+        "extrapola", id_punto=id_punto,
+        rotulo=MOTIVO_METODO_NO_EVALUABLE_CABEZAL)
+
+
+def coeficiente_rcbc(*, phi_grados: float, c_kpa: float, gamma: float,
+                     B: float, H_s: float, b: float, beta_grados: float,
+                     id_punto: Optional[str] = None) -> Tuple[float, dict]:
     """
-    q_ultima de una zapata proxima al talud, kPa (Manual de Puentes num.
-    2.8.1.3.1.2c, pags. 272-273): N_q = 0.0, y N_c y N_gamma REEMPLAZADOS por
-    N_cq y N_gamma_q de las figuras 2.8.1.3.1.2c-1 y -2 (Meyerhof 1957).
+    RC_BC, coeficiente de reduccion de la capacidad portante por talud de
+    AASHTO LRFD 10.6.3.1.2c (Tablas 10.6.3.1.2c-1 y -2, pags. impresas 10-76
+    a 10-78), y el detalle de la lectura.
 
-    Se detiene con `CriterioPendienteError` en 'N_cq_N_gammaq_meyerhof'. La
-    penalizacion es severa por perdida de confinamiento y la hoja de ruta lo
-    subraya: "el cabezal se apoya en el BORDE DEL TERRAPLEN, no en terreno
-    horizontal". Usar aqui los N_c y N_gamma de terreno horizontal -- que
-    cualquier formulario tiene a mano -- es exactamente la sobrestimacion que
-    Sec. 9.3 advierte, y por eso este modulo no ofrece via alternativa.
+      b = 0     zapata EN el talud: Tabla 10.6.3.1.2c-1, por phi, B/H_s y
+                beta (B/H_s de 0.1 a 3);
+      b > 0     zapata JUNTO al talud: Tabla 10.6.3.1.2c-2, por phi, B/H_s,
+                b/B y beta (B/H_s de 0.2 a 2, b/B de 0 a 10; mas alla de 10
+                se toma la fila de 10, que ya es 1.00 o casi: lado seguro).
+      columna   c = 0 (friccionante, E.050 Art. 20): la columna «c' = 0»;
+                c > 0: N_s = gamma·H_s/c (`n_s_zapata_en_talud`) entre sus
+                columnas 0, 2 y 4.
 
-    El vacio se comprueba ANTES que cualquier otra cosa a proposito: con suelo
-    friccionante (c = 0 por E.050 Art. 20) `n_s_zapata_en_talud` levantaria
-    `DatoInvalidoError` y el mensaje culparia al dato, cuando lo que falta de
-    verdad es la lectura de los abacos. N_s se calcula aparte, con esa
-    funcion, al ir a leerlos.
-
-    E.050 Art. 30.1-30.2 exige ADEMAS la verificacion por inclinacion de la
-    superficie y de la base y el analisis de estabilidad global con la
-    estructura cargando el talud: son dos comprobaciones y no una (la "doble
-    verificacion" de Sec. 9.3). La segunda es E4/E5.
+    «Use linear interpolation to obtain reduction coefficients for values
+    not provided»: interpolacion lineal anidada en phi, B/H, [b/B], beta y
+    N_s. Bajo beta = 10 grados (el talud mas tendido de la tabla) se toma la
+    fila de 10: el coeficiente crece al tender el talud, y no se inventa el
+    valor de 0 grados. LO QUE NO SE EXTRAPOLA -- beta > 40, N_s > 4, phi >
+    40, B/H fuera de su rango -- detiene con `MetodoNoEvaluableError`: el
+    comentario pide el analisis limite para geometrias y suelos fuera de las
+    de la referencia.
     """
-    factores = ca.valor(CRITERIO_MEYERHOF)   # CriterioPendienteError mientras falte
-    # --- T-7b --- CON los factores declarados, la formula del numeral (era
-    # un AssertionError desnudo): N_q = 0, y N_c y N_gamma reemplazados por
-    # N_cq y N_gamma_q, que el proyectista lee de las Figuras 2.8.1.3.1.2c-1
-    # y -2 del Manual de Puentes y declara. E.050 Art. 20: en friccionantes
-    # c = 0 y solo cuenta el termino de N_gamma_q.
-    if not hasattr(factores, "get") or not (
-            _es_numero_finito(factores.get("N_cq"))
-            and _es_numero_finito(factores.get("N_gamma_q"))):
+    for nombre, x in (("phi", phi_grados), ("c", c_kpa), ("gamma", gamma),
+                      ("B", B), ("H_s", H_s), ("b", b),
+                      ("beta", beta_grados)):
+        if not _finito(x):
+            raise DatoInvalidoError(nombre, valor=x, id_punto=id_punto,
+                                    motivo="se espera un numero finito")
+    if not (B > 0 and H_s > 0 and gamma > 0 and b >= 0 and c_kpa >= 0
+            and phi_grados >= 0 and beta_grados > 0):
         raise DatoInvalidoError(
-            campo=CRITERIO_MEYERHOF, valor=factores,
-            motivo="se esperan los dos factores leidos de las Figuras "
-                   "2.8.1.3.1.2c-1 y -2: {'N_cq': ..., 'N_gamma_q': ...}")
-    if not (B > 0 and gamma > 0 and c >= 0):
+            "talud delante del cabezal", id_punto=id_punto,
+            valor=(B, H_s, b, beta_grados, c_kpa, phi_grados),
+            motivo="B, H_s, gamma y beta positivos; b, c y phi no negativos")
+    t1, t2 = RCBC_EN_TALUD_T10_6_3_1_2C_1, RCBC_JUNTO_AL_TALUD_T10_6_3_1_2C_2
+    if phi_grados > max(t1) + TOL_UMBRAL_NORMATIVO:
+        raise _fuera_de_la_tabla(f"phi = {phi_grados:g} grados > {max(t1)}",
+                                 id_punto)
+    if beta_grados > max(RCBC_BETAS_GRADOS) + TOL_UMBRAL_NORMATIVO:
+        raise _fuera_de_la_tabla(f"talud de {beta_grados:g} grados > "
+                                 f"{max(RCBC_BETAS_GRADOS)}", id_punto)
+    beta = max(beta_grados, min(RCBC_BETAS_GRADOS))
+    B_H = B / H_s
+    if c_kpa > 0:
+        N_s = n_s_zapata_en_talud(H_s=H_s, gamma=gamma, c=c_kpa)
+        if N_s > max(RCBC_COLUMNAS_NS) + TOL_UMBRAL_NORMATIVO:
+            raise _fuera_de_la_tabla(f"N_s = gamma·H_s/c = {N_s:.3f} > "
+                                     f"{max(RCBC_COLUMNAS_NS)}", id_punto)
+    else:
+        N_s = None
+    if b > TOL_UMBRAL_NORMATIVO:
+        tabla, nombre = t2, "10.6.3.1.2c-2"
+        filas_BH = sorted(next(iter(t2.values())))
+        b_B = min(b / B, max(next(iter(next(iter(t2.values())).values()))))
+        coordenadas = (phi_grados, B_H, b_B, beta)
+    else:
+        tabla, nombre = t1, "10.6.3.1.2c-1"
+        filas_BH = sorted(next(iter(t1.values())))
+        b_B = 0.0
+        coordenadas = (phi_grados, B_H, beta)
+    if not (filas_BH[0] - TOL_UMBRAL_NORMATIVO <= B_H
+            <= filas_BH[-1] + TOL_UMBRAL_NORMATIVO):
+        raise _fuera_de_la_tabla(
+            f"B/H_s = {B:.3f}/{H_s:.3f} = {B_H:.3f} fuera de "
+            f"{filas_BH[0]:g} a {filas_BH[-1]:g} (Tabla {nombre})", id_punto)
+    fila = _multilineal(tabla, coordenadas)
+    if N_s is None:
+        rc = fila[len(RCBC_COLUMNAS_NS)]           # la columna c' = 0
+        columna = "c' = 0"
+    else:
+        columnas = dict(zip(RCBC_COLUMNAS_NS, fila))
+        a, b2, f = _interpolar_en(columnas, N_s)
+        rc = a + (b2 - a) * f
+        columna = f"N_s = {N_s:.3f}"
+    return rc, {"tabla": nombre, "B_H": B_H, "b_B": b_B, "beta": beta,
+                "N_s": N_s, "columna": columna, "RC_BC": rc}
+
+
+def validar_talud_delante(valor: Any, *, id_punto: Optional[str] = None
+                          ) -> dict:
+    """
+    La geometria del talud que desciende delante de la zapata (Figura
+    10.6.3.1.2c-1 de AASHTO): `H_s_m`, la altura del terreno inclinado bajo
+    la base de la zapata (m, > 0); `beta_grados`, su inclinacion (> 0 y <
+    90); `b_m`, la distancia del borde de la zapata a la coronacion del
+    talud (m, >= 0; 0 = zapata en el talud). Forma y dominio, o
+    `DatoInvalidoError`.
+    """
+    if not hasattr(valor, "get") or set(valor) != set(CAMPOS_TALUD_DELANTE):
         raise DatoInvalidoError(
-            campo="B", valor=(B, gamma, c),
+            CRITERIO_TALUD_DELANTE, valor=valor, id_punto=id_punto,
+            motivo="se espera {'H_s_m': ..., 'beta_grados': ..., 'b_m': ...}")
+    H_s, beta, b = (valor["H_s_m"], valor["beta_grados"], valor["b_m"])
+    recto = math.degrees(math.pi / 2)
+    if not (all(_es_numero_finito(x) for x in (H_s, beta, b))
+            and H_s > 0 and 0 < beta < recto and b >= 0):
+        raise DatoInvalidoError(
+            CRITERIO_TALUD_DELANTE, valor=valor, id_punto=id_punto,
+            motivo="H_s > 0 m, 0 < beta < 90 grados y b >= 0 m, numeros "
+                   "finitos")
+    return {"H_s_m": float(H_s), "beta_grados": float(beta),
+            "b_m": float(b)}
+
+
+def capacidad_portante_zapata_en_talud(*, B: float, H_s: float, b: float,
+                                       beta_grados: float, gamma: float,
+                                       c: float, phi_grados: float,
+                                       C_wgamma: float = 1.0,
+                                       i_c: float = 1.0, i_gamma: float = 1.0,
+                                       s_c: float = 1.0, s_gamma: float = 1.0,
+                                       id_punto: Optional[str] = None
+                                       ) -> Tuple[float, dict]:
+    """
+    q_n de la zapata EN o JUNTO a un talud, kPa, por AASHTO LRFD
+    10.6.3.1.2c (ec. 10.6.3.1.2c-1, pag. impresa 10-74):
+
+        q_n = RC_BC·(c·N_cm + 0.5·gamma·B·N_gamma_m)
+        N_cm = N_c·s_c·i_c;  N_gamma_m = N_gamma·s_gamma·i_gamma·C_wgamma
+
+    con N_c y N_gamma de la Tabla 10.6.3.1.2a-1 (`factores_de_capacidad_de_
+    carga`) y RC_BC de `coeficiente_rcbc`. Sin termino de sobrecarga
+    (`n_q_zapata_en_talud`): los coeficientes son de zapatas sin
+    empotramiento, y la fuente avisa que con empotramiento pueden ser
+    conservadores. C_wgamma, el del nivel freatico (Tabla 10.6.3.1.2a-2),
+    se conserva: el agua bajo la zapata no deja de restar por estar en un
+    talud.
+
+    --- VE-5 (ficha T7B-04) --- SUSTITUYE la ecuacion del Manual de Puentes
+    2.8.1.3.1.2c con los abacos de Meyerhof ('N_cq_N_gammaq_meyerhof',
+    retirado), que no se podian transcribir: las tablas de la 9a edicion si.
+    """
+    if not (_finito(B) and B > 0 and _finito(gamma) and gamma > 0
+            and _finito(c) and c >= 0):
+        raise DatoInvalidoError(
+            campo="B", valor=(B, gamma, c), id_punto=id_punto,
             motivo="ancho y peso especifico positivos y cohesion no negativa")
-    # El termino de sobrecarga lleva N_q = 0 (`n_q_zapata_en_talud`): no suma.
-    return c * factores["N_cq"] + gamma * B * factores["N_gamma_q"] / 2
+    rc, detalle = coeficiente_rcbc(phi_grados=phi_grados, c_kpa=c,
+                                   gamma=gamma, B=B, H_s=H_s, b=b,
+                                   beta_grados=beta_grados, id_punto=id_punto)
+    N_c, _N_q, N_g = factores_de_capacidad_de_carga(phi_grados)
+    termino_c = c * N_c * s_c * i_c
+    termino_g = gamma * B * N_g * s_gamma * i_gamma * C_wgamma / 2
+    q = rc * (termino_c + termino_g + n_q_zapata_en_talud())
+    if not (math.isfinite(q) and q >= 0):
+        raise LimiteNumericoError(
+            "q_n", valor=q, id_punto=id_punto,
+            motivo="la capacidad portante en talud no es finita y no "
+                   "negativa")
+    detalle.update(N_c=N_c, N_gamma=N_g, termino_c=termino_c,
+                   termino_gamma=termino_g)
+    return q, detalle
 
 
 def verificar_estabilidad(*, geometria: GeometriaCabezal,
@@ -3652,10 +3816,11 @@ FUNCIONES_SIN_CONSUMIDOR = {
     "n_q_zapata_en_talud / n_s_zapata_en_talud": (
         "`capacidad_portante_zapata_en_talud` solo se alcanza con "
         "'terreno_delante_del_cabezal' = 'talud_descendente', que no es el "
-        "valor de archivo, y entonces pide 'N_cq_N_gammaq_meyerhof': N_cq y "
-        "N_gamma_q salen de FIGURAS del Manual de Puentes y no de una "
-        "formula transcribible. N_s se calcula aparte al leer los abacos, "
-        "que es justo para lo que existe la funcion (SIS-B-21)"),
+        "valor de archivo, y entonces pide la geometria del talud "
+        "('talud_delante_del_cabezal' [S]); desde VE-5 la reduccion es la "
+        "RC_BC de AASHTO 10.6.3.1.2c, cuyas tablas leen N_s "
+        "(`coeficiente_rcbc`). Ninguna corrida con el valor de archivo las "
+        "llama (SIS-B-21)"),
 }
 
 
@@ -5969,6 +6134,10 @@ REGLAS_DE_PENDIENTE = (REGLA_CUNA_DE_TANTEO, REGLA_TALUD_QUEBRADO,
 # formula cerrada (Coulomb / Mononobe-Okabe) con una pendiente equivalente.
 METODO_EMPUJE_CUNA = "cuna de tanteo (Culmann) con la superficie real"
 METODO_EMPUJE_FORMULA = "formula cerrada con pendiente equivalente"
+# --- VE-5 (ficha T7B-06) --- el incremento sismico por la cuña de tanteo
+# cuando la formula cerrada de la regla queda fuera del dominio de M-O.
+METODO_INCREMENTO_CUNA = ("cuña de tanteo pseudoestatica (C11.6.5.3): "
+                          "Mononobe-Okabe fuera de su dominio")
 # El regimen del cabezal frente al empuje (correcciones de T-7b, H7).
 CRITERIO_REGIMEN = "regimen_cabezal"
 # --- verificacion de T-7 (punto 9) --- los tres factores del modificador de
@@ -5983,6 +6152,16 @@ CITAS_DE_ETA = (CITA_ETA, "AASHTO_LRFD_9.1.3.3", "AASHTO_LRFD_9.1.3.4",
 REGIMEN_CEDENTE = "cedente"
 REGIMEN_NO_CEDENTE = "no_cedente"
 REGIMENES_DEL_CABEZAL = (REGIMEN_CEDENTE, REGIMEN_NO_CEDENTE)
+# --- VE-5 (lote M9, ficha T7B-14) --- el empuje sismico total del muro que
+# no cede (ver su ficha en criterios_adoptados) y el empuje estatico que
+# rige en cada caso.
+CRITERIO_EMPUJE_SISMICO_NO_CEDE = "empuje_sismico_muro_que_no_cede"
+NO_CEDE_REPOSO_MAS_INCREMENTO = "reposo_mas_incremento"
+NO_CEDE_MAYOR_DE_REPOSO_Y_TOTAL = "mayor_de_reposo_y_total"
+EMPUJES_SISMICOS_NO_CEDE = (NO_CEDE_REPOSO_MAS_INCREMENTO,
+                            NO_CEDE_MAYOR_DE_REPOSO_Y_TOTAL)
+EMPUJE_ESTATICO_ACTIVO = "activo"
+EMPUJE_ESTATICO_REPOSO = "reposo"
 INCLINACION_APLICAR = "aplicar"
 INCLINACION_OMITIR = "omitir"
 TERRENO_HORIZONTAL = "horizontal"
@@ -6125,9 +6304,30 @@ def suelo_de_fundacion(suelo_del_punto: Optional[dict] = None, *,
         return dict(suelo_del_punto), ("dato externo del punto "
                                        "(`suelo_fundacion`), del EMS")
     declarado = ca.valor(CRITERIO_SUELO_FUNDACION)   # CriterioPendienteError
-    return (validar_suelo_fundacion(declarado, campo=CRITERIO_SUELO_FUNDACION,
-                                    id_punto=id_punto),
-            f"criterio de corredor '{CRITERIO_SUELO_FUNDACION}', del EMS")
+    suelo = validar_suelo_fundacion(declarado, campo=CRITERIO_SUELO_FUNDACION,
+                                    id_punto=id_punto)
+    origen = f"criterio de corredor '{CRITERIO_SUELO_FUNDACION}', del EMS"
+    # --- VE-5 (ficha T7B-04) --- 'capacidad_portante_adm' [S] ya no es un
+    # criterio sin consumidor: es la presion ADMISIBLE de corredor, la misma
+    # magnitud que el campo `q_adm_kpa` del suelo de corredor, y entra cuando
+    # ese campo no viene. Si vienen los dos y difieren, el expediente se
+    # contradice: `DatoInvalidoError`. El suelo de un PUNTO no la hereda (es
+    # del EMS de ese punto, y gana entero).
+    adm = ca.valor_si_declarado(CRITERIO_PORTANTE_ADMISIBLE)
+    if adm is not None:
+        if "q_adm_kpa" in suelo and not math.isclose(
+                suelo["q_adm_kpa"], adm, rel_tol=TOL_UMBRAL_NORMATIVO):
+            raise DatoInvalidoError(
+                CRITERIO_PORTANTE_ADMISIBLE, valor=adm, id_punto=id_punto,
+                motivo=f"'{CRITERIO_SUELO_FUNDACION}' declara q_adm_kpa = "
+                       f"{suelo['q_adm_kpa']:g} kPa y "
+                       f"'{CRITERIO_PORTANTE_ADMISIBLE}' {adm:g} kPa: la "
+                       "presion admisible del EMS es una sola")
+        if "q_adm_kpa" not in suelo:
+            suelo["q_adm_kpa"] = float(adm)
+            origen += (f"; la presion admisible de "
+                       f"'{CRITERIO_PORTANTE_ADMISIBLE}' [S]")
+    return suelo, origen
 
 
 # ---------------------------------------------------------------------------
@@ -6334,10 +6534,51 @@ def coeficientes_de_nivel_freatico(*, D_w: float, D_f: float,
     return c_wq, c_wg
 
 
+def factores_de_forma(*, phi_grados: float, B: float, L: float,
+                      N_c: float, N_q: float) -> Tuple[float, float, float]:
+    """
+    (s_c, s_q, s_gamma) de la Tabla 10.6.3.1.2a-3 de AASHTO LRFD (pag.
+    impresa 10-73): con phi = 0, s_c = 1 + B/(5L) y s_q = s_gamma = 1; con
+    phi > 0, s_c = 1 + (B/L)(N_q/N_c), s_q = 1 + (B/L)·tan(phi) y s_gamma =
+    1 - 0.4·(B/L). B/L no pasa de 1 (L es la dimension mayor).
+    """
+    if not (_finito(B) and _finito(L) and B > 0 and L > 0):
+        raise DatoInvalidoError("longitud", valor=(B, L),
+                                motivo="ancho y longitud de la zapata "
+                                       "positivos y finitos")
+    r = min(B / L, 1.0)
+    if phi_grados > 0:
+        return (1.0 + r * N_q / N_c,
+                1.0 + r * math.tan(math.radians(phi_grados)),
+                1.0 - FORMA_SGAMMA_COEFICIENTE * r)
+    return 1.0 + r / FORMA_SC_PHI_CERO_DIVISOR, 1.0, 1.0
+
+
+def factor_de_profundidad(*, phi_grados: float, D_f: float,
+                          B: float) -> float:
+    """
+    d_q de la ec. 10.6.3.1.2a-10 de AASHTO LRFD (pag. impresa 10-73):
+
+        d_q = 1 + 2·tan(phi)·(1 - sen(phi))²·arctan(D_f/B)  (radianes)
+
+    «shall not exceed 1.4» (`DQ_MAXIMO_10_6_3_1_2A_10`). La fuente lo pide
+    solo con el suelo sobre el desplante tan competente como el de debajo,
+    y lo verifico para phi de 32 a 42 grados y D_f/B de 1 a 8: quien lo
+    declara ('factores_forma_profundidad_portante') asume lo primero, y el
+    paso dice si se esta fuera de lo segundo.
+    """
+    phi = math.radians(phi_grados)
+    d_q = (1.0 + 2 * math.tan(phi) * (1.0 - math.sin(phi)) ** 2
+           * math.atan(max(D_f, 0.0) / B))
+    return min(d_q, DQ_MAXIMO_10_6_3_1_2A_10)
+
+
 def resistencia_portante_nominal(*, suelo: dict, B_efectivo: float,
                                  D_f: float, D_w: float, H_servicio: float,
                                  V_servicio: float,
-                                 aplicar_inclinacion: bool
+                                 aplicar_inclinacion: bool,
+                                 longitud: Optional[float] = None,
+                                 profundidad: bool = False
                                  ) -> Tuple[float, dict]:
     """
     q_n, resistencia portante NOMINAL del terreno bajo la zapata corrida del
@@ -6347,11 +6588,18 @@ def resistencia_portante_nominal(*, suelo: dict, B_efectivo: float,
         q_n = c·N_c·i_c + gamma·D_f·N_q·i_q·C_wq
               + 0.5·gamma·B'·N_gamma·i_gamma·C_wgamma
 
-    LO QUE SE TOMA IGUAL A 1, y por que: los factores de FORMA (s_c, s_q,
-    s_gamma), porque la zapata del cabezal continua bajo los aleros y se
-    trata como corrida (B/L -> 0); y el de PROFUNDIDAD d_q, porque la fuente
-    lo admite solo con suelo competente sobre el desplante y lo verifico para
-    D_f/B de 1 a 8, que no es el caso de esta zapata.
+    LO QUE SE TOMA IGUAL A 1 DE ARCHIVO, y por que: los factores de FORMA
+    (s_c, s_q, s_gamma), porque la zapata del cabezal continua bajo los
+    aleros y se trata como corrida (B/L -> 0); y el de PROFUNDIDAD d_q,
+    porque la fuente lo admite solo con suelo competente sobre el desplante
+    y lo verifico para D_f/B de 1 a 8, que no es el caso de esta zapata.
+    --- VE-5 (ficha T7B-04) --- Con `longitud` (L) se aplican los de forma
+    (`factores_de_forma`, Tabla 10.6.3.1.2a-3) y con `profundidad`, d_q
+    (`factor_de_profundidad`, ec. 10.6.3.1.2a-10): lo declara
+    'factores_forma_profundidad_portante' [A].
+
+        q_n = c·N_c·s_c·i_c + gamma·D_f·N_q·s_q·d_q·i_q·C_wq
+              + 0.5·gamma·B'·N_gamma·s_gamma·i_gamma·C_wgamma
 
     `B_efectivo` es B - 2e de la combinacion (10.6.3.1.1 manda usar las
     dimensiones efectivas). `D_f` es el empotramiento que queda DELANTE de la
@@ -6397,9 +6645,15 @@ def resistencia_portante_nominal(*, suelo: dict, B_efectivo: float,
             i_c = i_q - (1.0 - i_q) / (N_q - 1.0)
         else:
             i_c = max(1.0 - n * H / (c * B_efectivo * N_c), 0.0)
-    termino_c = c * N_c * i_c
-    termino_q = gamma * D_f * N_q * i_q * c_wq
-    termino_g = gamma * B_efectivo * N_g * i_g * c_wg / 2
+    s_c = s_q = s_g = d_q = 1.0
+    if longitud is not None:
+        s_c, s_q, s_g = factores_de_forma(phi_grados=phi, B=B_efectivo,
+                                          L=longitud, N_c=N_c, N_q=N_q)
+    if profundidad:
+        d_q = factor_de_profundidad(phi_grados=phi, D_f=D_f, B=B_efectivo)
+    termino_c = c * N_c * s_c * i_c
+    termino_q = gamma * D_f * N_q * s_q * d_q * i_q * c_wq
+    termino_g = gamma * B_efectivo * N_g * s_g * i_g * c_wg / 2
     q_n = termino_c + termino_q + termino_g
     if not (math.isfinite(q_n) and q_n >= 0):
         raise LimiteNumericoError(
@@ -6408,6 +6662,7 @@ def resistencia_portante_nominal(*, suelo: dict, B_efectivo: float,
                    f"y no negativo (B' = {B_efectivo!r} m, H/V = "
                    f"{H!r}/{V_servicio!r})")
     return q_n, {"N_c": N_c, "N_q": N_q, "N_gamma": N_g, "i_c": i_c,
+                 "s_c": s_c, "s_q": s_q, "s_gamma": s_g, "d_q": d_q,
                  "i_q": i_q, "i_gamma": i_g, "C_wq": c_wq, "C_wgamma": c_wg,
                  "c": c, "phi": phi, "gamma": gamma,
                  "termino_c": termino_c, "termino_q": termino_q,
@@ -6558,11 +6813,11 @@ def _sesgo(K_formula: float, K: float) -> str:
 
 def _regimen() -> str:
     """
-    El regimen del cabezal ('regimen_cabezal' [A]): «cedente» es lo que el
-    ensamble calcula; «no_cedente» lo detiene sin cifra, porque las
-    presiones de un muro que no cede (K0 en resistencia, k_h = 1.0·k_h0 y
-    resultante en h/2 bajo sismo, AASHTO 11.6.5.4 y su comentario) no estan
-    implementadas.
+    El regimen del cabezal ('regimen_cabezal' [A]): «cedente», empuje
+    activo de 11.6.5.3; «no_cedente», las presiones del muro que no cede
+    (reposo K0 en la estatica, k_h = 1.0·k_h0 y resultante en h/2 bajo
+    sismo, AASHTO 11.6.5.4 y su comentario), que hasta VE-5 detenian el
+    ensamble sin cifra y desde VE-5 calcula `cargas_del_cabezal`.
     """
     regimen = ca.valor(CRITERIO_REGIMEN)
     if regimen not in REGIMENES_DEL_CABEZAL:
@@ -6605,25 +6860,34 @@ def _decide(marco: str, regla: str) -> bool:
 # empuje estatico un 7 a 11 % frente a esta cuña.
 
 def _area_de_la_cuna(*, h: float, subida: float, talud: float,
-                     tan_rho: float) -> float:
+                     tan_rho: float, beta_grados: float = 0.0) -> float:
     """
-    Area de la cuña entre el plano vertical (x = 0, de la base z = 0 a su
-    tope z = h), el plano de falla z = x·tan(rho) y la superficie del relleno:
-    sube desde (0, h) con 1 V : `talud` H y se quiebra, `subida` m mas arriba,
-    en una plataforma horizontal (con `subida` infinita, el talud no se
-    quiebra nunca). Area del poligono por la formula del cordon de zapato.
+    Area de la cuña entre el plano de empuje (de la base (0, 0) a su tope
+    (x_t, h), con x_t = -h·tan(beta): beta sobre la vertical, positiva cuando
+    el muro se aleja del relleno, la convencion de Mononobe-Okabe; con beta
+    = 0, el plano vertical x = 0), el plano de falla z = x·tan(rho) y la
+    superficie del relleno: sube desde el tope del plano con 1 V : `talud` H
+    y se quiebra, `subida` m mas arriba, en una plataforma horizontal (con
+    `subida` infinita, el talud no se quiebra nunca). Area del poligono por
+    la formula del cordon de zapato. --- VE-5 (ficha T7B-06) --- `beta`: la
+    cuña sobre el trasdos inclinado.
     """
     pendiente = 1.0 / talud
-    x_quiebre = subida * talud
+    x_t = -h * math.tan(math.radians(beta_grados))
+    x_quiebre = x_t + subida * talud
+    vertices = [(0.0, 0.0), (x_t, h)]
+    corte = None
     if tan_rho > pendiente:
-        x_corte = h / (tan_rho - pendiente)
+        x_corte = (h - x_t * pendiente) / (tan_rho - pendiente)
         if x_corte <= x_quiebre:
-            return h * x_corte / 2      # triangulo (0,0), (0,h), (x, x·tan)
-    if math.isinf(subida):
-        return math.inf                 # el plano no alcanza el talud
-    tope = h + subida
-    x_corte = tope / tan_rho
-    vertices = ((0.0, 0.0), (x_corte, tope), (x_quiebre, tope), (0.0, h))
+            corte = (x_corte, x_corte * tan_rho)
+    if corte is None:
+        if math.isinf(subida):
+            return math.inf             # el plano no alcanza el talud
+        tope = h + subida
+        vertices.append((x_quiebre, tope))
+        corte = (tope / tan_rho, tope)
+    vertices.append(corte)
     n = len(vertices)
     doble = sum(vertices[k][0] * vertices[(k + 1) % n][1]
                 - vertices[(k + 1) % n][0] * vertices[k][1]
@@ -6634,31 +6898,35 @@ def _area_de_la_cuna(*, h: float, subida: float, talud: float,
 def empuje_de_una_cuna(*, rho_grados: float, h: float, subida: float,
                        talud: float, phi_grados: float, delta_grados: float,
                        gamma: float, k_h: float = 0.0,
-                       k_v: float = 0.0) -> float:
+                       k_v: float = 0.0, beta_grados: float = 0.0) -> float:
     """
-    El empuje, kN/m, que UNA cuña de prueba ejerce sobre el plano vertical
-    del talon, con el plano de falla a `rho_grados` sobre la horizontal y la
-    superficie del relleno de `_area_de_la_cuna`. Equilibrio de la cuña con
-    su peso W, la inercia k_h·W hacia el muro y -k_v·W, la reaccion del plano
-    vertical inclinada delta sobre su normal y la del plano de falla
-    inclinada phi sobre la suya:
+    El empuje, kN/m, que UNA cuña de prueba ejerce sobre el plano de empuje
+    (vertical, o inclinado `beta_grados` sobre la vertical), con el plano de
+    falla a `rho_grados` sobre la horizontal y la superficie del relleno de
+    `_area_de_la_cuna`. Equilibrio de la cuña con su peso W, la inercia
+    k_h·W hacia el muro y -k_v·W, la reaccion del plano de empuje inclinada
+    delta sobre su normal (la normal gira beta con el plano) y la del plano
+    de falla inclinada phi sobre la suya:
 
-        P = W·(1 - k_v)·sen(rho - phi + psi) / [cos(psi)·cos(rho - phi - delta)]
+        P = W·(1 - k_v)·sen(rho - phi + psi)
+            / [cos(psi)·cos(rho - phi - delta - beta)]
         psi = arctan[k_h / (1 - k_v)]
 
     Con k_h = k_v = 0 es la cuña de Coulomb; el maximo sobre rho, con la
-    superficie de talud uniforme, es la ec. 3.11.5.3-1 de AASHTO, y con el
-    relleno horizontal y sismo, Mononobe-Okabe (A11.3.1): los dos dorados
-    analiticos de la funcion.
+    superficie de talud uniforme, es la ec. 3.11.5.3-1 de AASHTO, y con
+    sismo, Mononobe-Okabe (A11.3.1): los dos dorados analiticos de la
+    funcion, tambien con beta (VE-5).
     """
     psi = math.atan2(k_h, 1.0 - k_v)
-    rho, phi, delta = (math.radians(rho_grados), math.radians(phi_grados),
-                       math.radians(delta_grados))
+    rho, phi, delta, beta = (math.radians(rho_grados),
+                             math.radians(phi_grados),
+                             math.radians(delta_grados),
+                             math.radians(beta_grados))
     area = _area_de_la_cuna(h=h, subida=subida, talud=talud,
-                            tan_rho=math.tan(rho))
+                            tan_rho=math.tan(rho), beta_grados=beta_grados)
     W = gamma * area
     return (W * (1.0 - k_v) * math.sin(rho - phi + psi)
-            / (math.cos(psi) * math.cos(rho - phi - delta)))
+            / (math.cos(psi) * math.cos(rho - phi - delta - beta)))
 
 
 def cuna_de_tanteo(*, h: float, subida: float, talud: float,
@@ -6666,7 +6934,8 @@ def cuna_de_tanteo(*, h: float, subida: float, talud: float,
                    k_h: float = 0.0, k_v: float = 0.0,
                    que: str = "empuje del relleno",
                    id_punto: Optional[str] = None,
-                   remedio: str = "") -> Tuple[float, float]:
+                   remedio: str = "",
+                   beta_grados: float = 0.0) -> Tuple[float, float]:
     """
     (P, rho_critico): el MAYOR empuje de las cuñas de prueba sobre el plano
     vertical de altura `h` y el angulo de su plano de falla, en grados
@@ -6675,7 +6944,14 @@ def cuna_de_tanteo(*, h: float, subida: float, talud: float,
     `TRAMOS_CUNA_DE_TANTEO` tramos y se afina el mejor a `TOL_ANGULO_CUNA`.
 
     EL INTERVALO: rho entre phi - psi (por debajo la cuña no empuja) y 90
-    grados; con el talud sin quiebre, ademas, por encima de su pendiente.
+    grados; con el talud sin quiebre, ademas, por encima de su pendiente; y
+    con el plano de empuje inclinado hacia el relleno (beta < 0, VE-5), por
+    debajo de la inclinacion del plano.
+
+    SIN MAXIMO, que con la superficie que se quiebra en la plataforma solo
+    pasa con psi >= phi (k_h/(1 - k_v) >= tan phi): es el RELLENO el que no
+    es estable bajo ese k_h, y no la formula la que falla. Ningun empuje
+    sobre el muro lo describe; lo dice el mensaje.
 
     SE DETIENE, sin cifra (forma MAT-D13):
       * datos fuera de su dominio -> `DatoInvalidoError`;
@@ -6688,7 +6964,7 @@ def cuna_de_tanteo(*, h: float, subida: float, talud: float,
     from scipy.optimize import minimize_scalar   # en el punto de uso (EXT-8)
     for nombre, x in (("h", h), ("talud", talud), ("phi", phi_grados),
                       ("delta", delta_grados), ("gamma", gamma),
-                      ("k_h", k_h), ("k_v", k_v)):
+                      ("k_h", k_h), ("k_v", k_v), ("beta", beta_grados)):
         if not _finito(x):
             raise DatoInvalidoError(nombre, valor=x, id_punto=id_punto,
                                     motivo="la cuña de tanteo necesita un "
@@ -6696,12 +6972,13 @@ def cuna_de_tanteo(*, h: float, subida: float, talud: float,
     recto = math.degrees(math.pi / 2)       # el angulo recto, en grados
     if not (h > 0 and talud > 0 and gamma > 0 and 0 < phi_grados < recto
             and 0 <= delta_grados <= phi_grados and k_h >= 0
-            and 0 <= k_v < 1):
+            and 0 <= k_v < 1 and abs(beta_grados) < recto / 2):
         raise DatoInvalidoError(
             "cuña de tanteo", valor=(h, talud, phi_grados, delta_grados,
-                                     k_h, k_v), id_punto=id_punto,
+                                     k_h, k_v, beta_grados),
+            id_punto=id_punto,
             motivo="altura, talud y peso positivos; 0 < phi < 90; 0 <= delta "
-                   "<= phi; k_h >= 0 y 0 <= k_v < 1")
+                   "<= phi; k_h >= 0, 0 <= k_v < 1 y |beta| < 45")
     if not (subida >= 0 and not math.isnan(subida)):
         raise DatoInvalidoError("subida", valor=subida, id_punto=id_punto,
                                 motivo="lo que el relleno sube sobre el "
@@ -6710,28 +6987,38 @@ def cuna_de_tanteo(*, h: float, subida: float, talud: float,
     bajo = max(phi_grados - psi, 0.0)
     if math.isinf(subida):
         bajo = max(bajo, math.degrees(math.atan2(1.0, talud)))
-    alto = recto
+    alto = recto + min(beta_grados, 0.0)
 
     def P(rho: float) -> float:
         return empuje_de_una_cuna(rho_grados=rho, h=h, subida=subida,
                                   talud=talud, phi_grados=phi_grados,
                                   delta_grados=delta_grados, gamma=gamma,
-                                  k_h=k_h, k_v=k_v)
+                                  k_h=k_h, k_v=k_v, beta_grados=beta_grados)
 
     paso_rho = (alto - bajo) / TRAMOS_CUNA_DE_TANTEO
     malla = [bajo + paso_rho * k for k in range(1, TRAMOS_CUNA_DE_TANTEO)]
     valores = [P(r) for r in malla]
     k_max = max(range(len(malla)), key=lambda k: valores[k])
     if k_max in (0, len(malla) - 1) or not math.isfinite(valores[k_max]):
+        inestable = psi >= phi_grados - TOL_UMBRAL_NORMATIVO
         raise _no_evaluable(
             que, "metodo de equilibrio limite generalizado (GLE, AASHTO "
-            "A11.3.3)",
+            "A11.3.3) con un programa de estabilidad de taludes, o un "
+            "analisis externo",
             "la cuña de tanteo no tiene maximo dentro del intervalo "
             f"admisible ({bajo:.2f} a {alto:.2f} grados): el empuje crece "
-            "hasta el borde, como en un talud sin quiebre mas empinado que "
-            f"phi - psi = {phi_grados - psi:.2f} grados. La fuente pide otro "
-            "metodo; el programa no lo tiene" + (". " + remedio if remedio
-                                                 else ""), id_punto)
+            "hasta el borde"
+            + (f". Con psi = arctan[k_h/(1 - k_v)] = {psi:.2f} >= phi = "
+               f"{phi_grados:.2f} grados el relleno no es estable bajo ese "
+               "k_h: el plano de falla tiende a la horizontal y arrastra un "
+               "relleno sin cota, de modo que no hay empuje sobre el muro "
+               "que describa el caso; es la estabilidad global del "
+               "terraplen (E5) la que lo juzga"
+               if inestable else
+               ", como en un talud sin quiebre mas empinado que phi - psi "
+               f"= {phi_grados - psi:.2f} grados")
+            + ". La fuente pide otro metodo; el programa no lo tiene"
+            + (". " + remedio if remedio else ""), id_punto)
     fino = minimize_scalar(lambda r: -P(r), method="bounded",
                            bounds=(malla[k_max - 1], malla[k_max + 1]),
                            options={"xatol": math.degrees(TOL_ANGULO_CUNA)})
@@ -6899,20 +7186,14 @@ def cargas_del_cabezal(entorno: EntornoDelCabezal,
                 and not relleno["i_declarado"])
     rho_A = None
     if usa_cuna:
-        if ang["beta"] > TOL_UMBRAL_NORMATIVO:
-            raise _no_evaluable(
-                f"empuje del cabezal de {ext}",
-                "cuña de tanteo sobre un plano inclinado",
-                f"el plano de empuje es el trasdos inclinado (beta = "
-                f"{ang['beta']:g} grados, zapata sin talon) y la cuña "
-                "implementada es la del plano vertical del talon; declarar "
-                f"'{CRITERIO_REGLA_PENDIENTE}' = '{REGLA_TALUD_QUEBRADO}' "
-                "usa la formula cerrada", idp)
+        # --- VE-5 (ficha T7B-06) --- sobre el trasdos inclinado (zapata sin
+        # talon) la cuña va sobre ESE plano: hasta VE-5 se detenia aqui.
         P_unitario, rho_A = cuna_de_tanteo(
             h=h, subida=relleno["subida_sobre_plano"],
             talud=relleno["talud"], phi_grados=ang["phi"],
             delta_grados=ang["delta"], gamma=1.0,
-            que=f"empuje estatico del cabezal de {ext}", id_punto=idp)
+            que=f"empuje estatico del cabezal de {ext}", id_punto=idp,
+            beta_grados=ang["beta"])
         K_A = 2 * P_unitario / h ** 2
         metodo = METODO_EMPUJE_CUNA
     else:
@@ -6930,6 +7211,27 @@ def cargas_del_cabezal(entorno: EntornoDelCabezal,
     )
     P_A = sum(p for p, _ in partes)
     z_A = (sum(p * z for p, z in partes) / P_A) if P_A > 0 else 0.0
+    # --- VE-5 (ficha T7B-14) --- EL MURO QUE NO CEDE ('regimen_cabezal' =
+    # 'no_cedente'): la estatica con el empuje en REPOSO, K0 de AASHTO
+    # 3.11.5.2-1 sobre el mismo diagrama (suelo sumergido bajo el agua),
+    # todo horizontal -- en reposo no se moviliza la friccion muro-relleno --
+    # y con el factor de la fila «En reposo» de la Tabla 3.4.1-2
+    # (`combinaciones_de_estabilidad`). K0 es de terreno HORIZONTAL: si el
+    # activo con la superficie real da MAS componente horizontal (relleno
+    # empinado), rige el activo, que un muro que no cede no puede tener por
+    # debajo; la misma regla que el armado aplica por seccion (ficha
+    # T7C-02). Con 'cedente', el activo de siempre.
+    regimen = _regimen()
+    K0 = 1.0 - math.sin(math.radians(ang["phi"]))
+    P_0 = K0 / K_A * P_A if K_A > 0 else 0.0
+    reposo_rige = (regimen == REGIMEN_NO_CEDENTE
+                   and P_0 >= P_A * math.cos(inclinacion))
+    if reposo_rige:
+        empuje_estatico = EMPUJE_ESTATICO_REPOSO
+        K_est, P_est, incl_est = K0, P_0, 0.0
+    else:
+        empuje_estatico = EMPUJE_ESTATICO_ACTIVO
+        K_est, P_est, incl_est = K_A, P_A, inclinacion
 
     cargas = []
     # --- DC ----------------------------------------------------------------
@@ -6977,21 +7279,33 @@ def cargas_del_cabezal(entorno: EntornoDelCabezal,
                         f"{alto_talon:.3f}, mas la cuña sobre el talon "
                         f"({cuña:.3f} m2)"))
     # --- EH ----------------------------------------------------------------
-    cargas.append(CargaDeCabezal(
-        C_EH_H, CARGA_EH, "empuje activo, componente horizontal",
-        H=P_A * math.cos(inclinacion), z=z_A, sobre=ELEMENTO_PANTALLA,
-        procedencia="P_A·cos(delta + beta)"))
-    cargas.append(CargaDeCabezal(
-        C_EH_V, CARGA_EH, "empuje activo, componente vertical",
-        V=P_A * math.sin(inclinacion), x=x_plano, sobre=ELEMENTO_ZAPATA,
-        procedencia="P_A·sen(delta + beta), en el plano de empuje"))
+    if reposo_rige:
+        cargas.append(CargaDeCabezal(
+            C_EH_H, CARGA_EH, "empuje en reposo, horizontal (muro que no "
+            "cede)", H=P_0, z=z_A, sobre=ELEMENTO_PANTALLA,
+            procedencia=f"(K0 / K_A)·P_A, K0 = 1 - sen(phi) = {K0:.4f} "
+                        "(AASHTO 3.11.5.2-1), sin friccion muro-relleno"))
+        cargas.append(CargaDeCabezal(
+            C_EH_V, CARGA_EH, "empuje en reposo, sin componente vertical",
+            V=0.0, x=x_plano, sobre=ELEMENTO_ZAPATA,
+            procedencia="en reposo no se moviliza friccion muro-relleno"))
+    else:
+        cargas.append(CargaDeCabezal(
+            C_EH_H, CARGA_EH, "empuje activo, componente horizontal",
+            H=P_A * math.cos(inclinacion), z=z_A, sobre=ELEMENTO_PANTALLA,
+            procedencia="P_A·cos(delta + beta)"))
+        cargas.append(CargaDeCabezal(
+            C_EH_V, CARGA_EH, "empuje activo, componente vertical",
+            V=P_A * math.sin(inclinacion), x=x_plano, sobre=ELEMENTO_ZAPATA,
+            procedencia="P_A·sen(delta + beta), en el plano de empuje"))
     # --- LS ----------------------------------------------------------------
     h_eq = h_eq_sobrecarga_trasdos(altura_muro_total=h)
+    nombre_K = "K0" if reposo_rige else "K_A"
     cargas.append(CargaDeCabezal(
         C_LS_H, CARGA_LS, "sobrecarga viva, empuje",
-        H=K_A * gamma * h_eq * h, z=h / 2, sobre=ELEMENTO_PANTALLA,
-        procedencia=f"K_A·gamma·h_eq·h = {K_A:.4f}·{gamma:g}·{h_eq:.4f}·"
-                    f"{h:.3f}"))
+        H=K_est * gamma * h_eq * h, z=h / 2, sobre=ELEMENTO_PANTALLA,
+        procedencia=f"{nombre_K}·gamma·h_eq·h = {K_est:.4f}·{gamma:g}·"
+                    f"{h_eq:.4f}·{h:.3f}"))
     if talon > TOL_UMBRAL_NORMATIVO:
         cargas.append(CargaDeCabezal(
             C_LS_V, CARGA_LS, "sobrecarga viva, peso sobre el talon",
@@ -7031,17 +7345,29 @@ def cargas_del_cabezal(entorno: EntornoDelCabezal,
              "metodo_empuje": metodo, "K_A_formula": K_A_formula,
              "rho_A": rho_A, "K_AE_formula": None, "rho_AE": None,
              "cota_agua_diseno": entorno.cota_agua_diseno,
-             "regimen": _regimen(), "z_rel": z_rel,
+             "regimen": regimen, "z_rel": z_rel,
              # K0 de AASHTO 3.11.5.2-1, de REFERENCIA para T-7c: la ec. es
              # de muro vertical y terreno horizontal (cita
-             # AASHTO_LRFD_9.3.11.5.2#K0).
-             "K0": 1.0 - math.sin(math.radians(ang["phi"]))}
+             # AASHTO_LRFD_9.3.11.5.2#K0). Desde VE-5 rige la estatica del
+             # muro que no cede cuando da mas que el activo.
+             "K0": K0, "P_0": P_0,
+             # --- VE-5 --- el empuje estatico que RIGE y su componente
+             # horizontal: el activo (cedente, o no cedente con relleno
+             # empinado) o el reposo (no cedente).
+             "empuje_estatico": empuje_estatico, "K_estatico": K_est,
+             "P_estatico": P_est, "P_total_sismico": None,
+             "metodo_incremento": None,
+             "empuje_sismico_no_cede": None}
 
     # --- EQ ----------------------------------------------------------------
     if condicion is CondicionAnalisis.SISMICO:
         cadena = cadena_sismica()
         if k_h is None:
-            k_h = cadena.k_h
+            # --- VE-5 --- el muro que no cede no admite la reduccion por
+            # desplazamiento: «shall be increased to 1.0kh0» (11.6.5.4),
+            # aunque 'factor_muro_eleccion' la declare para la cadena.
+            k_h = (cadena.k_h0 if regimen == REGIMEN_NO_CEDENTE
+                   else cadena.k_h)
         elif not (_finito(k_h) and k_h >= 0):
             raise DatoInvalidoError("k_h", valor=k_h, id_punto=idp,
                                     motivo="coeficiente sismico horizontal "
@@ -7087,6 +7413,8 @@ def cargas_del_cabezal(entorno: EntornoDelCabezal,
                     "peso sumergido MAS la presion hidrodinamica." + remedio,
                     idp)
         dominio_MO = ang["phi"] >= ang["i"] + psi - TOL_UMBRAL_NORMATIVO
+        metodo_incremento = (METODO_EMPUJE_CUNA if usa_cuna
+                             else METODO_EMPUJE_FORMULA)
         K_AE_formula = (k_ae_mononobe_okabe(
             phi_grados=ang["phi"], i_grados=ang["i"],
             beta_grados=ang["beta"], delta_grados=ang["delta"], k_h=k_h,
@@ -7101,6 +7429,7 @@ def cargas_del_cabezal(entorno: EntornoDelCabezal,
                 h=h, subida=relleno["subida_sobre_plano"],
                 talud=relleno["talud"], phi_grados=ang["phi"],
                 delta_grados=ang["delta"], gamma=1.0, k_h=k_h, k_v=k_v,
+                beta_grados=ang["beta"],
                 que=f"empuje sismico del cabezal de {ext}", id_punto=idp,
                 remedio=("Lo que lo destraba es una decision del Propietario "
                          "-- admitir el desplazamiento del muro, "
@@ -7112,22 +7441,47 @@ def cargas_del_cabezal(entorno: EntornoDelCabezal,
                          "externo"))
             K_AE = 2 * P_unitario_E / (h ** 2 * (1.0 - k_v))
         elif not dominio_MO:
-            raise _no_evaluable(
-                f"empuje sismico del cabezal de {ext}",
-                "metodo de equilibrio limite generalizado (GLE, AASHTO "
-                "A11.3.3) o analisis de cuña",
-                f"Mononobe-Okabe no es aceptable (AASHTO 11.6.5.3, ec. "
-                f"11.6.5.3-1): phi = {ang['phi']:.2f} grados < i + "
-                f"arctan[k_h/(1 - k_v)] = {ang['i']:.2f} + {psi:.2f} = "
-                f"{ang['i'] + psi:.2f} grados (k_h = {k_h:.3f}). La fuente "
-                "pide otro metodo y desaconseja forzar la ecuacion; el "
-                "programa no lo tiene. Lo que lo destraba es una decision "
-                "del Propietario -- admitir el desplazamiento del muro, "
-                "'factor_muro_eleccion', que reduce k_h a la mitad y exige "
-                "el armado del muro que cede --, un "
-                "relleno de mayor friccion, la cuña de tanteo ('"
-                f"{CRITERIO_REGLA_PENDIENTE}' = '{REGLA_CUNA_DE_TANTEO}') o "
-                "un analisis externo", idp)
+            # --- VE-5 (ficha T7B-06) --- Mononobe-Okabe no es aceptable
+            # (11.6.5.3, ec. 11.6.5.3-1) y la fuente da la cuña de tanteo
+            # para ese caso (C11.6.5.3, «may also be used for situations
+            # when the M–O Method is not suitable»): con la superficie REAL
+            # del relleno, o con la pendiente declarada como talud sin
+            # quiebre si 'pendiente_relleno_trasdos_i' la declara. El
+            # INCREMENTO sale de la misma cuña (P_AE - P_A de la cuña, no
+            # menos el P_A de la formula: dos modelos no se restan) y el
+            # estatico sigue con la formula de la regla. Hasta VE-5 se
+            # detenia aqui.
+            if relleno["i_declarado"]:
+                sub_c = math.inf
+                talud_c = (1.0 / math.tan(math.radians(ang["i"]))
+                           if ang["i"] > TOL_UMBRAL_NORMATIVO else math.inf)
+            else:
+                sub_c, talud_c = relleno["subida_sobre_plano"], relleno["talud"]
+            remedio_c = (
+                f"Mononobe-Okabe tampoco es aceptable (AASHTO 11.6.5.3, ec. "
+                f"11.6.5.3-1: phi = {ang['phi']:.2f} < i + psi = "
+                f"{ang['i']:.2f} + {psi:.2f} grados). Lo que lo destraba es "
+                "una decision del Propietario -- admitir el desplazamiento "
+                f"del muro, '{CRITERIO_FACTOR_MURO}', que reduce k_h a la "
+                "mitad --, un relleno de mayor friccion o un analisis "
+                "externo; la cuña de archivo es "
+                f"'{CRITERIO_REGLA_PENDIENTE}' = '{REGLA_CUNA_DE_TANTEO}'")
+            if math.isinf(talud_c):
+                sub_c, talud_c = 0.0, relleno["talud"]
+            P1_c, _ = cuna_de_tanteo(
+                h=h, subida=sub_c, talud=talud_c, phi_grados=ang["phi"],
+                delta_grados=ang["delta"], gamma=1.0,
+                beta_grados=ang["beta"],
+                que=f"empuje estatico (cuña) del cabezal de {ext}",
+                id_punto=idp, remedio=remedio_c)
+            P1_cE, rho_AE = cuna_de_tanteo(
+                h=h, subida=sub_c, talud=talud_c, phi_grados=ang["phi"],
+                delta_grados=ang["delta"], gamma=1.0, k_h=k_h, k_v=k_v,
+                beta_grados=ang["beta"],
+                que=f"empuje sismico del cabezal de {ext}", id_punto=idp,
+                remedio=remedio_c)
+            K_AE = (K_A + 2 * (P1_cE - P1_c) / h ** 2) / (1.0 - k_v)
+            metodo_incremento = METODO_INCREMENTO_CUNA
         else:
             K_AE = K_AE_formula
         P_AE = empuje_activo_sismico_total(gamma_relleno=gamma, K_AE=K_AE,
@@ -7151,7 +7505,29 @@ def cargas_del_cabezal(entorno: EntornoDelCabezal,
                                  (INCREMENTO_SEGUN_REGIMEN,
                                   INCREMENTO_FRACCION,
                                   INCREMENTO_DISTRIBUCION_ESTATICA))
-        cede = ca.valor(CRITERIO_FACTOR_MURO) == FACTOR_MURO_CON_REDUCCION
+        # --- VE-5 --- con 'regimen_cabezal' = 'no_cedente' el muro no cede
+        # aunque la cadena declare la reduccion: manda el regimen.
+        cede = (regimen == REGIMEN_CEDENTE
+                and ca.valor(CRITERIO_FACTOR_MURO)
+                == FACTOR_MURO_CON_REDUCCION)
+        # --- VE-5 (ficha T7B-14) --- el empuje sismico del muro que no cede
+        # sobre el reposo: el reposo mas el incremento pseudoestatico, o el
+        # mayor del reposo y del total ('empuje_sismico_muro_que_no_cede'
+        # [A]). Todo horizontal, como el reposo. Con el activo rigiendo, el
+        # incremento de siempre (P_AE - P_A) con sus dos componentes.
+        dP_h = dP * math.cos(inclinacion)
+        dP_v = dP * math.sin(inclinacion)
+        P_estatico, P_total = P_A, P_AE
+        forma_no_cede = None
+        if regimen == REGIMEN_NO_CEDENTE:
+            forma_no_cede = _eleccion(CRITERIO_EMPUJE_SISMICO_NO_CEDE,
+                                      EMPUJES_SISMICOS_NO_CEDE)
+        if reposo_rige:
+            if forma_no_cede == NO_CEDE_MAYOR_DE_REPOSO_Y_TOTAL:
+                dP_h = max((P_A + dP) * math.cos(inclinacion) - P_0, 0.0)
+            dP_v = 0.0
+            dP = dP_h
+            P_estatico, P_total = P_0, P_0 + dP_h
         if distribucion == INCREMENTO_DISTRIBUCION_ESTATICA and not cede:
             raise DatoInvalidoError(
                 CRITERIO_DISTRIBUCION_INCREMENTO, valor=distribucion,
@@ -7182,20 +7558,30 @@ def cargas_del_cabezal(entorno: EntornoDelCabezal,
             # en h/2 («a higher resultant location ... of h/2»), y se lee
             # como piso: el incremento sube lo necesario para que la
             # resultante no quede bajo h/2, y si la fraccion de archivo ya
-            # la deja mas alta, se conserva.
-            z_h_medios = (P_AE * h / 2 - P_A * z_A) / dP
+            # la deja mas alta, se conserva. (VE-5: con el estatico que
+            # rige, el reposo del muro que no cede si es el caso.)
+            z_h_medios = (P_total * h / 2 - P_estatico * z_A) / dP
             if z_h_medios > z_dP:
                 z_dP = z_h_medios
                 fraccion = z_dP / h
+        if reposo_rige:
+            proc_h = (("max[P_AE·cos(delta + beta) - P_0, 0] (el mayor del "
+                       "reposo y del total)"
+                       if forma_no_cede == NO_CEDE_MAYOR_DE_REPOSO_Y_TOTAL
+                       else "(P_AE - P_A)·cos(delta + beta), sobre el "
+                            "reposo")
+                      + f" con k_h = 1.0·k_h0, a {fraccion:g}·h")
+            proc_v = ("sin componente vertical: sobre el reposo no se "
+                      "moviliza la friccion muro-relleno")
+        else:
+            proc_h = f"(P_AE - P_A)·cos(delta + beta), a {fraccion:g}·h"
+            proc_v = "(P_AE - P_A)·sen(delta + beta)"
         cargas.append(CargaDeCabezal(
             C_EQ_H, CARGA_EQ, "incremento sismico del empuje, horizontal",
-            H=dP * math.cos(inclinacion), z=z_dP, sobre=ELEMENTO_PANTALLA,
-            procedencia="(P_AE - P_A)·cos(delta + beta), a "
-                        f"{fraccion:g}·h"))
+            H=dP_h, z=z_dP, sobre=ELEMENTO_PANTALLA, procedencia=proc_h))
         cargas.append(CargaDeCabezal(
             C_EQ_V, CARGA_EQ, "incremento sismico del empuje, vertical",
-            V=dP * math.sin(inclinacion), x=x_plano, sobre=ELEMENTO_ZAPATA,
-            procedencia="(P_AE - P_A)·sen(delta + beta)"))
+            V=dP_v, x=x_plano, sobre=ELEMENTO_ZAPATA, procedencia=proc_v))
         z_muro = ((W_pant * z_pant + W_zap * e_z / 2)
                   / (W_pant + W_zap))
         cargas.append(CargaDeCabezal(
@@ -7210,9 +7596,13 @@ def cargas_del_cabezal(entorno: EntornoDelCabezal,
                 procedencia=f"k_h·W_s = {k_h:.3f}·{W_s:.3f}"))
         datos.update(K_AE=K_AE, k_h=k_h, k_v=k_v, P_AE=P_AE,
                      tratamiento_agua_sismo=tratamiento_agua,
-                     z_AE=(P_A * z_A + dP * z_dP) / P_AE,
+                     z_AE=((P_estatico * z_A + dP * z_dP) / P_total
+                           if P_total > 0 else z_A),
+                     P_total_sismico=P_total,
+                     empuje_sismico_no_cede=forma_no_cede,
                      fraccion_brazo=fraccion, psi=psi,
-                     K_AE_formula=K_AE_formula, rho_AE=rho_AE)
+                     K_AE_formula=K_AE_formula, rho_AE=rho_AE,
+                     metodo_incremento=metodo_incremento)
     return tuple(cargas), datos
 
 
@@ -7318,9 +7708,13 @@ def _casos_sismicos(datos: dict) -> Tuple[Tuple[str, float, float, float], ...]:
                                      incremento 0. Inercia 1.
     """
     casos = []
+    # --- VE-5 --- el piso es el empuje estatico que RIGE (el reposo del
+    # muro que no cede, si es el caso) frente al total sismico.
+    P_est = datos.get("P_estatico") or datos["P_A"]
+    P_tot = datos.get("P_total_sismico") or datos["P_AE"]
     for nombre, f_ae, f_ir in P_SEIS_COMBINACIONES:
         con_piso = (nombre == P_SEIS_PISO_ESTATICO
-                    and f_ae * datos["P_AE"] < datos["P_A"])
+                    and f_ae * P_tot < P_est)
         if con_piso:
             casos.append((nombre + " (rige el piso del empuje estatico)",
                           1.0, 0.0, f_ir))
@@ -7369,7 +7763,13 @@ def combinaciones_de_estabilidad(cargas: tuple, datos: dict,
 
     if condicion is CondicionAnalisis.ESTATICO:
         g = factores_de_carga("Resistencia I")
-        maximos, minimos = _resistencia_i_con_eta(g, g["EH"]["max"])
+        # --- VE-5 (ficha T7B-14) --- con el empuje en reposo del muro que
+        # no cede, el gamma_p de la fila «En reposo» de la Tabla 3.4.1-2
+        # (1.35), no el de la activa (1.50).
+        EH_max = (TABLA_GAMMA_P_FILAS[FILA_EH_EN_REPOSO]["max"]
+                  if datos.get("empuje_estatico") == EMPUJE_ESTATICO_REPOSO
+                  else g["EH"]["max"])
+        maximos, minimos = _resistencia_i_con_eta(g, EH_max)
         combos.append(_combinar(
             "Resistencia I (maximos)", MARCO_LRFD, condicion, cargas,
             factores(**maximos), B, "portante"))
@@ -7508,16 +7908,7 @@ def _q_nominal(entorno: EntornoDelCabezal, datos: dict, suelo: dict,
             "falta la resistencia nominal del EMS (`q_n_kpa`)",
             entorno.id_punto)
     terreno = ca.valor(CRITERIO_TERRENO_DELANTE)
-    if terreno == TERRENO_TALUD:
-        c_art20, phi_art20 = parametros_resistencia_art20(
-            c=suelo["c_kpa"], phi_grados=suelo["phi_grados"],
-            cohesivo=suelo["cohesivo"])
-        q = capacidad_portante_zapata_en_talud(
-            B=B_efectivo, H_s=0.0, gamma=suelo["gamma_kn_m3"],
-            c=c_art20, phi_grados=phi_art20)
-        return q, ("zapata en talud (Manual de Puentes 2.8.1.3.1.2c), con "
-                   f"los factores de '{CRITERIO_MEYERHOF}'"), {}
-    if terreno != TERRENO_HORIZONTAL:
+    if terreno not in (TERRENO_HORIZONTAL, TERRENO_TALUD):
         raise DatoInvalidoError(CRITERIO_TERRENO_DELANTE, valor=terreno,
                                 motivo=f"se espera '{TERRENO_HORIZONTAL}' o "
                                        f"'{TERRENO_TALUD}'")
@@ -7528,14 +7919,62 @@ def _q_nominal(entorno: EntornoDelCabezal, datos: dict, suelo: dict,
         raise DatoInvalidoError(CRITERIO_INCLINACION_PORTANTE,
                                 valor=inclinacion,
                                 motivo="se espera 'aplicar' u 'omitir'")
+    # --- VE-5 (ficha T7B-04) --- forma y profundidad, declarables.
+    forma = _eleccion(CRITERIO_FORMA_PROFUNDIDAD, OPCIONES_FORMA_PROFUNDIDAD)
+    longitud = None
+    if forma != FORMA_CORRIDA:
+        longitud = entorno.geometria.longitud
+        if longitud is None:
+            raise DatoFaltanteError(
+                "longitud", id_punto=entorno.id_punto,
+                detalle=f"'{CRITERIO_FORMA_PROFUNDIDAD}' = '{forma}' pide la "
+                        "longitud de la zapata del cabezal (L de la Tabla "
+                        "10.6.3.1.2a-3), que la geometria no trae")
+    profundidad = forma == FORMA_Y_PROFUNDIDAD
+    texto_forma = ("zapata corrida, s = d_q = 1" if forma == FORMA_CORRIDA
+                   else f"factores de forma con L = {longitud:.3f} m"
+                   + (" y d_q (ec. 10.6.3.1.2a-10)" if profundidad else ""))
+    if terreno == TERRENO_TALUD:
+        # --- VE-5 (ficha T7B-04) --- la RC_BC de AASHTO 10.6.3.1.2c sobre
+        # la geometria del talud ('talud_delante_del_cabezal' [S]): hasta
+        # VE-5 pedia los factores de los abacos de Meyerhof del Manual de
+        # Puentes (retirados) y les pasaba H_s = 0.
+        talud = validar_talud_delante(ca.valor(CRITERIO_TALUD_DELANTE),
+                                      id_punto=entorno.id_punto)
+        D_w_base = max(D_w - D_f, 0.0)
+        q_0, det0 = resistencia_portante_nominal(
+            suelo=suelo, B_efectivo=B_efectivo, D_f=0.0, D_w=D_w_base,
+            H_servicio=servicio.H, V_servicio=servicio.N,
+            aplicar_inclinacion=inclinacion == INCLINACION_APLICAR,
+            longitud=longitud)
+        c_art20, phi_art20 = parametros_resistencia_art20(
+            c=suelo["c_kpa"], phi_grados=suelo["phi_grados"],
+            cohesivo=suelo["cohesivo"])
+        q, detalle = capacidad_portante_zapata_en_talud(
+            B=B_efectivo, H_s=talud["H_s_m"], b=talud["b_m"],
+            beta_grados=talud["beta_grados"], gamma=suelo["gamma_kn_m3"],
+            c=c_art20, phi_grados=phi_art20, C_wgamma=det0["C_wgamma"],
+            i_c=det0["i_c"], i_gamma=det0["i_gamma"], s_c=det0["s_c"],
+            s_gamma=det0["s_gamma"], id_punto=entorno.id_punto)
+        detalle.update(talud, inclinacion=inclinacion, forma=forma,
+                       D_f=0.0, D_w=D_w_base, texto_D_f=texto)
+        return q, (f"zapata {'en el' if talud['b_m'] <= 0 else 'junto al'} "
+                   f"talud (AASHTO 10.6.3.1.2c): RC_BC = "
+                   f"{detalle['RC_BC']:.4f} de la Tabla {detalle['tabla']} "
+                   f"({detalle['columna']}, B/H_s = {detalle['B_H']:.3f}, "
+                   f"beta = {talud['beta_grados']:g} grados) sobre c·N_cm + "
+                   "0.5·gamma·B'·N_gamma_m, sin empotramiento; "
+                   + texto_forma), detalle
     q_n, detalle = resistencia_portante_nominal(
         suelo=suelo, B_efectivo=B_efectivo, D_f=D_f, D_w=D_w,
         H_servicio=servicio.H, V_servicio=servicio.N,
-        aplicar_inclinacion=inclinacion == INCLINACION_APLICAR)
-    detalle.update(D_f=D_f, D_w=D_w, texto_D_f=texto, inclinacion=inclinacion)
+        aplicar_inclinacion=inclinacion == INCLINACION_APLICAR,
+        longitud=longitud, profundidad=profundidad)
+    detalle.update(D_f=D_f, D_w=D_w, texto_D_f=texto, inclinacion=inclinacion,
+                   forma=forma)
     return q_n, ("ecuacion de AASHTO 10.6.3.1.2a con B' = B - 2e, "
-                 f"D_f = {D_f:.3f} m ({texto}) y factores de inclinacion "
-                 f"'{inclinacion}'"), detalle
+                 f"D_f = {D_f:.3f} m ({texto}), factores de inclinacion "
+                 f"'{inclinacion}' y {texto_forma}"), detalle
 
 
 def _resistencia_al_deslizamiento(suelo: dict, combo: CombinacionDeEstabilidad
@@ -8263,9 +8702,12 @@ def solicitaciones_por_elemento(entorno: EntornoDelCabezal, cargas: tuple,
     por_codigo = {c.codigo: c for c in cargas}
     salida = []
     sismica = datos["K_AE"] is not None
+    reposo = datos.get("empuje_estatico") == EMPUJE_ESTATICO_REPOSO
     marca = dict(regimen=datos["regimen"],
-                 coeficiente_de_empuje="K_AE" if sismica else "K_A",
-                 K_empuje=datos["K_AE"] if sismica else datos["K_A"],
+                 coeficiente_de_empuje=("K_AE" if sismica else
+                                        "K0" if reposo else "K_A"),
+                 K_empuje=(datos["K_AE"] if sismica else
+                           datos["K0"] if reposo else datos["K_A"]),
                  K0=datos["K0"], K0_sobre_K_A=datos["K0"] / datos["K_A"])
     try:
         arranque = empujes_sobre_el_arranque(cargas, datos, e_z,
@@ -8468,8 +8910,27 @@ def _pasos_de_cargas(entorno, condicion, cargas, combos, datos,
                    "archivo; la pendiente equivalente 2H la subestima del 7 "
                    "al 11 % en los cabezales de A-01.")
                 + f" Regimen del cabezal: '{datos['regimen']}' "
-                f"('{CRITERIO_REGIMEN}' [A]): empuje activo de muro que "
-                "cede, la hipotesis de la estabilidad externa (C11.6.5.4)."
+                f"('{CRITERIO_REGIMEN}' [A]): "
+                + (("muro que NO cede (11.6.5.4 y C11.6.5.4): rige el "
+                    f"empuje en REPOSO, K0 = 1 - sen(phi) = {datos['K0']:.4f} "
+                    "(AASHTO 3.11.5.2-1) sobre el mismo diagrama, todo "
+                    "horizontal (sin friccion muro-relleno), con el factor "
+                    "de carga de la fila «En reposo» (1.35); P_0 = "
+                    f"{datos['P_0']:.3f} kN/m frente al activo horizontal "
+                    f"{datos['P_A'] * math.cos(datos['inclinacion']):.3f}. "
+                    "K0 es de terreno horizontal: con un relleno que sube "
+                    "detras es una cota inferior, y por eso rige el activo "
+                    "cuando da mas.")
+                   if datos["empuje_estatico"] == EMPUJE_ESTATICO_REPOSO
+                   else ("muro que NO cede, pero el activo con la superficie "
+                         "real da mas componente horizontal que el reposo "
+                         f"de 3.11.5.2-1 (K0 = {datos['K0']:.4f}, de terreno "
+                         "horizontal; P_0 = "
+                         f"{datos['P_0']:.3f} kN/m): rige el activo, que un "
+                         "muro que no cede no puede tener por debajo."
+                         if datos["regimen"] == REGIMEN_NO_CEDENTE else
+                         "empuje activo de muro que cede, la hipotesis de "
+                         "la estabilidad externa (C11.6.5.4)."))
                 )))
         ls = _carga(cargas, C_LS_H)
         pasos.append(paso(
@@ -8562,7 +9023,12 @@ def _pasos_de_cargas(entorno, condicion, cargas, combos, datos,
                     "2·P_AE/(gamma·h²·(1 - k_v)) (rho = "
                     f"{datos['rho_AE']:.2f} grados; AASHTO C11.6.5.3)"
                     if datos["metodo_empuje"] == METODO_EMPUJE_CUNA else
-                    "Mononobe-Okabe")),
+                    ("(K_A + 2·(P_cuña,E - P_cuña)/h²)/(1 - k_v): el "
+                     "incremento de la cuña de tanteo pseudoestatica "
+                     f"(rho = {datos['rho_AE']:.2f} grados), porque "
+                     "Mononobe-Okabe esta fuera de su dominio (C11.6.5.3)")
+                    if datos.get("metodo_incremento") == METODO_INCREMENTO_CUNA
+                    else "Mononobe-Okabe")),
                 _m("K_AE_formula",
                    (datos["K_AE_formula"] if datos["K_AE_formula"]
                     is not None else "no evaluable"), "-",
@@ -8573,7 +9039,11 @@ def _pasos_de_cargas(entorno, condicion, cargas, combos, datos,
                              f"i + psi = {ang['i'] + datos['psi']:.2f} "
                              "grados (11.6.5.3)")
                     if datos["metodo_empuje"] == METODO_EMPUJE_CUNA else
-                    "el que rige (formula cerrada)")),
+                    ("fuera de su dominio: phi = "
+                     f"{ang['phi']:.2f} < i + psi = "
+                     f"{ang['i'] + datos['psi']:.2f} grados (11.6.5.3)"
+                     if datos["K_AE_formula"] is None else
+                     "el que rige (formula cerrada)"))),
                 _m("K_A", datos["K_A"], "-", "el estatico, misma "
                    "formulacion"),
                 _m("h", datos["h"], "m", "altura del plano de empuje"),
@@ -8617,14 +9087,37 @@ def _pasos_de_cargas(entorno, condicion, cargas, combos, datos,
                     + "; Mononobe-Okabe con la pendiente equivalente queda "
                     "al lado como contraste. "
                     if datos["metodo_empuje"] == METODO_EMPUJE_CUNA else
-                    "Mononobe-Okabe dentro de su dominio: "
+                    ("Mononobe-Okabe con la pendiente de la regla queda "
+                     "FUERA de su dominio (phi = "
+                     f"{ang['phi']:.2f} < i + psi = {ang['i']:.2f} + "
+                     f"{datos['psi']:.2f} grados, 11.6.5.3): el incremento "
+                     "sale de la cuña de tanteo pseudoestatica con la "
+                     "superficie real del relleno, P_AE - P_A de la MISMA "
+                     "cuña, que la fuente da para ese caso (C11.6.5.3); el "
+                     "estatico sigue con la formula de la regla (VE-5). ")
+                    if datos.get("metodo_incremento") == METODO_INCREMENTO_CUNA
+                    else "Mononobe-Okabe dentro de su dominio: "
                     + ("" if datos.get("tratamiento_agua_sismo") else
                        "relleno sin agua en el plano de empuje y ")
                     + f"phi = {ang['phi']:.2f} >= i + psi = "
                     f"{ang['i']:.2f} + {datos['psi']:.2f} grados. "))
-                + "Regimen del cabezal CEDENTE ('regimen_cabezal' [A]): un "
-                "muro que no cede pediria k_h = 1.0·k_h0 y presiones mayores "
-                "(11.6.5.4). Los dos casos "
+                + (("Regimen del cabezal CEDENTE ('regimen_cabezal' [A]): "
+                    "un muro que no cede pediria k_h = 1.0·k_h0 y presiones "
+                    "mayores (11.6.5.4). ")
+                   if datos["regimen"] == REGIMEN_CEDENTE else
+                   ("Muro que NO cede ('regimen_cabezal' [A]): k_h = "
+                    f"1.0·k_h0 = {datos['k_h']:.3f}, sin la reduccion por "
+                    "desplazamiento (11.6.5.4), y la resultante del estatico "
+                    "mas el sismico no bajo h/2 (C11.6.5.4)"
+                    + (("; sobre el reposo, el incremento es "
+                        + ("lo que el total pseudoestatico supera al reposo"
+                           if datos["empuje_sismico_no_cede"]
+                           == NO_CEDE_MAYOR_DE_REPOSO_Y_TOTAL else
+                           "el pseudoestatico P_AE - P_A, todo horizontal")
+                        + f" ('{CRITERIO_EMPUJE_SISMICO_NO_CEDE}' [A]). ")
+                       if datos["empuje_estatico"] == EMPUJE_ESTATICO_REPOSO
+                       else ". ")))
+                + "Los dos casos "
                 "del 11.6.5.1 se combinan aparte: 100 % P_AE + 50 % P_IR, y "
                 "50 % P_AE (no menos que el empuje estatico) + 100 % P_IR. "
                 "La fraccion f se aplica al INCREMENTO; el empuje estatico "
@@ -9007,17 +9500,8 @@ def ensamble_estabilidad(entorno: EntornoDelCabezal,
                                 motivo="estatico o sismico")
     g = entorno.geometria
     regla = _regla_de_marco()
-    if _regimen() == REGIMEN_NO_CEDENTE:
-        raise _no_evaluable(
-            f"estabilidad del cabezal de {entorno.extremo}",
-            "presiones de un muro que no cede (empuje en reposo K0 en "
-            "resistencia; k_h = 1.0·k_h0 y resultante en h/2 bajo sismo: "
-            "AASHTO 11.6.5.4 y C11.6.5.4)",
-            f"'{CRITERIO_REGIMEN}' = '{REGIMEN_NO_CEDENTE}': el ensamble "
-            "calcula el cabezal que CEDE (empuje activo, 11.6.5.3) y no "
-            "implementa el que no cede; el comentario de la fuente admite "
-            "un analisis numerico aprobado por el Propietario",
-            entorno.id_punto)
+    # --- VE-5 (ficha T7B-14) --- el muro que NO cede ya no se detiene aqui:
+    # `cargas_del_cabezal` calcula sus presiones (11.6.5.4 y C11.6.5.4).
     suelo, origen_suelo = suelo_de_fundacion(entorno.suelo,
                                              id_punto=entorno.id_punto)
     cargas, datos = cargas_del_cabezal(entorno, condicion)
@@ -11257,7 +11741,10 @@ def cargas_en_reposo(cargas: tuple, datos: dict) -> tuple:
                             procedencia="en reposo no se moviliza friccion "
                                         "muro-relleno")
         elif c.codigo == C_LS_H:
-            c = _reemplazar(c, H=c.H * escala,
+            # (VE-5) de los datos y no de la carga, para que sea idempotente
+            # sobre el ensamble del muro que no cede, que ya va en reposo.
+            c = _reemplazar(c, H=K0 * datos["gamma"] * datos["h_eq"]
+                            * datos["h"],
                             descripcion="sobrecarga viva, empuje en reposo",
                             procedencia="K0·gamma·h_eq·h")
         nuevas.append(c)
@@ -11593,6 +12080,19 @@ def solicitaciones_de_resistencia(entorno: EntornoDelCabezal) -> dict:
             "criterio")
 
     cargas, datos = cargas_del_cabezal(entorno, est)
+    if (regimen == REGIMEN_RESISTENCIA_CEDENTE
+            and datos["regimen"] == REGIMEN_NO_CEDENTE):
+        # --- VE-5 (ficha T7B-14) --- las dos declaraciones se contradicen
+        # y la corrida lo dice: el ensamble ya va con el muro que no cede.
+        avisos.append(
+            f"{quien}: el armado se declara del muro que CEDE "
+            f"('{CRITERIO_REGIMEN_RESISTENCIA}' = '{regimen}') y la "
+            f"estabilidad del que NO cede ('{CRITERIO_REGIMEN}' = "
+            f"'{REGIMEN_NO_CEDENTE}'): las solicitaciones «del muro que "
+            "cede» salen del ensamble, que ya va con el empuje en reposo y "
+            "k_h = 1.0·k_h0. Un cabezal que no cede en conjunto no tiene "
+            "elementos que cedan: la declaracion coherente es "
+            f"'{CRITERIO_REGIMEN_RESISTENCIA}' = 'no_cedente_k0'")
     combos = combinaciones_de_estabilidad(cargas, datos, est, g.B)
     lrfd = [c for c in combos if c.marco == MARCO_LRFD]
     cargas0 = cargas_en_reposo(cargas, datos)

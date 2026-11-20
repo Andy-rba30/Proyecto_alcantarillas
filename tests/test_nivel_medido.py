@@ -372,7 +372,9 @@ SIN_CONSUMIDOR_Y_SIN_MEDIDA = (
     # 'c_phi_fundacion' SALIO DE ESTE CENSO EN T-7b: tiene consumidor (el
     # ensamble de estabilidad de M9, `suelo_de_fundacion`), que la Fase 9
     # ejecuta a nivel de expediente y el de perfil difiere.
-    "capacidad_portante_adm",
+    # 'capacidad_portante_adm' SALIO DE ESTE CENSO EN VE-5 (ficha T7B-04):
+    # tiene consumidor (`M9.suelo_de_fundacion`, la presion admisible de
+    # corredor cuando 'c_phi_fundacion' no la trae).
     "clase_sitio",
     "demanda_sismica_licuefaccion",
     # T1: la eleccion de edicion para las fuentes con edicion posterior

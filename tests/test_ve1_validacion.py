@@ -696,7 +696,9 @@ def test_h2_guardia_el_valor_de_archivo_de_todos_los_criterios_sigue_pasando():
     # 159 desde VE-5-m6: 'relacion_co_poza_enrocado_hec14'.
     # 162 desde VE-5-met: los tres criterios de los metrados de la Fase 11.
     # 163 desde VE-5-m8 (VE-4f): 'carga_viva_tubo_concreto_somero' (ficha VE4F-01).
-    assert len(ca.CRITERIOS) == 163 and barridos > 100, (len(ca.CRITERIOS),
+    # 164 desde VE-5-m9: 'empuje_sismico_muro_que_no_cede'.
+    # 165 con el item 3 de VE-5-m9 (ficha T7B-04).
+    assert len(ca.CRITERIOS) == 165 and barridos > 100, (len(ca.CRITERIOS),
                                                           barridos)
 
 
