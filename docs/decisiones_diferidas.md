@@ -8459,7 +8459,9 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   nueva `E050.38.3`): sin él, o con `licua` sin mitigación, `DatoFaltanteError` y el
   expediente no cierra. Declarado, se contrasta con `demanda_sismica_licuefaccion` y
   `Mw_licuefaccion`, que con `PERFIL_SUELO_PRESUNTO` salieron del censo
-  `SIN_CONSUMIDOR_Y_SIN_MEDIDA` (7 → 4). Paso `F0.LICUEFACCION` (verbo OBLIGA).
+  `SIN_CONSUMIDOR_Y_SIN_MEDIDA` (7 → 3, con `clase_sitio`). Paso `F0.LICUEFACCION` (verbo
+  OBLIGA). Censo §5: `ML.contrastar_clase_sitio` contrasta la clase medida, si se declara,
+  con las filas de `F_pga` (F: método no evaluable, 3.10.2; fuera: inválido; dentro: aviso).
 - **Por qué así (decisión pendiente de Fable, tomada del lado seguro):** (1) el dato es
   por punto con `globales` admitido (el 38.3 habla del potencial «de la zona»; el NF y el
   suelo varían por cruce) y el del punto gana; (2) la M_w del EMS no puede ser menor que
