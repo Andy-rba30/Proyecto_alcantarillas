@@ -9268,7 +9268,7 @@ el test; lo que la sesión tuvo que decidir sin dictamen va rotulado «pendiente
   centro de gravedad de los pesos; `combinaciones_de_estabilidad` le da 1.0 en las filas de
   excentricidad, deslizamiento y volteo (los dos casos de 11.6.5.1) y 0 en las de portante. Es
   genérico (todo muro que use el ensamble). El armado lleva los pesos enteros y lo avisa. Se
-  retiró el aviso de C8. Citas `CITAS_K_V_EN_LOS_PESOS` (A11.3.1, MP 2.8.1.1.14.2.1, 11.6.5.1).
+  retiró el aviso de C8. Citas `CITAS_K_V_EN_LOS_PESOS` (A11.3.1, 11.6.5.1, MP 2.8.1.1.14.1; dictamen Fable de la revisión residual: la cita anterior, MP 2.8.1.1.14.2.1#ROCA, era la de k_h0 en roca).
 - **Abierto:** nada de esta ficha (k_v = 0 es el de archivo, prescrito).
 - **Qué haría falta:** nada.
 - **Dónde vive:** `src/modulos/M9_cabezal.py::_verificar_cuerpo_bajo_sismo`

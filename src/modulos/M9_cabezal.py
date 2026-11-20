@@ -6792,12 +6792,15 @@ CARGAS_DE_INERCIA = (C_EQ_PIR_MURO, C_EQ_PIR_SUELO)
 # --- dictamen Fable (VE-7 lote A, abierto (i)) --- con k_v distinto de cero
 # los pesos estabilizantes (DC y EV) van con (1 - k_v): una carga vertical
 # -k_v·(W_w + W_s) en su centro de gravedad (AASHTO A11.3.1, el mismo k_v
-# de Mononobe-Okabe; Manual de Puentes 2.8.1.1.14.2.1; los dos casos de
-# 11.6.5.1). Solo bajo sismo y solo con |k_v| > 0.
+# de Mononobe-Okabe; los dos casos de 11.6.5.1 y su contraparte del Manual
+# de Puentes 2.8.1.1.14.1). El (1 - k_v) en los pesos es DERIVACION del
+# equilibrio seudoestatico de Mononobe-Okabe (A11.3.1), no texto literal de
+# la norma (dictamen Fable, revision residual de VE-7). Solo bajo sismo y
+# solo con |k_v| > 0.
 C_EQ_KV = "EQ.kv.pesos"
 CITAS_K_V_EN_LOS_PESOS = ("AASHTO_LRFD_9.A11.3.1#KAE",
-                          "MP.2.8.1.1.14.2.1#ROCA",
-                          "AASHTO_LRFD_9.11.6.5.1#EXC")
+                          "AASHTO_LRFD_9.11.6.5.1#EXC",
+                          "MP.2.8.1.1.14.1#EXC")
 CARGAS_DE_EMPUJE_ESTATICO = (C_EH_H, C_EH_V)
 CARGAS_DE_INCREMENTO = (C_EQ_H, C_EQ_V)
 
