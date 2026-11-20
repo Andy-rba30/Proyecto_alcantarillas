@@ -5502,8 +5502,11 @@ CUNETA_FONDO_MIN_TRAPEZOIDAL_T34 = 0.30                       # m
 # (De 1600 a <3000 mm/año)» y «Muy lluviosa (>3000 mm/año)». Limite inferior
 # de cada fila, en mm/año, en el orden de la tabla; la fila es la del mayor
 # limite que la precipitacion alcanza. La fuente deja fuera EXACTAMENTE 3000
-# («<3000» y «>3000»): el consumidor lo lleva a la fila trapezoidal, la mas
-# exigente (lado seguro; `M10.fila_de_la_tabla_34`).
+# («<3000» y «>3000»): el consumidor lo lleva a la fila trapezoidal por la
+# convencion de limite inferior cerrado de los rotulos («De 400 a <1600»:
+# cada fila incluye su limite inferior) (`M10.fila_de_la_tabla_34`). No es
+# la fila mas exigente: 0.30 x 1.20 con fondo 0.30 son 0.225 m2, menos que
+# los 0.24 m2 de la triangular de 0.40 x 1.20.
 CUNETA_PRECIPITACION_MIN_FILA_T34 = (
     ("seca", 0.0),
     ("lluviosa", 400.0),

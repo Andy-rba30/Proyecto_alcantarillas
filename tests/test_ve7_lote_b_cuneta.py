@@ -130,3 +130,33 @@ def test_2000_mm_y_0_30_de_profundidad_no_vale(precipitacion):
         with pytest.raises(DatoInvalidoError) as exc:
             M10.capacidad_cuneta(S_cuneta=S)
     assert exc.value.campo == "seccion_cuneta.profundidad_m"
+
+
+# ===========================================================================
+# Dictamen Fable sobre B11: 2a (3000 exactos) y 2b (la trapezoidal de 0.30
+# sin la precipitacion)
+# ===========================================================================
+
+def test_3000_exactos_va_a_la_trapezoidal_y_lo_dice(precipitacion, seccion):
+    precipitacion(3000)
+    seccion(profundidad_m=0.30, ancho_m=1.20, ancho_fondo_m=0.30)
+    c = M10.capacidad_cuneta(S_cuneta=S)
+    assert M10.fila_de_la_tabla_34(3000) == "muy_lluviosa_mas_de_3000"
+    nota = c.pasos[0].nota_del_proyecto
+    assert "no cubre exactamente 3000" in nota
+    assert "limite inferior cerrado" in nota
+
+
+def test_trapezoidal_0_30_sin_precipitacion_se_detiene(seccion):
+    from src.modelos import DatoFaltanteError
+    seccion(profundidad_m=0.30, ancho_m=1.20, ancho_fondo_m=0.30)
+    with pytest.raises(DatoFaltanteError) as exc:
+        M10.capacidad_cuneta(S_cuneta=S)
+    assert exc.value.campo == P
+    assert "declarar la precipitacion" in str(exc.value)
+
+
+def test_trapezoidal_de_0_40_sin_precipitacion_sigue_con_su_aviso(seccion):
+    seccion(profundidad_m=0.40, ancho_m=1.20, ancho_fondo_m=0.30)
+    c = M10.capacidad_cuneta(S_cuneta=S)
+    assert any("no verificada" in a for a in c.avisos)

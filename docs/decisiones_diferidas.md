@@ -9310,13 +9310,16 @@ cambios están aplicados en estas fichas.
   la triangular sigue en 0.40 y las esquinas de la ventana siguen siendo válidas.
 - **Decisión del consultor Fable (triaje VE-7, 2026-11-20):** [S] opcional, contraste contra su
   fila y aviso sin él.
-- **Abierto:** (1) **Pendiente de revisión Fable:** la fuente deja fuera exactamente 3000 mm/año
-  («<3000» y «>3000»); se lleva a la fila trapezoidal, la más exigente (lado seguro). (2) Con la
-  precipitación de una fila seca o lluviosa, una triangular más chica que 0.40 × 1.20 sólo entra
-  pisando la ventana del criterio (la puerta no ve el [S]). (3) Una trapezoidal con menos de 3000
-  mm/año se contrasta con los mínimos de su fila y con el fondo de la nota «*». (4) El editor de la
-  pestaña 2 valida cada campo con la ventana propia (0.40): la trapezoidal de 0.30 entra por el
-  literal y por la CLI.
+- **Revisado por Fable (dictamen del consultor, 2026-11-20): 2a y 2b, aplicados.** (2a) 3000 mm/año
+  exactos van a la trapezoidal por la convención de límite inferior cerrado de los rótulos (no por
+  ser la más exigente: 0.30 × 1.20 con fondo 0.30 = 0.225 m² < 0.24 m² de la triangular 0.40 × 1.20),
+  y la nota del paso dice que la fuente no cubre ese valor. (2b) Sin la precipitación, una
+  trapezoidal de menos de 0.40 m se detiene: `DatoFaltanteError` sobre
+  `precipitacion_anual_corredor_mm` (esa profundidad sólo la concede la fila de más de 3000).
+- **Abierto:** (1) con la precipitación de una fila seca o lluviosa, una triangular más chica que
+  0.40 × 1.20 sólo entra pisando la ventana del criterio (la puerta no ve el [S]); (2) el editor de
+  la pestaña 2 valida cada campo con su ventana (0.40): la trapezoidal de 0.30 entra por el literal y
+  por la CLI.
 - **Qué haría falta:** una ventana del criterio que dependa de un [S] declarado por sesión.
 - **Dónde vive:** `src/modulos/M10_espaciamiento.py::fila_de_la_tabla_34`
 

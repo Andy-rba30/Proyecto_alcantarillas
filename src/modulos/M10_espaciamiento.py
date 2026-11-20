@@ -119,7 +119,8 @@ from src.dominios import METROS_POR_KM
 from src.modelos import (CAPACIDAD_CUNETA_LLENA, CAPACIDAD_VELOCIDAD_LIMITE,
                          CIFRAS_FACTOR, CIFRAS_FINA, CIFRAS_MAGNITUD,
                          CODIGO_VB1, ORIGEN_L_CALCULADO, ORIGEN_L_DECLARADO,
-                         CapacidadCuneta, CaudalDeDiseno, DatoInvalidoError,
+                         CapacidadCuneta, CaudalDeDiseno, DatoFaltanteError,
+                         DatoInvalidoError,
                          EleccionDeProyecto, Espaciamiento,
                          LimiteNumericoError, LongitudHidraulica, Magnitud,
                          TipoDeVeredicto, TramoDeAlivio, Umbral, Verificacion,
@@ -340,8 +341,9 @@ def fila_de_la_tabla_34(P_anual_mm: float) -> str:
     impresa 178) de la region pluvial con precipitacion anual `P_anual_mm`:
     la del mayor limite inferior que P alcanza
     (`CUNETA_PRECIPITACION_MIN_FILA_T34`). La fuente deja fuera exactamente
-    3000 mm/año («<3000» y «>3000»): cae en la fila trapezoidal, la mas
-    exigente (lado seguro).
+    3000 mm/año («<3000» y «>3000»): cae en la fila trapezoidal por la
+    convencion de limite inferior cerrado de los rotulos (dictamen Fable,
+    2a), y la nota del paso dice que la fuente no cubre ese valor.
     """
     fila = CUNETA_PRECIPITACION_MIN_FILA_T34[0][0]
     for clave, minimo in CUNETA_PRECIPITACION_MIN_FILA_T34:
@@ -371,6 +373,18 @@ def _contrastar_con_la_tabla_34(d: float, a: float, b: float,
     """
     P = ds.valor_si_declarado(DATO_PRECIPITACION_ANUAL)
     if P is None:
+        # --- dictamen Fable (2b) --- la profundidad bajo 0.40 solo la
+        # concede la fila de mas de 3000 mm/año, y sin la precipitacion esa
+        # fila no esta verificada: se detiene en el dato que falta.
+        d_tri = CUNETA_DIMENSIONES_MINIMAS_T34[FILA_SUPUESTA_TRIANGULAR_T34][0]
+        if b > 0 and not d >= d_tri - TOL_UMBRAL_NORMATIVO:
+            raise DatoFaltanteError(
+                DATO_PRECIPITACION_ANUAL, id_punto=id_punto,
+                detalle=f"la cuneta trapezoidal declarada tiene {d:g} m de "
+                        f"profundidad, y la profundidad < {d_tri:g} m solo "
+                        "la concede la fila >3000 mm/año de la Tabla Nº 34: "
+                        "declarar la precipitacion anual del corredor "
+                        "(estudio hidrologico)")
         fila = (CUNETA_FILA_TRAPEZOIDAL_T34 if b > 0
                 else FILA_SUPUESTA_TRIANGULAR_T34)
         aviso = (f"fila de la Tabla Nº 34 no verificada: falta el dato de "
@@ -649,6 +663,11 @@ def capacidad_cuneta(*, S_cuneta: float,
         (f"Tabla Nº 34: fila «{_rotulo_t34(fila_t34)}» con la precipitacion "
          f"anual de {P_anual:g} mm/año del dato de sitio "
          f"'{DATO_PRECIPITACION_ANUAL}' [S]; la seccion cumple su minimo."
+         + (" La fuente no cubre exactamente 3000 mm/año («<3000» y "
+            "«>3000»): se tomo la fila trapezoidal por la convencion de "
+            "limite inferior cerrado de los rotulos."
+            if math.isclose(P_anual, CUNETA_PRECIPITACION_MIN_FILA_T34[-1][1])
+            else "")
          if P_anual is not None else aviso_t34[0].upper() + aviso_t34[1:]
          + "."),
         "A, P y Rh salen de la geometria declarada; las ecuaciones (4.1), "
