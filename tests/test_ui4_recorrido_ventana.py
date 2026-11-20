@@ -397,6 +397,16 @@ def r(tmp_path_factory):
     return SimpleNamespace(salida=salida, datos=datos)
 
 
+# --- VE-7, lote C (C6) --- Las corridas de referencia que el recorrido de
+# la ventana (`tests/apoyo/gui_ui4_recorrido_real.py`) teclea. La cuarta,
+# `materiales_y_ramas`, se escribio para el indice de formulas y el recorrido
+# todavia no la teclea (declara criterios de tabla --el perfil del HDPE, el
+# tope del catalogo-- que la pestaña 2 recibe de otra forma): queda fuera,
+# dicho, y la ficha VE7C-06 lo deja abierto.
+RECORRIDAS_POR_LA_VENTANA = [c.nombre for c in ind.CORRIDAS_DE_REFERENCIA
+                             if c.nombre != "materiales_y_ramas"]
+
+
 def _json(salida, nombre):
     return json.loads((salida / nombre).read_text(encoding="utf-8"))
 
@@ -406,7 +416,7 @@ def json_de_la_cli(tmp_path_factory):
     """El JSON que `cli.py` escribe con las MISMAS entradas que la ventana tecleo."""
     salida = tmp_path_factory.mktemp("ui4_cli")
     hechos = {}
-    for referencia in ind.CORRIDAS_DE_REFERENCIA:
+    for referencia in (recorrido.corrida(n) for n in RECORRIDAS_POR_LA_VENTANA):
         destino = salida / f"{referencia.nombre}.json"
         hecho = subprocess.run(
             [sys.executable, str(RAIZ / "cli.py"), *recorrido.argumentos_de_la_cli(referencia),
@@ -455,7 +465,7 @@ def test_c1_el_cuadro_resumen_de_la_ventana_es_el_de_la_linea_base(r):
     assert ventana == (LINEA_BASE / recorrido.RESUMEN_DE_LA_LINEA_BASE).read_bytes()
 
 
-@pytest.mark.parametrize("nombre", [c.nombre for c in ind.CORRIDAS_DE_REFERENCIA])
+@pytest.mark.parametrize("nombre", RECORRIDAS_POR_LA_VENTANA)
 def test_c2_la_corrida_de_la_ventana_es_la_de_la_cli(r, json_de_la_cli, nombre):
     medido = r.datos[nombre]
     assert all(medido["examinar"].values()), medido["examinar"]
@@ -515,7 +525,7 @@ def test_c3_el_detalle_dice_el_caudal_calculado_la_proteccion_la_fase_8_y_el_cab
     assert any(l.startswith("Fase 9 estabilidad del cabezal") for l in cabezal)
 
 
-@pytest.mark.parametrize("nombre", [c.nombre for c in ind.CORRIDAS_DE_REFERENCIA])
+@pytest.mark.parametrize("nombre", RECORRIDAS_POR_LA_VENTANA)
 def test_c4_el_panel_del_cabezal_del_proyecto_es_el_de_la_cli(r, nombre):
     medido = r.datos[nombre]
     panel = medido["panel_del_cabezal"]
