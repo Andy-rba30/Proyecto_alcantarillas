@@ -9894,10 +9894,377 @@ AASHTO_3_6_1_2_6A_CONCRETO_SOMERO = _cita(
         pagina_pdf=80),
     caracter=Caracter.EXIGENCIA,
     sesion=T5,
-    nota=("Es el caso que este programa NO implementa: con menos de 2.0 ft "
-          "(0.6096 m) de relleno sobre un tubo de concreto la Fase 8 se "
-          "detiene con MetodoNoEvaluableError en vez de aplicar fuera de su "
-          "dominio la distribucion de 3.6.1.2.6b."),
+    nota=("DESDE VE-4f SE IMPLEMENTA (hasta entonces la Fase 8 se detenia "
+          "con MetodoNoEvaluableError): con 1.0 ft o mas y menos de 2.0 ft "
+          "(0.3048 a 0.6096 m) hasta la rasante, el eje se reparte a lo "
+          "largo del tubo en el ancho E de la Eq. 4.6.2.10.2-1 y el tubo se "
+          "diseña a la profundidad de 1.0 ft (cita #UN_PIE); con menos de "
+          "1.0 ft la fuente manda «more comprehensive methods» (cita "
+          "#MENOS_DE_UN_PIE), que siguen sin implementarse. Que largo se le "
+          "da al area cargada A TRAVES del tubo la fuente no lo dice para el "
+          "tubo, y lo declara el criterio [A] "
+          "'carga_viva_tubo_concreto_somero' (ficha VE4F-01)."),
+)
+
+# ===========================================================================
+# --- VE-4f --- El relleno somero: lo que 3.6.1.2.6a manda por debajo del
+# dominio de la rueda distribuida, y la franja equivalente de 4.6.2.10 que
+# el marco y el tubo de concreto con menos de 2.0 ft usan. Leidas en la capa
+# de texto de las paginas 3-26, 4-65 y 12-68; las ecuaciones de 4.6.2.10.2,
+# renderizadas.
+# ===========================================================================
+FECHA_VE4F = "2026-11-20"
+POR_VE4F = "validacion/VE-4f · lectura directa de la pagina por la sesion"
+VE4F = (FECHA_VE4F, POR_VE4F)
+
+AASHTO_3_6_1_2_6A_UN_PIE = _cita(
+    id="AASHTO_LRFD_9.3.6.1.2.6a#UN_PIE",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="3.6.1.2.6a",
+    titulo_numeral="3.6.1.2.6a—General",
+    pagina_impresa="3-26",
+    pagina_pdf=80,
+    texto_literal=Verbatim(
+        texto=("Round concrete culverts with 1.0 ft or more but less than "
+               "2.0 ft of cover shall be designed for a depth of 1.0 ft."),
+        pagina_pdf=80),
+    caracter=Caracter.EXIGENCIA,
+    sesion=VE4F,
+    nota=("Sigue a la frase de la Eq. 4.6.2.10.2-1 (cita #CONCRETO_SOMERO). "
+          "Que la profundidad de diseño de 1.0 ft entre en el IM de 3.6.2.2 "
+          "(D_E = 1.0 ft, o la cubierta de tierra si es menor) y en el largo "
+          "E_span de la Eq. 4.6.2.10.2-2 cuando el proyecto lo declara, y NO "
+          "en la carga de tierra, es lectura del proyecto: la frase esta en "
+          "el articulo de la carga viva."),
+)
+
+AASHTO_3_6_1_2_6A_MENOS_DE_UN_PIE = _cita(
+    id="AASHTO_LRFD_9.3.6.1.2.6a#MENOS_DE_UN_PIE",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="3.6.1.2.6a",
+    titulo_numeral="3.6.1.2.6a—General",
+    pagina_impresa="3-26",
+    pagina_pdf=80,
+    texto_literal=Verbatim(
+        texto=("Round culverts with less than 1.0 ft of fill shall be "
+               "analyzed with more comprehensive methods."),
+        pagina_pdf=80),
+    caracter=Caracter.EXIGENCIA,
+    sesion=VE4F,
+    nota=("Es lo unico que sigue sin implementarse (MetodoNoEvaluableError). "
+          "Casi nunca se alcanza: la Tabla 12.6.6.3-1 pide al menos 12.0 in "
+          "de cobertura a todo conducto redondo del catalogo salvo al tubo "
+          "de concreto bajo pavimento rigido (9.0 in), de modo que un tubo "
+          "con menos de 1.0 ft hasta la rasante INCUMPLE la cobertura minima "
+          "(F8.COBERTURA) y solo el de concreto bajo pavimento rigido, entre "
+          "9 y 12 in, queda sin metodo."),
+)
+
+AASHTO_4_6_2_10_1 = _cita(
+    id="AASHTO_LRFD_9.4.6.2.10.1",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="4.6.2.10.1",
+    titulo_numeral="4.6.2.10.1—General",
+    pagina_impresa="4-65",
+    pagina_pdf=316,
+    texto_literal=Verbatim(
+        texto=("This Article shall be applied to box culverts with depths of "
+               "fill less than 2.0 ft."),
+        pagina_pdf=316),
+    caracter=Caracter.EXIGENCIA,
+    sesion=VE4F,
+    nota=("El articulo se titula «Equivalent Strip Widths for Box Culverts». "
+          "Con 2.0 ft o mas rige 3.6.1.2.6 (C4.6.2.10.1, misma pagina). El "
+          "Manual de Puentes no lo transcribe (su 2.6.4.2 termina en 2.6.4.2.6, "
+          "«Ancho de Ala Efectivo»): por eso es [C]."),
+)
+
+AASHTO_4_6_2_10_2_UN_CARRIL = _cita(
+    id="AASHTO_LRFD_9.4.6.2.10.2#UN_CARRIL",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="4.6.2.10.2",
+    titulo_numeral="4.6.2.10.2—Case 1: Traffic Travels Parallel to Span",
+    pagina_impresa="4-65",
+    pagina_pdf=316,
+    texto_literal=Verbatim(
+        texto=("When traffic travels primarily parallel to the span, culverts "
+               "shall be analyzed for a single loaded lane with the single "
+               "lane multiple presence factor."),
+        pagina_pdf=316),
+    caracter=Caracter.EXIGENCIA,
+    sesion=VE4F,
+)
+
+AASHTO_4_6_2_10_2_FRANJA = _cita(
+    id="AASHTO_LRFD_9.4.6.2.10.2#FRANJA",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="4.6.2.10.2",
+    titulo_numeral="4.6.2.10.2—Case 1: Traffic Travels Parallel to Span",
+    pagina_impresa="4-65",
+    pagina_pdf=316,
+    texto_literal=Verbatim(
+        texto=("The axle load shall be distributed to the top slab for "
+               "determining moment, thrust, and shear as follows:"),
+        pagina_pdf=316),
+    caracter=Caracter.EXIGENCIA,
+    metodo=AMBOS,
+    sesion=VE4F,
+    nota=("Ecuaciones leidas RENDERIZADAS (la capa de texto las entrega "
+          "partidas): «Perpendicular to the span: E = 96 + 1.44S "
+          "(4.6.2.10.2-1)» y «Parallel to the span: E_span = L_T + LLDF(H) "
+          "(4.6.2.10.2-2)». Simbolos en la pag. 4-66 (PDF 317): E «equivalent "
+          "distribution width perpendicular to span (in.)», S «clear span "
+          "(ft)», E_span «equivalent distribution length parallel to span "
+          "(in.)», L_T «length of tire contact area parallel to span, as "
+          "specified in Article 3.6.1.2.5 (in.)», LLDF «as specified in "
+          "Article 3.6.1.2.6», H «depth of fill from top of culvert to top of "
+          "pavement (in.)». Vista de calculo en constantes_normativas "
+          "(FRANJA_CAJON_*). La presion es la del eje sobre E x E_span con "
+          "el IM y el m de un carril: es la que da el ejemplo resuelto de "
+          "MnDOT, LRFD Bridge Design Manual §12.6 (2013), contrastado en "
+          "tests/test_ve4f_relleno_bajo.py."),
+)
+
+AASHTO_C4_6_2_10_2_E_SPAN = _cita(
+    id="AASHTO_LRFD_9.C4.6.2.10.2#E_SPAN",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="C4.6.2.10.2",
+    titulo_numeral="C4.6.2.10.2",
+    pagina_impresa="4-65",
+    pagina_pdf=316,
+    texto_literal=Verbatim(
+        texto=("The increased load length parallel to the span, as allowed by "
+               "Eq. 4.6.2.10.2-2, may be conservatively neglected in design."),
+        pagina_pdf=316),
+    caracter=Caracter.PERMISO,
+    sesion=VE4F,
+    nota=("Comentario. Es una de las dos lecturas que el criterio [A] "
+          "'carga_viva_tubo_concreto_somero' ofrece para el tubo de concreto "
+          "somero: despreciar el aumento LLDF H deja el largo del area "
+          "cargada en L_T, el del neumatico (la cota superior de la carga "
+          "sobre el tubo); tomarlo, en L_T + LLDF (1.0 ft)."),
+)
+
+AASHTO_12_11_2_1_SOMERO = _cita(
+    id="AASHTO_LRFD_9.12.11.2.1#SOMERO",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="12.11.2.1",
+    titulo_numeral="12.11.2.1—General",
+    pagina_impresa="12-68",
+    pagina_pdf=1706,
+    texto_literal=Verbatim(
+        texto=("Distribution of wheel loads and concentrated loads for "
+               "culverts with less than 2.0 ft of fill shall be taken as "
+               "specified in Article 4.6.2.10."),
+        pagina_pdf=1706),
+    caracter=Caracter.EXIGENCIA,
+    sesion=VE4F,
+    nota=("Es el articulo del cajon de concreto armado (12.11), y es el que "
+          "lleva el marco del catalogo a 4.6.2.10: la frase de 3.6.1.2.6a que "
+          "remite a 4.6.2.10 nombra los marcos de tres lados y los arcos, no "
+          "el cajon. El comentario C12.11.2.1 (misma pagina) añade las vigas "
+          "de borde del cajon vaciado in situ con menos de 2.0 ft, que son "
+          "del diseño del portico, diferido."),
+)
+
+# ===========================================================================
+# --- VE-5 (m8), item 1 del censo --- El portico del marco: lo que AASHTO
+# LRFD 12.11 manda para analizarlo y armarlo, leido en la capa de texto de
+# sus paginas (12-12, 12-68, 12-71 a 12-73, 3-152 y 5-248).
+# ===========================================================================
+FECHA_VE5M8 = "2026-11-20"
+POR_VE5M8 = "validacion/VE-5 m8 · lectura directa de la pagina por la sesion"
+VE5M8 = (FECHA_VE5M8, POR_VE5M8)
+
+AASHTO_12_11_2_1_CARGAS = _cita(
+    id="AASHTO_LRFD_9.12.11.2.1#CARGAS",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="12.11.2.1",
+    titulo_numeral="12.11.2.1—General",
+    pagina_impresa="12-68",
+    pagina_pdf=1706,
+    texto_literal=Verbatim(
+        texto="Loads and load combinations specified in Table 3.4.1-1 shall apply.",
+        pagina_pdf=1706),
+    caracter=Caracter.EXIGENCIA,
+    sesion=VE5M8,
+    nota=("Las cargas del portico: DC, EV, EH, LS, WA y LL con su IM. Los "
+          "factores se leen del Manual de Puentes (Tablas 2.4.5.3.1-1 y -2), "
+          "que transcribe las de AASHTO."),
+)
+
+AASHTO_C12_11_2_1_COMBINACIONES = _cita(
+    id="AASHTO_LRFD_9.C12.11.2.1#COMBINACIONES",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="C12.11.2.1",
+    titulo_numeral="C12.11.2.1",
+    pagina_impresa="12-68",
+    pagina_pdf=1706,
+    texto_literal=Verbatim(
+        texto=("For the design of box culverts, three general load "
+               "combinations envelope all controlling force effects for the "
+               "Strength and Service limit states."),
+        pagina_pdf=1706),
+    caracter=Caracter.RECOMENDACION,
+    sesion=VE5M8,
+    nota=("Comentario. Las tres: vertical maximo con horizontal maximo, "
+          "vertical maximo con horizontal minimo, vertical minimo con "
+          "horizontal maximo; y «Controlling force effects with maximum "
+          "horizontal loads may occur with live load surcharge (LS) present "
+          "or absent. Both situations should be investigated.» (misma "
+          "pagina): por eso cada combinacion de horizontal maximo se corre "
+          "con LS y sin LS."),
+)
+
+AASHTO_12_11_2_3 = _cita(
+    id="AASHTO_LRFD_9.12.11.2.3",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="12.11.2.3",
+    titulo_numeral="12.11.2.3—Distribution of Concentrated Loads to Bottom Slab of Box Culvert",
+    pagina_impresa="12-71",
+    pagina_pdf=1709,
+    texto_literal=Verbatim(
+        texto=("The width of the top slab strip used for distribution of "
+               "concentrated wheel loads, specified in Article 12.11.2, shall "
+               "also be used for the determination of moments, shears, and "
+               "thrusts in the side walls and the bottom slab."),
+        pagina_pdf=1709),
+    caracter=Caracter.EXIGENCIA,
+    sesion=VE5M8,
+    nota=("Su comentario (misma pagina): «typical designs assume a uniform "
+          "pressure distribution across the bottom slab». El proyecto reparte "
+          "la reaccion del suelo bajo la losa inferior de forma LINEAL "
+          "(uniforme con la carga centrada, trapecial con la carga "
+          "excentrica), que es la que equilibra fuerza y momento sin un "
+          "modulo del suelo que el proyecto no tiene: lectura del proyecto."),
+)
+
+AASHTO_12_11_4 = _cita(
+    id="AASHTO_LRFD_9.12.11.4",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="12.11.4",
+    titulo_numeral="12.11.4—Service Limit State",
+    pagina_impresa="12-72",
+    pagina_pdf=1710,
+    texto_literal=Verbatim(
+        texto=("The provisions of Article 5.6.7 shall apply to crack width "
+               "control in reinforced concrete cast-in-place and precast box "
+               "culverts and reinforced cast-in-place arches."),
+        pagina_pdf=1710),
+    caracter=Caracter.EXIGENCIA,
+    sesion=VE5M8,
+)
+
+AASHTO_12_11_5_1 = _cita(
+    id="AASHTO_LRFD_9.12.11.5.1",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="12.11.5.1",
+    titulo_numeral="12.11.5.1—General",
+    pagina_impresa="12-73",
+    pagina_pdf=1711,
+    texto_literal=Verbatim(
+        texto=("All sections shall be designed for the applicable factored "
+               "loads specified in Table 3.4.1-1 at the strength limit state, "
+               "except as modified herein."),
+        pagina_pdf=1711),
+    caracter=Caracter.EXIGENCIA,
+    sesion=VE5M8,
+)
+
+AASHTO_12_11_5_1_CORTANTE = _cita(
+    id="AASHTO_LRFD_9.12.11.5.1#CORTANTE",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="12.11.5.1",
+    titulo_numeral="12.11.5.1—General",
+    pagina_impresa="12-73",
+    pagina_pdf=1711,
+    texto_literal=Verbatim(
+        texto=("Shear in culverts shall be investigated in conformance with "
+               "Article 5.12.7.3."),
+        pagina_pdf=1711),
+    caracter=Caracter.EXIGENCIA,
+    sesion=VE5M8,
+)
+
+AASHTO_5_12_7_3 = _cita(
+    id="AASHTO_LRFD_9.5.12.7.3",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="5.12.7.3",
+    titulo_numeral="5.12.7.3—Design for Shear in Slabs of Box Culverts",
+    pagina_impresa="5-248",
+    pagina_pdf=607,
+    texto_literal=Verbatim(
+        texto="The provisions of Article 5.7 apply unless modified herein.",
+        pagina_pdf=607),
+    caracter=Caracter.EXIGENCIA,
+    sesion=VE5M8,
+    nota=("Para las losas con 2.0 ft o mas de relleno la Eq. 5.12.7.3-1 "
+          "«may» dar un V_c mayor: es un PERMISO que el proyecto no toma. El "
+          "cortante del portico se verifica con 5.7 (el procedimiento del "
+          "armado del cabezal, simplificado de 5.7.3.4.1 o general de "
+          "5.7.3.4.2), que es lo que el articulo deja en pie."),
+)
+
+AASHTO_12_11_5_3_1 = _cita(
+    id="AASHTO_LRFD_9.12.11.5.3.1",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="12.11.5.3.1",
+    titulo_numeral="12.11.5.3.1—Cast-in-Place Structures",
+    pagina_impresa="12-73",
+    pagina_pdf=1711,
+    texto_literal=Verbatim(
+        texto=("Reinforcement shall not be less than that specified in "
+               "Article 5.6.3.3 at all cross-sections subject to flexural "
+               "tension, including the inside face of walls."),
+        pagina_pdf=1711),
+    caracter=Caracter.EXIGENCIA,
+    sesion=VE5M8,
+    nota=("Sigue: «Shrinkage and temperature reinforcement shall be provided "
+          "near the inside surfaces of walls and slabs in accordance with "
+          "Article 5.10.6.» El armado del cabezal pone en cada cara armada "
+          "el mayor de 5.6.3.3, 5.10.6 y E.060."),
+)
+
+AASHTO_3_11_7 = _cita(
+    id="AASHTO_LRFD_9.3.11.7",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="3.11.7",
+    titulo_numeral="3.11.7—Reduction Due to Earth Pressure",
+    pagina_impresa="3-152",
+    pagina_pdf=206,
+    texto_literal=Verbatim(
+        texto=("In lieu of more precise information, a 50 percent reduction "
+               "may be used, but need not be combined with the minimum load "
+               "factor specified in Table 3.4.1-2."),
+        pagina_pdf=206),
+    caracter=Caracter.PERMISO,
+    sesion=VE5M8,
+    nota=("Su comentario C3.11.7: «the earth pressure is reduced by 50 "
+          "percent in order to obtain maximum positive moment in top slab of "
+          "culverts and frames». El proyecto toma la reduccion solo para el "
+          "momento POSITIVO de la losa superior (decision del dueño, censo "
+          "del 2026-11-20) y la combina con el factor minimo y el 1/eta, que "
+          "la fuente permite no combinar: es el lado conservador para ese "
+          "momento y lo que hace el ejemplo resuelto de MnDOT §12.5."),
+)
+
+AASHTO_T12_5_5_1_CAJON_IN_SITU = _cita(
+    id="AASHTO_LRFD_9.T12.5.5-1#CAJON_IN_SITU",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="Table 12.5.5-1",
+    titulo_numeral="Table 12.5.5-1—Resistance Factors for Buried Structures",
+    pagina_impresa="12-12",
+    pagina_pdf=1650,
+    texto_literal=Verbatim(
+        texto="Reinforced Concrete Cast-in-Place Box Structures",
+        pagina_pdf=1650),
+    caracter=Caracter.EXIGENCIA,
+    metodo=AMBOS,
+    sesion=VE5M8,
+    nota=("Fila de la tabla: flexion 0.90, cortante 0.85 (la del "
+          "prefabricado, 1.00 y 0.90). Vista de calculo en "
+          "constantes_normativas (PHI_*_CAJON_IN_SITU). El articulo 12.5.5 "
+          "manda tomarlos de esta tabla (cita AASHTO_LRFD_9.12.5.5)."),
 )
 
 AASHTO_T3_6_1_2_6A_1 = _cita(

@@ -1066,6 +1066,11 @@ class Material:
     # falsa de NOR-PRO-01 leida al reves. Vacio = constructor que no pasa por
     # `M2.catalogo` (dobles de prueba): quien lo lea cae al rotulo.
     D_max_criterio: str = ""
+    # --- VE-5 (m8), item 23 (ficha T5-03) --- LA PLANCHA DEL TMC con que se
+    # arma la geometria: vacia = la adoptada ('corrugacion_y_espesor_tmc');
+    # si no, la que la Fase 8 eligio y MD devolvio al material
+    # (`M2.material_con_plancha_tmc`), y entonces `espesor_pared` ya la lleva.
+    plancha_tmc: str = ""
 
     def __post_init__(self) -> None:
         # EL PAR ES UN PAR (PC-01): n_min <= n_max, o la regla de doble n se
@@ -2544,11 +2549,17 @@ class AlcanceDeclarado:
 ALCANCE_DECLARADO: Tuple[AlcanceDeclarado, ...] = (
     AlcanceDeclarado(
         clave="armado_seccion_marco",
-        texto=("El armado de la SECCION del marco de concreto de la Familia C "
-               "no se diseña: el expediente llega al dimensionamiento y a la "
-               "demanda de la losa superior que entrega la Fase 8; el "
-               "analisis y el diseño del portico quedan para quien lo arme"),
-        ficha="T5-07", simbolo="M8_estructural.demanda_marco"),
+        # --- VE-5 (m8) --- Hasta VE-5 decia que el armado de la seccion del
+        # marco no se diseñaba. Desde VE-5 el portico se analiza y se arma
+        # (`M8.disenar_portico`); lo que sigue fuera es lo de abajo.
+        texto=("El portico del marco de concreto se analiza y se arma con UN "
+               "canto, el de 'espesor_pared_cajon', en losas, paredes y "
+               "tabiques, y no se itera: los cantos separados de losa y "
+               "pared en la geometria del programa, el refuerzo de "
+               "distribucion y las vigas de borde de la losa con menos de "
+               "2.0 ft, el desarrollo y los empalmes y el agua exterior "
+               "quedan para quien lo arme"),
+        ficha="T5-07", simbolo="M8_estructural.disenar_portico"),
     AlcanceDeclarado(
         clave="cabezal_paralelo_a_la_via",
         texto=("El cabezal PARALELO a la via no se calcula: en las tres "
@@ -7371,6 +7382,13 @@ class CargaVivaEnterrada:
     efecto_descripcion: str = ""
     candidatos: Tuple[Tuple[str, float, float, float, float, float], ...] = ()
     en_zona_de_permiso: bool = False
+    # --- VE-4f --- True cuando el relleno hasta la rasante es MENOR de 2.0 ft
+    # sobre un tubo de concreto o un marco y la carga viva se reparte en la
+    # franja equivalente de AASHTO LRFD 4.6.2.10.2 (3.6.1.2.6a): `w_w_m` es
+    # entonces el ancho E de la franja (a lo largo del conducto), `l_w_m` el
+    # largo del area cargada a traves de el, `P_kN` la carga de UN eje y
+    # `efecto` la medida del consumidor sobre los ejes que caen en el.
+    relleno_somero: bool = False
 
 
 @dataclass(frozen=True)
@@ -7388,6 +7406,92 @@ class DemandaMarco:
     luz_m: float
     M_u_referencia_kNm_m: float
     pasos: Tuple["PasoDeMemoria", ...]
+
+
+# ===========================================================================
+# --- VE-5 (m8), item 1 del censo --- EL PORTICO DEL MARCO (ficha T5-07)
+# ===========================================================================
+
+@dataclass(frozen=True)
+class GeometriaPortico:
+    """
+    El marco como portico cerrado de ejes, para su analisis (AASHTO LRFD
+    12.11): `n_celdas` celdas de luz libre `luz_libre_m` y altura libre
+    `altura_libre_m`, con los CANTOS SEPARADOS de la losa superior, la
+    inferior, las paredes exteriores y los tabiques (decision del dueño,
+    censo del 2026-11-20). `cartela_m` es la cartela a 45° de las esquinas
+    interiores (0 en el catalogo del proyecto, que no las lleva; el ejemplo
+    resuelto de MnDOT §12.5 las tiene de 12 in): el analisis la cuenta como
+    canto creciente junto a cada cara.
+    """
+    n_celdas: int
+    luz_libre_m: float
+    altura_libre_m: float
+    t_losa_superior_m: float
+    t_losa_inferior_m: float
+    t_pared_m: float
+    t_tabique_m: float
+    cartela_m: float = 0.0
+
+    def espesor_de_pared(self, j: int) -> float:
+        """El canto de la pared j (0 y n_celdas son las exteriores)."""
+        return (self.t_pared_m if j in (0, self.n_celdas)
+                else self.t_tabique_m)
+
+    @property
+    def ejes_x_m(self) -> Tuple[float, ...]:
+        """Abscisas de los ejes de las paredes, desde el eje de la izquierda."""
+        x = [0.0]
+        for j in range(self.n_celdas):
+            x.append(x[-1] + self.luz_libre_m
+                     + (self.espesor_de_pared(j)
+                        + self.espesor_de_pared(j + 1)) / 2)
+        return tuple(x)
+
+    @property
+    def altura_ejes_m(self) -> float:
+        """Distancia entre los ejes de las losas."""
+        return (self.altura_libre_m
+                + (self.t_losa_superior_m + self.t_losa_inferior_m) / 2)
+
+
+@dataclass(frozen=True)
+class EsfuerzoDeSeccion:
+    """
+    Los esfuerzos de UNA seccion del portico en un caso de carga o en una
+    combinacion, por metro de marco: M positivo TRACCIONA LA CARA INTERIOR
+    de la celda (en un tabique, la cara que mira a la celda de su derecha),
+    N positivo comprime, V en valor absoluto.
+    """
+    seccion: str
+    miembro: str
+    M_kNm_m: float
+    V_kN_m: float
+    N_kN_m: float
+
+
+@dataclass(frozen=True)
+class DisenoPortico:
+    """
+    El analisis y el armado del portico del marco (AASHTO LRFD 12.11 y
+    Seccion 5). `envolventes` son, por combinacion, los esfuerzos factorados
+    de cada seccion con la carga viva en su posicion mas desfavorable para
+    cada signo; `armados`, las secciones armadas con el armado del cabezal
+    (`M9.diseno_flexion_corte`); `verificaciones`, las suyas (A1 a A6 por
+    seccion y cara), que cuentan en el punto como las del cabezal.
+    """
+    geometria: GeometriaPortico
+    casos: Tuple[Tuple[str, Tuple[EsfuerzoDeSeccion, ...]], ...]
+    envolventes: Tuple[Tuple[str, str, Tuple[EsfuerzoDeSeccion, ...]], ...]
+    armados: Tuple[Any, ...]
+    verificaciones: Tuple["Verificacion", ...]
+    pasos: Tuple["PasoDeMemoria", ...]
+    avisos: Tuple[str, ...] = ()
+    diferido: Tuple[str, ...] = ()
+
+    @property
+    def cumple(self) -> bool:
+        return all(v.cumple for v in self.verificaciones)
 
 
 @dataclass(frozen=True)
@@ -7423,6 +7527,9 @@ class ResultadoEstructural:
     diferido: Tuple[str, ...] = ()
     demanda_marco: Optional[DemandaMarco] = None
     cota_inferior: bool = False
+    # --- VE-5 (m8) --- El analisis y el armado del portico del marco (la
+    # etapa `servicio.ETAPA_PORTICO_MARCO`, a expediente); None en los tubos.
+    portico: Optional[DisenoPortico] = None
 
     @property
     def cumple(self) -> bool:

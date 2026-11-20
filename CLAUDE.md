@@ -303,8 +303,7 @@ el 0.5 es [N] y cuál de las dos declaraciones aplica a esta obra es [A].
   numérica. Es lo que M2/M4 iban a exigir de todos modos, dicho en la ficha
   para que se rechace en la puerta con `ValueError` (SIS-E-05) y no en el
   consumidor con un `TypeError` fuera de `ErrorProyecto`: medido antes de
-  EXT-5, 53 de las 70 claves (71 desde EXT-6, 73 desde EXT-7, 74 desde E-A, 75 desde PF-1, 76 desde PF-4, 77 desde el cierre de C10, 79 desde el de C05, 82 desde T-2, 88 desde T-4, 95 desde T-1, 97 desde T-6, 102 desde T-8, 109 desde T-5, 110 desde T-3, 114 desde T-9, 119 desde T-7a, 129 desde T-7b, 139 desde T-7c, 141 desde la verificación de fórmulas de T-7, 146 desde VE-2, 148 desde VE-3, 149 desde VE-3.12, 153 desde VE-3.14, 154 desde VE-4a, 155 desde VE-4c, 157 desde VE-4d, 158 desde VE-4e, 159 desde VE-5-m6, 162 desde VE-5-met) aceptaban la cadena `'cero'` y la GUI no podía
-  declarar el entero de `n_celdas_cajon` (PC-13, PC-14). Una `categoria`
+  EXT-5, 53 de las 70 claves (71 desde EXT-6, 73 desde EXT-7, 74 desde E-A, 75 desde PF-1, 76 desde PF-4, 77 desde el cierre de C10, 79 desde el de C05, 82 desde T-2, 88 desde T-4, 95 desde T-1, 97 desde T-6, 102 desde T-8, 109 desde T-5, 110 desde T-3, 114 desde T-9, 119 desde T-7a, 129 desde T-7b, 139 desde T-7c, 141 desde la verificación de fórmulas de T-7, 146 desde VE-2, 148 desde VE-3, 149 desde VE-3.12, 153 desde VE-3.14, 154 desde VE-4a, 155 desde VE-4c, 157 desde VE-4d, 158 desde VE-4e, 159 desde VE-5-m6, 162 desde VE-5-met) aceptaban la cadena `'cero'` y la GUI no podía  declarar el entero de `n_celdas_cajon` (PC-13, PC-14). Una `categoria`
   valida contra la tupla de textos de `sensibilidad`, que es donde vive el
   conjunto cerrado de un criterio; las guardias de los consumidores se
   quedan como segunda línea (ficha EXT-5-02). Y lo que el proyectista teclea
@@ -395,8 +394,7 @@ documento. La tercera es el criterio de salida del nivel de perfil escrito como
 invariante: **ningún [A] de perfil sin valor, sin sensibilidad y sin
 procedencia**.
 
-**Y desde S21 el nivel lo llevan los 69 (70 desde T1, 71 desde EXT-6, 73 desde EXT-7, 74 desde E-A, 75 desde PF-1, 76 desde PF-4, 77 desde el cierre de C10, 79 desde el de C05, 82 desde T-2, 88 desde T-4, 95 desde T-1, 97 desde T-6, 102 desde T-8, 109 desde T-5, 110 desde T-3, 114 desde T-9, 119 desde T-7a, 129 desde T-7b, 139 desde T-7c, 141 desde la verificación de fórmulas de T-7, 146 desde VE-2, 148 desde VE-3, 149 desde VE-3.12, 153 desde VE-3.14, 154 desde VE-4a, 155 desde VE-4c, 157 desde VE-4d, 158 desde VE-4e, 159 desde VE-5-m6, 162 desde VE-5-met), no sólo los que no tienen valor.** La
-guardia sólo lo exigía a los criterios SIN VALOR, de modo que trece con valor
+**Y desde S21 el nivel lo llevan los 69 (70 desde T1, 71 desde EXT-6, 73 desde EXT-7, 74 desde E-A, 75 desde PF-1, 76 desde PF-4, 77 desde el cierre de C10, 79 desde el de C05, 82 desde T-2, 88 desde T-4, 95 desde T-1, 97 desde T-6, 102 desde T-8, 109 desde T-5, 110 desde T-3, 114 desde T-9, 119 desde T-7a, 129 desde T-7b, 139 desde T-7c, 141 desde la verificación de fórmulas de T-7, 146 desde VE-2, 148 desde VE-3, 149 desde VE-3.12, 153 desde VE-3.14, 154 desde VE-4a, 155 desde VE-4c, 157 desde VE-4d, 158 desde VE-4e, 159 desde VE-5-m6, 162 desde VE-5-met), no sólo los que no tienen valor.** Laguardia sólo lo exigía a los criterios SIN VALOR, de modo que trece con valor
 —once de Fase 9 y licuefacción, dos opcionales— se habían quedado sin
 clasificar. Se rellenaron **midiendo**, no opinando, y esa distinción tiene
 consecuencias que conviene leer antes de tocar el campo:
@@ -436,8 +434,7 @@ consecuencias que conviene leer antes de tocar el campo:
 
 **Para qué se completó, además de por completitud:** `nivel` gobierna el
 filtro de alcance de la pestaña 2 (`criterios_adoptados.criterios_del_alcance`),
-que a `--alcance perfil` pasa la tabla de 69 filas (70 desde T1, 71 desde EXT-6, 73 desde EXT-7, 74 desde E-A, 75 desde PF-1, 76 desde PF-4, 77 desde el cierre de C10, 79 desde el de C05, 82 desde T-2, 88 desde T-4, 95 desde T-1, 97 desde T-6, 102 desde T-8, 109 desde T-5, 110 desde T-3, 114 desde T-9, 119 desde T-7a, 129 desde T-7b, 139 desde T-7c, 141 desde la verificación de fórmulas de T-7, 146 desde VE-2, 148 desde VE-3, 149 desde VE-3.12, 153 desde VE-3.14, 154 desde VE-4a, 155 desde VE-4c, 157 desde VE-4d, 158 desde VE-4e, 159 desde VE-5-m6, 162 desde VE-5-met) a 36 y los pendientes
-visibles de 33 a 11. El filtro **no oculta**: el recuento sigue contando los 33
+que a `--alcance perfil` pasa la tabla de 69 filas (70 desde T1, 71 desde EXT-6, 73 desde EXT-7, 74 desde E-A, 75 desde PF-1, 76 desde PF-4, 77 desde el cierre de C10, 79 desde el de C05, 82 desde T-2, 88 desde T-4, 95 desde T-1, 97 desde T-6, 102 desde T-8, 109 desde T-5, 110 desde T-3, 114 desde T-9, 119 desde T-7a, 129 desde T-7b, 139 desde T-7c, 141 desde la verificación de fórmulas de T-7, 146 desde VE-2, 148 desde VE-3, 149 desde VE-3.12, 153 desde VE-3.14, 154 desde VE-4a, 155 desde VE-4c, 157 desde VE-4d, 158 desde VE-4e, 159 desde VE-5-m6, 162 desde VE-5-met) a 36 y los pendientesvisibles de 33 a 11. El filtro **no oculta**: el recuento sigue contando los 33
 sobre el archivo entero y dice además cuántas filas esconde. Y **no se apoya en
 la derivación estática** de `variables_entrada` —que es una ESTIMACIÓN y tuvo
 dos falsos negativos medidos, ver abajo—, sino en el campo que las corridas

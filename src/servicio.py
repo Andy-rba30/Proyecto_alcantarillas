@@ -146,7 +146,9 @@ from src.modulos.M7_geometria import (aviso_de_pendiente,
 from src.modulos.M5_verificaciones import altura_relleno_sobre_clave
 from src.modulos.M5_verificaciones import cota_de_entrada   # --- T-6 ---
 from src.modulos.M8_estructural import (CODIGOS_FASE_8,
+                                        DIFERIDOS_QUE_EL_PORTICO_CIERRA,
                                         cama_apoyo_relleno_lateral,
+                                        disenar_portico,
                                         seleccionar_clase_calibre,
                                         verificar_conducto)
 from src.modulos.M9_cabezal import (aviso_ambiente_corrosivo,
@@ -668,6 +670,11 @@ ETAPA_DURABILIDAD = "matriz de durabilidad (Sec. 3.3)"
 ETAPA_ESTRUCTURAL_CONDUCTO = ("clase, calibre o perfil del conducto y relleno "
                               "maximo (items 1-2 y 5)")
 ETAPA_DEMANDA_MARCO = "demanda de la losa superior del marco (12.11.2)"
+# --- VE-5 (m8) --- El analisis y el armado del portico del marco (12.11),
+# aparte de la demanda: sin el angulo de friccion del relleno se detiene el
+# portico, y la demanda sigue.
+ETAPA_PORTICO_MARCO = ("analisis y armado del portico del marco (AASHTO LRFD "
+                       "12.11 y Seccion 5)")
 
 # --- T-6 --- La pendiente transversal de la plataforma en el cruce, cuando
 # la seccion tipica la da (m/m: 0.02 = 2 %). Son datos del TRAZO, opcionales
@@ -1819,6 +1826,12 @@ class InformePunto:
         # por construccion; con declaradas, una incumplida cuenta.
         if self.cabezal is not None:
             filas.extend((FASE_CABEZAL, v) for v in self.cabezal.verificaciones)
+        # --- VE-5 (m8) --- el armado del portico del marco (A1 a A6 por
+        # seccion y cara), a expediente.
+        if self.estructural is not None and \
+                self.estructural.portico is not None:
+            filas.extend((FASE_ESTRUCTURAL, v)
+                         for v in self.estructural.portico.verificaciones)
         # --- T-9 --- Las dos de la Fase 10, y las dos pueden fallar: VB2, el
         # caudal de aporte contra la capacidad de la cuneta (la condicion
         # literal del Manual, H1 de la auditoria), y VB1, el espaciamiento
@@ -3711,6 +3724,23 @@ def _fase_8(informe: InformePunto) -> None:
                 lambda: seleccionar_clase_calibre(
                     punto=punto, material=material, seccion=seccion,
                     altura_relleno=altura))
+        if altura is not None and informe.estructural is not None:
+            # --- VE-5 (m8) --- El portico (ficha T5-07): sus pasos van con
+            # los de la Fase 8 y sus verificaciones cuentan en el punto
+            # (`InformePunto.verificaciones`).
+            portico = _etapa(
+                informe.bloqueos, FASE_ESTRUCTURAL, ETAPA_PORTICO_MARCO,
+                lambda: disenar_portico(
+                    punto=punto, material=material, seccion=seccion,
+                    altura_relleno=altura))
+            if portico is not None:
+                e = informe.estructural
+                informe.estructural = replace(
+                    e, portico=portico, pasos=e.pasos + portico.pasos,
+                    avisos=e.avisos + portico.avisos,
+                    diferido=tuple(d for d in e.diferido
+                                   if d not in DIFERIDOS_QUE_EL_PORTICO_CIERRA)
+                    + portico.diferido)
     informe.cama_apoyo = _etapa(informe.bloqueos, FASE_ESTRUCTURAL,
                                 "cama de apoyo y relleno lateral (item 4)",
                                 lambda: cama_apoyo_relleno_lateral(material))

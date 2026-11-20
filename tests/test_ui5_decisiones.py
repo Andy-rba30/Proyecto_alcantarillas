@@ -1336,8 +1336,7 @@ def test_4_el_barrido_cubre_los_141_y_censa_lo_que_no_barre(candidatos):
     # 162 desde VE-5-met: 'sobreancho_excavacion_estructuras_m' (opcional,
     # ventana 0-0.45 m de EG-2013 501.04), 'incremento_acero_por_despiece' y
     # 'clase_concreto_losa_entrega' (los metrados de la Fase 11).
-    assert len(por_clave) == len(ca.CRITERIOS) == 162
-    assert fuera == FILAS_FUERA_DE_SU_VENTANA
+    assert len(por_clave) == len(ca.CRITERIOS) == 162    assert fuera == FILAS_FUERA_DE_SU_VENTANA
     assert {k for k, cs in por_clave.items() if not cs} == SIN_NADA_QUE_BARRER
     # Y el barrido no es de juguete: cada valor de archivo esta, y mas.
     con_valor = sum(1 for c in ca.CRITERIOS.values() if c.valor is not None)
