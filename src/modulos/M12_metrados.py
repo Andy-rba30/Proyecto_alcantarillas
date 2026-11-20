@@ -568,10 +568,25 @@ def renglones_excavacion(*, punto, material, seccion, celdas: int,
     return tuple(renglones)
 
 
+# --- VE-6 (dictamen Fable) --- EL REPARTO SECO / BAJO AGUA ES UNA LECTURA, NO
+# LA PARTIDA DE OBRA. Lo lleva todo renglon bajo agua (501.B, 501.D); sin
+# margen ni correccion numerica: la cantidad es la de la lectura.
+AVISO_PARTIDA_BAJO_AGUA = (
+    "excavacion bajo agua: el reparto entre seco y bajo agua sale de "
+    "NF_profundidad_m, la lectura de campo del EMS, y no del freatico mas "
+    "alto previsto; la partida definitiva la fija el Supervisor en obra, "
+    "por las lineas «aprobadas por el Supervisor» (EG-2013 501.09) y donde "
+    "«la presencia permanente de agua dificulte los trabajos de excavacion» "
+    "(501.01, pag. impresa 886)")
+
+
 def _renglones_por_agua(*, punto, en_roca: bool, elemento: str, V: float,
                         V_agua: float, paso_, desglose=()
                         ) -> Tuple[RenglonDeMetrado, ...]:
-    """Parte un volumen de excavacion en sus dos partidas (501.01)."""
+    """
+    Parte un volumen de excavacion en sus dos partidas (501.01). El renglon
+    bajo agua lleva `AVISO_PARTIDA_BAJO_AGUA`.
+    """
     salida = []
     for bajo_agua, volumen in ((False, V - V_agua), (True, V_agua)):
         if not volumen > TOL_UMBRAL_NORMATIVO:
@@ -581,7 +596,8 @@ def _renglones_por_agua(*, punto, en_roca: bool, elemento: str, V: float,
             rubro=RUBRO_EXCAVACION,
             elemento=f"{elemento}, {_BAJO_AGUA if bajo_agua else _EN_SECO}",
             partida=codigo, descripcion=texto, unidad=UNIDAD_M3,
-            cantidad=volumen, paso=paso_, desglose=desglose))
+            cantidad=volumen, paso=paso_, desglose=desglose,
+            avisos=(AVISO_PARTIDA_BAJO_AGUA,) if bajo_agua else ()))
     return tuple(salida)
 
 

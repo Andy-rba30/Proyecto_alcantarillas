@@ -311,10 +311,10 @@ def consumo_diferido(alcance: str, modulo: str) -> bool:
     """
     Si esta corrida NO llega a la parte de `modulo` que lee datos de entrada
     y criterios: porque difiere el modulo entero, o porque difiere el modulo
-    detras del cual lee (`CONSUMO_DETRAS_DE`). Un alcance desconocido no
-    difiere nada.
+    detras del cual lee (`CONSUMO_DETRAS_DE`). Un alcance desconocido falla
+    como en `_difiere` (KeyError): no se supone que no difiere nada.
     """
-    diferidos = MODULOS_DIFERIDOS_POR_ALCANCE.get(alcance, ())
+    diferidos = MODULOS_DIFERIDOS_POR_ALCANCE[alcance]
     return modulo in diferidos or CONSUMO_DETRAS_DE.get(modulo) in diferidos
 
 
@@ -580,6 +580,11 @@ ETAPA_METRADO_ACERO = "metrado del acero de los cabezales (EG-2013 504)"
 ETAPA_METRADO_LOSA = "metrado de la losa de entrega (EG-2013 503)"
 ETAPA_METRADO_PROTECCION = ("metrado del enrocado de salida y el geotextil "
                             "(EG-2013 511)")
+# --- VE-6 (dictamen Fable) --- el punto dimensionado que llega sin cabezal.
+ETAPA_METRADOS_SIN_CABEZAL = "metrados del punto (sin cabezal de la Fase 9)"
+MENSAJE_METRADOS_SIN_CABEZAL = (
+    "metrados no medidos: sin cabezal no hay longitud entre caras "
+    "exteriores ni cimientos que medir")
 AVISO_ACERO_DEL_MARCO = (
     "el acero del marco no se metra: el armado de la seccion del marco esta "
     "fuera del alcance declarado (armado_seccion_marco, ficha T5-07)")
@@ -945,16 +950,37 @@ CLAVE_LICUEFACCION_EMS = ML.CLAVE_LICUEFACCION_EMS
 CLAVES_DE_LICUEFACCION: Tuple[str, ...] = (CLAVE_LICUEFACCION_EMS,)
 FASE_LICUEFACCION = "Fase 0-bis - Licuefaccion (ML)"
 ETAPA_LICUEFACCION = ML.ETAPA_LICUEFACCION
-# --- VE-6 --- LAS FASES QUE SE REGISTRAN AL LADO DEL DIMENSIONADO, sin
-# detenerlo. La Fase 0-bis es la primera de ellas y la unica hoy: el riesgo
-# de licuefaccion es del terreno de fundacion y del terraplen (AASHTO LRFD
-# 10.5.4.2, PDF 1323; E.050 38.3), no del conducto, y su falta es un
-# `Bloqueo` que impide cerrar el EXPEDIENTE sin anteponerse a las demas
-# faltas del punto: la corrida sigue y dice tambien las de las Fases 2 a 11
-# (ficha VE5-CAT-03, decision de VE-6). Quien busca POR QUE un punto no
-# llego a 7.A --la fila del cuadro de compatibilidad-- salta estas fases;
-# un bloqueo de ellas nunca es el motivo de un punto sin tamizado.
-FASES_AL_MARGEN_DEL_DIMENSIONADO: Tuple[str, ...] = (FASE_LICUEFACCION,)
+# --- VE-6 (dictamen Fable) --- LAS FASES CUYO BLOQUEO PUEDE DEJAR A UN
+# PUNTO SIN 7.A, por SELECCION POSITIVA. La fila del cuadro de
+# compatibilidad (`_fase_11_compatibilidad`) dice por que un punto no tiene
+# tamizado, y el motivo solo puede venir de las fases que lo producen: la
+# carga, la clasificacion, la hidrologia, el bucle de MD (que incluye la
+# durabilidad, que lo detiene) y 7.B. Hasta el dictamen la regla era la
+# contraria --«todo menos la Fase 0-bis»-- y un bloqueo lateral cualquiera
+# (los techos de transcripcion de la Fase 6, que se anotan antes que nada,
+# o la proteccion, que va antes de 7.B) pasaba por motivo. Una fase nueva
+# no entra en el motivo hasta que alguien la ponga aqui.
+FASES_QUE_LLEVAN_A_7A: Tuple[str, ...] = (
+    FASE_CARGA, FASE_CLASIFICACION, FASE_HIDROLOGIA, FASE_DISENO,
+    FASE_GEOMETRIA)
+# El complemento, para quien lee los bloqueos del bucle de MD (los tests de
+# VE-2 y VE-3): las fases que se registran AL LADO del dimensionado sin
+# detenerlo ni anteponerse a sus faltas. La Fase 0-bis es la que lo motivo:
+# el riesgo de licuefaccion es del terreno de fundacion y del terraplen
+# (AASHTO LRFD 10.5.4.2, PDF 1323; E.050 38.3) y su falta impide cerrar el
+# EXPEDIENTE, pero la corrida sigue y dice tambien las faltas de las Fases 2
+# a 11 (fichas VE5-CAT-03 y VE6-02).
+FASES_AL_MARGEN_DEL_DIMENSIONADO: Tuple[str, ...] = (
+    FASE_LICUEFACCION, FASE_PROTECCION, FASE_ESTRUCTURAL, FASE_CABEZAL,
+    FASE_ALIVIO, FASE_METRADOS)
+# --- VE-6 (dictamen Fable) --- Lo que el punto dice de su cabezal mientras
+# la Fase 0-bis siga abierta. Solo un aviso: no cambia ningun resultado.
+AVISO_CIMENTACION_PROVISIONAL = (
+    "la verificacion de la cimentacion del cabezal (Fase 9: capacidad "
+    "portante y deslizamiento) es PROVISIONAL mientras la Fase "
+    "0-bis siga abierta: AASHTO LRFD 10.5.4.2 exige evaluar la licuefaccion "
+    "y el EMS no ha declarado su resultado (o declara que licua sin "
+    "mitigacion); un suelo que licua invalida esa verificacion")
 # A nivel de perfil la Fase 0-bis declara el condicionante y remite la
 # solucion al expediente (v8, Fase 0-bis, punto 3).
 MENSAJE_LICUEFACCION_DIFERIDA = (
@@ -3352,6 +3378,12 @@ def _fase_licuefaccion(informe: InformePunto, externos: DatosExternos) -> None:
         lambda: ML.evaluar_licuefaccion(
             id_punto=punto.id, NF_profundidad_m=punto.NF_profundidad_m,
             declarada=externos.valor(punto.id, CLAVE_LICUEFACCION_EMS)))
+    # --- VE-6 (dictamen Fable) --- con la Fase 0-bis abierta (sin el
+    # resultado del EMS, o «licua» sin mitigacion) la cimentacion del
+    # cabezal de la Fase 9 se verifico sin saber si el suelo licua: aviso.
+    if informe.licuefaccion is None and \
+            AVISO_CIMENTACION_PROVISIONAL not in informe.avisos_de_expediente:
+        informe.avisos_de_expediente.append(AVISO_CIMENTACION_PROVISIONAL)
     # --- VE-5 (catlic, censo Sec. 5) --- la clase de sitio MEDIDA, si el EMS
     # la declara, contra las filas de 'F_pga' (`ML.contrastar_clase_sitio`).
     avisos_sitio = _etapa(informe.bloqueos, FASE_LICUEFACCION,
@@ -4822,13 +4854,36 @@ def _fase_11_compatibilidad(informe: InformePunto) -> None:
     delta = next((b.delta_rasante_m for b in informe.bloqueos
                   if b.tipo is _TipoDeBloqueo.DISENO_NO_FACTIBLE
                   and b.delta_rasante_m is not None), None)
+    # --- VE-6 (dictamen Fable) --- el primer bloqueo NO diferido de una
+    # fase que lleva a 7.A; si no hay ninguno, el texto por defecto de M12.
     motivo = next((f"detenido en {b.fase}, {b.etapa}"
                    for b in informe.bloqueos
                    if not b.diferido_por_alcance
-                   and b.fase not in FASES_AL_MARGEN_DEL_DIMENSIONADO), "")
+                   and b.fase in FASES_QUE_LLEVAN_A_7A), "")
     informe.compatibilidad_rasante = M12.fila_compatibilidad(
         punto=informe.punto, delta_no_factible=delta, seccion=seccion,
         motivo=motivo)
+
+
+def _sin_cabezal_no_hay_metrado(informe: InformePunto) -> None:
+    """
+    --- VE-6 (dictamen Fable) --- Lanza la falta del cabezal para el metrado,
+    con la remision al bloqueo que la explica: el primero no diferido de la
+    Fase 9 o, si no lo hay, el primero de una fase que lleva a 7.A.
+    """
+    previo = next((b for b in informe.bloqueos
+                   if b.fase == FASE_CABEZAL and not b.diferido_por_alcance),
+                  None)
+    if previo is None:
+        previo = next((b for b in informe.bloqueos
+                       if b.fase in FASES_QUE_LLEVAN_A_7A
+                       and not b.diferido_por_alcance), None)
+    remision = (f"vease el bloqueo de {previo.fase}, {previo.etapa}"
+                if previo is not None else
+                f"{FASE_CABEZAL} no propuso cabezal para el punto")
+    raise DatoFaltanteError(
+        "cabezal", id_punto=informe.punto.id,
+        detalle=f"{MENSAJE_METRADOS_SIN_CABEZAL}: {remision}")
 
 
 def _fase_11_metrados(informe: InformePunto) -> None:
@@ -4840,10 +4895,17 @@ def _fase_11_metrados(informe: InformePunto) -> None:
     se puede medir (un criterio [A] sin declarar, el nivel freatico que
     falta) queda como `Bloqueo` de FASE_METRADOS y los demas rubros siguen.
     Sin cabezal no hay metrado: la longitud del barril entre caras
-    exteriores es la de la Fase 9.
+    exteriores es la de la Fase 9. Y desde el dictamen Fable de VE-6 eso no
+    se calla: un punto dimensionado sin cabezal lleva su propio `Bloqueo` de
+    FASE_METRADOS («metrados no medidos: sin cabezal»), que remite al de la
+    Fase 9 o, si la 9 no llego a correr, al que dejo al punto sin 7.B.
     """
     c, r, g = informe.cabezal, informe.resultado, informe.geometria
-    if c is None or r is None or g is None or not r.aceptado:
+    if r is None or not r.aceptado:
+        return
+    if c is None or g is None:
+        _etapa(informe.bloqueos, FASE_METRADOS, ETAPA_METRADOS_SIN_CABEZAL,
+               lambda: _sin_cabezal_no_hay_metrado(informe))
         return
     material, seccion = r.material, r.seccion
     celdas = r.resultado_hidraulico.numero_celdas
