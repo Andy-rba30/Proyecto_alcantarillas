@@ -3,7 +3,7 @@
     "csv": "tests/ejemplo_puntos.csv",
     "generado_utc": "<UTC>",
     "csv_sha1": "7ae59002159b228f3681ec0d34a4e8ae65052015",
-    "criterios_sha1": "db9cc6a6be7ae8b2f1b83fa8c6be769d3a2d77fe",
+    "criterios_sha1": "0c6986d83b6576dddf8a62e840fcc9f36757b627",
     "corredor_del_proyecto": {
       "valor": "terraplen de ~5 km de la Fase 0-bis de la hoja de ruta, num. 150",
       "origen": "src/datos_sitio.py"
@@ -48,6 +48,12 @@
         "texto": "El cabezal se dimensiona solo como zapata CORRIDA sobre la grilla de 'dimensionamiento_zapata_cabezal': el ancho por la estabilidad (VE-3.5, con la punta si el talon llega al tope), el peralte por el armado de la zapata (VE-3.9) y la pantalla por su armado (VE-3.14). Si ninguna zapata corrida cumple dentro del tope, el cabezal se declara NO FACTIBLE con estos criterios y no se proponen dentellon, llave de corte, mejoramiento del suelo ni pilotes; una dimension declarada (`cabezal_declarado`) no se itera y la estabilidad la juzga como llega; los parametros son los de prueba hasta el EMS",
         "ficha": "T7B-09",
         "simbolo": "M9_cabezal.dimensionar_zapata_por_estabilidad"
+      },
+      {
+        "clave": "aleros_como_muro",
+        "texto": "Los aleros se verifican como muro (E1 a E3, y el cuerpo ciclopeo en el de gravedad) en cinco franjas de su longitud (0, L/4, L/2, 3L/4 y L), no entre ellas; su zapata es una zapata CORRIDA de un solo ancho y un solo peralte por cabezal, y el cuerpo del alero de gravedad no se itera",
+        "ficha": "VE7-01",
+        "simbolo": "M9_cabezal.estabilidad_del_alero"
       },
       {
         "clave": "tirante_de_borde_hec14",
@@ -131,6 +137,7 @@
           "1b.8"
         ]
       },
+      "licuefaccion": null,
       "durabilidad": {
         "aplicada": false,
         "resumen": "durabilidad: sin ensayos, matriz no aplicada",
@@ -339,6 +346,7 @@
           "1b.8"
         ]
       },
+      "licuefaccion": null,
       "durabilidad": {
         "aplicada": false,
         "resumen": "durabilidad: sin ensayos, matriz no aplicada",
@@ -534,6 +542,7 @@
           "1b.8"
         ]
       },
+      "licuefaccion": null,
       "durabilidad": {
         "aplicada": false,
         "resumen": "durabilidad: sin ensayos, matriz no aplicada",
@@ -767,6 +776,7 @@
         ]
       },
       "caudal": null,
+      "licuefaccion": null,
       "durabilidad": {
         "aplicada": false,
         "resumen": "durabilidad: sin ensayos, matriz no aplicada",
@@ -1108,6 +1118,7 @@
       "distancia_borde_calzada_al_trasdos_m",
       "existe_informacion_secundaria_tramo",
       "orientacion_muro_respecto_al_trafico",
+      "precipitacion_anual_corredor_mm",
       "zona_sismica_aashto"
     ]
   },
@@ -1646,7 +1657,6 @@
       "TW_receptor",
       "c_phi_fundacion",
       "capacidad_portante_adm",
-      "carga_viva_tubo_concreto_somero",
       "categoria_refuerzo_aashto",
       "caudal_unitario_admisible_desborde_m2s",
       "clase_concreto_losa_entrega",

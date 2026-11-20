@@ -287,6 +287,7 @@ declara:
 | `clase_de_via` | str | perfil | sí | — |
 | `region_natural` | categoria | perfil | sí | `costa`, `sierra`, `selva_alta`, `selva_baja` |
 | `zona_sismica_aashto` | int | expediente | sí | — |
+| `precipitacion_anual_corredor_mm` | float | perfil | sí | — |
 | `existe_informacion_secundaria_tramo` | categoria | perfil | sí | `si`, `no` |
 <!-- fin: sitio -->
 

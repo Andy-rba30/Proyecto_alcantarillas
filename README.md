@@ -256,6 +256,10 @@ la imprimen la memoria, la CLI y el JSON, `modelos.ALCANCE_DECLARADO`):
   normal al eje del conducto (ficha T7A-03).
 - **El ancho de la zapata del cabezal no se itera**: la geometría la propone una regla o
   la declara el proyectista, y la estabilidad la juzga como llega (ficha T7B-09).
+- **Los aleros se verifican como muro en cinco franjas** de su longitud (0, L/4, L/2, 3L/4
+  y L), no entre ellas: E1 a E3 (y el cuerpo ciclópeo en el de gravedad); su zapata es
+  corrida, de un solo ancho y un solo peralte por cabezal, y el cuerpo del alero de gravedad
+  no se itera (ficha VE7-01).
 - **V7 del marco no pesa el concreto del marco** (del lado seguro), hasta tener la sección
   real del canal (ficha T3-08).
 - **Donde las Figuras 3.3 y 3.4 de HEC-14 no dan el tirante de borde** (una forma que no

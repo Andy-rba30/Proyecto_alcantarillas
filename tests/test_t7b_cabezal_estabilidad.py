@@ -3235,8 +3235,16 @@ def test_H3_el_barrido_del_auditor_sobre_A01(tmp_path, Q_ext, regimen,
     hw = next(m for m in v8.paso.sustitucion if m.simbolo == "HW_ext")
     assert regimen in hw.procedencia
     assert "control que gobierna: entrada" in hw.procedencia
+    # CAMBIADO DECLARANDOLO (VE-5 met, ficha VE5-MET-01; VE-7 fix-suite):
+    # la Fase 11 MIDE y los rubros que no tiene con que medir (el relleno,
+    # el revestimiento de la entrada) salen como «metodo no evaluable
+    # (metrados, Fase 11)». Lo que este test excluye es un metodo no
+    # evaluable del DISEÑO (V8 que no se pudiera evaluar), no esos rubros.
     assert not [b for b in a01.bloqueos
-                if b.tipo is TipoDeBloqueo.METODO_NO_EVALUABLE]
+                if b.tipo is TipoDeBloqueo.METODO_NO_EVALUABLE
+                and not b.fase.startswith("Fase 11")]
+    assert all("(metrados, Fase 11)" in b.mensaje for b in a01.bloqueos
+               if b.tipo is TipoDeBloqueo.METODO_NO_EVALUABLE)
     if adoptada != "Ø 0.90 m":
         primera = a01.traza[0]
         v8_090 = next(v for v in primera.verificaciones if v.codigo == "V8")
