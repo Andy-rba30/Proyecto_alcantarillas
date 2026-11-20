@@ -3,6 +3,39 @@
 Material de proceso, no del entregable. Lo mantiene la sesión orquestadora y se actualiza
 cada vez que se integra algo. Fecha de esta versión: 2026-11-20.
 
+> **ESTADO (2026-11-20, tarde, sesión `claude/laughing-euler-ybme10`): VE-5 y VE-6 integrados.**
+> `main` había sido vaciado (commit `03ab811`, «Repositorio vaciado a pedido del propietario»)
+> y `claude/keen-cray-rhxzmg` traía la fusión de los lotes de VE-5 con marcadores de conflicto
+> y ~300 líneas perdidas (servicio, M6, tolerancias). Esta sesión:
+>
+> - **Rehízo la integración de VE-5** desde `6fd1c54` (m8, m9, mh, catlic, gui, fixve4, uno a
+>   uno) y la enlazó con `03ab811` por una fusión `-s ours`, para que `main` avance por
+>   fast-forward sin reescribir historia. Revisó las 36 ramas: todo commit con nombre está en
+>   la integración; los respaldos WIP están superados; `tesis/orquestacion-estado` quedó
+>   archivada en `proceso/planes_mejora/orquestacion_T/` (scripts como `.py.txt`).
+> - **VE-6** (agentes en paralelo, cada uno en su rama, con respaldo continuo):
+>   `claude/ve6-m9-cabezal` (+`-2`): ítems 9 (alero por secciones), 10 (ciclópeo C7/C8), 28
+>   (orientación y distancia al borde por punto) y 29 (cuantía [N→]); `claude/ve6-integrador`:
+>   ítems 22 (refinamiento con la longitud entre cabezales), 34 (G1 en el bucle, V10, delta con
+>   V4) y T7A-03 (cabezal paralelo, Carta 11); `claude/ve6-prevuelo` (+`-2`): NF de M12 a
+>   expediente detrás de M9 y la Fase 0-bis al margen del dimensionado. **Todas las decisiones
+>   las revisó Fable** (dictamen del consultor por delegación del dueño): aprobadas con
+>   cambios, y los cambios están aplicados (fichas VE6-*, VE6M9-*, Partes LXII y LXIII).
+>   Fable también decidió que `incremento_acero_por_despiece` y `clase_concreto_losa_entrega`
+>   quedan [A] sin valor (VE5-MET-01).
+> - **Hoja de ruta:** se añadió el «Addendum VE-6» a la nota T11-03 de §7.B (decisión del
+>   consultor por delegación del dueño); el texto anterior no se tocó.
+> - **Entorno:** el «Default» no deja PyPI: se usa el entorno personal `proyecto_alcantarillas`;
+>   Tk para Python 3.12 por apt (`python3-tk`, `python3-pil.imagetk`) y la suite con
+>   `xvfb-run -a /usr/bin/python3.12 -m pytest -n 4`. Los worktrees de agentes viven en
+>   `.claude/worktrees/` (excluidos en `.git/info/exclude`) y ensucian dos guardias que barren el
+>   árbol: medir la suite en un clon o worktree limpio.
+> - **Queda:** sellar índice y manifiesto con el par de la suite, fila en la bitácora y
+>   fast-forward de `main` (el dueño confirmó que el código final va en `main`).
+> - **Abierto, no se cierra con código:** el EMS, el estudio hidrológico, la topografía, el
+>   fabricante y los documentos de normas que lista el censo (§9); la zapata y la estabilidad
+>   del alero (T7C-04); la cita propia de E.060 22.10.2.2 (falta el PDF: `NORMAS_DIR`).
+
 > **ESTADO (2026-11-20, ~08:30 UTC, sesión `claude/keen-cray-rhxzmg`).** La sesión
 > `claude/cool-euler-tpoj7o` se cortó (~06:36 UTC; las sesiones hijas de VE-5 no dejaron ramas
 > salvo `claude/ve5-gui`). Esta sesión retoma en `claude/keen-cray-rhxzmg`:
