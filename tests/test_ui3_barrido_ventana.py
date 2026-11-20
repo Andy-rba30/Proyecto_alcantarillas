@@ -291,10 +291,13 @@ SIN_VENTANA_EN_LA_VENTANA = frozenset({
     # 3.11 digitalizada (una lectura de figura, sin ventana).
     "caudal_unitario_admisible_desborde_m2s",
     "coeficientes_desborde_plataforma",
-    # --- VE-5 --- (mh, ficha T1-05) los factores K, m, n de la IDF regional,
-    # [S] de un estudio; (met) el incremento de acero del despiece, que lo da
-    # el plano. Ninguno de los dos tiene ventana.
-    "factores_idf_regional", "incremento_acero_por_despiece"})
+    # --- VE-5 (met y mh), censados en VE-6: la integracion de VE-5 los dejo
+    # fuera del censo -- el incremento de acero por despiece de los metrados
+    # y los factores de la IDF regional [S], sin ventana --.
+    "incremento_acero_por_despiece", "factores_idf_regional",
+    # --- VE-6 (ficha T7C-10) --- las cuantias minimas de muro del 14.3.1,
+    # [N→] sin ventana: el valor es el de la norma aplicada por analogia.
+    "cuantia_minima_muro_e060"})
 # Y de ellos, los que la puerta de la CLI (`barrido.verificar_valores`, la de
 # `cli.py --barrido`) SI deja barrer con el valor de su archivo: la divergencia
 # ventana/CLI, MEDIDA, que UI3-01 deja al dueño. La CLI no se cambia.
@@ -309,7 +312,9 @@ SIN_VENTANA_QUE_LA_CLI_BARRE = frozenset({
     "suelo_agresivo_acero_lrfd",
     # --- VE-4d --- la CLI barre la Figura 3.11 con su propio valor de archivo
     # (un dict con campos: la puerta solo comprueba la forma).
-    "coeficientes_desborde_plataforma"})
+    "coeficientes_desborde_plataforma",
+    # --- VE-6 (ficha T7C-10) --- y las cuantias del 14.3.1, por lo mismo.
+    "cuantia_minima_muro_e060"})
 
 
 def test_a_la_regla_vive_en_src_y_la_ventana_solo_la_pinta(app, monkeypatch):

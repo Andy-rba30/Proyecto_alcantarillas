@@ -6015,6 +6015,8 @@ marca del régimen para T-7c.
   (ficha T7C-12); (2) la presión uniforme **no se usa para armar**: el armado calcula la
   lineal de 10.6.5 (ficha T7C-07); (3) los aleros se arman en su arranque (ficha T7C-04).
   `solicitaciones_por_elemento` ganó el parámetro `marco`.
+- **Cerrado en VE-6 (3):** el alero ya no lleva la solicitación de la pantalla: cada
+  sección tiene la de su franja (ficha VE6M9-03).
 - **Dónde vive:** `src/modulos/M9_cabezal.py::solicitaciones_por_elemento`
 
 ## T7B-09 · Con la regla de predimensionamiento de T-7a el cabezal de A-01 no pasa el deslizamiento del marco que rige: medido, no corregido
@@ -6093,6 +6095,8 @@ marca del régimen para T-7c.
   como dato de corredor.
 - **Qué haría falta:** una regla declarada para el muro oblicuo (un [A] con ventana), o
   los dos datos por punto en `--datos-externos`.
+- **Cerrado en VE-6:** los dos datos por punto (ficha VE6M9-04); la regla del muro oblicuo
+  no se escribe (la fuente no la da).
 - **Dónde vive:** `src/modulos/M9_cabezal.py::h_eq_sobrecarga_trasdos`
 
 ## T7B-12 · Declarados, V5 y V8 se evalúan también a nivel de perfil; y el pre-vuelo de expediente anuncia el freático
@@ -6295,6 +6299,8 @@ fichas en su sitio y añadió T7C-11 a T7C-13.
   acero del arranque es el lado seguro; lo que falta es la zapata.
 - **Qué haría falta:** el ensamble de estabilidad del alero por secciones (altura
   variable con el talud) y sus solicitaciones de zapata.
+- **Cerrado en VE-6, a medias:** el fuste del alero se arma por secciones (arranque y
+  mitad, ficha VE6M9-03); la zapata del alero sigue sin armar ni verificar.
 - **Y lo que el armado tampoco cubre (cierre, H6):** el **vano del conducto** —la
   pantalla de 1.70 m de A-01 es hueco en el ancho del barril, y la sección llena de la
   hipótesis de T-7b son los machones a cada lado—: el refuerzo de borde alrededor de la
@@ -6441,6 +6447,8 @@ fichas en su sitio y añadió T7C-11 a T7C-13.
   está probada.
 - **Qué haría falta:** una especificación del Propietario para muros de gravedad en
   ciclópeo, y la verificación de la zapata por 22.7.
+- **Cerrado en VE-6 (2) y (3):** el cuerpo bajo sismo (C8) y la zapata como voladizo (C7);
+  ficha VE6M9-01.
 - **Dónde vive:** `src/modulos/M9_cabezal.py::verificar_cabezal_ciclopeo`
 
 ## T7C-10 · El rótulo por ámbito de E.060: lo que T-7c usa es [N→]; el 0.30 m de 22.7.4 pasa a criterio [N→] en el cierre, y las cuantías de 14.3.1 siguen como constante
@@ -6466,7 +6474,8 @@ fichas en su sitio y añadió T7C-11 a T7C-13.
   sesión de registro aparte, no una línea de este cierre.
 - **Qué haría falta:** una sesión que pase `CUANTIA_MIN_MURO` a un criterio [N→] y
   resincronice el manifiesto y los consumidores.
-- **Dónde vive:** `src/constantes_normativas.py::CUANTIA_MIN_MURO`
+- **Cerrado en VE-6:** es el criterio [N→] `cuantia_minima_muro_e060`; ficha VE6M9-02.
+- **Dónde vive:** `src/criterios_adoptados.py::cuantia_minima_muro_e060`
 
 ## T7C-11 · El modificador de carga η no entra en el cabezal: la fuente lo sostiene, pero el cambio no es acotado
 
@@ -8321,7 +8330,9 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   acero longitudinal que pide el cortante general y sólo después el espesor. Sin eso la pantalla
   de E2 llegaba a 1.20 m; con eso queda en 0.70 m.
 - **Abierto:** el alero se dimensiona con la pantalla, no por separado (sus aleros largos con
-  esviaje alto —13 m con 45°— quedan sin diseño, H-13).
+  esviaje alto —13 m con 45°— quedan sin diseño, H-13). **Cerrado en VE-6** (ficha
+  VE6M9-03): el alero se arma por sus secciones y su espesor crece por su armado; su
+  estabilidad sigue abierta (T7C-04).
 - **Qué haría falta:** dimensionar el alero por separado y decidir su tratamiento con esviaje alto (H-13).
 - **Dónde vive:** `src/modulos/M9_cabezal.py::dimensionar_peralte_por_armado`
 
@@ -8720,6 +8731,82 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
 - **Qué haría falta:** la geometría del talud por PUNTO (hoy es de corredor, como
   `terreno_delante_del_cabezal`); y corregir la §9.3 de la hoja de ruta.
 - **Dónde vive:** `src/modulos/M9_cabezal.py::coeficiente_rcbc`
+## VE6M9-01 · El cabezal ciclópeo se verifica bajo sismo (C8) y su zapata como voladizo de concreto simple (C7) (VE-6, ítem 10; T7C-09 (2)(3))
+
+- **Cerrado:** `M9.verificar_cabezal_ciclopeo` suma dos filas. **C7** (punta y talón que
+  vuelan más que la mitad del peralte, E.060 22.10.2.2): max[(M_u/S)/(φ·0,42√f'c),
+  V_u/(φ·0,11√f'c·b·h)] ≤ 1, φ = 0,5, f'c ≤ 10 MPa, h − 50 mm (22.4.8), con las
+  solicitaciones del armado (presión lineal, subpresión) y las dos combinaciones de E.060
+  9.2.5 por cada empuje del régimen; decide. **C8** (arranque y media altura): e ≤ t/6 con el
+  Evento Extremo I sin factorar. Dorados a mano: `tests/test_ve5_m9_ciclopeo.py`.
+- **Decisiones de la sesión** (Fable no se pudo consultar: la sesión no tenía la
+  herramienta; se tomó el lado que sostiene la fuente): (1) los dos casos de 11.6.5.1
+  («el resultado más conservador de estos dos análisis se usará para el diseño del
+  muro»), los de E2, y no el 100 % del incremento y de la inercia que suponía el test
+  escrito en VE-5; (2) la inercia del cuerpo en el centroide del trapecio; (3) el diagrama
+  estático es el del plano virtual de C2/C3 (no la cuña sobre la cara); (4) con
+  `no_cedente_k0`, k_h = 1.0·k_h0 y la resultante total no bajo h/2 (C11.6.5.4), como la
+  pantalla armada; (5) la junta del arranque decide siempre (22.4.7), media altura con
+  `tracciones_nulas`; (6) el cortante de C7 en la cara del cuerpo (lado seguro); (7) sin
+  presión de contacto en ninguna combinación de E.060, `MetodoNoEvaluableError` (Bloqueo).
+- **Abierto:** (a) sin inercia vertical del cuerpo (el ensamble no la aplica a pesos); (b)
+  con `traccion_admisible_e060` el sismo a media altura sólo informa: E.060 9.2 no combina
+  sismo con empuje; (c) el texto de 22.10.2.2 vive en la nota de `E060.22.10.2#CICLOPEO`:
+  no se firmó cita propia sin `NORMAS_DIR`.
+- **Qué haría falta:** el PDF de E.060 para firmar la cita de 22.10.2.2.
+- **Dónde vive:** `src/modulos/M9_cabezal.py::_verificar_cuerpo_bajo_sismo`
+
+## VE6M9-02 · Las cuantías mínimas de muro de E.060 14.3.1 pasan a criterio [N→] (VE-6, ítem 29; T7C-10)
+
+- **Cerrado:** la constante [N] `CUANTIA_MIN_MURO` se retiró de `constantes_normativas` y
+  su valor (0,0020 horizontal, 0,0015 vertical) es el criterio [N→]
+  `cuantia_minima_muro_e060` (expediente, sin ventana), por el argumento que movió el 0,30 m
+  de 22.7.4 en el cierre de T-7c. `M9.cuantia_minima` lo lee y valida;
+  `M9.DIRECCIONES_CUANTIA_MURO` sustituye a las claves de la constante en `servicio`; la fila
+  R1/R2 sin cortante alto se atribuye al criterio (`criterio_aplicado`, antes None). El
+  manifiesto, `variables_entrada` y los censos (169 criterios) se resincronizaron.
+- **Por qué:** E.060 es norma de edificaciones; la excepción de la §0.2 de la hoja de ruta
+  cubre la durabilidad, no los mínimos estructurales.
+- **Qué haría falta:** nada; una norma vial con mínimos propios lo sustituiría.
+- **Dónde vive:** `src/criterios_adoptados.py::cuantia_minima_muro_e060`
+## VE6M9-03 · El alero se arma por sus propias secciones y su espesor se dimensiona por su armado (VE-6, ítem 9; VE3-14 H-13, T7B-08 (3), T7C-04)
+
+- **Cerrado:** cada franja vertical del alero es el fuste de un muro en voladizo que baja
+  con el talud (`M9.entorno_de_la_seccion_del_alero`: Δ = (h0 − H_f)·f, su espesor, su
+  zapata toda como talón, el relleno Δ más abajo y subiendo hasta la plataforma). Se arma
+  en dos secciones, cada una con `solicitaciones_de_resistencia` de su franja (AASHTO 5:
+  cada sección con sus cargas): el arranque (tramo 0–L/2) y la mitad (tramo L/2–L, clave
+  `alero_mitad`); sin caída, sólo el arranque. El espesor del alero ya no copia el de la
+  pantalla: parte del de la regla y crece con el paso de `dimensionamiento_zapata_cabezal`
+  hasta que sus dos secciones cumplen (`M9._dimensionar_aleros`, paso 9.3.al, origen
+  «dimensionada por armado»); la pantalla crece sólo por las suyas. Los metrados reparten
+  cada fila en su tramo (L/2). Dorados: `tests/test_ve6_m9_alero.py`.
+- **Decisiones de la sesión** (Fable no se pudo consultar; lado seguro): (1) la franja
+  apoya en la zapata entera como talón y el plano virtual queda en su extremo (con la cuña
+  sobre la cara, la de archivo, no cambia); (2) detrás de la franja el relleno sube con el
+  talud entero (normal al alero sube menos); (3) la sobrecarga es la del cabezal; (4) dos
+  tramos, porque la altura baja monótona y cada tramo se arma con su sección más alta.
+- **Abierto:** la zapata del alero y su estabilidad (T7C-04): siguen sin ensamble; con
+  esviaje alto el alero largo (H-13, 13 m) queda armado, no verificado como muro.
+- **Qué haría falta:** el ensamble de estabilidad del alero por franjas (E1–E3 de 11.6) y
+  el armado de su zapata.
+- **Dónde vive:** `src/modulos/M9_cabezal.py::entorno_de_la_seccion_del_alero`
+
+## VE6M9-04 · La orientación del muro y la distancia al borde de calzada, por punto (VE-6, ítem 28; T7B-11)
+
+- **Cerrado:** dos claves de `--datos-externos`, por punto o en `globales`, con un valor o
+  `{"entrada": …, "salida": …}`: `orientacion_muro_del_punto` y
+  `distancia_borde_calzada_del_punto_m` (`servicio.CLAVES_DE_CABEZAL`, validadas por
+  `M9.validar_sobrecarga_del_punto`). `servicio.fundir_sobrecarga_del_punto` las pasa
+  extremo por extremo a lo declarado del cabezal; `predimensionar_cabezal` las lleva a
+  `GeometriaCabezal.orientacion_trafico` / `.distancia_borde_calzada_m`, y el ensamble
+  (`h_eq_sobrecarga_trasdos`) las usa y lo dice en el paso 9.2.2. Lo que el punto no
+  declara sale del [S] de corredor; las secciones del alero lo heredan.
+- **Por qué no una regla:** AASHTO 3.11.6.4 no tiene tabla para el muro oblicuo; deducir
+  la orientación del esviaje sería inventar un umbral (T7B-11).
+- **Qué haría falta:** nada; un muro oblicuo con tabla propia necesitaría una fuente.
+- **Dónde vive:** `src/modulos/M9_cabezal.py::validar_sobrecarga_del_punto`
+
 ## VE5-CAT-01 · La rama de selva alta del TMC: [S] `region_natural` y la recomendación como piso del catálogo (cierre de T4-06)
 
 - **Cerrado (VE-5, lote catlic, 2026-11-20):** la entrada que faltaba es el [S] de corredor

@@ -2451,7 +2451,7 @@ def _bloque_armado(a: Any) -> str:
     (la solicitacion que rige, los tres aceros, el adoptado, la barra, la
     resistencia, la fisuracion de 5.6.7 y el contraste de E.060, que
     informa) y la tabla de armado por elemento y posicion (T-7c punto 4).
-    Las verificaciones A1 a A8 / C1 a C6 estan en la tabla del punto y su
+    Las verificaciones A1 a A8 / C1 a C8 estan en la tabla del punto y su
     desarrollo en sus pasos.
     """
     partes = [f"<p><b>{_esc(TITULO_ARMADO.format(extremo=a.extremo, tipo=a.tipo))}"
@@ -2538,7 +2538,7 @@ def _traza_cabezal_sin_repetir(informe: Any) -> str:
     """
     --- T-10 --- El desarrollo de la Fase 9 SIN los pasos que ya salieron en
     «Desarrollo de cada verificacion»: los de las verificaciones del armado
-    (A1 a A8, C1 a C6) cuelgan a la vez de su `Verificacion` y de
+    (A1 a A8, C1 a C8) cuelgan a la vez de su `Verificacion` y de
     `ArmadoDelCabezal.pasos`, y hasta T-10 la memoria los imprimia DOS veces
     (medido en A-01 a expediente: 50 pasos, 161 KB). Se excluyen por
     IDENTIDAD del objeto --- el mismo `PasoDeMemoria`, no uno parecido ---,

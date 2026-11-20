@@ -1919,7 +1919,7 @@ def _lineas_cabezal_del_punto(informe: InformePunto) -> List[str]:
                    "Bloqueos)")
     # --- T-7c --- El armado de cada cabezal: la tabla por elemento (acero
     # requerido, minimo, adoptado y la barra propuesta) o, si es de gravedad,
-    # que se verifico como ciclopeo. Las filas A1 a A5 y C1 a C6 salen, con
+    # que se verifico como ciclopeo. Las filas A1 a A5 y C1 a C8 salen, con
     # su marca, en «Verificaciones»; lo que no se pudo armar, en «Bloqueos».
     for a in c.armado:
         if not a.secciones:
@@ -1927,7 +1927,7 @@ def _lineas_cabezal_del_punto(informe: InformePunto) -> List[str]:
                 f"{SANGRIA}Fase 9  cabezal de {a.extremo}: de gravedad en "
                 f"concreto ciclopeo, no se arma (f'c de la matriz "
                 f"{_fmt(a.fc_mpa, 1)} MPa; empuje: {a.regimen}); ver las "
-                "filas C1 a C6")
+                "filas C1 a C8")
             continue
         out.append(
             f"{SANGRIA}Fase 9  armado del cabezal de {a.extremo} (AASHTO "
@@ -2078,7 +2078,7 @@ def _cabezal_del_punto_json(informe: InformePunto) -> Optional[Dict[str, Any]]:
     # --- T-7c --- el armado de cada cabezal: regimen y materiales, las
     # secciones criticas con sus dos solicitaciones (la que rige y la del
     # muro que cede) y la TABLA de armado por elemento; en el de gravedad,
-    # solo los codigos de sus verificaciones (C1 a C6).
+    # solo los codigos de sus verificaciones (C1 a C8).
     salida["armado"] = [{
         "extremo": a.extremo, "tipo": a.tipo, "regimen": a.regimen,
         "fc_mpa": _num(a.fc_mpa), "fy_mpa": _num(a.fy_mpa),

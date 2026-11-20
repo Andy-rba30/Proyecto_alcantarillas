@@ -3738,9 +3738,16 @@ AMBIENTE_CORROSIVO_TEXTO = (
 # ruta lo recoge desde EXT-0 (v8 §9.4) y el registro tiene las cuatro citas
 # desde EXT-6 (NUMERAL_CORTANTE_MUROS_E060, abajo), pero cablearlo con su
 # caso patron es la sesion EXT-7 (EXT-M-05, R95-031). Mientras siga asi, el
-# 0.0020 de abajo es el minimo MENOR de los dos que tiene E.060, y M9 obliga
-# a contestar expresamente cual aplica ('cortante_alto_muro_e060_art_11_10_10_2').
-CUANTIA_MIN_MURO = {"horizontal": 0.0020, "vertical": 0.0015}   # Art. 14.3.1, pag. 133
+# 0.0020 del criterio [N→] 'cuantia_minima_muro_e060' es el minimo MENOR de
+# los dos que tiene E.060, y M9 obliga a contestar expresamente cual aplica
+# ('cortante_alto_muro_e060_art_11_10_10_2').
+# --- VE-6 (lote M9, item 29 del censo; ficha T7C-10) --- Las cuantias
+# minimas del 14.3.1 (0.0020 horizontal, 0.0015 vertical, pag. 133) YA NO
+# VIVEN AQUI: pasaron al criterio [N→] 'cuantia_minima_muro_e060' de
+# criterios_adoptados.py, por el mismo argumento que movio el 0.30 m de
+# 22.7.4 en el cierre de T-7c: E.060 es norma de edificaciones y la
+# excepcion de la §0.2 de la hoja de ruta cubre la durabilidad, no sus
+# minimos estructurales. El valor no cambio; lo lee `M9.cuantia_minima`.
 # Las cuatro citas de E.060 11.10 que EXT-7 consume, como texto de numeral y
 # no como valor: la pregunta de aplicabilidad (11.10.1 remite el cortante
 # perpendicular al plano a las losas de 11.12; 11.10.2 rige el cortante EN el

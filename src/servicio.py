@@ -75,8 +75,7 @@ from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
 from src import criterios_adoptados as ca
 from src import datos_sitio as ds
 from src import declaracion as _declaracion
-from src.constantes_normativas import (CUANTIA_MIN_MURO,
-                                       H_O_HW_SOBRE_D_MIN,
+from src.constantes_normativas import (H_O_HW_SOBRE_D_MIN,
                                        NIVELES_DE_ABRASION, RECUBRIMIENTO)
 # --- T-8 --- las filas y columnas de la Tabla Nº 11 y el techo de un
 # porcentaje: con ellos se valida en la PUERTA lo que el punto declara.
@@ -162,11 +161,15 @@ from src.modulos.M9_cabezal import (aviso_ambiente_corrosivo,
                                     recubrimiento_de_diseno)
 # --- T-7a --- el cabezal POR PUNTO: la embocadura (perfil) y la geometria
 # de la Fase 9 (expediente), con la puerta de su dato externo.
+from src.modulos.M9_cabezal import (  # --- VE-6 ---
+    CAMPO_DISTANCIA_BORDE_DEL_PUNTO, CAMPO_ORIENTACION_DEL_PUNTO,
+    EXTREMOS as CAMPOS_EXTREMOS, validar_sobrecarga_del_punto)
 from src.modulos.M9_cabezal import (cabezal_del_punto,
                                     embocadura_del_punto,
                                     validar_cabezal_declarado,
                                     verificar_coherencia_embocadura_cajon)
 # --- T-7b --- el ensamble de estabilidad del cabezal y la puerta del suelo.
+from src.modulos.M9_cabezal import DIRECCIONES_CUANTIA_MURO  # --- VE-6 ---
 from src.modulos.M9_cabezal import (ELEMENTOS_ARMADOS,  # --- T-7c ---
                                     TIPO_GRAVEDAD, armar_elemento,
                                     ensamblar_armado, integrar_armado,
@@ -901,6 +904,38 @@ CLAVES_DE_CABEZAL += (CLAVE_SUELO_FUNDACION,)
 CLAVE_ESTABILIDAD_GLOBAL_DECLARADA = "estabilidad_global_declarada"
 CLAVES_DE_CABEZAL += (CLAVE_ESTABILIDAD_GLOBAL_DECLARADA,)
 CLAVES_SOLO_POR_PUNTO: Tuple[str, ...] = (CLAVE_ESTABILIDAD_GLOBAL_DECLARADA,)
+# --- VE-6 (lote M9, item 28; fichas T7B-11 y VE6M9-04) --- LA ORIENTACION DEL
+# MURO FRENTE AL TRAFICO Y LA DISTANCIA DEL BORDE DE CALZADA AL TRASDOS, POR
+# PUNTO (o en `globales`) y por extremo si hace falta: ganan sobre los dos [S]
+# de corredor de `datos_sitio`. Van con `cabezal_declarado`, FUERA de
+# `CLAVES_EXTERNAS`: sin ellas rige el corredor. Las valida
+# `M9.validar_sobrecarga_del_punto` al CARGAR, y `fundir_sobrecarga_del_punto`
+# las pasa a M9 dentro de lo declarado del cabezal de cada extremo.
+CLAVE_ORIENTACION_DEL_PUNTO = CAMPO_ORIENTACION_DEL_PUNTO
+CLAVE_DISTANCIA_BORDE_DEL_PUNTO = CAMPO_DISTANCIA_BORDE_DEL_PUNTO
+CLAVES_DE_CABEZAL += (CLAVE_ORIENTACION_DEL_PUNTO,
+                      CLAVE_DISTANCIA_BORDE_DEL_PUNTO)
+
+
+def fundir_sobrecarga_del_punto(declarados: Optional[dict], *,
+                                orientacion: Optional[dict],
+                                distancia: Optional[dict]) -> Optional[dict]:
+    """
+    --- VE-6 --- Lo declarado del cabezal de cada extremo (la forma
+    normalizada de `cabezal_declarado`, o nada) con la orientacion y la
+    distancia del punto para ESE extremo, si las hay. Sin ninguna de las
+    tres cosas, None (la regla y el corredor rigen).
+    """
+    if declarados is None and orientacion is None and distancia is None:
+        return None
+    fundido = {e: dict((declarados or {}).get(e, {}))
+               for e in CAMPOS_EXTREMOS}
+    for campo, valores in ((CLAVE_ORIENTACION_DEL_PUNTO, orientacion),
+                           (CLAVE_DISTANCIA_BORDE_DEL_PUNTO, distancia)):
+        for e in CAMPOS_EXTREMOS:
+            if valores is not None and valores.get(e) is not None:
+                fundido[e][campo] = valores[e]
+    return fundido
 # --- VE-5 (lote catlic) --- EL RESULTADO DE LA EVALUACION DE LICUEFACCION
 # DEL EMS (E.050 38.3), por punto o en `globales` (el del punto gana): FUERA
 # de `CLAVES_EXTERNAS` porque solo lo pide la Fase 0-bis, a expediente y
@@ -1053,6 +1088,12 @@ def _dato_externo(clave: str, bruto: Any, origen: str) -> DatoDeclarado:
         # --- T-7a --- forma y dominio en la puerta; viaja normalizado.
         return DatoDeclarado(nombre=clave,
                              valor=validar_cabezal_declarado(bruto),
+                             origen=origen)
+    if clave in (CLAVE_ORIENTACION_DEL_PUNTO,
+                 CLAVE_DISTANCIA_BORDE_DEL_PUNTO):
+        # --- VE-6 --- la sobrecarga viva del punto, validada en la puerta.
+        return DatoDeclarado(nombre=clave,
+                             valor=validar_sobrecarga_del_punto(clave, bruto),
                              origen=origen)
     if clave == CLAVE_SUELO_FUNDACION:
         # --- T-7b --- el suelo de fundacion del punto, validado en la puerta.
@@ -3512,6 +3553,15 @@ def _fase_9(informe: InformePunto,
         return
     declarados = (None if externos is None else
                   externos.valor(informe.punto.id, CLAVE_CABEZAL_DECLARADO))
+    # --- VE-6 (ficha T7B-11) --- la orientacion y la distancia del punto,
+    # dentro de lo declarado de cada cabezal (M9 las lleva a su geometria).
+    if externos is not None:
+        declarados = fundir_sobrecarga_del_punto(
+            declarados,
+            orientacion=externos.valor(informe.punto.id,
+                                       CLAVE_ORIENTACION_DEL_PUNTO),
+            distancia=externos.valor(informe.punto.id,
+                                     CLAVE_DISTANCIA_BORDE_DEL_PUNTO))
     # Si la Fase 6 no entrego la socavacion porque su etapa se BLOQUEO, el
     # aviso del desplante de salida lo dice con ese motivo y no con el de un
     # lecho que falta (correcciones de T-7a, H9).
@@ -3646,7 +3696,8 @@ def _fase_9(informe: InformePunto,
                     else None if dimensionado is None
                     else dimensionado.puntas),
             espesores_zapata=None if peralte is None else peralte.espesores))
-    if pantalla is not None and pantalla.espesores:
+    if pantalla is not None and (pantalla.espesores
+                                 or pantalla.espesores_aleros):
         informe.cabezal = pantalla.cabezal
         entornos = _etapa(
             informe.bloqueos, FASE_CABEZAL,
@@ -4866,7 +4917,7 @@ def correr_cabezal() -> InformeCabezal:
             lambda c=condicion: recubrimiento_de_diseno(condicion=c))
         if recubrimiento is not None:
             informe.recubrimientos.append(recubrimiento)
-    for direccion in CUANTIA_MIN_MURO:
+    for direccion in DIRECCIONES_CUANTIA_MURO:
         cuantia = _etapa(informe.bloqueos, FASE_CABEZAL,
                          f"cuantia minima {direccion} (9.4, referencia)",
                          lambda d=direccion: cuantia_minima(direccion=d))

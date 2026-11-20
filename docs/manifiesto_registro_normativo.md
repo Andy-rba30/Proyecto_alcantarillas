@@ -120,6 +120,7 @@ línea que se pueda romper.
 | `AASHTO_LRFD_9.11.12.8#AGRESIVO` | 11.12.8 | «Corrosion Protection» | pág. impresa **11-134** · PDF 1603 | definicion | 2026-11-11 · texto |
 | `AASHTO_LRFD_9.11.5.7#MUROS` | 11.5.7 | «Resistance Factors—Service and Strength» | pág. impresa **11-15** · PDF 1484 | exigencia | 2026-11-13 · texto |
 | `AASHTO_LRFD_9.11.5.8#EXTREMO` | 11.5.8 | «Resistance Factors—Extreme Event Limit State» | pág. impresa **11-18** · PDF 1487 | exigencia | 2026-11-13 · texto |
+| `AASHTO_LRFD_9.11.5.8#GLOBAL` | 11.5.8 | «Resistance Factors—Extreme Event Limit State» | pág. impresa **11-18** · PDF 1487 | exigencia | 2026-11-20 · texto |
 | `AASHTO_LRFD_9.11.5.8#PORTANTE` | 11.5.8 | «Resistance Factors—Extreme Event Limit State» | pág. impresa **11-18** · PDF 1487 | exigencia | 2026-11-13 · texto |
 | `AASHTO_LRFD_9.11.6.1.2#TALON` | 11.6.1.2 | «Loading» | pág. impresa **11-20** · PDF 1489 | exigencia | 2026-11-13 · texto |
 | `AASHTO_LRFD_9.11.6.1.5.1#TEMPERATURA` | 11.6.1.5.1 | «Conventional Walls and Abutments» | pág. impresa **11-20** · PDF 1489 | exigencia | 2026-11-13 · texto |
@@ -128,6 +129,7 @@ línea que se pueda romper.
 | `AASHTO_LRFD_9.11.6.3.5#PASIVA` | 11.6.3.5 | «Passive Resistance» | pág. impresa **11-24** · PDF 1493 | exigencia | 2026-11-13 · texto |
 | `AASHTO_LRFD_9.11.6.3.6#DESLIZAMIENTO` | 11.6.3.6 | «Sliding» | pág. impresa **11-24** · PDF 1493 | exigencia | 2026-11-13 · texto |
 | `AASHTO_LRFD_9.11.6.3.7#GLOBAL` | 11.6.3.7 | «Overall Stability» | pág. impresa **11-24** · PDF 1493 | exigencia | 2026-11-13 · texto |
+| `AASHTO_LRFD_9.11.6.3.7#PHI` | 11.6.3.7 | «Overall Stability» | pág. impresa **11-25** · PDF 1494 | recomendacion | 2026-11-20 · texto |
 | `AASHTO_LRFD_9.11.6.5.1#EXC` | 11.6.5.1 | «General» | pág. impresa **11-25** · PDF 1494 | exigencia | 2026-08-28 · texto |
 | `AASHTO_LRFD_9.11.6.5.2.1#ROCA` | 11.6.5.2.1 | «Characterization of Acceleration at Wall Base» | pág. impresa **11-27** · PDF 1496 | exigencia | 2026-08-28 · texto |
 | `AASHTO_LRFD_9.11.6.5.2.2#ALTURA` | 11.6.5.2.2 | «Estimation of Acceleration Acting on Wall Mass» | pág. impresa **11-28** · PDF 1497 | exigencia | 2026-11-13 · texto |
@@ -146,8 +148,15 @@ línea que se pueda romper.
 | `AASHTO_LRFD_9.12.10.4.3.2a` | 12.10.4.3.2a | «12.10.4.3.2a—Earth Load Bedding Factor for Circular Pipe» | pág. impresa **12-65** · PDF 1703 | definicion | 2026-11-12 · texto |
 | `AASHTO_LRFD_9.12.10.4.3.2c` | 12.10.4.3.2c | «12.10.4.3.2c—Live Load Bedding Factors» | pág. impresa **12-66** · PDF 1704 | exigencia | 2026-11-12 · texto |
 | `AASHTO_LRFD_9.12.11.1` | 12.11.1 | «General» | pág. impresa **12-68** · PDF 1706 | exigencia | 2026-09-20 · texto |
+| `AASHTO_LRFD_9.12.11.2.1#CARGAS` | 12.11.2.1 | «12.11.2.1—General» | pág. impresa **12-68** · PDF 1706 | exigencia | 2026-11-20 · texto |
 | `AASHTO_LRFD_9.12.11.2.1#LL` | 12.11.2.1 | «12.11.2.1—General» | pág. impresa **12-68** · PDF 1706 | exigencia | 2026-11-12 · texto |
+| `AASHTO_LRFD_9.12.11.2.1#SOMERO` | 12.11.2.1 | «12.11.2.1—General» | pág. impresa **12-68** · PDF 1706 | exigencia | 2026-11-20 · texto |
 | `AASHTO_LRFD_9.12.11.2.2.1` | 12.11.2.2.1 | «12.11.2.2.1—Embankment and Trench Conditions» | pág. impresa **12-69** · PDF 1707 | exigencia | 2026-11-12 · texto |
+| `AASHTO_LRFD_9.12.11.2.3` | 12.11.2.3 | «12.11.2.3—Distribution of Concentrated Loads to Bottom Slab of Box Culvert» | pág. impresa **12-71** · PDF 1709 | exigencia | 2026-11-20 · texto |
+| `AASHTO_LRFD_9.12.11.4` | 12.11.4 | «12.11.4—Service Limit State» | pág. impresa **12-72** · PDF 1710 | exigencia | 2026-11-20 · texto |
+| `AASHTO_LRFD_9.12.11.5.1` | 12.11.5.1 | «12.11.5.1—General» | pág. impresa **12-73** · PDF 1711 | exigencia | 2026-11-20 · texto |
+| `AASHTO_LRFD_9.12.11.5.1#CORTANTE` | 12.11.5.1 | «12.11.5.1—General» | pág. impresa **12-73** · PDF 1711 | exigencia | 2026-11-20 · texto |
+| `AASHTO_LRFD_9.12.11.5.3.1` | 12.11.5.3.1 | «12.11.5.3.1—Cast-in-Place Structures» | pág. impresa **12-73** · PDF 1711 | exigencia | 2026-11-20 · texto |
 | `AASHTO_LRFD_9.12.12.2.2` | 12.12.2.2 | «12.12.2.2—Deflection Requirement» | pág. impresa **12-75** · PDF 1713 | exigencia | 2026-11-12 · texto |
 | `AASHTO_LRFD_9.12.12.3.10.1b#STUB` | 12.12.3.10.1b | «12.12.3.10.1b—Local Buckling Effective Area» | pág. impresa **12-85** · PDF 1723 | permiso | 2026-11-12 · texto |
 | `AASHTO_LRFD_9.12.12.3.10.1c#EP` | 12.12.3.10.1c | «12.12.3.10.1c—Compression Strain» | pág. impresa **12-86** · PDF 1724 | exigencia | 2026-11-12 · texto |
@@ -186,21 +195,28 @@ línea que se pueda romper.
 | `AASHTO_LRFD_9.3.11.6.4` | 3.11.6.4 | «Live Load Surcharge (LS)» | pág. impresa **3-151** · PDF 205 | exigencia | 2026-08-28 · ambos |
 | `AASHTO_LRFD_9.3.11.6.4#ALTURA` | 3.11.6.4 | «Live Load Surcharge (LS)» | pág. impresa **3-151** · PDF 205 | exigencia | 2026-08-28 · ambos |
 | `AASHTO_LRFD_9.3.11.6.4#APLICA` | 3.11.6.4 | «Live Load Surcharge (LS)» | pág. impresa **3-151** · PDF 205 | exigencia | 2026-08-28 · ambos |
+| `AASHTO_LRFD_9.3.11.7` | 3.11.7 | «3.11.7—Reduction Due to Earth Pressure» | pág. impresa **3-152** · PDF 206 | permiso | 2026-11-20 · texto |
 | `AASHTO_LRFD_9.3.6.1.2.6a#CONCRETO_SOMERO` | 3.6.1.2.6a | «3.6.1.2.6a—General» | pág. impresa **3-26** · PDF 80 | exigencia | 2026-11-12 · texto |
 | `AASHTO_LRFD_9.3.6.1.2.6a#DESPRECIABLE` | 3.6.1.2.6a | «3.6.1.2.6a—General» | pág. impresa **3-26** · PDF 80 | permiso | 2026-11-12 · texto |
 | `AASHTO_LRFD_9.3.6.1.2.6a#EJES` | 3.6.1.2.6a | «3.6.1.2.6a—General» | pág. impresa **3-26** · PDF 80 | exigencia | 2026-11-12 · texto |
+| `AASHTO_LRFD_9.3.6.1.2.6a#MENOS_DE_UN_PIE` | 3.6.1.2.6a | «3.6.1.2.6a—General» | pág. impresa **3-26** · PDF 80 | exigencia | 2026-11-20 · texto |
 | `AASHTO_LRFD_9.3.6.1.2.6a#RELLENO` | 3.6.1.2.6a | «3.6.1.2.6a—General» | pág. impresa **3-26** · PDF 80 | exigencia | 2026-11-12 · texto |
 | `AASHTO_LRFD_9.3.6.1.2.6a#UN_CARRIL` | 3.6.1.2.6a | «3.6.1.2.6a—General» | pág. impresa **3-26** · PDF 80 | exigencia | 2026-11-12 · texto |
+| `AASHTO_LRFD_9.3.6.1.2.6a#UN_PIE` | 3.6.1.2.6a | «3.6.1.2.6a—General» | pág. impresa **3-26** · PDF 80 | exigencia | 2026-11-20 · texto |
 | `AASHTO_LRFD_9.3.6.1.2.6a#VARIOS_VANOS` | 3.6.1.2.6a | «3.6.1.2.6a—General» | pág. impresa **3-26** · PDF 80 | permiso | 2026-11-12 · texto |
 | `AASHTO_LRFD_9.3.6.1.2.6b#PL` | 3.6.1.2.6b | «3.6.1.2.6b—Traffic Parallel to the Culvert Span» | pág. impresa **3-28** · PDF 82 | exigencia | 2026-11-12 · texto |
 | `AASHTO_LRFD_9.3.7.1#NIVEL_DE_DISENO` | 3.7.1 | «Static Pressure» | pág. impresa **3-45** · PDF 99 | exigencia | 2026-11-17 · texto |
 | `AASHTO_LRFD_9.3.7.2` | 3.7.2 | «Buoyancy» | pág. impresa **3-45** · PDF 99 | exigencia | 2026-08-28 · texto |
+| `AASHTO_LRFD_9.4.6.2.10.1` | 4.6.2.10.1 | «4.6.2.10.1—General» | pág. impresa **4-65** · PDF 316 | exigencia | 2026-11-20 · texto |
+| `AASHTO_LRFD_9.4.6.2.10.2#FRANJA` | 4.6.2.10.2 | «4.6.2.10.2—Case 1: Traffic Travels Parallel to Span» | pág. impresa **4-65** · PDF 316 | exigencia | 2026-11-20 · ambos |
+| `AASHTO_LRFD_9.4.6.2.10.2#UN_CARRIL` | 4.6.2.10.2 | «4.6.2.10.2—Case 1: Traffic Travels Parallel to Span» | pág. impresa **4-65** · PDF 316 | exigencia | 2026-11-20 · texto |
 | `AASHTO_LRFD_9.5.10.1` | 5.10.1 | «Concrete Cover» | pág. impresa **5-167** · PDF 526 | exigencia | 2026-08-28 · ambos |
 | `AASHTO_LRFD_9.5.10.1#ESTRIBOS` | 5.10.1 | «Concrete Cover» | pág. impresa **5-168** · PDF 527 | permiso | 2026-08-28 · ambos |
 | `AASHTO_LRFD_9.5.10.1#PISO` | 5.10.1 | «Concrete Cover» | pág. impresa **5-168** · PDF 527 | exigencia | 2026-08-28 · ambos |
 | `AASHTO_LRFD_9.5.10.3.2#ESPACIAMIENTO` | 5.10.3.2 | «Maximum Spacing of Reinforcing Bars» | pág. impresa **5-172** · PDF 531 | exigencia | 2026-11-13 · texto |
 | `AASHTO_LRFD_9.5.10.6#ESPACIAMIENTO` | 5.10.6 | «Shrinkage and Temperature Reinforcement» | pág. impresa **5-175** · PDF 534 | exigencia | 2026-11-13 · texto |
 | `AASHTO_LRFD_9.5.10.6#TEMPERATURA` | 5.10.6 | «Shrinkage and Temperature Reinforcement» | pág. impresa **5-174** · PDF 533 | exigencia | 2026-11-13 · ambos |
+| `AASHTO_LRFD_9.5.12.7.3` | 5.12.7.3 | «5.12.7.3—Design for Shear in Slabs of Box Culverts» | pág. impresa **5-248** · PDF 607 | exigencia | 2026-11-20 · texto |
 | `AASHTO_LRFD_9.5.12.8.4#CARA` | 5.12.8.4 | «Moment in Footings» | pág. impresa **5-250** · PDF 609 | exigencia | 2026-11-13 · texto |
 | `AASHTO_LRFD_9.5.4.2.6#FR` | 5.4.2.6 | «Modulus of Rupture» | pág. impresa **5-20** · PDF 379 | permiso | 2026-11-13 · ambos |
 | `AASHTO_LRFD_9.5.4.3.2#ES` | 5.4.3.2 | «Modulus of Elasticity» | pág. impresa **5-22** · PDF 381 | exigencia | 2026-11-13 · texto |
@@ -228,13 +244,16 @@ línea que se pueda romper.
 | `AASHTO_LRFD_9.C11.5.6#FIGURAS` | C11.5.6, Figuras C11.5.6-1 y C11.5.6-2 | «Load Combinations and Load Factors» | pág. impresa **11-13** · PDF 1482 | definicion | 2026-11-13 · ambos |
 | `AASHTO_LRFD_9.C11.5.6#SOBRECARGA` | C11.5.6 | «Load Combinations and Load Factors» | pág. impresa **11-12** · PDF 1481 | definicion | 2026-11-13 · texto |
 | `AASHTO_LRFD_9.C11.6.3.3#REEMPLAZA` | C11.6.3.3 | «Eccentricity Limits» | pág. impresa **11-24** · PDF 1493 | definicion | 2026-11-13 · texto |
+| `AASHTO_LRFD_9.C11.6.3.7#FS` | C11.6.3.7 | «Overall Stability» | pág. impresa **11-25** · PDF 1494 | definicion | 2026-11-20 · texto |
 | `AASHTO_LRFD_9.C11.6.5.3#AGUA_ABIERTO` | C11.6.5.3 | «Calculation of Seismic Active Earth Pressures» | pág. impresa **11-32** · PDF 1501 | recomendacion | 2026-11-17 · texto |
 | `AASHTO_LRFD_9.C11.6.5.3#AGUA_TOTAL` | C11.6.5.3 | «Calculation of Seismic Active Earth Pressures» | pág. impresa **11-31** · PDF 1500 | recomendacion | 2026-11-17 · texto |
 | `AASHTO_LRFD_9.C11.6.5.3#CUNA` | C11.6.5.3 | «Calculation of Seismic Active Earth Pressures» | pág. impresa **11-30** · PDF 1499 | permiso | 2026-11-13 · texto |
+| `AASHTO_LRFD_9.C11.6.5.3#NIVEL_MEDIO` | C11.6.5.3 | «Calculation of Seismic Active Earth Pressures» | pág. impresa **11-31** · PDF 1500 | recomendacion | 2026-11-20 · texto |
 | `AASHTO_LRFD_9.C11.6.5.3#RESULTANTE` | C11.6.5.3 | «Calculation of Seismic Active Earth Pressures» | pág. impresa **11-30** · PDF 1499 | definicion | 2026-11-13 · texto |
 | `AASHTO_LRFD_9.C11.6.5.4#CEDENTE` | C11.6.5.4 | «Calculation of Seismic Earth Pressure for Nonyielding Abutments and Walls» | pág. impresa **11-32** · PDF 1501 | definicion | 2026-11-13 · texto |
 | `AASHTO_LRFD_9.C11.6.5.4#H_MEDIOS` | C11.6.5.4 | «Calculation of Seismic Earth Pressure for Nonyielding Abutments and Walls» | pág. impresa **11-32** · PDF 1501 | recomendacion | 2026-11-13 · texto |
 | `AASHTO_LRFD_9.C11.6.5.4#K0` | C11.6.5.4 | «Calculation of Seismic Earth Pressure for Nonyielding Abutments and Walls» | pág. impresa **11-32** · PDF 1501 | recomendacion | 2026-11-13 · texto |
+| `AASHTO_LRFD_9.C12.11.2.1#COMBINACIONES` | C12.11.2.1 | «C12.11.2.1» | pág. impresa **12-68** · PDF 1706 | recomendacion | 2026-11-20 · texto |
 | `AASHTO_LRFD_9.C12.12.2.2` | C12.12.2.2 | «C12.12.2.2» | pág. impresa **12-74** · PDF 1712 | recomendacion | 2026-11-12 · texto |
 | `AASHTO_LRFD_9.C12.12.3.2` | C12.12.3.2 | «C12.12.3.2» | pág. impresa **12-76** · PDF 1714 | definicion | 2026-11-12 · texto |
 | `AASHTO_LRFD_9.C12.6.2.3` | C12.6.2.3 | «Uplift» | pág. impresa **12-19** · PDF 1657 | recomendacion | 2026-08-28 · texto |
@@ -249,6 +268,7 @@ línea que se pueda romper.
 | `AASHTO_LRFD_9.C3.11.6.4` | C3.11.6.4 | «Live Load Surcharge (LS)» | pág. impresa **3-151** · PDF 205 | definicion | 2026-08-28 · ambos |
 | `AASHTO_LRFD_9.C3.4.1#GAMMA_EQ` | C3.4.1 | «3.4.1-Load Factors and Load Combinations» | pág. impresa **3-10** · PDF 64 | recomendacion | 2026-08-28 · ambos |
 | `AASHTO_LRFD_9.C3.6.1.2.6b` | C3.6.1.2.6b | «C3.6.1.2.6b» | pág. impresa **3-27** · PDF 81 | definicion | 2026-11-12 · texto |
+| `AASHTO_LRFD_9.C4.6.2.10.2#E_SPAN` | C4.6.2.10.2 | «C4.6.2.10.2» | pág. impresa **4-65** · PDF 316 | permiso | 2026-11-20 · texto |
 | `AASHTO_LRFD_9.C5.12.8.6.1#TALON` | C5.12.8.6.1 | «Critical Sections for Shear» | pág. impresa **5-251** · PDF 610 | definicion | 2026-11-13 · texto |
 | `AASHTO_LRFD_9.C5.4.2.4#EC` | C5.4.2.4 | «Modulus of Elasticity» | pág. impresa **5-20** · PDF 379 | permiso | 2026-11-13 · ambos |
 | `AASHTO_LRFD_9.C5.6.7#CLASE_1` | C5.6.7 | «Control of Cracking by Distribution of Reinforcement» | pág. impresa **5-56** · PDF 415 | definicion | 2026-11-13 · texto |
@@ -259,6 +279,7 @@ línea que se pueda romper.
 | `AASHTO_LRFD_9.T12.12.3.3-1` | Table 12.12.3.3-1 | «Table 12.12.3.3-1—Mechanical Properties of Thermoplastic Pipe» | pág. impresa **12-77** · PDF 1715 | definicion | 2026-11-12 · texto |
 | `AASHTO_LRFD_9.T12.12.3.5-1` | Table 12.12.3.5-1 | «Table 12.12.3.5-1—Ms Based on Soil Type and Compaction Condition» | pág. impresa **12-81** · PDF 1719 | definicion | 2026-11-12 · texto |
 | `AASHTO_LRFD_9.T12.12.3.5-2` | Table 12.12.3.5-2 | «Table 12.12.3.5-2—Equivalent ASTM and AASHTO Soil Classifications» | pág. impresa **12-82** · PDF 1720 | definicion | 2026-11-12 · texto |
+| `AASHTO_LRFD_9.T12.5.5-1#CAJON_IN_SITU` | Table 12.5.5-1 | «Table 12.5.5-1—Resistance Factors for Buried Structures» | pág. impresa **12-12** · PDF 1650 | exigencia | 2026-11-20 · ambos |
 | `AASHTO_LRFD_9.T12.6.6.3-1` | Table 12.6.6.3-1 | 12.6.6.3 › Minimum Cover › «Minimum Cover» | pág. impresa **12-22** · PDF 1660 | exigencia | 2026-08-28 · imagen renderizada |
 | `AASHTO_LRFD_9.T3.10.3.1-1#F` | Tabla 3.10.3.1-1, fila F | «Site Class Definitions» | pág. impresa **3-102** · PDF 156 | definicion | 2026-08-29 · ambos |
 | `AASHTO_LRFD_9.T3.11.6.4-1` | Table 3.11.6.4-1 | «Equivalent Height of Soil for Vehicular Loading on Abutments Perpendicular to Traffic» | pág. impresa **3-151** · PDF 205 | exigencia | 2026-08-28 · ambos |
@@ -312,6 +333,8 @@ línea que se pueda romper.
 
 > **`AASHTO_LRFD_9.11.5.8#EXTREMO`** — NO ES «phi = 1.0» A SECAS: la misma pagina especifica las excepciones. «For overall stability of the retaining wall when earthquake loading is included, a resistance factor, phi, of 0.9 shall be used. For bearing resistance, a resistance factor of 0.8 shall be used for gravity and semigravity walls and 0.9 for MSE walls» (cita gemela #PORTANTE). El deslizamiento si va con 1.0.
 
+> **`AASHTO_LRFD_9.11.5.8#GLOBAL`** — Vive en `constantes_normativas.PHI_EVENTO_EXTREMO_11_5_8` ('estabilidad_global'). Hasta VE-4a estaba transcrito solo en la nota de la cita #EXTREMO; lo consume el contraste del FS sismico declarado de E4 y E5 en el marco LRFD.
+
 > **`AASHTO_LRFD_9.11.5.8#PORTANTE`** — El comentario C11.5.8 da la razon: reducir la posibilidad de que la falla por capacidad portante ocurra antes de que el muro deslice. Vive en `constantes_normativas.PHI_EVENTO_EXTREMO_11_5_8`.
 
 > **`AASHTO_LRFD_9.11.6.1.2#TALON`** — El talon se arma con el PESO ENTERO de lo que tiene encima (relleno, sobrecarga, componente vertical del empuje y peso propio), sin descontar la reaccion del terreno. La solicitacion que T-7b entrega para el talon SI la descuenta (es el «more exact method»): el armado toma la mayor de las dos y la otra se imprime.
@@ -327,6 +350,8 @@ línea que se pueda romper.
 > **`AASHTO_LRFD_9.11.6.3.6#DESLIZAMIENTO`** — Remite el deslizamiento del muro al de las zapatas (10.6.3.4).
 
 > **`AASHTO_LRFD_9.11.6.3.7#GLOBAL`** — Sigue en la pag. impresa 11-25: se investiga en Resistencia I con phi = 0.75 (parametros y estratigrafia bien definidos) o 0.65 (muy variables o con informacion limitada), y el comentario dice que equivalen a FS = 1.3 y 1.5. Es E4/E5: el programa NO lo evalua (hace falta un analisis de equilibrio limite con la estratigrafia del EMS) y lo imprime como diferido.
+
+> **`AASHTO_LRFD_9.11.6.3.7#PHI`** — Sigue: «The resistance factor, φ, should be taken as: Where the geotechnical parameters and subsurface stratigraphy are well defined ... 0.75; Where the geotechnical parameters and subsurface stratigraphy are highly variable or based on limited information ... 0.65» (la extraccion de texto pierde el simbolo phi). Las dos filas viven en `constantes_normativas.PHI_ESTABILIDAD_GLOBAL_11_6_3_7`; cual aplica al cabezal es el criterio [A] 'fila_phi_estabilidad_global'. CONTRASTE con el Manual de Puentes (2016), que traduce una edicion anterior: su 2.4.5.3.1 (pag. impresa 142, PDF 143) pide la estabilidad global con la combinacion de SERVICIO I y «un factor de resistencia adecuado», sin cifra; la 9a edicion la lleva a Resistencia I. El programa no calcula el FS y no elige la combinacion: la declara el documento del analisis externo.
 
 > **`AASHTO_LRFD_9.11.6.5.1#EXC`** — «middle two-thirds», no «tercio central»: es la parte de AASHTO que gana a la errata de traduccion del Manual. Y su comentario C11.6.5.1 ARRANCA en esta misma pagina (columna derecha), no en la 11-26; lo que si esta en la 11-26 es el texto que el repositorio le atribuye.
 
@@ -354,7 +379,15 @@ línea que se pueda romper.
 
 > **`AASHTO_LRFD_9.12.11.1`** — El Art. 12.11 se titula «REINFORCED CONCRETE CAST-IN-PLACE AND PRECAST BOX CULVERTS AND REINFORCED CAST-IN-PLACE ARCHES» (partido en tres renglones en la misma pagina; por eso no va en `jerarquia_numeral`). Rige el diseño estructural del marco in situ Y del prefabricado; y su cuarto parrafo dice que las dimensiones ESTANDAR del prefabricado estan en «AASHTO M 259 (ASTM C789) and M 273 (ASTM C850)»: para el in situ no hay dimensiones estandar, se proyectan. Es la mitad de diseño del rotulo de M2: «diseño LRFD Sec. 5 y Art. 12.11».
 
+> **`AASHTO_LRFD_9.12.11.2.1#CARGAS`** — Las cargas del portico: DC, EV, EH, LS, WA y LL con su IM. Los factores se leen del Manual de Puentes (Tablas 2.4.5.3.1-1 y -2), que transcribe las de AASHTO.
+
+> **`AASHTO_LRFD_9.12.11.2.1#SOMERO`** — Es el articulo del cajon de concreto armado (12.11), y es el que lleva el marco del catalogo a 4.6.2.10: la frase de 3.6.1.2.6a que remite a 4.6.2.10 nombra los marcos de tres lados y los arcos, no el cajon. El comentario C12.11.2.1 (misma pagina) añade las vigas de borde del cajon vaciado in situ con menos de 2.0 ft, que son del diseño del portico, diferido.
+
 > **`AASHTO_LRFD_9.12.11.2.2.1`** — W_E = F_e gamma_s B_c H con F_e = 1 + 0.20 H/B_c (Eqs. 12.11.2.2.1-1 y -2).
+
+> **`AASHTO_LRFD_9.12.11.2.3`** — Su comentario (misma pagina): «typical designs assume a uniform pressure distribution across the bottom slab». El proyecto reparte la reaccion del suelo bajo la losa inferior de forma LINEAL (uniforme con la carga centrada, trapecial con la carga excentrica), que es la que equilibra fuerza y momento sin un modulo del suelo que el proyecto no tiene: lectura del proyecto.
+
+> **`AASHTO_LRFD_9.12.11.5.3.1`** — Sigue: «Shrinkage and temperature reinforcement shall be provided near the inside surfaces of walls and slabs in accordance with Article 5.10.6.» El armado del cabezal pone en cada cara armada el mayor de 5.6.3.3, 5.10.6 y E.060.
 
 > **`AASHTO_LRFD_9.12.12.2.2`** — Eq. 12.12.2.2-2: Delta_t = K_B(D_L P_sp + C_L P_L) D_o / (1000(E_p I_p/R^3 + 0.061 M_s)) + eps_sc D; «D_L ... a value of 1.5 is typical» y «K_B ... a value of 0.10 is typical». El 1000 es el paso de ksi a psi: en SI desaparece.
 
@@ -424,13 +457,19 @@ línea que se pueda romper.
 
 > **`AASHTO_LRFD_9.3.11.6.4#ALTURA`** — La altura que entra en las tablas NO es la altura visible del muro: incluye la zapata. Con `GeometriaCabezal` eso es H + espesor_zapata. Medirla sin la zapata SUBESTIMA la altura y, como h_eq decrece con ella, SOBRESTIMA h_eq -- conservador, pero es la lectura equivocada de la tabla.
 
-> **`AASHTO_LRFD_9.3.6.1.2.6a#CONCRETO_SOMERO`** — Es el caso que este programa NO implementa: con menos de 2.0 ft (0.6096 m) de relleno sobre un tubo de concreto la Fase 8 se detiene con MetodoNoEvaluableError en vez de aplicar fuera de su dominio la distribucion de 3.6.1.2.6b.
+> **`AASHTO_LRFD_9.3.11.7`** — Su comentario C3.11.7: «the earth pressure is reduced by 50 percent in order to obtain maximum positive moment in top slab of culverts and frames». El proyecto toma la reduccion solo para el momento POSITIVO de la losa superior (decision del dueño, censo del 2026-11-20) y la combina con el factor minimo y el 1/eta, que la fuente permite no combinar: es el lado conservador para ese momento y lo que hace el ejemplo resuelto de MnDOT §12.5.
+
+> **`AASHTO_LRFD_9.3.6.1.2.6a#CONCRETO_SOMERO`** — DESDE VE-4f SE IMPLEMENTA (hasta entonces la Fase 8 se detenia con MetodoNoEvaluableError): con 1.0 ft o mas y menos de 2.0 ft (0.3048 a 0.6096 m) hasta la rasante, el eje se reparte a lo largo del tubo en el ancho E de la Eq. 4.6.2.10.2-1 y el tubo se diseña a la profundidad de 1.0 ft (cita #UN_PIE); con menos de 1.0 ft la fuente manda «more comprehensive methods» (cita #MENOS_DE_UN_PIE), que siguen sin implementarse. Que largo se le da al area cargada A TRAVES del tubo la fuente no lo dice para el tubo, y lo declara el criterio [A] 'carga_viva_tubo_concreto_somero' (ficha VE4F-01).
 
 > **`AASHTO_LRFD_9.3.6.1.2.6a#EJES`** — «respectively shall» SIN coma: asi lo entrega la capa de texto del ejemplar. Es lo que deja fuera la carga de carril del HL-93: en una alcantarilla solo cuentan los ejes del camion y del tandem.
+
+> **`AASHTO_LRFD_9.3.6.1.2.6a#MENOS_DE_UN_PIE`** — Es lo unico que sigue sin implementarse (MetodoNoEvaluableError). Casi nunca se alcanza: la Tabla 12.6.6.3-1 pide al menos 12.0 in de cobertura a todo conducto redondo del catalogo salvo al tubo de concreto bajo pavimento rigido (9.0 in), de modo que un tubo con menos de 1.0 ft hasta la rasante INCUMPLE la cobertura minima (F8.COBERTURA) y solo el de concreto bajo pavimento rigido, entre 9 y 12 in, queda sin metodo.
 
 > **`AASHTO_LRFD_9.3.6.1.2.6a#RELLENO`** — ES EL METODO DE LA CARGA VIVA SOBRE EL CONDUCTO, y tiene DOS dominios distintos: mas de 1.0 ft de relleno para la tuberia que no es de concreto y 2.0 ft o mas para el tubo de concreto. Por debajo el mismo numeral manda otra cosa (Eq. 4.6.2.10.2-1 para el tubo de concreto, «more comprehensive methods» con menos de 1.0 ft), que este programa no implementa: lo dice como metodo no evaluable. El Manual de Puentes no transcribe este numeral (su 2.4.3.2 trae el HL-93 y el 2.4.3.3.2 el IM de lo enterrado, no la distribucion a traves del relleno): por eso es [C].
 
 > **`AASHTO_LRFD_9.3.6.1.2.6a#UN_CARRIL`** — El trafico «paralelo al vano» es el de la inmensa mayoria de las alcantarillas viales (C3.6.1.2.6b, misma columna de la pag. 3-27): el vano de un tubo es su diametro, medido a lo largo de la via. La lectura de que las obras de este expediente caen ahi es del proyecto y la dice el paso de la carga viva.
+
+> **`AASHTO_LRFD_9.3.6.1.2.6a#UN_PIE`** — Sigue a la frase de la Eq. 4.6.2.10.2-1 (cita #CONCRETO_SOMERO). Que la profundidad de diseño de 1.0 ft entre en el IM de 3.6.2.2 (D_E = 1.0 ft, o la cubierta de tierra si es menor) y en el largo E_span de la Eq. 4.6.2.10.2-2 cuando el proyecto lo declara, y NO en la carga de tierra, es lectura del proyecto: la frase esta en el articulo de la carga viva.
 
 > **`AASHTO_LRFD_9.3.6.1.2.6a#VARIOS_VANOS`** — La segunda mitad del permiso de #DESPRECIABLE: en una alcantarilla de VARIOS vanos la condicion no es la luz de un vano sino la distancia entre las caras interiores de los muros extremos. El marco de varias celdas la usa (`M8.demanda_marco`); el permiso solo se toma si 'carga_viva_bajo_relleno_alto' lo declara.
 
@@ -439,6 +478,10 @@ línea que se pueda romper.
 > **`AASHTO_LRFD_9.3.7.1#NIVEL_DE_DISENO`** — El gemelo del Manual de Puentes, en la misma pagina que la subpresion de 3.7.2 («acting on all components below design water level»). El 12.6.2.3 de la Sec. 12 nombra el nivel con otras palabras --«the highest anticipated groundwater level»-- y tampoco da su cota: la da el estudio del sitio, o la adopta el proyecto.
 
 > **`AASHTO_LRFD_9.3.7.2`** — «all components below design water level»: el mismo ambito neutro que el numeral peruano. Es DEFINITORIA de la fuerza; quien pone la condicion de disparo para una estructura enterrada es el 12.6.1, que remite aqui expresamente.
+
+> **`AASHTO_LRFD_9.4.6.2.10.1`** — El articulo se titula «Equivalent Strip Widths for Box Culverts». Con 2.0 ft o mas rige 3.6.1.2.6 (C4.6.2.10.1, misma pagina). El Manual de Puentes no lo transcribe (su 2.6.4.2 termina en 2.6.4.2.6, «Ancho de Ala Efectivo»): por eso es [C].
+
+> **`AASHTO_LRFD_9.4.6.2.10.2#FRANJA`** — Ecuaciones leidas RENDERIZADAS (la capa de texto las entrega partidas): «Perpendicular to the span: E = 96 + 1.44S (4.6.2.10.2-1)» y «Parallel to the span: E_span = L_T + LLDF(H) (4.6.2.10.2-2)». Simbolos en la pag. 4-66 (PDF 317): E «equivalent distribution width perpendicular to span (in.)», S «clear span (ft)», E_span «equivalent distribution length parallel to span (in.)», L_T «length of tire contact area parallel to span, as specified in Article 3.6.1.2.5 (in.)», LLDF «as specified in Article 3.6.1.2.6», H «depth of fill from top of culvert to top of pavement (in.)». Vista de calculo en constantes_normativas (FRANJA_CAJON_*). La presion es la del eje sobre E x E_span con el IM y el m de un carril: es la que da el ejemplo resuelto de MnDOT, LRFD Bridge Design Manual §12.6 (2013), contrastado en tests/test_ve4f_relleno_bajo.py.
 
 > **`AASHTO_LRFD_9.5.10.1`** — El factor por relacion agua-cemento NO es opcional: la norma dice `shall`, y esta en el CUERPO ARTICULADO (columna izquierda), no en el comentario. Sostiene NOR-AAS-05.
 
@@ -451,6 +494,8 @@ línea que se pueda romper.
 > **`AASHTO_LRFD_9.5.10.6#ESPACIAMIENTO`** — Es la tercera viñeta de «Spacing shall not exceed the following:»; la primera, «12.0 in. for walls and footings greater than 18.0 in. thick». La tercera esta escrita «but not less than 18.0 in.»: leida a la letra, el tope es el MAYOR de tres veces el espesor y 18.0 in, que casi nunca gobierna; el espaciamiento maximo del armado lo fijan 5.10.3.2 y E.060 14.3.3.
 
 > **`AASHTO_LRFD_9.5.10.6#TEMPERATURA`** — Ec. 5.10.6-1, leida por imagen: A_s >= 1.30·b·h / [2·(b + h)·f_y], con el tope 0.11 <= A_s <= 0.60 (ec. 5.10.6-2), en in2/ft por cara y por direccion; b es el menor ancho de la seccion y h su menor espesor (in), f_y en ksi. El comentario explica el 1.30: es 0.0018·60 ksi·12 in/ft, y la ecuacion reparte 0.0018·b·h en el perimetro. En SI: `constantes_normativas.TEMPERATURA_COEFICIENTE_AASHTO_SI`.
+
+> **`AASHTO_LRFD_9.5.12.7.3`** — Para las losas con 2.0 ft o mas de relleno la Eq. 5.12.7.3-1 «may» dar un V_c mayor: es un PERMISO que el proyecto no toma. El cortante del portico se verifica con 5.7 (el procedimiento del armado del cabezal, simplificado de 5.7.3.4.1 o general de 5.7.3.4.2), que es lo que el articulo deja en pie.
 
 > **`AASHTO_LRFD_9.5.12.8.4#CARA`** — Es la seccion en que T-7b entrega el momento de la punta y del talon: la cara de la pantalla. El 5.12.8.2 manda que la zapata que soporta un muro «shall be assumed to act as a cantilever».
 
@@ -506,11 +551,15 @@ línea que se pueda romper.
 
 > **`AASHTO_LRFD_9.C11.6.3.3#REEMPLAZA`** — Es el comentario que dice por que el marco LRFD NO TIENE factor de seguridad al volteo: lo REEMPLAZAN el limite de excentricidad y la presion de contacto. Por eso la fila E2 del marco LRFD es la excentricidad (e <= B/3 en suelo, sobre cargas factoradas) y la del marco ASD el cociente de momentos de E.050 39.13.6: son dos verificaciones distintas con el mismo numero de fila, y no se cruzan.
 
+> **`AASHTO_LRFD_9.C11.6.3.7#FS`** — La frase sigue: «(i.e., φ = 0.75 approximately corresponds to FS = 1.3, and φ = 0.65 approximately corresponds to FS = 1.5). These resistance factors address the soil resistance.» Es el comentario el que convierte el FS de un programa de taludes en el lenguaje del marco LRFD.
+
 > **`AASHTO_LRFD_9.C11.6.5.3#AGUA_ABIERTO`** — El caso, en la frase anterior: «If the backfill material is a very open granular material, such as quarry spalls, it is possible that the water will not move with the soil during seismic loading». La presion hidrodinamica «Generally, these methods involve a form of the Westergaard solution» (Kramer, 1996): la formula no esta en ninguna fuente del repositorio de normas, y por eso el programa se detiene en este caso en vez de inventarla.
 
 > **`AASHTO_LRFD_9.C11.6.5.3#AGUA_TOTAL`** — El sujeto, en la frase anterior: «If the soil within the wedge is fully saturated, then the total unit weight (γt)». El mismo comentario abre el parrafo con que el agua dentro de la cuña «can influence the magnitude of the seismic active earth pressure» y pide el nivel medio del agua en el tiempo.
 
 > **`AASHTO_LRFD_9.C11.6.5.3#CUNA`** — Es lo que sostiene la cuña pseudoestatica bajo sismo (`M9.cuna_de_tanteo` con k_h y k_v): con el relleno que sube y se quiebra en la plataforma, Mononobe-Okabe con una pendiente equivalente queda fuera de su dominio con el k_h de archivo, y la cuña da cifra. La condicion de la frase -- suelo no estratificado detras del muro -- es la del relleno compactado del trasdos. El mismo comentario añade que estos metodos de equilibrio limite «may be overly conservative».
+
+> **`AASHTO_LRFD_9.C11.6.5.3#NIVEL_MEDIO`** — La frase anterior dice de que agua habla: «The groundwater within the active wedge or submerged conditions (e.g., as in the case of a retaining structure in a harbor or next to a lake or river) can influence the magnitude of the seismic active earth pressure». Es comentario y recomienda («should»). No dice cual es el nivel medio de un relleno que no drena, y la regla estatica de 11.6.6 (cita AASHTO_LRFD_9.11.6.6#DRENAJE) no lo trae: la hidrostatica plena es de la condicion estatica.
 
 > **`AASHTO_LRFD_9.C11.6.5.3#RESULTANTE`** — DESCRIBE la practica anterior (Seed y Whitman, 1970), no la prescribe: «Past practice … has been to either assume a uniform distribution … or, if the static and seismic components of earth pressure are treated separately, using an inverted trapezoid for the seismic component, with the seismic force located at 0.6h». El mismo comentario añade que la investigacion mas reciente situa la resultante del empuje TOTAL en h/3, que como minimo no debe quedar por debajo de la estatica, y que «a slightly higher combined static/seismic resultant location (e.g., 0.4h to 0.5h) may be considered». La fraccion se aplica al INCREMENTO (P_AE - P_A), no al total: con 0.6h en el incremento y h/3 en el estatico, la resultante combinada cae entre 0.4h y 0.5h. Es la fuente del criterio [C] 'punto_aplicacion_incremento_sismico'.
 
@@ -519,6 +568,8 @@ línea que se pueda romper.
 > **`AASHTO_LRFD_9.C11.6.5.4#H_MEDIOS`** — «These solutions» son las elasticas de Wood (1973) para muros rigidos. La fuente NO da un coeficiente sismico de reposo: manda k_h = 1.0·k_h0 (11.6.5.4) con los mismos metodos de 11.6.5.3, y pide considerar la resultante del empuje total a h/2. Es lo que el armado hace bajo el regimen que no cede: toma el empuje sismico que el ensamble entrega y, para el momento de la pantalla, la mayor de su posicion y h/2.
 
 > **`AASHTO_LRFD_9.C11.6.5.4#K0`** — Liga el muro que no cede con el empuje en REPOSO (K0) en el estado limite de resistencia. Es lo que la interfaz de T-7c marca: las solicitaciones salen con el coeficiente del muro que cede y llevan al lado el K0 de 3.11.5.2 (cita AASHTO_LRFD_9.3.11.5.2#K0).
+
+> **`AASHTO_LRFD_9.C12.11.2.1#COMBINACIONES`** — Comentario. Las tres: vertical maximo con horizontal maximo, vertical maximo con horizontal minimo, vertical minimo con horizontal maximo; y «Controlling force effects with maximum horizontal loads may occur with live load surcharge (LS) present or absent. Both situations should be investigated.» (misma pagina): por eso cada combinacion de horizontal maximo se corre con LS y sin LS.
 
 > **`AASHTO_LRFD_9.C12.12.3.2`** — Comentario. La frase empieza en la pag. 12-75: «Historically, AASHTO bridge specifications have contained minimum values for the moment of inertia and wall area of thermoplastic pipe; however, these values», y sigue en la 12-76: «... Thus, there is no way to provide meaningful generic information on section properties.» Son los minimos de la Tabla A12-11: con ellos el resultado es una COTA INFERIOR, no un veredicto sobre un producto (`M8.cota_inferior_hdpe`).
 
@@ -542,6 +593,8 @@ línea que se pueda romper.
 
 > **`AASHTO_LRFD_9.C3.4.1#GAMMA_EQ`** — EL 0.50 ESTA LITERAL EN LA FUENTE, pero como COMENTARIO y con el calificador «is reasonable»: no es una exigencia ni una de dos opciones tabuladas. Y el 0.0 aparece solo como referencia a ediciones pasadas del Standard Specifications, seguido de «This issue is not resolved». Quien lo determina es el PROYECTO («project-specific basis», Art. 3.4.1, pag. impresa 3-19), no «el propietario».
 
+> **`AASHTO_LRFD_9.C4.6.2.10.2#E_SPAN`** — Comentario. Es una de las dos lecturas que el criterio [A] 'carga_viva_tubo_concreto_somero' ofrece para el tubo de concreto somero: despreciar el aumento LLDF H deja el largo del area cargada en L_T, el del neumatico (la cota superior de la carga sobre el tubo); tomarlo, en L_T + LLDF (1.0 ft).
+
 > **`AASHTO_LRFD_9.C5.12.8.6.1#TALON`** — En el talon el cortante se toma en la cara trasera de la pantalla, no a d_v de ella. En la punta la fuente (5.12.8.6.1 → 5.7.3.2) permite tomarlo a d_v de la cara cuando la reaccion comprime el extremo: el programa lo toma en la cara tambien alli, que es mas cortante (lado seguro, declarado).
 
 > **`AASHTO_LRFD_9.C5.4.2.4#EC`** — Sigue la ec. C5.4.2.4-1, leida por imagen: E_c = 2,500·(f'c)^0.33 (ksi). Es la ec. 5.4.2.4-1 (E_c = 120,000·K1·w_c^2.0·f'c^0.33) con K1 = 1.0 y w_c = 0.145 kcf, redondeada. En SI, `EC_COEFICIENTE_AASHTO_SI`·f'c^0.33 = 9115·f'c^0.33 MPa. Solo entra en la relacion modular de la fisuracion (5.6.7).
@@ -561,6 +614,8 @@ línea que se pueda romper.
 > **`AASHTO_LRFD_9.T12.12.3.5-1`** — M_s en ksi por nivel de P_sp (1, 5, 10, 20, 40 y 60 psi) y por suelo y compactacion (Sn, Si, Cl; % del Proctor ESTANDAR, nota 2). Entre niveles se interpola (pag. 12-80).
 
 > **`AASHTO_LRFD_9.T12.12.3.5-2`** — Sn (Gravelly sand, SW): SW, SP, GW, GP, arenas y gravas con 12 % de finos o menos; AASHTO M 145 A-1, A-3. Si (Sandy silt, ML): GM, SM, ML, y GC y SC con menos de 20 % que pasa el tamiz N.° 200; A-2-4, A-2-5, A-4. Cl (Silty clay, CL): CL, MH, GC, SC, y GC y SC con mas de 20 %; A-2-6, A-2-7, A-5, A-6. La nota 2 de la Tabla 12.12.3.5-1 (pag. 12-81): el sufijo es el % de la densidad maxima de AASHTO T 99 (Proctor Estandar).
+
+> **`AASHTO_LRFD_9.T12.5.5-1#CAJON_IN_SITU`** — Fila de la tabla: flexion 0.90, cortante 0.85 (la del prefabricado, 1.00 y 0.90). Vista de calculo en constantes_normativas (PHI_*_CAJON_IN_SITU). El articulo 12.5.5 manda tomarlos de esta tabla (cita AASHTO_LRFD_9.12.5.5).
 
 > **`AASHTO_LRFD_9.T12.6.6.3-1`** — LA TABLA VIVE UNA PAGINA DESPUES QUE SU NUMERAL, y por eso lleva cita propia: el articulado 12.6.6.3 abre en la 12-21 (PDF 1659) y la tabla entera esta en la 12-22 (PDF 1660). Citarlas con la misma pagina manda al revisor a la pagina donde la tabla no esta. SUS COLUMNAS NO SON LAS QUE EL EXPEDIENTE SUPONIA: son «Type», «Condition» y «Minimum Cover*», TRES, y las condiciones de pavimento son VALORES de la segunda columna que solo aparecen en 2 de los 13 tipos. No es una matriz tipo x condicion de pavimento. El repositorio ya la leia asi -- repite la misma fila en las tres condiciones para el metal corrugado, en vez de inventarle dos que la tabla no trae --, y esta verificacion lo confirma.
 
@@ -798,6 +853,7 @@ línea que se pueda romper.
 | `E050.26.2#PROFUNDIDAD` | Art. 26.2 | «Profundidad de cimentación» | pág. impresa **38** · PDF 38 | exigencia | 2026-11-12 · texto |
 | `E050.30.3` | Art. 30.3 | «Cimentaciones superficiales en taludes o en su cercanía» | pág. impresa **39** · PDF 39 | exigencia | 2026-08-28 · texto |
 | `E050.38.1` | Art. 38, 38.1 | «Licuación de suelos» | pág. impresa **51** · PDF 51 | definicion | 2026-11-11 · texto |
+| `E050.38.3` | Art. 38, 38.3 | «Licuación de suelos» | pág. impresa **51** · PDF 51 | exigencia | 2026-08-28 · texto |
 | `E050.38.4.3` | 38.4.3 | Licuación de suelos › «Exploración de campo» | pág. impresa **51** · PDF 51 | exigencia | 2026-08-28 · texto |
 | `E050.39.13.6` | 39.13.6 a) y b) | Sostenimiento de excavaciones › «Muros de contención» | pág. impresa **72** · PDF 72 | exigencia | 2026-08-28 · ambos |
 | `E050.39.13.8#DRENAJE` | 39.13.8 | Sostenimiento de excavaciones › «Muros de contención» | pág. impresa **73** · PDF 73 | exigencia | 2026-11-13 · texto |
@@ -818,6 +874,8 @@ línea que se pueda romper.
 > **`E050.30.3`** — AQUI la norma SI dice «condiciones sismicas». Es el unico de los tres numerales de FS que usa esa palabra.
 
 > **`E050.38.1`** — El 38.1 lo dice de los suelos granulares y de algunos suelos granulares con finos cohesivos ubicados bajo la napa freatica; el 38.2, en la misma pagina, lista las caracteristicas que el suelo tiene que presentar a la vez para ser susceptible, y el 38.5 (pag. 52) manda el analisis del potencial de licuacion por Seed e Idriss. ESTE PROGRAMA NO EVALUA LA LICUACION: la cita existe para que la linea «no esta entre los grupos declarados deficientes» de un suelo SM, SP o ML no se lea como «apto» (H9).
+
+> **`E050.38.3`** — «En estos casos» son los del 38.2: suelo granular (arena, arena limosa, arena arcillosa, limo arenoso no plastico o grava en esa matriz) y sumergido. E.050 es norma de edificaciones: para la obra vial rige por analogia [N->], como en el resto del cabezal; lo que se toma de ella es A QUIEN le toca el analisis (el PR del EMS), no el disparador, que es el de AASHTO 10.5.4.2.
 
 > **`E050.38.4.3`** — NOR-E050-02, cerrado, y con un hallazgo de mas. (1) EL ESPACIAMIENTO SI TIENE NUMERAL: es este, y el repositorio lo declaraba «sin numeral». Ademas va reforzado con «obligatoriamente». (2) LO GRAVE, que el repositorio omitia: los dos valores viven bajo «Articulo 38.- Licuacion de suelos», y el 38.4.1 los dispara SOLO «Cuando la historia sismica del lugar haga sospechar la posibilidad de ocurrencia de Licuacion». NO son el programa de SPT general de E.050 -- ese esta en el 14.2.3 y la Tabla 3, pags. 18-19 --: son el programa de exploracion PARA ANALISIS DE LICUEFACCION. Citarlos como minimos universales del SPT extiende la norma mas alla de lo que dice.
 
@@ -941,25 +999,43 @@ línea que se pueda romper.
 |---|---|---|---|---|---|
 | `EG2013.205.12#COMPACTACION` | 205.12 c) 1 | «Compactación» | pág. impresa **193** · PDF 201 | exigencia | 2026-11-12 · texto |
 | `EG2013.205.12c1` | 205.12 c) 1. | «205.12 Criterio» | pág. impresa **193** · PDF 201 | exigencia | 2026-08-28 · texto |
+| `EG2013.501.01#CLASES` | 501.01 | «Excavación para estructuras» | pág. impresa **885** · PDF 893 | definicion | 2026-11-20 · texto |
+| `EG2013.501.04#CARAS` | 501.04 | «Requerimientos de construcción» | pág. impresa **886** · PDF 894 | exigencia | 2026-11-20 · texto |
+| `EG2013.501.04#ENCOFRADO` | 501.04 | «Requerimientos de construcción» | pág. impresa **886** · PDF 894 | permiso | 2026-11-20 · texto |
 | `EG2013.501.07` | 501.07 | «Tolerancias» | pág. impresa **889** · PDF 897 | exigencia | 2026-11-12 · texto |
+| `EG2013.501.09` | 501.09 | «Medición» | pág. impresa **890** · PDF 898 | exigencia | 2026-11-20 · texto |
 | `EG2013.503.01#ALCANCE` | 503.01 | «Descripción» | pág. impresa **905** · PDF 913 | definicion | 2026-08-28 · texto |
 | `EG2013.503.04#T503_07` | 503.04, Tabla 503-07 | «Clases de concreto» | pág. impresa **912** · PDF 920 | exigencia | 2026-08-28 · ambos |
 | `EG2013.503.10h#CAJON` | 503.10 h) | «Operaciones para el vaciado de la mezcla» | pág. impresa **926** · PDF 934 | recomendacion | 2026-08-28 · texto |
 | `EG2013.503.11g#COTAS` | 503.11 g) 2. | 503.11 Criterios › «Calidad del trabajo terminado» | pág. impresa **934** · PDF 942 | exigencia | 2026-11-12 · texto |
+| `EG2013.503.12` | 503.12 | «Medición» | pág. impresa **935** · PDF 943 | exigencia | 2026-11-20 · texto |
+| `EG2013.503.13#DESPERDICIOS` | 503.13 | «Pago» | pág. impresa **935** · PDF 943 | definicion | 2026-11-20 · texto |
+| `EG2013.504.01#PESOS` | 504.01 c., Tabla 504-01 | «Peso de las barras por unidad de longitud» | pág. impresa **940** · PDF 948 | definicion | 2026-11-20 · texto |
+| `EG2013.504.10` | 504.10 | «Medición» | pág. impresa **946** · PDF 954 | exigencia | 2026-11-20 · texto |
 | `EG2013.506.01#ALCANCE` | 506.01 | «Descripción» | pág. impresa **959** · PDF 967 | definicion | 2026-08-28 · texto |
 | `EG2013.506.02#CLASE` | 506.02 | «Tubería» | pág. impresa **959** · PDF 967 | exigencia | 2026-11-12 · texto |
+| `EG2013.506.06#ZANJA` | 506.06 | «506.06 Preparación del terreno base» | pág. impresa **960** · PDF 968 | exigencia | 2026-11-20 · texto |
 | `EG2013.506.07` | 506.07 | «Solado» | pág. impresa **960** · PDF 968 | exigencia | 2026-11-12 · texto |
+| `EG2013.506.07#ESPESOR` | 506.07 | «506.07 Solado» | pág. impresa **960** · PDF 968 | exigencia | 2026-11-20 · texto |
 | `EG2013.506.10` | 506.10 | «Sujeción» | pág. impresa **961** · PDF 969 | exigencia | 2026-11-12 · texto |
+| `EG2013.506.14#LONGITUD` | 506.14 | «Medición» | pág. impresa **964** · PDF 972 | exigencia | 2026-11-20 · texto |
 | `EG2013.507.02#EMPERNADA` | 507.02 a) | «Tubos conformados estructuralmente de planchas o láminas corrugadas de acero galvanizado en caliente» | pág. impresa **969** · PDF 977 | exigencia | 2026-11-12 · texto |
+| `EG2013.507.05#ZANJA` | 507.05 | «507.05 Preparación del terreno base» | pág. impresa **973** · PDF 981 | exigencia | 2026-11-20 · texto |
 | `EG2013.507.10` | 507.10 | «Aguas y Suelos agresivos» | pág. impresa **974** · PDF 982 | exigencia | 2026-11-11 · texto |
+| `EG2013.507.12#LONGITUD` | 507.12 | «Medición» | pág. impresa **977** · PDF 985 | exigencia | 2026-11-20 · texto |
 | `EG2013.508.02#GRANULAR` | 508.02 d) | «Material para cama de asiento» | pág. impresa **982** · PDF 990 | exigencia | 2026-11-12 · texto |
 | `EG2013.508.02a` | 508.02 a | «Tubos de polietileno de alta densidad (PAD o HDPE)» | pág. impresa **981** · PDF 989 | definicion | 2026-11-11 · texto |
+| `EG2013.508.04#ZANJA` | 508.04 | «508.04 Preparación del terreno y excavación» | pág. impresa **983** · PDF 991 | exigencia | 2026-11-20 · texto |
+| `EG2013.508.05#CAMA` | 508.05 | «508.05 Preparación de la cama de asiento del tubo» | pág. impresa **983** · PDF 991 | exigencia | 2026-11-20 · texto |
 | `EG2013.508.07#COMPACTACION` | 508.07 | «Colocación del relleno alrededor de la estructura» | pág. impresa **984** · PDF 992 | exigencia | 2026-11-12 · texto |
 | `EG2013.508.07#RELLENO_MIN` | 508.07 | «Colocación del relleno alrededor de la estructura» | pág. impresa **984** · PDF 992 | exigencia | 2026-08-28 · texto |
+| `EG2013.508.11#LONGITUD` | 508.11 | «Medición» | pág. impresa **987** · PDF 995 | exigencia | 2026-11-20 · texto |
 | `EG2013.511.05#T511_02_NOTA_5` | 511.05, Tabla 511-02, nota (5) | «511.05 Geotextiles usados en subdrenaje» | pág. impresa **1011** · PDF 1019 | definicion | 2026-11-12 · ambos |
 | `EG2013.511.08#EROSION` | 511.08 | «511.08 Geotextiles usados en control permanente de erosión» | pág. impresa **1014** · PDF 1022 | definicion | 2026-11-12 · texto |
 | `EG2013.511.08#NOTA_5A` | 511.08, Tabla 511-06, nota (5) a | «511.08 Geotextiles usados en control permanente de erosión» | pág. impresa **1015** · PDF 1023 | recomendacion | 2026-11-12 · texto |
 | `EG2013.511.08#T511_06` | 511.08, Tabla 511-06 | «511.08 Geotextiles usados en control permanente de erosión» | pág. impresa **1015** · PDF 1023 | exigencia | 2026-11-12 · texto |
+| `EG2013.511.13` | 511.13 | «Medición» | pág. impresa **1018** · PDF 1026 | exigencia | 2026-11-20 · texto |
+| `EG2013.603.10` | 603.10 | «Medición» | pág. impresa **1064** · PDF 1072 | definicion | 2026-11-20 · texto |
 | `EG2013.T205-01` | 205.02, Tabla 205-01 | «Requisitos de los materiales» | pág. impresa **186** · PDF 194 | exigencia | 2026-11-12 · texto |
 | `EG2013.T301-01` | 301.02, Tabla 301-01 | «Tabla 301-01» | pág. impresa **238** · PDF 246 | exigencia | 2026-11-12 · texto |
 | `EG2013.T507-01` | 507.02 a), Tabla 507-01 | «Espesores Mínimos de Alcantarillas Circulares y Abovedadas» | pág. impresa **970** · PDF 978 | exigencia | 2026-11-12 · texto |
@@ -968,7 +1044,15 @@ línea que se pueda romper.
 
 > **`EG2013.205.12c1`** — ES LA REMISION DE SEGUNDO NIVEL de tres de las cuatro fichas de cama y relleno: el «95 % MDS» que el expediente les atribuia no es literal de las Secciones 505, 506 ni 507 -- llega desde aqui, por remision. El valor es correcto; lo que faltaba era decir por que via llega, que es la diferencia entre una cita y una deduccion.
 
+> **`EG2013.501.01#CLASES`** — Las cuatro clases que siguen son las cuatro partidas de 501.10: roca en seco (501.A), roca bajo agua (501.B), material comun en seco (501.C) y material comun bajo agua (501.D). «Bajo agua» es «en donde la presencia permanente de agua dificulte los trabajos de excavación» (pag. impresa 886); roca, el material que se excava «mediante el uso sistemático de explosivos».
+
+> **`EG2013.501.04#CARAS`** — Es el defecto del sobreancho: cero, la excavacion ceñida a la estructura. La frase siguiente es el permiso de los 45 cm (EG2013.501.04#ENCOFRADO).
+
+> **`EG2013.501.04#ENCOFRADO`** — PERMISO con tope: «se podrá extender hasta 45 cm». Es el techo de la ventana del criterio 'sobreancho_excavacion_estructuras_m'; si hacen falta encofrados lo decide el proyecto.
+
 > **`EG2013.501.07`** — Seccion 501, excavacion para estructuras. Es el extremo ALTO de la ventana del criterio [A] 'desajuste_empalme_canal_m': la cota de la excavacion que recibe la losa de fondo admite 2 cm. Tampoco habla de empalmes: es analogia declarada.
+
+> **`EG2013.501.09`** — «En su posición original»: el volumen se mide en banco, sin esponjamiento; el transporte del material excavado se paga por la Seccion 700 (501.10). Las «líneas indicadas en el Proyecto» son las de la estructura (501.04) y, para las zanjas de los tubos, el ancho que fijan 506.06, 507.05 y 508.04.
 
 > **`EG2013.503.01#ALCANCE`** — «ESTRUCTURAS DE DRENAJE» ES EL TERMINO DE ENCABEZAMIENTO y la lista que sigue es ENUNCIATIVA, no cerrada: un marco de concreto vaciado in situ es una estructura de drenaje y no esta nombrado ahi. Que si lo esta bajo esta Seccion lo prueba el 503.10 h), que le fija plazo de desencofrado a la «placa superior en alcantarillas de cajon». Por si sola esta cita NO dice que el marco se pague aqui: eso es ensamblaje del proyecto sobre las tres citas mas la ausencia de partida propia.
 
@@ -978,25 +1062,49 @@ línea que se pueda romper.
 
 > **`EG2013.503.11g#COTAS`** — Es una tolerancia de ACEPTACION de la obra terminada (503.11, «Aceptación de los trabajos»), bajo el rotulo «2. Otras tolerancias» de g. «Calidad del trabajo terminado», junto a «Espesores de placas: -10 mm a +20 mm». La cota superior de la placa de FONDO de un marco es su invert: el proyecto la toma POR ANALOGIA como el desajuste que admite el empalme de la salida con el fondo del canal (VC2, criterio [A] 'desajuste_empalme_canal_m'). La fuente no habla de empalmes ni de canales.
 
+> **`EG2013.503.12`** — «Realmente suministrada, colocada y consolidada»: el volumen NETO, con el vano del conducto descontado y sin factor de desperdicio, que 503.13 pone en el precio unitario (EG2013.503.13#DESPERDICIOS).
+
+> **`EG2013.503.13#DESPERDICIOS`** — Lo que el precio unitario del concreto «deberá cubrir»: el desperdicio esta en el precio, no en la cantidad. 504.11 dice lo mismo del acero («corte, desperdicios, doblamiento»).
+
+> **`EG2013.504.01#PESOS`** — La tabla da, por barra, el diametro nominal en mm y pulgadas y el peso en kg/m: 1/4" 0,25; 3/8" 0,56; 1/2" 1,00; 5/8" 1,55; 3/4" 2,24; 7/8" 3,04; 1" 3,97; 1 1/8" 5,06; 1 1/4" 6,41; 1 3/8" 7,91; 1 3/4" 11,38; 2 1/4" 20,24. Transcritos en `constantes_normativas.PESO_BARRA_KG_M_EG2013`. La remision esta en 504.01 c. (pag. impresa 939): «Los pesos unitarios, se indican en la Tabla 504-01».
+
+> **`EG2013.504.10`** — La unidad es el kilogramo, «aproximado al décimo de kilogramo» (pag. impresa 945). «Longitudes de barras utilizadas» son las del despiece de los planos (504.03): con anclajes, ganchos y los empalmes indicados en el Proyecto, y sin los «empalmes adicionales a los indicados en el Proyecto». El programa entrega el acero por metro de cada cara, no el despiece.
+
 > **`EG2013.506.01#ALCANCE`** — LO QUE ESTA CITA HACE ES DELIMITAR, y por eso es DEFINICION y no EXIGENCIA: no prohibe nada, dice de que trata la Seccion. Su objeto es «la instalacion de TUBOS», y las otras tres piezas de la misma Seccion lo confirman -- 506.02 remite a AASHTO M-170M y pide el «diametro interno», y la partida 506.A del Anexo 2 se mide en METRO LINEAL --. Un marco vaciado in situ no tiene diametro interior ni se mide por metro lineal de tubo suministrado: la 506 no lo alcanza. Los cuatro titulos de las Secciones 505 a 508 empiezan por «Tuberia».
 
 > **`EG2013.506.02#CLASE`** — La norma peruana manda que el PROYECTO indique la clase: es la salida de la Fase 8 para el tubo de concreto, no una entrada.
 
+> **`EG2013.506.06#ZANJA`** — «Por lo menos»: es el minimo, y es el que el metrado toma como linea del Proyecto mientras los planos no indiquen otra. 507.06 remite a este mismo ancho para el solado del TMC.
+
 > **`EG2013.506.07`** — El solado: «una capa o solado de material granular, que cumplan con las características de material para subbase, de por lo menos 15 cm de espesor compactado», compactado como la corona del terraplen (205.12(c)(1): 95 % del Proctor Modificado). La sujecion (506.10) sube con el mismo material y la misma densidad hasta un sexto del diametro exterior; el relleno (506.11) es el de la Seccion 502.
+
+> **`EG2013.506.07#ESPESOR`** — El solado granular bajo el tubo de concreto reforzado; 507.06 manda construir el del TMC «de acuerdo con el procedimiento descrito en la Subsección 506.07». El metrado toma el minimo como linea del Proyecto: el fondo de la zanja queda a 15 cm bajo el fondo exterior del tubo.
 
 > **`EG2013.506.10`** — Por encima de 1/6 del diametro exterior el relleno es el de la Seccion 502 (506.11), que remite a la densidad de 205.12(c)(1): 90 % del Proctor Modificado en base y cuerpo. Con esas dos exigencias el EG-2013 no garantiza el 95 % de Categoria I en toda la zona de riñones que pide el Tipo 1 de AASHTO, y si excluye el Tipo 4, que no exige compactacion: es la lectura con que 'instalacion_estandar_concreto' fija su ventana.
 
+> **`EG2013.506.14#LONGITUD`** — Tuberia de concreto reforzado, en metros lineales «aproximado al decímetro». La partida 506.A se paga «según el diámetro interno» (506.15) e incluye el solado y la sujecion granulares.
+
 > **`EG2013.507.02#EMPERNADA`** — El mismo inciso fija las normas de los pernos (ASTM A-449 / F568 y A 307 Grado A) y de las tuercas (A-563 Grado C), y habla del «corrugado, perforado y formación de las planchas».
 
+> **`EG2013.507.05#ZANJA`** — «El diámetro del tubo»: el nominal, que en el TMC es el interior (507.A se designa por su diametro).
+
 > **`EG2013.507.10`** — ES EL UNICO UMBRAL NUMERICO DE DURABILIDAD DE LA TUBERIA QUE LA NORMA PERUANA ESCRIBE, y esta en la Seccion 507 «Tubería metálica corrugada»: pH < 5.8 del AGUA QUE CONDUCE el tubo. EXIGE PROTEGER, no prohibe el material, y no dice con que («acorde al Proyecto»). «Sustancias agresivas» del suelo no se cuantifica. Las Secciones 505, 506 y 508 (concreto simple, concreto reforzado y polietileno) no traen clausula equivalente: buscadas por «agresiv», «corrosi», «salin», «pH» y «resistividad» en las pags. PDF 940 a 1000.
+
+> **`EG2013.507.12#LONGITUD`** — Tuberia metalica corrugada; la partida 507.A se paga «según el diámetro y espesor o calibre de la tubería» (507.13) e incluye el solado de material granular.
 
 > **`EG2013.508.02#GRANULAR`** — La Seccion 301 es la de los afirmados: franjas granulometricas con 5 a 25 % de finos e indice de plasticidad de 4 a 9 (cita EG2013.T301-01). La misma letra dice que la cama «estará constituida por arena gruesa».
 
 > **`EG2013.508.02a`** — La norma peruana de construccion DEFINE el producto: interior liso y pared exterior corrugada; sigue «Debe cumplir con la guía AASHTO, clasificación tipo “S”» y remite a AASHTO M294. Respalda DOS cosas de T-4: que la fila de n que corresponde al HDPE en la Table B.1 de HDS-5 es la de interior liso («Smooth») y no la corrugada, y que el diametro exterior del tubo no es el interior mas una pared delgada sino mas la altura de un perfil corrugado.
 
+> **`EG2013.508.04#ZANJA`** — El diametro nominal del tubo de HDPE, que es el interior.
+
+> **`EG2013.508.05#CAMA`** — La frase siguiente sube la cama a 30 cm «en roca o suelo blando». El metrado toma el minimo de 0,15 m como linea del Proyecto; el suelo de fundacion que pida mas lo dice el EMS.
+
 > **`EG2013.508.07#COMPACTACION`** — El material del relleno es el de la Seccion 502 (mismo numeral), y el de la cama y la SUJECION LATERAL lo fija el 508.02 d): granular (cita EG2013.508.02#GRANULAR). Con 95 % del Proctor MODIFICADO la compactacion es al menos la de las columnas «-95» de la Tabla 12.12.3.5-1 de AASHTO (Proctor ESTANDAR, T 99), porque la densidad maxima del ensayo modificado no es menor que la del estandar. La version anterior de esta nota decia que el tipo de suelo no lo fija la norma y que por eso se tomaba «el mas desfavorable» (Cl-95): omitia el 508.02 d) (auditoria de T-5).
 
 > **`EG2013.508.07#RELLENO_MIN`** — NOR-EG-01 / NOR-EG-02. La pagina impresa es la 984 (PDF 992). La 982 (PDF 990) trae 508.02 b), c) y d) -- calidad del tubo, muestreo y material para cama de asiento --, nada de altura de relleno. El desfase de este documento es +8, el mayor del corpus, y confundir impresa con PDF produce exactamente ese error. NO CONFUNDIR CON SU VECINA: el 508.08 (pag. impresa 985) tambien dice 0,30 m, pero es la exigencia de EJECUCION -- que el equipo pesado no circule antes de alcanzarla --, no la altura minima de diseño. Dos frases con el mismo numero en paginas contiguas.
+
+> **`EG2013.508.11#LONGITUD`** — Tuberia de polietileno de alta densidad; la partida 508.A se paga «según el diámetro de la tubería» (508.12) e incluye la cama de asiento.
 
 > **`EG2013.511.05#T511_02_NOTA_5`** — LA TABLA HERMANA de la 511-06, en la misma Seccion 511: misma fila «Tamaño de Abertura Aparente», mismas tres columnas por el pasante del tamiz N.º 200 y las mismas celdas 0,43 / 0,25 / 0,22. Aqui las dos notas llevan numeros DISTINTOS: el rotulo de la fila dice «Tamaño de Abertura Aparente (3) (4)», y la (4) es el diseño para un sitio especifico en suelos problematicos; la nota de los suelos cohesivos es la (5), que termina «es de 0.30 mm», y la lleva SOLO la celda «0,22 (5)» de la columna «>50». Leida por texto y por imagen. No se aplica al enrocado --es la tabla de subdrenaje--: se cita como el hecho de la propia fuente que sostiene la lectura de la nota (5) de la Tabla 511-06 (`Interpretacion` de EG2013.511.08#T511_06).
 
@@ -1005,6 +1113,10 @@ línea que se pueda romper.
 > **`EG2013.511.08#NOTA_5A`** — Frase completa: «Debería efectuarse un diseño del geotextil para un sitio específico especialmente si uno o más de los siguientes suelos problemáticos son encontrados: suelos inestables o altamente erosionables tales como los limos no cohesivos; suelos de gradación abierta; suelos laminados alternando arenas y limos; arcillas dispersivas y/o polvo de roca.» La llamada (5) la llevan el rotulo de la FILA «Tamaño de Abertura Aparente (3) (4) (5)» y la celda «0,22(5)». El proyecto lee que el rotulo llama a ESTA nota, que vale para la fila entera, y la celda a la (5) b (`Interpretacion` de la cita EG2013.511.08#T511_06).
 
 > **`EG2013.511.08#T511_06`** — La Tabla 511-06 «Geotextiles para control permanente de erosión-requerimientos» entra por el «Porcentaje de Suelo in Situ que pasa Tamiz N.º 200 (0,075 mm)» en tres columnas (< 15, 15-50, > 50) y fija la permitividad minima (0,7 / 0,2 / 0,1 s-1) y el tamaño de abertura aparente maximo (0,43 / 0,25 / 0,22 mm); la clase es la 1 de la Tabla 511-01 (la 2 para los tejidos de monofilamento) y la estabilidad ultravioleta, 50 % tras 500 horas. Su nota (5) a pide un diseño especifico en suelos problematicos y su nota (5) b da 0,30 mm para cohesivos con indice de plasticidad mayor de 7. LA LLAMADA (5) APARECE DOS VECES, en el rotulo de la fila «Tamaño de Abertura Aparente (3) (4) (5)» y en la celda «0,22(5)» de la columna «>50», y la tabla no dice que nota llama cada una: la lectura del proyecto va en `interpretacion`. El dato que la tabla pide --el pasante del tamiz N.º 200-- es del EMS.
+
+> **`EG2013.511.13`** — El area cubierta, sin sumar traslapes: el geotextil bajo el enrocado de salida se mide con el area en planta del enrocado. Partida 511.A (511.14).
+
+> **`EG2013.603.10`** — La Seccion 603 «Defensas ribereñas» es la unica del EG-2013 que mide enrocado, y lo mide por metro lineal de defensa de taludes y riberas (603.01). El enrocado de salida de una alcantarilla no es una defensa ribereña: el EG-2013 no le da partida propia, y el metrado lo entrega en m3 para una partida especial del proyecto.
 
 > **`EG2013.T205-01`** — Los materiales de terraplen, que la Seccion 502 (502.02, pag. impresa 895) manda usar en los rellenos para estructuras: «Tipo de Material: A-1-a, A-1-b, A-2-4, A-2-6 y A-3», con indice de plasticidad menor de 11 en base y cuerpo y menor de 10 en la corona. El A-2-6 es el mas plastico de los cinco, y la Tabla 12.12.3.5-2 de AASHTO LRFD lo agrupa con las arcillas (Cl).
 
@@ -1018,11 +1130,14 @@ línea que se pueda romper.
 |---|---|---|---|---|---|
 | `HDS5_3ED.1.2#MODELO` | 1.2 | «COMPARISONS BETWEEN CULVERTS, BRIDGES, AND STORM DRAINS» | pág. impresa **1.4** · PDF 42 | recomendacion | 2026-09-22 · ambos |
 | `HDS5_3ED.1.2#NBIS` | 1.2 | «COMPARISONS BETWEEN CULVERTS, BRIDGES, AND STORM DRAINS» | pág. impresa **1.3** · PDF 41 | definicion | 2026-09-22 · ambos |
+| `HDS5_3ED.2.2.3a#SECCION_TIPICA` | 2.2.3 a. | «Waterway Data» | pág. impresa **2.6** · PDF 68 | recomendacion | 2026-11-20 · texto |
+| `HDS5_3ED.2.2.3e#NORMAL` | 2.2.3 e. | «Waterway Data» | pág. impresa **2.7** · PDF 69 | permiso | 2026-11-20 · texto |
 | `HDS5_3ED.2.2.4#LONGITUD` | 2.2.4 b. | «Roadway Data» | pág. impresa **2.8** · PDF 70 | aproximacion | 2026-11-11 · ambos |
 | `HDS5_3ED.2.2.5#EMBALSE` | 2.2.5 | «Allowable Headwater» | pág. impresa **2.9** · PDF 71 | definicion | 2026-11-13 · texto |
 | `HDS5_3ED.2.2.5#NO_EXCEDER` | 2.2.5 | «Allowable Headwater» | pág. impresa **2.9** · PDF 71 | recomendacion | 2026-11-13 · texto |
 | `HDS5_3ED.2.2.5a#COTA_CRITICA` | 2.2.5 a. | «Allowable Headwater» | pág. impresa **2.10** · PDF 72 | permiso | 2026-11-13 · texto |
 | `HDS5_3ED.2.2.5a#COTA_DE_DANO` | 2.2.5 a. | «Allowable Headwater» | pág. impresa **2.10** · PDF 72 | permiso | 2026-11-13 · texto |
+| `HDS5_3ED.2.2.5b#AUMENTO` | 2.2.5 b. | «Allowable Headwater» | pág. impresa **2.10** · PDF 72 | definicion | 2026-11-20 · texto |
 | `HDS5_3ED.2.2.5d#AGENCIAS` | 2.2.5 d. | «Allowable Headwater» | pág. impresa **2.10** · PDF 72 | definicion | 2026-11-13 · texto |
 | `HDS5_3ED.3.1.3#CRITICO_EN_LA_ENTRADA` | 3.1.3 | «3.1.3  Inlet Control» | pág. impresa **3.2** · PDF 84 | definicion | 2026-11-12 · texto |
 | `HDS5_3ED.3.1.3#SUMERGENCIA` | 3.1.3 | «Inlet Control» | pág. impresa **3.2** · PDF 84 | definicion | 2026-09-20 · texto |
@@ -1034,6 +1149,10 @@ línea que se pueda romper.
 | `HDS5_3ED.3.1.4#LONGITUD` | 3.1.4 | «Outlet Control» | pág. impresa **3.9** · PDF 91 | aproximacion | 2026-11-11 · texto |
 | `HDS5_3ED.3.1.4#N_TIPICO` | 3.1.4 | «Outlet Control» | pág. impresa **3.8** · PDF 90 | definicion | 2026-11-17 · ambos |
 | `HDS5_3ED.3.1.4#REMANSO` | 3.1.4 | «Outlet Control» | pág. impresa **3.12** · PDF 94 | definicion | 2026-09-21 · texto |
+| `HDS5_3ED.3.1.5#CD_SI` | 3.1.5 | «Roadway Overtopping» | pág. impresa **3.15** · PDF 97 | definicion | 2026-11-20 · texto |
+| `HDS5_3ED.3.1.5#EC_3_9` | 3.1.5 | «Roadway Overtopping» | pág. impresa **3.15** · PDF 97 | definicion | 2026-11-20 · texto |
+| `HDS5_3ED.3.1.5#TANTEO` | 3.1.5 | «Roadway Overtopping» | pág. impresa **3.16** · PDF 98 | definicion | 2026-11-20 · texto |
+| `HDS5_3ED.3.1.5#UN_TRAMO` | 3.1.5 | «Roadway Overtopping» | pág. impresa **3.16** · PDF 98 | permiso | 2026-11-20 · texto |
 | `HDS5_3ED.3.1.6#V_SALIDA` | 3.1.6 | «Outlet Velocity» | pág. impresa **3.18** · PDF 100 | definicion | 2026-09-20 · texto |
 | `HDS5_3ED.3.1.6#V_SALIDA_TW` | 3.1.6 | «Outlet Velocity» | pág. impresa **3.18** · PDF 100 | definicion | 2026-09-20 · texto |
 | `HDS5_3ED.3.3.2#V_SALIDA_ENTRADA` | 3.3.2 | «Inlet Control» | pág. impresa **3.24** · PDF 106 | aproximacion | 2026-09-20 · texto |
@@ -1062,6 +1181,8 @@ línea que se pueda romper.
 | `HDS5_3ED.5.4.3#REPARTO` | 5.4.3 | «Multiple Barrels» | pág. impresa **5.15** · PDF 151 | aproximacion | 2026-09-20 · texto |
 | `HDS5_3ED.5.4.4#PENDIENTE_10` | 5.4.4 | «Barrels on Steep Slopes» | pág. impresa **5.16** · PDF 152 | definicion | 2026-11-11 · texto |
 | `HDS5_3ED.5.4.4#PENDIENTE_20` | 5.4.4 | «Barrels on Steep Slopes» | pág. impresa **5.16** · PDF 152 | recomendacion | 2026-11-11 · texto |
+| `HDS5_3ED.5.4.5#DESBORDE_ACEPTADO` | 5.4.5 | «Embankment Overtopping» | pág. impresa **5.16** · PDF 152 | permiso | 2026-11-20 · texto |
+| `HDS5_3ED.5.4.5#HEC23` | 5.4.5 | «Embankment Overtopping» | pág. impresa **5.17** · PDF 153 | permiso | 2026-11-20 · texto |
 | `HDS5_3ED.A.2` | A.2, A.2.1 | «INLET CONTROL EQUATIONS» | pág. impresa **A.2** · PDF 191 | definicion | 2026-08-28 · texto |
 | `HDS5_3ED.A.2.1#FORMA_1` | A.2.1 | «Unsubmerged Inlet Control Equations» | pág. impresa **A.1** · PDF 190 | definicion | 2026-11-11 · texto |
 | `HDS5_3ED.A.2.1#KS` | A.2.1 | «Unsubmerged Inlet Control Equations» | pág. impresa **A.2** · PDF 191 | definicion | 2026-08-28 · texto |
@@ -1072,6 +1193,7 @@ línea que se pueda romper.
 | `HDS5_3ED.A.3.1#CRITICO` | A.3.1 | «Elliptical Structural Plate Example» | pág. impresa **A.3** · PDF 192 | definicion | 2026-11-11 · texto |
 | `HDS5_3ED.B.2#CONCRETO_CAMPO` | B.2 | «CONCRETE PIPE CULVERTS» | pág. impresa **B.2** · PDF 204 | definicion | 2026-11-17 · texto |
 | `HDS5_3ED.B.3#CAJON_IN_SITU` | B.3 | «CONCRETE BOX CULVERT» | pág. impresa **B.2** · PDF 204 | definicion | 2026-11-12 · ambos |
+| `HDS5_3ED.F3.11` | Figura 3.11 | «Discharge coefficients for roadway overtopping» | pág. impresa **3.16** · PDF 98 | definicion | 2026-11-20 · ambos |
 | `HDS5_3ED.SIMBOLOS#THETA_W` | List of Symbols, ΘW | «LIST OF SYMBOLS (Cont.)» | pág. impresa **xix** · PDF 23 | definicion | 2026-11-13 · texto |
 | `HDS5_3ED.TA.1` | Table A.1 | «Constants for Inlet Control Equations for Charts in Appendix G.» | pág. impresa **A.8** · PDF 197 | definicion | 2026-08-28 · ambos |
 | `HDS5_3ED.TB.1` | Table B.1 | «Manning's n Values for Culverts.» | pág. impresa **B.6** · PDF 208 | definicion | 2026-11-11 · texto |
@@ -1081,6 +1203,10 @@ línea que se pueda romper.
 
 > **`HDS5_3ED.1.2#NBIS`** — La unica fuente de normas/ que dice que ancho cuenta en un cruce de VARIOS barriles: el TOTAL («the total width of a multiple barrel crossing»), para la clasificacion como puente (NBIS). Es la parte que sostiene la lectura de `luz_m` como abertura total del cruce (DIS-LUZ-DENOMINACION). El parrafo siguiente, en la pag. 1.4, matiza que para el METODO HIDRAULICO la guia razonable es modelar como puente «a single culvert with a span of 20 ft (6.1 m) or more» (HDS5_3ED.1.2#MODELO).
 
+> **`HDS5_3ED.2.2.3a#SECCION_TIPICA`** — Inciso a. «Cross Sections» de los datos del cauce: lo deseable son al menos dos secciones levantadas, una aguas arriba y otra aguas abajo, y mas aguas arriba si hay embalse importante. Con UNA, se toma como seccion tipica. Es lo que sostiene que V5, con el perfil de remanso, corra el paso directo sobre UNA seccion trapecial prismatica del cauce de aproximacion (dato externo `seccion_cauce_aproximacion`): la lectura de que esa seccion representa todo el tramo remansado es del proyecto, y la fuente dice que hay que comprobarla con la cartografia y las fotos.
+
+> **`HDS5_3ED.2.2.3e#NORMAL`** — Inciso e. «Tailwater»: «these conditions» son los embalses, obstrucciones, estrechamientos, mareas y confluencias aguas abajo; sin ellos, la lamina del cauce natural es la del tirante normal. La fuente lo dice para el TW; V5 lo aplica al cauce de APROXIMACION para obtener el tirante natural sobre el que se mide lo que la obra añade (lectura del proyecto). La frase sigue: si esas condiciones existen, hace falta el perfil de la lamina «typically using the standard step method».
+
 > **`HDS5_3ED.2.2.4#LONGITUD`** — Inciso «b. Culvert Length» del num. 2.2.4, que abre en la pag. impresa 2.7 (PDF 69). Las dos oraciones anteriores dicen COMO se obtiene: «The dimensions are obtained by superimposing the estimated culvert barrel on the roadway cross section and the streambed profile (Figure 2.4). This superposition establishes the inlet and outlet invert elevations». La Figura 2.4 (misma pagina, leida por imagen) dibuja la seccion A-A SOBRE EL EJE ESVIADO del conducto, con tres cotas rotuladas en la corona -- «Pavement Elevation» en el borde izquierdo, «Centerline Elevation» en el eje y «Shoulder Elevation» en el borde derecho --, el talud «Se : 1» y un «Upstream Invert» mas alto que el «Downstream Invert»: un talud a cada lado y dos fondos a cotas distintas, no dos taludes iguales medidos en el eje. LOS TALUDES DE LA FIGURA MUEREN EN LA CARA SUPERIOR DEL BARRIL, no en su fondo. La cita sostiene la superposicion APROXIMADA del barril estimado y nada mas: que el proyecto baje cada talud hasta el fondo -- un barril de altura cero, porque la seccion no se conoce todavia -- es eleccion suya, declarada en el criterio 'metodo_longitud_conducto', y da la cota superior de la longitud. El inciso «a. Cross Section» de la misma pagina añade que la seccion que el proyectista necesita es la del cruce, «skewed with reference to the roadway centerline».
 
 > **`HDS5_3ED.2.2.5#EMBALSE`** — La fuente identifica la carga a la entrada con la PROFUNDIDAD DEL EMBALSE aguas arriba («headwater, or ponding depth»). Es lo unico que esta cita sostiene: que el HW de M4 es el nivel del embalse en la boca. NO da un metodo para la extension del embalse aguas arriba ni nombra el derecho de via: el plano horizontal a la cota del HW cortando el fondo del cauce es el metodo [A] del proyecto ('remanso_derecho_via' = «embalse_a_nivel»), y el paso de V5 lo dice con sus supuestos.
@@ -1089,7 +1215,9 @@ línea que se pueda romper.
 
 > **`HDS5_3ED.2.2.5a#COTA_CRITICA`** — Del inciso a. «Economic Considerations»: las restricciones del sitio suelen fijar «some designated elevation that is not to be exceeded within a specified return period», y esta frase dice a que puede corresponder: el hombro de la plataforma o la cota de desborde de la via. La oracion siguiente da la otra: «Another criteria might be the flood damage elevation of an upstream building or another upstream road crossing». Es lo que sostiene que V8 compare el nivel del evento extremo con el borde de la plataforma; no fija el periodo de retorno ni dice que desbordar sea colapsar.
 
-> **`HDS5_3ED.2.2.5a#COTA_DE_DANO`** — Del inciso a. «Economic Considerations»: la cota admisible puede ser la de daño de una edificacion o de otro cruce aguas arriba. Es lo que sostiene el metodo «cota_de_afectacion» de V5: la cota del embalse de diseño (solera de entrada + HW de M4) contra la cota del terreno o del bien a proteger en el limite del derecho de via aguas arriba, dato externo por punto (`cota_afectacion_aguas_arriba_msnm`, de la topografia). La fuente no fija el periodo de retorno ni nombra el derecho de via: la eleccion de ESA cota como la admisible es del proyecto ('remanso_derecho_via' [A]). El inciso b. trae otro criterio de nivel, el AUMENTO admisible de la superficie del agua (de 0 a 1 ft en la llanura de inundacion de la FEMA), que exige el perfil del cauce sin la obra y no esta implementado.
+> **`HDS5_3ED.2.2.5a#COTA_DE_DANO`** — Del inciso a. «Economic Considerations»: la cota admisible puede ser la de daño de una edificacion o de otro cruce aguas arriba. Es lo que sostiene el metodo «cota_de_afectacion» de V5: la cota del embalse de diseño (solera de entrada + HW de M4) contra la cota del terreno o del bien a proteger en el limite del derecho de via aguas arriba, dato externo por punto (`cota_afectacion_aguas_arriba_msnm`, de la topografia). La fuente no fija el periodo de retorno ni nombra el derecho de via: la eleccion de ESA cota como la admisible es del proyecto ('remanso_derecho_via' [A]). El inciso b. trae otro criterio de nivel, el AUMENTO admisible de la superficie del agua (de 0 a 1 ft en la llanura de inundacion de la FEMA), que exige el perfil del cauce sin la obra: desde VE-4c lo usa el metodo del perfil de remanso (cita HDS5_3ED.2.2.5b#AUMENTO).
+
+> **`HDS5_3ED.2.2.5b#AUMENTO`** — Inciso b. «Regulatory Constraints»: el limite es el del Programa Nacional de Seguros contra Inundaciones de EE. UU. (FEMA) sobre la cota de la crecida de 100 años, y la fuente lo DESCRIBE como practica regulatoria de su pais. Es el criterio de nivel que la nota de `HDS5_3ED.2.2.5a#COTA_DE_DANO` dejaba sin implementar: el AUMENTO de la lamina sobre la que hay sin la obra. V5, con el perfil de remanso, termina la curva donde la lamina baja a esa sobreelevacion sobre el tirante natural; el valor dentro de la banda 0 a 0.3 m es [A] ('sobreelevacion_admisible_remanso_m').
 
 > **`HDS5_3ED.2.2.5d#AGENCIAS`** — Item d. «Agency Constraints» del num. 2.2.5, pag. impresa 2.10 (PDF 72; el titulo del numeral esta en la PDF 71). La frase anterior del mismo item: «For example, the headwater depth may not be allowed to exceed the barrel height or some multiple of the barrel height, expressed as HW/D.» Es lo que sostiene que HW/D sea la magnitud de V4b y que la banda 1.0-1.5 sea practica de AGENCIAS de EE. UU.; el MTC no fija ninguna (NOR-HDS-02), y el tope del proyecto es el criterio [A] 'HW_D_max'.
 
@@ -1112,6 +1240,14 @@ línea que se pueda romper.
 > **`HDS5_3ED.3.1.4#N_TIPICO`** — Item «Barrel roughness» de «Factors Influencing Outlet Control», num. 3.1.4, pag. impresa 3.8 (PDF 90; el numeral abre en la 3.5, PDF 87). Comprobado por texto y renderizada a 1.3x. Es UN n por material --0.012 para pared lisa--, no un par: la alternativa 'n_unico_hds5' del criterio [A] 'columna_n_manning_concreto' lo usa para capacidad y para velocidad. Remite al Apendice B, cuyo num. B.2 da para el concreto 0.011 a 0.013 en obra (HDS5_3ED.B.2#CONCRETO_CAMPO).
 
 > **`HDS5_3ED.3.1.4#REMANSO`** — Es el procedimiento en prosa (pieza 1 del paquete I1): la frontera aguas abajo max(y_c, TW) y la marcha hacia la entrada. La frase anterior dice para que casos: «Backwater calculations may be required for the partly full flow conditions shown in Figures 3.7A and C».
+
+> **`HDS5_3ED.3.1.5#CD_SI`** — La linea anterior define el coeficiente: «Cd = Overtopping discharge coefficient = ktCr from Figure 3.11». La figura da C_r en unidades inglesas (ft^0.5/s); 0.552 es la raiz de 0.3048 redondeada a tres cifras, y es la que la fuente imprime: el programa usa la impresa.
+
+> **`HDS5_3ED.3.1.5#EC_3_9`** — La ecuacion, en la linea siguiente: «Qo= CdL HWr^1.5 (3.9)», con «L = Length of roadway crest, ft (m)» y «HWr = Upstream depth, measured from roadway crest to water surface upstream of weir drawdown, ft (m)». El parrafo que la abre: «Overtopping will begin when the headwater rises to the elevation of the roadway (Figure 3.10). The overtopping will usually occur at the low point of a sag vertical curve on the roadway. The flow will be similar to flow over a broad crested weir.»
+
+> **`HDS5_3ED.3.1.5#TANTEO`** — La frase anterior plantea la condicion: «The problem is that the roadway overflow plus the culvert flow must equal the total design flow.» Es el reparto de V8 con el desborde admitido (`M4.repartir_caudal_con_desborde`), por tanteo sobre el caudal del conducto.
+
+> **`HDS5_3ED.3.1.5#UN_TRAMO`** — Y sigue: «Using this approach, the length of the weir (L) can be represented by the topwidth of the overflow area in the sag, the upstream depth (HWr) by the hydraulic depth (overflow area in the sag divided by the top width of flow), and the elevation of the weir crest defined from the lowest point in the sag.»
 
 > **`HDS5_3ED.3.1.6#V_SALIDA`** — La oracion sigue con «(Figure 3.14).» y la lista de tres vinetas que reparte los casos por el TW: tirante critico si TW < y_c, TW si y_c < TW < D, seccion entera si TW > D. `M4.velocidad_de_salida` lo escribe como el area al tirante min(D, max(TW, y_c)).
 
@@ -1169,6 +1305,10 @@ línea que se pueda romper.
 
 > **`HDS5_3ED.5.4.4#PENDIENTE_20`** — La cautela hidraulica del USBR que nombra esta en la misma pagina: no dejar que el barril fluya lleno en caidas grandes. Este programa no dimensiona anclajes ni ataduras de tubo: por eso la ventana de `pendiente_maxima_conducto` termina en 0.10.
 
+> **`HDS5_3ED.5.4.5#DESBORDE_ACEPTADO`** — Y sigue: «The overtopping can be infrequent as in the case of highways on the National Highway System (NHS) which are designed not to overtop for the 50-year flood event, or can be frequent for highways that are designed as low water crossings (Section 1.2.6). If the overtopping is infrequent, overtopping mitigation measures are not used and flood damage is repaired after flood events.» Es lo que sostiene que V8 admita el desborde; no define el colapso.
+
+> **`HDS5_3ED.5.4.5#HEC23`** — Las dos vias que lista: «Downstream fill slope can be protected using Design Guideline 5 – Riprap Design for Embankment Overtopping, or» y «Embankment itself can be constructed of erosion resistant material using Design Guideline 7 – Soil Cement.» HEC-23 no esta en el repositorio de normas: el diseño de la proteccion es del expediente, y su caudal unitario admisible es el criterio 'caudal_unitario_admisible_desborde_m2s' [A].
+
 > **`HDS5_3ED.A.2`** — NOR-HDS-03, confirmado: `Ku` y `Ks` estan en la LISTA DE VARIABLES de las ecuaciones del num. A.2.1, pag. impresa A.2, y NO en la Tabla A.1. La Tabla A.1 tiene nueve columnas y de constantes de la ecuacion solo cuatro -- K, M, c e Y --: no hay columna K_u ni columna K_s.
 
 > **`HDS5_3ED.A.2.1#FORMA_1`** — LA BASE DE LA FORMA 1 ES H_c, y los demas terminos --K(q*)^M y Ks·S-- son «correction factors». Es lo que sostiene el piso «energia_critica» de `hw_entrada_fuera_de_rango`: cuando la correccion por pendiente, extrapolada, anula la carga, el proyecto se queda con la base de la que la ecuacion parte. LA FUENTE NO PRESCRIBE ESE PISO --no dice que hacer cuando HWi/D sale nulo o negativo--: por eso el criterio sigue siendo [A], con «descartar» como alternativa, y no [C].
@@ -1182,6 +1322,8 @@ línea que se pueda romper.
 > **`HDS5_3ED.B.2#CONCRETO_CAMPO`** — Num. B.2, pag. impresa B.2 (PDF 204). DESCRIBE el n del tubo de concreto en obra: el de laboratorio (~0.009) sube a 0.011-0.013 por la instalacion y el envejecimiento. Ese intervalo coincide con las columnas NORMAL y MAXIMO de la fila «tubo recto y libre de basuras» de la Tabla Nº 09 (lectura corregida), y NO con el MINIMO (0.010) que la doble n usa para la velocidad: es lo que sostiene que el extremo de erosion de la doble n sea un valor por debajo de lo que el HDS-5 espera en obra (lado seguro para V3).
 
 > **`HDS5_3ED.B.3#CAJON_IN_SITU`** — La pagina imprime «0.022  see concrete lined open channels  from» con DOS espacios a cada lado y sin parentesis (comprobado renderizada); el texto va como la capa de texto lo entrega, con los espacios normalizados. DESCRIBE el rango del cajon VACIADO IN SITU y lo liga a la calidad del ENCOFRADO, no a un acabado: es la ventana HACIA ARRIBA del n de capacidad del criterio 'n_manning_cajon' [C], cuyo valor de archivo es la fila «Concrete Boxes / Smooth» de la Tabla B.1 (0.012-0.015, pag. impresa B.6). Remite a la Tabla 1 del HDS 3 (FHWA 1961), que no esta en normas/.
+
+> **`HDS5_3ED.F3.11`** — Tres paneles, leidos sobre la imagen: «A) Discharge Coefficient for HWr/Lr > 0.15» (C_r de 2.90 a 3.10, abscisa 0.16 a 0.32), «B) Discharge Coefficient for HWr/Lr ≤ 0.15» (C_r de 2.50 a 3.10, abscisa HWr de 0 a 4.0) y «C) Submergence Factor» (k_t de 0.50 a 1.00 contra ht/HWr de 0.6 a 1.0), con «Cd = ktCr» y dos curvas, «Paved» (continua, roja) y «Gravel» (de trazos, azul). La digitalizacion es el criterio 'coeficientes_desborde_plataforma' [C], y la contrastan las lecturas del ejemplo DG 1.5 (C_r = 2.7 con HWr = 0.5 ft y 2.92 con 1.5 ft, grava; pag. impresa DG1.12).
 
 > **`HDS5_3ED.SIMBOLOS#THETA_W`** — La definicion completa es «ΘW Flare angle of wingwalls with respect to extension of culvert side wall, degrees». Fija la CONVENCION del angulo de los aleros: se mide con la PROLONGACION DE LA PARED DEL BARRIL, de modo que 0 grados son aleros paralelos al barril y 90 grados aleros en el plano del muro. Es la misma que imprimen los rotulos de la Tabla C.2 («to barrel») y la que hace que la longitud de un alero lleve el COSENO del angulo que forma con la bajada del talud, no el seno. La geometria de la longitud es del proyecto: esta cita solo fija desde donde se mide el angulo.
 
@@ -1204,9 +1346,23 @@ línea que se pueda romper.
 | id de la cita | Numeral | Título literal del numeral | Página | Carácter | Verificada |
 |---|---|---|---|---|---|
 | `HEC14.1#T1_1_APRON` | 1, Table 1.1, nota 8 | «CHAPTER 1: ENERGY DISSIPATOR DESIGN» | pág. impresa **1-2** · PDF 15 | aproximacion | 2026-11-12 · texto |
+| `HEC14.1#T1_1_POZA` | 1, Table 1.1 | «CHAPTER 1: ENERGY DISSIPATOR DESIGN» | pág. impresa **1-2** · PDF 15 | aproximacion | 2026-11-20 · ambos |
+| `HEC14.10.1#CO_ENVOLVENTE` | 10.1.1 | «10.1.1 Design Development» | pág. impresa **10-3** · PDF 204 | recomendacion | 2026-11-20 · texto |
 | `HEC14.10.1#DOS_D50` | 10.1 | «10.1 RIPRAP BASIN» | pág. impresa **10-1** · PDF 202 | recomendacion | 2026-11-12 · texto |
+| `HEC14.10.1#EC_10_1` | 10.1.1 | «10.1.1 Design Development» | pág. impresa **10-3** · PDF 204 | definicion | 2026-11-20 · ambos |
+| `HEC14.10.1#EXTENDER` | 10.1.5 (ejemplo resuelto) | «10.1.5 Design Procedure» | pág. impresa **10-8** · PDF 209 | permiso | 2026-11-20 · texto |
+| `HEC14.10.1#HASTA_VALLOW` | 10.1.5 (ejemplo resuelto) | «10.1.5 Design Procedure» | pág. impresa **10-8** · PDF 209 | definicion | 2026-11-20 · texto |
 | `HEC14.10.1#HS` | 10.1 | «10.1 RIPRAP BASIN» | pág. impresa **10-1** · PDF 202 | definicion | 2026-11-12 · ambos |
+| `HEC14.10.1#LONGITUDES` | 10.1 | «10.1 RIPRAP BASIN» | pág. impresa **10-1** · PDF 202 | definicion | 2026-11-20 · texto |
+| `HEC14.10.1#MAYOR_REVISTE` | 10.1.5 (ejemplo resuelto) | «10.1.5 Design Procedure» | pág. impresa **10-7** · PDF 208 | permiso | 2026-11-20 · texto |
+| `HEC14.10.1.1#ENSAYOS` | 10.1.1 | «10.1.1 Design Development» | pág. impresa **10-2** · PDF 203 | definicion | 2026-11-20 · texto |
 | `HEC14.10.1.1#YE` | 10.1.1 | «10.1.1 Design Development» | pág. impresa **10-2** · PDF 203 | definicion | 2026-11-12 · texto |
+| `HEC14.10.1.2#ABOCINADO` | 10.1.2 | «10.1.2 Basin Length» | pág. impresa **10-4** · PDF 205 | recomendacion | 2026-11-20 · ambos |
+| `HEC14.10.1.3#FIGURA_10_3` | 10.1.3 | «10.1.3 High Tailwater» | pág. impresa **10-4** · PDF 205 | recomendacion | 2026-11-20 · ambos |
+| `HEC14.10.1.4#TALUD` | 10.1.4 | «10.1.4 Riprap Details» | pág. impresa **10-4** · PDF 205 | recomendacion | 2026-11-20 · texto |
+| `HEC14.10.1.5#PASO_5` | 10.1.5 | «10.1.5 Design Procedure» | pág. impresa **10-5** · PDF 206 | definicion | 2026-11-20 · texto |
+| `HEC14.10.1.5#RANGO` | 10.1.5 | «10.1.5 Design Procedure» | pág. impresa **10-5** · PDF 206 | aproximacion | 2026-11-20 · texto |
+| `HEC14.10.1.5#SALIDA` | 10.1.5 | «10.1.5 Design Procedure» | pág. impresa **10-5** · PDF 206 | permiso | 2026-11-20 · texto |
 | `HEC14.10.2#ANCHO` | 10.2 | «10.2 RIPRAP APRON» | pág. impresa **10-18** · PDF 219 | permiso | 2026-11-12 · texto |
 | `HEC14.10.2#EC_10_4` | 10.2, Ec. (10.4) | «10.2 RIPRAP APRON» | pág. impresa **10-17** · PDF 218 | recomendacion | 2026-11-12 · ambos |
 | `HEC14.10.2#EC_10_5` | 10.2, Ec. (10.5) | «10.2 RIPRAP APRON» | pág. impresa **10-17** · PDF 218 | definicion | 2026-11-12 · ambos |
@@ -1215,6 +1371,16 @@ línea que se pueda romper.
 | `HEC14.10.2#T10_1` | 10.2, Table 10.1 | «10.2 RIPRAP APRON» | pág. impresa **10-18** · PDF 219 | recomendacion | 2026-11-12 · ambos |
 | `HEC14.10.2#TW` | 10.2 | «10.2 RIPRAP APRON» | pág. impresa **10-17** · PDF 218 | aproximacion | 2026-11-12 · texto |
 | `HEC14.10.2#TW_ALTO` | 10.2 | «10.2 RIPRAP APRON» | pág. impresa **10-18** · PDF 219 | aproximacion | 2026-11-12 · texto |
+| `HEC14.10.3#EC_10_6` | 10.3 | «10.3 RIPRAP APRONS AFTER ENERGY DISSIPATORS» | pág. impresa **10-19** · PDF 220 | recomendacion | 2026-11-20 · ambos |
+| `HEC14.11.1.3#ANCHO_APROXIMACION` | 11.1.3 | «11.1.3 Straight Drop Structure Design Features» | pág. impresa **11-8** · PDF 229 | recomendacion | 2026-11-20 · texto |
+| `HEC14.11.1.3#BLOQUES` | 11.1.3 | «11.1.3 Straight Drop Structure Design Features» | pág. impresa **11-8** · PDF 229 | recomendacion | 2026-11-20 · texto |
+| `HEC14.11.1.3#EC_11_5` | 11.1.3 | «11.1.3 Straight Drop Structure Design Features» | pág. impresa **11-6** · PDF 227 | definicion | 2026-11-20 · ambos |
+| `HEC14.11.1.3#EC_11_6` | 11.1.3 | «11.1.3 Straight Drop Structure Design Features» | pág. impresa **11-6** · PDF 227 | definicion | 2026-11-20 · ambos |
+| `HEC14.11.1.3#LIMITES` | 11.1.3 | «11.1.3 Straight Drop Structure Design Features» | pág. impresa **11-6** · PDF 227 | aproximacion | 2026-11-20 · texto |
+| `HEC14.11.1.3#LONGITUD` | 11.1.3 | «11.1.3 Straight Drop Structure Design Features» | pág. impresa **11-7** · PDF 228 | definicion | 2026-11-20 · ambos |
+| `HEC14.11.1.3#SALIDA_COLGADA` | 11.1.3 | «11.1.3 Straight Drop Structure Design Features» | pág. impresa **11-8** · PDF 229 | definicion | 2026-11-20 · texto |
+| `HEC14.11.1.3#SUBCRITICO` | 11.1.3 | «11.1.3 Straight Drop Structure Design Features» | pág. impresa **11-8** · PDF 229 | definicion | 2026-11-20 · texto |
+| `HEC14.11.1.3#Y3` | 11.1.3 | «11.1.3 Straight Drop Structure Design Features» | pág. impresa **11-6** · PDF 227 | definicion | 2026-11-20 · ambos |
 | `HEC14.3#CONTINUIDAD` | 3 | «CHAPTER 3: CULVERT OUTLET VELOCITY AND VELOCITY MODIFICATION» | pág. impresa **3-1** · PDF 32 | definicion | 2026-11-12 · texto |
 | `HEC14.3.1.3#BORDE` | 3.1.3 | «3.1.3 Unsubmerged Outlets (Brink Depth)» | pág. impresa **3-3** · PDF 34 | definicion | 2026-11-12 · texto |
 | `HEC14.3.1.3#FIGURAS` | 3.1.3 | «3.1.3 Unsubmerged Outlets (Brink Depth)» | pág. impresa **3-3** · PDF 34 | permiso | 2026-11-18 · texto |
@@ -1232,17 +1398,50 @@ línea que se pueda romper.
 | `HEC14.5.2#EC_5_2` | 5.2, Ec. (5.2) y (5.3) | «COHESIVE SOILS» | pág. impresa **5-6** · PDF 59 | aproximacion | 2026-11-12 · ambos |
 | `HEC14.5.2#EC_5_4` | 5.2, Ec. (5.4) | «COHESIVE SOILS» | pág. impresa **5-7** · PDF 60 | definicion | 2026-11-12 · ambos |
 | `HEC14.5.2#RANGO_IP` | 5.2 | «COHESIVE SOILS» | pág. impresa **5-7** · PDF 60 | aproximacion | 2026-11-12 · texto |
+| `HEC14.6#V_TRAS_RESALTO` | 6.2.1 | «6.2.1 Rectangular Channels» | pág. impresa **6-6** · PDF 69 | definicion | 2026-11-20 · texto |
+| `HEC14.6.2#MOMENTUM` | 6.2 | «6.2 HYDRAULIC JUMP IN HORIZONTAL CHANNELS» | pág. impresa **6-3** · PDF 66 | definicion | 2026-11-20 · texto |
+| `HEC14.6.2.2#FROUDE` | 6.2.2 | «6.2.2 Circular Channels» | pág. impresa **6-9** · PDF 72 | definicion | 2026-11-20 · texto |
+| `HEC14.6.2.2#LLENO` | 6.2.2 | «6.2.2 Circular Channels» | pág. impresa **6-8** · PDF 71 | definicion | 2026-11-20 · texto |
+| `HEC14.6.3#PENDIENTE` | 6.3 | «6.3 HYDRAULIC JUMP IN SLOPING CHANNELS» | pág. impresa **6-13** · PDF 76 | permiso | 2026-11-20 · texto |
 | `HEC14.D#SOLO_VELOCIDAD` | D | «APPENDIX D: RIPRAP APRON SIZING EQUATIONS» | pág. impresa **D-2** · PDF 281 | recomendacion | 2026-11-12 · texto |
 | `HEC14.F3.3` | 3.1.3, Figure 3.3 | «3.1.3 Unsubmerged Outlets (Brink Depth)» | pág. impresa **3-5** · PDF 36 | definicion | 2026-11-18 · imagen renderizada |
 | `HEC14.F3.4` | 3.1.3, Figure 3.4 | «3.1.3 Unsubmerged Outlets (Brink Depth)» | pág. impresa **3-6** · PDF 37 | definicion | 2026-11-18 · imagen renderizada |
 
 > **`HEC14.1#T1_1_APRON`** — Es la nota 8 de la Table 1.1 «Energy Dissipators and Limitations», y cuelga de la fila «Riprap apron» (Chapter 10), cuya columna de Froude dice «na». La Sec. 10.2 lo dice como poblacion y no como prohibicion: «The most commonly used device for outlet protection, primarily for culverts 1500 mm (60 in) or smaller, is a riprap apron» (pag. impresa 10-16). La tabla se titula «Limitations» y la nota es una de ellas: un conducto mas alto sale como metodo no evaluable. LA FUENTE DA DOS CIFRAS QUE NO COINCIDEN: 60 in son 1.524 m, no 1.500. Rige 1.524 m (`constantes_normativas.HEC14_APRON_ALTURA_MAX_M`), lectura declarada: es la que deja evaluar el ejemplo resuelto de la propia fuente, que usa D = 5.0 ft = 60 in (pag. impresa 10-19). La misma tabla limita la POZA de enrocado (riprap basin) a Fr < 3.
 
+> **`HEC14.1#T1_1_POZA`** — La fila «Riprap basin» (Chapter 10) da en la columna «Froude Number» el limite «< 3» («At release point from culvert or channel», nota 7) y en la de tailwater «Not needed»; NO lleva la nota 8 del alto del conducto, que cuelga solo de la fila «Riprap apron» (cita HEC14.1#T1_1_APRON). Por eso la poza es la alternativa donde el apron no llega: un marco o un conducto de mas de 60 in. Leida por texto y contrastada por imagen.
+
+> **`HEC14.10.1#CO_ENVOLVENTE`** — Sigue: «Use of the best fit design relationship (Equations 10.1 and 10.3) is recommended when basin failure may easily be addressed as part of routine maintenance. Intermediate risk levels can be adopted by the use of intermediate values of Co.» Sostiene el criterio [A] 'relacion_co_poza_enrocado_hec14'.
+
 > **`HEC14.10.1#DOS_D50`** — Es de la POZA de enrocado, no del apron; se cita porque fija el mismo piso que la Tabla 10.1 alcanza para las piedras grandes (cita HEC14.10.2#PROFUNDIDAD). La Figura 10.1 de la misma pagina, leida por imagen, mide hs DESDE la solera de salida del conducto hasta el fondo de la poza.
+
+> **`HEC14.10.1#EC_10_1`** — La ecuacion, leida por imagen en la misma pagina: «hs/ye = 0.86·(D50/ye)^-0.55·(Vo/(g·ye)^0.5) - Co (10.1)», con hs la profundidad de la poza, ye el tirante equivalente de borde (cita HEC14.10.1.1#YE), D50 la piedra y Co el parametro del tirante del receptor: Ec. (10.2), envolvente, 1.4 / 4.0(TW/ye) - 1.6 / 2.4 con los bordes en TW/ye = 0.75 y 1.0; Ec. (10.3), mejor ajuste, 2.0 / 4.0(TW/ye) - 1.0 / 3.0. La fuente escribe los dos bordes con «<» a ambos lados; las dos relaciones son continuas en ellos y el borde no cambia el numero.
+
+> **`HEC14.10.1#EXTENDER`** — Es la salida que el ejemplo da cuando la velocidad en la salida de la poza supera la admisible (2.3 contra 2.1 m/s). El ejemplo CU repite la frase con 90 ft. El programa la aplica: alarga el apron con el mismo abocinado hasta que Vc = Vallow.
+
+> **`HEC14.10.1#HASTA_VALLOW`** — Sigue: «Riprap should be at least the size shown. As a practical consideration, the channel can be lined with the same size rock used for the basin. Protection must extend at least 41.0 m downstream from the culvert brink, which is 12.6 m beyond the basin exit.» El programa resuelve el L/De en que VL = Vallow sobre la curva y no se queda en la seccion tabulada.
 
 > **`HEC14.10.1#HS`** — Es de la POZA de enrocado (Sec. 10.1), otro metodo que la hoya del Cap. 5. Se cita por lo unico que sostiene: en la poza, hs es la profundidad del piso de enrocado, y la Figura 10.1 de la misma pagina, leida por imagen, la acota DESDE la prolongacion de la solera de salida del conducto hasta ese piso. Es la lectura «solera_de_salida» del criterio 'referencia_profundidad_socavacion'. Hasta la segunda auditoria de T-8 (H9) eso se apoyaba en HEC14.10.1#DOS_D50, cuyo literal habla del espesor del revestimiento y no de la referencia de hs.
 
+> **`HEC14.10.1#LONGITUDES`** — La frase anterior: «The length of the energy dissipating pool, Ls, is 10hs, but no less than 3Wo; the length of the apron, LA, is 5hs, but no less than Wo.» Los ejemplos resueltos toman LA = LB - Ls (pag. 10-13: 7.3 - 5.5 = 1.8 m, menor que 5hs = 2.05 m): el programa hace lo mismo. Wo es el ancho del conducto en la boca (Figura 10.2: el marco de 2.44 m o el tubo de 1.83 m de los ejemplos).
+
+> **`HEC14.10.1#MAYOR_REVISTE`** — Lo dice el ejemplo del marco SI cuando la piedra disponible da hs/D50 < 2: «try a riprap size that will yield hS/D50 close to, but greater than, 2», y la poza se reviste con la piedra mayor («the next larger riprap size (D50 = 0.75 m) would be used to line a basin with the given dimensions»). El programa resuelve la piedra de hs/D50 = 2 exacto y reviste con la que el proyecto pone. Los cuatro ejemplos repiten la frase.
+
+> **`HEC14.10.1.1#ENSAYOS`** — Los ensayos son de UN conducto que descarga a la poza, tubo o marco; la fuente no da el ancho Wo ni la hoya de varios barriles descargando juntos. Es la razon por la que la poza de varios barriles sale como metodo no evaluable. Los ensayos incluyen MARCOS: la poza vale para la seccion rectangular, que el apron de la Ec. (10.4) no cubre.
+
 > **`HEC14.10.1.1#YE`** — Sigue: «For rectangular culverts, ye = yo (culvert brink depth). For circular culverts, ye = (A/2)^1/2, where A is the brink area». El paso 1 del procedimiento (num. 10.1.5, pag. impresa 10-5) forma con el el numero de Froude de la salida, Fr = Vo / (g·ye)^1/2. Es el Froude que HEC-14 usa para sus disipadores; el apron de la Ec. (10.4) no lo lleva.
+
+> **`HEC14.10.1.2#ABOCINADO`** — Los ejemplos resueltos lo aplican como WB = Wo + 2(LB/3). La Figura 10.2 (pag. 10-2, PDF 203), leida por imagen, dibuja ese abocinado («1 / 3») y los taludes laterales 2:1, que son la z = 2 de la Ec. (7.14) del paso 4.
+
+> **`HEC14.10.1.3#FIGURA_10_3`** — Sigue: «This attenuation can be used to determine the extent of riprap protection required. HEC 11 (Brown and Clyde, 1989) or the method provided in Section 10.3 can be used for sizing riprap.» LA FIGURA (pag. 10-4) se leyo por imagen: render a 4x, reticula log-log localizada por sus lineas (1.0 a 0.1 en las ordenadas, 1 a 100 en las abscisas) y la curva de diseño, la gruesa, trazada columna a columna; las dos rectas de los orificios no se usan. Los cuatro puntos que la fuente imprime en sus ejemplos (L/De = 10, 15, 20, 21 -> 0.59, 0.42, 0.30, 0.28) se toman tal cual; la lectura dio 0.585, 0.407, 0.300 y 0.286 (tolerancia 0.015). Tabla en `constantes_normativas.HEC14_FIGURA_10_3`; se interpola en log-log y no se extrapola mas alla de L/De = 60. De = (4·A/pi)^0.5 con A el area de borde (nota de la figura: «convert wetted cross sectional area to an equivalent circular area»).
+
+> **`HEC14.10.1.4#TALUD`** — La frase anterior: «the recommended thickness of riprap for the floor and sides of the basin is 2D50 or 1.50Dmax». La Figura 10.1 (por imagen) rotula los dos: «3 d50 or 2 dmax» en el talud y «2d50 or 1.5dmax» en el piso.
+
+> **`HEC14.10.1.5#PASO_5`** — Sigue: «With high tailwater (TW/yo ≥ 0.75), estimate centerline velocity at a series of downstream cross sections using Figure 10.3 to determine the size and extent of additional protection.»
+
+> **`HEC14.10.1.5#RANGO`** — Son los limites de los ensayos con que se ajusto la ecuacion (num. 10.1.1): se descartaron las corridas con D50/ye < 0.1 («did not exhibit relationships that appeared useful for design») y las de hs/D50 < 2 («not considered reliable for design»). Fuera de ellos la Ec. (10.1) no se extrapola.
+
+> **`HEC14.10.1.5#SALIDA`** — Del paso 4: «Determine the basin exit depth, yB = yc, and exit velocity, VB = Vc and compare with the allowable exit velocity, Vallow». yc por la Ec. (7.14), Q²/g = [yc(WB + z·yc)]³/(WB + 2z·yc). El programa toma como Vallow la de la Tabla Nº 11 del Manual para el terreno declarado del receptor, que es un criterio de estabilidad; no tiene la velocidad normal del cauce receptor y no toma el mayor de las dos: lado conservador.
 
 > **`HEC14.10.2#ANCHO`** — El ejemplo resuelto de la pag. impresa 10-19 (PDF 220) lo escribe: «Width (at apron end) = 3D + (2/3)L». El 3D es el ancho del apron en la boca de la Figura 10.4 y el (2/3)L el abocinado de 1:3 por cada lado.
 
@@ -1258,7 +1457,25 @@ línea que se pueda romper.
 
 > **`HEC14.10.2#TW`** — EL LIMITE DE VALIDEZ DE LA Ec. (10.4), con sus dos lados. Por abajo, el ejemplo resuelto de la pag. impresa 10-18 enseña que hacer: con TW/D = 0.33 «This is less than 0.4D, therefore, use TW = 0.4D». Por arriba, la pag. 10-18 remite a OTRO procedimiento (cita HEC14.10.2#TW_ALTO).
 
-> **`HEC14.10.2#TW_ALTO`** — Con el TW sobre la clave la Ec. (10.4) queda FUERA de su rango aceptable y la fuente manda a la Figura 10.3 (atenuacion de la velocidad aguas abajo) y a la Sec. 10.3 para dimensionar la piedra. La Figura 10.3 es una familia de curvas que este programa no tiene digitalizada: ese caso sale como metodo no evaluable, no con la ecuacion extrapolada.
+> **`HEC14.10.2#TW_ALTO`** — Con el TW sobre la clave la Ec. (10.4) queda FUERA de su rango aceptable y la fuente manda a la Figura 10.3 (atenuacion de la velocidad aguas abajo) y a la Sec. 10.3 para dimensionar la piedra. Sigue: «The apron length is determined based on the allowable velocity and the location at which it occurs based on Figure 10.3.» Desde VE-5 (lote m6) la Figura 10.3 esta digitalizada (cita HEC14.10.1.3#FIGURA_10_3) y el caso se dimensiona (`M6.proteccion_tw_alto_hec14`); no con la Ec. (10.4) extrapolada.
+
+> **`HEC14.10.3#EC_10_6`** — La ecuacion, por imagen: «D50 = 0.692/(S - 1)·(V²/2g) (10.6)», de Searcy (1967), con V la velocidad a la salida del disipador y S la gravedad especifica de la piedra; el programa toma S = 2.65, la de la Ec. (10.4). Con S = 2.65 es D50 = 0.0214·V², la relacion de Searcy del Apendice D. Los ejemplos de la poza la aplican seccion a seccion con la velocidad de la Figura 10.3 (VL = 4.50 m/s -> D50 = 0.43 m).
+
+> **`HEC14.11.1.3#BLOQUES`** — Sigue: «The basin will perform acceptably if the width and spacing varies within plus or minus 0.15yc. The blocks should be square in plan and should occupy between 50 percent and 60 percent of the stilling basin width. The end sill height should be 0.4yc.» Y para la salida y la entrada: «the sidewall height at the basin exit should be above the tailwater elevation by 0.85yc», aleros a 45° con coronacion 1:1, y «riprap or paving should be provided for a distance upstream from the headwall equal to 3yc».
+
+> **`HEC14.11.1.3#EC_11_5`** — La ecuacion, por imagen: «yc = (q²/g)^(1/3) (11.5)», q = Q/B. Solo para la seccion rectangular: el marco de la caida recta.
+
+> **`HEC14.11.1.3#EC_11_6`** — La ecuacion, por imagen: «Q²Tc/(gAc³) = 1 (11.6)», con Tc el ancho de la lamina y Ac el area en condicion critica. Es la que da el yc del TUBO en la caida recta (decision Fable, VE-5 lote m6): el y_critico por barril que M4 resuelve con la misma condicion (Sec. 4.2.1 de la hoja de ruta).
+
+> **`HEC14.11.1.3#LIMITES`** — Siguen las tres condiciones: «1. Total drop, ho, less than 4.6 m (15 ft) with sufficient tailwater. 2. Relative drop, ho/yc, between 1.0 and 15. 3. Crest length, Wo, greater than 1.5yc.» La Tabla 1.1 (pag. 1-2) repite la primera en su nota 5 («Drop < 4.6 m (15 ft)») y da a la fila «Straight drop structure» el Froude «< 1» y el tailwater «Required». Las dos cifras de la primera no coinciden (15 ft = 4.572 m): rige 4.572 m (`constantes_normativas.HEC14_CAIDA_HO_MAX_M`).
+
+> **`HEC14.11.1.3#LONGITUD`** — LB = L1 + L2 + L3 (11.10); L1 = (Lf + Ls)/2 (11.11); Lf = (-0.406 + (3.195 - 4.368·ho/yc)^0.5)·yc (11.12); Ls = (0.691 + 0.228·(Lt/yc)² - ho/yc)·yc/(0.185 + 0.456·Lt/yc) (11.13); Lt = (-0.406 + (3.195 - 4.368·h2/yc)^0.5)·yc (11.14); L2 = 0.8·yc (11.15); L3 ≥ 1.75·yc (11.16). Leidas por imagen en las pags. 11-7 y 11-8; los ejemplos resueltos las reproducen (Lf = 3.01, Lt = 1.90, Ls = 3.30 m en el SI).
+
+> **`HEC14.11.1.3#SALIDA_COLGADA`** — Del paso 1 del procedimiento: «Estimate the elevation difference required between the approach and tailwater channel, h.» Es lo que pone la estructura a la salida de una alcantarilla colgada: el desnivel h es la altura de la solera de salida sobre el lecho del receptor, y la cresta es la solera de salida.
+
+> **`HEC14.11.1.3#SUBCRITICO`** — Paso 2; sigue «If not subcritical, repeat step 1.» El flujo de llegada supercritico solo lo trata la fuente con la rejilla del num. 11.1.2, que no se implementa. El programa lee el regimen del barril con la misma regla que M6 usa para todo: el tirante normal contra el critico.
+
+> **`HEC14.11.1.3#Y3`** — Las ecuaciones, por imagen: yc = (q²/g)^(1/3) (11.5), y3 = 2.15·yc (11.7), h2 = -(h - yo) (11.8, «Using the crest as the reference point, this distance is a negative number») y ho = h2 - y3 (11.9). yo es el tirante normal del cauce de aguas abajo.
 
 > **`HEC14.3#CONTINUIDAD`** — Sigue: «The flow area, A, for determining outlet velocity is calculated using the culvert outlet depth that is consistent with the culvert flow type», y el num. 3.1.2 (pag. impresa 3-2, PDF 33) da la regla de HDS-5 que M4 aplica: «the higher of the tailwater or critical depth», o la seccion llena con la salida sumergida (3.1.1). Es la relacion con que M6 asigna a la velocidad de salida su area, A = Q/V, para el tirante equivalente del Froude; los procedimientos de HEC-14 hacen lo mismo («A = Q/Vo», pag. impresa 9-40, PDF 197).
 
@@ -1293,6 +1510,16 @@ línea que se pueda romper.
 > **`HEC14.5.2#EC_5_4`** — Ec. (5.4): τc = 0.001·(Sv + αu)·tan(30 + 1.73·PI), con el argumento de la tangente en GRADOS (el ejemplo resuelve tan (50.76) con PI = 12), Sv la resistencia al corte saturada y αu «unit conversion constant, 8630 N/m2 (SI), 180 lb/ft2 (CU)». τc sale en N/m2. La Tabla 5.4 (misma pagina) da α, β, θ y αe: profundidad 0.86, 0.18, 0.10, 1.37; ancho 3.55, 0.17, 0.07, 5.63; longitud 2.82, 0.33, 0.09, 4.48; volumen 0.62, 0.93, 0.23, 2.48.
 
 > **`HEC14.5.2#RANGO_IP`** — LIMITE DE VALIDEZ. El suelo ensayado fue UNA arcilla arenosa (58 % arena, 27 % arcilla, 15 % limo, indice de plasticidad 15; pag. impresa 5-6).
+
+> **`HEC14.6#V_TRAS_RESALTO`** — El ejemplo resuelto (SI) sigue: «V2 = Q/A2 = 11.33/ [2.134(2.011)] = 2.64 m/s». El del circular (pag. impresa 6-11, PDF 74) hace lo mismo con el area de y2/D = 0.78: «V2 = Q/A2 = 5.664/2.99 = 1.89 m/s». Es la velocidad tras el resalto que imprime V2.
+
+> **`HEC14.6.2#MOMENTUM`** — Sigue la Ec. (6.1): «Defining a momentum quantity as, M = Q2/(gA) + AY and recognizing that momentum is conserved through a hydraulic jump, the following can be written: Q2/(gA1) + A1Y1 = Q2/(gA2) + A2Y2», con «Y1,Y2 = depth from water surface to centroid of cross-section area». `M3._MomentoDelBarril` integra A·Y sobre la propia seccion en vez de leer los K y C de Sylvester de la Tabla 6.1.
+
+> **`HEC14.6.2.2#FROUDE`** — Es el Fr1 = V1 / (g y1)^0.5 que imprime el paso del resalto; la alternativa que la misma pagina ofrece, el Froude con el tirante hidraulico (Figura 6.7), no se usa.
+
+> **`HEC14.6.2.2#LLENO`** — La Ec. (6.5), «For y2 greater than or equal to D», resta 0.5 C2 D / (C1 y1): la seccion 2 va llena, con el centroide a D/2 y y2 como carga piezometrica sobre la solera. `M3._MomentoDelBarril` lo escribe para cualquier forma: por encima de la clave el primer momento crece A_llena por metro de carga.
+
+> **`HEC14.6.3#PENDIENTE`** — El volumen es el del agua dentro del resalto, cuyo peso entra a la ecuacion de cantidad de movimiento en un canal inclinado. Es el dominio de `M3.resalto_hidraulico` (`HEC14_RESALTO_PENDIENTE_HORIZONTAL_MAX`); por encima, la fuente remite a Bradley (1961) y a ensayos de modelo.
 
 > **`HEC14.D#SOLO_VELOCIDAD`** — Las dos ecuaciones que HEC-14 descarta son las que dimensionan la piedra SOLO con la velocidad de salida: D.2 (Berry, 1948; Peterka, 1978), D50 = α·V² con α = 0.0413 en SI, y D.3 (Searcy, 1967; la de la edicion anterior de HEC-14 y de HEC 11), D50 = 0.692/(S − 1)·V²/(2g). Ninguna de las dos es la de Laushey, que HEC-14 no nombra. El apendice compara seis relaciones sobre diez casos de HY8 y retiene la de Fletcher y Grace (Ec. D.5), que es la Ec. (10.4) del Capitulo 10 escrita sin la gravedad. La lectura de que la ec. (49) del Manual pertenece a la misma familia que D.2 y D.3 es del proyecto y va en `M6_proteccion`, no aqui.
 
@@ -1330,17 +1557,24 @@ línea que se pueda romper.
 | `MC_HHD.3.7.1.1` | 3.7.1.1 | «Distribución Normal» | pág. impresa **26** · PDF 29 | definicion | 2026-11-11 · ambos |
 | `MC_HHD.3.7.1.2` | 3.7.1.2 | «Distribución  Log  Normal  2  Parámetros» | pág. impresa **27** · PDF 30 | definicion | 2026-11-11 · ambos |
 | `MC_HHD.3.7.1.7` | 3.7.1.7 | «Distribución Gumbel» | pág. impresa **29** · PDF 32 | definicion | 2026-11-11 · ambos |
+| `MC_HHD.3.7.2a` | 3.7.2 a) | 3.7.2 Pruebas de bondad de ajuste › «a) Prueba» | pág. impresa **31** · PDF 34 | exigencia | 2026-11-20 · ambos |
+| `MC_HHD.3.7.2a#ALCANCE` | 3.7.2 a) | 3.7.2 Pruebas de bondad de ajuste › «a) Prueba» | pág. impresa **31** · PDF 34 | definicion | 2026-11-20 · ambos |
+| `MC_HHD.3.7.2a#INTERVALOS` | 3.7.2 a) | 3.7.2 Pruebas de bondad de ajuste › «a) Prueba» | pág. impresa **31** · PDF 34 | definicion | 2026-11-20 · ambos |
 | `MC_HHD.3.7.2b` | 3.7.2 b) | 3.7.2 Pruebas de bondad de ajuste › «b) Prueba Kolmogorov – Smirnov» | pág. impresa **32** · PDF 35 | definicion | 2026-11-11 · ambos |
 | `MC_HHD.3.7.2b#ELIGE` | 3.7.2 b) | 3.7.2 Pruebas de bondad de ajuste › «b) Prueba Kolmogorov – Smirnov» | pág. impresa **32** · PDF 35 | permiso | 2026-11-11 · texto |
 | `MC_HHD.3.7.2b#T03` | 3.7.2 b) | 3.7.2 Pruebas de bondad de ajuste › «b) Prueba Kolmogorov – Smirnov» | pág. impresa **32** · PDF 35 | definicion | 2026-11-11 · ambos |
 | `MC_HHD.3.8.1#DICK_PESCHKE` | 3.8.1 | «Curvas Intensidad – Duración – Frecuencia» | pág. impresa **37** · PDF 40 | permiso | 2026-11-11 · ambos |
 | `MC_HHD.3.8.1#DURACION` | 3.8.1 | «Curvas Intensidad – Duración – Frecuencia» | pág. impresa **36** · PDF 39 | definicion | 2026-11-11 · texto |
+| `MC_HHD.3.8.1#EC17` | 3.8.1 | «Curvas Intensidad – Duración – Frecuencia» | pág. impresa **38** · PDF 41 | definicion | 2026-11-20 · ambos |
 | `MC_HHD.3.8.1#P24` | 3.8.1 | «Curvas Intensidad – Duración – Frecuencia» | pág. impresa **36** · PDF 39 | definicion | 2026-11-17 · texto |
 | `MC_HHD.3.8.1#T04` | 3.8.1 | «Curvas Intensidad – Duración – Frecuencia» | pág. impresa **36** · PDF 39 | permiso | 2026-11-11 · ambos |
 | `MC_HHD.3.9#T05` | 3.9 | «Tiempo de Concentración» | pág. impresa **39** · PDF 42 | definicion | 2026-11-11 · ambos |
 | `MC_HHD.3.9#T05_CALIFORNIA` | 3.9 | «Tiempo de Concentración» | pág. impresa **39** · PDF 42 | aproximacion | 2026-11-11 · ambos |
 | `MC_HHD.3.9#T05_FAA` | 3.9 | «Tiempo de Concentración» | pág. impresa **39** · PDF 42 | aproximacion | 2026-11-11 · ambos |
+| `MC_HHD.3.9#T05_IZZARD` | 3.9 | «Tiempo de Concentración» | pág. impresa **39** · PDF 42 | aproximacion | 2026-11-20 · ambos |
+| `MC_HHD.3.9#T05_IZZARD_IL` | 3.9 | «Tiempo de Concentración» | pág. impresa **39** · PDF 42 | exigencia | 2026-11-20 · ambos |
 | `MC_HHD.3.9#T05_KIRPICH` | 3.9 | «Tiempo de Concentración» | pág. impresa **39** · PDF 42 | aproximacion | 2026-11-11 · ambos |
+| `MC_HHD.3.9#T05_ONDA` | 3.9 | «Tiempo de Concentración» | pág. impresa **40** · PDF 43 | aproximacion | 2026-11-20 · ambos |
 | `MC_HHD.3.9#T05_SCS` | 3.9 | «Tiempo de Concentración» | pág. impresa **40** · PDF 43 | aproximacion | 2026-11-11 · ambos |
 | `MC_HHD.4.1.1.3.1` | 4.1.1.3.1 | «Aspectos generales» | pág. impresa **70** · PDF 73 | definicion | 2026-08-28 · texto |
 | `MC_HHD.4.1.1.3.2` | 4.1.1.3.2 | «Ubicación en planta» | pág. impresa **71** · PDF 74 | definicion | 2026-11-11 · texto |
@@ -1455,6 +1689,12 @@ línea que se pueda romper.
 
 > **`MC_HHD.3.7.1.7`** — Ecuacion (9): F(x) = exp(−exp(−α(x − β))). Las dos relaciones, vistas en imagen: α = 1.2825 / σ y β = µ − 0.45 σ. Los dos numeros son los que la pagina imprime (los exactos son π/√6 = 1.28255 y 0.5772·√6/π = 0.45005). La pagina NO dice para que tamaño de muestra valen ni menciona correccion alguna por n.
 
+> **`MC_HHD.3.7.2a`** — El titulo, en imagen: «a) Prueba χ²». La condicion que sigue, en imagen: D ≤ X²(1−α, k−1−m), con D = Σ (θi − εi)² / εi, ecuacion (12), θi el numero observado de eventos en el intervalo i, εi = n[F(Si) − F(Ii)] el esperado, ν = k − 1 − m grados de libertad y m el numero de parametros estimados a partir de los datos. La prueba de que se acepta una distribucion con χ² es la del numeral; el programa adopta por la de Kolmogorov-Smirnov (cita MC_HHD.3.7.2b#ELIGE) e imprime la χ² como contraste.
+
+> **`MC_HHD.3.7.2a#ALCANCE`** — Por eso el contraste χ² se imprime para la normal y la log normal de 2 parametros y no para la Gumbel.
+
+> **`MC_HHD.3.7.2a#INTERVALOS`** — El numeral no fija k ni como se trazan los intervalos: es el vacio que cubre el criterio 'intervalos_de_clase_chi_cuadrado' [A].
+
 > **`MC_HHD.3.7.2b`** — D = máx |Fo(xm) − F(xm)| y, ecuacion (13), Fo(xm) = 1 − m/(n+1), con m el numero de orden del dato en una lista de MAYOR a menor. El valor critico d sale de la Tabla Nº 03 de la misma pagina. La desigualdad es estricta: D = d no acepta.
 
 > **`MC_HHD.3.7.2b#ELIGE`** — Es lo que sostiene el valor de archivo del criterio 'distribucion_precipitacion_maxima' (la de menor D): la fuente PERMITE elegir asi, no lo manda.
@@ -1462,6 +1702,8 @@ línea que se pueda romper.
 > **`MC_HHD.3.7.2b#T03`** — La tabla empieza en la pag. impresa 32 (PDF 35: n = 5 a 25) y termina en la 33 (PDF 36: n = 30, 35 y 40, y «Fuente: Aparicio, 1999.»).
 
 > **`MC_HHD.3.8.1#DICK_PESCHKE`** — Ecuacion (16), vista en imagen: Pd = P24h · (d / 1440)^0.25, con d en MINUTOS y las dos precipitaciones en mm. Y a renglon seguido: «La intensidad se halla dividiendo la precipitación Pd entre la duración.» Las dos condiciones van unidas por «o»: basta con no tener registros pluviograficos, que es el caso de una serie de maximas en 24 horas.
+
+> **`MC_HHD.3.8.1#EC17`** — Ecuacion (17), vista en imagen: I = K · T^m / t^n, con «I = Intensidad máxima (mm/h)», «K, m, n = factores característicos de la zona de estudio», «T = período de retorno en años» y «t = duración de la precipitación equivalente al tiempo de concentración (min)». La pagina no da ningun valor de K, m ni n: son datos de un estudio de la zona (criterio 'factores_idf_regional' [S]).
 
 > **`MC_HHD.3.8.1#P24`** — Oracion del parrafo que presenta la Tabla Nº 04, pag. impresa 36 (PDF 39). La fila de 24 horas de esa tabla vale 1.00 (pag. impresa 37, PDF 40). El Manual usa la maxima en 24 horas sin conversion: un factor que la multiplique antes del ajuste (el 1.13 de intervalo fijo de la practica, que ninguna fuente del repositorio de normas trae) es una adopcion [A] del proyecto.
 
@@ -1473,7 +1715,13 @@ línea que se pueda romper.
 
 > **`MC_HHD.3.9#T05_FAA`** — Fila «Federal Aviation Administration (1970)». La formula, vista en imagen: tc = 0.7035 · (1.1 − C) · L^0.50 / S^0.333, con «C = coeficiente de escorrentía del método racional», «L = longitud del flujo superficial, m.» y «S = pendiente de la superficie, m/m». Es una formula de FLUJO SUPERFICIAL (sobre una superficie, no por un cauce) y la observacion no le escribe rango numerico: es la que el proyecto ofrece para una plataforma, un talud o una cuenca plana sin cauce definido.
 
+> **`MC_HHD.3.9#T05_IZZARD`** — Fila «Izzard (1946)». La formula, vista en imagen: tc = 525 · (0.0000276·i + c) · L^0.33 / (S^0.333 · i^0.667), con «i = intensidad de lluvia, mm/h», «c = coeficiente de retardo», «L = longitud de la trayectoria de flujo, m.» y «S = pendiente de la trayectoria de flujo, m/m.» La observacion termina con la condicion de aplicacion (cita MC_HHD.3.9#T05_IZZARD_IL). Los valores del coeficiente de retardo son una DESCRIPCION (de 0.0070 a 0.06 segun la superficie), no un rango de validez: el coeficiente es un dato de la cuenca.
+
+> **`MC_HHD.3.9#T05_IZZARD_IL`** — Ultima frase de la observacion de la fila «Izzard (1946)», con i en mm/h y L en m (las unidades que la misma fila escribe). Es la condicion de la formula, y el programa no la evalua fuera de ella. El «≤» se leyo en la imagen.
+
 > **`MC_HHD.3.9#T05_KIRPICH`** — Fila «Kirpich (1940)». La formula, vista en imagen: tc = 0.01947 · L^0.77 · S^−0.385, con «L = longitud del canal desde aguas arriba hasta la salida, m.» y «S = pendiente promedio de la cuenca, m/m». La observacion sigue: para flujo superficial en superficies de concreto o asfalto se debe multiplicar tc por 0.4; para canales de concreto, por 0.2; ningun ajuste para flujo superficial en suelo descubierto o para flujo en cunetas. El «(3 a 10%)» es la poblacion de la que salio la formula.
+
+> **`MC_HHD.3.9#T05_ONDA`** — Fila «Ecuaciones de onda cinemática Morgali y Linsley (1965) Aron y Erborge (1973)». La formula, vista en imagen: tc = 7 · L^0.6 · n^0.6 / (I^0.4 · S^0.3), con «L = longitud del flujo superficial, m.», «n = coeficiente de rugosidad de Manning.», «I = intensidad de lluvia, mm/h.» y «S = pendiente promedio del terreno-m/m.» La observacion sigue: «la superposición de una curva de intensidad – duración – frecuencia da una solución gráfica directa para tc»; el programa hace lo mismo numericamente (punto fijo tc <-> I con la relacion intensidad-duracion del criterio). La fila no escribe rango de aplicacion.
 
 > **`MC_HHD.3.9#T05_SCS`** — Fila «Ecuación de retardo SCS (1973)». La formula, vista en imagen: tc = 0.0136 · L^0.8 · (1000/CN − 9)^0.7 / S^0.5, con «L = longitud hidráulica de la cuenca (mayor trayectoria de flujo), m.», «CN = Número de curva SCS» y «S = pendiente promedio de la cuenca, m/m». La observacion sigue: buena cuando el area esta completamente pavimentada, tiende a sobreestimar en areas mixtas, y «la ecuación supone que tc = 1.67 x retardo de la cuenca». Las «800 Ha» son la poblacion a la que se adapto; el proyecto las trata como a los «3 a 10%» de Kirpich.
 
@@ -2778,7 +3026,7 @@ sus campos `alcance` y `uso`, de modo que no puede contradecirlos.
 ### `MC_HHD.T05` — TABLA Nº 05: Fórmulas para el cálculo del tiempo de concentración
 
 - Cita: `MC_HHD.3.9#T05`
-- Tabla completa · el calculo usa 3 de 3 columnas y 4 de 6 filas
+- Tabla completa · el calculo usa 3 de 3 columnas y 6 de 6 filas
 - Fuente que la tabla se atribuye: ** SCS   Soil Conservation Service*
 - **Afirmación negativa**: la Tabla Nº 05 no lista la formula de Temez. Sus seis filas son Kirpich, California Culverts Practice, Izzard, Federal Aviation Administration, onda cinematica y retardo SCS. Ámbito barrido: la tabla entera, pags. impresas 39 y 40 (PDF 42 y 43), en texto y en imagen; y el Manual entero por la cadena «mez»: Temez solo aparece en el num. 3.12.2.1, pag. impresa 50 (PDF 53)
 - **Afirmación negativa**: ni la Tabla Nº 05 ni el resto del Manual fijan una duracion minima de la lluvia de diseño ni un tiempo de concentracion minimo. Ámbito barrido: el Manual entero, 225 paginas, por las cadenas «mínim» y «minut» junto a «concentración» y «duración»
@@ -2788,9 +3036,9 @@ sus campos `alcance` y `uso`, de modo que no puede contradecirlos.
 |---|---|---|---|---|
 | Kirpich (1940) | Kirpich (1940) | tc = 0.01947 · L^0.77 · S^-0.385 ; L = longitud del canal desde aguas arriba hasta la salida, m ; S = pendiente promedio de la cuenca, m/m | Desarrollada a partir de información del SCS en siete cuencas rurales de Tennessee con canales bien definidos y pendientes empinadas (3 a 10%); para flujo superficial en superficies de concreto o asfalto se debe multiplicar tc por 0.4; para canales de concreto se debe multiplicar por 0.2; no se debe hacer ningún ajuste para flujo superficial en suelo descubierto o para flujo en cunetas. | usada |
 | California Culverts Practice (1942) | California Culverts Practice (1942) | tc = 0.0195 · (L^3 / H)^0.385 ; L = longitud del curso de agua más largo, m ; H = diferencia de nivel entre la divisoria de aguas y la salida, m | Esencialmente es la ecuación de Kirpich; desarrollada para pequeñas cuencas montañosas en California. | usada |
-| Izzard (1946) | Izzard (1946) | tc = 525 · (0.0000276·i + c) · L^0.33 / (S^0.333 · i^0.667) ; i = intensidad de lluvia, mm/h ; c = coeficiente de retardo ; L = longitud de la trayectoria de flujo, m ; S = pendiente de la trayectoria de flujo, m/m | Desarrollada experimentalmente en laboratorio por el Bureau of Public Roads para flujo superficial en caminos y Áreas de céspedes; los valores del coeficiente de retardo varían desde 0.0070 para pavimentos muy lisos hasta 0.012 para pavimentos de concreto y 0.06 para superficies densamente cubiertas de pasto; la solución requiere de procesos iterativos; el producto de i por L debe ser ≤ 3800. | no usada |
+| Izzard (1946) | Izzard (1946) | tc = 525 · (0.0000276·i + c) · L^0.33 / (S^0.333 · i^0.667) ; i = intensidad de lluvia, mm/h ; c = coeficiente de retardo ; L = longitud de la trayectoria de flujo, m ; S = pendiente de la trayectoria de flujo, m/m | Desarrollada experimentalmente en laboratorio por el Bureau of Public Roads para flujo superficial en caminos y Áreas de céspedes; los valores del coeficiente de retardo varían desde 0.0070 para pavimentos muy lisos hasta 0.012 para pavimentos de concreto y 0.06 para superficies densamente cubiertas de pasto; la solución requiere de procesos iterativos; el producto de i por L debe ser ≤ 3800. | usada |
 | Federal Aviation Administration (1970) | Federal Aviation Administration (1970) | tc = 0.7035 · (1.1 − C) · L^0.50 / S^0.333 ; C = coeficiente de escorrentía del método racional ; L = longitud del flujo superficial, m ; S = pendiente de la superficie, m/m | Desarrollada de información sobre el drenaje de aeropuertos recopilada por el Corps of Engineers: el método tiene como finalidad el ser usado en problemas de drenaje de aeropuertos pero ha sido frecuentemente usado para flujo superficial en cuencas urbanas. | usada |
-| Ecuaciones de onda cinemática Morgali y Linsley (1965) Aron y Erborge (1973) | Ecuaciones de onda cinemática | tc = 7 · L^0.6 · n^0.6 / (I^0.4 · S^0.3) ; L = longitud del flujo superficial, m ; n = coeficiente de rugosidad de Manning ; I = intensidad de lluvia, mm/h ; S = pendiente promedio del terreno, m/m | Ecuación para flujo superficial desarrollada a partir de análisis de onda cinemática de la escorrentía superficial desde superficies desarrolladas; el método requiere iteraciones debido a que tanto I (Intensidad de lluvia) como tc son desconocidos, la superposición de una curva de intensidad – duración – frecuencia da una solución gráfica directa para tc. | no usada |
+| Ecuaciones de onda cinemática Morgali y Linsley (1965) Aron y Erborge (1973) | Ecuaciones de onda cinemática | tc = 7 · L^0.6 · n^0.6 / (I^0.4 · S^0.3) ; L = longitud del flujo superficial, m ; n = coeficiente de rugosidad de Manning ; I = intensidad de lluvia, mm/h ; S = pendiente promedio del terreno, m/m | Ecuación para flujo superficial desarrollada a partir de análisis de onda cinemática de la escorrentía superficial desde superficies desarrolladas; el método requiere iteraciones debido a que tanto I (Intensidad de lluvia) como tc son desconocidos, la superposición de una curva de intensidad – duración – frecuencia da una solución gráfica directa para tc. | usada |
 | Ecuación de retardo SCS (1973) | Ecuación de retardo SCS (1973) | tc = 0.0136 · L^0.8 · (1000/CN − 9)^0.7 / S^0.5 ; L = longitud hidráulica de la cuenca (mayor trayectoria de flujo), m ; CN = Número de curva SCS ; S = pendiente promedio de la cuenca, m/m | Ecuación desarrollada por el SCS a partir de información de cuencas de uso agrícola; ha sido adaptada a pequeñas cuencas urbanas con áreas inferiores a 800 Ha; se ha encontrado que generalmente es buena cuando el área se encuentra completamente pavimentada; para áreas mixtas tiene tendencia a la sobreestimación; se aplican factores de ajuste para corregir efectos de mejoras en canales e impermeabilización de superficies; la ecuación supone que tc = 1.67 x retardo de la cuenca. | usada |
 
 ### `MC_HHD.T08` — TABLA Nº 08:   Coeficientes de escorrentía método racional
@@ -2923,7 +3171,7 @@ sus campos `alcance` y `uso`, de modo que no puede contradecirlos.
 ### `MC_HHD.T34` — TABLA  Nº  34:  Dimensiones  mínimas
 
 - Cita: `MC_HHD.4.1.2.1c#T34`
-- Tabla completa · el calculo usa 3 de 3 columnas y 3 de 4 filas
+- Tabla completa · el calculo usa 3 de 3 columnas y 4 de 4 filas
 - Fuente que la tabla se atribuye: *Manual de Diseño de Carreteras Pavimentadas de Bajo Volumen de Tránsito-MTC*
 - Vistas de cálculo derivadas: `CUNETA_DIMENSIONES_MINIMAS_T34`
 
@@ -2932,7 +3180,7 @@ sus campos `alcance` y `uso`, de modo que no puede contradecirlos.
 | Seca (<400 mm/año) |  | 0.2 | 0.5 | usada |
 | Lluviosa (De 400 a <1600 mm/año) |  | 0.3 | 0.75 | usada |
 | Muy lluviosa (De 1600 a <3000 mm/año) |  | 0.4 | 1.2 | usada |
-| Muy lluviosa (>3000 mm/año) |  | 0.3 | 1.2 | no usada |
+| Muy lluviosa (>3000 mm/año) |  | 0.3 | 1.2 | usada |
 
 > * * Sección Trapezoidal con un ancho mínimo de fondo de 0.30
 
@@ -3155,7 +3403,7 @@ escrita, y el test la exige.
 | `COND-LS-DISTANCIA-H-MEDIO` | cita:MP.2.4.2.2#SOBRECARGA | `distancia_trafico <= H / 2` | advierte |
 | `COND-LS-LOSA-APROXIMACION` | cita:MP.2.4.2.2#SOBRECARGA | `losa_de_aproximacion` | excluye |
 | `COND-MARCO-SUELO-MALA-CALIDAD` | cita:MC_HHD.4.1.1.3.4a#MARCO | `el Manual recomienda el marco «cuando se tiene la presencia de suelos de fundacion de mala calidad» y NO define «mala calidad»: no da umbral, ni clasificacion, ni remision a otra norma. La columna `sucs_fundacion` del CSV trae el grupo SUCS del punto, y traducirlo a «mala calidad» seria inventar el mapeo que la fuente calla` | advierte |
-| `COND-MULTICELDA-ARRASTRE` | cita:MC_HHD.4.1.1.3.4a#MULTIPLES | `la capacidad de arrastre del curso -- palizada, troncos, material de cauce -- no es una magnitud que este programa calcule ni una columna del CSV: se establece con inspeccion del cauce` | advierte |
+| `COND-MULTICELDA-ARRASTRE` | cita:MC_HHD.4.1.1.3.4a#MULTIPLES | `la capacidad de arrastre del curso -- palizada, troncos, material de cauce -- no es una magnitud que este programa calcule ni una columna del CSV: se establece con inspeccion del cauce, y es de CADA punto, no del corredor` | advierte |
 | `COND-N-MANNING-CAJON` | cita:MC_HHD.4.1.1.3.6#T09 | `n_manning_cajon` | bloquea |
 | `COND-PERFIL-SIN-INFO-SECUNDARIA` | cita:MS.4.2#PERFIL | `existe_informacion_secundaria_tramo` | bloquea |
 | `COND-SELVA-ALTA` | cita:MC_HHD.4.1.1.3.7a | `region == 'selva_alta'` | excluye |
@@ -3170,6 +3418,7 @@ recomienda.
 
 | id | Fase | Paso | Verbo | Citas |
 |---|---|---|---|---|
+| `F0.LICUEFACCION` | Fase 0-bis - Licuefaccion | Evaluacion de licuefaccion del punto: donde AASHTO 10.5.4.2 la exige, el resultado declarado del EMS y, si licua, su medida de mitigacion | **obliga** | `AASHTO_LRFD_9.10.5.4.2`, `E050.38.3` |
 | `F1.TW` | Fase 1 - Datos de entrada | TW en el cuerpo receptor: nivel de agua durante la avenida, por Manning en la seccion del receptor (Sec. 1.3) | **define** | `MC_HHD.4.1.1.3.6` |
 | `F10.APORTE` | Fase 10 - Alcantarillas de alivio: espaciamiento | Caudal aportante por metro de cuneta: escorrentia especifica del area tributaria por su ancho | **define** | `MC_HHD.4.1.2.1b`, `MC_HHD.4.1.2a` |
 | `F10.APORTE_CAPACIDAD` | Fase 10 - Alcantarillas de alivio: espaciamiento | Verificacion VB2: el caudal de aporte del alivio contra la capacidad admisible de la cuneta | **obliga** | `MC_HHD.4.1.2.1a#CONDICION`, `MC_HHD.4.1.2.1a`, `MC_HHD.4.1.2.1b` |
@@ -3177,6 +3426,11 @@ recomienda.
 | `F10.CUNETA` | Fase 10 - Alcantarillas de alivio: espaciamiento | Longitud maxima de recorrido de la cuneta, que fija el espaciamiento de las alcantarillas de alivio | **obliga** | `MC_HHD.4.1.2.1d` |
 | `F10.L_HIDRAULICO` | Fase 10 - Alcantarillas de alivio: espaciamiento | Longitud por capacidad de la cuneta: a partir de ella el caudal aportante supera la capacidad admisible | **define** | `MC_HHD.4.1.2.1a`, `MC_HHD.4.1.2.1b`, `DG2018.304.11` |
 | `F10.TRAMO` | Fase 10 - Alcantarillas de alivio: espaciamiento | Verificacion VB1: espaciamiento adoptado entre alcantarillas de alivio contra el espaciamiento maximo | **obliga** | `MC_HHD.4.1.2.1d`, `DG2018.304.11#DESAGUE`, `MC_HHD.4.1.2.1d#ALIVIO` |
+| `F11.ACERO` | Fase 11 - Entregables | Metrado del acero de refuerzo de los cabezales: peso de las barras propuestas por cara, con los pesos unitarios de la Tabla 504-01 | **obliga** | `EG2013.504.10`, `EG2013.504.01#PESOS` |
+| `F11.CONCRETO` | Fase 11 - Entregables | Metrado del concreto estructural de los cabezales: muro, zapata y aleros, con el vano del conducto descontado | **obliga** | `EG2013.503.12`, `EG2013.503.13#DESPERDICIOS`, `EG2013.503.04#T503_07` |
+| `F11.CONDUCTO` | Fase 11 - Entregables | Metrado del conducto: longitud entre las caras exteriores de los cabezales, a lo largo del eje y siguiendo la pendiente | **obliga** | `EG2013.506.14#LONGITUD`, `EG2013.507.12#LONGITUD`, `EG2013.508.11#LONGITUD`, `EG2013.503.12` |
+| `F11.ENROCADO` | Fase 11 - Entregables | Metrado del enrocado de salida y del geotextil bajo el: area en planta del apron con su abocinado y volumen con el espesor que rige | **permite** | `HEC14.10.2#ANCHO`, `EG2013.603.10`, `EG2013.511.13` |
+| `F11.EXCAVACION` | Fase 11 - Entregables | Metrado de la excavacion para estructuras: la zanja del conducto y la de los cimientos de los cabezales, en volumen en su posicion original | **obliga** | `EG2013.501.09`, `EG2013.501.01#CLASES`, `EG2013.501.04#CARAS`, `EG2013.501.04#ENCOFRADO`, `EG2013.506.06#ZANJA`, `EG2013.507.05#ZANJA`, `EG2013.508.04#ZANJA`, `EG2013.506.07#ESPESOR`, `EG2013.508.05#CAMA` |
 | `F2.LUZ` | Fase 2 - Clasificacion y periodo de retorno | Denominacion de la obra por su luz: alcantarilla o puente | **define** | `MC_HHD.4.1.1.3.1`, `MC_HHD.4.1.1.5.1`, `MP.GLOSARIO#OBRAS_DE_ARTE_MENORES`, `AASHTO_LRFD_9.1.2#BRIDGE`, `HDS5_3ED.1.2#NBIS` |
 | `F2.TR` | Fase 2 - Clasificacion y periodo de retorno | Periodo de retorno del caudal de diseno, obtenido del riesgo admisible y la vida util de la Tabla N 02 | **recomienda** | `MC_HHD.3.6` |
 | `F3.CELDAS` | Fase 3 - Tipo, material y durabilidad | Numero de celdas del cajon: una sola, o multicelda | **recomienda** | `MC_HHD.4.1.1.3.4a#MULTIPLES`, `HDS5_3ED.5.4.3#REPARTO` |
@@ -3191,6 +3445,7 @@ recomienda.
 | `F3.D_MIN` | Fase 3 - Tipo, material y durabilidad | Seccion minima circular de 0.90 m (36") | **obliga** | `MC_HHD.4.1.1.3.4a` |
 | `F3.MANTENIMIENTO` | Fase 3 - Tipo, material y durabilidad | Cota inferior de la progresion de secciones: dimension interior que permite mantener y limpiar el conducto | **obliga** | `MC_HHD.4.1.1.3.7d` |
 | `F3.SECCION_CANAL` | Fase 3 - Tipo, material y durabilidad | Adopcion de la seccion del cajon en un cruce de canal de riego, fuera del piso de 0.90 m | **obliga** | `MC_HHD.4.1.1.3.4a` |
+| `F3.SELVA_ALTA_TMC` | Fase 3 - Tipo, material y durabilidad | Diametro minimo del TMC en zonas de selva alta (Ф 48") | **recomienda** | `MC_HHD.4.1.1.3.7a` |
 | `F3.TIPO_MARCO` | Fase 3 - Tipo, material y durabilidad | Tipo de estructura del cruce: alcantarilla tipo marco de concreto de seccion rectangular | **recomienda** | `MC_HHD.4.1.1.3.4a#TIPOS`, `MC_HHD.4.1.1.3.4a#NIVELES`, `MC_HHD.4.1.1.3.4a#MARCO`, `MC_HHD.LAMINA_03` |
 | `F4.CONTROL` | Fase 4 - Dimensionamiento hidraulico | Carga a la entrada HW por los dos controles del HDS-5, entrada y salida, y adopcion del mayor | **define** | `HDS5_3ED.A.2`, `HDS5_3ED.3.1.4#K`, `HDS5_3ED.3.3.5#GOBIERNA` |
 | `F4.FORMA_HDS5` | Fase 4 - Dimensionamiento hidraulico | Forma de la ecuacion de control de entrada del HDS-5 que aplica a esta seccion, y por que | **define** | `HDS5_3ED.A.2`, `HDS5_3ED.TA.1`, `HDS5_3ED.A.3#FORMAS` |
@@ -3204,6 +3459,7 @@ recomienda.
 | `F4.PERFIL` | Fase 4 - Dimensionamiento hidraulico | Perfil de la lamina de agua por paso directo desde la salida hacia la entrada: longitud a seccion llena y carga a la entrada por remanso (HDS-5 pag. 3.12 y Section 3.5) | **define** | `HDS5_3ED.3.1.4#REMANSO`, `HDS5_3ED.3.1.4#EMPALME`, `HDS5_3ED.3.1.4#HW_REMANSO`, `HDS5_3ED.3.1.4#0_75D`, `HDS5_3ED.3.5#PERFIL`, `HDS5_3ED.3.5.1#S1`, `HDS5_3ED.3.5.1#TIPO7`, `HDS5_3ED.3.3.3#HO` |
 | `F4.PISO_HW` | Fase 4 - Dimensionamiento hidraulico | Carga de control de entrada cuando la correccion por pendiente Ks·S la deja nula o negativa: el piso adoptado (`hw_entrada_fuera_de_rango`) | **define** | `HDS5_3ED.A.2.1#FORMA_1`, `HDS5_3ED.A.2.1#KS`, `HDS5_3ED.A.3#PENDIENTE_2` |
 | `F4.REGIMEN` | Fase 4 - Dimensionamiento hidraulico | Regimen del barril y velocidad a la salida, con el area que HDS-5 3.1.6 asigna a cada caso | **define** | `HDS5_3ED.3.1.6#V_SALIDA`, `HDS5_3ED.3.1.6#V_SALIDA_TW`, `HDS5_3ED.3.3.2#V_SALIDA_ENTRADA`, `HDS5_3ED.3.1.3#SUMERGENCIA`, `HEC14.3.1.3#BORDE`, `HEC14.3.1.3#FIGURAS`, `HEC14.3.1.3#OTRAS_FORMAS` |
+| `F4.RESALTO` | Fase 4 - Dimensionamiento hidraulico | Resalto hidraulico dentro del barril bajo control de entrada, situado por cantidad de movimiento (HEC-14 Cap. 6) | **define** | `HEC14.6.2#MOMENTUM`, `HEC14.6.2.2#LLENO`, `HEC14.6.2.2#FROUDE`, `HEC14.6#V_TRAS_RESALTO`, `HDS5_3ED.3.1.3#SUMERGENCIA` |
 | `F4.SECCION` | Fase 4 - Dimensionamiento hidraulico | Area, perimetro mojado y radio hidraulico de la seccion, para el tirante de trabajo | **define** | `MC_HHD.4.1.1.3.6` |
 | `F4.YC` | Fase 4 - Dimensionamiento hidraulico | Tirante critico de la seccion, y la energia critica H_c | **define** | `HDS5_3ED.3.3.3#HO`, `HDS5_3ED.A.2`, `HDS5_3ED.A.3.1#CRITICO` |
 | `F5.V1` | Fase 5 - Verificaciones | V1 - Borde libre: y no mayor que la relacion de llenado adoptada (por defecto 0.75 de la altura, diametro o flecha de la estructura, el complemento del 25 % recomendado) | **recomienda** | `MC_HHD.4.1.1.3.7b`, `MC_HHD.4.1.1.3.7b#LLENA` |
@@ -3216,22 +3472,29 @@ recomienda.
 | `F5.V4` | Fase 5 - Verificaciones | V4 - Carga a la entrada bajo la subrasante, con el resguardo que fija el CBR | **obliga** | `MS.4.5.4`, `MS.9.1.3` |
 | `F5.V4b` | Fase 5 - Verificaciones | V4b - Carga relativa HW/D frente al tope adoptado por el proyectista | **define** | `HDS5_3ED.2.2.5d#AGENCIAS`, `HDS5_3ED.2.2.5#EMBALSE` |
 | `F5.V5` | Fase 5 - Verificaciones | V5: el embalse aguas arriba frente al derecho de via, por el metodo declarado (cota de afectacion o embalse a nivel) | **define** | `HDS5_3ED.2.2.5#EMBALSE`, `HDS5_3ED.2.2.5#NO_EXCEDER`, `HDS5_3ED.2.2.5a#COTA_DE_DANO`, `DG2018.304.07.01`, `DG2018.304.07.02`, `DG2018.304.07.02#INCREMENTO` |
+| `F5.V5_PERFIL` | Fase 5 - Verificaciones | V5: hasta donde la obra eleva la lamina del cauce de aproximacion sobre su tirante natural, frente al derecho de via (metodo del perfil de remanso) | **define** | `HDS5_3ED.2.2.5#EMBALSE`, `HDS5_3ED.2.2.5b#AUMENTO`, `HDS5_3ED.2.2.3a#SECCION_TIPICA`, `HDS5_3ED.2.2.3e#NORMAL`, `DG2018.304.07.01`, `DG2018.304.07.02` |
 | `F5.V6` | Fase 5 - Verificaciones | V6 - Seccion unica cuando el cauce arrastra material solido: numero de celdas del conducto | **recomienda** | `MC_HHD.4.1.1.3.4a#MULTIPLES` |
 | `F5.V7` | Fase 5 - Verificaciones | V7 - Flotacion del conducto vacio bajo el nivel freatico | **obliga** | `MP.2.4.3.8.2`, `MP.2.4.3.8.1#NIVEL_DE_DISENO`, `AASHTO_LRFD_9.12.6.1#FLOTACION`, `AASHTO_LRFD_9.12.6.2.3#UPLIFT`, `AASHTO_LRFD_9.3.7.2`, `MP.2.4.5.3.1#MINIMO`, `AASHTO_LRFD_9.12.6.1#GAMMA_EV_MAX`, `MP.2.4.5.2#EV`, `AASHTO_LRFD_9.C12.6.2.3`, `MP.T2.4.5.3.1-1`, `MP.T2.4.5.3.1-2` |
 | `F5.V7_FILA` | Fase 5 - Verificaciones | Fila de gamma_p de la Tabla 2.4.5.3.1-2 que describe a esta estructura | **define** | `MP.2.4.5.2#EV`, `MP.T2.4.5.3.1-2` |
 | `F5.V7_NIVEL` | Fase 5 - Verificaciones | Nivel de agua de diseño de la flotacion: lo especifica o aprueba el Propietario | **obliga** | `MP.2.4.3.8.1#NIVEL_DE_DISENO`, `AASHTO_LRFD_9.3.7.1#NIVEL_DE_DISENO`, `AASHTO_LRFD_9.12.6.1#FLOTACION`, `AASHTO_LRFD_9.12.6.2.3#UPLIFT`, `MP.2.4.4.1.3#SUMERGIDO`, `AASHTO_LRFD_9.3.11.3` |
 | `F5.V8` | Fase 5 - Verificaciones | V8: nivel del embalse con el caudal del evento extremo frente a la cota de desborde de la plataforma | **permite** | `HDS5_3ED.2.2.5a#COTA_CRITICA` |
+| `F5.V8.DESBORDE` | Fase 5 - Verificaciones | V8 con el desborde admitido: reparto del caudal del evento extremo entre el conducto y la plataforma, y caudal unitario sobre la plataforma frente al que la proteccion admite | **permite** | `HDS5_3ED.5.4.5#DESBORDE_ACEPTADO`, `HDS5_3ED.5.4.5#HEC23`, `HDS5_3ED.3.1.5#EC_3_9`, `HDS5_3ED.3.1.5#CD_SI`, `HDS5_3ED.3.1.5#TANTEO`, `HDS5_3ED.3.1.5#UN_TRAMO`, `HDS5_3ED.F3.11` |
 | `F5.V9` | Fase 5 - Verificaciones | V9 - Seccion requerida frente al tope de la serie de su material | **define** | `AASHTO_M170M.T1_T5#DIAMETROS`, `AASHTO_M170M.7.2.1`, `AASHTO_M36.T6` |
 | `F5.VC1` | Fase 5 - Verificaciones | VC1 - Cruce de canal: el agua embalsada a la entrada no llega a la coronacion del canal, con su borde libre | **recomienda** | `MC_HHD.4.1.1.4.1e`, `MC_HHD.4.1.1.4.1e#RANGO` |
 | `F6.APRON` | Fase 6 - Proteccion de entrada y salida | Tamaño de piedra del apron de enrocado por HEC-14, Ec. (10.4): D50 en funcion de Q, D y TW | **recomienda** | `HEC14.10.2#EC_10_4`, `HEC14.10.2#TW`, `HEC14.10.2#TW_ALTO`, `HEC14.10.2#EC_10_5`, `HEC14.1#T1_1_APRON`, `HDS5_3ED.5.3.2#APRON`, `HEC14.D#SOLO_VELOCIDAD` |
 | `F6.APRON_GEOMETRIA` | Fase 6 - Proteccion de entrada y salida | Clase de enrocado, longitud, profundidad y ancho del apron por la Tabla 10.1 de HEC-14 | **recomienda** | `HEC14.10.2#T10_1`, `HEC14.10.2#ANCHO`, `MC_HHD.LAMINA_05`, `MC_HHD.4.1.1.3.7c#ALIVIADERO`, `MC_HHD.LAMINA_04`, `HDS5_3ED.5.3.2#APRON` |
+| `F6.CAIDA` | Fase 6 - Proteccion de entrada y salida | Cotas de la estructura de caida recta de HEC-14 en la salida colgada: tirante critico, nivel del receptor y piso del estanque | **recomienda** | `HEC14.11.1.3#SALIDA_COLGADA`, `HEC14.11.1.3#LIMITES`, `HEC14.11.1.3#SUBCRITICO`, `HEC14.11.1.3#Y3`, `HEC14.11.1.3#EC_11_5`, `HEC14.11.1.3#EC_11_6`, `HEC14.11.1.3#ANCHO_APROXIMACION` |
+| `F6.CAIDA_ESTANQUE` | Fase 6 - Proteccion de entrada y salida | Longitud del estanque, bloques, umbral, muros y aproximacion revestida de la estructura de caida recta | **recomienda** | `HEC14.11.1.3#LONGITUD`, `HEC14.11.1.3#BLOQUES` |
 | `F6.ENTRADA` | Fase 6 - Proteccion de entrada y salida | Proteccion de la entrada: velocidad en la boca y revestimiento del cauce y del talud | **recomienda** | `MC_HHD.4.1.1.3.7c#PROTECCION`, `MC_HHD.4.1.1.3.7c#REVESTIMIENTOS`, `HDS5_3ED.5.3.1#ENTRADA`, `HDS5_3ED.3.1.3#CRITICO_EN_LA_ENTRADA`, `MC_HHD.LAMINA_02` |
 | `F6.FILTRO` | Fase 6 - Proteccion de entrada y salida | Filtro entre el enrocado y el suelo: requisitos del geotextil de control permanente de erosion | **recomienda** | `MC_HHD.LAMINA_05`, `HEC14.10.2#FILTRO`, `EG2013.511.08#EROSION`, `EG2013.511.08#T511_06`, `EG2013.511.08#NOTA_5A`, `EG2013.511.05#T511_02_NOTA_5` |
 | `F6.FROUDE` | Fase 6 - Proteccion de entrada y salida | Numero de Froude de HEC-14 a la salida del conducto, Fr_e = V / (g·ye)^0.5, con el tirante equivalente | **define** | `HEC14.10.1.1#YE`, `HDS5_3ED.3.1.6#V_SALIDA`, `HEC14.3#CONTINUIDAD`, `HEC14.1#T1_1_APRON` |
 | `F6.GEOMETRIA_ADOPTADA` | Fase 6 - Proteccion de entrada y salida | Espesor y longitud de la proteccion de salida que el proyecto adopta | **recomienda** | `MC_HHD.4.1.1.3.7c#REVESTIMIENTOS`, `MC_HHD.4.1.1.3.7c`, `HEC14.10.2#T10_1`, `HEC14.10.2#PROFUNDIDAD`, `HEC14.10.2#EC_10_4` |
 | `F6.LAUSHEY` | Fase 6 - Proteccion de entrada y salida | Diametro medio del enrocado de proteccion a la salida, d50 = V^2 / (3.1 g) | **define** | `MC_HHD.4.1.1.3.7c` |
+| `F6.POZA` | Fase 6 - Proteccion de entrada y salida | Profundidad de la poza de enrocado de HEC-14 y piedra con que se dimensiona, por la Ec. (10.1) | **recomienda** | `HEC14.1#T1_1_POZA`, `HEC14.10.1#EC_10_1`, `HEC14.10.1#CO_ENVOLVENTE`, `HEC14.10.1.5#RANGO`, `HEC14.10.1#MAYOR_REVISTE`, `HEC14.10.1.1#ENSAYOS`, `HEC14.10.1.1#YE`, `HEC14.10.1#DOS_D50`, `HEC14.10.1.4#TALUD` |
+| `F6.POZA_SALIDA` | Fase 6 - Proteccion de entrada y salida | Longitud y ancho de la poza de enrocado y velocidad a su salida contra la admisible | **recomienda** | `HEC14.10.1#LONGITUDES`, `HEC14.10.1.2#ABOCINADO`, `HEC14.10.1.5#SALIDA`, `HEC14.10.1#EXTENDER`, `HEC14.10.1.5#PASO_5`, `MC_HHD.4.1.1.3.6#T11` |
 | `F6.SOCAVACION` | Fase 6 - Proteccion de entrada y salida | Hoya de socavacion local a la salida por HEC-14, Cap. 5: profundidad, ancho y longitud | **recomienda** | `HEC14.5.1#EC_5_1`, `HEC14.5#PEOR_CASO`, `HEC14.5.1.1#T5_1`, `HEC14.5.1.4#T5_2`, `HEC14.5.1.5#T5_3`, `HEC14.5.1.2#T30`, `HEC14.5.1.2#NO_BAJO_30`, `HEC14.5.1.2#DOS_TERCIOS`, `HEC14.5.2#EC_5_2`, `HEC14.5.2#RANGO_IP`, `HEC14.5.2#EC_5_4` |
 | `F6.SOCAVACION_DESPLANTE` | Fase 6 - Proteccion de entrada y salida | Profundidad de socavacion que se entrega al desplante del cabezal de salida | **recomienda** | `HEC14.5.1.3#CABEZAL`, `HDS5_3ED.5.3.2#APRON`, `HEC14.10.1#HS` |
+| `F6.TW_ALTO` | Fase 6 - Proteccion de entrada y salida | Proteccion aguas abajo con el tirante del receptor alto: atenuacion de la velocidad por la Figura 10.3 de HEC-14 y piedra por la Ec. (10.6) | **recomienda** | `HEC14.10.2#TW_ALTO`, `HEC14.10.1.3#FIGURA_10_3`, `HEC14.10.3#EC_10_6`, `HEC14.10.1#HASTA_VALLOW`, `HEC14.10.1.5#PASO_5` |
 | `F6.V_ADMISIBLE` | Fase 6 - Proteccion de entrada y salida | Velocidad del flujo contra la maxima admisible del terreno del cauce (Tabla Nº 11) | **recomienda** | `MC_HHD.4.1.1.3.6#V_SALIDA`, `MC_HHD.4.1.1.3.6#T11`, `MC_HHD.4.1.1.3.7c#PROTECCION`, `HDS5_3ED.5.3.2#PRACTICA` |
 | `F7.COTA_SALIDA` | Fase 7 - Compatibilidad geometrica | Caida del conducto y cota de fondo de la salida | **define** | `MC_HHD.LAMINA_01`, `HDS5_3ED.2.2.4#LONGITUD` |
 | `F7.EMPALME_CANAL` | Fase 7 - Compatibilidad geometrica | Empalme de la salida de un paso de canal con el fondo del canal aguas abajo (VC2, aviso) | **define** | `MC_HHD.LAMINA_03`, `EG2013.503.11g#COTAS`, `EG2013.501.07` |
@@ -3246,19 +3509,21 @@ recomienda.
 | `F7.REMANSO_CANAL` | Fase 7 - Compatibilidad geometrica | Sobreelevacion de la lamina del canal en el cruce y longitud minima del remanso aguas arriba (aviso) | **define** | `MC_HHD.4.1.1.3.6`, `HDS5_3ED.3.5#PERFIL` |
 | `F7.VC3` | Fase 7 - Compatibilidad geometrica | VC3: perdidas de la obra frente al desnivel que el perfil del canal provee en el cruce | **recomienda** | `USBR_DSCS.2-6#CHECK`, `USBR_DSCS.2-6#F` |
 | `F8.CARGA_TIERRA` | Fase 8 - Verificacion estructural del conducto | Carga de tierra sobre el conducto: prisma de relleno y paquete estructural, con la interaccion suelo-estructura de su tipo | **obliga** | `AASHTO_LRFD_9.12.10.2.1#VAF`, `AASHTO_LRFD_9.12.10.2.1#PESO_MIN`, `AASHTO_LRFD_9.12.10.2.2`, `AASHTO_LRFD_9.C12.7.2.2`, `AASHTO_LRFD_9.12.11.2.2.1`, `MP.2.4.2.1#PESOS` |
-| `F8.CARGA_VIVA` | Fase 8 - Verificacion estructural del conducto | Carga viva HL-93 a la profundidad de la clave: presion vertical por la rueda distribuida a traves del relleno | **obliga** | `AASHTO_LRFD_9.3.6.1.2.6a#RELLENO`, `AASHTO_LRFD_9.3.6.1.2.6a#EJES`, `AASHTO_LRFD_9.3.6.1.2.6a#UN_CARRIL`, `AASHTO_LRFD_9.3.6.1.2.6a#DESPRECIABLE`, `AASHTO_LRFD_9.3.6.1.2.6a#VARIOS_VANOS`, `AASHTO_LRFD_9.3.6.1.2.6a#CONCRETO_SOMERO`, `AASHTO_LRFD_9.T3.6.1.2.6a-1`, `AASHTO_LRFD_9.3.6.1.2.6b#PL`, `AASHTO_LRFD_9.C3.6.1.2.6b`, `MP.2.4.3.2.2.2`, `MP.2.4.3.2.2.3`, `MP.2.4.3.2.2.5`, `MP.2.4.3.2.2.6`, `MP.2.4.3.3.2`, `AASHTO_LRFD_9.12.11.2.1#LL` |
+| `F8.CARGA_VIVA` | Fase 8 - Verificacion estructural del conducto | Carga viva HL-93 a la profundidad de la clave: presion vertical por la rueda distribuida a traves del relleno | **obliga** | `AASHTO_LRFD_9.3.6.1.2.6a#RELLENO`, `AASHTO_LRFD_9.3.6.1.2.6a#EJES`, `AASHTO_LRFD_9.3.6.1.2.6a#UN_CARRIL`, `AASHTO_LRFD_9.3.6.1.2.6a#DESPRECIABLE`, `AASHTO_LRFD_9.3.6.1.2.6a#VARIOS_VANOS`, `AASHTO_LRFD_9.3.6.1.2.6a#CONCRETO_SOMERO`, `AASHTO_LRFD_9.3.6.1.2.6a#UN_PIE`, `AASHTO_LRFD_9.3.6.1.2.6a#MENOS_DE_UN_PIE`, `AASHTO_LRFD_9.4.6.2.10.1`, `AASHTO_LRFD_9.4.6.2.10.2#UN_CARRIL`, `AASHTO_LRFD_9.4.6.2.10.2#FRANJA`, `AASHTO_LRFD_9.C4.6.2.10.2#E_SPAN`, `AASHTO_LRFD_9.12.11.2.1#SOMERO`, `AASHTO_LRFD_9.T3.6.1.2.6a-1`, `AASHTO_LRFD_9.3.6.1.2.6b#PL`, `AASHTO_LRFD_9.C3.6.1.2.6b`, `MP.2.4.3.2.2.2`, `MP.2.4.3.2.2.3`, `MP.2.4.3.2.2.5`, `MP.2.4.3.2.2.6`, `MP.2.4.3.3.2`, `AASHTO_LRFD_9.12.11.2.1#LL` |
 | `F8.CLASE_CONCRETO` | Fase 8 - Verificacion estructural del conducto | Clase del tubo de concreto reforzado por el metodo indirecto: D-load requerida frente a la D-load de la clase | **obliga** | `AASHTO_LRFD_9.12.10.4.3.1`, `AASHTO_LRFD_9.12.10.4.3.1#TIPO1`, `AASHTO_LRFD_9.12.10.4.3.1#DLOAD`, `AASHTO_LRFD_9.12.10.4.3.2a`, `AASHTO_LRFD_9.12.10.4.3.2c`, `AASHTO_LRFD_9.12.10.2.3`, `AASHTO_M170M.T2#DLOAD`, `AASHTO_M170M.T1#DIAMETROS`, `USACE_EM_1110_2_2902.B-7#C76`, `AASHTO_M170M.T4#LEGIBLE`, `AASHTO_M170M.T5#PARED_B`, `AASHTO_LRFD_9.T12.10.2.1-1`, `AASHTO_LRFD_9.T12.10.2.1-1#PROCTOR`, `EG2013.506.02#CLASE`, `EG2013.506.07`, `EG2013.506.10`, `EG2013.T205-01`, `EG2013.205.12#COMPACTACION` |
+| `F8.COBERTURA` | Fase 8 - Verificacion estructural del conducto | Cobertura minima del conducto redondo cuando el relleno queda por debajo del dominio de la rueda distribuida | **obliga** | `AASHTO_LRFD_9.12.6.6.3#COBERTURA`, `AASHTO_LRFD_9.T12.6.6.3-1`, `AASHTO_LRFD_9.3.6.1.2.6a#MENOS_DE_UN_PIE` |
 | `F8.HDPE_DEFLEXION` | Fase 8 - Verificacion estructural del conducto | Tuberia de polietileno corrugado: deflexion vertical de servicio | **obliga** | `AASHTO_LRFD_9.12.12.2.2`, `AASHTO_LRFD_9.C12.12.2.2` |
 | `F8.HDPE_EMPUJE` | Fase 8 - Verificacion estructural del conducto | Tuberia de polietileno corrugado: deformacion de compresion por el empuje frente a su limite | **obliga** | `AASHTO_LRFD_9.12.12.3.10.1d`, `AASHTO_LRFD_9.12.12.3.10.1c#EP`, `AASHTO_LRFD_9.12.12.3.5`, `AASHTO_LRFD_9.T12.12.3.3-1`, `AASHTO_LRFD_9.T12.12.3.5-1`, `AASHTO_LRFD_9.12.12.3.10.1b#STUB`, `AASHTO_M294_TRAD.7.7`, `AASHTO_LRFD_9.TA12-11`, `AASHTO_LRFD_9.12.12.3.2`, `AASHTO_LRFD_9.C12.12.3.2`, `AASHTO_LRFD_9.T12.12.3.5-2`, `AASHTO_LRFD_9.12.5.4`, `AASHTO_LRFD_9.1.3.5`, `MP.2.3.2.5`, `EG2013.508.02#GRANULAR`, `EG2013.T301-01`, `EG2013.508.07#COMPACTACION` |
 | `F8.HDPE_FF` | Fase 8 - Verificacion estructural del conducto | Tuberia de polietileno corrugado: factor de flexibilidad para el manejo y la instalacion | **obliga** | `AASHTO_LRFD_9.12.5.6.3`, `AASHTO_LRFD_9.12.12.3.6`, `AASHTO_LRFD_9.TA12-11` |
 | `F8.HDPE_PANDEO` | Fase 8 - Verificacion estructural del conducto | Tuberia de polietileno corrugado: pandeo general del anillo | **obliga** | `AASHTO_LRFD_9.12.12.3.10.1e`, `AASHTO_LRFD_9.12.12.3.3#PANDEO`, `AASHTO_LRFD_9.12.12.3.10.1c#EP`, `AASHTO_LRFD_9.T12.12.3.5-1`, `AASHTO_LRFD_9.12.5.5` |
 | `F8.MARCO_DEMANDA` | Fase 8 - Verificacion estructural del conducto | Marco de concreto: cargas sobre la losa superior y momento de referencia; el diseño de la seccion se difiere | **obliga** | `AASHTO_LRFD_9.12.11.2.2.1`, `AASHTO_LRFD_9.12.11.2.1#LL` |
+| `F8.PORTICO` | Fase 8 - Verificacion estructural del conducto | Marco de concreto: analisis del portico cerrado y armado de sus losas, paredes y tabiques | **obliga** | `AASHTO_LRFD_9.12.11.5.1`, `AASHTO_LRFD_9.12.11.2.1#CARGAS`, `AASHTO_LRFD_9.12.11.2.3`, `AASHTO_LRFD_9.C12.11.2.1#COMBINACIONES`, `AASHTO_LRFD_9.3.11.5.2#K0`, `AASHTO_LRFD_9.3.11.7`, `AASHTO_LRFD_9.3.11.6.4#APLICA`, `AASHTO_LRFD_9.T3.11.6.4-1`, `AASHTO_LRFD_9.T12.5.5-1#CAJON_IN_SITU`, `AASHTO_LRFD_9.12.5.5`, `AASHTO_LRFD_9.12.11.4`, `AASHTO_LRFD_9.12.11.5.3.1`, `AASHTO_LRFD_9.12.11.5.1#CORTANTE`, `AASHTO_LRFD_9.5.12.7.3` |
 | `F8.RECUBRIMIENTO` | Fase 8 - Verificacion estructural del conducto | Recubrimiento del refuerzo, por la regla del mayor entre E.060 y AASHTO | **obliga** | `E060.7.7.1`, `AASHTO_LRFD_9.T5.10.1-1` |
 | `F8.TMC_AREA` | Fase 8 - Verificacion estructural del conducto | Tuberia metalica corrugada: empuje de anillo mayorado frente a la resistencia de la pared, con el pandeo | **obliga** | `AASHTO_LRFD_9.12.7.2.2`, `AASHTO_LRFD_9.C12.7.2.2`, `AASHTO_LRFD_9.12.7.2.3`, `AASHTO_LRFD_9.12.7.2.4`, `AASHTO_LRFD_9.12.5.4`, `AASHTO_LRFD_9.1.3.5`, `AASHTO_LRFD_9.12.5.5`, `AASHTO_LRFD_9.TA12-9`, `MP.2.3.2.5`, `ASTM_A796.9.1`, `ASTM_A796.T5`, `EG2013.T507-01` |
 | `F8.TMC_ASD` | Fase 8 - Verificacion estructural del conducto | Tuberia metalica corrugada: contraste por tensiones admisibles (ASTM A796, num. 8), que no rige | **permite** | `ASTM_A796.7.1`, `ASTM_A796.8.1.1.2#SELECCION`, `ASTM_A796.6.2.2.1` |
 | `F8.TMC_COSTURA` | Fase 8 - Verificacion estructural del conducto | Tuberia metalica corrugada: resistencia de la costura longitudinal | **obliga** | `AASHTO_LRFD_9.12.7.2.5`, `ASTM_A796.8.1.3.1`, `ASTM_A796.T5`, `AASHTO_LRFD_9.12.5.5`, `EG2013.507.02#EMPERNADA` |
 | `F8.TMC_FF` | Fase 8 - Verificacion estructural del conducto | Tuberia metalica corrugada: factor de flexibilidad de manejo e instalacion | **obliga** | `AASHTO_LRFD_9.12.5.6.1#FF`, `ASTM_A796.10.3` |
-| `F9.AGUA` | Fase 9 - Cabezal y aletas | Agua en el trasdos: nivel, empuje hidrostatico, suelo sumergido y subpresion | **obliga** | `AASHTO_LRFD_9.3.11.3`, `AASHTO_LRFD_9.11.6.6#DRENAJE`, `E050.39.13.8#DRENAJE`, `MP.2.4.3.8.2` |
+| `F9.AGUA` | Fase 9 - Cabezal y aletas | Agua en el trasdos: nivel, empuje hidrostatico, suelo sumergido y subpresion | **obliga** | `AASHTO_LRFD_9.3.11.3`, `AASHTO_LRFD_9.11.6.6#DRENAJE`, `E050.39.13.8#DRENAJE`, `MP.2.4.3.8.2`, `AASHTO_LRFD_9.C11.6.5.3#NIVEL_MEDIO` |
 | `F9.ALEROS` | Fase 9 - Cabezal y aletas | Aleros: angulo, longitud, alturas inicial y final, espesor | **obliga** | `AASHTO_LRFD_9.12.6.5#ALEROS`, `MC_HHD.LAMINA_02A`, `HDS5_3ED.SIMBOLOS#THETA_W` |
 | `F9.ARM_CORTANTE` | Fase 9 - Cabezal y aletas | Resistencia a cortante del concreto, sin refuerzo transversal, frente al cortante factorado | **obliga** | `AASHTO_LRFD_9.5.7.3.3#VN`, `AASHTO_LRFD_9.5.7.3.4.1#SIMPLIFICADO`, `AASHTO_LRFD_9.C5.7.3.4.1#GRANDES`, `AASHTO_LRFD_9.5.7.2.8#DV`, `AASHTO_LRFD_9.5.5.4.2#CORTE`, `AASHTO_LRFD_9.5.7.2.3#TRANSVERSAL`, `AASHTO_LRFD_9.1.3.2.1#EXTREMO`, `AASHTO_LRFD_9.5.7.3.4.2#GENERAL`, `AASHTO_LRFD_9.5.7.3.4.2#MU`, `AASHTO_LRFD_9.5.7.3.4.2#SXE`, `AASHTO_LRFD_9.5.7.3.4.2#SX`, `AASHTO_LRFD_9.C5.7.3.4.2#NEGATIVO` |
 | `F9.ARM_CORTANTE_PLANO` | Fase 9 - Cabezal y aletas | Cuantias minimas del muro bajo el regimen de cortante en su plano | **obliga** | `E060.11.10.1`, `E060.11.10.2`, `E060.11.10.7#UMBRAL`, `E060.11.10.10.2`, `E060.11.10.10.3`, `E060.14.3.1` |
@@ -3287,6 +3552,7 @@ recomienda.
 | `F9.EMPUJES` | Fase 9 - Cabezal y aletas | Empuje activo del relleno sobre el plano vertical del talon: coeficiente de la cuña de tanteo con la superficie real (o de Coulomb con una pendiente equivalente), altura y componentes horizontal y vertical | **define** | `MP.2.4.4.1.5.3`, `AASHTO_LRFD_9.C3.11.5.3#PLANO_DEL_TALON`, `AASHTO_LRFD_9.C3.11.5.3#DELTA`, `AASHTO_LRFD_9.3.11.5.3#CULMANN`, `AASHTO_LRFD_9.3.11.5.8.1#CUNA`, `AASHTO_LRFD_9.C3.11.5.8.1#TALUD_QUEBRADO`, `AASHTO_LRFD_9.11.6.5.2.2#ALTURA` |
 | `F9.E_ASD` | Fase 9 - Cabezal y aletas | E1 a E3 (ASD): factores de seguridad al portante, al volteo y al deslizamiento con cargas de servicio | **obliga** | `E050.21`, `E050.39.13.6`, `E050.20`, `E050.17.1#SERVICIO`, `AASHTO_LRFD_9.C10.5.5.2.2#ASD` |
 | `F9.GLOBAL` | Fase 9 - Cabezal y aletas | E4 y E5: estabilidad global del muro y del talud, diferidas al expediente | **obliga** | `AASHTO_LRFD_9.11.6.3.7#GLOBAL`, `E050.39.13.6`, `E050.30.3` |
+| `F9.GLOBAL_DECLARADA` | Fase 9 - Cabezal y aletas | E4 y E5: el factor de seguridad de la estabilidad global del muro y del talud, declarado del estudio de suelos, contra el minimo de cada marco | **obliga** | `AASHTO_LRFD_9.11.6.3.7#GLOBAL`, `E050.39.13.6`, `E050.30.3`, `AASHTO_LRFD_9.11.6.3.7#PHI`, `AASHTO_LRFD_9.C11.6.3.7#FS`, `AASHTO_LRFD_9.11.5.8#GLOBAL` |
 | `F9.LONGITUD` | Fase 9 - Cabezal y aletas | Longitud entre cabezales con el talud muriendo en el relleno que retienen, y longitud de metrado del barril | **obliga** | `HDS5_3ED.3.3.5#ENCAJE`, `HDS5_3ED.3.1.4#LONGITUD` |
 | `F9.LOSA` | Fase 9 - Cabezal y aletas | Losa de entrega y dentellon delante del cabezal | **obliga** | `AASHTO_LRFD_9.12.6.5#DENTELLON`, `MC_HHD.LAMINA_04#DENTELLON`, `MC_HHD.LAMINA_02` |
 | `F9.SISMO` | Fase 9 - Cabezal y aletas | Demanda sismica del cabezal: empuje sismico (cuña de tanteo pseudoestatica, o Mononobe-Okabe), su punto de aplicacion, la inercia del muro y los dos casos de combinacion | **obliga** | `AASHTO_LRFD_9.11.6.5.3#VALIDEZ`, `AASHTO_LRFD_9.C11.6.5.3#CUNA`, `AASHTO_LRFD_9.C11.6.5.4#CEDENTE`, `AASHTO_LRFD_9.C11.6.5.4#K0`, `AASHTO_LRFD_9.3.11.5.2#K0`, `AASHTO_LRFD_9.11.6.5.3#DISTRIBUCION`, `AASHTO_LRFD_9.C11.6.5.3#RESULTANTE`, `AASHTO_LRFD_9.11.6.5.4#NO_CEDENTE`, `AASHTO_LRFD_9.11.6.5.2.2#REDUCCION`, `AASHTO_LRFD_9.A11.3.1#KAE`, `MP.2.8.1.1.14.1#EXC`, `AASHTO_LRFD_9.C11.6.5.3#AGUA_TOTAL`, `AASHTO_LRFD_9.C11.6.5.3#AGUA_ABIERTO` |
@@ -3458,7 +3724,7 @@ vigila. Una cita con cualquier campo pendiente NO puede llevar firma de
 verificación.
 
 
-Citas sin firma de verificación: **6** de 543.
+Citas sin firma de verificación: **6** de 629.
 - `AASHTO_M294_TRAD.1.1.1`
 - `AASHTO_M294_TRAD.1.4`
 - `AASHTO_M294_TRAD.7.2.1`

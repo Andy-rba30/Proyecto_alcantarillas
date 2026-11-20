@@ -1357,7 +1357,9 @@ def test_4_el_barrido_cubre_los_141_y_censa_lo_que_no_barre(candidatos):
     # 167 desde VE-5-mh: 'factores_idf_regional' [S] (ficha T1-05), sin valor,
     # e 'intervalos_de_clase_chi_cuadrado' [A] (ficha T1-01).
     # 168 desde VE-5-gui: 'techos_de_transcripcion_fase_6' (ficha T8-11).
-    assert len(por_clave) == len(ca.CRITERIOS) == 168
+    # 169 desde VE-6-m9: 'cuantia_minima_muro_e060' [N→] (ficha T7C-10; era
+    # la constante CUANTIA_MIN_MURO), sin ventana.
+    assert len(por_clave) == len(ca.CRITERIOS) == 169
     assert fuera == FILAS_FUERA_DE_SU_VENTANA
     assert {k for k, cs in por_clave.items() if not cs} == SIN_NADA_QUE_BARRER
     # Y el barrido no es de juguete: cada valor de archivo esta, y mas.

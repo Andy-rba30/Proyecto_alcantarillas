@@ -701,7 +701,8 @@ def test_h2_guardia_el_valor_de_archivo_de_todos_los_criterios_sigue_pasando():
     # 167 desde VE-5-mh: 'factores_idf_regional' [S] (ficha T1-05) e
     # 'intervalos_de_clase_chi_cuadrado' [A] (ficha T1-01).
     # 168 desde VE-5-gui: 'techos_de_transcripcion_fase_6' (ficha T8-11).
-    assert len(ca.CRITERIOS) == 168 and barridos > 100, (len(ca.CRITERIOS),
+    # 169 desde VE-6-m9: 'cuantia_minima_muro_e060' [N→] (ficha T7C-10).
+    assert len(ca.CRITERIOS) == 169 and barridos > 100, (len(ca.CRITERIOS),
                                                           barridos)
 
 
