@@ -1752,6 +1752,32 @@ E050_38_4_3 = _cita(
           "que dice."),
 )
 
+# --- VE-5 (lote catlic) --- A QUIEN le toca el potencial de licuacion: al
+# profesional responsable del EMS. Es lo que hace de la licuefaccion un
+# RESULTADO DECLARADO del EMS y no un calculo de este programa (decision del
+# dueño, censo de pendientes, item 6).
+E050_38_3 = _cita(
+    id="E050.38.3",
+    fuente_id="E050",
+    numeral="Art. 38, 38.3",
+    titulo_numeral="Licuación de suelos",
+    pagina_impresa="51",
+    pagina_pdf=51,
+    texto_literal=Verbatim(
+        texto=("En estos casos, el PR debe incluir en su EMS un análisis "
+               "determinístico y probabilístico del Potencial de Licuación de "
+               "la zona, (Ver numeral 38.5) e indicar la probabilidad de "
+               "ocurrencia o no del fenómeno de Licuación."),
+        pagina_pdf=51),
+    caracter=Caracter.EXIGENCIA,
+    nota=("«En estos casos» son los del 38.2: suelo granular (arena, arena "
+          "limosa, arena arcillosa, limo arenoso no plastico o grava en esa "
+          "matriz) y sumergido. E.050 es norma de edificaciones: para la obra "
+          "vial rige por analogia [N->], como en el resto del cabezal; lo que "
+          "se toma de ella es A QUIEN le toca el analisis (el PR del EMS), no "
+          "el disparador, que es el de AASHTO 10.5.4.2."),
+)
+
 
 # ===========================================================================
 # EG-2013

@@ -5736,3 +5736,24 @@ EXCENTRICIDAD_MIN_MURO_CONCRETO_SIMPLE_E060 = 0.10
 # que CEDE con una pantalla mas baja. Se convierte con el factor exacto.
 ALTURA_VOLADIZO_ACTIVO_PIE = 5.0
 ALTURA_VOLADIZO_ACTIVO_M = ALTURA_VOLADIZO_ACTIVO_PIE * PIE_EN_METROS
+
+
+# ---- VE-5 (lote catlic) · Fase 0-bis: cuando AASHTO EXIGE evaluar la ---------
+# ---- licuefaccion (10.5.4.2) y las cuatro zonas sismicas de 3.10.6 -----------
+# AASHTO LRFD 9a ed., 10.5.4.2, pag. impresa 10-34 (PDF 1323; cita
+# AASHTO_LRFD_9.10.5.4.2): «A liquefaction assessment shall be conducted for
+# Seismic Zones 3 and 4 if both of the following conditions are present:
+# Ground Water Level—The groundwater level anticipated at the site is within
+# 50.0 ft of the existing ground surface or the final ground surface,
+# whichever is lower» (y la condicion de suelo, que solo el EMS puede leer).
+# Y el mismo numeral: «the potential for liquefaction in Seismic Zone 2
+# should also be considered» cuando hay arenas sueltas saturadas.
+# AASHTO 3.10.6, pag. impresa 3-108 (PDF 162): «Each bridge shall be
+# assigned to one of the four seismic zones in accordance with Table
+# 3.10.6-1».
+ZONAS_SISMICAS_AASHTO = (1, 2, 3, 4)
+ZONAS_SISMICAS_EXIGEN_LICUEFACCION = (3, 4)
+ZONA_SISMICA_LICUEFACCION_A_CONSIDERAR = 2
+# 50.0 ft convertidos con el factor exacto; el imperial no entra al calculo.
+PROF_NF_LICUEFACCION_PIE = 50.0
+PROF_NF_LICUEFACCION_SI = PROF_NF_LICUEFACCION_PIE * PIE_EN_METROS   # m

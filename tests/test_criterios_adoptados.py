@@ -1072,7 +1072,13 @@ def test_la_cadena_sismica_no_se_detiene_por_la_clase_de_sitio_indeterminada():
     sobre el campo `sin_consumidor`; aqui se fija la otra mitad: que el
     factor que la cadena si consume sigue teniendo valor y rango.
     """
-    assert criterio("clase_sitio").sin_consumidor.strip()
+    # VE-5 (catlic): la lee la Fase 0-bis con `valor_si_declarado`; sin
+    # valor no detiene nada y no se registra como usada.
+    from src.modulos import ML_licuefaccion as ML
+    assert not criterio("clase_sitio").sin_consumidor
+    ca.reiniciar_usos()
+    assert ML.contrastar_clase_sitio() == ()
+    assert "clase_sitio" not in ca.criterios_usados()
     f_pga = criterio("F_pga")
     assert f_pga.valor == ("C", "D", "E")
     assert f_pga.etiqueta == "A" and f_pga.sensibilidad
@@ -1241,7 +1247,9 @@ def test_los_criterios_sin_consumidor_declaran_por_que_nadie_los_invoca():
     en el propio criterio, y no repartida entre la auditoria y el manifiesto.
     """
     sin_consumidor = ca.criterios_sin_consumidor()
-    assert "demanda_sismica_licuefaccion" in sin_consumidor
+    # VE-5 (catlic): la demanda de licuefaccion y la clase de sitio ya
+    # tienen consumidor (ML_licuefaccion).
+    assert "capacidad_portante_adm" in sin_consumidor
     for clave in sin_consumidor:
         assert criterio(clave).sin_consumidor.strip(), clave
 

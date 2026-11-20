@@ -343,8 +343,11 @@ def test_el_criterio_de_la_verificacion_diferida_solo_lo_lee_esa_verificacion():
 # silencio. Si aparece un decimo, este test falla y obliga a decidir --- o se
 # cablea su consumidor, o se admite que su nivel es una declaracion.
 SIN_CONSUMIDOR_Y_SIN_MEDIDA = (
-    "Mw_licuefaccion",
-    "PERFIL_SUELO_PRESUNTO",
+    # 'Mw_licuefaccion', 'PERFIL_SUELO_PRESUNTO' y
+    # 'demanda_sismica_licuefaccion' SALIERON DE ESTE CENSO EN VE-5 (lote
+    # catlic): los consume la Fase 0-bis (`ML_licuefaccion`), que la corrida
+    # de perfil difiere entera; la demanda la mide la corrida de expediente
+    # y los otros dos los mide tests/test_ve5_catlic.py.
     # 'angulo_aletas' SALIO DE ESTE CENSO EN T-7a: tiene consumidor
     # (`M9.embocadura_del_punto`, que corre antes de la Fase 4) y su nivel de
     # perfil lo mide la corrida de perfil de este mismo archivo.
@@ -352,8 +355,8 @@ SIN_CONSUMIDOR_Y_SIN_MEDIDA = (
     # ensamble de estabilidad de M9, `suelo_de_fundacion`), que la Fase 9
     # ejecuta a nivel de expediente y el de perfil difiere.
     "capacidad_portante_adm",
-    "clase_sitio",
-    "demanda_sismica_licuefaccion",
+    # 'clase_sitio' SALIO EN VE-5 (catlic): la contrasta con 'F_pga'
+    # `ML.contrastar_clase_sitio` cuando el EMS la declara.
     # T1: la eleccion de edicion para las fuentes con edicion posterior
     # detectada. No es una magnitud y ningun modulo la consume; su nivel
     # (expediente) es el argumento escrito junto al campo.

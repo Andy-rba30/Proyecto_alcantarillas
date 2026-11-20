@@ -407,8 +407,11 @@ consecuencias que conviene leer antes de tocar el campo:
   con esas palabras, apoyados en `variables_entrada.consumido_por`.
 - **El límite se conoce por MUTACIÓN, no por lectura.** Cambiando el nivel de
   cinco de los trece murieron cuatro tests y sobrevivió uno:
-  `demanda_sismica_licuefaccion`, que no tiene consumidor. De los **siete** sin
-  consumidor —contados de nuevo por las correcciones de T-11 (H11), porque
+  `demanda_sismica_licuefaccion`, que entonces no tenía consumidor (desde
+  VE-5-catlic lo tiene: la Fase 0-bis, `ML_licuefaccion`, que consume también
+  `Mw_licuefaccion`, `PERFIL_SUELO_PRESUNTO` y `clase_sitio`). De los **tres** sin
+  consumidor (siete hasta VE-5-catlic)
+  —contados de nuevo por las correcciones de T-11 (H11), porque
   esta frase decía «ocho» desde T-7b, que le dio consumidor real a
   `c_phi_fundacion` (el ensamble de estabilidad de M9)— (ocho hasta T-7b;
   nueve hasta T-7a, que le dio consumidor real a `angulo_aletas`

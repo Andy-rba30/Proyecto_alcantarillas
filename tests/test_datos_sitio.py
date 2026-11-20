@@ -142,6 +142,9 @@ def test_los_datos_sin_leer_estan_censados_y_bloquean():
         "distancia_borde_calzada_al_trasdos_m",
         "existe_informacion_secundaria_tramo",
         "orientacion_muro_respecto_al_trafico",
+        # VE-5 (catlic): la zona sismica de AASHTO (3.10.6) que la Fase
+        # 0-bis necesita para decidir si 10.5.4.2 exige la evaluacion.
+        "zona_sismica_aashto",
     ]
     # Y los tres tienen que decir QUE los cerraria: un vacio sin salida
     # declarada es una excusa, con salida es una deuda con direccion.

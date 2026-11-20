@@ -919,6 +919,53 @@ DATOS_SITIO: Dict[str, DatoSitio] = {
         ),
     ),
 
+    # --- VE-5 (lote catlic, Fase 0-bis) --- LA ZONA SISMICA DE AASHTO, que
+    # NO es la de E.030 ('ZONA_SISMICA_LA_UNION' es la 4 de E.030, por
+    # distrito): AASHTO asigna la zona por S_D1 (3.10.6, Tabla 3.10.6-1). La
+    # usa la Fase 0-bis para saber si 10.5.4.2 exige evaluar la licuefaccion.
+    # Sin valor: la hoja de ruta (Sec. 9.2, nota VE3-20) dice que no es dato
+    # del proyecto y que la revision de VE-3.15 la ESTIMO en Zona 4 con una
+    # lectura propia de S1 que el EMS tiene que confirmar. Mientras no se
+    # lea, la Fase 0-bis no supone una zona 1 o 2.
+    "zona_sismica_aashto": DatoSitio(
+        valor=None,
+        concepto="Zona sismica de AASHTO LRFD (1 a 4), asignada por S_D1 con "
+                 "la Tabla 3.10.6-1. No es la zona de E.030",
+        procedimiento="S_D1 = F_v · S_1 (Ec. 3.10.4.2-6), con S_1 leido del "
+                      "mapa de aceleraciones espectrales a 1.0 s sobre las "
+                      "coordenadas de la obra y F_v de la clase de sitio; la "
+                      "zona sale de la Tabla 3.10.6-1",
+        fuente="AASHTO LRFD 9a ed., 3.10.6 «Seismic Performance Zones» y "
+               "Tabla 3.10.6-1, pag. impresa 3-108 (PDF 162): «Each bridge "
+               "shall be assigned to one of the four seismic zones in "
+               "accordance with Table 3.10.6-1 using the value of SD1»",
+        trazabilidad=(
+            "NO SE HA HECHO LA LECTURA CONFIRMADA. La revision de VE-3.15 "
+            "estimo S_D1 de 0.63 a 1.13 (Zona 4) con S_1 de 0.47 g leido por "
+            "ella misma del mapa, y Zona 3 aun en roca B "
+            "(proceso/planes_mejora/ve3_estado/verificaciones_del_dueno/"
+            "sismo_cabezal_que_se_pasa.md); depende ademas de la clase de "
+            "sitio, que esta sin medir ('clase_sitio'). Mientras falte, la "
+            "Fase 0-bis no supone zona 1 ni 2 (hoja de ruta, Sec. 9.2, nota "
+            "VE3-20, sobre la exencion de 11.5.4.2)"),
+        ambito=AMBITO_CORREDOR,
+        verificacion_pendiente=(
+            "Leer S_1 del mapa con las coordenadas del corredor, cerrar la "
+            "clase de sitio y declarar la zona"),
+        # nivel: lo consume `ML_licuefaccion` (Fase 0-bis), que la corrida
+        #        de perfil difiere entera (MODULOS_DIFERIDOS_POR_ALCANCE).
+        nivel=NIVEL_EXPEDIENTE,
+        forma=FORMA_INT,
+        positivo=True,
+        resolucion=DeEnsayo(
+            ensayo="lectura de S_1 del mapa de aceleraciones espectrales y "
+                   "clase de sitio medida (AASHTO 3.10.4.2 y 3.10.6)",
+            trazabilidad_exigida="el mapa y la coordenada de la lectura de "
+                                 "S_1, la clase de sitio y el F_v con que se "
+                                 "obtuvo S_D1",
+        ),
+    ),
+
     "existe_informacion_secundaria_tramo": DatoSitio(
         valor=None,
         concepto="Si existe informacion secundaria (estudios geotecnicos "

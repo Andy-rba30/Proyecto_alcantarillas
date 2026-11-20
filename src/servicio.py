@@ -121,6 +121,8 @@ from src.modulos.M0_carga import (COLUMNA_CAUDAL,
 # punto de calculo, igual que el declarado, y ningun modulo de M1 a M11 sabe
 # de cual de los dos se trata salvo por `InformePunto.caudal`.
 from src.modulos import MH_hidrologia as MH
+# --- VE-5 (lote catlic) --- la Fase 0-bis: licuefaccion declarada del EMS.
+from src.modulos import ML_licuefaccion as ML
 from src.modulos.M1_clasificacion import clasificar, exigir_alcance
 from src.modulos.M2_material import matriz_durabilidad
 from src.modulos.M6_proteccion import (proteccion_entrada, proteccion_salida,
@@ -231,7 +233,10 @@ ALCANCE_EXPEDIENTE = _ALCANCE_EXPEDIENTE
 # a perfil. Esa pareja tiene su propio dato, justo debajo.
 MODULOS_DIFERIDOS_POR_ALCANCE: Dict[str, Tuple[str, ...]] = {
     ALCANCE_EXPEDIENTE: (),
-    ALCANCE_PERFIL: ("M8_estructural", "M9_cabezal"),
+    # --- VE-5 (catlic) --- la Fase 0-bis (licuefaccion) es de expediente:
+    # a nivel de perfil se declara el condicionante y la solucion se remite
+    # al expediente (v8, Fase 0-bis, punto 3).
+    ALCANCE_PERFIL: ("M8_estructural", "M9_cabezal", "ML_licuefaccion"),
 }
 
 # LAS VERIFICACIONES QUE CADA ALCANCE DIFIERE, como dato y no como prosa.
@@ -814,6 +819,34 @@ CLAVES_DE_CABEZAL += (CLAVE_SUELO_FUNDACION,)
 CLAVE_ESTABILIDAD_GLOBAL_DECLARADA = "estabilidad_global_declarada"
 CLAVES_DE_CABEZAL += (CLAVE_ESTABILIDAD_GLOBAL_DECLARADA,)
 CLAVES_SOLO_POR_PUNTO: Tuple[str, ...] = (CLAVE_ESTABILIDAD_GLOBAL_DECLARADA,)
+# --- VE-5 (lote catlic) --- EL RESULTADO DE LA EVALUACION DE LICUEFACCION
+# DEL EMS (E.050 38.3), por punto o en `globales` (el del punto gana): FUERA
+# de `CLAVES_EXTERNAS` porque solo lo pide la Fase 0-bis, a expediente y
+# donde AASHTO 10.5.4.2 exige la evaluacion. Lo valida
+# `ML.validar_licuefaccion_declarada` al CARGAR.
+CLAVE_LICUEFACCION_EMS = ML.CLAVE_LICUEFACCION_EMS
+CLAVES_DE_LICUEFACCION: Tuple[str, ...] = (CLAVE_LICUEFACCION_EMS,)
+FASE_LICUEFACCION = "Fase 0-bis - Licuefaccion (ML)"
+ETAPA_LICUEFACCION = ML.ETAPA_LICUEFACCION
+# A nivel de perfil la Fase 0-bis declara el condicionante y remite la
+# solucion al expediente (v8, Fase 0-bis, punto 3).
+MENSAJE_LICUEFACCION_DIFERIDA = (
+    "la evaluacion de licuefaccion (AASHTO 10.5.4.2) es el condicionante "
+    "mayor del proyecto y su resultado lo declara el EMS (E.050 38.3): a "
+    "nivel de perfil se declara el condicionante y se remite al expediente, "
+    "donde la Fase 0-bis lo exige. Ensayo: SPT de al menos 15 m con ensayo "
+    "cada 1 m (E.050 38.4.3). Disponible con --alcance expediente")
+# Lo que el pre-vuelo dice de la falta (PF-2): estima DE MAS, porque la
+# zona leida y el NF del punto pueden hacer que 10.5.4.2 no la exija.
+DETALLE_FALTA_LICUEFACCION = (
+    "Resultado de la evaluacion de licuefaccion del EMS (E.050 38.3). A "
+    "nivel de expediente la Fase 0-bis lo exige donde AASHTO 10.5.4.2 exige "
+    "la evaluacion: zona sismica 3 o 4 (sin leer no se supone 1 ni 2), NF "
+    "en los 50 ft superiores y suelo que solo el EMS puede descartar. No "
+    "detiene si la zona leida es 1 o 2 o el NF del punto esta mas hondo")
+DETALLE_FALTA_MITIGACION = (
+    "El EMS declara que el suelo licua y no declara la medida de mitigacion: "
+    "la Fase 0-bis no deja cerrar el expediente sin ella")
 
 # La geometria del cabezal es del proyecto entero, no de un punto: Sec. 9 no
 # dimensiona un cabezal por punto y el criterio que la declara es uno solo.
@@ -934,6 +967,11 @@ def _dato_externo(clave: str, bruto: Any, origen: str) -> DatoDeclarado:
         return DatoDeclarado(nombre=clave,
                              valor=validar_suelo_fundacion(bruto),
                              origen=origen)
+    if clave == CLAVE_LICUEFACCION_EMS:
+        # --- VE-5 (catlic) --- el resultado del EMS, validado en la puerta.
+        return DatoDeclarado(
+            nombre=clave, valor=ML.validar_licuefaccion_declarada(bruto),
+            origen=origen)
     if clave == CLAVE_ESTABILIDAD_GLOBAL_DECLARADA:
         # --- VE-4a --- el FS declarado de E4 y E5, validado en la puerta.
         return DatoDeclarado(
@@ -1540,7 +1578,8 @@ def cargar_datos_externos(ruta: Optional[Path],
 
 def _exige_clave(clave: str, donde: str) -> None:
     if (clave not in CLAVES_EXTERNAS and clave not in CLAVES_DE_DURABILIDAD
-            and clave not in CLAVES_DE_CABEZAL):
+            and clave not in CLAVES_DE_CABEZAL
+            and clave not in CLAVES_DE_LICUEFACCION):
         raise DatoInvalidoError(
             "datos_externos", valor=clave,
             motivo=f"clave no reconocida en {donde}. Las admitidas son: "
@@ -1549,7 +1588,9 @@ def _exige_clave(clave: str, donde: str) -> None:
                    + ", ".join(CLAVES_DE_DURABILIDAD)
                    + "; y los datos del cabezal (dimensiones, suelo de "
                      "fundacion y FS declarado de E4/E5), opcionales: "
-                   + ", ".join(CLAVES_DE_CABEZAL),
+                   + ", ".join(CLAVES_DE_CABEZAL)
+                   + "; y el resultado de licuefaccion del EMS: "
+                   + ", ".join(CLAVES_DE_LICUEFACCION),
         )
 
 
@@ -1718,6 +1759,9 @@ class InformePunto:
     # los datos de expediente de V5 y V8 (el ancho declarado por debajo del
     # piso del DG-2018, la semilongitud tomada como L/2). Sale por `avisos()`.
     avisos_de_expediente: List[str] = field(default_factory=list)
+    # --- VE-5 (catlic) --- la Fase 0-bis del punto (`ML.evaluar_licuefaccion`):
+    # no aplica, o el resultado del EMS contrastado. Lo que falta es Bloqueo.
+    licuefaccion: Optional[Verificacion] = None
     geometria: Optional[CompatibilidadGeometrica] = None
     cama_apoyo: Optional[Any] = None
     # --- T-5 --- La Fase 8 del conducto de la seccion aceptada: la clase, la
@@ -1935,6 +1979,10 @@ class InformePunto:
             avisos.extend(self.cabezal.avisos)
         # --- T-7b --- los de los datos de expediente de V5 y V8.
         avisos.extend(a for a in self.avisos_de_expediente if a not in avisos)
+        # --- VE-5 (catlic) --- los de la Fase 0-bis (zona 2; suelo que
+        # licua con mitigacion declarada).
+        if self.licuefaccion is not None:
+            avisos.extend(a for a in self.licuefaccion.avisos if a not in avisos)
         # --- verificacion de T-7 --- y los que una verificacion de la
         # seccion aceptada lleva consigo sin cambiar su veredicto
         # (`Verificacion.avisos`): la carga del evento extremo de V8 en la
@@ -3040,6 +3088,29 @@ def _fase_hidrologia(informe: InformePunto, externos: DatosExternos,
     informe.punto_completado = replace(informe.punto_de_calculo,
                                        Q_m3s=informe.caudal.Q_m3s)
     return True
+
+
+def _fase_licuefaccion(informe: InformePunto, externos: DatosExternos) -> None:
+    """
+    --- VE-5 (lote catlic) --- La Fase 0-bis del punto: AASHTO LRFD 10.5.4.2
+    decide si la evaluacion de licuefaccion es exigible y E.050 38.3 la pone
+    en el EMS (`ML.evaluar_licuefaccion`). Lo que falta --el resultado del
+    EMS, o la mitigacion de un suelo que licua-- es un `Bloqueo` del punto que
+    no deja cerrar el expediente.
+    """
+    punto = informe.punto
+    informe.licuefaccion = _etapa(
+        informe.bloqueos, FASE_LICUEFACCION, ML.ETAPA_LICUEFACCION,
+        lambda: ML.evaluar_licuefaccion(
+            id_punto=punto.id, NF_profundidad_m=punto.NF_profundidad_m,
+            declarada=externos.valor(punto.id, CLAVE_LICUEFACCION_EMS)))
+    # --- VE-5 (catlic, censo Sec. 5) --- la clase de sitio MEDIDA, si el EMS
+    # la declara, contra las filas de 'F_pga' (`ML.contrastar_clase_sitio`).
+    avisos_sitio = _etapa(informe.bloqueos, FASE_LICUEFACCION,
+                          ML.ETAPA_CLASE_SITIO, ML.contrastar_clase_sitio)
+    for aviso in avisos_sitio or ():
+        if aviso not in informe.avisos_de_expediente:
+            informe.avisos_de_expediente.append(aviso)
 
 
 def _fase_durabilidad(informe: InformePunto,
@@ -4259,6 +4330,18 @@ def correr_punto(punto: PuntoCritico, externos: DatosExternos,
     con_caudal = _fase_hidrologia(informe, externos, hidrologia)
     if clasificado:
         _fase_durabilidad(informe, externos)
+    # --- VE-5 (catlic) --- la Fase 0-bis, a expediente: no depende del
+    # dimensionado (el riesgo es del terreno de fundacion y del terraplen).
+    if clasificado and not _difiere(alcance, "ML_licuefaccion"):
+        _fase_licuefaccion(informe, externos)
+    elif clasificado:
+        informe.bloqueos.append(Bloqueo(
+            fase=FASE_LICUEFACCION,
+            etapa=(f"Fase 0-bis diferida al expediente (alcance "
+                   f"{ALCANCE_PERFIL})"),
+            tipo=TipoDeBloqueo.DIFERIDO_POR_ALCANCE,
+            mensaje=MENSAJE_LICUEFACCION_DIFERIDA,
+            diferido_por_alcance=True))
     if clasificado and con_caudal:
         _fase_diseno(informe, externos, alcance)
         _compuerta_metodo_h_o(informe, alcance)

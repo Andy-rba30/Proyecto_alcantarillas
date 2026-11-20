@@ -8446,3 +8446,29 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   forma declarada; la sección rectangular sigue sin implementarse.
 - **Dónde vive:** `src/modulos/M10_espaciamiento.py::geometria_cuneta`
 
+## VE5-CAT-03 · Fase 0-bis: la licuefacción como resultado declarado del EMS, con bloqueo de expediente donde AASHTO 10.5.4.2 la exige
+
+- **Cerrado (VE-5, lote catlic, 2026-11-20; decisión del dueño adoptada, censo ítem 6):**
+  módulo nuevo `ML_licuefaccion` (Fase 0-bis), corrido por `servicio._fase_licuefaccion`
+  para cada punto clasificado y **sólo a expediente** (la corrida de perfil lo difiere
+  entero: `MODULOS_DIFERIDOS_POR_ALCANCE`). Decide si AASHTO 10.5.4.2 (PDF 1323) exige la
+  evaluación —zona 3 o 4 por el [S] nuevo `zona_sismica_aashto` (sin leer no se supone 1
+  ni 2, como la §9.2 hace con la exención de 11.5.4.2), NF ≤ 50 ft de la columna del
+  punto, suelo presumido mientras el EMS no lo descarte, con `PERFIL_SUELO_PRESUNTO`
+  dicho al lado— y, donde la exige, pide el dato `licuefaccion_ems` (E.050 38.3, cita
+  nueva `E050.38.3`): sin él, o con `licua` sin mitigación, `DatoFaltanteError` y el
+  expediente no cierra. Declarado, se contrasta con `demanda_sismica_licuefaccion` y
+  `Mw_licuefaccion`, que con `PERFIL_SUELO_PRESUNTO` salieron del censo
+  `SIN_CONSUMIDOR_Y_SIN_MEDIDA` (7 → 4). Paso `F0.LICUEFACCION` (verbo OBLIGA).
+- **Por qué así (decisión pendiente de Fable, tomada del lado seguro):** (1) el dato es
+  por punto con `globales` admitido (el 38.3 habla del potencial «de la zona»; el NF y el
+  suelo varían por cruce) y el del punto gana; (2) la M_w del EMS no puede ser menor que
+  la adoptada (una M_w mayor baja el MSF) y su Tr no puede ser menor; (3) la mitigación
+  declarada se imprime y no se verifica; (4) no hay calculadora CSR/CRR.
+- **Qué haría falta:** el EMS real por punto; la lectura de S_1 y la clase de sitio para
+  `zona_sismica_aashto`; la M_w adoptada; una sección propia de la memoria y del JSON
+  para la Fase 0-bis (hoy viaja como `InformePunto.licuefaccion`, su paso y sus avisos);
+  y corregir la hoja de ruta (Fase 0-bis y §0.5 dicen que la licuefacción queda fuera del
+  script, sin el bloqueo de expediente).
+- **Dónde vive:** `src/modulos/ML_licuefaccion.py::evaluar_licuefaccion`
+

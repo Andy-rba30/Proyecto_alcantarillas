@@ -3365,3 +3365,34 @@ CP_VE4C_USBR_WSP = {
     "cifras_en_la_pagina": ("3697.786", "3692.942", "3680.106", "3668.845",
                             "3653.641", "22.906", "24.531", "27.024"),
 }
+
+
+# ===========================================================================
+# VE-5 (lote catlic) -- Fase 0-bis, ML_licuefaccion: CUANDO se exige
+# ===========================================================================
+# AASHTO LRFD 9a ed., 10.5.4.2, pag. impresa 10-34 (PDF 1323): «A liquefaction
+# assessment shall be conducted for Seismic Zones 3 and 4 if both of the
+# following conditions are present: Ground Water Level—... within 50.0 ft».
+# Cuenta a mano: 50.0 ft x 0.3048 m/ft = 15.24 m. El programa no calcula el
+# potencial (decision del dueño): el caso fija el DISPARADOR y el CONTRASTE
+# del resultado declarado del EMS con lo adoptado (Tr = 1000 años, v8 0.6).
+#   zona 4, NF = 15.24 m  -> exigida (borde incluido: «within»)
+#   zona 4, NF = 15.25 m  -> no exigida (NF bajo los 50 ft)
+#   zona 3, NF =  1.40 m  -> exigida (A-01 del corredor, NF de la columna)
+#   zona 2, NF =  1.40 m  -> no exigida, con aviso («should also be considered»)
+#   zona 1, NF =  1.40 m  -> no exigida, sin aviso
+#   EMS con Tr = 999 años contra 1000 adoptados       -> dato invalido
+#   EMS con M_w = 7.9 contra 8.0 adoptada (de PRUEBA)  -> dato invalido
+CP_ML_LICUEFACCION = {
+    "pies": 50.0, "m_por_pie": 0.3048, "NF_limite_m": 15.24,
+    "disparador": (
+        # (zona, NF_m, exigida, con_aviso)
+        (4, 15.24, True, False),
+        (4, 15.25, False, False),
+        (3, 1.40, True, False),
+        (2, 1.40, False, True),
+        (1, 1.40, False, False),
+    ),
+    "Tr_adoptado": 1000, "Tr_corto": 999,
+    "Mw_adoptada_prueba": 8.0, "Mw_menor": 7.9,
+}
