@@ -7169,6 +7169,13 @@ class CargaVivaEnterrada:
     efecto_descripcion: str = ""
     candidatos: Tuple[Tuple[str, float, float, float, float, float], ...] = ()
     en_zona_de_permiso: bool = False
+    # --- VE-4f --- True cuando el relleno hasta la rasante es MENOR de 2.0 ft
+    # sobre un tubo de concreto o un marco y la carga viva se reparte en la
+    # franja equivalente de AASHTO LRFD 4.6.2.10.2 (3.6.1.2.6a): `w_w_m` es
+    # entonces el ancho E de la franja (a lo largo del conducto), `l_w_m` el
+    # largo del area cargada a traves de el, `P_kN` la carga de UN eje y
+    # `efecto` la medida del consumidor sobre los ejes que caen en el.
+    relleno_somero: bool = False
 
 
 @dataclass(frozen=True)

@@ -4850,6 +4850,35 @@ RELLENO_MIN_METODO_NO_CONCRETO_M = 1.0 * PIE_EN_METROS
 RELLENO_MIN_METODO_TUBO_CONCRETO_M = 2.0 * PIE_EN_METROS
 RELLENO_DESPRECIA_CARGA_VIVA_M = 8.0 * PIE_EN_METROS
 
+# ---- [C] Relleno somero: AASHTO LRFD 3.6.1.2.6a y 4.6.2.10 (VE-4f) --------
+# Por debajo de 2.0 ft la rueda distribuida de 3.6.1.2.6b no vale para el
+# tubo de concreto ni para el marco, y 3.6.1.2.6a manda otra cosa (pag. 3-26,
+# citas AASHTO_LRFD_9.3.6.1.2.6a#CONCRETO_SOMERO, #UN_PIE y #MENOS_DE_UN_PIE):
+# el tubo de concreto con «1.0 ft or more but less than 2.0 ft» se diseña
+# «for a depth of 1.0 ft» con la Eq. 4.6.2.10.2-1, y con menos de 1.0 ft
+# toda alcantarilla redonda va a «more comprehensive methods». El marco con
+# menos de 2.0 ft va a 4.6.2.10 (4.6.2.10.1, pag. 4-65; 12.11.2.1, pag.
+# 12-68). Las ecuaciones de la franja, leidas renderizadas en la pag. 4-65
+# (PDF 316; cita AASHTO_LRFD_9.4.6.2.10.2#FRANJA):
+#     E      = 96 + 1.44 S        (in, con S, la luz libre, en ft)  (4.6.2.10.2-1)
+#     E_span = L_T + LLDF (H)     (in, con H en in)                 (4.6.2.10.2-2)
+# En SI, E = 96 in + (1.44 in/ft) S: la pendiente 1.44 in por pie es la
+# fraccion adimensional 1.44/12 = 0.12 de la luz. L_T es el largo del area de
+# contacto (3.6.1.2.5: 10.0 in, `LARGO_NEUMATICO_M`) y LLDF el de 3.6.1.2.6
+# para «All other culverts» (1.15, `LLDF_OTRAS_ALCANTARILLAS`).
+FRANJA_CAJON_BASE_PULG = 96.0
+FRANJA_CAJON_PENDIENTE_PULG_POR_PIE = 1.44
+FRANJA_CAJON_BASE_M = FRANJA_CAJON_BASE_PULG * _M_POR_PULG
+FRANJA_CAJON_PENDIENTE_SI = (FRANJA_CAJON_PENDIENTE_PULG_POR_PIE
+                             * _M_POR_PULG / PIE_EN_METROS)
+# «Round concrete culverts with 1.0 ft or more but less than 2.0 ft of cover
+# shall be designed for a depth of 1.0 ft» y «Round culverts with less than
+# 1.0 ft of fill shall be analyzed with more comprehensive methods»: el mismo
+# 1.0 ft es la profundidad de diseño del tubo somero y el borde inferior de
+# la franja.
+PROFUNDIDAD_DISENO_TUBO_CONCRETO_SOMERO_M = 1.0 * PIE_EN_METROS
+RELLENO_MIN_FRANJA_TUBO_CONCRETO_M = 1.0 * PIE_EN_METROS
+
 # ---- [C] Tubo de concreto: AASHTO LRFD 12.10 (pags. 12-50 a 12-66) --------
 # VAF = Fe de las instalaciones estandar (Tabla 12.10.2.1-3, pag. 12-53;
 # cita AASHTO_LRFD_9.12.10.2.1#VAF); peso del suelo nunca menor de
