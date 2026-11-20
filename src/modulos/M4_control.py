@@ -401,6 +401,7 @@ from src.constantes_normativas import (FORMA_1, FORMA_2, K_MANNING_SI,
                                    Q_LIM_SUMERGIDO)
 from src.modelos import (CriterioPendienteError, PisoDeCargaEntrada,
                          CIFRAS_FACTOR, CIFRAS_FINA, CIFRAS_MAGNITUD,
+                         cifras_de_dimension,
                      FormaSeccion, Geometria, Seccion,
                      ConstantesHDS5,
                      ControlEntrada, ControlGobernante,
@@ -2835,7 +2836,7 @@ def _pasos_hidraulicos(*, seccion, Q, S, L, TW, material, normal, critico, entra
                  f"pasa a HW_entrada: es la fila «{fila_altura}» del paso 4.1"
                  + ("" if fila_altura == "D" else
                     " (la altura del marco; el diametro en la circular)"),
-                 cifras=CIFRAS_FACTOR))
+                 cifras=cifras_de_dimension(seccion.altura)))
     # LOS DOS EXTREMOS DE LA RECTA, solo cuando la rama es la de transicion
     # (EXT-M-04): un HW «por la recta» sin los dos numeros entre los que se
     # interpolo no se puede rehacer. El inferior se evalua para Q_lo, el
@@ -2997,7 +2998,7 @@ def _pasos_hidraulicos(*, seccion, Q, S, L, TW, material, normal, critico, entra
                      + ("" if fila_altura == "D" else
                         f" (la altura del marco, que NO es la «{fila_altura}» "
                         "de perdida de carga de esta misma sustitucion)"),
-                     cifras=CIFRAS_FACTOR),
+                     cifras=cifras_de_dimension(seccion.altura)),
             Magnitud("HW/D", salida.HW_sobre_D, "",
                      "HW_salida/D: la magnitud sobre la que se juzga el "
                      "umbral de abajo y sobre la que se calcula el margen del "
@@ -3100,7 +3101,7 @@ def _pasos_hidraulicos(*, seccion, Q, S, L, TW, material, normal, critico, entra
                      "mismo del paso 4.3", cifras=CIFRAS_MAGNITUD),
             Magnitud("D", seccion.altura, "m",
                      f"altura interior del barril, la fila «{fila_altura}» "
-                     f"del paso 4.1", cifras=CIFRAS_FACTOR),
+                     f"del paso 4.1", cifras=cifras_de_dimension(seccion.altura)),
             Magnitud("y_c", critico.y_c, "m", "tirante critico del paso 4.2",
                      cifras=CIFRAS_MAGNITUD),
             (Magnitud("y_n", Y_N_NO_EXISTE, "",
@@ -3216,7 +3217,7 @@ def _pasos_hidraulicos(*, seccion, Q, S, L, TW, material, normal, critico, entra
         Magnitud("D", seccion.altura, "m",
                  f"altura interior del barril, la fila «{fila_altura}» del "
                  f"paso 4.1: la clave donde la lamina libre se empalma con "
-                 f"la linea de energia llena", cifras=CIFRAS_FACTOR),
+                 f"la linea de energia llena", cifras=cifras_de_dimension(seccion.altura)),
         Magnitud("n", perfil.n, "",
                  "n MAXIMO de la Tabla N 09 (paso 4.1), el mismo de la "
                  "friccion del paso 4.3: mas rugosidad da mas remanso, mas "

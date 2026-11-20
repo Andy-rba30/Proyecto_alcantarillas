@@ -344,3 +344,38 @@ def test_39_el_fallo_del_pdf_en_la_cli_sale_con_su_mensaje(monkeypatch, capsys, 
     # Lo que se escribio antes del fallo queda entero.
     assert (tmp_path / "i.json").stat().st_size > 0
 
+
+# ===========================================================================
+# 46 · Ids `FH.*` en el índice; la fila de rugosidad; `D` con sus decimales
+# ===========================================================================
+
+def test_46_el_indice_reconoce_los_ids_de_la_hidrologia_y_los_de_punto_interior():
+    from src import indice_formulas as ind
+    menciones = ind.menciones_del_fundamento()
+    assert menciones.get("FH.FACTOR_P24") == ("MH_hidrologia",)
+    assert "M5_verificaciones" in menciones.get("F5.V2b.REGIMEN", ())
+    import re
+    assert re.fullmatch(ind.PATRON_ID_DE_FUNDAMENTO, "F4.N_CONCRETO")
+    assert not re.fullmatch(ind.PATRON_ID_DE_FUNDAMENTO, "FX.ALGO")
+
+
+@pytest.mark.parametrize("valor, texto", [(0.9, "0.90 m"), (1.05, "1.05 m"),
+                                          (1.0668, "1.0668 m"), (1.2192, "1.2192 m")])
+def test_46_la_dimension_de_la_sustitucion_es_la_del_rotulo(valor, texto):
+    from src import modelos as mod
+    assert mod.SeccionCircular(D=valor).magnitudes_de_forma()[0].texto == texto
+    assert f"{mod.texto_de_dimension(valor)} m" == texto
+
+
+def test_46_la_dimension_del_marco_tambien():
+    from src import modelos as mod
+    b, h = mod.SeccionRectangular(B=1.2192, H=0.9).magnitudes_de_forma()
+    assert (b.texto, h.texto) == ("1.2192 m", "0.90 m")
+
+
+def test_46_la_fila_de_rugosidad_no_supone_la_regla_de_doble_n(informe_de_perfil, monkeypatch):
+    from src.modulos import M11_reporte as M11
+    html = M11.memoria_html(informe_de_perfil)
+    assert "Rugosidad (regla de doble n)" not in html
+    assert "<b>Rugosidad (n de Manning)</b>" in html
+    assert "Fila de la Tabla N 09: ninguna" not in html

@@ -1140,10 +1140,15 @@ def _filas_combinacion_adoptada(informe: Any) -> Tuple[str, ...]:
         _fila([_td("<b>Alcance de la norma de producto</b>"),
                _td(_esc(_M2.alcance_norma_producto_de(material.tipo,
                                                       material.forma)))]),
-        _fila([_td("<b>Rugosidad (regla de doble n)</b>"),
+        # --- VE-5 (ficha VE2-A, abierto (2)) --- el rotulo no supone la
+        # regla ni la tabla: con la columna NORMAL o el n unico del HDS-5 el
+        # n no sale de la «regla de doble n», y la fila del marco es de la
+        # Tabla B.1 del HDS-5 o el par del encofrado. Que regla y que fuente
+        # rigen lo dice `Material.fila_manning`, que M2 escribe para cada caso.
+        _fila([_td("<b>Rugosidad (n de Manning)</b>"),
                _td(f"n para capacidad y tirante = {_num(material.n_max)}; "
                    f"n para velocidad maxima y socavacion = "
-                   f"{_num(material.n_min)}. Fila de la Tabla N 09: "
+                   f"{_num(material.n_min)}. Fila o fuente del n: "
                    f"{_esc(material.fila_manning)}")]),
         # EL TITULAR DICE LA SECCION, NO UN DIAMETRO. Decia «Diametro
         # adoptado D = 0.900 m» sobre un marco de 1.20 x 0.90, que es la
