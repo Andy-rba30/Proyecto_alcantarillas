@@ -8748,8 +8748,6 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   (`criterio_traccion_cabezal_ciclopeo`); C7 avisa las combinaciones de E.060 descartadas
   por sacar la resultante de la base y decide con las demás; C8 cita `MP.2.8.1.1.14.1#EXC`
   (el numeral de los dos casos: su texto no tiene cita propia, vive en `P_SEIS_TEXTO`).
-- **Abierto:** (a) y (b) cerrados en VE7A-04 y VE7A-03; (c) cerrado en
-  A11: `E060.22.10.2.2#VOLADIZO` firmada con el PDF y cita principal de C7 (ficha VE7C-01); (d) C7 no se evalúa bajo sismo (E.060 9.2.3 no
 - **Abierto:** (a) no procede mientras k_v = 0; con k_v ≠ 0, C8 debe afectar W con
   (1 − k_v); (b) a media altura, con `traccion_admisible_e060`, C8 informa; (c) la cita
   `E060.22.10.2.2#VOLADIZO` existe desde VE-7 y se firmó en A11 (ficha VE7C-01), y es la
@@ -9367,7 +9365,7 @@ del triaje VE-7 y, después, el dictamen Fable sobre el lote (2026-11-20). Decis
 Fable (triaje VE-7, 2026-11-20): Fable decidió QUÉ hacer; estas fichas dicen cómo se hizo. Los documentos generados (manifiestos,
 `trazabilidad.csv`, `indice_formulas.md`) no se regeneran aquí: los sella el integrador.
 
-## VE7C-01 · `E060.22.10.2.2#VOLADIZO` con cita propia, sin firma y censada (C1; VE6M9-01 (c))
+## VE7C-01 · `E060.22.10.2.2#VOLADIZO` con cita propia, firmada en A11 (C1; VE6M9-01 (c))
 
 - **Cerrado (decisión del consultor Fable, triaje VE-7, 2026-11-20):** el registro tiene la cita
   `E060.22.10.2.2#VOLADIZO` (pág. 195, EXIGENCIA: «será necesario») con el `Verbatim` «En
@@ -9375,11 +9373,11 @@ Fable (triaje VE-7, 2026-11-20): Fable decidió QUÉ hacer; estas fichas dicen c
   verificar las resistencias en flexión y corte», el mismo que T-7a transcribió en la nota de
   `E060.22.10.2#CICLOPEO` (firmada). `F9.CICLOPEO` la cita. Test:
   `tests/test_ve7_lote_c_voladizo.py`.
-- **Abierto:** la cita NO lleva firma: la sesión no tenía `NORMAS_DIR`. Está en
+- **Abierto (hasta A11; cerrado, ver abajo):** la cita NO llevaba firma: la sesión no tenía `NORMAS_DIR`. Estuvo en
   `CITAS_SIN_FIRMA_A_PROPOSITO` por una segunda razón, distinta de la paginación sin medir
   (`SIN_FIRMA_POR_SESION_SIN_PDF`, que exige que el `Verbatim` sea literalmente el de la nota
   de origen firmada, entrecomillado, de la misma fuente y página). La cita principal de C7
-  en M9 sigue siendo `E060.22.10.2#CICLOPEO` y NO se cambia hasta firmar.
+  en M9 siguió siendo `E060.22.10.2#CICLOPEO` hasta firmar.
 - **Revisado por Fable (dictamen del consultor, 2026-11-20):** aprobado con cambios, aplicados: la exención caduca (trinquete
   `MAX_SIN_FIRMA_POR_SESION_SIN_PDF` = 1; con `NORMAS_DIR`,
   `test_con_el_pdf_enlazado_no_queda_cita_sin_firma_por_sesion` exige firmarla) y no sostiene
