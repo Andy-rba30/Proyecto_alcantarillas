@@ -723,10 +723,16 @@ def test_v8_lo_que_no_sabe_calcular_lo_dice_con_su_rotulo():
         _llamar_v8(_evento(resolver=lambda seccion, material: None))
     assert str(e.value).startswith(
         modelos.MOTIVO_METODO_NO_EVALUABLE_EVENTO_EXTREMO)
+    # REESCRITO DECLARANDOLO (VE-4d, ficha T7B-02): el umbral del desborde
+    # admitido ya no se detiene siempre con «metodo no evaluable». Reparte
+    # el caudal entre el conducto y la plataforma, y antes de eso se detiene
+    # en su criterio (el caudal unitario admisible, sin valor de archivo).
+    # Lo cubre entero tests/test_ve4d_v8_desborde.py.
     ca.establecer_valor_dinamico("umbral_no_colapso_evento_extremo",
                                  "desborde_admitido_con_terraplen_protegido")
-    with pytest.raises(MetodoNoEvaluableError):
+    with pytest.raises(CriterioPendienteError) as e:
         _llamar_v8(_evento())
+    assert e.value.clave == "caudal_unitario_admisible_desborde_m2s"
 
 
 # ===========================================================================
@@ -748,12 +754,14 @@ def test_las_tres_claves_de_V5_y_V8_son_datos_externos_por_punto():
     Y 26 desde VE-3.6, que sumo `desnivel_perfil_canal_m` (el F del canal
     que VC3 pide en la Familia C); este recuento se habia quedado en 25.
     """
+    # REESCRITO DECLARANDOLO (VE-4d): CINCO, con la longitud de la cresta
+    # del desborde admitido de V8; `CLAVES_EXTERNAS` pasa de 26 a 27.
     assert servicio.CLAVES_DE_V5_Y_V8 == (
         "ancho_derecho_via_m", "Q_evento_extremo_m3s", "TW_evento_extremo_m",
-        "cota_afectacion_aguas_arriba_msnm")
+        "cota_afectacion_aguas_arriba_msnm", "longitud_cresta_desborde_m")
     for clave in servicio.CLAVES_DE_V5_Y_V8:
         assert clave in servicio.CLAVES_EXTERNAS
-    assert len(servicio.CLAVES_EXTERNAS) == 26
+    assert len(servicio.CLAVES_EXTERNAS) == 27
     assert "desnivel_perfil_canal_m" in servicio.CLAVES_EXTERNAS
     cota = "cota_afectacion_aguas_arriba_msnm"
     assert {f.value for f in servicio.FAMILIAS_QUE_USAN[cota]} == {"A", "B"}
@@ -761,7 +769,9 @@ def test_las_tres_claves_de_V5_y_V8_son_datos_externos_por_punto():
     assert cota in servicio.CLAVES_CON_SIGNO
     assert servicio.METODO_QUE_EXIGE_LA_CLAVE == {
         "ancho_derecho_via_m": "embalse_a_nivel",
-        cota: "cota_de_afectacion"}
+        cota: "cota_de_afectacion",
+        "longitud_cresta_desborde_m":
+            "desborde_admitido_con_terraplen_protegido"}
     # El ancho del derecho de via es de las Familias A y B: en la C la
     # sustituye VC1 y el dato no se pide.
     familias = servicio.FAMILIAS_QUE_USAN["ancho_derecho_via_m"]

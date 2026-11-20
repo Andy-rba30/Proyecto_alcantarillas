@@ -267,6 +267,10 @@ def test_lo_que_ninguna_corrida_invoca_se_clasifica_por_su_consumidor(
 # V8 de punta a punta. Que solo lo lee V8 se comprueba abajo, por AST.
 DE_UNA_VERIFICACION_DIFERIDA = {
     "umbral_no_colapso_evento_extremo": "V8",
+    # --- VE-4d --- los dos del desborde admitido, que V8 lee solo con ese
+    # umbral declarado; los mide tests/test_ve4d_v8_desborde.py.
+    "caudal_unitario_admisible_desborde_m2s": "V8",
+    "coeficientes_desborde_plataforma": "V8",
 }
 
 # --- VE-2 (c2) --- UN CRITERIO QUE SOLO UNA ALTERNATIVA DE PERFIL LEE. El

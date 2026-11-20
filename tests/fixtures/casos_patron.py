@@ -1918,7 +1918,7 @@ CP_HDS5_DG15 = {
     # sin pasar por M4.
     "curva_conducto_publicada": ((400.0, 108.1), (600.0, 111.6),
                                  (700.0, 113.7), (800.0, 116.5),
-                                 (850.0, 117.9)),
+                                 (850.0, 117.9), (1000.0, 122.5)),
     # La fila de 800 ft3/s (la unica de la tabla que es coherente con su
     # propio total: «At Qc = 800 cfs, HWr = 0.5 ft, Qo = 2.7(200)(0.5)1.5 =
     # 191 ft3/s», total 991). Las de 850 y 1000 ft3/s llevan HW_r de 1.5 y

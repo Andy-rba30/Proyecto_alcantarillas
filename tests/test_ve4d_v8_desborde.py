@@ -258,7 +258,8 @@ def _reparto_de_prueba(q_unitario, desborda=True):
         ancho_cresta=9.60, HW_r=0.10 if desborda else 0.0,
         panel=modelos.PANEL_DESBORDE_SOMERO if desborda else "",
         C_r=3.0 if desborda else None, k_t=1.0 if desborda else None,
-        C_d_si=1.656 if desborda else None, q_unitario=q_unitario)
+        C_d_si=1.656 if desborda else None,
+        q_unitario=q_unitario if desborda else 0.0)
 
 
 def _evento(L=30.0, q_unitario=0.05, desborda=True, llamadas=None):
@@ -429,6 +430,122 @@ def test_A01_con_el_desborde_admitido_reparte_y_juzga(tmp_path):
     v8 = next(v for v in con.resultado.verificaciones if v.codigo == "V8")
     assert v8.cumple and v8.criterio_aplicado == CRITERIO_Q_ADM
     assert 0.0 < v8.valor_obtenido < 1.0
-    nombres = {m.nombre for m in v8.paso.sustitucion}
+    nombres = {m.simbolo for m in v8.paso.sustitucion}
     assert {"Q_conducto", "Q_plataforma", "HW_r", "C_r", "k_t",
             "L_cresta", "L_r"} <= nombres
+    # El V8 que incumplio con «sin_desborde» es el del Ø 0.90 m: la traza lo
+    # lleva, y es lo que hizo subir de diametro.
+    v8_sin = [v for p in sin.traza for v in p.verificaciones
+              if v.codigo == "V8"]
+    assert v8_sin and not v8_sin[0].cumple
+
+
+def test_el_inicio_del_desborde_es_el_de_HY8():
+    """«overtopping begins at 798.5 ft3/s» (PDF 284): con la carga de M4, el
+    caudal con que el embalse alcanza la cresta (116 ft)."""
+    from scipy.optimize import brentq
+    ej = CP_HDS5_DG15
+
+    def altura(Q_ft):
+        return (_carga_m4_del_cajon(Q_ft * PIE3).HW / PIE
+                - (ej["EL_o_ft"] - ej["EL_i_ft"]))
+    Q = brentq(altura, 700.0, 900.0)
+    assert Q == pytest.approx(ej["hy8"]["Q_inicio_desborde_ft3_s"],
+                              rel=LECTURA)
+
+
+# ===========================================================================
+# 6. La digitalizacion, repetida sobre el PDF
+# ===========================================================================
+
+# La calibracion de los ejes de la imagen de la Figura 3.11 (hif12026.pdf,
+# PDF 98), medida en VE-4d sobre sus lineas de rejilla: (pixel, valor) de dos
+# marcas por eje. Es la misma que declara el comentario del criterio.
+EJES_FIGURA_3_11 = {
+    "Cr_profundo": {"x": ((245.5, 0.16), (696.5, 0.30)),
+                    "y": ((535.0, 3.10), (792.0, 2.90)),
+                    "filas": (538, 790), "columnas": (217, 758)},
+    "Cr_somero_m": {"x": ((215.0, 0.0), (761.0, 4.0 * PIE)),
+                    "y": ((1059.0, 3.10), (1475.0, 2.50)),
+                    "filas": (1062, 1473), "columnas": (218, 758)},
+    "kt": {"x": ((1089.0, 0.6), (1635.0, 1.0)),
+           "y": ((799.0, 1.00), (1475.0, 0.50)),
+           "filas": (802, 1473), "columnas": (1092, 1632)},
+}
+# La de la lectura del ejemplo (`CP_HDS5_DG15["tolerancia_C_r"]`).
+TOLERANCIA_DIGITALIZACION = CP_HDS5_DG15["tolerancia_C_r"]
+
+
+@pytest.mark.pdf
+def test_la_digitalizacion_de_la_figura_se_repite_sobre_el_pdf():
+    """
+    Se vuelve a leer la imagen de la Figura 3.11 del PDF: por cada punto de
+    las curvas del criterio, la ordenada del trazo (mediana de los pixeles
+    rojos, «Paved», o azules, «Gravel», en las columnas vecinas) en su
+    abscisa. Un extremo de curva se lee donde el trazo empieza o termina, y
+    el primer punto de k_t (donde la curva deja el borde del cuadro) no se
+    lee: el borde tapa el trazo.
+    """
+    import numpy as np
+    pymupdf = pytest.importorskip("pymupdf")
+    from src.normativa import fuentes
+    ruta = fuentes.ruta_pdf(fuentes.fuente("HDS5_3ED"))
+    if not ruta.exists():
+        pytest.skip(f"sin el PDF del HDS-5 en {ruta}")
+    doc = pymupdf.open(ruta)
+    xref = doc[97].get_images()[0][0]
+    pix = pymupdf.Pixmap(pymupdf.csRGB, pymupdf.Pixmap(doc, xref))
+    img = np.frombuffer(pix.samples, dtype=np.uint8).reshape(
+        pix.height, pix.width, pix.n).astype(int)
+    R, G, B = img[..., 0], img[..., 1], img[..., 2]
+    colores = {"pavimentada": (R > 170) & (G < 110) & (B < 110),
+               "grava": (B > 140) & (R < 130) & (G < 160) & (B - R > 60)}
+
+    def recta(a, b):
+        (p0, v0), (p1, v1) = a, b
+        return (lambda p: v0 + (p - p0) * (v1 - v0) / (p1 - p0),
+                lambda v: p0 + (v - v0) * (p1 - p0) / (v1 - v0))
+
+    fallos = []
+    for curva, ejes in EJES_FIGURA_3_11.items():
+        x_de, a_px = recta(*ejes["x"])
+        a_valor, a_fila = recta(*ejes["y"])
+        f0, f1 = ejes["filas"]
+        c0, c1 = ejes["columnas"]
+        for superficie, mascara in colores.items():
+            serie = COEF[curva][superficie]
+            # Por columna, la mediana del trazo: (abscisa, ordenada).
+            trazo = [(x_de(c), a_valor(f0 + float(np.median(
+                np.where(mascara[f0:f1, c])[0]))))
+                for c in range(c0, c1) if mascara[f0:f1, c].any()]
+            for x, y in serie:
+                if curva == "kt":
+                    # La curva de k_t baja casi vertical: se lee por FILAS,
+                    # la abscisa del trazo a la altura y (y el primer punto,
+                    # sobre el borde del cuadro, no se lee).
+                    if x <= serie[0][0]:
+                        continue
+                    filas = [f for f in range(f0, f1)
+                             if mascara[f, c0:c1].any()]
+                    fila = min(filas, key=lambda f: abs(f - a_fila(y)))
+                    cols = np.where(mascara[fila, c0:c1])[0]
+                    leido = x_de(c0 + float(np.median(cols)))
+                    if not abs(leido - x) <= TOLERANCIA_DIGITALIZACION:
+                        fallos.append((curva, superficie, x, y,
+                                       round(leido, 4)))
+                    continue
+                if x == serie[0][0] and x == 0.0:
+                    continue    # extrapolado al eje: lo declara el criterio
+                # La ventana de abscisa del panel: una marca de la rejilla
+                # menor (0.0035 en HW_r/L_r; 0.03 ft en HW_r).
+                ventana = (0.0035 if curva == "Cr_profundo" else 0.03 * PIE)
+                cerca = [o for a, o in trazo if abs(a - x) < ventana]
+                if not cerca:
+                    # Al final del eje el trazo rojo queda bajo el azul
+                    # (las dos curvas se funden): el ultimo tramo visible.
+                    cerca = [o for a, o in sorted(
+                        trazo, key=lambda t: abs(t[0] - x))[:5]]
+                leido = float(np.median(cerca))
+                if not abs(leido - y) <= TOLERANCIA_DIGITALIZACION:
+                    fallos.append((curva, superficie, x, y, round(leido, 4)))
+    assert not fallos, fallos

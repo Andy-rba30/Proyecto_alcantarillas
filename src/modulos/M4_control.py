@@ -3497,3 +3497,291 @@ def resolver_control(seccion: Seccion, Q: float, S: float, L: float, TW: float,
             gobierna_salida=gobierna_salida, Q_celda=Q_celda, celdas=celdas,
             regimen=regimen, perfil=perfil),
     )
+
+
+# ===========================================================================
+# --- VE-4d --- EL DESBORDE DE LA PLATAFORMA (HDS-5 num. 3.1.5): el caudal
+# del evento extremo de V8 repartido entre el conducto y la via
+# ===========================================================================
+
+class CoeficienteDelVertedero(NamedTuple):
+    """El coeficiente de la Ec. 3.9 y de donde salio (Figura 3.11)."""
+
+    C_r: float                  # unidades inglesas, como lo da la figura
+    k_t: float
+    panel: str                  # PANEL_DESBORDE_PROFUNDO / _SOMERO
+    C_d_si: float               # conversion * k_t * C_r
+    HW_r_sobre_L_r: float
+    h_t_sobre_HW_r: float
+
+
+def _no_evaluable_vertedero(motivo: str) -> MetodoNoEvaluableError:
+    from src.modelos import MOTIVO_METODO_NO_EVALUABLE_EVENTO_EXTREMO
+    return MetodoNoEvaluableError(
+        "V8", "flujo sobre la plataforma con un coeficiente de la Figura "
+        "3.11 del HDS-5", motivo,
+        rotulo=MOTIVO_METODO_NO_EVALUABLE_EVENTO_EXTREMO)
+
+
+def _curva(coeficientes, campo: str, superficie: str):
+    """La serie (abscisa, ordenada) de `campo` para `superficie`, validada."""
+    from src.modelos import SUPERFICIES_CRESTA
+    if superficie not in SUPERFICIES_CRESTA:
+        raise DatoInvalidoError(
+            "superficie de la cresta", valor=superficie,
+            motivo="la Figura 3.11 del HDS-5 solo distingue: "
+                   + ", ".join(SUPERFICIES_CRESTA))
+    try:
+        serie = tuple((float(x), float(y))
+                      for x, y in coeficientes[campo][superficie])
+    except (KeyError, TypeError, ValueError) as exc:
+        raise DatoInvalidoError(
+            "coeficientes_desborde_plataforma", valor=campo,
+            motivo=f"falta la curva '{campo}' de '{superficie}' o no es una "
+                   f"serie de pares (abscisa, ordenada): {exc}") from exc
+    if len(serie) < 2 or any(not b[0] > a[0] for a, b in zip(serie, serie[1:])):
+        raise DatoInvalidoError(
+            "coeficientes_desborde_plataforma", valor=campo,
+            motivo=f"la curva '{campo}' de '{superficie}' necesita dos o mas "
+                   "puntos con la abscisa estrictamente creciente")
+    return serie
+
+
+def _interpolar_en(serie, x: float, que: str) -> float:
+    """Interpolacion lineal DENTRO de la serie; fuera, no hay lectura."""
+    if not (serie[0][0] - TOL_UMBRAL_NORMATIVO <= x
+            <= serie[-1][0] + TOL_UMBRAL_NORMATIVO):
+        raise _no_evaluable_vertedero(
+            f"{que} = {x:.4f} esta fuera de la curva de la Figura 3.11 "
+            f"({serie[0][0]:g} a {serie[-1][0]:g}): la fuente no da "
+            "coeficiente ahi y no se extrapola")
+    for (x0, y0), (x1, y1) in zip(serie, serie[1:]):
+        if x <= x1 + TOL_UMBRAL_NORMATIVO:
+            return y0 + (min(max(x, x0), x1) - x0) * (y1 - y0) / (x1 - x0)
+    return serie[-1][1]
+
+
+def coeficiente_de_desborde(*, HW_r: float, ancho_cresta: float, h_t: float,
+                            superficie: str,
+                            coeficientes) -> CoeficienteDelVertedero:
+    """
+    C_d = k_t·C_r de la Figura 3.11 del HDS-5 3a ed. (num. 3.1.5, pag.
+    impresa 3.16), en SI: C_d(SI) = 0.552·C_d («[Cd (SI) = 0.552(Cd from
+    Figure 3.11)]», pag. impresa 3.15). Las curvas son el criterio
+    'coeficientes_desborde_plataforma' [C] (la figura digitalizada), que
+    llega como argumento: M4 no lo lee.
+
+      * C_r: panel A si HW_r/L_r > 0.15 (abscisa HW_r/L_r), panel B si no
+        (abscisa HW_r, en m en el criterio);
+      * k_t: panel C con h_t/HW_r; 1 si el agua de aguas abajo no alcanza la
+        cresta o si la relacion queda a la izquierda del inicio de la curva
+        (vertedero libre: «Submergence occurs as the tailwater begins to
+        encroach on the free overfall from the weir»).
+
+    Fuera de los ejes de la figura no hay coeficiente:
+    `MetodoNoEvaluableError` con el rotulo del evento extremo.
+    """
+    from src.modelos import PANEL_DESBORDE_PROFUNDO, PANEL_DESBORDE_SOMERO
+    if not (HW_r > 0 and ancho_cresta > 0 and math.isfinite(HW_r)
+            and math.isfinite(ancho_cresta) and math.isfinite(h_t)):
+        raise DatoInvalidoError(
+            "vertedero de la plataforma", valor=(HW_r, ancho_cresta, h_t),
+            motivo="HW_r y L_r tienen que ser finitos y positivos, y h_t "
+                   "finito")
+    relacion = HW_r / ancho_cresta
+    try:
+        limite = float(coeficientes["limite_HWr_sobre_Lr"])
+        conversion = float(coeficientes["conversion_cd_si"])
+    except (KeyError, TypeError, ValueError) as exc:
+        raise DatoInvalidoError(
+            "coeficientes_desborde_plataforma", valor=coeficientes,
+            motivo="faltan 'limite_HWr_sobre_Lr' o 'conversion_cd_si'") from exc
+    if relacion > limite:
+        panel = PANEL_DESBORDE_PROFUNDO
+        C_r = _interpolar_en(_curva(coeficientes, "Cr_profundo", superficie),
+                             relacion, "HW_r/L_r")
+    else:
+        panel = PANEL_DESBORDE_SOMERO
+        C_r = _interpolar_en(_curva(coeficientes, "Cr_somero_m", superficie),
+                             HW_r, "HW_r (m)")
+    sumergencia = max(h_t, 0.0) / HW_r
+    curva_kt = _curva(coeficientes, "kt", superficie)
+    k_t = (1.0 if sumergencia < curva_kt[0][0]
+           else _interpolar_en(curva_kt, sumergencia, "h_t/HW_r"))
+    return CoeficienteDelVertedero(
+        C_r=C_r, k_t=k_t, panel=panel, C_d_si=conversion * k_t * C_r,
+        HW_r_sobre_L_r=relacion, h_t_sobre_HW_r=sumergencia)
+
+
+def caudal_sobre_la_plataforma(*, HW_r: float, longitud_cresta: float,
+                               ancho_cresta: float, h_t: float,
+                               superficie: str, coeficientes
+                               ) -> Tuple[float, CoeficienteDelVertedero]:
+    """
+    Ec. 3.9 del HDS-5 3a ed. (num. 3.1.5, pag. impresa 3.15):
+
+        Q_o = C_d · L · HW_r^1.5
+
+    con C_d de `coeficiente_de_desborde` (en SI), L la longitud de la cresta
+    y HW_r el tirante aguas arriba sobre ella.
+    """
+    if not HW_r > 0:
+        raise DatoInvalidoError("HW_r", valor=HW_r,
+                                motivo="el tirante sobre la cresta tiene que "
+                                       "ser positivo para que haya desborde")
+    if not (longitud_cresta > 0 and math.isfinite(longitud_cresta)):
+        raise DatoInvalidoError("longitud_cresta_desborde_m",
+                                valor=longitud_cresta,
+                                motivo="la longitud de la cresta tiene que "
+                                       "ser finita y positiva")
+    coef = coeficiente_de_desborde(HW_r=HW_r, ancho_cresta=ancho_cresta,
+                                   h_t=h_t, superficie=superficie,
+                                   coeficientes=coeficientes)
+    Q_o = coef.C_d_si * longitud_cresta * HW_r ** 1.5  # literal-ok: exponente 1.5 de la Ec. 3.9 del HDS-5
+    return Q_o, coef
+
+
+def _dominio_de_HW_r(*, ancho_cresta: float, h_t: float, superficie: str,
+                     coeficientes) -> Tuple[float, float]:
+    """
+    El intervalo de HW_r en que la Figura 3.11 da coeficiente: por arriba,
+    el final del panel B si su tope (en m) no llega a la frontera
+    HW_r/L_r = limite (queda un hueco entre los dos paneles que la figura no
+    cubre), o el final del panel A; por abajo, con agua de aguas abajo sobre
+    la cresta, el h_t/HW_r del final de la curva de k_t.
+    """
+    limite = float(coeficientes["limite_HWr_sobre_Lr"])
+    somero = _curva(coeficientes, "Cr_somero_m", superficie)
+    profundo = _curva(coeficientes, "Cr_profundo", superficie)
+    if somero[-1][0] < limite * ancho_cresta:
+        techo = somero[-1][0]
+    else:
+        techo = profundo[-1][0] * ancho_cresta
+    piso = 0.0
+    if h_t > 0:
+        piso = h_t / _curva(coeficientes, "kt", superficie)[-1][0]
+    return piso, techo
+
+
+def repartir_caudal_con_desborde(*, Q_total: float, hidraulica_de,
+                                 cota_entrada: float, cota_cresta: float,
+                                 longitud_cresta: float, ancho_cresta: float,
+                                 cota_agua_abajo: float, superficie: str,
+                                 coeficientes, Q_minimo: float,
+                                 HW_minimo: float):
+    """
+    El reparto del caudal del evento extremo entre el conducto y la
+    plataforma, HDS-5 3a ed. num. 3.1.5 (pags. impresas 3.15-3.16): «the
+    roadway overflow plus the culvert flow must equal the total design flow.
+    A trial and error process is necessary to determine the amount of the
+    total flow passing through the culvert and the amount flowing across the
+    roadway».
+
+    El tanteo es sobre el caudal del CONDUCTO, Q_c: con el, la carga de M4
+    (`hidraulica_de(Q_c).HW`, acotada por abajo con `HW_minimo` --un caudal
+    mayor que el de diseño no da menos carga, la guardia de V8--) fija la
+    cota del agua, z = cota_entrada + HW; sobre la cresta, HW_r = z -
+    cota_cresta, y la Ec. 3.9 da Q_o. Se busca Q_c con Q_c + Q_o(z) =
+    Q_total (`brentq`), entre `Q_minimo` (el caudal de diseño) y Q_total.
+    La cresta es UN tramo horizontal a la cota de desborde (Figura 3.12B:
+    «Representing the sag vertical curve by a single horizontal line (one
+    segment) is often adequate for culvert design»), de longitud L y ancho
+    L_r; el agua de aguas abajo sobre la cresta, h_t = cota_agua_abajo -
+    cota_cresta.
+
+    Sin alcanzar la cresta con todo el caudal por el conducto, no hay
+    reparto (`desborda` False). Se detiene con `MetodoNoEvaluableError`
+    (rotulo del evento extremo) si con el caudal minimo ya hay desborde
+    --el tanteo no se busca por debajo del caudal de diseño--, o si la
+    solucion cae fuera de los ejes de la Figura 3.11.
+    """
+    from scipy.optimize import brentq   # perezoso: ver la nota junto a los imports
+    from src.modelos import RepartoDelDesborde
+
+    if not (Q_total > 0 and math.isfinite(Q_total)):
+        raise DatoInvalidoError("Q_evento_extremo_m3s", valor=Q_total,
+                                motivo="tiene que ser finito y positivo")
+    h_t = cota_agua_abajo - cota_cresta
+    calculadas = {}
+
+    def hidraulica(Q_c: float):
+        if Q_c not in calculadas:
+            calculadas[Q_c] = hidraulica_de(Q_c)
+        return calculadas[Q_c]
+
+    def carga(Q_c: float) -> float:
+        return max(hidraulica(Q_c).HW, HW_minimo)
+
+    def tirante_sobre_cresta(Q_c: float) -> float:
+        return cota_entrada + carga(Q_c) - cota_cresta
+
+    comun = dict(cota_cresta=cota_cresta, longitud_cresta=longitud_cresta,
+                 ancho_cresta=ancho_cresta, Q_total=Q_total)
+    if not tirante_sobre_cresta(Q_total) > TOL_UMBRAL_NORMATIVO:
+        h = hidraulica(Q_total)
+        return RepartoDelDesborde(
+            Q_conducto=Q_total, Q_plataforma=0.0,
+            cota_embalse=cota_entrada + carga(Q_total),
+            HW_conducto=carga(Q_total), hidraulica=h, desborda=False,
+            h_t=max(h_t, 0.0), avisos=tuple(getattr(h, "avisos", ())),
+            **comun)
+    if not Q_minimo < Q_total:
+        raise _no_evaluable_vertedero(
+            f"el caudal minimo del tanteo ({Q_minimo:.4f} m3/s) no es menor "
+            f"que el del evento ({Q_total:.4f} m3/s) y con todo el caudal por "
+            "el conducto la plataforma desborda")
+    piso, techo = _dominio_de_HW_r(ancho_cresta=ancho_cresta, h_t=h_t,
+                                   superficie=superficie,
+                                   coeficientes=coeficientes)
+    if tirante_sobre_cresta(Q_minimo) > max(piso, TOL_UMBRAL_NORMATIVO):
+        raise _no_evaluable_vertedero(
+            f"con el caudal de diseño ({Q_minimo:.4f} m3/s) el embalse ya "
+            f"pasa {tirante_sobre_cresta(Q_minimo):.3f} m sobre la cresta: "
+            "el reparto no se busca por debajo del caudal de diseño")
+
+    def Q_con_tirante(h: float) -> float:
+        """El Q_c con que el agua llega a HW_r = h sobre la cresta."""
+        if tirante_sobre_cresta(Q_minimo) >= h:
+            return Q_minimo
+        if tirante_sobre_cresta(Q_total) <= h:
+            return Q_total
+        return brentq(lambda Q_c: tirante_sobre_cresta(Q_c) - h,
+                      Q_minimo, Q_total, xtol=TOL_BRENT)
+
+    def exceso(Q_c: float) -> float:
+        Q_o, _ = caudal_sobre_la_plataforma(
+            HW_r=tirante_sobre_cresta(Q_c), longitud_cresta=longitud_cresta,
+            ancho_cresta=ancho_cresta, h_t=h_t, superficie=superficie,
+            coeficientes=coeficientes)
+        return Q_c + Q_o - Q_total
+
+    inferior = Q_con_tirante(max(piso, TOL_UMBRAL_NORMATIVO))
+    superior = Q_con_tirante(techo)
+    if exceso(inferior) > 0:
+        raise _no_evaluable_vertedero(
+            "el agua de aguas abajo ahoga la cresta: con h_t/HW_r al final "
+            "de la curva de sumergencia de la Figura 3.11 la plataforma ya "
+            "conduce mas que el exceso del evento, y por encima la figura no "
+            "da k_t")
+    if exceso(superior) < 0:
+        raise _no_evaluable_vertedero(
+            f"el reparto necesita mas de {techo:.3f} m de agua sobre la "
+            "cresta, donde la Figura 3.11 ya no da C_r")
+    Q_c = brentq(exceso, inferior, superior, xtol=TOL_BRENT)
+    HW_r = tirante_sobre_cresta(Q_c)
+    Q_o, coef = caudal_sobre_la_plataforma(
+        HW_r=HW_r, longitud_cresta=longitud_cresta, ancho_cresta=ancho_cresta,
+        h_t=h_t, superficie=superficie, coeficientes=coeficientes)
+    h = hidraulica(Q_c)
+    avisos = list(getattr(h, "avisos", ()))
+    if h.HW < HW_minimo - TOL_UMBRAL_NORMATIVO:
+        avisos.append(
+            f"la carga del conducto con Q_c = {Q_c:.3f} m3/s ({h.HW:.3f} m) "
+            f"es menor que la de diseño ({HW_minimo:.3f} m): el reparto se "
+            "hizo con la de diseño como cota inferior")
+    return RepartoDelDesborde(
+        Q_conducto=Q_c, Q_plataforma=Q_o, cota_embalse=cota_cresta + HW_r,
+        HW_conducto=carga(Q_c), hidraulica=h, desborda=True, HW_r=HW_r,
+        h_t=max(h_t, 0.0), panel=coef.panel, C_r=coef.C_r, k_t=coef.k_t,
+        C_d_si=coef.C_d_si, q_unitario=Q_o / longitud_cresta,
+        avisos=tuple(avisos), **comun)

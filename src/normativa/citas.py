@@ -15221,4 +15221,212 @@ AASHTO_C11_6_5_3_AGUA_ABIERTO = _cita(
           "por eso el programa se detiene en este caso en vez de inventarla."),
 )
 
+# ===========================================================================
+# --- VE-4d --- HDS-5 3a ed., num. 3.1.5 «Roadway Overtopping» y 5.4.5
+# «Embankment Overtopping»: el desborde admitido de V8 (ficha T7B-02). Leidas
+# en la capa de texto de las paginas; la Figura 3.11 es una imagen y se leyo
+# renderizada (y digitalizada: criterio 'coeficientes_desborde_plataforma').
+# ===========================================================================
+FECHA_VE4D = "2026-11-20"
+POR_VE4D = "validacion/VE-4d · lectura directa de la pagina por la sesion"
+VE4D = (FECHA_VE4D, POR_VE4D)
+
+HDS5_3_1_5_EC_3_9 = _cita(
+    id="HDS5_3ED.3.1.5#EC_3_9",
+    fuente_id="HDS5_3ED",
+    numeral="3.1.5",
+    titulo_numeral="Roadway Overtopping",
+    pagina_impresa="3.15",
+    pagina_pdf=97,
+    pagina_pdf_titulo=97,
+    texto_literal=Verbatim(
+        texto="Equation 3.9 defines the flow across the roadway.",
+        pagina_pdf=97),
+    caracter=Caracter.DEFINICION,
+    sesion=VE4D,
+    nota=("La ecuacion, en la linea siguiente: «Qo= CdL HWr^1.5 (3.9)», con "
+          "«L = Length of roadway crest, ft (m)» y «HWr = Upstream depth, "
+          "measured from roadway crest to water surface upstream of weir "
+          "drawdown, ft (m)». El parrafo que la abre: «Overtopping will "
+          "begin when the headwater rises to the elevation of the roadway "
+          "(Figure 3.10). The overtopping will usually occur at the low "
+          "point of a sag vertical curve on the roadway. The flow will be "
+          "similar to flow over a broad crested weir.»"),
+)
+
+HDS5_3_1_5_CD_SI = _cita(
+    id="HDS5_3ED.3.1.5#CD_SI",
+    fuente_id="HDS5_3ED",
+    numeral="3.1.5",
+    titulo_numeral="Roadway Overtopping",
+    pagina_impresa="3.15",
+    pagina_pdf=97,
+    pagina_pdf_titulo=97,
+    texto_literal=Verbatim(
+        texto="[Cd (SI) = 0.552(Cd from Figure 3.11)]",
+        pagina_pdf=97),
+    caracter=Caracter.DEFINICION,
+    sesion=VE4D,
+    nota=("La linea anterior define el coeficiente: «Cd = Overtopping "
+          "discharge coefficient = ktCr from Figure 3.11». La figura da C_r "
+          "en unidades inglesas (ft^0.5/s); 0.552 es la raiz de 0.3048 "
+          "redondeada a tres cifras, y es la que la fuente imprime: el "
+          "programa usa la impresa."),
+)
+
+HDS5_3_1_5_TANTEO = _cita(
+    id="HDS5_3ED.3.1.5#TANTEO",
+    fuente_id="HDS5_3ED",
+    numeral="3.1.5",
+    titulo_numeral="Roadway Overtopping",
+    pagina_impresa="3.16",
+    pagina_pdf=98,
+    pagina_pdf_titulo=97,
+    texto_literal=Verbatim(
+        texto=("A trial and error process is necessary to determine the "
+               "amount of the total flow passing through the culvert and "
+               "the amount flowing across the roadway."),
+        pagina_pdf=98),
+    caracter=Caracter.DEFINICION,
+    sesion=VE4D,
+    nota=("La frase anterior plantea la condicion: «The problem is that the "
+          "roadway overflow plus the culvert flow must equal the total "
+          "design flow.» Es el reparto de V8 con el desborde admitido "
+          "(`M4.repartir_caudal_con_desborde`), por tanteo sobre el caudal "
+          "del conducto."),
+)
+
+HDS5_3_1_5_UN_TRAMO = _cita(
+    id="HDS5_3ED.3.1.5#UN_TRAMO",
+    fuente_id="HDS5_3ED",
+    numeral="3.1.5",
+    titulo_numeral="Roadway Overtopping",
+    pagina_impresa="3.16",
+    pagina_pdf=98,
+    pagina_pdf_titulo=97,
+    texto_literal=Verbatim(
+        texto=("Representing the sag vertical curve by a single horizontal "
+               "line (one segment) is often adequate for culvert design "
+               "(Figure 3.12B)."),
+        pagina_pdf=98),
+    caracter=Caracter.PERMISO,
+    sesion=VE4D,
+    nota=("Y sigue: «Using this approach, the length of the weir (L) can be "
+          "represented by the topwidth of the overflow area in the sag, the "
+          "upstream depth (HWr) by the hydraulic depth (overflow area in the "
+          "sag divided by the top width of flow), and the elevation of the "
+          "weir crest defined from the lowest point in the sag.»"),
+    interpretacion=Interpretacion(
+        texto=("El proyecto toma la cresta como UN tramo horizontal a la "
+               "cota de desborde que ya usa V8 (el borde de la plataforma "
+               "del lado de la entrada, de 7.B, o la rasante), con la "
+               "longitud que el expediente declara por punto "
+               "(`longitud_cresta_desborde_m`) y el ancho de la plataforma "
+               "del CSV como ancho de la cresta en la direccion del flujo "
+               "(L_r de la Figura 3.11). La longitud no cambia con el nivel "
+               "del agua."),
+        en_contra=("en una curva vertical en columpio el ancho superficial "
+                   "del desborde crece con el nivel: una longitud fija la "
+                   "sobrestima con poca carga y la subestima con mucha",
+                   "la fuente define la cota de la cresta en el punto bajo "
+                   "del columpio; el borde de la plataforma de la entrada "
+                   "puede no serlo si la rasante del cruce no es el punto "
+                   "bajo"),
+        a_favor=("la fuente lo da por adecuado para el diseño de "
+                 "alcantarillas, y su ejemplo DG 1.5 lo usa («The roadway "
+                 "profile may be approximated as a broad crested weir 200 ft "
+                 "long»)",
+                 "la longitud es un dato del perfil de la via que el "
+                 "proyectista conoce; el programa no la inventa")),
+)
+
+HDS5_F3_11 = _cita(
+    id="HDS5_3ED.F3.11",
+    fuente_id="HDS5_3ED",
+    numeral="Figura 3.11",
+    titulo_numeral="Discharge coefficients for roadway overtopping",
+    pagina_impresa="3.16",
+    pagina_pdf=98,
+    pagina_pdf_titulo=98,
+    texto_literal=Verbatim(
+        texto=("Figure 3.11. Discharge coefficients for roadway "
+               "overtopping."),
+        pagina_pdf=98),
+    caracter=Caracter.DEFINICION,
+    metodo=AMBOS,
+    sesion=VE4D,
+    nota=("Tres paneles, leidos sobre la imagen: «A) Discharge Coefficient "
+          "for HWr/Lr > 0.15» (C_r de 2.90 a 3.10, abscisa 0.16 a 0.32), «B) "
+          "Discharge Coefficient for HWr/Lr ≤ 0.15» (C_r de 2.50 a 3.10, "
+          "abscisa HWr de 0 a 4.0) y «C) Submergence Factor» (k_t de 0.50 a "
+          "1.00 contra ht/HWr de 0.6 a 1.0), con «Cd = ktCr» y dos curvas, "
+          "«Paved» (continua, roja) y «Gravel» (de trazos, azul). La "
+          "digitalizacion es el criterio 'coeficientes_desborde_plataforma' "
+          "[C], y la contrastan las lecturas del ejemplo DG 1.5 (C_r = 2.7 "
+          "con HWr = 0.5 ft y 2.92 con 1.5 ft, grava; pag. impresa DG1.12)."),
+    interpretacion=Interpretacion(
+        texto=("La abscisa del panel A es HW_r/L_r aunque el eje este "
+               "rotulado «HWr»; la del panel B es HW_r en pies. Fuera de los "
+               "ejes de la figura no hay coeficiente, y k_t vale 1 a la "
+               "izquierda del punto en que su curva deja el borde superior."),
+        en_contra=("el rotulo impreso del eje A es «HWr», el mismo del B",
+                   "la figura no dice que k_t valga 1 por debajo de h_t/HW_r "
+                   "= 0.6, donde termina su eje"),
+        a_favor=("el panel A es el de «HWr/Lr > 0.15» y su eje empieza "
+                 "justo en 0.15 (el borde izquierdo cae a 0.150 al calibrar "
+                 "la rejilla) y llega a 0.32: como HW_r en pies seria un "
+                 "desborde de 5 cm, que es el dominio del panel B",
+                 "la fuente define la sumergencia como el agua de aguas "
+                 "abajo que «begins to encroach on the free overfall»: sin "
+                 "ella el vertedero es libre y no hay correccion")),
+)
+
+HDS5_5_4_5_DESBORDE_ACEPTADO = _cita(
+    id="HDS5_3ED.5.4.5#DESBORDE_ACEPTADO",
+    fuente_id="HDS5_3ED",
+    numeral="5.4.5",
+    titulo_numeral="Embankment Overtopping",
+    pagina_impresa="5.16",
+    pagina_pdf=152,
+    pagina_pdf_titulo=152,
+    texto_literal=Verbatim(
+        texto=("Embankment overtopping is an accepted result of highway "
+               "crossings of floodplains."),
+        pagina_pdf=152),
+    caracter=Caracter.PERMISO,
+    sesion=VE4D,
+    nota=("Y sigue: «The overtopping can be infrequent as in the case of "
+          "highways on the National Highway System (NHS) which are designed "
+          "not to overtop for the 50-year flood event, or can be frequent "
+          "for highways that are designed as low water crossings (Section "
+          "1.2.6). If the overtopping is infrequent, overtopping mitigation "
+          "measures are not used and flood damage is repaired after flood "
+          "events.» Es lo que sostiene que V8 admita el desborde; no define "
+          "el colapso."),
+)
+
+HDS5_5_4_5_HEC23 = _cita(
+    id="HDS5_3ED.5.4.5#HEC23",
+    fuente_id="HDS5_3ED",
+    numeral="5.4.5",
+    titulo_numeral="Embankment Overtopping",
+    pagina_impresa="5.17",
+    pagina_pdf=153,
+    pagina_pdf_titulo=152,
+    texto_literal=Verbatim(
+        texto=("If the overtopping is frequent, the potential damage of "
+               "overtopping can be mitigated using the countermeasure design "
+               "guidelines in HEC-23 (FHWA 2009b):"),
+        pagina_pdf=153),
+    caracter=Caracter.PERMISO,
+    sesion=VE4D,
+    nota=("Las dos vias que lista: «Downstream fill slope can be protected "
+          "using Design Guideline 5 – Riprap Design for Embankment "
+          "Overtopping, or» y «Embankment itself can be constructed of "
+          "erosion resistant material using Design Guideline 7 – Soil "
+          "Cement.» HEC-23 no esta en el repositorio de normas: el diseño "
+          "de la proteccion es del expediente, y su caudal unitario admisible "
+          "es el criterio 'caudal_unitario_admisible_desborde_m2s' [A]."),
+)
+
 CITAS: Dict[str, Cita] = {c.id: c for c in _TODAS}

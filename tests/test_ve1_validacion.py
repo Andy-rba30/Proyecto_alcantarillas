@@ -672,7 +672,8 @@ def test_h2_guardia_el_valor_de_archivo_de_todos_los_criterios_sigue_pasando():
     # 147 desde VE-3.5: 'dimensionamiento_zapata_cabezal'; 148 con el de VE-3.7,
     # 'fraccion_fin_remanso_canal' (las dos ramas se integraron juntas).
     # 149 desde VE-3.12: 'relleno_max_contraste_acpa_m' (decision 6 del dueño).
-    assert len(ca.CRITERIOS) == 153 and barridos > 100, (len(ca.CRITERIOS),
+    # 155 desde VE-4d: los dos criterios del desborde admitido de V8.
+    assert len(ca.CRITERIOS) == 155 and barridos > 100, (len(ca.CRITERIOS),
                                                           barridos)
 
 

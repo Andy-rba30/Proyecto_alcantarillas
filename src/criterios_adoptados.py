@@ -10690,9 +10690,13 @@ CRITERIOS: Dict[str, Criterio] = {
         #       caudal del evento extremo no alcanza el borde de la
         #       plataforma del lado de la entrada. IMPLEMENTADO.
         #   desborde_admitido_con_terraplen_protegido   se admite el flujo
-        #       sobre la plataforma con el talud protegido. Se puede declarar
-        #       y V8 se detiene con «metodo no evaluable»: el flujo sobre la
-        #       via (HDS-5 num. 3.1.5) no esta implementado (ficha T7B-02).
+        #       sobre la plataforma con el talud protegido. IMPLEMENTADO
+        #       desde VE-4d: el caudal se reparte entre el conducto y la
+        #       plataforma (HDS-5 num. 3.1.5, Ec. 3.9 y Figura 3.11, criterio
+        #       'coeficientes_desborde_plataforma' [C]) y el caudal unitario
+        #       sobre la plataforma se compara con el que la proteccion
+        #       admite ('caudal_unitario_admisible_desborde_m2s' [A], sin
+        #       valor). Ficha T7B-02.
         sensibilidad=("sin_desborde_de_la_plataforma",
                       "desborde_admitido_con_terraplen_protegido"),
         concepto="Como se juzga, en V8, que la via «no colapsa» con el "
@@ -10714,19 +10718,189 @@ CRITERIOS: Dict[str, Criterio] = {
                       "del evento extremo queda por debajo del borde de la "
                       "plataforma: si no hay desborde, no hay desborde que "
                       "la haga colapsar; es la lectura mas exigente, porque "
-                      "la fila admite el desborde. La otra opcion exige "
-                      "calcular el flujo sobre la plataforma y la proteccion "
-                      "del talud de aguas abajo, que este programa no hace",
+                      "la fila admite el desborde. Con "
+                      "«desborde_admitido_con_terraplen_protegido» (desde "
+                      "VE-4d) el caudal del evento se reparte entre el "
+                      "conducto y el vertedero que forma la plataforma "
+                      "(HDS-5 num. 3.1.5) y V8 cumple si el caudal unitario "
+                      "que pasa sobre la plataforma no supera el que la "
+                      "proteccion del talud de aguas abajo admite, que es "
+                      "otro criterio del proyecto; el diseño de esa "
+                      "proteccion (HEC-23, que la fuente cita y que no esta "
+                      "en el repositorio de normas) no lo hace este programa",
         fuente="Fase 5, V8 de la hoja de ruta, sin numeral. HDS-5 num. 2.2.5 "
-               "a., pag. impresa 2.10 (PDF 72), para la cota de comparacion",
-        reemplazado_por="Analisis del flujo sobre la plataforma (HDS-5 num. "
-                        "3.1.5) y de la erosion del talud, con la definicion "
-                        "de colapso declarada en la memoria",
+               "a., pag. impresa 2.10 (PDF 72), para la cota de comparacion; "
+               "num. 3.1.5, pags. impresas 3.15-3.16 (PDF 97-98), y num. "
+               "5.4.5, pag. impresa 5.16 (PDF 152), para el desborde",
+        reemplazado_por="La definicion de colapso de la via que el "
+                        "Propietario declare, con el diseño de la proteccion "
+                        "del terraplen adjunto a la memoria",
         resolucion=Libre(
             que_lo_fija="el proyectista: la hoja de ruta pide la "
                         "verificacion y ninguna fuente de normas/ define el "
                         "colapso de la via",
             dominio="una de las opciones de la ventana",
+        ),
+    ),
+
+    # --- VE-4d --- (ficha T7B-02) EL DESBORDE ADMITIDO: dos criterios.
+    "caudal_unitario_admisible_desborde_m2s": Criterio(
+        # SIN VALOR DE ARCHIVO, como el umbral: lo lee V8 solo con
+        # «desborde_admitido_con_terraplen_protegido» declarado, y ninguna
+        # corrida del fixture lo alcanza.
+        valor=None,                 # VACIO: bloquea V8 con el desborde admitido
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="A",
+        forma=FORMA_FLOAT,
+        positivo=True,
+        concepto="Caudal unitario sobre la plataforma (m3/s por metro de "
+                 "cresta) que la proteccion del terraplen admite: el umbral "
+                 "de V8 con el desborde admitido",
+        justificacion="Decide cuando el desborde de la plataforma con el "
+                      "caudal del evento extremo deja de ser admisible. La "
+                      "fuente acepta el desborde (HDS-5 num. 5.4.5, cita "
+                      "HDS5_3ED.5.4.5#DESBORDE_ACEPTADO) y, si es frecuente, "
+                      "remite la proteccion del talud de aguas abajo a las "
+                      "guias de HEC-23 (cita HDS5_3ED.5.4.5#HEC23), que no "
+                      "estan en el repositorio de normas; no fija ningun "
+                      "limite de tirante, velocidad ni caudal sobre la via. "
+                      "El proyecto juzga «no colapsa» con el caudal "
+                      "unitario, Q_plataforma / L, que es la magnitud con "
+                      "que se dimensiona la proteccion de un terraplen "
+                      "desbordado y la que el reparto entrega sin suponer "
+                      "nada mas (el tirante y la velocidad sobre la cresta "
+                      "dependen del perfil del flujo, que no se calcula). "
+                      "Lo que no resuelve: el valor es el de la proteccion "
+                      "que el expediente diseñe, y por eso no se elige aqui",
+        fuente="PENDIENTE - diseño de la proteccion del talud de aguas abajo "
+               "del terraplen (HDS-5 num. 5.4.5, pag. impresa 5.17, remite a "
+               "HEC-23, Design Guideline 5, que no esta en el repositorio de "
+               "normas)",
+        reemplazado_por="El caudal unitario de diseño de la proteccion del "
+                        "talud de aguas abajo (enrocado o suelo-cemento), "
+                        "con su memoria adjunta",
+        resolucion=Libre(
+            que_lo_fija="el proyectista, con el diseño de la proteccion del "
+                        "terraplen",
+            dominio="m3/s por metro de cresta, > 0",
+        ),
+    ),
+
+    "coeficientes_desborde_plataforma": Criterio(
+        # LA FIGURA 3.11 DEL HDS-5, DIGITALIZADA, y la conversion a SI que la
+        # misma pagina imprime. Es una LECTURA de una figura y por eso es [C]
+        # y no [N]: la hoja de ruta no trae el desborde, y el registro no
+        # tiene tipo para un abaco (ver 'N_cq_N_gammaq_meyerhof'). A
+        # diferencia de aquel, aqui la lectura no depende de la geometria
+        # del punto: son cinco curvas de una variable, y se leen una vez.
+        #
+        # COMO SE LEYO (VE-4d, 2026-11-20): la figura es una imagen
+        # (hif12026.pdf, PDF 98, imagen 261, 1700 x 1754 px). Se calibraron
+        # los ejes por sus lineas de rejilla (panel A: 0.16 en x = 245.5 px
+        # y 0.30 en 696.5 px; 3.10 en y = 535 px y 2.90 en 792 px; panel B:
+        # 0 en x = 215 px y 4.0 en 761 px, 3.10 en y = 1059 px y 2.50 en
+        # 1475 px; panel C: 0.6 en x = 1089 px y 1.0 en 1635 px, 1.00 en y =
+        # 799 px y 0.50 en 1475 px) y se tomo, por columna, la mediana de
+        # los pixeles rojos (Paved) y azules (Gravel) del trazo. La
+        # resolucion es ~0.001 en C_r y ~0.001 en k_t; el grosor del trazo,
+        # ~0.005. `tests/test_ve4d_v8_desborde.py` la contrasta con las dos
+        # lecturas que el ejemplo DG 1.5 imprime (2.7 y 2.92), y el test
+        # marcado `pdf` la REPITE sobre el PDF.
+        #
+        # Cada curva es una serie de pares (abscisa, ordenada) que M4
+        # interpola linealmente; fuera de la primera y la ultima abscisa no
+        # hay coeficiente («metodo no evaluable»), salvo k_t por debajo del
+        # inicio de su curva, que vale 1 (vertedero libre).
+        valor={
+            # «[Cd (SI) = 0.552(Cd from Figure 3.11)]» (pag. impresa 3.15).
+            "conversion_cd_si": 0.552,
+            # El rotulo de los paneles A («HWr/Lr > 0.15») y B («<= 0.15»).
+            "limite_HWr_sobre_Lr": 0.15,
+            # Panel A: abscisa HW_r/L_r (el eje esta rotulado «HWr», y su
+            # rango 0.15-0.32 es el de la relacion: interpretacion
+            # declarada en la cita HDS5_3ED.F3.11).
+            "Cr_profundo": {
+                "pavimentada": ((0.15, 3.052), (0.16, 3.058), (0.18, 3.067),
+                                (0.20, 3.076), (0.22, 3.081), (0.24, 3.085),
+                                (0.26, 3.088), (0.28, 3.091), (0.30, 3.093),
+                                (0.32, 3.093)),
+                "grava": ((0.15, 2.951), (0.16, 2.958), (0.18, 2.979),
+                          (0.20, 3.001), (0.22, 3.021), (0.24, 3.043),
+                          (0.26, 3.060), (0.28, 3.079), (0.30, 3.090),
+                          (0.32, 3.094)),
+            },
+            # Panel B: abscisa HW_r en METROS. La figura la da en pies (0 a
+            # 4.0 ft): se leyo en 0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.8, 1.0,
+            # 1.25 (grava), 1.5, 1.75 (grava), 2.0, 2.5, 3.0, 3.5 y 4.0 ft y
+            # se convirtio con 0.3048 m/ft exactos. El valor en 0 se toma en
+            # la primera columna del trazo (0.02 ft) extrapolado al eje.
+            "Cr_somero_m": {
+                "pavimentada": ((0.0, 2.897), (0.03048, 2.933),
+                                (0.06096, 2.969), (0.09144, 2.990),
+                                (0.12192, 3.006), (0.1524, 3.019),
+                                (0.18288, 3.026), (0.24384, 3.032),
+                                (0.3048, 3.034), (0.4572, 3.034),
+                                (0.6096, 3.037), (0.762, 3.037),
+                                (0.9144, 3.043), (1.0668, 3.040),
+                                (1.2192, 3.040)),
+                "grava": ((0.0, 2.513), (0.03048, 2.550), (0.06096, 2.591),
+                          (0.09144, 2.629), (0.12192, 2.674), (0.1524, 2.701),
+                          (0.18288, 2.729), (0.24384, 2.778), (0.3048, 2.827),
+                          (0.381, 2.875), (0.4572, 2.919), (0.5334, 2.953),
+                          (0.6096, 2.978), (0.762, 3.012), (0.9144, 3.034),
+                          (1.0668, 3.039), (1.2192, 3.039)),
+            },
+            # Panel C: abscisa h_t/HW_r; k_t = 1 a la izquierda del primer
+            # punto (donde la curva deja el borde superior del cuadro) y
+            # ningun valor a la derecha del ultimo (k_t = 0.50, el pie del
+            # cuadro).
+            "kt": {
+                "pavimentada": ((0.83, 1.000), (0.84, 0.993), (0.86, 0.977),
+                                (0.88, 0.958), (0.90, 0.927), (0.92, 0.887),
+                                (0.94, 0.818), (0.95, 0.775), (0.96, 0.722),
+                                (0.97, 0.648), (0.98, 0.548), (0.9815, 0.500)),
+                "grava": ((0.775, 1.000), (0.80, 0.989), (0.82, 0.980),
+                          (0.84, 0.960), (0.86, 0.938), (0.88, 0.911),
+                          (0.90, 0.879), (0.92, 0.824), (0.94, 0.735),
+                          (0.95, 0.680), (0.96, 0.616), (0.97, 0.535),
+                          (0.9718, 0.500)),
+            },
+        },
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="C",
+        forma=FORMA_DICT_CON_CAMPOS,
+        concepto="Coeficiente de descarga del flujo sobre la plataforma: las "
+                 "curvas C_r (desborde profundo y somero) y k_t (sumergencia) "
+                 "de la Figura 3.11 del HDS-5, digitalizadas, y la conversion "
+                 "de C_d a SI",
+        justificacion="Da el coeficiente de la Ec. 3.9 del HDS-5 (Q_o = C_d "
+                      "L HW_r^1.5, cita HDS5_3ED.3.1.5#EC_3_9) con que V8 "
+                      "reparte el caudal del evento extremo entre el "
+                      "conducto y la plataforma cuando el desborde se "
+                      "admite. El vacio es de la hoja de ruta, que no trae "
+                      "el desborde; lo cubre el HDS-5, que define C_d = k_t "
+                      "C_r con las curvas de la Figura 3.11 (cita "
+                      "HDS5_3ED.F3.11) y su conversion a SI, 0.552 (cita "
+                      "HDS5_3ED.3.1.5#CD_SI). La figura distingue la cresta "
+                      "pavimentada de la de grava; cual es la de esta via lo "
+                      "dice 'condicion_pavimento'. Lo que no resuelve: la "
+                      "figura es un abaco y su lectura tiene la resolucion "
+                      "del trazo (del orden de 0.01 en C_r); fuera de sus "
+                      "ejes no hay coeficiente, y el calculo se detiene",
+        fuente="HDS-5 3a ed. (FHWA-HIF-12-026), num. 3.1.5 «Roadway "
+               "Overtopping», pag. impresa 3.15 (PDF 97), Ec. 3.9 y la "
+               "conversion a SI; Figura 3.11 «Discharge coefficients for "
+               "roadway overtopping», pag. impresa 3.16 (PDF 98), leida por "
+               "imagen. Fuente tecnica, no norma peruana",
+        reemplazado_por="Las curvas de la fuente original (HDS-1 / HY-7) o "
+                        "una calibracion del vertedero para la seccion real "
+                        "de la via, con su memoria",
+        resolucion=Libre(
+            que_lo_fija="la Figura 3.11 del HDS-5, digitalizada en VE-4d; el "
+                        "proyectista puede declarar otra lectura con su "
+                        "fuente",
+            dominio="las cinco curvas como series (abscisa, ordenada) "
+                    "crecientes en la abscisa; C_r y k_t > 0",
         ),
     ),
 
