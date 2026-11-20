@@ -8514,7 +8514,6 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
 
 <<<<<<< HEAD
 <<<<<<< HEAD
-<<<<<<< HEAD
 ## VE5-M6-01 · La poza de enrocado de HEC-14 Sec. 10.1 entra donde el apron no llega (VE-4g, ítem 2 del censo)
 
 - **Cerrado:** `M6.poza_de_enrocado_hec14` sigue el procedimiento del núm. 10.1.5 (Ec. 10.1
@@ -8679,76 +8678,6 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   el tubo con menos de 1.0 ft. Con el pórtico (ficha T5-07) la presión de la franja se
   aplica al marco como carga concentrada sobre la losa.
 - **Dónde vive:** `src/modulos/M8_estructural.py::_carga_viva_en_la_franja`
-=======
-# Parte LXI — Lo que VE-5 (lote M9) dejó escrito: el cabezal
-
-## VE5M9-01 · El muro que no cede se calcula: reposo en la estática, 1.0·k_h0 y h/2 bajo sismo (VE-5, ficha T7B-14)
-
-- **Cerrado:** `regimen_cabezal` = `no_cedente` ya no detiene el ensamble.
-  `M9.cargas_del_cabezal`: (1) estática con el empuje en reposo de 3.11.5.2-1 sobre el
-  mismo diagrama (suelo sumergido bajo el agua), todo horizontal y con el γ_p de la fila
-  «En reposo» (1.35/0.90); K0 es de terreno horizontal, de modo que si el activo con la
-  superficie real da más componente horizontal rige el activo —la regla del armado,
-  ficha T7C-02—; (2) sísmica con k_h = 1.0·k_h0 aunque `factor_muro_eleccion` declare la
-  reducción («shall be increased to 1.0kh0»), la distribución estática del incremento
-  rechazada y la resultante del estático más el sísmico no bajo h/2 (C11.6.5.4).
-  `cargas_en_reposo` es idempotente sobre ese ensamble, y el armado avisa si se declara
-  del muro que cede con el cabezal que no cede. Dorados a mano:
-  `tests/test_ve5_m9_no_cedente.py`.
-- **Abierto (decisión pendiente de Fable):** cómo se suma el reposo al empuje
-  pseudoestático, que es de muro que cede; la fuente no lo dice. Lo declara
-  `empuje_sismico_muro_que_no_cede` [A]: `reposo_mas_incremento` de archivo (lado
-  seguro: más que Mononobe-Okabe, como dice C11.6.5.4) y `mayor_de_reposo_y_total` en la
-  ventana. El agente no pudo consultar a Fable y tomó la conservadora.
-- **Qué haría falta:** la solución de muro rígido de Wood (1973) o un análisis numérico
-  aprobado por el Propietario (11.6.5.4), que no están en el repositorio de normas.
-- **Dónde vive:** `src/criterios_adoptados.py::empuje_sismico_muro_que_no_cede`
-
-## VE5M9-02 · La cuña de tanteo sísmica donde M-O no es aceptable y sobre el trasdós inclinado (VE-5, ficha T7B-06)
-
-- **Cerrado:** (1) la cuña de Coulomb/Culmann va sobre un plano de empuje inclinado β
-  (zapata sin talón), con la normal girada β; con el talud uniforme reproduce Coulomb
-  (3.11.5.3-1) y Mononobe-Okabe (A11.3.1-1) con β a cinco decimales. Hasta VE-5 se
-  detenía pidiendo la fórmula cerrada. (2) Con la fórmula cerrada de las reglas
-  `talud_quebrado_2h` o `talud_del_terraplen` fuera del dominio de M-O (φ < i + ψ), el
-  incremento sísmico sale de la cuña de tanteo pseudoestática con la superficie real
-  (C11.6.5.3: «may also be used for situations when the M–O Method is not suitable»):
-  P_AE − P_A de la MISMA cuña, y el estático sigue con la fórmula de la regla
-  (`METODO_INCREMENTO_CUNA`); con la pendiente declarada, la cuña con ese talud sin
-  quiebre. (3) La cuña sin máximo interior ya no se describe como un defecto del método:
-  con la superficie que se quiebra en la plataforma sólo pasa con ψ ≥ φ, y el mensaje
-  dice que es el relleno el que no es estable bajo ese k_h.
-- **Por qué no más:** la fuente da el GLE como método general y la cuña como el de mano;
-  el GLE no se calcula a mano.
-- **Qué haría falta (C):** el GLE de A11.3.3 necesita un programa de estabilidad de
-  taludes, y la puerta para un P_AE declarado por punto (como E4/E5 en VE-4a) no se abrió:
-  no es barata (dato nuevo por punto y cabezal, validación y contrato). La cuña sobre la CARA de la
-  pantalla (`carga_pantalla_cabezal` = `cuna_sobre_la_pantalla`) sigue vertical: con
-  talón el trasdós de la regla es vertical, y un β declarado con talón no la inclina.
-- **Dónde vive:** `src/modulos/M9_cabezal.py::cuna_de_tanteo`
-
-## VE5M9-03 · Capacidad portante: la RC_BC de AASHTO sustituye a Meyerhof, forma y profundidad declarables, y la admisible de corredor con consumidor (VE-5, ficha T7B-04)
-
-- **Cerrado:** (1) las Tablas 10.6.3.1.2c-1 y -2 de AASHTO 9.ª ed. transcritas enteras
-  (`constantes_normativas.RCBC_EN_TALUD_T10_6_3_1_2C_1` y `RCBC_JUNTO_AL_TALUD_…`), leídas
-  con un analizador del texto del PDF y comprobadas celda a celda por un test `pdf`;
-  `M9.coeficiente_rcbc` interpola en φ, B/H, b/B, β y N_s, toma la fila de 10° bajo 10°
-  (lado seguro) y, fuera de la tabla, se detiene («analysis limite», C10.6.3.1.2c). La
-  zapata en talud es RC_BC·(c·N_cm + 0.5·γ·B'·N_γm) sin empotramiento, con la geometría
-  de `talud_delante_del_cabezal` [S]. `N_cq_N_gammaq_meyerhof` (abacos de Meyerhof del
-  Manual de Puentes) se **retiró**, y con él el `H_s = 0` que se le pasaba. (2) Forma
-  (Tabla 10.6.3.1.2a-3, con L = longitud del cabezal) y profundidad (ec.
-  10.6.3.1.2a-10, ≤ 1.4) por `factores_forma_profundidad_portante` [A]; el archivo sigue
-  en la zapata corrida sin profundidad, de modo que ningún dorado se mueve. (3)
-  `capacidad_portante_adm` **no se retiró**: el Anexo A de la hoja de ruta la nombra; se le
-  dio consumidor (`M9.suelo_de_fundacion`), como el `q_adm_kpa` de corredor.
-- **Por qué:** la Fase 9 rige con AASHTO LRFD 9.ª ed. y su 10.6.3.1.2c son tablas, no
-  figuras; la §9.3 de la hoja de ruta sigue nombrando la ecuación del Manual de Puentes
-  2.8.1.3.1.2c (Meyerhof): **la hoja de ruta sigue mal** mientras no se corrija.
-- **Qué haría falta:** la geometría del talud por PUNTO (hoy es de corredor, como
-  `terreno_delante_del_cabezal`); y corregir la §9.3 de la hoja de ruta.
-- **Dónde vive:** `src/modulos/M9_cabezal.py::coeficiente_rcbc`
->>>>>>> claude/ve5-m9
 =======
 ## VE5-CAT-01 · La rama de selva alta del TMC: [S] `region_natural` y la recomendación como piso del catálogo (cierre de T4-06)
 
