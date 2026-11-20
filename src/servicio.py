@@ -124,11 +124,9 @@ from src.modulos.M0_carga import (COLUMNA_CAUDAL,
 # de cual de los dos se trata salvo por `InformePunto.caudal`.
 from src.modulos import MH_hidrologia as MH
 from src.modulos import M12_metrados as M12             # --- VE-5 met ---
-# --- VE-5 (lote catlic) --- la Fase 0-bis: licuefaccion declarada del EMS.
-from src.modulos import ML_licuefaccion as MLfrom src.modulos.M1_clasificacion import clasificar, exigir_alcance
+from src.modulos.M1_clasificacion import clasificar, exigir_alcance
 from src.modulos.M2_material import matriz_durabilidad
-from src.modulos.M6_proteccion import (avisos_de_transcripcion,
-                                       proteccion_entrada, proteccion_salida,
+from src.modulos.M6_proteccion import (proteccion_entrada, proteccion_salida,
                                        socavacion_salida)
 from src.modulos import M3_hidraulica as M3
 from src.modulos import M4_control as M4                # --- T-7b --- (V8)
@@ -238,10 +236,7 @@ ALCANCE_EXPEDIENTE = _ALCANCE_EXPEDIENTE
 # a perfil. Esa pareja tiene su propio dato, justo debajo.
 MODULOS_DIFERIDOS_POR_ALCANCE: Dict[str, Tuple[str, ...]] = {
     ALCANCE_EXPEDIENTE: (),
-    # --- VE-5 (catlic) --- la Fase 0-bis (licuefaccion) es de expediente:
-    # a nivel de perfil se declara el condicionante y la solucion se remite
-    # al expediente (v8, Fase 0-bis, punto 3).
-    ALCANCE_PERFIL: ("M8_estructural", "M9_cabezal", "ML_licuefaccion"),
+    ALCANCE_PERFIL: ("M8_estructural", "M9_cabezal"),
 }
 
 # LAS VERIFICACIONES QUE CADA ALCANCE DIFIERE, como dato y no como prosa.
@@ -798,15 +793,6 @@ METODO_QUE_EXIGE_LA_CLAVE: Dict[str, Tuple[str, ...]] = {
     # --- VE-4d --- y la de V8, la OPCION del umbral que la pide.
     CLAVE_LONGITUD_CRESTA_DESBORDE: (UMBRAL_V8_DESBORDE_ADMITIDO,),
 }
-# --- VE-5 fixve4 --- Y los criterios que la verificacion lee ANTES del que
-# la hace exigible: con cualquiera de ellos vacio, la verificacion se detiene
-# en el (bloque 1) y el dato todavia no falta. La cresta del desborde la pide
-# el umbral de V8, pero V8 se detiene antes en 'TR_evento_extremo' (revision
-# de la fusion de VE-4, hallazgo 7: el pre-vuelo la anunciaba como falta que
-# detiene con solo el umbral declarado).
-CRITERIOS_PREVIOS_DE_LA_CLAVE: Dict[str, Tuple[str, ...]] = {
-    CLAVE_LONGITUD_CRESTA_DESBORDE: ("TR_evento_extremo",),
-}
 VERIFICACION_QUE_EXIGE_LA_CLAVE: Dict[str, str] = {
     CLAVE_ANCHO_DERECHO_VIA: "V5",
     CLAVE_COTA_AFECTACION: "V5",
@@ -868,34 +854,6 @@ CLAVES_DE_CABEZAL += (CLAVE_SUELO_FUNDACION,)
 CLAVE_ESTABILIDAD_GLOBAL_DECLARADA = "estabilidad_global_declarada"
 CLAVES_DE_CABEZAL += (CLAVE_ESTABILIDAD_GLOBAL_DECLARADA,)
 CLAVES_SOLO_POR_PUNTO: Tuple[str, ...] = (CLAVE_ESTABILIDAD_GLOBAL_DECLARADA,)
-# --- VE-5 (lote catlic) --- EL RESULTADO DE LA EVALUACION DE LICUEFACCION
-# DEL EMS (E.050 38.3), por punto o en `globales` (el del punto gana): FUERA
-# de `CLAVES_EXTERNAS` porque solo lo pide la Fase 0-bis, a expediente y
-# donde AASHTO 10.5.4.2 exige la evaluacion. Lo valida
-# `ML.validar_licuefaccion_declarada` al CARGAR.
-CLAVE_LICUEFACCION_EMS = ML.CLAVE_LICUEFACCION_EMS
-CLAVES_DE_LICUEFACCION: Tuple[str, ...] = (CLAVE_LICUEFACCION_EMS,)
-FASE_LICUEFACCION = "Fase 0-bis - Licuefaccion (ML)"
-ETAPA_LICUEFACCION = ML.ETAPA_LICUEFACCION
-# A nivel de perfil la Fase 0-bis declara el condicionante y remite la
-# solucion al expediente (v8, Fase 0-bis, punto 3).
-MENSAJE_LICUEFACCION_DIFERIDA = (
-    "la evaluacion de licuefaccion (AASHTO 10.5.4.2) es el condicionante "
-    "mayor del proyecto y su resultado lo declara el EMS (E.050 38.3): a "
-    "nivel de perfil se declara el condicionante y se remite al expediente, "
-    "donde la Fase 0-bis lo exige. Ensayo: SPT de al menos 15 m con ensayo "
-    "cada 1 m (E.050 38.4.3). Disponible con --alcance expediente")
-# Lo que el pre-vuelo dice de la falta (PF-2): estima DE MAS, porque la
-# zona leida y el NF del punto pueden hacer que 10.5.4.2 no la exija.
-DETALLE_FALTA_LICUEFACCION = (
-    "Resultado de la evaluacion de licuefaccion del EMS (E.050 38.3). A "
-    "nivel de expediente la Fase 0-bis lo exige donde AASHTO 10.5.4.2 exige "
-    "la evaluacion: zona sismica 3 o 4 (sin leer no se supone 1 ni 2), NF "
-    "en los 50 ft superiores y suelo que solo el EMS puede descartar. No "
-    "detiene si la zona leida es 1 o 2 o el NF del punto esta mas hondo")
-DETALLE_FALTA_MITIGACION = (
-    "El EMS declara que el suelo licua y no declara la medida de mitigacion: "
-    "la Fase 0-bis no deja cerrar el expediente sin ella")
 
 # La geometria del cabezal es del proyecto entero, no de un punto: Sec. 9 no
 # dimensiona un cabezal por punto y el criterio que la declara es uno solo.
@@ -1016,11 +974,6 @@ def _dato_externo(clave: str, bruto: Any, origen: str) -> DatoDeclarado:
         return DatoDeclarado(nombre=clave,
                              valor=validar_suelo_fundacion(bruto),
                              origen=origen)
-    if clave == CLAVE_LICUEFACCION_EMS:
-        # --- VE-5 (catlic) --- el resultado del EMS, validado en la puerta.
-        return DatoDeclarado(
-            nombre=clave, valor=ML.validar_licuefaccion_declarada(bruto),
-            origen=origen)
     if clave == CLAVE_ESTABILIDAD_GLOBAL_DECLARADA:
         # --- VE-4a --- el FS declarado de E4 y E5, validado en la puerta.
         return DatoDeclarado(
@@ -1627,8 +1580,7 @@ def cargar_datos_externos(ruta: Optional[Path],
 
 def _exige_clave(clave: str, donde: str) -> None:
     if (clave not in CLAVES_EXTERNAS and clave not in CLAVES_DE_DURABILIDAD
-            and clave not in CLAVES_DE_CABEZAL
-            and clave not in CLAVES_DE_LICUEFACCION):
+            and clave not in CLAVES_DE_CABEZAL):
         raise DatoInvalidoError(
             "datos_externos", valor=clave,
             motivo=f"clave no reconocida en {donde}. Las admitidas son: "
@@ -1637,9 +1589,7 @@ def _exige_clave(clave: str, donde: str) -> None:
                    + ", ".join(CLAVES_DE_DURABILIDAD)
                    + "; y los datos del cabezal (dimensiones, suelo de "
                      "fundacion y FS declarado de E4/E5), opcionales: "
-                   + ", ".join(CLAVES_DE_CABEZAL)
-                   + "; y el resultado de licuefaccion del EMS: "
-                   + ", ".join(CLAVES_DE_LICUEFACCION),
+                   + ", ".join(CLAVES_DE_CABEZAL),
         )
 
 
@@ -1808,9 +1758,7 @@ class InformePunto:
     # los datos de expediente de V5 y V8 (el ancho declarado por debajo del
     # piso del DG-2018, la semilongitud tomada como L/2). Sale por `avisos()`.
     avisos_de_expediente: List[str] = field(default_factory=list)
-    # --- VE-5 (catlic) --- la Fase 0-bis del punto (`ML.evaluar_licuefaccion`):
-    # no aplica, o el resultado del EMS contrastado. Lo que falta es Bloqueo.
-    licuefaccion: Optional[Verificacion] = None    geometria: Optional[CompatibilidadGeometrica] = None
+    geometria: Optional[CompatibilidadGeometrica] = None
     cama_apoyo: Optional[Any] = None
     # --- T-5 --- La Fase 8 del conducto de la seccion aceptada: la clase, la
     # plancha o el perfil elegidos, el relleno maximo, los pasos de carga y
@@ -2016,9 +1964,6 @@ class InformePunto:
             avisos.append(
                 f"{v.codigo}: indicador disparado; el diseño no se detiene"
                 + (f" -- {explicacion}" if explicacion else ""))
-        # --- VE-5 (ficha T8-11) --- los datos de la Fase 6 que parecen mal
-        # transcritos, delante de lo que la fase calculo con ellos.
-        avisos.extend(self.avisos_de_transcripcion)
         # --- T-8 --- Los de la Fase 6: lo que no se pudo comparar o estimar
         # por falta de un dato del sitio, lo que la fuente no cubre, y donde
         # lo adoptado queda por debajo de lo que HEC-14 daria.
@@ -2044,10 +1989,6 @@ class InformePunto:
             avisos.extend(self.cabezal.avisos)
         # --- T-7b --- los de los datos de expediente de V5 y V8.
         avisos.extend(a for a in self.avisos_de_expediente if a not in avisos)
-        # --- VE-5 (catlic) --- los de la Fase 0-bis (zona 2; suelo que
-        # licua con mitigacion declarada).
-        if self.licuefaccion is not None:
-            avisos.extend(a for a in self.licuefaccion.avisos if a not in avisos)
         # --- verificacion de T-7 --- y los que una verificacion de la
         # seccion aceptada lleva consigo sin cambiar su veredicto
         # (`Verificacion.avisos`): la carga del evento extremo de V8 en la
@@ -2445,58 +2386,8 @@ def _piso_del_derecho_de_via() -> Tuple[Optional[float], str]:
             f"Tabla 304.09 del DG-2018, fila '{clase}', ancho minimo")
 
 
-def _caudal_del_evento_extremo(informe: InformePunto,
-                               hidrologia: Optional[EntradaHidrologica],
-                               ) -> Optional[DatoDeclarado]:
-    """
-    --- VE-5 (ficha T1-03) --- El caudal del evento extremo de V8 pedido a la
-    Fase 1-bis, cuando NO se declaro `Q_evento_extremo_m3s` (el declarado
-    gana y no se recalcula): la MISMA puerta que el caudal de diseño del
-    punto (`MH.caudal_de_diseno`, o la de la cuneta en la Familia B), con la
-    cuenca y la serie de la corrida y el periodo de retorno del criterio
-    'TR_evento_extremo'.
-
-    None, sin calcular nada, si falta alguna de las tres cosas: la familia no
-    tiene caudal hidrologico, la corrida no trae la cuenca de la obra o el TR
-    no esta declarado. El TR se lee SIN registrar el uso
-    (`ca.criterio_efectivo`): quien lo registra es V8 cuando corre, y a perfil
-    V8 se difiere. Si el calculo se detiene, None y un aviso de expediente
-    con el motivo: V8 pedira entonces el caudal declarado, con su nombre.
-    """
-    punto = informe.punto_de_calculo
-    if hidrologia is None or punto.familia not in FAMILIAS_CON_CAUDAL_HIDROLOGICO:
-        return None
-    cuenca = hidrologia.cuenca_de(punto.id)
-    TR = ca.criterio_efectivo(M5.CRITERIO_EVENTO_EXTREMO).valor
-    if cuenca is None or TR is None:
-        return None
-    calcular = (MH.caudal_de_aporte_cuneta if punto.familia is Familia.B
-                else MH.caudal_de_diseno)
-    try:
-        if punto.area_ha is not None:
-            MH.exigir_areas_coherentes(area_ha=punto.area_ha,
-                                       area_km2=cuenca.area_km2,
-                                       id_punto=punto.id,
-                                       origen_cuenca=cuenca.origen)
-        caudal = calcular(cuenca, hidrologia.estaciones[cuenca.estacion], TR)
-    except ErrorProyecto as exc:
-        informe.avisos_de_expediente.append(
-            f"V8 de {punto.id}: la Fase 1-bis no pudo calcular el caudal del "
-            f"evento extremo (TR = {TR:g} años) con la cuenca y la estacion "
-            f"de la corrida: {exc}")
-        return None
-    return DatoDeclarado(
-        nombre=CLAVE_Q_EVENTO_EXTREMO, valor=caudal.Q_m3s,
-        origen=(f"calculado por la Fase 1-bis con TR = {TR:g} años "
-                f"('{M5.CRITERIO_EVENTO_EXTREMO}'): {caudal.de_donde}; tc = "
-                f"{caudal.tc_min:.2f} min, I = {caudal.I_mm_h:.2f} mm/h, "
-                f"C = {caudal.C:.3f}, P24(TR) = {caudal.P24_TR_mm:.1f} mm"))
-
-
 def _datos_de_expediente(informe: InformePunto, externos: DatosExternos,
-                         S: Optional[float],
-                         hidrologia: Optional[EntradaHidrologica] = None,
-                         ) -> DatosDeExpediente:
+                         S: Optional[float]) -> DatosDeExpediente:
     """
     --- T-7b --- Lo que V5 y V8 necesitan del punto ademas del resultado
     hidraulico, armado UNA vez antes del bucle de MD (PUNTO 0):
@@ -2585,11 +2476,6 @@ def _datos_de_expediente(informe: InformePunto, externos: DatosExternos,
         remanso_aguas_arriba=M3.remanso_aguas_arriba)
 
     Q_ext = externos.dato(punto.id, CLAVE_Q_EVENTO_EXTREMO)
-    # --- VE-5 (ficha T1-03) --- Sin el declarado, el de la Fase 1-bis.
-    Q_calculado = (_caudal_del_evento_extremo(informe, hidrologia)
-                   if Q_ext is None else None)
-    if Q_calculado is not None:
-        Q_ext = Q_calculado
     TW_ext = externos.dato(punto.id, CLAVE_TW_EVENTO_EXTREMO)
     if calculada is not None and calculada.cota_borde_entrada is not None:
         cota_desborde = calculada.cota_borde_entrada
@@ -2655,8 +2541,6 @@ def _datos_de_expediente(informe: InformePunto, externos: DatosExternos,
         Q_m3s=None if Q_ext is None else Q_ext.valor,
         TW_m=None if TW_ext is None else TW_ext.valor,
         origen=("" if Q_ext is None else
-                f"`{CLAVE_Q_EVENTO_EXTREMO}`, {Q_ext.origen}"
-                if Q_calculado is not None else
                 f"`{CLAVE_Q_EVENTO_EXTREMO}`, dato externo: {Q_ext.origen}"),
         cota_desborde=cota_desborde, origen_cota_desborde=origen_cota,
         resolver=resolver if con_evento else None,
@@ -3224,29 +3108,6 @@ def _fase_hidrologia(informe: InformePunto, externos: DatosExternos,
     return True
 
 
-def _fase_licuefaccion(informe: InformePunto, externos: DatosExternos) -> None:
-    """
-    --- VE-5 (lote catlic) --- La Fase 0-bis del punto: AASHTO LRFD 10.5.4.2
-    decide si la evaluacion de licuefaccion es exigible y E.050 38.3 la pone
-    en el EMS (`ML.evaluar_licuefaccion`). Lo que falta --el resultado del
-    EMS, o la mitigacion de un suelo que licua-- es un `Bloqueo` del punto que
-    no deja cerrar el expediente.
-    """
-    punto = informe.punto
-    informe.licuefaccion = _etapa(
-        informe.bloqueos, FASE_LICUEFACCION, ML.ETAPA_LICUEFACCION,
-        lambda: ML.evaluar_licuefaccion(
-            id_punto=punto.id, NF_profundidad_m=punto.NF_profundidad_m,
-            declarada=externos.valor(punto.id, CLAVE_LICUEFACCION_EMS)))
-    # --- VE-5 (catlic, censo Sec. 5) --- la clase de sitio MEDIDA, si el EMS
-    # la declara, contra las filas de 'F_pga' (`ML.contrastar_clase_sitio`).
-    avisos_sitio = _etapa(informe.bloqueos, FASE_LICUEFACCION,
-                          ML.ETAPA_CLASE_SITIO, ML.contrastar_clase_sitio)
-    for aviso in avisos_sitio or ():
-        if aviso not in informe.avisos_de_expediente:
-            informe.avisos_de_expediente.append(aviso)
-
-
 def _fase_durabilidad(informe: InformePunto,
                       externos: DatosExternos) -> None:
     """
@@ -3274,8 +3135,7 @@ def _fase_durabilidad(informe: InformePunto,
 
 
 def _fase_diseno(informe: InformePunto, externos: DatosExternos,
-                 alcance: str = ALCANCE_EXPEDIENTE,
-                 hidrologia: Optional[EntradaHidrologica] = None) -> None:
+                 alcance: str = ALCANCE_EXPEDIENTE) -> None:
     """
     Fases 3-5: MD recorre materiales y diametros hasta que uno pase la Fase 5.
 
@@ -3311,7 +3171,7 @@ def _fase_diseno(informe: InformePunto, externos: DatosExternos,
     # evento extremo), armados una vez. A nivel de expediente la Fase 5 es
     # la de M5 completa, con ellos; a nivel de perfil, la del verificador
     # que difiere V5 y V8 mientras sigan sin poder evaluarse.
-    expediente = _datos_de_expediente(informe, externos, S, hidrologia)
+    expediente = _datos_de_expediente(informe, externos, S)
     if alcance == ALCANCE_PERFIL:
         verificar = _verificador_perfil(informe, expediente)
     else:
@@ -3398,23 +3258,7 @@ def _estabilidades(informe: InformePunto, entornos, bloqueos) -> list:
                 lambda e=entorno, c=condicion: ensamble_estabilidad(e, c))
             if resultado is not None:
                 estabilidades.append(resultado)
-                # --- VE-5 fixve4 --- una fila E4/E5 declarada que su
-                # criterio sin valor no deja decidir es un `Bloqueo` del
-                # punto (CriterioPendienteError), sin tumbar E1 a E3.
-                for codigo, clave in resultado.pendientes_por_criterio:
-                    _etapa(bloqueos, FASE_CABEZAL,
-                           etapa_de_global_declarada(entorno.extremo, codigo,
-                                                     condicion.value),
-                           lambda k=clave: ca.valor(k))
     return estabilidades
-
-
-def etapa_de_global_declarada(extremo: str, codigo: str,
-                              condicion: str) -> str:
-    """--- VE-5 fixve4 --- El rotulo del contraste del FS declarado de E4 o
-    E5 que espera un criterio (sin la palabra de las etapas E1-E3)."""
-    return (f"contraste del FS declarado de {codigo} del cabezal de "
-            f"{extremo}, condicion {condicion} (VE-4a)")
 
 
 def _fase_9(informe: InformePunto,
@@ -4490,14 +4334,6 @@ def correr_punto(punto: PuntoCritico, externos: DatosExternos,
     # tambien en el punto que no llega a dimensionarse.
     informe.acceso_mantenimiento = externos.dato(punto.id,
                                                  CLAVE_ACCESO_MANTENIMIENTO)
-    # --- VE-5 (ficha T8-11) --- Los techos de transcripcion de los datos de
-    # la Fase 6, por la misma razon: son datos del punto y no dependen de
-    # ninguna fase, de modo que se avisan tambien en el punto que no llega a
-    # dimensionarse. Por `_etapa`: un techo mal declarado es un `Bloqueo`.
-    informe.avisos_de_transcripcion = _etapa(
-        informe.bloqueos, FASE_PROTECCION, "techos de transcripcion",
-        lambda: avisos_de_transcripcion(
-            lambda clave: externos.valor(punto.id, clave))) or []
 
     if punto.familia is Familia.C:
         _declarar_alcance_familia_c(informe)
@@ -4512,20 +4348,8 @@ def correr_punto(punto: PuntoCritico, externos: DatosExternos,
     con_caudal = _fase_hidrologia(informe, externos, hidrologia)
     if clasificado:
         _fase_durabilidad(informe, externos)
-    # --- VE-5 (catlic) --- la Fase 0-bis, a expediente: no depende del
-    # dimensionado (el riesgo es del terreno de fundacion y del terraplen).
-    if clasificado and not _difiere(alcance, "ML_licuefaccion"):
-        _fase_licuefaccion(informe, externos)
-    elif clasificado:
-        informe.bloqueos.append(Bloqueo(
-            fase=FASE_LICUEFACCION,
-            etapa=(f"Fase 0-bis diferida al expediente (alcance "
-                   f"{ALCANCE_PERFIL})"),
-            tipo=TipoDeBloqueo.DIFERIDO_POR_ALCANCE,
-            mensaje=MENSAJE_LICUEFACCION_DIFERIDA,
-            diferido_por_alcance=True))
     if clasificado and con_caudal:
-        _fase_diseno(informe, externos, alcance, hidrologia)
+        _fase_diseno(informe, externos, alcance)
         _compuerta_metodo_h_o(informe, alcance)
         if informe.dimensionado:
             _fase_6(informe, externos)
