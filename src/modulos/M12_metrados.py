@@ -336,8 +336,9 @@ def renglones_conducto(*, material, seccion, celdas: int, espesor: float,
             nota_del_proyecto=(
                 "El marco no es una tuberia: el EG-2013 no tiene partida de "
                 "cajon y se construye bajo la Seccion 503 (num. 503.10 h)). "
-                "Su acero no se metra: el armado de la seccion del marco "
-                "esta fuera del alcance declarado. " + NOTA_SIN_DESPERDICIO))
+                "Su acero se metra aparte, con los armados del portico (VE-7, "
+                "`renglones_acero_portico`), cuando el portico se arma. "
+                + NOTA_SIN_DESPERDICIO))
         codigo, plantilla = PARTIDA_CONCRETO_EG2013
         return (RenglonDeMetrado(
             rubro=RUBRO_CONDUCTO, elemento="marco vaciado en sitio",
@@ -823,6 +824,105 @@ def renglones_acero_cabezales(*, cabezal) -> Tuple[RenglonDeMetrado, ...]:
     return tuple(renglones)
 
 
+# --- VE-7 lote B, B6 --- la etapa del servicio para el acero del portico.
+ETAPA_ACERO_PORTICO = "metrado del acero del portico del marco (EG-2013 504)"
+
+
+def renglones_acero_portico(*, portico, cabezal, S: float
+                            ) -> Tuple[RenglonDeMetrado, ...]:
+    """
+    --- VE-7 lote B, B6 (VE5-MET-01; decision del consultor Fable, triaje
+    VE-7, 2026-11-20) --- El acero de refuerzo del portico del marco (504.10,
+    504.A), con los armados de `DisenoPortico` por la longitud de metrado:
+
+        P = (1 + i) · Σ miembro, cara · (L_eje / s) · largo · w
+
+    L_eje es la longitud del barril a lo largo del eje y siguiendo la
+    pendiente (la del conducto, `renglones_conducto`); s y w, la barra que
+    el armado PROPONE para la cara y su peso de la Tabla 504-01; i,
+    'incremento_acero_por_despiece' [A] (anclajes, ganchos y empalmes), que
+    es la puerta: sin el, `CriterioPendienteError` como en el cabezal.
+
+    LECTURA DEL PROYECTO, en la nota del paso: cada cara de cada miembro
+    (losa de una celda, pared o tabique) lleva en todo su largo entre ejes
+    la barra de la seccion de ese miembro con MAS acero por metro (las
+    caras traccionadas con su armado, las demas con el minimo de 5.10.6,
+    `DisenoPortico.minimos`): la envolvente del miembro, del lado seguro. El
+    acero LONGITUDINAL del marco (el de distribucion, 9.7.3.2) no se metra:
+    el portico no lo diseña (`M8.DIFERIDO_PORTICO`).
+    """
+    from src.modulos import M8_estructural as M8     # perezoso, como M9
+    i = ca.valor(CRITERIO_INCREMENTO_ACERO)
+    L = cabezal.longitud_metrado
+    if L is None:
+        raise DatoFaltanteError(
+            "longitud_metrado", id_punto=cabezal.id_punto,
+            detalle="la Fase 9 no cerro la longitud entre cabezales: sin ella "
+                    "no hay barril en el que contar las barras del portico")
+    L_eje = L * math.sqrt(1 + S ** 2)
+    g = portico.geometria
+    largos = M8.largos_de_los_miembros(g)
+    miembro_de = M8.miembros_de_las_secciones(g)
+    caras = [(a.clave, a.barra) for a in portico.armados] + [
+        (f.posicion.split(":", 1)[0], f.barra) for f in portico.minimos]
+    por_cara: Dict[Tuple[str, str], object] = OrderedDict()
+    for clave, barra in caras:
+        sec, cara = clave.rsplit(".", 1)
+        if barra is None:
+            raise DatoFaltanteError(
+                "barra del armado", id_punto=cabezal.id_punto,
+                detalle=f"el armado del portico no propone barra para "
+                        f"«{clave}»: sin barra no hay peso que medir (504.10)")
+        if barra.designacion not in PESO_BARRA_KG_M_EG2013:
+            raise DatoInvalidoError(
+                "barra del armado", valor=barra.designacion,
+                id_punto=cabezal.id_punto,
+                motivo="la Tabla 504-01 del EG-2013 no tiene esa barra")
+        llave = (miembro_de[sec], cara)
+        actual = por_cara.get(llave)
+        if actual is None or barra.As_provisto > actual.As_provisto:
+            por_cara[llave] = barra
+    por_barra: Dict[str, float] = OrderedDict()
+    filas_sust = []
+    for (miembro, cara), b in por_cara.items():
+        w = PESO_BARRA_KG_M_EG2013[b.designacion]
+        largo = largos[miembro]
+        peso = (L_eje / b.espaciamiento) * largo * w
+        clave = f"Ø {b.designacion}\""
+        por_barra[clave] = por_barra.get(clave, 0.0) + peso
+        filas_sust.append(_m(
+            f"{miembro}.{cara}", peso, "kg",
+            f"{b.texto}: ({L_eje:.3f}/{b.espaciamiento:.3f})·{largo:.3f}·"
+            f"{w:.2f} kg/m"))
+    neto = sum(por_barra.values())
+    P = (1 + i) * neto
+    codigo, texto = PARTIDA_ACERO_EG2013
+    p = paso(
+        "F11.ACERO", codigo=f"{CODIGO_ACERO}.marco",
+        que="Metrado del acero de refuerzo del portico del marco",
+        formula="P = (1 + i)·Σ (L_eje/s)·largo·w",
+        formula_cita_id="EG2013.504.10",
+        sustitucion=(_m("L_eje", L_eje, "m", "longitud del barril a lo largo "
+                        "del eje y siguiendo la pendiente (11.1)"),)
+        + tuple(filas_sust) + (
+            _m("Σ", neto, "kg", "peso de las barras de las caras"),
+            _m("i", i, "", f"'{CRITERIO_INCREMENTO_ACERO}' [A]: anclajes, "
+               "ganchos y empalmes del despiece")),
+        resultado=_m("P", P, "kg", f"partida {codigo}"),
+        veredicto=_sin_veredicto("metrado: no se contrasta"),
+        citas_textuales=("EG2013.504.10", CITA_PESO_BARRA_EG2013),
+        nota_del_proyecto=(
+            "Lectura del proyecto: cada cara de cada miembro lleva en todo su "
+            "largo entre ejes la barra de su seccion con mas acero por metro "
+            "(envolvente del miembro); las caras sin traccion, el minimo de "
+            "5.10.6. El acero longitudinal (de distribucion) del marco no se "
+            "metra: el portico no lo diseña. " + NOTA_SIN_DESPERDICIO))
+    return (RenglonDeMetrado(
+        rubro=RUBRO_ACERO, elemento="portico del marco", partida=codigo,
+        descripcion=texto, unidad=UNIDAD_KG, cantidad=P, paso=p,
+        desglose=tuple((k, (1 + i) * v) for k, v in por_barra.items())),)
+
+
 def renglones_losa_entrega(*, cabezal) -> Tuple[RenglonDeMetrado, ...]:
     """
     El concreto de la losa de entrega y su dentellon (503.12), con la clase
@@ -978,7 +1078,9 @@ RENGLONES_NO_MEDIDOS: Dict[str, Tuple[str, str]] = OrderedDict((
     (NO_MEDIDO_CAMA, (
         "el espesor y el ancho de la cama de la seccion tipica del plano",
         "la excavacion baja hasta el fondo de la cama (506.07, 508.05), pero "
-        "el material de la cama no tiene renglon propio en este programa")),
+        "la cama no tiene renglon propio en el cuadro: en la tuberia la nota "
+        "del paso 11.1 la deja en la partida del tubo, y en el marco no se "
+        "mide")),
     (NO_MEDIDO_EMBOQUILLADO, (
         "la geometria del zampeado y del dentellon de la entrada (planos del "
         "expediente; ficha T8-03)",

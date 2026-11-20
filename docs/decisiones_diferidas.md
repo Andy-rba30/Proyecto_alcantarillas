@@ -9398,3 +9398,21 @@ cambios están aplicados en estas fichas.
   existir en la geometría del programa (T5-07). Con el canto declarado la corrida se repite entera.
 - **Qué haría falta:** separar los cantos en M2/M5/M7.
 - **Dónde vive:** `src/modulos/M8_estructural.py::exigir_canto_del_portico`
+
+## VE7B-12 · El acero del pórtico del marco se metra con sus armados (VE5-MET-01)
+
+- **Cerrado (VE-7 lote B, B6):** `M12.renglones_acero_portico` mide el acero del pórtico (504.10,
+  partida 504.A) con los armados de `DisenoPortico` (las caras traccionadas y, desde B4, las de
+  mínimo) por la longitud de metrado del barril a lo largo del eje (la del conducto, 11.1): P = (1 +
+  i)·Σ (L_eje/s)·largo·w, con w de la Tabla 504-01 (`EG2013.504.01#PESOS`) e i de
+  `incremento_acero_por_despiece`, que es la puerta (`CriterioPendienteError` sin él, como en el
+  cabezal). Lectura del proyecto, en la nota del paso: cada cara de cada miembro lleva en todo su
+  largo entre ejes la barra de su sección con más acero (`M8.largos_de_los_miembros`,
+  `M8.miembros_de_las_secciones`). `servicio._fase_11_metrados` pasa `estructural.portico` (cambio
+  mínimo) y el aviso «el acero del marco no se metra» sólo sale sin pórtico.
+- **Decisión del consultor Fable (triaje VE-7, 2026-11-20):** armados × longitud de metrado, Tabla
+  504-01, tras la puerta del incremento.
+- **Abierto:** el acero longitudinal (de distribución, 9.7.3.2) del marco no se diseña ni se metra;
+  la envolvente por miembro es del lado seguro y no el despiece del plano.
+- **Qué haría falta:** el refuerzo de distribución del pórtico y el despiece declarado.
+- **Dónde vive:** `src/modulos/M12_metrados.py::renglones_acero_portico`

@@ -221,3 +221,62 @@ def test_b5_el_canto_anterior_de_la_grilla_no_cierra(a01):
     assert "no se adopta" in paso.que
     # el portico que se devuelve es el de 0.20 m: no se auto-adopta
     assert d.geometria.t_pared_m == pytest.approx(t0, rel=REL_TRANSPORTE)
+
+
+# ===========================================================================
+# B6: el acero del portico, metrado (VE5-MET-01)
+# ===========================================================================
+
+def test_b6_el_acero_del_portico_a_mano():
+    """
+    El portico de prueba (una celda de 2.0 x 1.5 m, t = 0.20 m): las losas
+    miden B + t = 2.20 m entre ejes y las paredes H + t = 1.70 m. Cada cara
+    de cada miembro lleva la barra de mayor acero por metro de sus
+    secciones; P = (1 + i)·Σ (L_eje/s)·largo·w con w de la Tabla 504-01 y
+    L_eje = L·sqrt(1 + S^2).
+    """
+    from types import SimpleNamespace
+    from src.constantes_normativas import PESO_BARRA_KG_M_EG2013
+    from src.modulos import M12_metrados as M12
+    from tests.apoyo.criterios import declarados
+    from tests.fixtures.casos_patron import CP_FASE_8_ESTRUCTURAL as CP
+    d = _disenar(CP["punto_A01"]())
+    largo_a_mano = {"losa_superior_1": 2.20, "losa_inferior_1": 2.20,
+                    "pared_0": 1.70, "pared_1": 1.70}
+    L, S, i = 10.0, 0.01, 0.10
+    L_eje = L * math.sqrt(1 + S ** 2)
+    mejor = {}
+    for clave, barra in ([(a.clave, a.barra) for a in d.armados]
+                         + [(f.posicion.split(":", 1)[0], f.barra)
+                            for f in d.minimos]):
+        sec, cara = clave.rsplit(".", 1)
+        miembro = next(m for m in largo_a_mano if sec.startswith(m + "_"))
+        if (miembro, cara) not in mejor or \
+                barra.As_provisto > mejor[(miembro, cara)].As_provisto:
+            mejor[(miembro, cara)] = barra
+    assert len(mejor) == 8                       # 4 miembros x 2 caras
+    neto = sum((L_eje / b.espaciamiento) * largo_a_mano[m]
+               * PESO_BARRA_KG_M_EG2013[b.designacion]
+               for (m, _c), b in mejor.items())
+    cabezal = SimpleNamespace(longitud_metrado=L, id_punto="A-01")
+    with declarados(dict(DECLARACIONES_CAJON,
+                         incremento_acero_por_despiece=i)):
+        (r,) = M12.renglones_acero_portico(portico=d, cabezal=cabezal, S=S)
+    assert r.partida == "504.A" and r.unidad == "kg"
+    assert r.cantidad == pytest.approx((1 + i) * neto, rel=REL_CONVERSION)
+    assert {"EG2013.504.10", "EG2013.504.01#PESOS"} <= set(
+        r.paso.citas_textuales)
+
+
+def test_b6_sin_el_incremento_el_acero_del_portico_se_detiene():
+    from types import SimpleNamespace
+    from src.modelos import CriterioPendienteError
+    from src.modulos import M12_metrados as M12
+    from tests.apoyo.criterios import sin_valor
+    from tests.fixtures.casos_patron import CP_FASE_8_ESTRUCTURAL as CP
+    d = _disenar(CP["punto_A01"]())
+    with sin_valor("incremento_acero_por_despiece"):
+        with pytest.raises(CriterioPendienteError):
+            M12.renglones_acero_portico(
+                portico=d, cabezal=SimpleNamespace(longitud_metrado=10.0,
+                                                   id_punto="A-01"), S=0.01)

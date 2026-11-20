@@ -4940,6 +4940,11 @@ def _fase_11_metrados(informe: InformePunto) -> None:
                lambda: M12.renglones_proteccion_salida(
                    proteccion=informe.proteccion, seccion=seccion,
                    celdas=celdas))
+    # --- VE-7 lote B, B6 --- el acero del portico del marco, si se armo.
+    portico = getattr(informe.estructural, "portico", None)
+    if portico is not None:
+        _rubro(M12.ETAPA_ACERO_PORTICO, lambda: M12.renglones_acero_portico(
+            portico=portico, cabezal=c, S=g.S_conducto))
     # --- VE-7 lote B, B7 --- lo que no se metra, renglon por renglon.
     for elemento in M12.RENGLONES_NO_MEDIDOS:
         if elemento == M12.NO_MEDIDO_EMBOQUILLADO and \
@@ -4949,7 +4954,7 @@ def _fase_11_metrados(informe: InformePunto) -> None:
                lambda e=elemento: M12.renglon_no_medido(
                    e, id_punto=informe.punto.id))
     avisos: List[str] = []
-    if material.forma is FormaSeccion.RECTANGULAR:
+    if material.forma is FormaSeccion.RECTANGULAR and portico is None:
         avisos.append(AVISO_ACERO_DEL_MARCO)
     for renglon in renglones:
         avisos.extend(a for a in renglon.avisos if a not in avisos)

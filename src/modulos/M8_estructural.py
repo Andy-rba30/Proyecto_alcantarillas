@@ -3994,6 +3994,21 @@ def secciones_del_portico(g: GeometriaPortico):
     return tuple(secciones)
 
 
+def largos_de_los_miembros(g: GeometriaPortico) -> dict:
+    """
+    --- VE-7 lote B, B6 --- {miembro: largo entre ejes, m} de las losas, las
+    paredes y los tabiques del portico (`_miembros_del_portico`). Lo lee el
+    metrado del acero del portico (`M12.renglones_acero_portico`).
+    """
+    return {m.nombre: m.L for m in _miembros_del_portico(g)}
+
+
+def miembros_de_las_secciones(g: GeometriaPortico) -> dict:
+    """--- VE-7 lote B, B6 --- {seccion de diseño: miembro al que pertenece}."""
+    return {nombre: miembro
+            for (nombre, miembro, *_r) in secciones_del_portico(g)}
+
+
 def _esfuerzos(res, secciones) -> dict:
     """{seccion: (M, |V|, N de compresion)} de un resultado del modelo."""
     salida = {}
