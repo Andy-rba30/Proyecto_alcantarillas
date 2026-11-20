@@ -482,6 +482,21 @@ CONSTANTES_SI: Dict[str, ConstanteSI] = {
              "s/ft^0.5 = 1.8112 s/m^0.5. La nombra el paso 4.3b cuando el TW "
              "queda bajo el critico bajo control de salida (el borde de "
              "HEC-14)."),
+    # --- VE-5 fixve4 --- La conversion a SI del coeficiente del desborde de
+    # la plataforma (HDS-5 num. 3.1.5): Q_o = C_d·L·HW_r^1.5 con el C_r de la
+    # Figura 3.11 leido como numero; el factor lleva la dimension de C_d.
+    "K_CD_DESBORDE_SI": ConstanteSI(
+        dimension=L ** F(1, 2) / T,
+        formula="c * v['C_r'] * v['L'] * v['HW_r'] ** F(3, 2)",
+        simbolos={"C_r": ADIM, "L": L, "HW_r": L},
+        cierra_a=L ** 3 / T,
+        imperial_en_comentario=r"Imperial:\s*([0-9.]+)",
+        huella_en_los_pasos=r"K_CD_DESBORDE_SI|C_d \(SI\)",
+        cierra_desde_el_comentario=True,
+        la_nombra_algun_paso=False,
+        nota="1.0 ft^0.5/s = 0.3048^0.5 = 0.5521 m^0.5/s, que la fuente "
+             "imprime como 0.552. La nombra V8 (el desborde admitido), que "
+             "el piloto M3-M5 no ejercita."),
 }
 
 

@@ -483,8 +483,17 @@ def test_hec14_la_cita_T8_y_wsdot_las_tiene_desde_t4():
     assert de_ve5_m45 == {"HEC14.6.2#MOMENTUM", "HEC14.6.2.2#LLENO",
                           "HEC14.6.2.2#FROUDE", "HEC14.6#V_TRAS_RESALTO",
                           "HEC14.6.3#PENDIENTE"}
+    # VE-4g y el lote m6 de VE-5 suman las de la poza de enrocado (Sec. 10.1),
+    # la Figura 10.3 y la Ec. 10.6 (Sec. 10.3) y la caida recta del Cap. 11,
+    # firmadas por su propia sesion («validacion/VE-4g»). Se amplia
+    # declarandolo, por prefijo de seccion: son las que la Fase 6 usa.
+    de_ve4g = {c.id for c in hec14 if "VE-4g" in c.verificado.por}
+    assert de_ve4g and all(c.split("#")[0] in {
+        "HEC14.1", "HEC14.10.1", "HEC14.10.1.1", "HEC14.10.1.2",
+        "HEC14.10.1.3", "HEC14.10.1.4", "HEC14.10.1.5", "HEC14.10.3",
+        "HEC14.11.1.3"} for c in de_ve4g), sorted(de_ve4g)
     assert all("T-8" in c.verificado.por for c in hec14
-               if c.id not in de_ve2 | de_t8_08 | de_ve5_m45)
+               if c.id not in de_ve2 | de_t8_08 | de_ve5_m45 | de_ve4g)
     assert {"WSDOT_HM.2-6.3#TC_MINIMO", "WSDOT_HM.2-6.2#T2-2",
             "WSDOT_HM.2-6.2#FRECUENCIA"} <= {c.id for c in reg.citas_de("WSDOT_HM")}
 
