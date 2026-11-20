@@ -158,6 +158,7 @@ si no se declara:
 | `seccion_cauce_aproximacion` | no | objeto | — | A, B | nada a nivel de perfil; a expediente, con `remanso_derecho_via` declarado, V5 se detiene |
 | `longitud_cresta_desborde_m` | no | número | — | las tres | nada a nivel de perfil; a expediente, con `umbral_no_colapso_evento_extremo` declarado, V8 se detiene |
 | `desnivel_perfil_canal_m` | no | número | — | C | el pre-vuelo la lista como falta |
+| `arrastre_de_solidos` | no | booleano | — | las tres | es opcional: sin ella no se afirma nada |
 <!-- fin: externos -->
 
 «Por otra vía» quiere decir: `longitud_m` la calcula la Fase 7.B con las
@@ -284,6 +285,8 @@ declara:
 | `distancia_borde_calzada_al_trasdos_m` | float | expediente | sí | — |
 | `carriles_por_sentido` | int | perfil | sí | — |
 | `clase_de_via` | str | perfil | sí | — |
+| `region_natural` | categoria | perfil | sí | `costa`, `sierra`, `selva_alta`, `selva_baja` |
+| `zona_sismica_aashto` | int | expediente | sí | — |
 | `existe_informacion_secundaria_tramo` | categoria | perfil | sí | `si`, `no` |
 <!-- fin: sitio -->
 
@@ -335,7 +338,7 @@ Puntos dimensionados    : 4
 Verificaciones incumplidas: 1
 Verificaciones con aviso: 1
 Etapas bloqueadas       : 0
-Diferidas por alcance   : 13 (ver ALCANCE DE LA CORRIDA; no cuentan para el cierre)
+Diferidas por alcance   : 17 (ver ALCANCE DE LA CORRIDA; no cuentan para el cierre)
 Expediente cerrado      : no
 ```
 
@@ -386,6 +389,8 @@ dentro de la que se elige. La tabla sale de esas fichas:
 | Criterio | Etiqueta | Forma | Ventana |
 |---|---|---|---|
 | `TW_receptor` | [A] | `float` | m >= 0 sobre el fondo de la salida; 0 es salida libre |
+| `carga_viva_tubo_concreto_somero` | [A] | `categoria` | una de: `largo_del_neumatico`, `e_span_a_un_pie` |
+| `factores_idf_regional` | [S] | `dict_con_campos` | sin ventana: lo da el ensayo (ajuste de la relacion I = K·T^m / t^n a las curvas IDF de la zona del corredor), con su trazabilidad (estudio, estacion o region, rango de duraciones y de periodos de retorno del ajuste, y unidades) |
 | `homogeneidad_serie_fen` | [A] | `categoria` | una de: `serie_completa`, `serie_sin_fen`, `dos_poblaciones` |
 | `margen_estacional_nf_v7_m` | [A] | `float` | m >= 0 |
 | `peso_especifico_saturado_relleno_kn_m3` | [S] | `float` | sin ventana: lo da el ensayo (peso especifico saturado del relleno compactado del trasdos), con su trazabilidad (cantera, ensayo, grado de compactacion y laboratorio) |
@@ -436,6 +441,8 @@ elegir):
 
 ```text id=ejemplos_declarar
 --declarar TW_receptor=0.0
+--declarar carga_viva_tubo_concreto_somero=largo_del_neumatico
+--declarar 'factores_idf_regional={"K": 120.0, "m": 0.2, "n": 0.6}'
 --declarar homogeneidad_serie_fen=serie_completa
 --declarar margen_estacional_nf_v7_m=0.0
 --declarar peso_especifico_saturado_relleno_kn_m3=20.0
@@ -447,7 +454,10 @@ comillas porque lleva corchetes; una **fila de tabla** por su clave, tal como
 la pestaña 2 de la ventana la lista (la fila trae consigo los números de la
 tabla, y por eso lo que se declara es la clave y no el coeficiente); una
 `categoria` por una de sus opciones cerradas; y un `str` libre entre comillas
-si lleva espacios. Los del cajón se declaran igual: por ejemplo,
+si lleva espacios; un `dict_con_campos` como diccionario entre comillas
+(`factores_idf_regional` lleva K, m y n de la ecuación 17 del Manual de
+Hidrología: los del ejemplo son de prueba, los reales los da el estudio
+regional). Los del cajón se declaran igual: por ejemplo,
 `--declarar embocadura_cajon=cajon_concreto_aletas_90_15` con
 `--declarar ke_entrada_cajon=cajon_sin_aletas_escuadra_3` prueba el cabezal
 recto en lugar de las aletas (la carga de C-01 sube de 0.589 a 0.629 m), y
@@ -483,7 +493,7 @@ Puntos dimensionados    : 4
 Verificaciones incumplidas: 1
 Verificaciones con aviso: 1
 Etapas bloqueadas       : 0
-Diferidas por alcance   : 13 (ver ALCANCE DE LA CORRIDA; no cuentan para el cierre)
+Diferidas por alcance   : 17 (ver ALCANCE DE LA CORRIDA; no cuentan para el cierre)
 Expediente cerrado      : no
 ```
 
@@ -573,8 +583,8 @@ corrida usó, no el estado del proceso al exportar.
   por punto, con estas columnas (`M11.COLUMNAS_RESUMEN_CSV`):
 
   <!-- generado: csv_resumen -->
-  `id`, `progresiva`, `familia`, `TR_anios`, `tipo_hidraulico`, `material`, `norma_producto`, `seccion`, `V_erosion_ms`, `V_sedimentacion_ms`, `y_sobre_D`, `HW_m`, `control_gobernante`, `proteccion_d50_m`, `proteccion_espesor_m`, `proteccion_longitud_m`, `tipo_cabezal`
-  <!-- fin: csv_resumen -->
+`id`, `progresiva`, `familia`, `TR_anios`, `tipo_hidraulico`, `material`, `norma_producto`, `seccion`, `V_erosion_ms`, `V_sedimentacion_ms`, `y_sobre_D`, `HW_m`, `control_gobernante`, `proteccion_d50_m`, `proteccion_espesor_m`, `proteccion_longitud_m`, `tipo_cabezal`
+<!-- fin: csv_resumen -->
 
 - **Sesión.** La escribe la ventana (`python -m gui.app`, botón «Guardar
   sesion»): un JSON con el proyecto, las rutas del CSV, del JSON externo, del
@@ -584,8 +594,8 @@ corrida usó, no el estado del proceso al exportar.
   claves (`sesion.sesion_vacia`):
 
   <!-- generado: sesion -->
-  Formato 4: `formato_version`, `app_version`, `id`, `proyecto`, `csv`, `datos_externos`, `datos_sitio`, `cuencas`, `estacion`, `externos`, `alcance`, `criterios`, `sitio`, `csv_sha1`, `corridas`.
-  <!-- fin: sesion -->
+Formato 4: `formato_version`, `app_version`, `id`, `proyecto`, `csv`, `datos_externos`, `datos_sitio`, `cuencas`, `estacion`, `externos`, `alcance`, `criterios`, `sitio`, `csv_sha1`, `corridas`.
+<!-- fin: sesion -->
 
   La CLI la **lee** con `--sesion` y repone todo por el mismo camino con
   guardia que «Cargar sesion»; una bandera escrita gana a lo que la sesión
