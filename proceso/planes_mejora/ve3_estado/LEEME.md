@@ -3,6 +3,24 @@
 Material de proceso, no del entregable. Lo mantiene la sesión orquestadora y se actualiza
 cada vez que se integra algo. Fecha de esta versión: 2026-11-20.
 
+> **ESTADO (2026-11-20, ~08:30 UTC, sesión `claude/keen-cray-rhxzmg`).** La sesión
+> `claude/cool-euler-tpoj7o` se cortó (~06:36 UTC; las sesiones hijas de VE-5 no dejaron ramas
+> salvo `claude/ve5-gui`). Esta sesión retoma en `claude/keen-cray-rhxzmg`:
+>
+> - **Integrado aquí:** `cool-euler` entero; VE-4a, VE-4b, VE-4c, VE-4d y VE-4e (merges con los
+>   censos reconciliados en `70226de`: criterios 158, `CLAVES_EXTERNAS` 28, el mapa de métodos de
+>   V5/V8 en tuplas); VE5-GUI `67a58c0` (ítems 37 y 42). 643 tests de las áreas tocadas en verde.
+> - **En curso (worktrees en `/home/user/wt/<lote>`, ramas locales `claude/ve5-<lote>`; si la
+>   sesión se corta, esos commits se pierden con el contenedor — retomar desde el censo):**
+>   m8 (VE-4f desde `3f1433e` → ítem 1 pórtico → 23 → 26), m6 (VE-4g desde `d6849e9` → ítem 2 y
+>   caída del Cap. 11), m9 (muro que no cede → 4 → 3 → 9 → 10 → 28 → 29 → 34 → T7A-03), mh (12, 14,
+>   13, 11), m45 (17, 18, 19, 24), catlic (20, 21, 6, clase de sitio), gui (38, 40, 39, 46, 43, 44,
+>   49, 45, 47, 48), met (8). Revisión Fable independiente de VE-4a…e en curso.
+> - **Después:** integrar los lotes, regenerar documentos y línea base, suite completa en clon
+>   limpio y exportación, sellos, bitácora y `main` (autorizado por el dueño cuando la suite pase).
+> - Entorno: el «Default» no deja PyPI; se creó el entorno personal «Proyecto_alcantarillas» con
+>   registros de paquetes.
+
 > **ESTADO (2026-11-20, sesión `claude/jolly-clarke-qojnbj` trabajando sobre la rama
 > `claude/cool-euler-tpoj7o`).** Retoma desde `ba63b8a` (VE-3.15 y VE-3.16 hechos, sellos
 > PROVISIONAL). Decisiones del dueño en el chat de esta sesión (2026-11-20): **seguir las
