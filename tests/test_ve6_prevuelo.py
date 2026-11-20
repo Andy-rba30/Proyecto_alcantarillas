@@ -75,13 +75,15 @@ def test_la_relacion_es_la_que_test_nivel_medido_usa_para_los_criterios():
 
 def test_la_licuefaccion_no_es_el_motivo_del_cuadro_de_compatibilidad():
     """
-    A expediente el juego no declara `licuefaccion_ems` y cada punto lleva
-    el bloqueo de la Fase 0-bis, el primero de su lista. B-01 de la variante
+    A expediente, sin `licuefaccion_ems` declarado, cada punto lleva el
+    bloqueo de la Fase 0-bis, el primero de su lista. (Desde VE-7 fix-suite
+    el juego SI lo declara; el test lo quita: lo que mide es la falta.) B-01 de la variante
     de referencia se detiene en el bucle de MD por `Q_evento_extremo_m3s`:
     la fila del cuadro dice esa fase, no la 0-bis, y las dos faltas estan.
     """
-    informe = V.correr_juego(V.aplicar(V.juego_completo(),
-                                       J.VARIANTES[V.VARIANTE_DE_REFERENCIA][1]))
+    informe = V.correr_juego(V.aplicar(
+        V.juego_completo(),
+        tuple(J.VARIANTES[V.VARIANTE_DE_REFERENCIA][1]) + (_SIN_EMS,)))
     b01 = next(p for p in informe.puntos if p.punto.id == "B-01")
     faltan = {(b.fase, b.campo) for b in b01.bloqueos
               if b.tipo is TipoDeBloqueo.DATO_FALTANTE}
@@ -109,6 +111,16 @@ _DEFECTO_SIN_TAMIZADO = "el punto no llego a 7.A con una seccion adoptada"
 @pytest.fixture(scope="module")
 def juego_expediente():
     return V.correr_juego(V.juego_completo())
+
+
+# --- VE-7 fix-suite --- el juego declara `licuefaccion_ems` (global); lo que
+# depende de la Fase 0-bis ABIERTA se mide quitandolo.
+_SIN_EMS = ("externo", "globales", servicio.CLAVE_LICUEFACCION_EMS, None)
+
+
+@pytest.fixture(scope="module")
+def juego_expediente_sin_ems():
+    return V.correr_juego(V.aplicar(V.juego_completo(), (_SIN_EMS,)))
 
 
 def _bloqueo(fase, etapa):
@@ -233,11 +245,11 @@ def test_sin_cabezal_con_bloqueo_de_la_fase_9_remite_a_el(juego_expediente):
 # --- 5: la cimentacion del cabezal es provisional con la 0-bis abierta -----
 
 def test_con_la_0bis_abierta_la_cimentacion_del_cabezal_es_provisional(
-        juego_expediente):
-    for p in juego_expediente.puntos:
+        juego_expediente_sin_ems):
+    for p in juego_expediente_sin_ems.puntos:
         abierta = any(b.fase == servicio.FASE_LICUEFACCION
                       and not b.diferido_por_alcance for b in p.bloqueos)
-        assert abierta, p.punto.id          # el juego no declara el EMS
+        assert abierta, p.punto.id          # sin el EMS declarado
         assert servicio.AVISO_CIMENTACION_PROVISIONAL in p.avisos_de_expediente
     assert "10.5.4.2" in servicio.AVISO_CIMENTACION_PROVISIONAL
 
