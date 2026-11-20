@@ -748,10 +748,16 @@ def test_e14_no_hay_falsos_iguales_en_bloqueos_iteraciones_ni_listas_de_estado()
     if punto["bloqueos"][0].get("delta_rasante_m") is not None:
         assert not _mutado(lambda b: b["puntos"][i]["bloqueos"][0].update(
             delta_rasante_m=b["puntos"][i]["bloqueos"][0]["delta_rasante_m"] + 0.75)).iguales
-    con_iteraciones = next(p for p in a["puntos"] if p["iteraciones"])
-    j = a["puntos"].index(con_iteraciones)
+    # --- VE-7 (B12) --- la rama de error ya no itera: la progresion
+    # declarada invalida se rechaza ANTES del bucle de MD, de modo que el
+    # contenido de una iteracion se muta en la corrida ancha, que si itera.
+    ancho = _json("informe_perfil_ancho.json")
+    con_iteraciones = next(p for p in ancho["puntos"] if p["iteraciones"])
+    j = ancho["puntos"].index(con_iteraciones)
     campo = next(k for k, v in con_iteraciones["iteraciones"][0].items() if isinstance(v, str))
-    assert not _mutado(lambda b: b["puntos"][j]["iteraciones"][0].update({campo: "otro"})).iguales
+    otro = json.loads(json.dumps(ancho))
+    otro["puntos"][j]["iteraciones"][0].update({campo: "otro"})
+    assert not comp.comparar(ancho, otro).iguales
     con_verif = next(p for p in a["puntos"] if p["verificaciones"])
     k = a["puntos"].index(con_verif)
     assert not _mutado(lambda b: b["puntos"][k]["verificaciones"][0].update(numeral="9.9")).iguales
