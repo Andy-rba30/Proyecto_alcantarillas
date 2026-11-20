@@ -550,6 +550,21 @@ CAMPOS_EXTERNOS = (
      "Fila de la Tabla N 02: 'quebrada_importante' o 'quebrada_menor'\n"
      "(Sec. 2.2). Sin ella la Familia A se detiene en el umbral de area.\n"
      "Equivale a la bandera --categoria-tr de la linea de comandos.", ""),
+    # --- VE-5 (ficha T6-04) --- los tres que solo entraban por el JSON.
+    ("S_conducto", "Pendiente del conducto:",
+     "Pendiente del barril, en m/m (no en %). Admite 0 (barril horizontal).\n"
+     "Si no se declara rige la del cauce (columna S_cauce del CSV).\n"
+     "Equivale a la bandera --s-conducto de la linea de comandos.", "[m/m]"),
+    ("bombeo", "Bombeo de la plataforma:",
+     "Pendiente transversal de la plataforma EN TANGENTE, en m/m\n"
+     "(DG-2018 304.05): baja los dos bordes y acorta la longitud por\n"
+     "extremo de 7.B. Excluyente con el peralte; 0 = sin bombeo.\n"
+     "Equivale a la bandera --bombeo de la linea de comandos.", "[m/m]"),
+    ("peralte", "Peralte de la plataforma:",
+     "Pendiente transversal de la plataforma EN CURVA, en m/m y con\n"
+     "signo (DG-2018 304.06): gira la plataforma sobre el eje y mueve la\n"
+     "altura de terraplen de cada extremo. Excluyente con el bombeo.\n"
+     "Equivale a la bandera --peralte de la linea de comandos.", "[m/m]"),
 )
 
 # LAS CUATRO VISTAS, con el titulo y el subtitulo que encabezan cada pestaña
@@ -1610,9 +1625,16 @@ class ExpedienteApp:
         columnas = ttk.PanedWindow(p, orient="horizontal")
         columnas.grid(row=1, column=0, sticky="nsew", padx=14, pady=(0, 12))
         izquierda = ttk.Frame(columnas, style="Fondo.TFrame")
-        derecha = ttk.Frame(columnas, style="Fondo.TFrame")
+        # LA COLUMNA DERECHA SE DESPLAZA (VE-5, ficha UI3-01): con el editor
+        # de un criterio de tabla, el detalle y el panel de declaracion piden
+        # mas alto que la ventana, y en la geometria por defecto «Aplicar»,
+        # «Quitar», «Barrido…» y «Guardar en archivo fuente» quedaban fuera de
+        # la vista sin forma de llegar a ellos. Es el `MarcoScroll` de las
+        # pestañas 1 y 4, sin su margen: los paneles traen el suyo.
+        self.columna_declarar = MarcoScroll(columnas, relleno=0)
+        derecha = self.columna_declarar.interior
         columnas.add(izquierda, weight=1)
-        columnas.add(derecha, weight=1)
+        columnas.add(self.columna_declarar, weight=1)
         comp.repartir_al_mostrar(columnas)
 
         panel_filtro = Panel(izquierda, "Filtro y recuento")
@@ -3036,7 +3058,10 @@ class ExpedienteApp:
         panel_exportacion = Panel(p, "Exportacion")
         panel_exportacion.pack(fill="x", pady=(0, 10))
         p = panel_exportacion.interior
-        f_exp = ttk.Frame(p)
+        # CADA FILA SE PARTE SOLA si no cabe (VE-5, ficha UI4-01): a 900 px
+        # --- el ancho minimo --- «Exportar memoria (PDF)» salia cortado, y
+        # el ancho de un boton depende de la tipografia de la pantalla.
+        f_exp = comp.FilaFluida(p)
         f_exp.pack(fill="x")
 
         # LOS EXPORTADORES NACEN APAGADOS Y DICIENDO POR QUE. El motivo es siempre
@@ -3048,7 +3073,7 @@ class ExpedienteApp:
             f_exp, "Exportar JSON", fondo=comp.VERDE,
             command=self.exportar_json, motivo=MOTIVO_SIN_CORRIDA,
             ayuda="El informe completo de la corrida en JSON.")
-        self.btn_json.pack(side="left", padx=(0, 8), ipadx=8, ipady=4)
+        f_exp.agregar(self.btn_json.boton, ipadx=8, ipady=4)
 
         self.btn_html = BotonAccion(
             f_exp, "Exportar memoria (HTML)", fondo=comp.AZUL,
@@ -3056,33 +3081,33 @@ class ExpedienteApp:
             command=self.exportar_html, motivo=MOTIVO_SIN_CORRIDA,
             ayuda="La memoria de calculo (M11) con la plantilla que\n"
                   "corresponde al alcance de la corrida.")
-        self.btn_html.pack(side="left", padx=8, ipadx=8, ipady=4)
+        f_exp.agregar(self.btn_html.boton, ipadx=8, ipady=4)
 
         self.btn_pdf = BotonAccion(
             f_exp, "Exportar memoria (PDF)", fondo=comp.AZUL_OSCURO,
             command=self.exportar_pdf, motivo=MOTIVO_SIN_CORRIDA,
             ayuda=self._ayuda_del_pdf())
-        self.btn_pdf.pack(side="left", padx=8, ipadx=8, ipady=4)
+        f_exp.agregar(self.btn_pdf.boton, ipadx=8, ipady=4)
 
         # LA MEMORIA RESUMIDA (UI-2, ficha T12-04): la vista para imprimir
         # del entregable (T-12), del MISMO informe que la completa --- mismas
         # huellas y misma hora de corrida en su encabezado de trazabilidad ---.
         # Una segunda fila; el contrato es el de los demas exportadores
         # (`BOTONES_DE_EXPORTACION`).
-        f_exp_resumida = ttk.Frame(p)
+        f_exp_resumida = comp.FilaFluida(p)
         f_exp_resumida.pack(fill="x", pady=(8, 0))
         self.btn_html_resumida = BotonAccion(
             f_exp_resumida, "Memoria resumida (HTML)", fondo=comp.AZUL,
             activebackground=comp.AZUL_OSCURO, activeforeground="white",
             command=self.exportar_html_resumida, motivo=MOTIVO_SIN_CORRIDA,
             ayuda=AYUDA_HTML_RESUMIDA)
-        self.btn_html_resumida.pack(side="left", padx=(0, 8), ipadx=8, ipady=4)
+        f_exp_resumida.agregar(self.btn_html_resumida.boton, ipadx=8, ipady=4)
 
         self.btn_pdf_resumida = BotonAccion(
             f_exp_resumida, "Memoria resumida (PDF)", fondo=comp.AZUL_OSCURO,
             command=self.exportar_pdf_resumida, motivo=MOTIVO_SIN_CORRIDA,
             ayuda=self._ayuda_del_pdf(vista=expdf.VISTA_RESUMIDA))
-        self.btn_pdf_resumida.pack(side="left", padx=8, ipadx=8, ipady=4)
+        f_exp_resumida.agregar(self.btn_pdf_resumida.boton, ipadx=8, ipady=4)
 
         # EL CUADRO RESUMEN Y LA COMPARACION, EN UNA TERCERA FILA (UI-4, ficha
         # UI2-01 abierto (c)): en la primera, con los tres de la memoria
@@ -3090,14 +3115,14 @@ class ExpedienteApp:
         # px «Exportar cuadro resumen (CSV)» salia cortado y «Comparar con
         # otro JSON...» fuera de la vista; medido en el recorrido de UI-4).
         # Las filas son la memoria completa, la resumida y los datos.
-        f_exp_datos = ttk.Frame(p)
+        f_exp_datos = comp.FilaFluida(p)
         f_exp_datos.pack(fill="x", pady=(8, 0))
         self.btn_csv = BotonAccion(
             f_exp_datos, "Exportar cuadro resumen (CSV)", fondo=comp.VERDE,
             command=self.exportar_csv, motivo=MOTIVO_SIN_CORRIDA,
             ayuda="El cuadro resumen (entregable 3 de M11), una fila\n"
                   "por punto, en una hoja de calculo.")
-        self.btn_csv.pack(side="left", padx=(0, 8), ipadx=8, ipady=4)
+        f_exp_datos.agregar(self.btn_csv.boton, ipadx=8, ipady=4)
 
         # COMPARAR CON OTRO VOLCADO (E-B, E14): el `informe_json` de ESTA
         # corrida --- el mismo que se embebe en la sesion, fotografiado al
@@ -3111,7 +3136,8 @@ class ExpedienteApp:
                   "identidad de punto y con tolerancias nombradas. Dice que\n"
                   "campo difiere en que punto, y que no se puede comparar y\n"
                   "por que (metodos distintos). No corre nada.")
-        self.btn_comparar.pack(side="left", padx=8, ipadx=8, ipady=4)
+        f_exp_datos.agregar(self.btn_comparar.boton, ipadx=8, ipady=4)
+        self.filas_de_exportacion = (f_exp, f_exp_resumida, f_exp_datos)
 
         # EL MOTIVO DEL BLOQUEO, A LA VISTA (EXT-8, PC-17). Los exportadores
         # comparten motivo --- se apagan y encienden juntos ---, y un solo

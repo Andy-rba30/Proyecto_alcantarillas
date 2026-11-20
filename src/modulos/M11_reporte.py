@@ -5480,15 +5480,20 @@ def exportar_html(informe: Any, destino: Path, **kwargs: Any) -> Path:
     # al terminar: un fallo a mitad (un `ErrorProyecto` en el punto 7) no
     # deja un HTML truncado con el nombre del bueno (auditoria adversarial de
     # EXT-8); antes, con `write_text` de la cadena entera, tampoco lo dejaba.
-    temporal = destino.with_name(destino.name + ".parcial")
-    try:
-        with temporal.open("w", encoding="utf-8") as f:
+    #
+    # --- VE-5 (ficha UI5-01 d) --- por `escritura_atomica.escribir_atomico`,
+    # la de los PDF: el temporal FIJO «<destino>.parcial» tenia los cuatro
+    # defectos que la revision de UI-5 midio (H3): nombre largo, archivo del
+    # usuario pisado, temporal compartido entre dos exportaciones y enlace
+    # simbolico convertido en archivo regular sin conservar el modo.
+    from src import escritura_atomica
+
+    def escribir(temporal: Path) -> None:
+        with Path(temporal).open("w", encoding="utf-8") as f:
             for trozo in memoria_html_por_partes(informe, **kwargs):
                 f.write(trozo)
-        os.replace(temporal, destino)
-    finally:
-        if temporal.exists():
-            temporal.unlink()
+
+    escritura_atomica.escribir_atomico(destino, escribir)
     return destino
 
 
@@ -5502,11 +5507,19 @@ def exportar_csv(informe: Any, destino: Path) -> Path:
     """
     destino = Path(destino)
     destino.parent.mkdir(parents=True, exist_ok=True)
-    with destino.open("w", encoding="utf-8", newline="") as f:
-        escritor = csv.writer(f)
-        escritor.writerow(COLUMNAS_RESUMEN_CSV)
-        for p in informe.puntos:
-            escritor.writerow(_fila_resumen_csv(p))
+    # --- VE-5 (ficha UI5-01 d) --- atomica, como la memoria: hasta VE-5
+    # escribia directo y un fallo a mitad dejaba el cuadro cortado con el
+    # nombre del bueno.
+    from src import escritura_atomica
+
+    def escribir(temporal: Path) -> None:
+        with Path(temporal).open("w", encoding="utf-8", newline="") as f:
+            escritor = csv.writer(f)
+            escritor.writerow(COLUMNAS_RESUMEN_CSV)
+            for p in informe.puntos:
+                escritor.writerow(_fila_resumen_csv(p))
+
+    escritura_atomica.escribir_atomico(destino, escribir)
     return destino
 
 
@@ -5519,13 +5532,10 @@ def exportar_html_resumida(informe: Any, destino: Path, **kwargs: Any) -> Path:
     destino = Path(destino)
     destino.parent.mkdir(parents=True, exist_ok=True)
     contenido = memoria_resumida_html(informe, **kwargs)
-    temporal = destino.with_name(destino.name + ".parcial")
-    try:
-        temporal.write_text(contenido, encoding="utf-8")
-        os.replace(temporal, destino)
-    finally:
-        if temporal.exists():
-            temporal.unlink()
+    # --- VE-5 (ficha UI5-01 d) --- la misma escritura que la completa.
+    from src import escritura_atomica
+    escritura_atomica.escribir_atomico(
+        destino, lambda temporal: Path(temporal).write_text(contenido, encoding="utf-8"))
     return destino
 
 
@@ -5622,9 +5632,15 @@ def _escribir_pdf(contenido: str, destino: Path, *, abrir_navegador: bool,
     if progreso is not None:
         progreso(ETAPA_NAVEGADOR, 1, 1)
     if abrir_navegador:
-        temporal = Path(tempfile.gettempdir()) / respaldo.name
-        temporal.write_text(contenido, encoding="utf-8")
-        webbrowser.open(temporal.as_uri())
+        # --- VE-5 (ficha UI5-01 d) --- la copia que abre el navegador, con
+        # un nombre UNICO del temporal del sistema: con el nombre fijo del
+        # respaldo, dos memorias del mismo nombre se pisaban la una a la otra
+        # mientras el navegador todavia leia la primera.
+        descriptor, nombre = tempfile.mkstemp(prefix=f"{respaldo.stem}-",
+                                              suffix=respaldo.suffix)
+        with os.fdopen(descriptor, "w", encoding="utf-8") as f:
+            f.write(contenido)
+        webbrowser.open(Path(nombre).as_uri())
     return ResultadoExportacion(
         ruta=respaldo, via=VIA_NAVEGADOR,
         mensaje=_mensaje_via_navegador(respaldo))

@@ -335,6 +335,10 @@ CONSTRUCTORES_DE_PRESENTACION = {
     # bloque 2): el peso de cada panel al añadirlo y la posicion del divisor
     # son geometria de widget, como `grid` y `pack`.
     "add", "sashpos",
+    # VE-5 (ficha UI4-01): `FilaFluida.agregar` coloca un boton en una fila
+    # que se parte sola; su `ipadx`/`ipady` es el relleno que antes iba en el
+    # `pack` del mismo boton. Geometria de widget, como `pack`.
+    "agregar",
 }
 
 NUMEROS_PERMITIDOS = {0, 1, 2}
@@ -876,7 +880,10 @@ CENSO_DE_MARCAS = {
     # escribe una magnitud) se mudo con el servicio de calculo a
     # `src/servicio.py`, donde escribe los mensajes de dos bloqueos ademas del
     # volcado. Ningun literal nacio ni murio: el censo suma igual.
-    "cli.py": 3,
+    # 3 -> 4 en VE-5 (ficha UI5-01 c): `CODIGO_ESCRITURA_FALLIDA = 3`, el
+    # codigo de salida de una escritura que falla. Es un codigo del proceso,
+    # no una magnitud.
+    "cli.py": 4,
     "src/servicio.py": 1,
     # EXT-10: `FORMATO_SESION = 3`. El 2 estaba exento por ser 2; el 3 no lo
     # esta y lleva marca: es la version del formato, no una magnitud.
@@ -934,7 +941,10 @@ CENSO_DE_MARCAS = {
     # pseudo-handle de la API de Windows con que el proceso se declara
     # consciente de DPI por monitor. Es un identificador del sistema
     # operativo, no una magnitud.
-    "gui/componentes.py": 10,
+    # 10 -> 12 en VE-5 (fichas UI3-01 y UI4-01): el margen interior de
+    # `MarcoScroll` pasa a parametro (`relleno`, 14 px por defecto) y el
+    # hueco entre botones de `FilaFluida` (8 px). Geometria de widget.
+    "gui/componentes.py": 12,
     # EXT-8 (PC-11): el umbral de puntos a partir del que se ofrece la via
     # del navegador --- una MEDIDA del dictamen, no un valor de proyecto ---
     # y las lineas de la cola del diagnostico del hijo.

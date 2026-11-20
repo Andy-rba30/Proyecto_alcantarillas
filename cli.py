@@ -56,6 +56,8 @@ diferencia importa porque se corrigen en sitios distintos:
       Desde T-6 tambien `bombeo` y `peralte`, la pendiente transversal de la
       plataforma en el cruce: opcionales, excluyentes entre si, y sin ellas
       la longitud por extremo toma la plataforma horizontal y lo avisa.
+      Desde VE-5 (ficha T6-04) las dos y `S_conducto` tienen bandera
+      (`--bombeo`, `--peralte`, `--s-conducto`) y campo en la pestaña 1.
       Y, desde T-8, las de la Fase 6, tambien opcionales y por punto o
       globales: `tipo_terreno_receptor` y `tipo_terreno_entrada` (fila de
       la Tabla N 11 del Manual: el material del cauce a la salida y a la
@@ -2218,6 +2220,14 @@ def plantilla_por_alcance(alcance: str,
 # Familia C la fija).
 PREFIJO_PROGRESO = "progreso:"
 
+# --- VE-5 (ficha UI5-01 c) --- EL CODIGO DE SALIDA DE UNA ESCRITURA QUE
+# FALLA. Los de antes son el contrato del README (§4): 0 cierra, 1 corre y no
+# cierra (y escribe la memoria), 2 no se pudo correr. Uno distinto de los
+# tres porque no es ninguno de ellos: la corrida termino y lo que fallo es el
+# disco. El hijo del PDF de la ventana no lo cuenta entre los que dejan
+# memoria (`gui.exportacion_pdf.CODIGOS_DE_SALIDA_CON_MEMORIA`).
+CODIGO_ESCRITURA_FALLIDA = 3  # literal-ok: codigo de salida del proceso, no una magnitud
+
 
 def _informar_progreso(etapa: str, hecho: int, total: int) -> None:
     print(f"{PREFIJO_PROGRESO} {hecho}/{total} {etapa}", flush=True)
@@ -2488,6 +2498,16 @@ def _parser() -> argparse.ArgumentParser:
     p.add_argument("--categoria-tr", dest="categoria_tr",
                    help="fila de la Tabla N 02: quebrada_importante o "
                         "quebrada_menor (Sec. 2.2, Familia A)")
+    # --- VE-5 (ficha T6-04) --- las tres que solo entraban por el JSON.
+    p.add_argument("--s-conducto", type=float, dest="S_conducto",
+                   help="pendiente del barril, m/m (0 = horizontal; si no, "
+                        "la del cauce)")
+    p.add_argument("--bombeo", type=float, dest="bombeo",
+                   help="bombeo de la plataforma en tangente, m/m "
+                        "(DG-2018 304.05; excluyente con --peralte)")
+    p.add_argument("--peralte", type=float, dest="peralte",
+                   help="peralte de la plataforma en curva, m/m con signo "
+                        "(DG-2018 304.06; excluyente con --bombeo)")
     p.add_argument("--criterios", action="store_true",
                    help="imprime tambien la declaracion completa de los "
                         "datos de sitio [S] y de los criterios usados "
@@ -2907,7 +2927,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     banderas = {"luz_m": args.luz, "TW_m": args.TW,
                 "longitud_m": args.longitud,
                 "L_hidraulico_m": args.l_hidraulico,
-                "categoria_tr": args.categoria_tr}
+                "categoria_tr": args.categoria_tr,
+                "S_conducto": args.S_conducto, "bombeo": args.bombeo,
+                "peralte": args.peralte}
     if sesion is not None:
         # Lo que la linea de comandos no trajo lo pone la sesion, campo a
         # campo: son las MISMAS claves (`sesion.banderas_de_externos`).
@@ -2974,6 +2996,25 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
               f"«{plantilla.name}»: {exc}", file=sys.stderr)
         return 2
 
+    try:
+        _escribir_las_salidas(args, informe, plantilla, progreso)
+    except OSError as exc:
+        # --- VE-5 (ficha UI5-01 c) --- UNA ESCRITURA QUE FALLA (disco lleno,
+        # sin permiso, un directorio que no existe y no se puede crear) no es
+        # un expediente que no cierra ni un fallo del programa: sale con su
+        # mensaje --- que nombra el destino (`escritura_atomica`) --- y con un
+        # codigo propio, `CODIGO_ESCRITURA_FALLIDA`. Hasta VE-5 salia con la
+        # traza de Python y el codigo 1, el mismo que «corre y no cierra».
+        # Lo ya escrito queda escrito y entero; lo que fallo deja intacto lo
+        # que hubiera en su destino.
+        print(f"No se pudo escribir una salida: {exc}", file=sys.stderr)
+        return CODIGO_ESCRITURA_FALLIDA
+    return 0 if informe.cerrado else 1
+
+
+def _escribir_las_salidas(args: argparse.Namespace, informe: Any,
+                          plantilla: Path, progreso: Any) -> None:
+    """El JSON y las memorias que la invocacion pidio, en ese orden."""
     destino = args.json_salida or args.csv.with_suffix(".informe.json")
     # Escritura atomica (E04): nunca un JSON a medias en disco.
     _sesion.escribir_json_atomico(destino, informe_json(informe))
@@ -3018,8 +3059,6 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     if args.csv_resumen_salida is not None:
         ruta = exportar_csv(informe, args.csv_resumen_salida)
         print(f"Cuadro resumen (CSV): {ruta}")
-
-    return 0 if informe.cerrado else 1
 
 
 def _exigir_plantilla_valida(plantilla: Path) -> None:

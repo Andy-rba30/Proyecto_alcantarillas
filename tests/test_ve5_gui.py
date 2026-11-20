@@ -183,3 +183,164 @@ def test_37_la_puerta_de_la_ventana_es_la_de_la_pestana_2():
              if isinstance(n, ast.FunctionDef) and n.name == "declarar_desde_la_ventana")
     llamadas = {ast.unparse(n.func) for n in ast.walk(f) if isinstance(n, ast.Call)}
     assert "declarar" in llamadas
+
+
+# ===========================================================================
+# 40 · `S_conducto`, `bombeo` y `peralte` en la ventana y en la CLI (T6-04)
+# ===========================================================================
+
+TRES_DE_T6_04 = ("S_conducto", "bombeo", "peralte")
+
+
+def test_40_los_tres_tienen_campo_y_viajan_con_su_clave():
+    import cli
+    from src import sesion as ses
+    for clave in TRES_DE_T6_04:
+        assert ses.CLAVE_EXTERNA_DE_CAMPO[clave] == clave
+        assert clave in cli.CLAVES_EXTERNAS
+    # La coma decimal y el signo del peralte, por la MISMA traduccion que la
+    # CLI aplica al leer una sesion y la ventana al correr.
+    banderas = ses.banderas_de_externos(
+        {"S_conducto": "0,004", "bombeo": "", "peralte": "-0,02"})
+    assert banderas["S_conducto"] == "0.004"
+    assert banderas["bombeo"] is None
+    assert banderas["peralte"] == "-0.02"
+
+
+def test_40_una_sesion_de_un_formato_anterior_abre_sin_los_campos_nuevos():
+    from src import sesion as ses
+    vieja = {"formato_version": 3, "externos": {"luz_m": "2.0"}}
+    assert ses.errores_de_sesion(vieja) == []
+    migrada, _avisos = ses.migrar_a_actual(vieja)
+    banderas = ses.banderas_de_externos(migrada["externos"])
+    assert banderas["luz_m"] == "2.0"
+    assert all(banderas[c] is None for c in TRES_DE_T6_04)
+
+
+def test_40_la_cli_lleva_las_tres_banderas_a_los_datos_externos(monkeypatch, tmp_path):
+    import cli
+    from src.modelos import DatoInvalidoError
+    vistas = {}
+
+    def capturar(ruta, banderas):
+        vistas.update(banderas)
+        raise DatoInvalidoError("datos_externos", valor="sonda", motivo="sonda del test")
+
+    monkeypatch.setattr(cli, "cargar_datos_externos", capturar)
+    codigo = cli.main([str(RAIZ / "tests" / "ejemplo_puntos_perfil.csv"),
+                       "--s-conducto", "0.004", "--bombeo", "0.02",
+                       "--peralte", "-0.03", "--json", str(tmp_path / "i.json")])
+    assert codigo == 2
+    assert vistas["S_conducto"] == 0.004
+    assert vistas["bombeo"] == 0.02
+    assert vistas["peralte"] == -0.03
+
+
+def test_40_las_banderas_pisan_al_global_del_json_y_conservan_la_exclusion(tmp_path):
+    import cli
+    from src.modelos import DatoInvalidoError
+    json_ = tmp_path / "ext.json"
+    json_.write_text('{"globales": {"bombeo": 0.02}}', encoding="utf-8")
+    ext = cli.cargar_datos_externos(json_, {"bombeo": 0.0, "peralte": 0.04})
+    assert ext.valor("X", "bombeo") == 0.0 and ext.valor("X", "peralte") == 0.04
+    with pytest.raises(DatoInvalidoError):
+        cli.cargar_datos_externos(json_, {"peralte": 0.04})
+
+
+# ===========================================================================
+# 39 · Temporales únicos al exportar; el fallo de escritura sin traza (UI5-01 c, d)
+# ===========================================================================
+
+@pytest.fixture(scope="module")
+def informe_de_perfil():
+    from src import indice_formulas as ind
+    referencia = next(r for r in ind.CORRIDAS_DE_REFERENCIA if r.nombre == "perfil_guia")
+    return ind.correr_referencia(referencia)
+
+
+def _exportadores_de_m11():
+    from src.modulos import M11_reporte as M11
+    return {"html": lambda inf, d: M11.exportar_html(inf, d),
+            "html_resumida": lambda inf, d: M11.exportar_html_resumida(inf, d),
+            "csv": lambda inf, d: M11.exportar_csv(inf, d)}
+
+
+@pytest.mark.parametrize("via", ["html", "html_resumida", "csv"])
+def test_39_no_pisa_el_archivo_del_usuario_con_nombre_de_temporal(via, informe_de_perfil, tmp_path):
+    destino = tmp_path / f"memoria.{via}"
+    del_usuario = destino.with_name(destino.name + ".parcial")
+    del_usuario.write_text("archivo del usuario", encoding="utf-8")
+    _exportadores_de_m11()[via](informe_de_perfil, destino)
+    assert destino.stat().st_size > 0
+    assert del_usuario.read_text(encoding="utf-8") == "archivo del usuario"
+    # Y no deja restos: el temporal de `escribir_atomico` es oculto y se va.
+    assert sorted(p.name for p in tmp_path.iterdir()) == sorted(
+        [destino.name, del_usuario.name])
+
+
+@pytest.mark.parametrize("via", ["html", "html_resumida", "csv"])
+def test_39_un_destino_de_nombre_largo_se_escribe(via, informe_de_perfil, tmp_path):
+    destino = tmp_path / ("m" * 245 + f".{via[:4]}")
+    _exportadores_de_m11()[via](informe_de_perfil, destino)
+    assert destino.stat().st_size > 0
+
+
+@pytest.mark.parametrize("via", ["html", "html_resumida", "csv"])
+def test_39_un_enlace_simbolico_sigue_siendo_enlace(via, informe_de_perfil, tmp_path):
+    real = tmp_path / "real" / "memoria"
+    real.parent.mkdir()
+    real.write_text("anterior", encoding="utf-8")
+    real.chmod(0o600)
+    enlace = tmp_path / "enlace"
+    enlace.symlink_to(real)
+    _exportadores_de_m11()[via](informe_de_perfil, enlace)
+    assert enlace.is_symlink()
+    assert real.read_text(encoding="utf-8") != "anterior"
+    assert real.stat().st_mode & 0o777 == 0o600
+
+
+def test_39_la_sesion_se_escribe_por_la_misma_puerta(tmp_path):
+    from src import sesion as ses
+    real = tmp_path / "real.json"
+    real.write_text("{}", encoding="utf-8")
+    enlace = tmp_path / "sesion.json"
+    enlace.symlink_to(real)
+    ses.escribir_json_atomico(enlace, {"a": 1})
+    assert enlace.is_symlink() and '"a": 1' in real.read_text(encoding="utf-8")
+    with pytest.raises(ValueError):
+        ses.escribir_json_atomico(tmp_path / "nan.json", {"x": float("nan")})
+    assert not (tmp_path / "nan.json").exists()
+
+
+def test_39_la_cli_que_no_puede_escribir_sale_con_su_codigo_y_sin_traza(capsys, tmp_path):
+    import cli
+    from gui import exportacion_pdf as expdf
+    bloqueo = tmp_path / "soy_un_archivo"
+    bloqueo.write_text("", encoding="utf-8")
+    codigo = cli.main([str(RAIZ / "tests" / "ejemplo_puntos_perfil.csv"),
+                       "--alcance", "perfil",
+                       "--json", str(bloqueo / "dentro" / "i.json")])
+    err = capsys.readouterr().err
+    assert codigo == cli.CODIGO_ESCRITURA_FALLIDA
+    assert codigo not in (0, 1, 2)
+    assert "No se pudo escribir una salida" in err and "Traceback" not in err
+    # El hijo del PDF de la ventana no lo cuenta como memoria escrita.
+    assert codigo not in expdf.CODIGOS_DE_SALIDA_CON_MEMORIA
+
+
+def test_39_el_fallo_del_pdf_en_la_cli_sale_con_su_mensaje(monkeypatch, capsys, tmp_path):
+    import cli
+
+    def disco_lleno(*_a, **_k):
+        raise OSError(28, "No space left on device", str(tmp_path / "m.pdf"))
+
+    monkeypatch.setattr(cli, "exportar_pdf", disco_lleno)
+    codigo = cli.main([str(RAIZ / "tests" / "ejemplo_puntos_perfil.csv"),
+                       "--alcance", "perfil", "--json", str(tmp_path / "i.json"),
+                       "--pdf", str(tmp_path / "m.pdf")])
+    err = capsys.readouterr().err
+    assert codigo == cli.CODIGO_ESCRITURA_FALLIDA
+    assert "No space left on device" in err and "Traceback" not in err
+    # Lo que se escribio antes del fallo queda entero.
+    assert (tmp_path / "i.json").stat().st_size > 0
+

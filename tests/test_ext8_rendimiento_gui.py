@@ -458,7 +458,9 @@ def test_pc11_el_esquema_de_sesion_vive_fuera_de_la_gui_y_la_gui_lo_reexporta():
     assert ses.banderas_de_externos({"luz_m": "1,5", "l_hidraulico": "",
                                      "categoria_tr": "quebrada_menor"}) == {
         "luz_m": "1.5", "TW_m": None, "longitud_m": None,
-        "L_hidraulico_m": None, "categoria_tr": "quebrada_menor"}
+        "L_hidraulico_m": None, "categoria_tr": "quebrada_menor",
+        # VE-5 (ficha T6-04): los tres campos que solo entraban por el JSON.
+        "S_conducto": None, "bombeo": None, "peralte": None}
 
 
 def test_pc11_la_cli_restaura_la_sesion_serializada_con_sus_procedencias(tmp_path):

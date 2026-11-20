@@ -26,7 +26,6 @@ from __future__ import annotations
 import copy
 import json
 import os
-import tempfile
 import uuid
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -102,6 +101,14 @@ CLAVE_EXTERNA_DE_CAMPO = {
     "longitud_m": "longitud_m",
     "l_hidraulico": "L_hidraulico_m",
     "categoria_tr": "categoria_tr",
+    # --- VE-5 (ficha T6-04) --- la pendiente del barril y la pendiente
+    # transversal de la plataforma (bombeo en tangente, peralte en curva),
+    # que hasta VE-5 solo entraban por el JSON de datos externos. Una sesion
+    # de un formato anterior no las trae, y un campo que la sesion no trae es
+    # un campo vacio (`banderas_de_externos`): la sesion vieja abre igual.
+    "S_conducto": "S_conducto",
+    "bombeo": "bombeo",
+    "peralte": "peralte",
 }
 
 # El unico campo que NO es numero: es una FILA de la Tabla N 02, y la coma
@@ -412,20 +419,25 @@ def escribir_json_atomico(ruta: Path, data: Any) -> None:
     Es lo que E04 pide para la sesion, y lo usan «Guardar sesion», el JSON
     del expediente que escriben la CLI y la ventana, y la sesion de trabajo
     del subproceso del PDF: cuatro escrituras, un solo camino.
+
+    --- VE-5 (ficha UI5-01 d) --- por `escritura_atomica.escribir_atomico`,
+    la de los PDF y las memorias: hasta VE-5 el temporal llevaba el nombre
+    del destino (un nombre largo no cabia), no seguia un enlace simbolico y
+    no conservaba el modo del archivo previo. El texto se arma ANTES de
+    abrir el temporal: un dato que no es JSON (un NaN) no deja nada en disco.
     """
+    from src import escritura_atomica
     ruta = Path(ruta)
     ruta.parent.mkdir(parents=True, exist_ok=True)
-    descriptor, temporal = tempfile.mkstemp(prefix=f".{ruta.name}.", suffix=".parcial",
-                                            dir=ruta.parent)
-    try:
-        with os.fdopen(descriptor, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=2, allow_nan=False)
+    texto = json.dumps(data, ensure_ascii=False, indent=2, allow_nan=False)
+
+    def escribir(temporal: Path) -> None:
+        with Path(temporal).open("w", encoding="utf-8") as f:
+            f.write(texto)
             f.flush()
             os.fsync(f.fileno())
-        os.replace(temporal, ruta)
-    finally:
-        if os.path.exists(temporal):
-            os.unlink(temporal)
+
+    escritura_atomica.escribir_atomico(ruta, escribir)
 
 
 def banderas_de_externos(externos: Dict[str, str]) -> Dict[str, Optional[str]]:
