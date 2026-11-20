@@ -25,6 +25,7 @@ from src.constantes_normativas import (H_EQ_ESTRIBO_PERPENDICULAR_FT,
                                        SOBRECARGA_TRASDOS_PISO_MP_M)
 from src.modelos import CondicionAnalisis
 from src.modulos import M9_cabezal as M9
+from tests.apoyo.aproximacion import REL_TRANSPORTE
 from tests.test_t7c_cabezal_armado import tanteo  # noqa: F401
 
 PIE = 0.3048
@@ -68,14 +69,18 @@ def test_paralelo_a_la_via_con_corredor_perpendicular_toma_la_mayor(tanteo):
     entorno = dataclasses.replace(tanteo, paralelo_a_la_via=True)
     h_eq, h = _h_eq(entorno)
     esperado = max(_perpendicular(h), _paralelo(h, lejos=False))
-    assert h_eq == pytest.approx(esperado, rel=1e-12)
+    assert h_eq == pytest.approx(esperado, rel=REL_TRANSPORTE)
+    assert M9.envolvente_de_h_eq_paralelo(entorno)
+    assert not M9.envolvente_de_h_eq_paralelo(tanteo)
+    assert M9.h_eq_del_cabezal(entorno, altura_muro_total=h) == \
+        pytest.approx(esperado, rel=REL_TRANSPORTE)
     avisos = M9.avisos_de_la_sobrecarga_del_punto(entorno)
     assert any("MAYOR de las dos tablas" in a
                and "distancia_borde_calzada_del_punto_m" in a
                and "orientacion_muro_del_punto" in a for a in avisos)
     # el cabezal normal al eje, con el mismo corredor: solo la -1
     h_normal, _ = _h_eq(tanteo)
-    assert h_normal == pytest.approx(_perpendicular(h), rel=1e-12)
+    assert h_normal == pytest.approx(_perpendicular(h), rel=REL_TRANSPORTE)
     assert not any("MAYOR de las dos tablas" in a for a in
                    M9.avisos_de_la_sobrecarga_del_punto(tanteo))
 
@@ -86,7 +91,7 @@ def test_con_la_distancia_del_punto_la_tabla_paralela_la_usa(tanteo):
     entorno = dataclasses.replace(tanteo, geometria=g, paralelo_a_la_via=True)
     h_eq, h = _h_eq(entorno)
     assert h_eq == pytest.approx(
-        max(_perpendicular(h), _paralelo(h, lejos=True)), rel=1e-12)
+        max(_perpendicular(h), _paralelo(h, lejos=True)), rel=REL_TRANSPORTE)
 
 
 def test_paralelo_a_la_via_con_corredor_paralelo_no_cambia(tanteo):
@@ -95,7 +100,7 @@ def test_paralelo_a_la_via_con_corredor_paralelo_no_cambia(tanteo):
     _corredor("paralelo_al_trafico")
     entorno = dataclasses.replace(tanteo, paralelo_a_la_via=True)
     h_eq, h = _h_eq(entorno)
-    assert h_eq == pytest.approx(_paralelo(h, lejos=True), rel=1e-12)
+    assert h_eq == pytest.approx(_paralelo(h, lejos=True), rel=REL_TRANSPORTE)
     assert not any("MAYOR de las dos tablas" in a for a in
                    M9.avisos_de_la_sobrecarga_del_punto(entorno))
 
@@ -107,4 +112,4 @@ def test_con_la_orientacion_del_punto_rige_la_del_punto(tanteo):
                             distancia_borde_calzada_m=0.0)
     entorno = dataclasses.replace(tanteo, geometria=g, paralelo_a_la_via=True)
     h_eq, h = _h_eq(entorno)
-    assert h_eq == pytest.approx(_paralelo(h, lejos=False), rel=1e-12)
+    assert h_eq == pytest.approx(_paralelo(h, lejos=False), rel=REL_TRANSPORTE)

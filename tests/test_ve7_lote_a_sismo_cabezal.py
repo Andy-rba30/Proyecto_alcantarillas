@@ -21,8 +21,10 @@ import pytest
 from src import criterios_adoptados as ca
 from src.modelos import CondicionAnalisis, EstadoDeVerificacion
 from src.modulos import M9_cabezal as M9
+from tests.apoyo.aproximacion import ABS_CERO, REL_TRANSPORTE
 from tests.test_t7c_cabezal_armado import _gravedad, tanteo  # noqa: F401
-from tests.test_ve5_m9_ciclopeo import C8_MEDIA, GAMMA_EQ, TOL, _v
+from tests.test_ve5_m9_ciclopeo import (C8_MEDIA, GAMMA_EQ, TOL,
+                                         TOL_DORADO, _v)
 
 SIS = CondicionAnalisis.SISMICO
 K_V = 0.10
@@ -47,7 +49,7 @@ def test_A3_la_media_altura_bajo_sismo_decide_con_la_traccion_admisible(
 def _c8_media_a_mano(entorno, k_v):
     """C8 a media altura con la aritmetica escrita aqui (ver el modulo)."""
     c, d = M9.cargas_del_cabezal(entorno, SIS, k_h=0.25)
-    assert d["k_v"] == pytest.approx(k_v)
+    assert d["k_v"] == pytest.approx(k_v, rel=REL_TRANSPORTE)
     H = {x.codigo: x.H for x in c}
     h, z, t, e_c = d["h"], 0.95, 0.40, 0.30
     arriba = h - z
@@ -73,10 +75,10 @@ def _c8_media_a_mano(entorno, k_v):
 def test_A4_con_k_v_cero_c8_no_cambia(tanteo):
     a = M9.verificar_cabezal_ciclopeo(_gravedad())
     media = _v(a, "C8.media.e")
-    assert media.valor_obtenido == pytest.approx(C8_MEDIA, abs=1e-5)
+    assert media.valor_obtenido == pytest.approx(C8_MEDIA, abs=TOL_DORADO)
     assert not any("(1 - k_v)" in x for x in a.avisos)
     sus = {m.simbolo: m.valor for m in media.paso.sustitucion}
-    assert sus["k_v"] == pytest.approx(0.0)
+    assert sus["k_v"] == pytest.approx(0.0, abs=ABS_CERO)
 
 
 def _con_k_v(monkeypatch):
@@ -96,7 +98,7 @@ def test_A4_con_k_v_el_peso_estabilizante_va_con_uno_menos_k_v(
         _c8_media_a_mano(entorno, K_V), abs=TOL)
     assert "W·(1 - k_v)" in media.paso.formula
     sus = {m.simbolo: m.valor for m in media.paso.sustitucion}
-    assert sus["k_v"] == pytest.approx(K_V)
+    assert sus["k_v"] == pytest.approx(K_V, rel=REL_TRANSPORTE)
     # el aviso: el ensamble E1-E3 no lo aplica a los pesos
     assert any("NO aplica k_v a los pesos" in x for x in a.avisos)
 
@@ -111,4 +113,4 @@ def test_A4_el_ensamble_no_aplica_k_v_a_los_pesos(tanteo, monkeypatch):
     pesos = ("DC.pantalla", "DC.zapata", "EV.talon")
     V_est = {c.codigo: c.V for c in est if c.codigo in pesos}
     V_sis = {c.codigo: c.V for c in sis if c.codigo in pesos}
-    assert V_est and V_est == pytest.approx(V_sis)
+    assert V_est and V_est == pytest.approx(V_sis, rel=REL_TRANSPORTE)

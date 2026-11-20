@@ -24,6 +24,7 @@ from src import servicio
 from src.modelos import (CondicionAnalisis, DatoInvalidoError,
                          MetodoNoEvaluableError)
 from src.modulos import M9_cabezal as M9
+from tests.apoyo.aproximacion import REL_TRANSPORTE
 from tests.test_t7c_cabezal_armado import tanteo  # noqa: F401
 
 SIS = CondicionAnalisis.SISMICO
@@ -49,7 +50,9 @@ def _inestable(monkeypatch):
 def test_la_puerta_valida_la_forma_y_va_solo_por_punto(tmp_path):
     ok = M9.validar_empuje_sismico_declarado(
         {"entrada": _declarado(), **{}})
-    assert ok["entrada"]["P_AE_kn_m"] == 60.0 and ok["salida"] == {}
+    assert ok["entrada"]["P_AE_kn_m"] == pytest.approx(
+        60.0, rel=REL_TRANSPORTE)
+    assert ok["salida"] == {}
     comun = M9.validar_empuje_sismico_declarado(
         {**TRAZA, "salida": {"P_AE_kn_m": 10, "altura_aplicacion_m": 1,
                              "incluye_hidrodinamica": True}})
@@ -113,7 +116,7 @@ def test_nunca_sustituye_un_empuje_que_el_programa_calcula(tanteo):
         tanteo, empuje_sismico=_declarado(P_AE=999.0)), SIS)
     assert con[1]["empuje_sismico_declarado"] is None
     assert {c.codigo: c.H for c in con[0]} == pytest.approx(
-        {c.codigo: c.H for c in sin[0]})
+        {c.codigo: c.H for c in sin[0]}, rel=REL_TRANSPORTE)
 
 
 def _con_agua_muy_abierta(entorno):

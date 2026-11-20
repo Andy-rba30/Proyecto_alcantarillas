@@ -23,6 +23,7 @@ from src.constantes_normativas import CAJON_C2_SIN_ALETAS, KE_HDS5_C2
 from src.modelos import DatoInvalidoError, Familia
 from src.modulos import M9_cabezal as M9
 from src.normativa import tablas
+from tests.apoyo.aproximacion import REL_TRANSPORTE
 from tests.apoyo.criterios import declarados
 from tests.test_canal_discrepancias import DECLARACIONES_DEL_CAJON
 
@@ -85,7 +86,7 @@ def test_el_borde_de_la_carta_10_empareja_el_ke(fila, ke):
 
 def test_chaflan_con_ke_02_se_detiene_y_bisel_con_ke_02_pasa():
     """El caso del dictamen, dicho con el ke de la tabla (0.2)."""
-    assert KE_HDS5_C2[BISELADA]["ke"] == pytest.approx(0.2)
+    assert KE_HDS5_C2[BISELADA]["ke"] == pytest.approx(0.2, rel=REL_TRANSPORTE)
     embocadura = _normal_sin_aletas()
     with declarados({"embocadura_cajon": "cajon_concreto_cabezal_90_chaflan",
                      "ke_entrada_cajon": BISELADA}):

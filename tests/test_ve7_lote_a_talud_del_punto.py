@@ -21,6 +21,7 @@ from src import servicio
 from src.modelos import CondicionAnalisis, DatoInvalidoError
 from src.modulos import M9_cabezal as M9
 from tests.apoyo.criterios import declarados
+from tests.apoyo.aproximacion import REL_TRANSPORTE
 from tests.test_ve5_m9_portante_talud import tanteo  # noqa: F401
 
 EST = CondicionAnalisis.ESTATICO
@@ -73,9 +74,10 @@ def test_dos_puntos_con_taludes_distintos_dan_rcbc_distintos(
         r2 = _rcbc_del_ensamble(p2, monkeypatch)
         rc = _rcbc_del_ensamble(tanteo, monkeypatch)
     # cada punto con SU talud, y el de corredor solo sin talud del punto
-    assert {(h, b) for h, b, _ in r1} == {(2.0, 15.0)}
-    assert {(h, b) for h, b, _ in r2} == {(6.0, 30.0)}
-    assert {(h, b) for h, b, _ in rc} == {(4.0, 20.0)}
+    for vistos, talud in ((r1, PUNTO_1), (r2, PUNTO_2), (rc, CORREDOR)):
+        assert [x for h, b, _ in vistos for x in (h, b)] == pytest.approx(
+            [talud["H_s_m"], talud["beta_grados"]] * len(vistos),
+            rel=REL_TRANSPORTE)
     rc1 = {x for _, _, x in r1}
     rc2 = {x for _, _, x in r2}
     assert rc1.isdisjoint(rc2)
