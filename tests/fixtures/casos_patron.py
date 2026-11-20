@@ -2472,7 +2472,8 @@ CP_FASE_8_CIERRE = {
 CP_T9_CUNETA = {
     "auditor": {
         "seccion": {"profundidad_m": 0.20, "ancho_m": 0.50,
-                    "talud_exterior_HV": 0.5, "borde_libre_m": 0.0},
+                    "talud_exterior_HV": 0.5, "borde_libre_m": 0.0,
+                    "ancho_fondo_m": 0.0},      # VE-5: triangular
         "S": 0.005, "Q": 0.095,
         "A": 0.060, "Rh": 0.078727, "Q_adm": 0.052215,
         "margen_VB2": -0.042785,

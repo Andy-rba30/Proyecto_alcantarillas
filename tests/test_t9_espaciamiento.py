@@ -88,7 +88,8 @@ REL_FORMULA = 1e-9           # una formula recomputada en el test
 # La seccion de PRUEBA con que se ejercita la capacidad: la Tabla Nº 34 para
 # region «lluviosa» (0.30 x 0.75 m), talud exterior 1:1 y sin borde libre.
 SECCION_PRUEBA = {"profundidad_m": 0.30, "ancho_m": 0.75,
-                  "talud_exterior_HV": 1.0, "borde_libre_m": 0.0}
+                  "talud_exterior_HV": 1.0, "borde_libre_m": 0.0,
+                  "ancho_fondo_m": 0.0}
 CRITERIOS_DE_LA_CUNETA = ("seccion_cuneta", "revestimiento_cuneta",
                           "lectura_velocidad_limite_cuneta")
 
@@ -269,10 +270,14 @@ def test_la_seccion_de_la_cuneta_tiene_el_minimo_muy_lluvioso_y_su_ventana_cita_
     assert c.etiqueta == "A" and c.nivel == ca.NIVEL_PERFIL
     assert c.valor == pytest.approx({"profundidad_m": 0.40, "ancho_m": 1.20,
                                      "talud_exterior_HV": 1.0,
-                                     "borde_libre_m": 0.0},
+                                     "borde_libre_m": 0.0,
+                  "ancho_fondo_m": 0.0},
                                     rel=REL_TRANSPORTE, abs=ABS_CERO)
     ventana = {"profundidad_m": (0.40, 0.60), "ancho_m": (1.20, 2.40),
-               "talud_exterior_HV": (0.10, 2.0), "borde_libre_m": (0.0, 0.10)}
+               "talud_exterior_HV": (0.10, 2.0), "borde_libre_m": (0.0, 0.10),
+               # VE-5 (catlic, T9-01): 0 = triangular; el fondo de la
+               # trapezoidal no llega al ancho minimo de la fila.
+               "ancho_fondo_m": (0.0, 1.20)}
     assert set(c.sensibilidad) == set(ventana)
     for campo, par in ventana.items():
         assert c.sensibilidad[campo] == pytest.approx(par, rel=REL_TRANSPORTE,

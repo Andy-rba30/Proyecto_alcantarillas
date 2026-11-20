@@ -4572,6 +4572,9 @@ class CapacidadCuneta:
     gobierna: str                 # CAPACIDAD_CUNETA_LLENA | ..._VELOCIDAD_LIMITE
     pasos: Tuple["PasoDeMemoria", ...] = ()
     avisos: Tuple[str, ...] = ()
+    # --- VE-5 (catlic, T9-01) --- fondo de la seccion: 0 = triangular;
+    # > 0 = la trapezoidal de la Tabla Nº 34 (fila «>3000 mm/año», nota «*»).
+    ancho_fondo_m: float = 0.0
 
 
 @dataclass(frozen=True)

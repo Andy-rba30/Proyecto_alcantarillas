@@ -5165,6 +5165,12 @@ _T34 = _reg.tabla("MC_HHD.T34")
 CUNETA_DIMENSIONES_MINIMAS_T34 = {
     _T34.clave_corta(_f): (_f.valores["profundidad_m"], _f.valores["ancho_m"])
     for _f in _T34.filas}                                     # m
+# --- VE-5 (catlic, ficha T9-01) --- la fila «Muy lluviosa (>3000 mm/año)»
+# lleva la llamada «*», cuya nota al pie (pag. impresa 178, PDF 181) dice:
+# «* Sección Trapezoidal con un ancho mínimo de fondo de 0.30». La fuente no
+# escribe la unidad; la tabla entera esta en metros (encabezados «(M)»).
+CUNETA_FILA_TRAPEZOIDAL_T34 = "muy_lluviosa_mas_de_3000"
+CUNETA_FONDO_MIN_TRAPEZOIDAL_T34 = 0.30                       # m
 
 # --- num. 4.1.2 c), pag. impresa 172, PDF 175 ------------------------------
 # «La pendiente longitudinal (i) debe estar comprendida entre la condición de

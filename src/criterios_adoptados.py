@@ -4323,7 +4323,10 @@ CRITERIOS: Dict[str, Criterio] = {
         valor={"profundidad_m": 0.40,       # m, Tabla Nº 34, muy lluviosa
                "ancho_m": 1.20,             # m, Tabla Nº 34, muy lluviosa
                "talud_exterior_HV": 1.0,    # H:V, eleccion [A] (justificacion)
-               "borde_libre_m": 0.0},       # m, la «cuneta llena» del Manual
+               "borde_libre_m": 0.0,        # m, la «cuneta llena» del Manual
+               # VE-5 (catlic, T9-01): 0 = triangular; > 0 = la trapezoidal
+               # de la Tabla Nº 34 para mas de 3000 mm/año (nota «*»).
+               "ancho_fondo_m": 0.0},       # m
         # DE PERFIL: lo consume M10, y la Fase 10 corre a perfil (no esta en
         # MODULOS_DIFERIDOS_POR_ALCANCE). Lo MIDE `tests/test_t9_espaciamiento.py`
         # con una corrida de perfil que calcula la capacidad.
@@ -4357,13 +4360,20 @@ CRITERIOS: Dict[str, Criterio] = {
         sensibilidad={"profundidad_m": (0.40, 0.60),     # m
                       "ancho_m": (1.20, 2.40),           # m
                       "talud_exterior_HV": (0.10, 2.0),  # H:V
-                      "borde_libre_m": (0.0, 0.10)},     # m
-        concepto="Seccion TRIANGULAR de la cuneta del tramo que descarga en la "
+                      "borde_libre_m": (0.0, 0.10),      # m
+                      # 0 = triangular; 1.20 = el ancho minimo de la fila
+                      # (el fondo no puede llegar al ancho). Un fondo entre
+                      # 0 y 0.30 lo rechaza M10: la nota «*» de la Tabla Nº
+                      # 34 pide 0.30 como minimo (VE-5, T9-01).
+                      "ancho_fondo_m": (0.0, 1.20)},     # m
+        concepto="Seccion de la cuneta del tramo que descarga en la "
                  "alcantarilla de alivio: profundidad d y ancho a (Figura Nº "
                  "27 del num. 4.1.2.1: el ancho se mide del borde de la "
                  "rasante a la vertical del vertice, a = Z1·d), talud "
-                 "exterior (H:V) y borde libre bajo el que se calcula la "
-                 "capacidad",
+                 "exterior (H:V), borde libre bajo el que se calcula la "
+                 "capacidad y ancho de fondo: 0 es la TRIANGULAR; mayor que "
+                 "0, la TRAPEZOIDAL de la Tabla Nº 34 para mas de 3000 "
+                 "mm/año (fondo minimo 0.30 m, VE-5)",
         justificacion="Decide la seccion con que la Fase 10 calcula la "
                       "capacidad de la cuneta (VB2) y, con ella, la longitud "
                       "a la que se agota (L_hidraulico) cuando no se declara. "
@@ -4421,7 +4431,9 @@ CRITERIOS: Dict[str, Criterio] = {
                         "por region pluvial y el talud exterior es el del "
                         "corte",
             dominio="profundidad_m > 0, ancho_m > 0, talud_exterior_HV > 0, "
-                    "0 <= borde_libre_m < profundidad_m",
+                    "0 <= borde_libre_m < profundidad_m, ancho_fondo_m = 0 "
+                    "(triangular) o 0.30 <= ancho_fondo_m < ancho_m "
+                    "(trapezoidal, Tabla Nº 34 nota «*»)",
         ),
     ),
 

@@ -8421,3 +8421,28 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   `PorExpresion` a `PorDatoDeSitio("region_natural")` (toca la ventana normativa y los
   manifiestos generados).
 - **Dónde vive:** `src/modulos/M2_material.py::piso_de_selva_alta`
+
+## VE5-CAT-02 · La cuneta trapezoidal de la Tabla Nº 34 (región > 3000 mm/año): el fondo como campo de `seccion_cuneta` (cierre de lo que T9-01 dejó diferido)
+
+- **Cerrado (VE-5, lote catlic, 2026-11-20):** `seccion_cuneta` tiene un quinto campo,
+  `ancho_fondo_m` (valor de archivo 0 = la triangular de siempre; ventana 0–1.20 m). Con
+  fondo, `M10.capacidad_cuneta` calcula la sección TRAPEZOIDAL (`M10.geometria_cuneta`:
+  A = b·y + (Z1+Z2)·y²/2, P = b + y·(√(1+Z1²)+√(1+Z2²)); el tirante a la velocidad límite
+  por brentq) y la contrasta con la fila «Muy lluviosa (>3000 mm/año)» de la Tabla Nº 34
+  (pág. impresa 178, PDF 181): profundidad 0.30, ancho 1.20 y la nota «* Sección
+  Trapezoidal con un ancho mínimo de fondo de 0.30»; por debajo, `DatoInvalidoError` con el
+  campo culpable (la tabla lo exige: «las dimensiones mínimas serán»). La fila pasó de
+  `NoUsada` a `Usada` en el registro; `CapacidadCuneta.ancho_fondo_m` lo lleva al informe.
+- **Por qué así:** (1) el ancho de la tabla se lee, con fondo, del borde de la rasante a la
+  vertical del pie del talud exterior, de modo que Z1 = (a − b)/d: es LECTURA del proyecto
+  (la fuente no dibuja la trapezoidal), declarada en la nota del paso 10.2, y la única con
+  la que la fila da Z1 = 3, como la triangular de 1600 a < 3000 mm/año; (2) el campo es
+  obligatorio en la puerta y en M10 (sin él no se supone sección): una sesión que declaró
+  `seccion_cuneta` antes de VE-5 tiene que añadirlo; (3) la región pluvial sigue sin ser
+  dato: la ventana de profundidad empieza en 0.40 (fila de 1600 a < 3000), de modo que la
+  trapezoidal mínima exacta (0.30 de profundidad) no se puede declarar y una más honda sí.
+- **Qué haría falta:** la región pluvial del corredor en año FEN como dato (el estudio
+  hidrológico), para elegir la fila de la Tabla Nº 34 que rige en vez de deducirla de la
+  forma declarada; la sección rectangular sigue sin implementarse.
+- **Dónde vive:** `src/modulos/M10_espaciamiento.py::geometria_cuneta`
+
