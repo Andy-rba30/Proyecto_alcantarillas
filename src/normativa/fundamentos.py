@@ -1670,6 +1670,32 @@ H_C = _fundamento(
         "cambia dieciseis veces."),
 )
 
+# --- VE-7 lote B, B10 (ficha VE5-MH-01; decision del consultor Fable,
+# triaje VE-7, 2026-11-20) --- El C ponderado de una cuenca con subareas.
+H_C_SUBAREAS = _fundamento(
+    id="FH.C_SUBAREAS",
+    fase=FH,
+    que_paso=("Coeficiente de escorrentia de una cuenca con subareas de "
+              "distinto coeficiente, ponderado por area"),
+    por_que=(
+        "Cuando la cuenca de una obra junta superficies que escurren "
+        "distinto --la plataforma y el talud de una cuneta, un tramo urbano "
+        "y uno de pastos--, un solo coeficiente de tabla describe mal a "
+        "todas. El metodo racional es lineal en el producto C·A: con la "
+        "misma intensidad y el mismo tiempo de concentracion sobre toda la "
+        "cuenca, el caudal de la cuenca entera es la suma de los caudales de "
+        "sus subareas, y eso es lo mismo que la formula con un coeficiente "
+        "ponderado por area. Es una consecuencia de la ecuacion del Manual, "
+        "no una regla aparte, y los coeficientes de cada subarea los declara "
+        "el estudio hidrologico."),
+    verbo=Verbo.DEFINE,
+    citas=("MC_HHD.3.12.2",),               # DEFINICION -> sostiene DEFINE
+    que_pasa_si_no_se_hace=(
+        "La cuenca con subareas tendria que describirse con UNA fila de la "
+        "Tabla N 08, la de la cobertura dominante, y el caudal de la "
+        "superficie que escurre mas quedaria repartido sobre toda el area."),
+)
+
 H_RACIONAL = _fundamento(
     id="FH.RACIONAL",
     fase=FH,

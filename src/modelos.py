@@ -7134,6 +7134,11 @@ class Cuenca:
     # estudio hidrologico: el programa no los elige ni los lee de una tabla.
     c_retardo_izzard: Optional[float] = None
     n_manning_superficial: Optional[float] = None
+    # --- VE-7 lote B, B10 (ficha VE5-MH-01) --- OPCIONAL: las subareas de la
+    # cuenca con distinto coeficiente de escorrentia, pares (C, area en ha)
+    # de la columna `subareas` («C:area_ha;...»). Vacia, C sale de la Tabla
+    # N 08 como siempre; con ella, C = ΣC·A/ΣA (`MH._paso_c`).
+    subareas: Tuple[Tuple[float, float], ...] = ()
 
 
 @dataclass(frozen=True)

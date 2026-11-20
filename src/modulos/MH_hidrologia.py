@@ -237,7 +237,13 @@ COLUMNAS_CUENCAS: Tuple[str, ...] = ("id", "area_km2", "L_cauce_m",
 COLUMNAS_CUENCAS_OPCIONALES: Tuple[str, ...] = ("H_desnivel_m",
                                                 "ajuste_kirpich", "CN",
                                                 "c_retardo_izzard",
-                                                "n_manning_superficial")
+                                                "n_manning_superficial",
+                                                "subareas")
+# --- VE-7 lote B, B10 --- La forma de la columna `subareas`: pares
+# «C:area_ha» separados por «;» (docs/contrato_entradas.md §2-bis).
+SEPARADOR_SUBAREAS = ";"
+SEPARADOR_C_AREA = ":"
+COLUMNA_SUBAREAS = "subareas"
 COLUMNAS_ESTACION: Tuple[str, ...] = ("estacion", "anio", "p24_mm", "fen")
 # Como se escribe el hecho «este año fue FEN» en la columna `fen`.
 FEN_SI: Tuple[str, ...] = ("si", "sí", "1", "fen", "x")
@@ -2366,6 +2372,8 @@ def coeficiente_de_superficie_vial(*, superficie: str, TR: float,
 
 
 def _paso_c(cuenca: Cuenca, TR: float) -> Tuple[float, PasoDeMemoria]:
+    if cuenca.subareas:
+        return _paso_c_por_subareas(cuenca)
     if cuenca.cobertura in SUPERFICIES_VIALES:
         return _paso_c_vial(cuenca, TR)
     S = cuenca.S_terreno
@@ -2397,6 +2405,61 @@ def _paso_c(cuenca: Cuenca, TR: float) -> Tuple[float, PasoDeMemoria]:
             tipo=TipoDeVeredicto.SIN_VEREDICTO,
             explicacion="lectura de tabla, no verificacion"),
         nota_del_proyecto=nota)
+
+
+def coeficiente_ponderado(subareas: Sequence[Tuple[float, float]]) -> float:
+    """
+    --- VE-7 lote B, B10 --- C = ΣC_i·A_i / ΣA_i de las subareas (C, A).
+
+    Es la SUPERPOSICION de la formula racional (num. 3.12.2, ec. (28), cita
+    `MC_HHD.3.12.2`): con la misma intensidad I y el mismo tiempo de
+    concentracion sobre toda la cuenca, Q = 0.278·I·ΣC_i·A_i =
+    0.278·C·I·A con C el ponderado por area. Fundamento [C] derivado de esa
+    cita (`FH.C_SUBAREAS`); el WSDOT Hydraulics Manual, Eq. 2-4, escribe la
+    misma modificacion, y su cita queda por registrar.
+    """
+    return (sum(C * a for C, a in subareas)
+            / sum(a for _C, a in subareas))
+
+
+def _paso_c_por_subareas(cuenca: Cuenca) -> Tuple[float, PasoDeMemoria]:
+    """
+    --- VE-7 lote B, B10 (ficha VE5-MH-01) --- El paso del coeficiente de una
+    cuenca con subareas: imprime cada subarea (su C y su area) y el
+    ponderado por area. Los C los declara el estudio hidrologico en la
+    columna `subareas`; el programa no los lee de la Tabla N 08 ni los
+    ajusta por periodo de retorno.
+    """
+    C = coeficiente_ponderado(cuenca.subareas)
+    sustitucion = []
+    for k, (C_k, A_k) in enumerate(cuenca.subareas, start=1):
+        sustitucion.append(Magnitud(
+            f"C_{k}", C_k, "", f"subarea {k}, columna subareas de "
+                               f"{cuenca.origen}", cifras=CIFRAS_MAGNITUD))
+        sustitucion.append(Magnitud(
+            f"A_{k}", A_k, "ha", f"subarea {k}, columna subareas de "
+                                 f"{cuenca.origen}", cifras=CIFRAS_MAGNITUD))
+    return C, paso(
+        "FH.C_SUBAREAS", codigo=CODIGO_C,
+        que="Coeficiente de escorrentia C de una cuenca con subareas, "
+            "ponderado por area",
+        formula="C = Σ C_i·A_i / Σ A_i   [superposicion de la ecuacion (28) "
+                "con la misma I y el mismo tc]",
+        formula_cita_id="MC_HHD.3.12.2",
+        citas_textuales=("MC_HHD.3.12.2",),
+        sustitucion=tuple(sustitucion),
+        resultado=Magnitud("C", C, "", "coeficiente ponderado de la cuenca",
+                           cifras=CIFRAS_MAGNITUD),
+        veredicto=Veredicto(
+            tipo=TipoDeVeredicto.SIN_VEREDICTO,
+            explicacion="ponderacion de datos declarados, no verificacion"),
+        nota_del_proyecto=(
+            "Los coeficientes de cada subarea los declara el estudio "
+            "hidrologico en la columna subareas; el programa no los lee de "
+            "la Tabla N 08. La ponderacion es la del WSDOT Hydraulics "
+            "Manual, Equation 2-4 (pag. impresa 2-8), fuente tecnica [C] "
+            "cuya cita queda por registrar; aqui se sostiene como "
+            "superposicion de la ecuacion (28) del Manual."))
 
 
 def _paso_c_vial(cuenca: Cuenca, TR: float) -> Tuple[float, PasoDeMemoria]:
@@ -3582,8 +3645,74 @@ def cargar_cuencas(ruta: Any, *, datos: Optional[bytes] = None) -> Dict[str, Cue
                                  id_punto=id_),
             ajuste_kirpich=ajuste, CN=CN, origen=donde,
             c_retardo_izzard=de_superficie["c_retardo_izzard"],
-            n_manning_superficial=de_superficie["n_manning_superficial"])
+            n_manning_superficial=de_superficie["n_manning_superficial"],
+            subareas=_subareas(fila, donde, id_,
+                               _numero(fila, "area_km2", donde,
+                                       id_punto=id_)))
     return cuencas
+
+
+def _subareas(fila: Dict[str, str], donde: str, id_: str,
+              area_km2: float) -> Tuple[Tuple[float, float], ...]:
+    """
+    --- VE-7 lote B, B10 (ficha VE5-MH-01; decision del consultor Fable,
+    triaje VE-7, 2026-11-20) --- La columna OPCIONAL `subareas` del CSV de
+    cuencas: «C:area_ha;C:area_ha;...», cada subarea con su coeficiente de
+    escorrentia y su area en hectareas. Vacia o ausente, (): C sale de la
+    Tabla N 08 como hasta hoy.
+
+    Valida y no corrige: cada C es un coeficiente (0 < C <= 1, la fraccion
+    de la lluvia que escurre), cada area es positiva y finita, y la suma de
+    las areas es el area de la cuenca --la de `area_km2`, que
+    `exigir_areas_coherentes` ata a la columna `area_ha` del CSV de puntos--
+    con la tolerancia del area escrita dos veces
+    (`TOL_REL_AREA_ESCRITA_DOS_VECES`). Si no, `DatoInvalidoError` sobre
+    `subareas` nombrando el par: son la misma cuenca escrita dos veces.
+    """
+    bruto = fila.get(COLUMNA_SUBAREAS, "")
+    if not bruto:
+        return ()
+    pares: List[Tuple[float, float]] = []
+    for trozo in bruto.split(SEPARADOR_SUBAREAS):
+        if not trozo.strip():
+            continue
+        partes = trozo.split(SEPARADOR_C_AREA)
+        try:
+            if len(partes) != 2:
+                raise ValueError
+            C, area_ha = float(partes[0]), float(partes[1])
+        except ValueError:
+            raise DatoInvalidoError(
+                COLUMNA_SUBAREAS, valor=bruto, id_punto=id_,
+                motivo=f"cada subarea se escribe «C:area_ha» y se separan "
+                       f"con «;»; «{trozo.strip()}» no tiene esa forma "
+                       f"({donde})") from None
+        if not (math.isfinite(C) and 0 < C <= 1):
+            raise DatoInvalidoError(
+                COLUMNA_SUBAREAS, valor=bruto, id_punto=id_,
+                motivo=f"el coeficiente de escorrentia {C:g} de la subarea "
+                       f"«{trozo.strip()}» no es una fraccion de la lluvia "
+                       f"(0 < C <= 1) ({donde})")
+        if not (math.isfinite(area_ha) and area_ha > 0):
+            raise DatoInvalidoError(
+                COLUMNA_SUBAREAS, valor=bruto, id_punto=id_,
+                motivo=f"el area de la subarea «{trozo.strip()}» tiene que "
+                       f"ser un numero finito y positivo, en ha ({donde})")
+        pares.append((C, area_ha))
+    if not pares:
+        return ()
+    suma_ha = sum(a for _C, a in pares)
+    de_la_cuenca_ha = area_km2 * HECTAREAS_POR_KM2
+    if not math.isclose(suma_ha, de_la_cuenca_ha,
+                        rel_tol=TOL_REL_AREA_ESCRITA_DOS_VECES):
+        raise DatoInvalidoError(
+            COLUMNA_SUBAREAS, valor=bruto, id_punto=id_,
+            motivo=f"contradice a otro dato: las subareas suman {suma_ha:g} "
+                   f"ha y la cuenca tiene {area_km2:g} km2 = "
+                   f"{de_la_cuenca_ha:g} ha (columna area_km2, que es el "
+                   f"area_ha del CSV de puntos). Son la misma cuenca y el "
+                   f"programa no elige cual vale ({donde})")
+    return tuple(pares)
 
 
 def cargar_estacion(ruta: Any, *,

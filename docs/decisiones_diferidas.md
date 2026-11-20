@@ -4139,8 +4139,9 @@ tres más (`T1-07` a `T1-09`) las dejó la auditoría adversarial de la misma se
   [C], no [A]. Lo que falta no es fuente sino forma de entrada: hoy el CSV de cuencas es
   una fila por obra, con un área que tiene que coincidir con `area_ha`, y varias subáreas
   por obra cambian el contrato, que decide su dueño.
-- **Qué haría falta:** la forma de las subáreas en `docs/contrato_entradas.md`, la cita de
-  la Eq. 2-4 en el registro y ΣC·A en el paso del coeficiente.
+- **Cerrado en VE-7 (lote B, B10; ficha VE7B-06):** la columna opcional `subareas` y ΣC·A/ΣA en
+  el paso del coeficiente. La cita de la Eq. 2-4 sigue sin registrar.
+- **Qué haría falta:** la cita de la Eq. 2-4 en el registro.
 - **Dónde vive:** `src/modulos/MH_hidrologia.py::_paso_c`
 
 ## T1-06 · `MetodoNoEvaluableError` admite un rótulo propio para la hidrología
@@ -9270,3 +9271,25 @@ cambios están aplicados en estas fichas.
 - **Qué haría falta:** una disposición de AASHTO o del Manual de Puentes que fije el largo; si el
   dueño prefiere la otra lectura, declararla.
 - **Dónde vive:** `src/modulos/M8_estructural.py::lectura_del_tubo_de_concreto_somero`
+
+## VE7B-06 · El coeficiente de escorrentía ponderado por subáreas (cierre de VE5-MH-01)
+
+- **Cerrado (VE-7 lote B, B10):** el CSV de cuencas admite la columna opcional `subareas`
+  («C:area_ha;…», `MH._subareas`): cada C en (0, 1], cada área positiva, y Σáreas = el área de la
+  cuenca (`area_km2`, que `exigir_areas_coherentes` ata a `area_ha`) con
+  `TOL_REL_AREA_ESCRITA_DOS_VECES`; si no, `DatoInvalidoError` sobre `subareas`. Con ella
+  `MH._paso_c` imprime cada subárea (C_k, A_k) y C = ΣC·A/ΣA (`coeficiente_ponderado`, fundamento
+  `FH.C_SUBAREAS`, verbo DEFINE sobre `MC_HHD.3.12.2`): es la superposición de la ecuación (28) con
+  la misma I y el mismo tc, fundamento [C] derivado de la cita ya registrada. La nota nombra la
+  Eq. 2-4 del WSDOT Hydraulics Manual. Sin la columna, todo igual que antes. Contrato:
+  `docs/contrato_entradas.md` §2-bis. `modelos.Cuenca.subareas` (campo nuevo, al final).
+- **Decisión del consultor Fable (triaje VE-7, 2026-11-20):** columna opcional, Σárea = área, C
+  ponderado con fundamento derivado.
+- **Abierto:** (1) la cita de la Eq. 2-4 (WSDOT, pág. impresa 2-8, PDF 44) queda por registrar.
+  (2) **Pendiente de revisión Fable:** los C de cada subárea se DECLARAN en el CSV; `FH.C` dice que
+  el programa no acepta un coeficiente tecleado y lo lee de la Tabla Nº 08. Se tomó el lado de la
+  especificación («C:area_ha») y se dice en la nota del paso; la alternativa sería «cobertura,suelo:
+  area_ha» leída de la tabla. (3) Con subáreas, `cobertura` y `suelo` se siguen validando y no
+  entran en C; tampoco se aplica el incremento por periodo de retorno de las superficies viales.
+- **Qué haría falta:** registrar la cita; la decisión sobre (2).
+- **Dónde vive:** `src/modulos/MH_hidrologia.py::coeficiente_ponderado`
