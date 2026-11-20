@@ -31,6 +31,12 @@ cada vez que se integra algo. Fecha de esta versión: 2026-11-20.
 >   `claude/ve4c-v5-remanso` (V5 `perfil_de_remanso_paso_a_paso`, T7B-01),
 >   `claude/ve4d-v8-desborde` (V8 `desborde_admitido_con_terraplen_protegido`, T7B-02),
 >   `claude/ve4e-agua-por-condicion` (WA estática y sísmica con `sin_drenaje`, VE3-21).
+>   Y (dueño, 2026-11-20) `claude/ve4f-relleno-bajo`: la carga viva con relleno bajo, fuera del
+>   dominio de AASHTO 3.6.1.2.6a (límite 3 de «Apuntado para después de VE-4»); se integra
+>   después de VE-4a a VE-4e. VE-4a terminado (`cf302c0`), en revisión Fable. Decisión del
+>   dueño pendiente de VE4A-01, con la recomendación: `fila_phi_estabilidad_global` vacía hasta
+>   el EMS; con el EMS, 0.65 (FS ≥ 1.54, coherente con el 1.50 de E.050) salvo sondeos en cada
+>   cabezal.
 >   Después: revisión independiente con Fable de cada una, integración en una rama, suite,
 >   sellos y `main`. Si la sesión se corta: cada rama tiene su avance; retomar desde ellas.
 > - **Sigue abierto, para cada obra (no es del programa):** con los valores de archivo el
