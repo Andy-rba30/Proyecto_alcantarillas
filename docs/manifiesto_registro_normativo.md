@@ -907,6 +907,7 @@ línea que se pueda romper.
 | `E060.14.8.4` | 14.8.4 | «Muros de contención» | pág. impresa **134** · PDF 134 | exigencia | 2026-08-28 · texto |
 | `E060.15.7#PERALTE` | 15.7 | «PERALTE MÍNIMO DE LAS ZAPATAS» | pág. impresa **138** · PDF 138 | exigencia | 2026-11-13 · texto |
 | `E060.22.10.2#CICLOPEO` | 22.10.2.1 | 22.10 CONCRETO CICLOPEO › «Limitaciones» | pág. impresa **195** · PDF 195 | exigencia | 2026-11-13 · texto |
+| `E060.22.10.2.2#VOLADIZO` | 22.10.2.2 | 22.10 CONCRETO CICLOPEO › «Limitaciones» | pág. impresa **195** · PDF 195 | exigencia | 2026-11-20 · texto |
 | `E060.22.10.2.3#PHI` | 22.10.2.3 | 22.10 CONCRETO CICLOPEO › «Limitaciones» | pág. impresa **195** · PDF 195 | exigencia | 2026-11-13 · texto |
 | `E060.22.4.7#JUNTAS` | 22.4.7 | «MÉTODO DE DISEÑO» | pág. impresa **191** · PDF 191 | exigencia | 2026-11-13 · texto |
 | `E060.22.4.8#PERALTE` | 22.4.8 | «MÉTODO DE DISEÑO» | pág. impresa **191** · PDF 191 | exigencia | 2026-11-13 · texto |
@@ -958,6 +959,8 @@ línea que se pueda romper.
 > **`E060.15.7#PERALTE`** — La frase sigue: «ni menor de 400 mm en el caso de zapatas apoyadas sobre pilotes». Es del Capitulo 15 (zapatas de concreto ARMADO), que la Via 1 de la §0.2 de la hoja de ruta saca del diseño estructural (rige AASHTO LRFD Seccion 5), y E.060 es una norma de edificaciones: aplicada a la zapata del cabezal de voladizo armado es una ANALOGIA, y el criterio que la usa es [N→] ('peralte_min_zapata_armada_m'). El espesor total suma ademas el recubrimiento del refuerzo inferior contra el suelo (E.060 7.7.1 a), 70 mm, que si rige por la excepcion de durabilidad de la §0.2).
 
 > **`E060.22.10.2#CICLOPEO`** — El 22.10.2.2, en la misma pagina, sigue: «En elementos en voladizo con una longitud mayor a la mitad de su peralte, será necesario verificar las resistencias en flexión y corte», y el 22.10.2.3 fija φ = 0,5 y f'c de diseño no mayor de 10 MPa. Es el limite del cabezal de GRAVEDAD en ciclopeo: un muro de gravedad, no un voladizo de concreto simple. La regla del tipo por altura de 'predimensionamiento_cabezal' no lo juzga (es geometria); lo juzga T-7c, y la memoria lo avisa cuando el tipo sale de gravedad.
+
+> **`E060.22.10.2.2#VOLADIZO`** — Dada de alta en VE-7 (lote C) con el texto que T-7a transcribio en la nota de E060.22.10.2#CICLOPEO, y firmada en A11 contra la pagina 195 del PDF (NORMAS_DIR enlazado; dictamen Fable 2026-11-20: aprobada con caducidad, se firma en la primera sesion con NORMAS_DIR). «Será necesario» es EXIGENCIA: el voladizo de ciclopeo mas largo que la mitad de su peralte se verifica en flexion y corte (C7 de M9, la punta y el talon de la zapata del cabezal de gravedad), y es la cita principal de C7.
 
 > **`E060.22.10.2.3#PHI`** — «... φ = 0,5 y se utilizará, para el diseño, un valor de f'c no mayor a 10 MPa» (el verbatim se corta en el simbolo). El 22.10.2.2 pide verificar flexion y corte en los voladizos mas largos que la mitad de su peralte.
 
@@ -3406,7 +3409,7 @@ escrita, y el test la exige.
 | `COND-MULTICELDA-ARRASTRE` | cita:MC_HHD.4.1.1.3.4a#MULTIPLES | `la capacidad de arrastre del curso -- palizada, troncos, material de cauce -- no es una magnitud que este programa calcule ni una columna del CSV: se establece con inspeccion del cauce, y es de CADA punto, no del corredor` | advierte |
 | `COND-N-MANNING-CAJON` | cita:MC_HHD.4.1.1.3.6#T09 | `n_manning_cajon` | bloquea |
 | `COND-PERFIL-SIN-INFO-SECUNDARIA` | cita:MS.4.2#PERFIL | `existe_informacion_secundaria_tramo` | bloquea |
-| `COND-SELVA-ALTA` | cita:MC_HHD.4.1.1.3.7a | `region == 'selva_alta'` | excluye |
+| `COND-SELVA-ALTA` | cita:MC_HHD.4.1.1.3.7a | `region_natural` | excluye |
 
 ## 6-bis. Fundamentos: por qué se hace cada paso
 
@@ -3537,7 +3540,7 @@ recomienda.
 | `F9.ARM_REGIMEN` | Fase 9 - Cabezal y aletas | Empuje con que se arma cada elemento: en reposo o activo, y las solicitaciones factoradas que resultan | **recomienda** | `AASHTO_LRFD_9.C3.11.1#REPOSO`, `AASHTO_LRFD_9.C11.6.5.4#K0`, `AASHTO_LRFD_9.3.11.5.2#K0`, `AASHTO_LRFD_9.C3.11.5.2#ACTIVO`, `AASHTO_LRFD_9.11.6.5.4#NO_CEDENTE`, `AASHTO_LRFD_9.C11.6.5.4#H_MEDIOS` |
 | `F9.ARM_TABLA` | Fase 9 - Cabezal y aletas | Tabla de armado del cabezal: acero requerido, minimo y propuesto por elemento | **obliga** | `AASHTO_LRFD_9.5.6.3.2.1#MR`, `AASHTO_LRFD_9.5.6.3.3#MINIMO`, `AASHTO_LRFD_9.5.10.6#TEMPERATURA` |
 | `F9.ARM_ZAPATA` | Fase 9 - Cabezal y aletas | Secciones criticas de la zapata: la punta y el talon en la cara de la pantalla | **obliga** | `AASHTO_LRFD_9.5.12.8.4#CARA`, `AASHTO_LRFD_9.10.6.5#LINEAL`, `AASHTO_LRFD_9.11.6.1.2#TALON`, `AASHTO_LRFD_9.C5.12.8.6.1#TALON` |
-| `F9.CICLOPEO` | Fase 9 - Cabezal y aletas | Cabezal de gravedad en concreto ciclopeo: posicion de la resultante en la base y en el cuerpo, y limites del material | **obliga** | `E060.22.10.2#CICLOPEO`, `E060.22.10.2.3#PHI`, `E060.22.5.3#TRACCION`, `E060.22.5.4#CORTANTE`, `E060.22.4.7#JUNTAS`, `E060.22.6.3#TERCIO`, `E060.22.6.3#EXCENTRICIDAD`, `E060.22.6.6.5#ABERTURAS`, `E060.22.4.8#PERALTE`, `EG2013.503.04#T503_07` |
+| `F9.CICLOPEO` | Fase 9 - Cabezal y aletas | Cabezal de gravedad en concreto ciclopeo: posicion de la resultante en la base y en el cuerpo, y limites del material | **obliga** | `E060.22.10.2#CICLOPEO`, `E060.22.10.2.2#VOLADIZO`, `E060.22.10.2.3#PHI`, `E060.22.5.3#TRACCION`, `E060.22.5.4#CORTANTE`, `E060.22.4.7#JUNTAS`, `E060.22.6.3#TERCIO`, `E060.22.6.3#EXCENTRICIDAD`, `E060.22.6.6.5#ABERTURAS`, `E060.22.4.8#PERALTE`, `EG2013.503.04#T503_07` |
 | `F9.COMBINACIONES` | Fase 9 - Cabezal y aletas | Cargas del cabezal con sus brazos y combinaciones de cada marco: factoradas (LRFD) y de servicio (ASD) | **obliga** | `AASHTO_LRFD_9.11.6.3.2#PORTANTE`, `AASHTO_LRFD_9.C11.5.6#FIGURAS`, `AASHTO_LRFD_9.C11.5.6#SOBRECARGA`, `MP.T2.4.5.3.1-2`, `E050.17.1#SERVICIO` |
 | `F9.CORONACION` | Fase 9 - Cabezal y aletas | Coronacion y altura del cabezal: sobre la clave exterior y sobre el nivel de agua del extremo | **obliga** | `HDS5_3ED.3.3.5#ENCAJE` |
 | `F9.DESPLANTE` | Fase 9 - Cabezal y aletas | Profundidad de desplante del cabezal: minimo de E.050 y, a la salida, bajo la socavacion | **obliga** | `E050.26.2#PROFUNDIDAD`, `AASHTO_LRFD_9.10.6.1.2#DESPLANTE`, `HEC14.5.1.3#CABEZAL`, `AASHTO_LRFD_9.12.6.5#ZAPATAS` |
@@ -3561,6 +3564,7 @@ recomienda.
 | `FH.AJUSTE` | Fase 1-bis - Hidrologia: caudal de diseño | Precipitacion maxima en 24 horas para el periodo de retorno, por ajuste de una distribucion de probabilidad a la serie | **recomienda** | `MC_HHD.3.7.1`, `MC_HHD.3.7.1.1`, `MC_HHD.3.7.1.2`, `MC_HHD.3.7.1.7`, `MC_HHD.3.7.2b` |
 | `FH.C` | Fase 1-bis - Hidrologia: caudal de diseño | Coeficiente de escorrentia C de la Tabla Nº 08, por cobertura vegetal, tipo de suelo y pendiente del terreno | **obliga** | `MC_HHD.3.12.2#T08`, `WSDOT_HM.2-6.2#T2-2`, `WSDOT_HM.2-6.2#FRECUENCIA` |
 | `FH.CONSISTENCIA` | Fase 1-bis - Hidrologia: caudal de diseño | Consistencia de la serie de la estacion: lo que el Manual manda evaluar y el programa no evalua | **obliga** | `MC_HHD.3.3#CONSISTENCIA`, `MC_HHD.3.4#CONSISTENCIA` |
+| `FH.C_SUBAREAS` | Fase 1-bis - Hidrologia: caudal de diseño | Coeficiente de escorrentia de una cuenca con subareas de distinto coeficiente, ponderado por area | **define** | `MC_HHD.3.12.2`, `MC_HHD.3.12.2#T08` |
 | `FH.FACTOR_P24` | Fase 1-bis - Hidrologia: caudal de diseño | Factor de intervalo fijo de la serie de 24 horas: por cuanto se multiplica cada maximo anual antes del ajuste | **define** | `MC_HHD.3.8.1#P24`, `MC_HHD.3.8.1#T04` |
 | `FH.FEN` | Fase 1-bis - Hidrologia: caudal de diseño | Contraste del tratamiento de los años FEN: la lluvia de diseño adoptada frente a la de la serie completa y la de la serie sin los años FEN | **obliga** | `MC_HHD.3.4#FEN`, `MC_HHD.3.12.5#PIURA` |
 | `FH.INTENSIDAD` | Fase 1-bis - Hidrologia: caudal de diseño | Intensidad de la lluvia de diseño para una duracion igual al tiempo de concentracion, desde la precipitacion maxima en 24 horas | **permite** | `MC_HHD.3.8.1#DICK_PESCHKE`, `MC_HHD.3.8.1#T04`, `MC_HHD.3.8.1#DURACION`, `WSDOT_HM.2-6.3#TC_MINIMO` |
@@ -3725,7 +3729,7 @@ vigila. Una cita con cualquier campo pendiente NO puede llevar firma de
 verificación.
 
 
-Citas sin firma de verificación: **6** de 629.
+Citas sin firma de verificación: **6** de 630.
 - `AASHTO_M294_TRAD.1.1.1`
 - `AASHTO_M294_TRAD.1.4`
 - `AASHTO_M294_TRAD.7.2.1`
