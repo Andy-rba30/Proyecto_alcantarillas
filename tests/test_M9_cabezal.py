@@ -239,7 +239,8 @@ def test_los_pasos_llevan_etiqueta_y_origen_para_M11():
 def test_el_factor_de_muro_reducido_no_se_asume():
     """
     Sec. 9.2: si el muro admitiera 25-50 mm de desplazamiento seria
-    k_h = 0.5*k_h0 = 0.25. "No asumirlo en un cabezal empotrado".
+    k_h = 0.5*k_h0 = 0.25. "No se asume de archivo": se declara por obra
+    (Sec. 9.2 corregida, ficha VE3-20).
     """
     assert factor_muro() == pytest.approx(CP7["factor_muro_rigido"])
     assert cadena_sismica().k_h == pytest.approx(

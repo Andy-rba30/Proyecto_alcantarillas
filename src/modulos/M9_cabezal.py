@@ -736,8 +736,10 @@ def factor_muro() -> float:
     tecnica: AASHTO, del que el numeral es traduccion, la condiciona ademas a
     que el movimiento lateral sea "acceptable to the Owner". Este cabezal va
     empotrado en el terraplen y no tiene desplazamiento admisible garantizado,
-    de modo que se declara SIN reduccion -- el lado conservador, y el que la
-    propia Sec. 9.2 subraya ("no asumirlo en un cabezal empotrado").
+    de modo que el archivo lo declara SIN reduccion: el programa no asume la
+    aceptacion del Propietario. La Sec. 9.2 (corregida, ficha VE3-20) pide
+    declarar la reduccion por obra, con el detalle que permite el movimiento
+    y la aceptacion escrita del Propietario.
     """
     declarado = ca.valor(CRITERIO_FACTOR_MURO)
     if declarado not in FACTOR_MURO_DECLARACIONES:

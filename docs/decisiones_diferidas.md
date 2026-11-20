@@ -8305,14 +8305,18 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   (`proceso/planes_mejora/ve3_estado/verificaciones_del_dueno/sismo_cabezal_que_se_pasa.md`)
   no halló error aritmético: lo que no cierra es el relleno lleno de agua bajo sismo
   (`drenaje_trasdos` de archivo) sobre k_h = k_h0, que por definición es desplazamiento nulo.
-  La exención de AASHTO 11.5.4.2 no aplica (A_s = 0.50 g). Aceptar el desplazamiento es del
+  La exención de AASHTO 11.5.4.2 no puede invocarse: A_s = 0.50 g y la zona sísmica (Zona 4
+  estimada, S_D1 ≈ 0.63 a 0.72, con una lectura de S1 que el EMS tiene que confirmar) no es
+  dato del proyecto. Aceptar el desplazamiento es del
   Propietario («acceptable to the Owner»), y el programa no lo asume.
-- **Abierto, defecto de la hoja de ruta (no se edita aquí):** la §9.2 dice «No asumirlo en un
-  cabezal empotrado en terraplén» y presenta «sin reducción» como el lado seguro sin decir que
-  k_h0 es la aceleración con desplazamiento nulo, ni que con el PGA del sitio ningún cabezal del
-  juego lo cumple: la zapata crece hasta el tope sin converger. Mientras no se corrija, quien
-  lea sólo la hoja de ruta diseñará con una exigencia que el programa no puede cerrar.
-- **Qué haría falta:** que el dueño corrija la §9.2; el EMS real (φ de la fundación, clase de
+- **Cerrado (dueño, 2026-11-20), el defecto de la hoja de ruta:** la §9.2 decía «No asumirlo
+  en un cabezal empotrado en terraplén» y presentaba «sin reducción» como el lado seguro sin
+  decir que k_h0 es la aceleración con desplazamiento nulo, ni que con el PGA del sitio ningún
+  cabezal del juego lo cumple. Hoy dice «No se asume de archivo: se declara por obra», con su
+  nota «Corregido (`VE3-20`, dueño, 2026-11-20)» verificada contra AASHTO 11.6.5.2.1,
+  11.6.5.2.2, 11.5.4.2 y C11.6.5.4. El docstring de `M9.factor_muro` y la ficha de
+  `factor_muro_eleccion`, que citaban la frase vieja, se ajustaron.
+- **Qué haría falta:** el EMS real (φ de la fundación, clase de
   sitio, licuefacción, que 11.5.4.2 pone como condición previa); y, para cada obra, el detalle
   que permite el movimiento (junta en los aleros y en la unión con el conducto) con la
   aceptación escrita del Propietario.
@@ -8328,7 +8332,8 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   drenaje). La reducción de k_h (`factor_muro_eleccion`) y
   `regimen_resistencia_elementos_cabezal` no cambian de valor de archivo (VE3-20).
 - **Cerrado con el valor de archivo:** con el relleno drenado el agua del relleno bajo sismo es
-  la del freático del punto, que es el nivel medio que pide C11.6.5.3: la corrección del nivel
+  la del freático del punto, que el proyecto toma como el nivel medio que C11.6.5.3 recomienda
+  («should», comentario): la corrección del nivel
   medio queda cubierta sin tocar el ensamble. El juego de la validación integral ya no declara
   el drenaje, y su corrida titular no lee el peso específico saturado del relleno, que pasa a
   las condicionales no medidas del contrato de entradas (§7).
@@ -8337,10 +8342,9 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
 - **Por qué:** separar el agua estática de la sísmica en `M9.cargas_del_cabezal` exigiría
   duplicar las cargas WA (empuje del agua y subpresión) por condición, y el caso declarado es
   el excepcional de la norma.
-- **Abierto, la hoja de ruta (no se edita aquí):** su Fase 9 («El agua una sola vez») sigue
-  diciendo `sin_drenaje` de archivo. Mientras no se corrija, quien la lea sin leer el código
-  creerá que el relleno se calcula lleno de agua por defecto.
+- **Cerrado (dueño, 2026-11-20), la hoja de ruta:** su Fase 9 («El agua una sola vez») decía
+  `sin_drenaje` de archivo; hoy dice `drenado`, con su nota «Corregido (`VE3-21`, dueño,
+  2026-11-20)» verificada contra AASHTO 11.6.6 y C11.6.5.3.
 - **Qué haría falta:** cargas WA por condición (estática y sísmica) en el ensamble, y la lectura
-  del nivel medio de un relleno sin drenar bajo sismo verificada contra C11.6.5.3; y que el
-  dueño corrija la Fase 9 de la hoja de ruta.
+  del nivel medio de un relleno sin drenar bajo sismo verificada contra C11.6.5.3.
 - **Dónde vive:** `src/modulos/M9_cabezal.py::cargas_del_cabezal`
