@@ -8344,29 +8344,26 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
 
 ## VE3-21 · El trasdós drenado es el valor de archivo (VE-3.16, decisión del dueño del 2026-11-18)
 
-- **Cerrado:** `drenaje_trasdos` pasa de «sin_drenaje» a «drenado» de archivo. AASHTO LRFD
-  11.6.6 manda drenar el relleno («shall be drained») y sólo admite la hidrostática plena «if
-  drainage cannot be provided»: el archivo tenía la excepción de la norma como regla. Adoptarlo
-  COMPROMETE el filtro y los lloraderos en los planos y su mantenimiento (un lloradero tapado
-  devuelve el caso «sin_drenaje»; C11.6.6 advierte que los lloraderos solos no aseguran el
-  drenaje). La reducción de k_h (`factor_muro_eleccion`) y
-  `regimen_resistencia_elementos_cabezal` no cambian de valor de archivo (VE3-20).
-- **Cerrado con el valor de archivo:** con el relleno drenado el agua del relleno bajo sismo es
-  la del freático del punto, que el proyecto toma como el nivel medio que C11.6.5.3 recomienda
-  («should», comentario): la corrección del nivel
-  medio queda cubierta sin tocar el ensamble. El juego de la validación integral ya no declara
-  el drenaje, y su corrida titular no lee el peso específico saturado del relleno, que pasa a
-  las condicionales no medidas del contrato de entradas (§7).
-- **Qué se difirió:** con «sin_drenaje» declarado el sismo sigue con el relleno lleno hasta su
-  superficie, no con el nivel medio.
-- **Por qué:** separar el agua estática de la sísmica en `M9.cargas_del_cabezal` exigiría
-  duplicar las cargas WA (empuje del agua y subpresión) por condición, y el caso declarado es
-  el excepcional de la norma.
-- **Cerrado (dueño, 2026-11-20), la hoja de ruta:** su Fase 9 («El agua una sola vez») decía
-  `sin_drenaje` de archivo; hoy dice `drenado`, con su nota «Corregido (`VE3-21`, dueño,
-  2026-11-20)» verificada contra AASHTO 11.6.6 y C11.6.5.3.
-- **Qué haría falta:** cargas WA por condición (estática y sísmica) en el ensamble, y la lectura
-  del nivel medio de un relleno sin drenar bajo sismo verificada contra C11.6.5.3.
+- **Cerrado:** `drenaje_trasdos` pasa de «sin_drenaje» a «drenado» de archivo (AASHTO 11.6.6,
+  «shall be drained»). Adoptarlo COMPROMETE el filtro y los lloraderos en planos y su
+  mantenimiento (C11.6.6). Con el relleno drenado el agua bajo sismo es la del freático del
+  punto, el nivel medio que C11.6.5.3 recomienda.
+- **Cerrado (VE-4e, 2026-11-20), lo diferido:** con «sin_drenaje» el sismo iba con el relleno
+  lleno. Hoy el agua es POR CONDICIÓN en `cargas_del_cabezal`: la estática llena el relleno
+  retenido (11.6.6) y la sísmica va con el nivel medio en el tiempo (cita nueva
+  `AASHTO_LRFD_9.C11.6.5.3#NIVEL_MEDIO`, pág. impresa 11-31, PDF 1500, «should»). WA, el suelo
+  sumergido, el peso del relleno sobre el talón y el incremento salen del nivel de SU condición.
+- **Por qué es [A] sin valor:** la fuente no dice cuál es el nivel medio de un relleno que no
+  drena. Lo declara el proyectista con el EMS en `nivel_agua_relleno_sin_drenaje_bajo_sismo`
+  (`superficie_del_relleno`, lo de antes de VE-4e, o `freatico_natural`); sin declararlo la
+  condición sísmica se detiene (`CriterioPendienteError`). Con «drenado» no se lee y ningún
+  número cambia (`tests/test_ve4e_agua_por_condicion.py`; variantes `sin_drenaje_declarado` y
+  `sin_drenaje_sismo_en_el_freatico` de la validación integral).
+- **Abierto contra la hoja de ruta:** su nota «Corregido (`VE3-21`…)» de la Fase 9 dice aún que,
+  declarado `sin_drenaje`, el sismo va con el relleno lleno «(diferido en la ficha VE3-21)».
+  Mientras no se corrija, quien lea sólo la hoja creerá que es así siempre.
+- **Qué haría falta:** el nivel medio como cota declarada por punto (dato del EMS entre el
+  freático y la superficie), si una obra lo tuviera medido.
 - **Dónde vive:** `src/modulos/M9_cabezal.py::cargas_del_cabezal`
 
 ## VE4A-01 · E4 y E5 con el FS declarado del EMS: tres lecturas del proyecto y una fila sin valor (VE-4a, decisión del dueño del 2026-11-20)

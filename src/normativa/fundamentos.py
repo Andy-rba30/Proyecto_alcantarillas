@@ -3669,10 +3669,15 @@ AGUA_CABEZAL = _fundamento(
         "contencion. El proyecto lee que, sin un drenaje declarado, el agua "
         "puede llenar el relleno hasta su superficie; con el, queda en el "
         "nivel freatico natural del punto. La subpresion actua bajo la "
-        "zapata en los dos casos."),
+        "zapata en los dos casos. Bajo sismo el comentario de la fuente "
+        "recomienda el nivel medio del agua en el tiempo: con el drenaje es "
+        "el mismo freatico natural, y sin el la fuente no dice cual es y lo "
+        "declara el proyectista."),
     verbo=Verbo.OBLIGA,
     citas=("AASHTO_LRFD_9.3.11.3", "AASHTO_LRFD_9.11.6.6#DRENAJE",
-           "E050.39.13.8#DRENAJE", "MP.2.4.3.8.2"),
+           "E050.39.13.8#DRENAJE", "MP.2.4.3.8.2",
+           # --- VE-4e (ficha VE3-21) --- el nivel medio bajo sismo.
+           "AASHTO_LRFD_9.C11.6.5.3#NIVEL_MEDIO"),
     que_pasa_si_no_se_hace=(
         "Con el freatico alto del Bajo Piura, el empuje y la subpresion del "
         "agua son del orden del empuje de tierras: omitirlos deja el muro "
