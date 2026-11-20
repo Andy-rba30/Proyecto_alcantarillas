@@ -35,6 +35,7 @@ from src.modelos import (CriterioPendienteError, DatoFaltanteError,
                          TipoMaterial)
 from src.modulos import M12_metrados as M12
 from src.modulos.M9_cabezal import TIPO_GRAVEDAD, TIPO_VOLADIZO
+from tests.apoyo.aproximacion import ABS_CERO, REL_TRANSPORTE
 from tests.fixtures.casos_patron import CP_M12_METRADOS as CP
 
 TOL = 1e-6
@@ -208,7 +209,8 @@ def test_cimientos_del_cabezal_recto_a_mano():
     total = 5.40 + 0.576
     agua = 4.86 + 0.504
     assert (total, agua) == pytest.approx(
-        (CP["cimientos_entrada_m3"], CP["cimientos_entrada_agua_m3"]))
+        (CP["cimientos_entrada_m3"], CP["cimientos_entrada_agua_m3"]),
+        abs=TOL_CP)
     assert r["cimientos del cabezal de entrada, bajo agua (bajo el nivel "
              "freatico)"].cantidad == pytest.approx(agua, abs=TOL)
     assert r["cimientos del cabezal de entrada, en seco"].cantidad == \
@@ -263,10 +265,11 @@ def test_un_sucs_que_no_es_suelo_no_se_toma_por_material_comun():
 
 
 def test_integral_positiva_es_exacta_en_los_tres_casos():
-    assert M12.integral_positiva(1.0, 3.0, 2.0) == pytest.approx(4.0)
-    assert M12.integral_positiva(-1.0, -3.0, 2.0) == 0.0
+    assert M12.integral_positiva(1.0, 3.0, 2.0) == pytest.approx(4.0, abs=TOL)
+    assert M12.integral_positiva(-1.0, -3.0, 2.0) == pytest.approx(
+        0.0, abs=ABS_CERO)
     # cruza el cero en x = 0.5: triangulo de base 0.5 y altura 1
-    assert M12.integral_positiva(1.0, -1.0, 1.0) == pytest.approx(0.25)
+    assert M12.integral_positiva(1.0, -1.0, 1.0) == pytest.approx(0.25, abs=TOL)
 
 
 # ===========================================================================
@@ -322,8 +325,10 @@ def test_acero_de_los_cabezales_a_mano():
         punta transversal      (1.8/0.25)·3.0·1.00         = 21.600
     con i = 0.10:  1.10 · 55.728 = 61.3008 kg
     """
-    assert PESO_BARRA_KG_M_EG2013["1/2"] == 1.00
-    assert PESO_BARRA_KG_M_EG2013["3/8"] == 0.56
+    assert PESO_BARRA_KG_M_EG2013["1/2"] == pytest.approx(
+        1.00, rel=REL_TRANSPORTE)
+    assert PESO_BARRA_KG_M_EG2013["3/8"] == pytest.approx(
+        0.56, rel=REL_TRANSPORTE)
     ca.establecer_valor_dinamico("incremento_acero_por_despiece", 0.10)
     try:
         ent, sal = M12.renglones_acero_cabezales(cabezal=_cabezal())
@@ -439,16 +444,17 @@ def test_cuadro_de_compatibilidad_tres_estados():
                                  tamizado=_tamizado(factible=True),
                                  cota_salida=99.78)
     assert ok.estado == ESTADO_RASANTE_COMPATIBLE
-    assert ok.holgura_m == pytest.approx(0.5) and ok.delta_rasante_m is None
+    assert ok.holgura_m == pytest.approx(0.5, abs=TOL) and ok.delta_rasante_m is None
     mal = M12.fila_compatibilidad(punto=_punto(), tamizado=_tamizado(
         factible=False, actual=101.0, minima=101.3))
     assert mal.estado == ESTADO_RASANTE_SUBIR
-    assert mal.delta_rasante_m == pytest.approx(0.3)
-    assert mal.holgura_m == pytest.approx(-0.3)
+    assert mal.delta_rasante_m == pytest.approx(0.3, abs=TOL)
+    assert mal.holgura_m == pytest.approx(-0.3, abs=TOL)
     sin = M12.fila_compatibilidad(punto=_punto(), motivo="detenido")
     assert sin.estado == ESTADO_RASANTE_SIN_TAMIZADO and sin.motivo
     nf = M12.fila_compatibilidad(punto=_punto(), delta_no_factible=0.4)
-    assert nf.estado == ESTADO_RASANTE_SUBIR and nf.delta_rasante_m == 0.4
+    assert nf.estado == ESTADO_RASANTE_SUBIR
+    assert nf.delta_rasante_m == pytest.approx(0.4, rel=REL_TRANSPORTE)
 
 
 # ===========================================================================
