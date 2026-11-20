@@ -6025,6 +6025,8 @@ marca del régimen para T-7c.
   (ficha T7C-12); (2) la presión uniforme **no se usa para armar**: el armado calcula la
   lineal de 10.6.5 (ficha T7C-07); (3) los aleros se arman en su arranque (ficha T7C-04).
   `solicitaciones_por_elemento` ganó el parámetro `marco`.
+- **Cerrado en VE-6 (3):** el alero ya no lleva la solicitación de la pantalla: cada
+  sección tiene la de su franja (ficha VE6M9-03).
 - **Dónde vive:** `src/modulos/M9_cabezal.py::solicitaciones_por_elemento`
 
 ## T7B-09 · Con la regla de predimensionamiento de T-7a el cabezal de A-01 no pasa el deslizamiento del marco que rige: medido, no corregido
@@ -6103,6 +6105,8 @@ marca del régimen para T-7c.
   como dato de corredor.
 - **Qué haría falta:** una regla declarada para el muro oblicuo (un [A] con ventana), o
   los dos datos por punto en `--datos-externos`.
+- **Cerrado en VE-6:** los dos datos por punto (ficha VE6M9-04); la regla del muro oblicuo
+  no se escribe (la fuente no la da).
 - **Dónde vive:** `src/modulos/M9_cabezal.py::h_eq_sobrecarga_trasdos`
 
 ## T7B-12 · Declarados, V5 y V8 se evalúan también a nivel de perfil; y el pre-vuelo de expediente anuncia el freático
@@ -6305,6 +6309,8 @@ fichas en su sitio y añadió T7C-11 a T7C-13.
   acero del arranque es el lado seguro; lo que falta es la zapata.
 - **Qué haría falta:** el ensamble de estabilidad del alero por secciones (altura
   variable con el talud) y sus solicitaciones de zapata.
+- **Cerrado en VE-6, a medias:** el fuste del alero se arma por secciones (arranque y
+  mitad, ficha VE6M9-03); la zapata del alero sigue sin armar ni verificar.
 - **Y lo que el armado tampoco cubre (cierre, H6):** el **vano del conducto** —la
   pantalla de 1.70 m de A-01 es hueco en el ancho del barril, y la sección llena de la
   hipótesis de T-7b son los machones a cada lado—: el refuerzo de borde alrededor de la
@@ -8329,7 +8335,9 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   acero longitudinal que pide el cortante general y sólo después el espesor. Sin eso la pantalla
   de E2 llegaba a 1.20 m; con eso queda en 0.70 m.
 - **Abierto:** el alero se dimensiona con la pantalla, no por separado (sus aleros largos con
-  esviaje alto —13 m con 45°— quedan sin diseño, H-13).
+  esviaje alto —13 m con 45°— quedan sin diseño, H-13). **Cerrado en VE-6** (ficha
+  VE6M9-03): el alero se arma por sus secciones y su espesor crece por su armado; su
+  estabilidad sigue abierta (T7C-04).
 - **Qué haría falta:** dimensionar el alero por separado y decidir su tratamiento con esviaje alto (H-13).
 - **Dónde vive:** `src/modulos/M9_cabezal.py::dimensionar_peralte_por_armado`
 
@@ -8785,6 +8793,44 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   cubre la durabilidad, no los mínimos estructurales.
 - **Qué haría falta:** nada; una norma vial con mínimos propios lo sustituiría.
 - **Dónde vive:** `src/criterios_adoptados.py::cuantia_minima_muro_e060`
+## VE6M9-03 · El alero se arma por sus propias secciones y su espesor se dimensiona por su armado (VE-6, ítem 9; VE3-14 H-13, T7B-08 (3), T7C-04)
+
+- **Cerrado:** cada franja vertical del alero es el fuste de un muro en voladizo que baja
+  con el talud (`M9.entorno_de_la_seccion_del_alero`: Δ = (h0 − H_f)·f, su espesor, su
+  zapata toda como talón, el relleno Δ más abajo y subiendo hasta la plataforma). Se arma
+  en dos secciones, cada una con `solicitaciones_de_resistencia` de su franja (AASHTO 5:
+  cada sección con sus cargas): el arranque (tramo 0–L/2) y la mitad (tramo L/2–L, clave
+  `alero_mitad`); sin caída, sólo el arranque. El espesor del alero ya no copia el de la
+  pantalla: parte del de la regla y crece con el paso de `dimensionamiento_zapata_cabezal`
+  hasta que sus dos secciones cumplen (`M9._dimensionar_aleros`, paso 9.3.al, origen
+  «dimensionada por armado»); la pantalla crece sólo por las suyas. Los metrados reparten
+  cada fila en su tramo (L/2). Dorados: `tests/test_ve6_m9_alero.py`.
+- **Decisiones de la sesión** (Fable no se pudo consultar; lado seguro): (1) la franja
+  apoya en la zapata entera como talón y el plano virtual queda en su extremo (con la cuña
+  sobre la cara, la de archivo, no cambia); (2) detrás de la franja el relleno sube con el
+  talud entero (normal al alero sube menos); (3) la sobrecarga es la del cabezal; (4) dos
+  tramos, porque la altura baja monótona y cada tramo se arma con su sección más alta.
+- **Abierto:** la zapata del alero y su estabilidad (T7C-04): siguen sin ensamble; con
+  esviaje alto el alero largo (H-13, 13 m) queda armado, no verificado como muro.
+- **Qué haría falta:** el ensamble de estabilidad del alero por franjas (E1–E3 de 11.6) y
+  el armado de su zapata.
+- **Dónde vive:** `src/modulos/M9_cabezal.py::entorno_de_la_seccion_del_alero`
+
+## VE6M9-04 · La orientación del muro y la distancia al borde de calzada, por punto (VE-6, ítem 28; T7B-11)
+
+- **Cerrado:** dos claves de `--datos-externos`, por punto o en `globales`, con un valor o
+  `{"entrada": …, "salida": …}`: `orientacion_muro_del_punto` y
+  `distancia_borde_calzada_del_punto_m` (`servicio.CLAVES_DE_CABEZAL`, validadas por
+  `M9.validar_sobrecarga_del_punto`). `servicio.fundir_sobrecarga_del_punto` las pasa
+  extremo por extremo a lo declarado del cabezal; `predimensionar_cabezal` las lleva a
+  `GeometriaCabezal.orientacion_trafico` / `.distancia_borde_calzada_m`, y el ensamble
+  (`h_eq_sobrecarga_trasdos`) las usa y lo dice en el paso 9.2.2. Lo que el punto no
+  declara sale del [S] de corredor; las secciones del alero lo heredan.
+- **Por qué no una regla:** AASHTO 3.11.6.4 no tiene tabla para el muro oblicuo; deducir
+  la orientación del esviaje sería inventar un umbral (T7B-11).
+- **Qué haría falta:** nada; un muro oblicuo con tabla propia necesitaría una fuente.
+- **Dónde vive:** `src/modulos/M9_cabezal.py::validar_sobrecarga_del_punto`
+
 ## VE5-CAT-01 · La rama de selva alta del TMC: [S] `region_natural` y la recomendación como piso del catálogo (cierre de T4-06)
 
 - **Cerrado (VE-5, lote catlic, 2026-11-20):** la entrada que faltaba es el [S] de corredor

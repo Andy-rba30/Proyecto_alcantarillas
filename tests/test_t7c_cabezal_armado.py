@@ -1653,7 +1653,8 @@ def test_los_avisos_del_armado_dicen_lo_que_no_cubre_y_lo_que_supone(tanteo):
     assert len(a.avisos) == len(set(a.avisos))
     for fragmento in ("COTA MAS EXIGENTE", "5.6.7", "sin iterarla",
                       "h/2", "NO se contrasto con el minimo por durabilidad",
-                      "zapata y las secciones intermedias de los aleros"):
+                      # VE-6: el fuste del alero ya se arma por secciones
+                      "zapata de los aleros"):
         assert fragmento in texto, fragmento
 
 
@@ -3275,7 +3276,7 @@ def test_H6_el_aviso_nombra_el_vano_la_losa_y_el_dentellon(tanteo):
     a = M9.armado_del_cabezal(tanteo)
     (aviso,) = [x for x in a.avisos if "NO cubre" in x]
     for palabra in ("VANO", "22.6.6.5", "losa de entrega", "dentellon",
-                    "empalmes", "secciones intermedias de los aleros"):
+                    "empalmes", "zapata de los aleros"):  # VE-6
         assert palabra in aviso, palabra
     assert "5.6.7" not in aviso            # la fisuracion ya es la fila A6
     b = M9.verificar_cabezal_ciclopeo(_gravedad())

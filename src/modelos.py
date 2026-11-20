@@ -5189,6 +5189,14 @@ class GeometriaCabezal:
     aleros: Optional["Aleros"] = None
     losa: Optional["LosaDeEntrega"] = None
     dimensiones: Tuple["DimensionDeCabezal", ...] = ()
+    # --- VE-6 (ficha T7B-11, VE6M9-04) --- la orientacion del trasdos frente
+    # al trafico y la distancia del borde de calzada al trasdos que el PUNTO
+    # declara para este cabezal (`--datos-externos`, claves
+    # `orientacion_muro_del_punto` y `distancia_borde_calzada_del_punto_m`).
+    # None: rige el [S] de corredor de `datos_sitio`. No son dimensiones: son
+    # la planta del cruce, que viaja con la geometria del cabezal.
+    orientacion_trafico: Optional[str] = None
+    distancia_borde_calzada_m: Optional[float] = None
 
     def exigir_ancho_talon(self) -> float:
         """

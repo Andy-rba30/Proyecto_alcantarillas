@@ -302,9 +302,11 @@ programa **no** puede elegir, y de quién es:
 | Si el muro admite desplazamiento bajo sismo | criterio `factor_muro_eleccion` [A] | **Propietario** | Rige `sin_reduccion` (k_h = k_h0). Desde el cierre de T-7b el empuje sísmico sale de la cuña de tanteo con la superficie real del relleno (`regla_pendiente_relleno_trasdos` = `cuna_de_tanteo`), que da cifra también con k_h0; Mononobe-Okabe con la pendiente equivalente queda como contraste |
 | Si el cabezal se modela como muro que cede o que no cede | criterio `regimen_cabezal` [A]: `cedente` (archivo) o `no_cedente` | **Proyectista** (hipótesis de modelación) | Rige `cedente` (empuje activo, la hipótesis de 11.6.5.3). Desde VE-5 `no_cedente` se calcula (ficha T7B-14): empuje en reposo K0 = 1 − sen φ con el factor de la fila «En reposo» (o el activo si da más, porque K0 es de terreno horizontal) y, bajo sismo, k_h = 1.0·k_h0 sin reducción y la resultante no bajo h/2 (AASHTO 11.6.5.4 y C11.6.5.4). Las solicitaciones para T-7c llevan el coeficiente con que salieron y el K0 de referencia |
 | Cómo se forma el empuje sísmico del cabezal que no cede | criterio `empuje_sismico_muro_que_no_cede` [A]: `reposo_mas_incremento` (archivo) o `mayor_de_reposo_y_total` | **Proyectista** | Sólo con `regimen_cabezal` = `no_cedente`. Rige el reposo más el incremento pseudoestático con 1.0·k_h0 (lado seguro: más que Mononobe-Okabe, como dice C11.6.5.4); la otra opción es la lectura literal de 11.6.5.4 sin bajar del reposo (VE-5, ficha T7B-14) |
-| Orientación del muro frente al tráfico y distancia del borde de calzada al trasdós | `[S]` de corredor (§4.1) | **Trazo** | La sobrecarga viva no se puede leer de su tabla: `CriterioPendienteError` del dato de sitio, que detiene la estabilidad y el armado de los dos cabezales de cada punto |
+| Orientación del muro frente al tráfico y distancia del borde de calzada al trasdós | `[S]` de corredor (§4.1); y, **por punto** (VE-6, ficha T7B-11), las claves `orientacion_muro_del_punto` (`paralelo_al_trafico` o `perpendicular_al_trafico`) y `distancia_borde_calzada_del_punto_m` (m, ≥ 0) de `--datos-externos`, por punto o en `globales`, con un valor para los dos cabezales o `{"entrada": …, "salida": …}` | **Trazo** (planta y sección del cruce) | La sobrecarga viva no se puede leer de su tabla: `CriterioPendienteError` del dato de sitio, que detiene la estabilidad y el armado de los dos cabezales de cada punto. Lo del punto **gana** sobre el corredor, extremo por extremo; lo que el punto no declara sale del corredor. El programa **no** deduce la orientación del esviaje: AASHTO 3.11.6.4 no tiene tabla para el muro oblicuo |
 
-`suelo_fundacion`, como `cabezal_declarado`, está en `servicio.CLAVES_DE_CABEZAL` y no en
+`suelo_fundacion`, como `cabezal_declarado` y las dos claves de la sobrecarga del punto
+(`orientacion_muro_del_punto`, `distancia_borde_calzada_del_punto_m`, validadas por
+`M9.validar_sobrecarga_del_punto`), está en `servicio.CLAVES_DE_CABEZAL` y no en
 `CLAVES_EXTERNAS`. Se valida en la puerta (`M9.validar_suelo_fundacion`): los cuatro campos
 obligatorios, φ entre 0 y 45° (el rango de la Tabla 10.6.3.1.2a-1 de AASHTO), γ > 0 y
 ninguna clave desconocida. **La estabilidad global del muro y la del talud (E4, E5) no las
@@ -369,8 +371,8 @@ lectura (`CLAUDE.md`, «Taxonomía de etiquetas»).
 | `PGA_roca_B` | Lectura de mapa (Manual de Puentes, Apéndice A3) | Aceleración pico en roca, TR 1000 años, leída de la isolínea en las coordenadas del corredor |
 | `ZONA_SISMICA_LA_UNION` | Lectura de tabla (E.030, zonificación por distritos) | Zona sísmica del distrito |
 | `Z_E030` | **Derivado** de la zona | No se declara: sale de `ZONA_SISMICA_LA_UNION` por la Tabla N° 1 de E.030 |
-| `orientacion_muro_respecto_al_trafico` | Trazo | Si el trasdós del cabezal es perpendicular o paralelo al tráfico (elige tabla de h_eq en AASHTO 3.11.6.4) |
-| `distancia_borde_calzada_al_trasdos_m` | Trazo | Distancia del trasdós al borde de la calzada (sección típica) |
+| `orientacion_muro_respecto_al_trafico` | Trazo | Si el trasdós del cabezal es perpendicular o paralelo al tráfico (elige tabla de h_eq en AASHTO 3.11.6.4). Un punto distinto del corredor la declara con `orientacion_muro_del_punto` (§3.3, VE-6) |
+| `distancia_borde_calzada_al_trasdos_m` | Trazo | Distancia del trasdós al borde de la calzada (sección típica). Por punto: `distancia_borde_calzada_del_punto_m` (§3.3, VE-6) |
 | `carriles_por_sentido` | Trazo | De la sección típica; fija el número de calicatas (Manual de Suelos, Cuadro 4.1) |
 | `clase_de_via` | Trazo (estudio de demanda, IMDA) | Clase de carretera; elige fila del Cuadro 4.1 y de la Tabla 304.09 del DG-2018 |
 | `existe_informacion_secundaria_tramo` | EMS | Si hay estudios geotécnicos previos en el tramo (Manual de Suelos, num. 4.2) |

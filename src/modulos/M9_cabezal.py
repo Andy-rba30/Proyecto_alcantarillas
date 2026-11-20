@@ -1230,7 +1230,9 @@ def sobrecarga_trasdos_siempre_aplica() -> str:
     )
 
 
-def h_eq_sobrecarga_trasdos(*, altura_muro_total: float) -> float:
+def h_eq_sobrecarga_trasdos(*, altura_muro_total: float,
+                            orientacion: Optional[str] = None,
+                            borde_m: Optional[float] = None) -> float:
     """
     Altura de suelo equivalente de la sobrecarga viva de trafico, en m.
 
@@ -1265,8 +1267,15 @@ def h_eq_sobrecarga_trasdos(*, altura_muro_total: float) -> float:
     `H + espesor_zapata`. Medirla sin la zapata subestima la altura y, como
     h_eq DECRECE con ella, sobrestima h_eq: conservador, pero es la lectura
     equivocada de la tabla.
+
+    --- VE-6 (ficha T7B-11) --- `orientacion` y `borde_m` son los que el
+    PUNTO declara para este cabezal (`GeometriaCabezal.orientacion_trafico`
+    y `.distancia_borde_calzada_m`); cada uno que falte se lee del [S] de
+    corredor, que solo entonces se invoca. Ninguno se deduce del esviaje:
+    AASHTO no tiene tabla para el muro oblicuo.
     """
-    orientacion = ds.valor("orientacion_muro_respecto_al_trafico")
+    if orientacion is None:
+        orientacion = ds.valor("orientacion_muro_respecto_al_trafico")
     altura_ft = altura_muro_total / PIE_EN_METROS
 
     if orientacion == ORIENTACION_PERPENDICULAR_AL_TRAFICO:
@@ -1278,7 +1287,8 @@ def h_eq_sobrecarga_trasdos(*, altura_muro_total: float) -> float:
         puntos = sorted((a, h) for a, h in
                         H_EQ_ESTRIBO_PERPENDICULAR_FT.values())
     elif orientacion == ORIENTACION_PARALELO_AL_TRAFICO:
-        borde = ds.valor("distancia_borde_calzada_al_trasdos_m")
+        borde = (ds.valor("distancia_borde_calzada_al_trasdos_m")
+                 if borde_m is None else borde_m)
         lejos = _columna_de_borde(borde)
         puntos = sorted((f[0], f[2] if lejos else f[1])
                         for f in H_EQ_MURO_PARALELO_FT.values())
@@ -4798,6 +4808,12 @@ def predimensionar_cabezal(*, extremo: ExtremoDelConducto,
     declarado -- remate al conducto.
     """
     declaradas = dict(declaradas or {})
+    # --- VE-6 (ficha T7B-11) --- la planta del cruce que el punto declara
+    # para este cabezal (las dos claves de la sobrecarga del punto, que el
+    # servicio funde aqui por extremo): no son dimensiones, viajan con la
+    # geometria.
+    orientacion_trafico = declaradas.pop(CAMPO_ORIENTACION_DEL_PUNTO, None)
+    distancia_borde = declaradas.pop(CAMPO_DISTANCIA_BORDE_DEL_PUNTO, None)
     reglas = _reglas()
     for nombre, x in declaradas.items():
         if nombre in ANGULOS_DECLARABLES:
@@ -5136,7 +5152,9 @@ def predimensionar_cabezal(*, extremo: ExtremoDelConducto,
         ancho_talon=talon, longitud=L_c, tipo=tipo, id_punto=id_punto,
         extremo=extremo.extremo, cota_coronacion=coronacion,
         cota_desplante=desplante, ancho_punta=punta, aleros=aleros,
-        losa=losa, dimensiones=tuple(dims))
+        losa=losa, dimensiones=tuple(dims),
+        orientacion_trafico=orientacion_trafico,
+        distancia_borde_calzada_m=distancia_borde)
 
 
 # ---------------------------------------------------------------------------
@@ -5957,6 +5975,82 @@ def cabezal_del_punto(*, punto, resultado, geometria, embocadura,
 # ---------------------------------------------------------------------------
 # La puerta del dato externo `cabezal_declarado`
 # ---------------------------------------------------------------------------
+
+# --- VE-6 (lote M9, item 28; fichas T7B-11 y VE6M9-04) --- LA ORIENTACION
+# DEL MURO FRENTE AL TRAFICO Y LA DISTANCIA DEL BORDE DE CALZADA AL TRASDOS,
+# POR PUNTO. Dos claves de `--datos-externos` (por punto o en `globales`),
+# fuera de `CLAVES_EXTERNAS` como `cabezal_declarado`: sin ellas rige el [S]
+# de corredor. El valor vale para los dos cabezales o va por extremo.
+CAMPO_ORIENTACION_DEL_PUNTO = "orientacion_muro_del_punto"
+CAMPO_DISTANCIA_BORDE_DEL_PUNTO = "distancia_borde_calzada_del_punto_m"
+CAMPOS_DE_SOBRECARGA_DEL_PUNTO = (CAMPO_ORIENTACION_DEL_PUNTO,
+                                  CAMPO_DISTANCIA_BORDE_DEL_PUNTO)
+
+
+def validar_sobrecarga_del_punto(clave: str, valor: Any, *,
+                                 id_punto: Optional[str] = None) -> dict:
+    """
+    Forma y dominio de una de las dos claves de la sobrecarga viva del
+    punto, normalizada a {"entrada": v | None, "salida": v | None}:
+
+      orientacion_muro_del_punto           una de ORIENTACIONES_TABULADAS
+                                           (las dos que AASHTO 3.11.6.4
+                                           tabula; no hay «oblicuo»)
+      distancia_borde_calzada_del_punto_m  m, finita y no negativa (0 es la
+                                           columna «0.0 ft» de la tabla)
+
+    El valor es uno solo (los dos cabezales) o un objeto con "entrada" y/o
+    "salida". Un texto en la distancia, un bool, un negativo, una clave
+    desconocida o un objeto vacio se rechazan.
+    """
+    if clave not in CAMPOS_DE_SOBRECARGA_DEL_PUNTO:
+        raise DatoInvalidoError(
+            clave, valor=valor, id_punto=id_punto,
+            motivo="no es una clave de la sobrecarga del punto: "
+                   + ", ".join(CAMPOS_DE_SOBRECARGA_DEL_PUNTO))
+
+    def _uno(x, donde):
+        if clave == CAMPO_ORIENTACION_DEL_PUNTO:
+            if not isinstance(x, str) or x not in ORIENTACIONES_TABULADAS:
+                raise DatoInvalidoError(
+                    f"{clave}{donde}", valor=x, id_punto=id_punto,
+                    motivo="se espera una de las dos que AASHTO 3.11.6.4 "
+                           "tabula: " + ", ".join(ORIENTACIONES_TABULADAS)
+                           + " (no hay tabla para el muro oblicuo)")
+            return x
+        if isinstance(x, bool) or not (_finito(x) and x >= 0):
+            raise DatoInvalidoError(
+                f"{clave}{donde}", valor=x, id_punto=id_punto,
+                motivo="se espera una distancia en m, finita y no negativa")
+        return float(x)
+
+    if isinstance(valor, dict):
+        if not valor or set(valor) - set(EXTREMOS):
+            raise DatoInvalidoError(
+                clave, valor=valor, id_punto=id_punto,
+                motivo="se espera un valor o un objeto con 'entrada' y/o "
+                       "'salida'")
+        return {e: (_uno(valor[e], f".{e}") if e in valor else None)
+                for e in EXTREMOS}
+    limpio = _uno(valor, "")
+    return {e: limpio for e in EXTREMOS}
+
+
+def _texto_de_la_sobrecarga(g: GeometriaCabezal) -> str:
+    """De donde salen la orientacion y la distancia de ESTE cabezal."""
+    if g.orientacion_trafico is not None:
+        texto = (f"'{g.orientacion_trafico}', declarada por punto "
+                 f"(`{CAMPO_ORIENTACION_DEL_PUNTO}`)")
+    else:
+        texto = ("[S] 'orientacion_muro_respecto_al_trafico' = "
+                 f"'{ds.valor('orientacion_muro_respecto_al_trafico')}', de "
+                 "corredor")
+    if g.distancia_borde_calzada_m is not None:
+        texto += (f"; borde de calzada a {g.distancia_borde_calzada_m:g} m "
+                  "del trasdos, declarada por punto "
+                  f"(`{CAMPO_DISTANCIA_BORDE_DEL_PUNTO}`)")
+    return texto
+
 
 def validar_cabezal_declarado(valor: Any, *,
                               id_punto: Optional[str] = None) -> dict:
@@ -7329,7 +7423,11 @@ def cargas_del_cabezal(entorno: EntornoDelCabezal,
             V=P_A * math.sin(inclinacion), x=x_plano, sobre=ELEMENTO_ZAPATA,
             procedencia="P_A·sen(delta + beta), en el plano de empuje"))
     # --- LS ----------------------------------------------------------------
-    h_eq = h_eq_sobrecarga_trasdos(altura_muro_total=h)
+    # --- VE-6 (ficha T7B-11) --- con la orientacion y la distancia que el
+    # punto declara para ESTE cabezal, si las declara.
+    h_eq = h_eq_sobrecarga_trasdos(altura_muro_total=h,
+                                   orientacion=g.orientacion_trafico,
+                                   borde_m=g.distancia_borde_calzada_m)
     nombre_K = "K0" if reposo_rige else "K_A"
     cargas.append(CargaDeCabezal(
         C_LS_H, CARGA_LS, "sobrecarga viva, empuje",
@@ -8971,9 +9069,8 @@ def _pasos_de_cargas(entorno, condicion, cargas, combos, datos,
             sustitucion=(
                 _m("h_eq", datos["h_eq"], "m",
                    "max(piso del Manual de Puentes, tabla de AASHTO "
-                   "3.11.6.4 por altura h y orientacion del muro: [S] "
-                   "'orientacion_muro_respecto_al_trafico' = "
-                   f"'{ds.valor('orientacion_muro_respecto_al_trafico')}')"),
+                   "3.11.6.4 por altura h y orientacion del muro: "
+                   + _texto_de_la_sobrecarga(entorno.geometria) + ")"),
                 _m("h", datos["h"], "m", "altura del plano de empuje, con "
                    "zapata"),
                 _m("K_A", datos["K_A"], "-", "el del empuje activo")),
@@ -11070,8 +11167,9 @@ def incorporar_pantalla(cabezal: CabezalDelPunto,
 #
 # LO QUE NO HACE, y lo dice (fichas T7C-*): el control de fisuracion en
 # servicio de AASHTO 5.6.7; el procedimiento general de cortante de
-# 5.7.3.4.2; el refuerzo transversal; la zapata y las secciones intermedias
-# de los aleros; el desarrollo y los empalmes de las barras; y la iteracion
+# 5.7.3.4.2; el refuerzo transversal; la zapata de los aleros (desde VE-6 su
+# fuste se arma en el arranque y en la mitad, ficha VE6M9-03); el desarrollo
+# y los empalmes de las barras; y la iteracion
 # de dimensiones (arma la geometria que recibe, pase o no su estabilidad).
 #
 # UNIDADES: m, kN/m y kN·m/m por metro de muro; f'c y fy en MPa; areas de
@@ -13975,7 +14073,8 @@ def ensamblar_armado(entorno: EntornoDelCabezal,
         "para el armado, por analogia) no se dimensiona --; ni la losa de "
         "entrega ni el dentellon, que la geometria del cabezal trae y no se "
         "arman; ni el desarrollo ni los empalmes de las barras; ni la "
-        "zapata y las secciones intermedias de los aleros. Arma la "
+        "zapata de los aleros (su fuste se arma en el arranque y en la "
+        "mitad de su longitud, VE-6). Arma la "
         "geometria que recibe sin iterarla: si el cabezal no pasa su "
         "estabilidad (filas E1 a E3), el armado es el de una geometria que "
         "todavia hay que ampliar")

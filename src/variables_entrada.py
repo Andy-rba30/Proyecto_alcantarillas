@@ -1513,9 +1513,15 @@ _META_SITIO: Dict[str, _Meta] = {
         nota="Es el dato que decide CUAL de las dos tablas de h_eq aplica, "
              "y por eso no tiene un criterio destino sino dos: "
              "`h_eq_bajo_altura_tabulada` y `h_eq_banda_intermedia_borde` "
-             "resuelven sendas lagunas de la tabla que este dato elige."),
+             "resuelven sendas lagunas de la tabla que este dato elige. "
+             "Desde VE-6 (ficha T7B-11) un punto la declara para sus "
+             "cabezales con `orientacion_muro_del_punto` de "
+             "`--datos-externos`, que gana sobre el corredor."),
     "distancia_borde_calzada_al_trasdos_m": _Meta(
-        unidad="m", criterio_destino="h_eq_banda_intermedia_borde"),
+        unidad="m", criterio_destino="h_eq_banda_intermedia_borde",
+        nota="Desde VE-6 (ficha T7B-11) un punto la declara para sus "
+             "cabezales con `distancia_borde_calzada_del_punto_m` de "
+             "`--datos-externos`, que gana sobre el corredor."),
     "carriles_por_sentido": _Meta(
         unidad="carriles",
         fase_declarada="Fase 1 - Datos de entrada (Cuadro 4.1 del Manual de "
