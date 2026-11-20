@@ -21,6 +21,9 @@ los JSON no admiten esta cabecera; vale para los siete archivos.
 | `externos.json` · `licuefaccion_ems`, `declaraciones.json` · `Mw_licuefaccion` | la Fase 0-bis con el resultado del EMS declarado (`F0.LICUEFACCION`) |
 | `declaraciones.json` · `exposicion_quimica_ems` (SO₄ 0.15 %), `incremento_acero_por_despiece`, `clase_concreto_losa_entrega` | la fila A7 del armado por durabilidad (`F9.ARM_DURABILIDAD`) y el metrado del acero (`F11.ACERO`) |
 
+La corrida ejercita fórmulas y no es un diseño: varias filas del cabezal no cumplen
+(A7 de A-01 y C-01, el ciclópeo declarado de A-02, las sísmicas E1/E3), y se dejan así.
+
 `estacion.csv` es la serie SINTÉTICA de T-1 (copia de la de `hidrologia_calculada`).
 `cuencas.csv` es la cuenca sintética de `tests/fixtures/hidrologia/cuencas_racional_modificado_prueba.csv`
 con el id A-03. Lo que esta corrida NO ejercita, y por qué, está en la ficha VE7C-06 de

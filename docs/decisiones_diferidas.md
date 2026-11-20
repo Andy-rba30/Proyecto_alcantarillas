@@ -9295,8 +9295,10 @@ estas fichas dicen cómo se hizo y lo que quedó. Los documentos generados (mani
   la de referencia (`region_natural` en selva alta saca a A-01 del TMC: medido; `n_manning_cajon`;
   el remanso por perfil; el desborde de V8; el régimen de V1) o una rama que ningún punto de
   prueba válido alcanza (piso de HW, caída recta, TW sobre la clave, cobertura somera, peralte
-  por armado). La fila A7 de A-01 no cumple con el f'c de archivo frente a la exposición de
-  prueba (decidido así para conservar `F9.DIMENSIONADO_PANTALLA`; pendiente de revisión Fable).
+  por armado). La corrida ejercita fórmulas, no es un diseño: A7 no cumple en A-01 y C-01 (f'c
+  de archivo frente a la exposición de prueba, para conservar `F9.DIMENSIONADO_PANTALLA`), el
+  ciclópeo declarado de A-02 no cumple C2, C3, C7 ni C8, y E1/E3 sísmicas fallan como en las
+  otras corridas (VE3-20); pendiente de revisión Fable.
 - **Qué haría falta:** regenerar y sellar `docs/indice_formulas.md` en la integración; contar
   las elecciones en el §4 del índice; una quinta corrida si se quieren las ramas de régimen.
 - **Dónde vive:** `src/indice_formulas.py::CORRIDAS_DE_REFERENCIA`
