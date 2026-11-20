@@ -404,6 +404,33 @@ decisiones 9–14 siguen pendientes del dueño (con la recomendación corregida 
 - Lo que no se puede cerrar con código (EMS, datos reales, revisión de experto, ejemplares de
   norma) queda listado, con la app lista para recibirlo.
 
+## VE-5: lotes del censo (`CENSO_PENDIENTES_FABLE_2026-11-20.md`), lanzados 2026-11-20 ~06:25 UTC
+
+**Decisiones adoptadas por la sesión con la autorización del dueño** («si surgen cosas nuevas,
+igual cerrar todo»; «seguir las recomendaciones»): licuefacción como resultado declarado del
+EMS con bloqueo de expediente; distribuciones sólo con estimadores que una fuente de Normas
+imprima; caída de HEC-14 Cap. 11 dentro del alcance; caja receptora espera HEC-22 (C);
+longitud entre cabezales con pasada de refinamiento y aviso; V9 por el diámetro designado; V7
+del marco con su DC y γ mínimo; pórtico del marco con empuje en reposo, reducción del 50 % de
+3.11.7 sólo en el momento positivo de la losa superior y cantos separados; NO se hace el editor
+de [S] en la ventana (R4); el hijo del PDF lee la corrida embebida. Fila de φ de E4/E5 vacía
+hasta el EMS. Fuera (D): ítems 15, 16, 25, 27, 32, 33, 35 (cuneta en terraplén), 41.
+
+**Sesiones hijas** (contenedores propios, base `claude/ve4b-prevuelo-hidrologia`; cada una deja
+su informe en `informes_ve5/<lote>.md` de su rama):
+- VE5-MH `claude/ve5-mh-hidrologia` (ítems 12, 14, 13) — `session_01GF7Ze2ngaZH7BhoD4xRPH3`
+- VE5-CAT `claude/ve5-catalogo-cuneta` (20, 21) — `session_01GF7Ze28wiXaC7oeemHKMz1`
+- VE5-MET `claude/ve5-metrados` (8) — `session_01GF7Ze22xYu1ZkzUgJXt7tN`
+- VE5-GUI `claude/ve5-gui` (37, 38, 40, 42) — `session_01GF7Ze2Yq9kRgSMchXKRNFh`
+- VE5-LIC `claude/ve5-licuefaccion` (6) — `session_01GF7ZdzpkYmr6rDW9FAswPa`
+
+**En cola** (cuando se integre lo que toca el mismo archivo): M8 (1 pórtico → 23 → 26) tras
+VE-4f; M9 (muro que no cede → 4 → 3 → 9 → 10 → 28 → 29 → cabezal paralelo T7A-03) tras VE-4a y
+VE-4e; M6 (2 con Cap. 11; 30, 31 si llegan documentos) tras VE-4g; M4/M5 (17 → 18 → 19 → 24) y
+11 tras VE-4c y VE-4d; GUI/M11 2.º lote (39, 43, 44, 45, 46, 47, 48, 49) tras VE5-GUI y VE5-MET;
+integrador final: 22, 34, documentos, línea base, conteos. VE-4b terminado (`950f5e4`), en
+revisión Fable.
+
 ## Apuntado para después de VE-4 (dueño, 2026-11-20): límites de cobertura de la app
 
 Lo que la app hoy no evalúa y se detiene diciéndolo (sin inventar un número). Prioridad según
