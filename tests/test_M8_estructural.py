@@ -314,7 +314,12 @@ def test_el_NF_ya_no_es_un_criterio_de_este_modulo():
         and "NF_profundidad_m" in {
             a.value for n in ast.walk(f) if isinstance(n, ast.Call)
             for a in n.args if isinstance(a, ast.Constant)}}
-    assert invocadoras == {"cota_nivel_agua_v7_del_nf"}, invocadoras
+    # --- VE-7 (lote B, B3 y dictamen Fable, defectos 1 y 2) --- CAMBIADO
+    # DECLARANDO LA CAUSA: el agua exterior del portico lee el mismo nivel
+    # (lectura + ascenso estacional si esta declarado) y rechaza el nivel
+    # sobre la rasante sobre la columna; es la segunda y ultima lectora.
+    assert invocadoras == {"cota_nivel_agua_v7_del_nf",
+                           "_agua_exterior_del_portico"}, invocadoras
 
 
 # ===========================================================================

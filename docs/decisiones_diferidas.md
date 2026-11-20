@@ -9201,6 +9201,7 @@ cambios están aplicados en estas fichas.
   la clave). La puerta del criterio sigue sin acotar el inicio: el consumidor lo hace.
 - **Decisión del consultor Fable (triaje VE-7, 2026-11-20):** validar en M2 con el campo del
   criterio. Verificado antes: no estaba (la puerta lo dejaba pasar a propósito y M3 lo rechazaba).
+- **Revisado por Fable (dictamen del consultor, 2026-11-20): conforme, aplicado sin cambios.**
 - **Abierto:** la línea base de la rama de error (`tests/linea_base_familia_c/`, corrida 3) cambia
   de texto («Dato invalido en 'diametros_normalizados'»): el test la fija y la regeneración queda
   para la integración, porque los archivos de la línea base llevan además la huella de los
@@ -9255,6 +9256,7 @@ cambios están aplicados en estas fichas.
   gobernante de hoy. Si con el HW de entrada el resguardo ya cabe, se conserva el mensaje anterior
   (`MENSAJE_SIN_DELTA_BAJO_SALIDA`).
 - **Decisión del consultor Fable (triaje VE-7, 2026-11-20):** el HW de entrada como cota inferior.
+- **Revisado por Fable (dictamen del consultor, 2026-11-20): conforme, aplicado sin cambios.**
 - **Abierto:** el delta con el HW gobernante real exigiría iterar 7.A con 7.B (la longitud crece con
   la rasante); no se hace.
 - **Qué haría falta:** una pasada de MD con la rasante y la longitud nuevas.
@@ -9272,6 +9274,7 @@ cambios están aplicados en estas fichas.
   y de la tabla y el ejemplo de `docs/guia_perfil.md` (editados a mano, sin regenerar la guía).
 - **Decisión del consultor Fable (triaje VE-7, 2026-11-20):** L_T como valor de archivo, por el
   lado seguro.
+- **Revisado por Fable (dictamen del consultor, 2026-11-20): conforme, aplicado sin cambios.**
 - **Abierto:** los tubos de concreto con menos de 1.0 ft y bajo pavimento rígido de 9 a 12 in
   siguen sin método (ficha VE4F-01).
 - **Qué haría falta:** una disposición de AASHTO o del Manual de Puentes que fije el largo; si el
