@@ -1931,11 +1931,11 @@ def test_con_la_traccion_admisible_de_E060_decide_C6_y_las_nulas_informan(
     # el vaciado monolitico.
     # CAMBIADO DECLARANDOLO (dictamen Fable de VE-6): el arranque bajo sismo
     # (C8) decide tambien sin junta y con la traccion admisible -- E.060 9.2
-    # no da contraste para el sismo --; la media altura sigue informando.
+    # no da contraste para el sismo --. CAMBIADO DECLARANDOLO (VE-7, lote
+    # A, A3; triaje VE-7 de Fable, ficha VE7A-03): la media altura tambien.
     assert {v.codigo for v in a.verificaciones
             if v.estado is EstadoDeVerificacion.NO_CUMPLE} == {
-        "C7.punta.e", "C8.arranque.e"}
-    assert _v(a, "C8.media.e").estado is EstadoDeVerificacion.INDICADOR
+        "C7.punta.e", "C8.arranque.e", "C8.media.e"}
 
 
 def test_C1_la_base_en_el_tercio_central_con_cargas_de_servicio(tanteo):

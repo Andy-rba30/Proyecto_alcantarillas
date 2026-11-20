@@ -15037,15 +15037,24 @@ def _verificar_cuerpo_bajo_sismo(entorno: EntornoDelCabezal, *, regimen: str,
     los mismos que la fila E2 (`_casos_sismicos`), y rige la mayor
     excentricidad. Con 'no_cedente_k0' el ensamble del armado va con k_h =
     1.0·k_h0 (11.6.5.4), como el Evento Extremo I de las pantallas armadas.
-    Sin inercia vertical del cuerpo: el ensamble no la aplica a los pesos
-    (k_v solo entra en el empuje).
+    --- VE-7 (lote A, A4; abierto (a) de VE6M9-01) --- CON k_v DISTINTO DE
+    CERO el peso estabilizante del cuerpo va con (1 - k_v), el signo
+    desfavorable (la aceleracion vertical hacia arriba lo aligera): e =
+    [M_H - W·(1 - k_v)·(t/2 - x_W)] / [W·(1 - k_v)]; la inercia horizontal
+    sigue con la masa entera, k_h·W. Con k_v = 0 es la formula de VE-6. El
+    ensamble E1-E3 NO aplica k_v a los pesos (`cargas_del_cabezal`: k_v
+    solo entra en el empuje), y con k_v distinto de cero se avisa.
 
     En el arranque, con la junta de construccion de archivo, la condicion es
-    la de E.060 22.4.7 y DECIDE siempre; a media altura decide con
-    «tracciones_nulas», como C3. Devuelve (verificaciones, evaluado,
-    aviso): si la condicion sismica no es evaluable (agua en el plano de
-    empuje con relleno muy abierto, una cuña sin maximo...), no hay filas y
-    el aviso dice por que, como el armado de las pantallas.
+    la de E.060 22.4.7 y DECIDE siempre. --- VE-7 (lote A, A3; abierto (b)
+    de VE6M9-01) --- a media altura TAMBIEN decide con cualquier criterio
+    de traccion, atribuido a 'criterio_traccion_cabezal_ciclopeo': bajo
+    sismo E.060 9.2 no combina el sismo con el empuje y no hay contraste que
+    lo cubra (la misma razon que el dictamen de VE-6 dio para el arranque).
+    Devuelve (verificaciones, evaluado, aviso): si la condicion sismica no
+    es evaluable (agua en el plano de empuje con relleno muy abierto, una
+    cuña sin maximo...), no hay filas y el aviso dice por que, como el
+    armado de las pantallas; evaluada, el aviso es el de k_v, o vacio.
     """
     g = entorno.geometria
     sis = CondicionAnalisis.SISMICO
@@ -15066,6 +15075,14 @@ def _verificar_cuerpo_bajo_sismo(entorno: EntornoDelCabezal, *, regimen: str,
         raise DatoInvalidoError(CRITERIO_GAMMA_EQ, valor=g_eq,
                                 motivo="gamma_EQ entre 0 y 1")
     e_c, e_z = g.espesor_corona, g.espesor_zapata
+    # --- VE-7 (lote A, A4) --- el peso que estabiliza, con (1 - k_v).
+    k_v = datos_s.get("k_v") or 0.0
+    alivio_vertical = 1 - k_v
+    if not (_finito(k_v) and alivio_vertical > 0):
+        raise LimiteNumericoError(
+            "k_v", valor=k_v, id_punto=entorno.id_punto,
+            motivo="con k_v >= 1 el peso del cuerpo no estabiliza nada")
+    con_k_v = abs(k_v) > TOL_UMBRAL_NORMATIVO
     salida: List[Verificacion] = []
     for codigo, rotulo, z in (("arranque", "arranque del cuerpo", e_z),
                               ("media", "media altura del cuerpo",
@@ -15093,7 +15110,8 @@ def _verificar_cuerpo_bajo_sismo(entorno: EntornoDelCabezal, *, regimen: str,
         # (`_incremento_sobre_el_arranque`) truncado en la seccion.
         M_dP = _incremento_sobre_el_arranque(H_dP, datos_s, z,
                                              entorno.id_punto)[1]
-        palanca = W * (t / 2 - x_W)
+        W_v = W * alivio_vertical
+        palanca = W_v * (t / 2 - x_W)
         # Con 'no_cedente_k0', como la pantalla armada
         # (`_pantalla_con_resultante_a_media_altura`): tambien la resultante
         # del empuje TOTAL del suelo a h/2 (AASHTO C11.6.5.4), un diagrama
@@ -15112,7 +15130,7 @@ def _verificar_cuerpo_bajo_sismo(entorno: EntornoDelCabezal, *, regimen: str,
                                                     "empuje total a h/2 "
                                                     "(C11.6.5.4)")
             M_H = M_tierra + g_eq * M_LS + M_WA + f_ir * M_PIR
-            e = (M_H - palanca) / W
+            e = (M_H - palanca) / W_v
             if peor is None or abs(e) > abs(peor[1]):
                 peor = (nombre, e, M_H, f_eh, f_inc, f_ir, posicion)
         nombre, e, M_H, f_eh, f_inc, f_ir, posicion = peor
@@ -15121,8 +15139,10 @@ def _verificar_cuerpo_bajo_sismo(entorno: EntornoDelCabezal, *, regimen: str,
         # --- dictamen Fable de VE-6 --- el arranque bajo sismo DECIDE
         # siempre: sin junta y con la traccion admisible de E.060 no hay
         # contraste que lo cubra (E.060 9.2 no combina sismo con empuje), y
-        # se atribuye al criterio de traccion del proyecto.
-        decide = nulas or en_la_junta or codigo == "arranque"
+        # se atribuye al criterio de traccion del proyecto. --- VE-7 (lote
+        # A, A3; triaje VE-7 de Fable) --- y la media altura tambien, por la
+        # misma razon.
+        decide = True
         salida.append(_verificacion_de_armado(
             fundamento="F9.CICLOPEO", codigo=f"C8.{codigo}.{ext}",
             que=f"C8, tracciones nulas en el {rotulo} bajo sismo: cabezal de "
@@ -15130,7 +15150,8 @@ def _verificar_cuerpo_bajo_sismo(entorno: EntornoDelCabezal, *, regimen: str,
                 + (" (junta de construccion, E.060 22.4.7)" if en_la_junta
                    else ""),
             formula="e = [f_EH·M_EH + gamma_EQ·M_LS + M_WA + f_inc·M_dPAE + "
-                    "f_IR·k_h·W·y_W - W·(t/2 - x_W)] / W <= t/6, Evento "
+                    "f_IR·k_h·W·y_W - W·(1 - k_v)·(t/2 - x_W)] / "
+                    "[W·(1 - k_v)] <= t/6, Evento "
                     "Extremo I sin factorar, el caso de AASHTO 11.6.5.1 que "
                     "mas excentrica"
                     + ("; con el muro que no cede, f_EH·M_EH + f_inc·M_dPAE "
@@ -15147,6 +15168,9 @@ def _verificar_cuerpo_bajo_sismo(entorno: EntornoDelCabezal, *, regimen: str,
                                   is not None else ""), CIFRAS_FACTOR),
                 mag("k_h·W·y_W", M_PIR, "kN·m/m", "inercia del cuerpo por "
                     "encima de la seccion, entera"),
+                mag("k_v", k_v, "", f"criterio '{CRITERIO_K_V}': el peso que "
+                    "estabiliza va con (1 - k_v), signo desfavorable",
+                    CIFRAS_FACTOR),
                 mag("M_EH", M_EH, "kN·m/m", "empuje estatico del suelo por "
                     "encima de la seccion"),
                 mag("M_dPAE", M_dP, "kN·m/m", "incremento sismico del "
@@ -15174,10 +15198,9 @@ def _verificar_cuerpo_bajo_sismo(entorno: EntornoDelCabezal, *, regimen: str,
                         if en_la_junta else
                         "criterio del proyecto, mas exigente que la fuente "
                         f"('{CRITERIO_TRACCION_CICLOPEO}' [A])"
-                        + ("; en el arranque decide con cualquier criterio: "
-                           "bajo sismo E.060 9.2 no da contraste que lo "
-                           "cubra" if codigo == "arranque" and not nulas
-                           else "")),
+                        + ("; decide con cualquier criterio: bajo sismo "
+                           "E.060 9.2 no da contraste que lo cubra"
+                           if not nulas else "")),
             criterio=(CRITERIO_JUNTA_CICLOPEO if en_la_junta
                       else CRITERIO_TRACCION_CICLOPEO),
             cumple=abs(e) <= limite + TOL_UMBRAL_NORMATIVO,
@@ -15187,10 +15210,10 @@ def _verificar_cuerpo_bajo_sismo(entorno: EntornoDelCabezal, *, regimen: str,
                   "P_IR; 50 % P_AE, no menos que el estatico, con 100 % P_IR), "
                   "los de la fila E2, con las cargas sin factorar. La "
                   "componente vertical del empuje, que estabiliza, no se "
-                  "cuenta; ni la inercia vertical del cuerpo, que el ensamble "
-                  "no aplica a los pesos (con k_v = 0 no procede; con k_v "
-                  "distinto de 0, W tendria que ir con (1 - k_v)). Los dos "
-                  "casos son los de " + NUMERAL_P_IR + "."),
+                  "cuenta. El peso que estabiliza va con (1 - k_v), el signo "
+                  "desfavorable de la aceleracion vertical (con k_v = 0 no "
+                  "cambia nada). Los dos casos son los de " + NUMERAL_P_IR
+                  + "."),
             explicacion_falla=("bajo sismo la junta del arranque transmitiria "
                                "traccion, que E.060 22.4.7 prohibe: aumentar "
                                "el espesor del cuerpo" if en_la_junta else
@@ -15198,7 +15221,15 @@ def _verificar_cuerpo_bajo_sismo(entorno: EntornoDelCabezal, *, regimen: str,
                                "cuerpo: aumentar su espesor"),
             citas=("MP.2.8.1.1.14.1#EXC", "AASHTO_LRFD_9.11.6.5.1#EXC"),
             numeral=NUMERAL_9_4_CICLOPEO))
-    return salida, True, ""
+    aviso = ""
+    if con_k_v:
+        aviso = (
+            f"C8 lleva el peso del cuerpo con (1 - k_v) = "
+            f"{alivio_vertical:g} (k_v = {k_v:g}, '{CRITERIO_K_V}'); el "
+            "ensamble de la estabilidad E1 a E3 NO aplica k_v a los pesos "
+            "(solo al empuje): sus filas sismicas quedan del lado "
+            "favorable en esa medida (ficha VE7A-04)")
+    return salida, True, aviso
 
 
 def integrar_armado(cabezal: CabezalDelPunto,

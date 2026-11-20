@@ -8749,8 +8749,7 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   (`criterio_traccion_cabezal_ciclopeo`); C7 avisa las combinaciones de E.060 descartadas
   por sacar la resultante de la base y decide con las demás; C8 cita `MP.2.8.1.1.14.1#EXC`
   (el numeral de los dos casos: su texto no tiene cita propia, vive en `P_SEIS_TEXTO`).
-- **Abierto:** (a) no procede mientras k_v = 0; con k_v ≠ 0, C8 debe afectar W con
-  (1 − k_v); (b) a media altura, con `traccion_admisible_e060`, C8 informa; (c) firmar
+- **Abierto:** (a) y (b) cerrados en VE7A-04 y VE7A-03; (c) firmar
   `E060.22.10.2.2#VOLADIZO` cuando haya PDF y pasar a ella la cita principal de C7 (hoy
   en la nota de `E060.22.10.2#CICLOPEO`); (d) C7 no se evalúa bajo sismo (E.060 9.2.3 no
   combina CS con CE): la punta bajo Evento Extremo I queda cubierta sólo por E2.
@@ -9224,3 +9223,31 @@ el test; lo que la sesión tuvo que decidir sin dictamen va rotulado «pendiente
 - **Abierto:** el pre-vuelo no la anuncia (no es una falta: sin ella rige la de proyecto).
 - **Qué haría falta:** si el dueño lo pide, una columna de la memoria con la embocadura por punto.
 - **Dónde vive:** `src/servicio.py::correr_punto`
+
+## VE7A-03 · C8 a media altura decide con cualquier criterio de tracción (cierra VE6M9-01 (b))
+
+- **Cerrado:** en `M9._verificar_cuerpo_bajo_sismo` las dos secciones de C8 (arranque y media
+  altura) deciden (`decide = True`); la media altura, atribuida a
+  `criterio_traccion_cabezal_ciclopeo`, también con `traccion_admisible_e060`. Un e > t/6 a media
+  altura bajo sismo es una incumplida del cabezal, no un indicador.
+- **Decisión del consultor Fable (triaje VE-7, 2026-11-20):** la razón es la del arranque en el
+  dictamen de VE-6: E.060 9.2 no combina el sismo con el empuje y no hay contraste que cubra la
+  sección. Dos tests de `tests/test_ve5_m9_ciclopeo.py` que fijaban «informa» se reescribieron.
+- **Abierto:** nada de esta ficha.
+- **Qué haría falta:** nada.
+- **Dónde vive:** `src/modulos/M9_cabezal.py::_verificar_cuerpo_bajo_sismo`
+
+## VE7A-04 · C8 con k_v ≠ 0: el peso estabilizante va con (1 − k_v) (cierra VE6M9-01 (a))
+
+- **Cerrado:** e = [M_H − W·(1 − k_v)·(t/2 − x_W)] / [W·(1 − k_v)], signo desfavorable (la
+  aceleración vertical hacia arriba aligera el cuerpo); la inercia horizontal sigue con la masa
+  entera, k_h·W. El paso lleva `k_v` en la sustitución y la fórmula. Con k_v = 0 nada cambia.
+- **Decisión del consultor Fable (triaje VE-7, 2026-11-20):** (1 − k_v) dicho en el paso, y un
+  aviso si el ensamble E1–E3 no lo aplica a los pesos. **Verificado:** `cargas_del_cabezal` usa
+  k_v sólo en el empuje (P_AE con (1 − k_v), la cuña y ψ); DC y EV del sismo son los del estático
+  (test). Con k_v ≠ 0 el cabezal avisa que E1–E3 quedan del lado favorable en esa medida. El
+  ensamble no se tocó.
+- **Abierto:** el ensamble E1–E3 sin (1 − k_v) en los pesos.
+- **Qué haría falta:** decidir si el ensamble aplica k_v a los pesos (cambia E1–E3 y sus dorados
+  con k_v ≠ 0; hoy k_v = 0 es el de archivo, prescrito).
+- **Dónde vive:** `src/modulos/M9_cabezal.py::_verificar_cuerpo_bajo_sismo`
