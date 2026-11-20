@@ -40,11 +40,14 @@ EJERCITA_LA_CUARTA = frozenset({
 #     corridas los EMITEN, pero el indice solo cuenta pasos.
 COMO_ELECCION = frozenset({"F3.D_EXTERIOR", "F5.V2b.REGIMEN", "F5.V7_FILA",
                            "F5.V7_NIVEL", "FH.FACTOR_P24"})
-# (b) Sin paso posible o con una rama que datos de prueba validos no alcanzan
+# (b) Entra por el BLOQUE FIJO de umbrales que M11 imprime siempre
+#     (`constantes_normativas.UMBRALES_DE_VERIFICACION`, codigo `D_min`):
+#     dictamen Fable (i-b), no se retira.
+POR_BLOQUE_FIJO = frozenset({"F3.D_MIN"})
+# (c) Sin ninguna puerta: una rama que datos de prueba validos no alcanzan
 #     sin romper lo que la cuarta ejercita (el criterio es de toda la
 #     corrida, o la rama es de otro regimen).
 SIN_EJERCITAR = {
-    "F3.D_MIN": "sin `paso()` ni eleccion: solo lo nombra constantes_normativas",
     "F4.PISO_HW": "eleccion del piso de HW, solo cuando Ks*S anula la carga de "
                   "entrada; ningun punto de prueba valido llega ahi",
     "F3.SELVA_ALTA_TMC": "'region_natural' es [S] de corredor: en selva alta el "
@@ -119,17 +122,45 @@ def test_C6_la_cuarta_dimensiona_en_TMC_y_HDPE_con_cabezal_ciclopeo(emitidos):
 def test_C6_los_que_quedan_sin_ejercitar_son_los_censados(emitidos):
     """
     La medida que pide el item: cuantos fundamentos ninguna corrida emite
-    como paso. Eran 39 de 154 con las tres de VE-6; con la cuarta, 17.
+    como paso. Eran 39 de 154 con las tres de VE-6; con la cuarta, 17. Y
+    desde el dictamen Fable (i-a) el indice cuenta las tres puertas: de esos
+    17, cinco entran como eleccion y uno por el bloque fijo; 11 sin puerta.
     """
     reg = _registro.construir()
     pasos = set().union(*(e for e, _el, _i in emitidos.values()))
     elecciones = set().union(*(el for _e, el, _i in emitidos.values()))
     sin_paso = {f.id for f in reg.fundamentos} - pasos
-    assert sin_paso == COMO_ELECCION | set(SIN_EJERCITAR)
+    assert sin_paso == COMO_ELECCION | POR_BLOQUE_FIJO | set(SIN_EJERCITAR)
     assert len(sin_paso) == 17
-    # (a) los cinco SI se emiten, como eleccion
     assert COMO_ELECCION <= elecciones
-    # (b) y ninguno de los otros doce sale ni como eleccion
-    assert not (set(SIN_EJERCITAR) & elecciones)
+    puertas = ind.puertas_de_los_fundamentos(
+        tuple(p for c in ind.CORRIDAS_DE_REFERENCIA
+              for p in ind.pasos_de_la_corrida(emitidos[c.nombre][2])))
+    assert POR_BLOQUE_FIJO <= puertas[ind.PUERTA_BLOQUE_FIJO]
+    sin_puerta = ({f.id for f in reg.fundamentos}
+                  - set().union(*puertas.values()))
+    assert sin_puerta == set(SIN_EJERCITAR)
+    assert len(sin_puerta) == 11
     for f, razon in SIN_EJERCITAR.items():
         assert razon.strip(), f
+
+
+# --- dictamen Fable, C6.b --- lo que NO cumple en la cuarta, por la raiz del
+# codigo, medido: la corrida ejercita formulas y no es un diseño.
+NO_CUMPLE_EN_LA_CUARTA = {
+    "A-01": {"A7", "E1-LRFD", "E3-LRFD"},
+    "A-02": {"C2", "C3", "C7", "C8", "E1-LRFD", "E3-LRFD"},
+    "C-01": {"A2", "A7", "E1-LRFD", "E3-LRFD"},
+}
+
+
+def test_C6_lo_que_no_cumple_es_exactamente_lo_censado(emitidos):
+    *_, informe = emitidos[NOMBRE]
+    medido = {pid: set(r) for pid, r in ind.raices_que_no_cumplen(informe).items()}
+    assert medido == NO_CUMPLE_EN_LA_CUARTA
+    a03 = next(p for p in informe.puntos if p.punto.id == "A-03")
+    assert not a03.dimensionado
+    assert any(b.tipo.value == "DisenoNoFactibleError" for b in a03.bloqueos)
+    linea = ind.verificaciones_que_no_cumplen(informe)
+    assert linea.startswith(ind.ROTULO_NO_CUMPLEN)
+    assert "NO ES UN DISEÑO VÁLIDO" in ind.CORRIDAS_DE_REFERENCIA[3].rotulo

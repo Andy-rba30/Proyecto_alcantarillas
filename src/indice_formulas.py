@@ -133,6 +133,7 @@ from typing import Any, Dict, Iterator, List, Optional, Tuple
 
 import json
 
+from src import constantes_normativas as _cn
 from src import criterios_adoptados as _ca
 from src import datos_sitio as _ds
 from src import traza_punto as _tp
@@ -234,7 +235,8 @@ CORRIDAS_DE_REFERENCIA: Tuple[CorridaDeReferencia, ...] = (
     # triaje VE-7, 2026-11-20) --- La CUARTA: las ramas sin ejercitar.
     CorridaDeReferencia(
         nombre="materiales_y_ramas", alcance="expediente",
-        rotulo=("DATOS DE PRUEBA, NO DEL PROYECTO: escritos en VE-7 para "
+        rotulo=("DATOS DE PRUEBA, NO DEL PROYECTO, NO ES UN DISEÑO VÁLIDO: "
+                "escritos en VE-7 para "
                 "ejercitar las ramas que las otras tres no alcanzan (ver su "
                 "LEEME.md). El concreto queda fuera del catalogo "
                 "('D_max_catalogo' de prueba): A-01 se dimensiona en TMC y "
@@ -630,6 +632,11 @@ def _resumen_de_la_corrida(corrida: CorridaDeReferencia,
              f"{informe.dimensionados} ("
              + ", ".join(p.punto.id for p in informe.puntos if p.dimensionado)
              + ").")
+    # --- VE-7, lote C (dictamen Fable, C6.a) --- lo que NO cumple, por
+    # punto y por la raiz de su codigo (antes del primer «.»), sin valores:
+    # una corrida de referencia ejercita formulas y no es un diseño, y el
+    # documento lo tiene que decir donde se lee la corrida.
+    L.append("- " + verificaciones_que_no_cumplen(informe))
     L.append("- Etapas que la corrida no completó (la razón está en el "
              "informe; aquí sólo se nombra la etapa):")
     bloqueos = list(informe.bloqueos())
@@ -640,6 +647,92 @@ def _resumen_de_la_corrida(corrida: CorridaDeReferencia,
         L.append(f"  - {quien}: {_celda(b.fase)} → {_celda(b.etapa)} "
                  f"(`{b.tipo}`).")
     L.append("")
+    return L
+
+
+ROTULO_NO_CUMPLEN = ("Verificaciones que NO cumplen en esta corrida (el "
+                     "índice no es un diseño)")
+
+
+def raices_que_no_cumplen(informe: Any) -> Dict[str, Tuple[str, ...]]:
+    """
+    --- VE-7 (dictamen Fable, C6.a) --- {punto: raices de los codigos de las
+    verificaciones con `cumple is False`}, en el orden de los puntos y de
+    sus verificaciones, sin repetir. La raiz es lo que va antes del primer
+    «.» del codigo (`A7.concreto.e` -> `A7`). Sin valores.
+    """
+    salida: Dict[str, Tuple[str, ...]] = {}
+    for p in informe.puntos:
+        raices: List[str] = []
+        for _fase, v in p.verificaciones():
+            if v.cumple is False:
+                raiz = str(v.codigo or v.numeral).split(".")[0]
+                if raiz not in raices:
+                    raices.append(raiz)
+        if raices:
+            salida[p.punto.id] = tuple(raices)
+    return salida
+
+
+def verificaciones_que_no_cumplen(informe: Any) -> str:
+    """La linea del §1 con `raices_que_no_cumplen`, para toda corrida."""
+    raices = raices_que_no_cumplen(informe)
+    if not raices:
+        return f"{ROTULO_NO_CUMPLEN}: *(ninguna)*."
+    return (f"{ROTULO_NO_CUMPLEN}: "
+            + "; ".join(f"{pid}: {', '.join(r)}" for pid, r in raices.items())
+            + ".")
+
+
+# --- VE-7, lote C (dictamen Fable, abierto (i-a)) --- LAS TRES PUERTAS por
+# las que un fundamento llega a la memoria, las mismas que
+# `tests/test_memoria_sustentada.py::test_todo_fundamento_declarado_lo_usa_
+# algun_paso` cuenta: el PASO que lo nombra, la ELECCION que viaja dentro de
+# un paso (`EleccionDeProyecto.fundamento_id`) y el BLOQUE FIJO de umbrales
+# que M11 imprime siempre (`constantes_normativas.UMBRALES_DE_VERIFICACION`).
+# Hasta VE-7 el indice solo contaba la primera y listaba como «no
+# ejercitados» fundamentos que la memoria si imprime.
+PUERTA_PASO = "paso"
+PUERTA_ELECCION = "eleccion"
+PUERTA_BLOQUE_FIJO = "bloque_fijo"
+
+
+def puertas_de_los_fundamentos(pasos: Tuple[PasoDeMemoria, ...]
+                               ) -> Dict[str, set]:
+    """{puerta: ids de fundamento que entran por ella} sobre `pasos`."""
+    return {
+        PUERTA_PASO: {p.fundamento_id for p in pasos},
+        PUERTA_ELECCION: {e.fundamento_id for p in pasos for e in p.elecciones
+                          if e.fundamento_id},
+        PUERTA_BLOQUE_FIJO: {u["fundamento"]
+                             for u in _cn.UMBRALES_DE_VERIFICACION},
+    }
+
+
+def _como_entra_sin_paso(fundamento_id: str,
+                         pasos: Tuple[PasoDeMemoria, ...]) -> str:
+    for p in pasos:
+        if any(e.fundamento_id == fundamento_id for e in p.elecciones):
+            return f"elección dentro del paso `{p.codigo}`"
+    codigos = [u["codigo"] for u in _cn.UMBRALES_DE_VERIFICACION
+               if u["fundamento"] == fundamento_id]
+    return "bloque fijo de umbrales, " + ", ".join(f"`{c}`" for c in codigos)
+
+
+def _fundamentos_sin_paso_propio(reg: Any, pasos: Tuple[PasoDeMemoria, ...],
+                                 emisores: Dict[str, Tuple[str, ...]]
+                                 ) -> List[str]:
+    puertas = puertas_de_los_fundamentos(pasos)
+    otras = puertas[PUERTA_ELECCION] | puertas[PUERTA_BLOQUE_FIJO]
+    menciones = menciones_del_fundamento()
+    L: List[str] = []
+    for f in sorted(reg.fundamentos, key=lambda x: x.id):
+        if f.id in puertas[PUERTA_PASO] or f.id not in otras:
+            continue
+        modulos = emisores.get(f.id) or menciones.get(f.id) or ()
+        modulo = ", ".join(f"`{m}`" for m in modulos) or "—"
+        L.append(f"| `{f.id}` | {_celda(f.fase)} | {_celda(f.que_paso)} | "
+                 f"{_como_entra_sin_paso(f.id, pasos)} | {modulo} |")
     return L
 
 
@@ -669,7 +762,8 @@ def _huecos(informes: Any) -> Tuple[List[Any], List[Any]]:
 def _fundamentos_no_ejercitados(reg: Any, pasos: Tuple[PasoDeMemoria, ...],
                                 emisores: Dict[str, Tuple[str, ...]]
                                 ) -> List[str]:
-    emitidos = {p.fundamento_id for p in pasos}
+    puertas = puertas_de_los_fundamentos(pasos)
+    emitidos = set().union(*puertas.values())
     menciones = menciones_del_fundamento()
     L: List[str] = []
     for f in sorted(reg.fundamentos, key=lambda x: x.id):
@@ -741,10 +835,18 @@ def indice_de_formulas(corridas: Any, sello: Sello) -> str:
     A("")
     for corrida, informe in corridas:
         L.extend(_resumen_de_la_corrida(corrida, informe))
+    puertas = puertas_de_los_fundamentos(pasos)
+    declarados = {f.id for f in reg.fundamentos}
+    con_paso = puertas[PUERTA_PASO] & declarados
+    por_eleccion = (puertas[PUERTA_ELECCION] & declarados) - con_paso
+    por_bloque = ((puertas[PUERTA_BLOQUE_FIJO] & declarados) - con_paso
+                  - por_eleccion)
+    sin_puerta = declarados - con_paso - por_eleccion - por_bloque
     A(f"Pasos emitidos: **{len(pasos)}** · fórmulas distintas: "
-      f"**{len(filas)}** · fundamentos ejercitados: "
-      f"**{len({p.fundamento_id for p in pasos})}** de "
-      f"{len(reg.fundamentos)}.")
+      f"**{len(filas)}** · de {len(reg.fundamentos)} fundamentos: con paso "
+      f"**{len(con_paso)}**, por elección **{len(por_eleccion)}**, por el "
+      f"bloque fijo de umbrales **{len(por_bloque)}**, sin ninguna puerta "
+      f"**{len(sin_puerta)}**.")
     A("")
 
     A("## 2. Índice")
@@ -800,10 +902,22 @@ def indice_de_formulas(corridas: Any, sello: Sello) -> str:
 
     A("## 4. Fundamentos que la corrida de referencia no ejercita")
     A("")
-    A("Declarados en `normativa/fundamentos.py` y sin paso en las corridas")
-    A("de referencia, porque sus datos no recorren esa rama (§1). Sus")
-    A("fórmulas no están en el §2 y este cuadro es lo que impide leer el")
-    A("índice como cobertura.")
+    A("### 4.1 Fundamentos que la memoria imprime sin paso propio")
+    A("")
+    A("Llegan a la memoria por otra puerta: como elección dentro de un paso")
+    A("(`EleccionDeProyecto`) o por el bloque fijo de umbrales que M11")
+    A("imprime siempre. No tienen fórmula en el §2.")
+    A("")
+    A("| Fundamento | Fase | Qué | Puerta | Módulo |")
+    A("|---|---|---|---|---|")
+    L.extend(_fundamentos_sin_paso_propio(reg, pasos, emisores))
+    A("")
+    A("### 4.2 Fundamentos sin ninguna puerta en las corridas")
+    A("")
+    A("Declarados en `normativa/fundamentos.py` y sin paso, elección ni")
+    A("bloque fijo en las corridas de referencia, porque sus datos no")
+    A("recorren esa rama (§1). Sus fórmulas no están en el §2 y este cuadro")
+    A("es lo que impide leer el índice como cobertura.")
     A("")
     A("| Fundamento | Fase | Paso | Módulo emisor |")
     A("|---|---|---|---|")
