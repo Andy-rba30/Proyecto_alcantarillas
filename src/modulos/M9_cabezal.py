@@ -16431,7 +16431,8 @@ def _verificar_zapata_ciclopea(entorno: EntornoDelCabezal, juegos: list,
     cuando vuelan mas que la mitad del peralte de la zapata: E.060 22.10.2.2
     («En elementos en voladizo con una longitud mayor a la mitad de su
     peralte, sera necesario verificar las resistencias en flexion y corte»,
-    transcrito en la nota de la cita E060.22.10.2#CICLOPEO, pag. 195).
+    cita E060.22.10.2.2#VOLADIZO, pag. 195, firmada en VE-7 A11: es la
+    cita principal de C7; E060.22.10.2#CICLOPEO la acompana).
 
     En la cara del cuerpo, con las solicitaciones de la zapata que el armado
     ya calcula (`solicitaciones_de_la_zapata`: presion de contacto LINEAL y
@@ -16551,9 +16552,9 @@ def _verificar_zapata_ciclopea(entorno: EntornoDelCabezal, juegos: list,
             explicacion_falla=f"la {rotulo} de la zapata no resiste como "
                               "voladizo de concreto simple: aumentar su "
                               "peralte o acortar su vuelo",
-            citas=("E060.22.10.2#CICLOPEO", "E060.22.10.2.3#PHI",
-                   "E060.22.5.4#CORTANTE", "E060.22.4.8#PERALTE",
-                   "E060.9.2.5#EMPUJE"),
+            citas=("E060.22.10.2.2#VOLADIZO", "E060.22.10.2#CICLOPEO",
+                   "E060.22.10.2.3#PHI", "E060.22.5.4#CORTANTE",
+                   "E060.22.4.8#PERALTE", "E060.9.2.5#EMPUJE"),
             numeral=NUMERAL_9_4_CICLOPEO))
     return salida, avisos
 

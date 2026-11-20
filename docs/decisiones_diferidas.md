@@ -8748,15 +8748,14 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   (`criterio_traccion_cabezal_ciclopeo`); C7 avisa las combinaciones de E.060 descartadas
   por sacar la resultante de la base y decide con las demás; C8 cita `MP.2.8.1.1.14.1#EXC`
   (el numeral de los dos casos: su texto no tiene cita propia, vive en `P_SEIS_TEXTO`).
-- **Abierto:** (a) y (b) cerrados en VE7A-04 y VE7A-03; (c) firmar
-  `E060.22.10.2.2#VOLADIZO` cuando haya PDF y pasar a ella la cita principal de C7 (hoy
-  en la nota de `E060.22.10.2#CICLOPEO`); (d) C7 no se evalúa bajo sismo (E.060 9.2.3 no
+- **Abierto:** (a) y (b) cerrados en VE7A-04 y VE7A-03; (c) cerrado en
+  A11: `E060.22.10.2.2#VOLADIZO` firmada con el PDF y cita principal de C7 (ficha VE7C-01); (d) C7 no se evalúa bajo sismo (E.060 9.2.3 no
 - **Abierto:** (a) no procede mientras k_v = 0; con k_v ≠ 0, C8 debe afectar W con
   (1 − k_v); (b) a media altura, con `traccion_admisible_e060`, C8 informa; (c) la cita
-  `E060.22.10.2.2#VOLADIZO` existe desde VE-7, sin firma (ficha VE7C-01): firmarla con el
-  PDF y pasar a ella la cita principal de C7; (d) C7 no se evalúa bajo sismo (E.060 9.2.3 no
+  `E060.22.10.2.2#VOLADIZO` existe desde VE-7 y se firmó en A11 (ficha VE7C-01), y es la
+  cita principal de C7 (cerrado); (d) C7 no se evalúa bajo sismo (E.060 9.2.3 no
   combina CS con CE): la punta bajo Evento Extremo I queda cubierta sólo por E2.
-- **Qué haría falta:** el PDF de E.060 para (c).
+- **Qué haría falta:** nada para (c): cerrado en A11 con el PDF de E.060.
 - **Dónde vive:** `src/modulos/M9_cabezal.py::_verificar_cuerpo_bajo_sismo`
 
 ## VE6M9-02 · Las cuantías mínimas de muro de E.060 14.3.1 pasan a criterio [N→] (VE-6, ítem 29; T7C-10)
@@ -9386,8 +9385,13 @@ Fable (triaje VE-7, 2026-11-20): Fable decidió QUÉ hacer; estas fichas dicen c
   `test_con_el_pdf_enlazado_no_queda_cita_sin_firma_por_sesion` exige firmarla) y no sostiene
   sola nada (`test_una_cita_sin_firma_por_sesion_no_sostiene_sola_nada`: otro apoyo firmado del
   verbo, y ningún literal en `src/modulos/`).
-- **Qué haría falta:** correr T2 con `NORMAS_DIR`, firmar la cita y sacarla del censo; pasar
-  a ella la cita principal de C7 en M9; regenerar los manifiestos y `trazabilidad.csv`.
+- **Cerrado en A11 (cierre de VE-7, 2026-11-20):** la sesión de cierre enlazó `NORMAS_DIR`
+  (clon de `Andy-rba30/Normas`), extrajo la página 195 de E.060 y el `Verbatim` casa letra por
+  letra; la cita se firmó (`VE7_A11`), salió de `CITAS_SIN_FIRMA_A_PROPOSITO` y
+  `SIN_FIRMA_POR_SESION_SIN_PDF` quedó vacío (trinquete a 0). La cita principal de C7 en M9
+  es ahora `E060.22.10.2.2#VOLADIZO`, seguida de `E060.22.10.2#CICLOPEO`; ningún número cambia.
+  Tests: `test_A11_*` en `tests/test_ve7_lote_c_voladizo.py` y el orden en
+  `tests/test_ve5_m9_ciclopeo.py`. Manifiestos, trazabilidad e índice regenerados en el sello.
 - **Dónde vive:** `src/normativa/citas.py::E060_22_10_2_2_VOLADIZO`
 
 ## VE7C-02 · `F9.LONGITUD`: la cercanía a la longitud aproximada es recomendación y la juzga el refinamiento (C2)

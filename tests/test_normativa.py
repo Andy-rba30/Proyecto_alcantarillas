@@ -645,25 +645,20 @@ CITAS_SIN_FIRMA_A_PROPOSITO = (
     # --- T-5 --- la quinta, misma razon: el num. 7.7 (ensayo de compresion)
     # con que M8 obtiene el area efectiva del perfil del HDPE.
     "AASHTO_M294_TRAD.7.7",
-    # --- VE-7, lote C (C1; decision del consultor Fable, triaje VE-7,
-    # 2026-11-20) --- la SEGUNDA razon, distinta de las seis de arriba: la
-    # fuente SI tiene paginacion medida, pero la sesion que dio de alta la
-    # cita no tenia `NORMAS_DIR`, y su Verbatim es la frase que ya estaba
-    # transcrita en la nota de otra cita FIRMADA contra la misma pagina.
-    # Dictamen Fable 2026-11-20: aprobada con caducidad (se firma en la
-    # primera sesion con NORMAS_DIR; `test_normativa_pdf` lo exige).
-    "E060.22.10.2.2#VOLADIZO",
+    # --- VE-7, lote C (C1) y A11 --- la SEGUNDA razon (la fuente SI tiene
+    # paginacion medida, pero la sesion que dio de alta la cita no tenia
+    # `NORMAS_DIR`) tuvo un solo caso, `E060.22.10.2.2#VOLADIZO`, y CADUCO:
+    # la sesion de cierre de VE-7 (A11) enlazo el repositorio de normas, la
+    # comparo con la pagina 195 y la firmo. El censo de abajo queda vacio.
 )
 
 # Las censadas por la segunda razon, con la cita firmada cuya nota llevaba
 # ya su Verbatim. Son las unicas exentas de la condicion `SinDeterminar`.
-SIN_FIRMA_POR_SESION_SIN_PDF = {
-    "E060.22.10.2.2#VOLADIZO": "E060.22.10.2#CICLOPEO",
-}
+SIN_FIRMA_POR_SESION_SIN_PDF: dict = {}
 # Trinquete (dictamen Fable, C1.a): SOLO DECRECE. La exencion caduca: con el
 # PDF enlazado no puede quedar ninguna (`test_normativa_pdf.py::test_con_el_
 # pdf_enlazado_no_queda_cita_sin_firma_por_sesion`).
-MAX_SIN_FIRMA_POR_SESION_SIN_PDF = 1
+MAX_SIN_FIRMA_POR_SESION_SIN_PDF = 0   # VE-7 A11: la unica se firmo
 
 
 def test_las_citas_sin_firma_son_exactamente_las_censadas(reg):

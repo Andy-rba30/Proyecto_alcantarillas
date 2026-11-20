@@ -106,6 +106,9 @@ def test_C7_la_punta_y_el_talon_como_voladizos_de_concreto_simple(tanteo):
         assert c7.valor_obtenido == pytest.approx(peor, abs=TOL)
         assert c7.paso.umbral.cita_id == "E060.22.5.3#TRACCION"
         assert "E060.22.10.2#CICLOPEO" in c7.paso.citas_textuales
+        ct = list(c7.paso.citas_textuales)  # A11: la del voladizo, antes
+        assert (ct.index("E060.22.10.2.2#VOLADIZO")
+                < ct.index("E060.22.10.2#CICLOPEO"))
         assert "E060.22.4.8#PERALTE" in c7.paso.citas_textuales
     punta = _v(a, "C7.punta.e")
     assert punta.valor_obtenido == pytest.approx(C7_PUNTA, abs=TOL_DORADO)
