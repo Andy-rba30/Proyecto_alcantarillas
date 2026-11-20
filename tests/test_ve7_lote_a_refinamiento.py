@@ -70,8 +70,11 @@ def test_bajo_salida_con_delta_mayor_que_el_margen_de_v4_no_cierra(
     assert "V4 NO se cumpliria" in b.mensaje
     assert f"declarar `longitud_m` = {L_cab:.3f} m" in b.mensaje
     assert not b.diferido_por_alcance
-    # y el aviso sigue
-    assert any("V4 NO se cumpliria" in a for a in punto.cabezal.avisos)
+    # y el aviso sigue, con el texto del dictamen Fable
+    assert any("V4 NO se cumpliria" in a
+               and "el expediente queda bloqueado hasta declarar "
+                   "`longitud_m` (VE7A-09)" in a
+               for a in punto.cabezal.avisos)
 
 
 # ===========================================================================

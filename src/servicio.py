@@ -3887,8 +3887,8 @@ def _fase_9_refinamiento(informe: InformePunto,
                 "cambia (el diseño corrio con la longitud aproximada de 7.B "
                 "y NO se sustituye)"))
             + ". " + "; ".join(no_se_cumplirian)
-            + ": la corrida no se detiene, y lo dice (hoja de ruta §7.B: "
-              "nunca un resultado silencioso)"))
+            + f": el expediente queda bloqueado hasta declarar "
+              f"`{CLAVE_LONGITUD_FINAL}` (VE7A-09)"))
     informe.refinamiento_longitud = refinado
     if no_se_cumplirian:
         # --- VE-7 (lote A, A9; triaje VE-7 de Fable, ficha VE6-22) --- lo
@@ -3927,8 +3927,10 @@ def _lo_que_no_se_cumpliria(informe: InformePunto,
         con la hidraulica refinada (`RefinamientoLongitud.
         resultado_cabezales`), que trae el TW de la longitud entre cabezales.
 
-    Solo cuenta lo que el diseño CUMPLIA. Ninguna de las dos bloquea ni
-    sustituye: alimentan el aviso.
+    Solo cuenta lo que el diseño CUMPLIA. Ninguna de las dos sustituye a la
+    verificacion del diseño: alimentan el aviso y, desde VE-7 (ficha
+    VE7A-09, dictamen Fable), el `Bloqueo` de la Fase 9 que
+    `_fase_9_refinamiento` levanta con ellas.
     """
     resultado = informe.resultado
     diseno = {v.codigo: v for v in resultado.verificaciones}
