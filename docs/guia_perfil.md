@@ -389,7 +389,6 @@ dentro de la que se elige. La tabla sale de esas fichas:
 | Criterio | Etiqueta | Forma | Ventana |
 |---|---|---|---|
 | `TW_receptor` | [A] | `float` | m >= 0 sobre el fondo de la salida; 0 es salida libre |
-| `carga_viva_tubo_concreto_somero` | [A] | `categoria` | una de: `largo_del_neumatico`, `e_span_a_un_pie` |
 | `factores_idf_regional` | [S] | `dict_con_campos` | sin ventana: lo da el ensayo (ajuste de la relacion I = K·T^m / t^n a las curvas IDF de la zona del corredor), con su trazabilidad (estudio, estacion o region, rango de duraciones y de periodos de retorno del ajuste, y unidades) |
 | `homogeneidad_serie_fen` | [A] | `categoria` | una de: `serie_completa`, `serie_sin_fen`, `dos_poblaciones` |
 | `margen_estacional_nf_v7_m` | [A] | `float` | m >= 0 |
@@ -441,7 +440,6 @@ elegir):
 
 ```text id=ejemplos_declarar
 --declarar TW_receptor=0.0
---declarar carga_viva_tubo_concreto_somero=largo_del_neumatico
 --declarar 'factores_idf_regional={"K": 120.0, "m": 0.2, "n": 0.6}'
 --declarar homogeneidad_serie_fen=serie_completa
 --declarar margen_estacional_nf_v7_m=0.0

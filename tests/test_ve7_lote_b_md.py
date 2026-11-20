@@ -24,6 +24,7 @@ from pathlib import Path
 import pytest
 
 import cli
+from tests.apoyo.aproximacion import REL_TRANSPORTE
 from src.modelos import ControlGobernante, DatoInvalidoError, Verificacion
 from src.modulos import MD
 from src.modulos import M5_verificaciones as M5
@@ -31,7 +32,7 @@ from src.modulos import M7_geometria as M7
 
 RAIZ = Path(__file__).resolve().parents[1]
 CSV_EJEMPLO = RAIZ / "tests" / "ejemplo_puntos.csv"
-REL = 1e-9
+
 
 
 def _v(codigo, cumple):
@@ -113,7 +114,7 @@ def test_b1_en_el_marco_el_par_mas_bajo_se_adopta_tras_uno_que_no_cabe(
     assert "mas bajo" in escalones[0].motivo
     assert "la progresion sigue" in escalones[0].motivo
     assert res is not None and res.aceptado, motivo
-    assert res.seccion.H == pytest.approx(0.60, rel=REL)
+    assert res.seccion.H == pytest.approx(0.60, rel=REL_TRANSPORTE)
 
 
 def test_b1_sin_par_mas_bajo_el_marco_se_descarta_por_rasante(tmp_path):
@@ -203,7 +204,7 @@ def test_b2_bajo_salida_el_delta_es_el_del_hw_de_entrada(corrida):
     # entrada (lo que el control de salida significa)
     r = dataclasses.replace(r0, control_gobernante=ControlGobernante.SALIDA,
                             HW_salida=r0.HW_entrada + 0.40)
-    assert r.HW == pytest.approx(r0.HW_entrada + 0.40, rel=REL)
+    assert r.HW == pytest.approx(r0.HW_entrada + 0.40, rel=REL_TRANSPORTE)
     material, seccion = a01.resultado.material, a01.resultado.seccion
     punto = _punto_bajo(a01, 1.20)
     resguardo = M7.resguardo_por_cbr(punto.cbr_subrasante)
@@ -212,7 +213,7 @@ def test_b2_bajo_salida_el_delta_es_el_del_hw_de_entrada(corrida):
     con_gobernante = 42.10 + r.HW + resguardo + e_paq
     delta, nota = MD._delta_de_7A(punto, material, seccion,
                                   [_v("V1", True), _v("V4", False)], r)
-    assert delta == pytest.approx(con_entrada - punto.cota_rasante, rel=REL)
+    assert delta == pytest.approx(con_entrada - punto.cota_rasante, rel=REL_TRANSPORTE)
     assert delta <= con_gobernante - punto.cota_rasante
     assert "cota inferior con el HW de entrada" in nota
 

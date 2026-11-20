@@ -176,19 +176,25 @@ def test_el_marco_desde_2_pies_sigue_con_la_rueda_distribuida(a01):
 # ===========================================================================
 
 def test_el_tubo_de_concreto_somero_pide_el_criterio_que_la_fuente_no_fija(a01):
-    """Sin declarar el largo a traves del tubo, la Fase 8 no lo inventa."""
+    """
+    Sin el largo a traves del tubo, la Fase 8 no lo inventa. Desde VE-7
+    (B8) el criterio tiene valor de archivo; la propiedad se fija vaciandolo.
+    """
+    from tests.apoyo.criterios import sin_valor
     mat = _material(TipoMaterial.CONCRETO_REFORZADO)
-    with pytest.raises(CriterioPendienteError) as exc:
+    with sin_valor(CRITERIO), pytest.raises(CriterioPendienteError) as exc:
         M8.verificar_conducto(punto=a01, material=mat,
                               seccion=SeccionCircular(0.90),
                               altura_relleno=0.40)
     assert CRITERIO in str(exc.value)
 
 
-def test_el_criterio_es_un_A_de_perfil_sin_valor_con_sus_dos_lecturas():
+def test_el_criterio_es_un_A_de_perfil_con_sus_dos_lecturas():
+    # Sin valor hasta VE-7; desde VE-7 (lote B, B8, ficha VE7B-05) el de
+    # archivo es el largo del neumatico, la cota superior.
     from src import criterios_adoptados as ca
     c = ca.CRITERIOS[CRITERIO]
-    assert c.valor is None and c.etiqueta == "A"
+    assert c.valor == NEUMATICO and c.etiqueta == "A"
     assert c.nivel == ca.NIVEL_PERFIL
     assert set(c.sensibilidad) == {NEUMATICO, E_SPAN}
     assert "M8_estructural" in ve.variable(CRITERIO).consumido_por
@@ -329,9 +335,11 @@ def test_en_la_fase_5_el_tubo_somero_tiene_veredicto(a01):
     hasta la rasante (1.68 ft): hasta VE-4f «metodo no evaluable»; hoy pide
     el criterio y, declarado, da la clase.
     """
+    from tests.apoyo.criterios import sin_valor
     mat = _material(TipoMaterial.CONCRETO_REFORZADO)
     somero = _somero(a01, mat, 1.35, 0.46, 0.05)
-    with pytest.raises(CriterioPendienteError):
+    # Sin valor (lo tuvo hasta VE-7, B8) la Fase 5 se detiene en el criterio
+    with sin_valor(CRITERIO), pytest.raises(CriterioPendienteError):
         M5.fase_8_estructural(punto=somero, material=mat,
                               seccion=SeccionCircular(1.35))
     with declarados({CRITERIO: NEUMATICO}):
@@ -371,7 +379,9 @@ def test_el_dominio_la_cobertura_y_la_lectura_tienen_su_puerta(a01):
                                seccion=SeccionCircular(0.90),
                                altura_relleno=0.40)
     assert v.cumple and v.codigo == M8.CODIGO_COBERTURA
-    with pytest.raises(CriterioPendienteError):
+    from tests.apoyo.criterios import sin_valor
+    with sin_valor(CRITERIO), pytest.raises(CriterioPendienteError):
         M8.lectura_del_tubo_de_concreto_somero()
+    assert M8.lectura_del_tubo_de_concreto_somero() == NEUMATICO  # VE-7, B8
     with declarados({CRITERIO: E_SPAN}):
         assert M8.lectura_del_tubo_de_concreto_somero() == E_SPAN

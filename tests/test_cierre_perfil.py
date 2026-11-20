@@ -496,11 +496,9 @@ VACIOS_DE_PERFIL_NO_INVOCADOS = [
     # clave, y entonces una corrida de perfil se detiene en el (lo mide
     # `tests/test_ve2_revision_m3_m4.py`). Esta corrida no lo invoca.
     "peso_especifico_saturado_relleno_kn_m3",
-    # --- VE-4f --- El largo del area cargada sobre el tubo de concreto con
-    # 1.0 a 2.0 ft hasta la rasante: lo lee M8 en la Fase 5 solo con ese
-    # relleno somero, que ningun punto de esta corrida tiene. Lo ejercita
-    # `tests/test_ve4f_relleno_bajo.py` (ficha VE4F-01).
-    "carga_viva_tubo_concreto_somero",
+    # --- VE-4f --- 'carga_viva_tubo_concreto_somero' estuvo aqui hasta
+    # VE-7 (lote B, B8): tiene valor de archivo, «largo_del_neumatico»
+    # (ficha VE7B-05). Lo ejercita `tests/test_ve4f_relleno_bajo.py`.
     # --- VE-5 (mh, ficha T1-05) --- Los factores K, m, n de la IDF regional
     # de la ecuacion (17): [S] de un estudio regional, solo los lee la Fase
     # 1-bis con 'relacion_intensidad_duracion' = 'idf_regional_ec17', que

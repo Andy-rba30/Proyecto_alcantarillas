@@ -8650,13 +8650,11 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   cobertura mínima de la Tabla 12.6.6.3-1 (F8.COBERTURA, medida hasta la rasante porque la
   fuente cuenta la base): sin ella INCUMPLE y el escalón se rechaza, no es «no evaluable».
 - **Abierto:** el largo del área cargada A TRAVÉS del tubo de concreto somero no lo fija la
-  fuente: `carga_viva_tubo_concreto_somero` [A] sin valor (L_T, la cota superior que
-  C4.6.2.10.2 permite, recomendada; o L_T + LLDF·1.0 ft). Difiere sólo con el tándem sobre
-  tubos de B_c entre 1.22 y 1.82 m. Sigue sin método (`MetodoNoEvaluableError`): el tubo de
+  fuente: `carga_viva_tubo_concreto_somero` [A] tiene desde VE-7 valor de archivo L_T (ficha
+  VE7B-05); L_T + LLDF·1.0 ft queda en la ventana. Sigue sin método (`MetodoNoEvaluableError`): el tubo de
   concreto bajo pavimento rígido entre 9 y 12 in («more comprehensive methods») y el
   flexible con 1.0 ft o menos que cumple la cobertura (sólo justo en 1.0 ft).
-- **Qué haría falta:** la decisión del dueño sobre el criterio; los métodos completos para
-  el tubo con menos de 1.0 ft. Con el pórtico (ficha T5-07) la presión de la franja se
+- **Qué haría falta:** los métodos completos para el tubo con menos de 1.0 ft. Con el pórtico (ficha T5-07) la presión de la franja se
   aplica al marco como carga concentrada sobre la losa.
 - **Dónde vive:** `src/modulos/M8_estructural.py::_carga_viva_en_la_franja`
 # Parte LXI — Lo que VE-5 (lote M9) dejó escrito: el cabezal
@@ -9254,3 +9252,21 @@ cambios están aplicados en estas fichas.
   la rasante); no se hace.
 - **Qué haría falta:** una pasada de MD con la rasante y la longitud nuevas.
 - **Dónde vive:** `src/modulos/MD.py::_delta_del_resguardo_bajo_salida`
+
+## VE7B-05 · El largo del área cargada sobre el tubo de concreto somero: el del neumático, valor de archivo (VE4F-01)
+
+- **Cerrado (VE-7 lote B, B8):** `carga_viva_tubo_concreto_somero` [A] de perfil tiene valor de
+  archivo `largo_del_neumatico` (L_T). Es el área menor y la presión mayor: con el camión las dos
+  lecturas cargan igual, y con el tándem sobre tubos de B_c entre s_a = 1.22 m y s_a + E_span =
+  1.82 m el segundo eje entra antes y entero, de modo que W_L(L_T) ≥ W_L(E_span). El comentario de la
+  franja permite despreciar el aumento por el relleno (`AASHTO_LRFD_9.C4.6.2.10.2#E_SPAN`,
+  PERMISO): es la cota superior. `e_span_a_un_pie` sigue en la ventana. Censos: sale de los
+  criterios de perfil sin valor (`tests/test_criterios_adoptados.py`, `tests/test_cierre_perfil.py`)
+  y de la tabla y el ejemplo de `docs/guia_perfil.md` (editados a mano, sin regenerar la guía).
+- **Decisión del consultor Fable (triaje VE-7, 2026-11-20):** L_T como valor de archivo, por el
+  lado seguro.
+- **Abierto:** los tubos de concreto con menos de 1.0 ft y bajo pavimento rígido de 9 a 12 in
+  siguen sin método (ficha VE4F-01).
+- **Qué haría falta:** una disposición de AASHTO o del Manual de Puentes que fije el largo; si el
+  dueño prefiere la otra lectura, declararla.
+- **Dónde vive:** `src/modulos/M8_estructural.py::lectura_del_tubo_de_concreto_somero`

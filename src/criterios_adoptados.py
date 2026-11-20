@@ -8795,7 +8795,15 @@ CRITERIOS: Dict[str, Criterio] = {
     # de concreto somero, y lo mide `tests/test_ve4f_relleno_bajo.py`, que
     # corre la Fase 5 de un punto somero a perfil.
     "carga_viva_tubo_concreto_somero": Criterio(
-        valor=None,
+        # --- VE-7 lote B, B8 (VE4F-01; decision del consultor Fable, triaje
+        # VE-7, 2026-11-20) --- VALOR DE ARCHIVO: el largo del neumatico. Es
+        # el area menor, la presion mayor y el lado seguro (con el tandem
+        # sobre tubos de B_c entre s_a y s_a + E_span carga mas o igual que
+        # la otra lectura, y con el camion igual), y C4.6.2.10.2 permite
+        # despreciar el aumento por el relleno (cita
+        # AASHTO_LRFD_9.C4.6.2.10.2#E_SPAN, PERMISO): la cota superior. La
+        # otra lectura sigue en la ventana. Ficha VE7B-05.
+        valor="largo_del_neumatico",
         nivel=NIVEL_PERFIL,
         etiqueta="A",
         forma=FORMA_CATEGORIA,
@@ -8822,10 +8830,12 @@ CRITERIOS: Dict[str, Criterio] = {
                       "el tubo es mas ancho que la separacion de sus ejes y "
                       "mas angosto que esa separacion mas el largo del area: "
                       "con el largo del neumatico el segundo eje entra antes "
-                      "y entero, y la carga es mayor o igual. Sin valor de "
-                      "archivo: la eleccion es del dueño del proyecto o del "
-                      "ingeniero estructural (ficha VE4F-01, que recomienda "
-                      "el largo del neumatico por ser la cota superior)",
+                      "y entero, y la carga es mayor o igual. Valor de "
+                      "archivo: el largo del neumatico, la cota superior y "
+                      "el lado seguro, que el comentario de la franja "
+                      "permite (decision del consultor Fable, fichas "
+                      "VE4F-01 y VE7B-05); la otra lectura queda en la "
+                      "ventana para el dueño o el ingeniero estructural",
         fuente="AASHTO LRFD 9a ed.: Art. 3.6.1.2.6a, pag. impresa 3-26 (citas "
                "AASHTO_LRFD_9.3.6.1.2.6a#CONCRETO_SOMERO y #UN_PIE: la Eq. "
                "4.6.2.10.2-1 y la profundidad de diseño de 1.0 ft); Art. "

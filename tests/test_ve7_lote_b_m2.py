@@ -20,6 +20,7 @@ import pytest
 from src import criterios_adoptados as ca
 from src.modelos import DatoFaltanteError, DatoInvalidoError, TipoMaterial
 from src.modulos import M2_material as M2
+from tests.apoyo.aproximacion import REL_TRANSPORTE
 from tests.apoyo.criterios import declarados
 
 
@@ -34,9 +35,9 @@ def _concreto():
 def test_el_diametro_ingles_toma_la_pared_del_designado():
     fila_1050 = ca.valor("espesor_pared_conducto")["concreto_reforzado"][1050]
     assert 1067 not in ca.valor("espesor_pared_conducto")["concreto_reforzado"]
-    assert M2.espesor_pared(_concreto(), 1.0668) == pytest.approx(fila_1050)
+    assert M2.espesor_pared(_concreto(), 1.0668) == pytest.approx(fila_1050, rel=REL_TRANSPORTE)
     # el ingles tal como lo imprime la Table 6, redondeado al mm
-    assert M2.espesor_pared(_concreto(), 1.067) == pytest.approx(fila_1050)
+    assert M2.espesor_pared(_concreto(), 1.067) == pytest.approx(fila_1050, rel=REL_TRANSPORTE)
 
 
 def test_si_el_criterio_trae_la_fila_del_ingles_gana_esa():
@@ -44,7 +45,7 @@ def test_si_el_criterio_trae_la_fila_del_ingles_gana_esa():
     pared["concreto_reforzado"] = {**pared["concreto_reforzado"],
                                    1067: 0.1143}
     with declarados({"espesor_pared_conducto": pared}):
-        assert M2.espesor_pared(_concreto(), 1.0668) == pytest.approx(0.1143)
+        assert M2.espesor_pared(_concreto(), 1.0668) == pytest.approx(0.1143, rel=REL_TRANSPORTE)
 
 
 def test_un_diametro_sin_fila_ni_designado_sigue_faltando():
@@ -55,7 +56,7 @@ def test_un_diametro_sin_fila_ni_designado_sigue_faltando():
 
 def test_el_designado_se_lee_sin_cambios():
     fila_900 = ca.valor("espesor_pared_conducto")["concreto_reforzado"][900]
-    assert M2.espesor_pared(_concreto(), 0.90) == pytest.approx(fila_900)
+    assert M2.espesor_pared(_concreto(), 0.90) == pytest.approx(fila_900, rel=REL_TRANSPORTE)
 
 
 # ===========================================================================
@@ -81,4 +82,4 @@ def test_el_arranque_cero_tambien():
 
 def test_el_arranque_de_archivo_no_cambia():
     assert M2.siguiente_diametro(TipoMaterial.CONCRETO_REFORZADO) == \
-        pytest.approx(0.90)
+        pytest.approx(0.90, rel=REL_TRANSPORTE)
