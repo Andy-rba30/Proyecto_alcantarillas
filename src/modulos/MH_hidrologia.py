@@ -3761,7 +3761,8 @@ def _subareas(fila: Dict[str, str], donde: str, id_: str,
                            f"pendiente; va sola ({donde})")
             suelo, S_k = "", None
         else:
-            if len(campos) not in (2, 3) or not campos[1]:
+            resto = campos[1:]          # suelo y, opcional, la pendiente
+            if not 1 <= len(resto) <= 2 or not resto[0]:
                 raise DatoInvalidoError(
                     COLUMNA_SUBAREAS, valor=bruto, id_punto=id_,
                     motivo=f"{forma}; «{trozo.strip()}» no nombra una "
@@ -3776,8 +3777,8 @@ def _subareas(fila: Dict[str, str], donde: str, id_: str,
                         COLUMNA_SUBAREAS, valor=bruto, id_punto=id_,
                         motivo=f"«{trozo.strip()}»: {exc} ({donde})") from None
             S_k = None
-            if len(campos) == 3:
-                S_k = _numero({"S_terreno": campos[2]}, "S_terreno", donde,
+            if len(resto) == 2:
+                S_k = _numero({"S_terreno": resto[1]}, "S_terreno", donde,
                               techo=S_CAUCE_MAX, id_punto=id_)
         if not (math.isfinite(area_ha) and area_ha > 0):
             raise DatoInvalidoError(

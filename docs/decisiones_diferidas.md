@@ -9277,24 +9277,21 @@ cambios están aplicados en estas fichas.
 
 ## VE7B-06 · El coeficiente de escorrentía ponderado por subáreas (cierre de VE5-MH-01)
 
-- **Cerrado (VE-7 lote B, B10):** el CSV de cuencas admite la columna opcional `subareas`
-  («C:area_ha;…», `MH._subareas`): cada C en (0, 1], cada área positiva, y Σáreas = el área de la
-  cuenca (`area_km2`, que `exigir_areas_coherentes` ata a `area_ha`) con
-  `TOL_REL_AREA_ESCRITA_DOS_VECES`; si no, `DatoInvalidoError` sobre `subareas`. Con ella
-  `MH._paso_c` imprime cada subárea (C_k, A_k) y C = ΣC·A/ΣA (`coeficiente_ponderado`, fundamento
-  `FH.C_SUBAREAS`, verbo DEFINE sobre `MC_HHD.3.12.2`): es la superposición de la ecuación (28) con
-  la misma I y el mismo tc, fundamento [C] derivado de la cita ya registrada. La nota nombra la
-  Eq. 2-4 del WSDOT Hydraulics Manual. Sin la columna, todo igual que antes. Contrato:
-  `docs/contrato_entradas.md` §2-bis. `modelos.Cuenca.subareas` (campo nuevo, al final).
-- **Decisión del consultor Fable (triaje VE-7, 2026-11-20):** columna opcional, Σárea = área, C
-  ponderado con fundamento derivado.
-- **Abierto:** (1) la cita de la Eq. 2-4 (WSDOT, pág. impresa 2-8, PDF 44) queda por registrar.
-  (2) **Pendiente de revisión Fable:** los C de cada subárea se DECLARAN en el CSV; `FH.C` dice que
-  el programa no acepta un coeficiente tecleado y lo lee de la Tabla Nº 08. Se tomó el lado de la
-  especificación («C:area_ha») y se dice en la nota del paso; la alternativa sería «cobertura,suelo:
-  area_ha» leída de la tabla. (3) Con subáreas, `cobertura` y `suelo` se siguen validando y no
-  entran en C; tampoco se aplica el incremento por periodo de retorno de las superficies viales.
-- **Qué haría falta:** registrar la cita; la decisión sobre (2).
+- **Cerrado (VE-7 lote B, B10):** columna opcional `subareas` del CSV de cuencas, con Σáreas = el área
+  de la cuenca (`TOL_REL_AREA_ESCRITA_DOS_VECES`; si no, `DatoInvalidoError` sobre `subareas`), y
+  C = ΣC·A/ΣA (`coeficiente_ponderado`, fundamento `FH.C_SUBAREAS`: superposición de la ecuación (28)
+  con la misma I y tc, sobre `MC_HHD.3.12.2`). Sin la columna, todo igual.
+- **Revisado por Fable (dictamen del consultor, 2026-11-20): decisión 1 y abierto (i), aplicados.** El
+  C tecleado se rechaza (`FH.C`: el programa no acepta un coeficiente tecleado): la forma es
+  «cobertura/suelo[/S_terreno]:area_ha» y, en una superficie vial, «cobertura:area_ha», con los
+  validadores de `cargar_cuencas` (`MH._subareas`, `Cuenca.subareas` de cuatro campos). Cada C_k sale
+  de su tabla (`MH._paso_c_por_subareas(cuenca, TR)`): la Tabla Nº 08 con la S de la subárea o la
+  `S_terreno` de la cuenca, o la tabla vial con su incremento por periodo de retorno; el paso imprime
+  cobertura, suelo, S, columna, C_k, A_k y la laguna del 1 %. Con `subareas`, `cobertura` y `suelo`
+  de la fila van vacíos (con valor, «contradice a otro dato»). La memoria ya no nombra la Eq. 2-4.
+- **Abierto (bloqueo declarado):** la Eq. 2-4 del WSDOT Hydraulics Manual no se nombra hasta tener el
+  PDF de WSDOT y registrar su cita; `FH.C_SUBAREAS` se sostiene con `MC_HHD.3.12.2`.
+- **Qué haría falta:** el PDF de WSDOT y la cita de la Eq. 2-4.
 - **Dónde vive:** `src/modulos/MH_hidrologia.py::coeficiente_ponderado`
 
 ## VE7B-07 · La región pluvial de la Tabla Nº 34 como [S] opcional (cierre de VE5-CAT-02)
