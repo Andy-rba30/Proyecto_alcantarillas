@@ -32,6 +32,7 @@ from scipy.optimize import brentq
 
 from src import modelos
 from src.modulos import MH_hidrologia as MH
+from tests.apoyo.aproximacion import REL_TRANSPORTE
 from tests.apoyo.criterios import declarados
 
 RAIZ = Path(__file__).resolve().parent.parent
@@ -44,6 +45,13 @@ FEN = "homogeneidad_serie_fen"
 
 REL = 1e-8          # el punto fijo itera a 1e-10 relativo
 REL_ARITMETICA = 1e-12
+# Los dorados escritos a mano con cuatro cifras: medio ultimo digito.
+ABS_CUATRO_CIFRAS = 5e-4
+ABS_DOS_DECIMALES = 5e-3
+# El brentq del dorado de Izzard, muy por debajo de la tolerancia del punto
+# fijo; y el margen de i·L, que arrastra la tolerancia relativa de I.
+XTOL_DORADO = 1e-14
+REL_MARGEN = 1e-6
 
 
 @pytest.fixture()
@@ -82,7 +90,7 @@ def test_izzard_es_la_formula_de_la_tabla_05():
     assert MH.tc_izzard_min(i_mm_h=i, c=c, L_m=L, S=S) == pytest.approx(
         a_mano, rel=REL_ARITMETICA)
     # A mano, con cuatro cifras: 525·0.014760·3.3784/(0.27146·21.627) = 4.464
-    assert a_mano == pytest.approx(4.464, abs=5e-4)
+    assert a_mano == pytest.approx(4.464, abs=ABS_CUATRO_CIFRAS)
 
 
 def test_onda_cinematica_es_la_formula_de_la_tabla_05():
@@ -92,7 +100,7 @@ def test_onda_cinematica_es_la_formula_de_la_tabla_05():
     assert MH.tc_onda_cinematica_min(L_m=L, n=n, I_mm_h=I, S=S) == \
         pytest.approx(a_mano, rel=REL_ARITMETICA)
     # A mano: 7·11.664·0.073767/(6.3096·0.34900) = 2.737
-    assert a_mano == pytest.approx(2.737, abs=5e-4)
+    assert a_mano == pytest.approx(2.737, abs=ABS_CUATRO_CIFRAS)
 
 
 def test_los_datos_de_superficie_tienen_que_ser_positivos():
@@ -106,7 +114,7 @@ def test_los_datos_de_superficie_tienen_que_ser_positivos():
 
 def test_la_condicion_de_izzard_es_la_del_producto_i_por_L():
     """«el producto de i por L debe ser ≤ 3800» (los dos lados incluidos)."""
-    assert MH.exigir_producto_izzard(i_mm_h=95.0, L_m=40.0) == pytest.approx(3800)
+    assert MH.exigir_producto_izzard(i_mm_h=95.0, L_m=40.0) == pytest.approx(3800, rel=REL_ARITMETICA)
     with pytest.raises(modelos.MetodoNoEvaluableError) as exc:
         MH.exigir_producto_izzard(i_mm_h=95.01, L_m=40.0)
     texto = str(exc.value)
@@ -136,7 +144,7 @@ def test_el_punto_fijo_de_la_onda_cinematica_reproduce_la_forma_cerrada(
     assert "PUNTO FIJO" in paso.nota_del_proyecto and not avisos
     # La S que entra es la del TERRENO (la fila dice «del terreno»).
     s = next(m for m in paso.sustitucion if m.simbolo == "S")
-    assert s.valor == pytest.approx(0.03) and "S_terreno" in s.procedencia
+    assert s.valor == pytest.approx(0.03, rel=REL_TRANSPORTE) and "S_terreno" in s.procedencia
     i = next(m for m in paso.sustitucion if m.simbolo == "I")
     assert i.valor == pytest.approx(a / esperado ** b, rel=REL)
 
@@ -149,7 +157,7 @@ def test_el_punto_fijo_de_izzard_coincide_con_brentq(cuencas):
         i = a / t ** b
         return 525 * (0.0000276 * i + 0.012) * 8.0 ** 0.33 / (
             0.02 ** 0.333 * i ** 0.667) - t
-    esperado = brentq(residuo, 1e-3, 1440.0, xtol=1e-14)
+    esperado = brentq(residuo, 1e-3, 1440.0, xtol=XTOL_DORADO)
     tc, paso, _ = MH.tiempo_de_concentracion(
         cuenca, intensidad_de=lambda t: a / t ** b)
     assert tc == pytest.approx(esperado, rel=REL)
@@ -158,7 +166,7 @@ def test_el_punto_fijo_de_izzard_coincide_con_brentq(cuencas):
     assert paso.umbral.caracter == "exigencia"
     assert paso.veredicto.tipo is modelos.TipoDeVeredicto.CUMPLE
     assert paso.veredicto.margen == pytest.approx(
-        3800 - a / esperado ** b * 8.0, rel=1e-6)
+        3800 - a / esperado ** b * 8.0, rel=REL_MARGEN)
 
 
 def test_izzard_fuera_del_producto_no_se_evalua(cuencas):
@@ -245,8 +253,8 @@ def test_el_cargador_lee_las_dos_columnas_nuevas(tmp_path):
         {**BASE, "metodo_tc": "izzard", "c_retardo_izzard": "0.012"},
         {**BASE, "id": "B-02", "metodo_tc": "onda_cinematica",
          "n_manning_superficial": "0.013"}]))
-    assert cuencas["B-01"].c_retardo_izzard == pytest.approx(0.012)
-    assert cuencas["B-02"].n_manning_superficial == pytest.approx(0.013)
+    assert cuencas["B-01"].c_retardo_izzard == pytest.approx(0.012, rel=REL_TRANSPORTE)
+    assert cuencas["B-02"].n_manning_superficial == pytest.approx(0.013, rel=REL_TRANSPORTE)
     assert {"izzard", "onda_cinematica"} <= set(MH.METODOS_TC)
 
 
@@ -288,7 +296,7 @@ def test_la_ecuacion_17_es_la_de_la_pagina():
     # I = K·T^m / t^n = 120 · 35^0.2 / 20^0.6 = 120·2.0360/6.0342 = 40.49
     I = MH.intensidad_idf_regional_mm_h(K=120.0, m=0.2, n=0.6, TR=35, t_min=20)
     assert I == pytest.approx(120 * 35 ** 0.2 / 20 ** 0.6, rel=REL_ARITMETICA)
-    assert I == pytest.approx(40.49, abs=5e-3)
+    assert I == pytest.approx(40.49, abs=ABS_DOS_DECIMALES)
 
 
 def test_el_criterio_de_los_factores_es_un_dato_de_sitio_sin_valor():
@@ -309,7 +317,9 @@ def test_la_relacion_regional_da_la_intensidad_del_caudal(cuencas, serie):
     paso = next(p for p in caudal.pasos if p.codigo == "1b.5")
     assert paso.formula_cita_id == "MC_HHD.3.8.1#EC17"
     simbolos = {m.simbolo: m.valor for m in paso.sustitucion}
-    assert simbolos["K"] == 120.0 and simbolos["n"] == 0.6 and simbolos["T"] == 35
+    assert simbolos["K"] == pytest.approx(FACTORES["K"], rel=REL_TRANSPORTE)
+    assert simbolos["n"] == pytest.approx(FACTORES["n"], rel=REL_TRANSPORTE)
+    assert simbolos["T"] == 35
     # La lluvia de 24 horas de la estacion se imprime al lado, como contraste.
     assert any("dick_peschke" in e for e in paso.elecciones[0].entre)
 
@@ -352,3 +362,11 @@ def test_el_punto_fijo_cruza_la_curva_regional(cuencas, serie):
         caudal = MH.caudal_de_aporte_cuneta(cuenca, serie, 35)
     assert caudal.tc_min == pytest.approx(esperado, rel=REL)
     assert caudal.I_mm_h == pytest.approx(a / esperado ** b, rel=REL)
+
+
+def test_factores_idf_regional_lee_el_criterio_y_lo_comprueba():
+    with declarados({IDF: FACTORES}):
+        assert MH.factores_idf_regional() == pytest.approx(
+            (FACTORES["K"], FACTORES["m"], FACTORES["n"]), rel=REL_TRANSPORTE)
+    with pytest.raises(modelos.CriterioPendienteError):
+        MH.factores_idf_regional()
