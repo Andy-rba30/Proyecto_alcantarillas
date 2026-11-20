@@ -5721,6 +5721,44 @@ marca del régimen para T-7c.
   2.2.5, citas `HDS5_3ED.2.2.5#NO_EXCEDER` y `HDS5_3ED.2.2.5a#COTA_DE_DANO`) es de
   **cota**: `cota_de_afectacion` (`M5._v5_cota_de_afectacion`, dato
   `cota_afectacion_aguas_arriba_msnm`). El criterio sigue sin valor de archivo.
+- **Cerrado (VE-4c, 2026-11-20):** `perfil_de_remanso_paso_a_paso` está implementado
+  (`M5._v5_perfil_de_remanso`, fundamento `F5.V5_PERFIL`). Mide lo que el embalse a nivel no
+  puede dar: la distancia aguas arriba de la boca hasta la que la obra **eleva** la lámina del
+  cauce de aproximación más de una sobreelevación admisible Δ sobre su **tirante natural**
+  (el normal de Manning en la sección del cauce, HDS-5 núm. 2.2.3 e., cita
+  `HDS5_3ED.2.2.3e#NORMAL`). El perfil es el paso directo de VE-3.7 con el HW de M4 como
+  condición de borde en la boca (`M3.remanso_aguas_arriba` sobre
+  `M3.perfil_remanso_trapecial`): en cauce **suave** la M1 de HW a y_n + Δ; en cauce
+  **fuerte** la S1 de HW a max(conjugado de y_n, y_n + Δ), el resalto; con HW bajo eso, la
+  obra no remansa el cauce y L = 0. Y d = (L_boca + L_remanso)·cos(esviaje) ≤ ancho / 2,
+  como el embalse a nivel. Entradas nuevas: la **sección del cauce de aproximación** por
+  punto, `seccion_cauce_aproximacion` en `--datos-externos`, con los cinco campos de
+  `seccion_receptor_medida` y su misma puerta (una sección típica para todo el tramo
+  remansado: HDS-5 núm. 2.2.3 a., cita `HDS5_3ED.2.2.3a#SECCION_TIPICA`), y el criterio
+  **`sobreelevacion_admisible_remanso_m`** [A] de expediente, sin valor de archivo, ventana
+  0 a 0.30 m (el aumento admisible que el HDS-5 núm. 2.2.5 b. describe para la FEMA, cita
+  `HDS5_3ED.2.2.5b#AUMENTO`). Se detiene sin cifra: sin Δ (`CriterioPendienteError`), sin
+  el ancho o sin la sección (`DatoFaltanteError`), y fuera del dominio del método
+  (`MetodoNoEvaluableError` con `MOTIVO_METODO_NO_EVALUABLE_REMANSO_PERFIL`) cuando la lámina
+  en la boca o el tirante natural pasan la `altura_total_m` levantada (el agua sale del
+  trapecio) o cuando Δ = 0 en un cauce suave (la M1 es asintótica). En el caso patrón
+  (A-01 con un cauce suave de prueba y Δ = 0.10 m) el perfil da d = 81.5 m donde el embalse
+  a nivel daba 176.75 m. **Validación:** en el repositorio de normas no hay un remanso M1
+  resuelto paso a paso; sí la salida impresa del programa 223-E3WSP del USBR («Design of
+  Small Canal Structures», 1978, Apéndice C, pág. impresa 428, PDF 451), un perfil por la
+  ecuación de la energía con la fricción de Manning promediada entre secciones. La energía
+  y la fricción del escalón (`M3.energia_y_friccion_trapecial`, sacadas del paso directo)
+  cierran el balance de cada uno de sus once tramos con residuo ≤ 0.0107 ft (tolerancia
+  derivada 0.012 ft); la salida trae una errata en 42+00 (velocidad y tirante impresos que
+  no concuerdan en 0.0007 ft), registrada en `CP_VE4C_USBR_WSP`. La suma del perfil se
+  contrasta con una integración independiente (scipy), como en VE-3.7. **Sigue abierto:**
+  (1) la faja se toma **simétrica** respecto del eje de la vía —la otra opción de la ficha,
+  el eje de la faja declarado (p. ej. la distancia del eje al límite aguas arriba como dato
+  por punto), no se implementó—; (2) una sola sección prismática y alineada con el eje del
+  conducto: sin topografía lateral ni tramos de sección distinta; (3) el tirante natural es
+  el normal (sin controles propios del cauce aguas abajo); (4) el HW sin la carga de
+  velocidad de aproximación, como lo da M4. Y `remanso_derecho_via` sigue sin valor de
+  archivo: con los datos de archivo nada cambia.
 - **Dónde vive:** `src/modulos/M5_verificaciones.py::v5_remanso`
 
 ## T7B-02 · V8 juzga «no colapsa» por el desborde de la plataforma, que es la lectura más exigente; el desborde admitido no está implementado
@@ -8057,11 +8095,13 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   (scipy `solve_ivp`, rtol 1e-11) y con Bélanger en el rectangular: peor error 6.5e-8, contra
   una tolerancia nombrada de 1e-6.
 - **Abierto:** el perfil supone un canal prismático (sin la coronación a lo largo del tramo, el
-  cruce es la sección crítica); V5 de las Familias A y B sigue sin el método paso a paso porque
-  le falta la sección del cauce de aproximación (T7B-01), y su mensaje lo dice; no hay un
-  ejemplo resuelto publicado y legal de paso directo contra el que contrastar.
-- **Qué haría falta:** la sección del cauce de aproximación para V5 de A y B; un ejemplo
-  resuelto publicado (p. ej. del USBR o del manual de referencia de HEC-RAS).
+  cruce es la sección crítica). Desde VE-4c V5 de las Familias A y B usa este mismo paso
+  directo con la sección del cauce de aproximación (T7B-01), y su escalón —la energía y la
+  fricción, `M3.energia_y_friccion_trapecial`— se contrasta con el perfil publicado del USBR
+  (223-E3WSP, pág. impresa 428); un remanso M1 resuelto paso a paso y publicado sigue sin
+  aparecer en el repositorio de normas.
+- **Qué haría falta:** un ejemplo resuelto publicado de un perfil M1 o S1 (p. ej. del manual
+  de referencia de HEC-RAS).
 - **Dónde vive:** `src/modulos/M3_hidraulica.py::perfil_remanso_trapecial`
 
 ## VE3-05 · El cabezal se dimensiona: la zapata crece por el talón (estabilidad) y en peralte (armado)

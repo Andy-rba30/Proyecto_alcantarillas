@@ -182,11 +182,14 @@ la tabla):
 | `Q_evento_extremo_m3s` | m³/s | **Estudio hidrológico** | Caudal del periodo de retorno que declare `TR_evento_extremo`, para V8. No puede ser menor que el de diseño. Por punto o global (T-7b) | Sólo se lee con `TR_evento_extremo` declarado; entonces, sin él, V8 se detiene con `DatoFaltanteError`. El programa **no lo escala** del caudal de diseño |
 | `TW_evento_extremo_m` | m (admite 0: salida libre) | **Estudio hidrológico** · hidráulico del receptor | Tirante del receptor sobre el fondo de la salida **en ese evento**. No se reutiliza el de diseño: el receptor sube con la avenida (T-7b) | Con el caudal declarado y sin él, V8 se detiene con `DatoFaltanteError` |
 | `cota_afectacion_aguas_arriba_msnm` | msnm (admite cero y signo: es una cota) | **Topografía** del cruce (levantamiento del cauce y del límite del derecho de vía aguas arriba) | La cota del terreno o del bien a proteger en el **límite del derecho de vía aguas arriba**. V5, con el método `cota_de_afectacion` de `remanso_derecho_via` —el criterio de nivel que el HDS-5 núm. 2.2.5 sostiene—, la compara con la cota del embalse de diseño (cota de entrada + HW de M4). Familias A y B. Por punto o global (cierre de T-7b, H2) | Sólo se lee con `remanso_derecho_via` = `cota_de_afectacion` y a nivel de expediente; entonces, sin ella, V5 se detiene con `DatoFaltanteError`. **No tiene valor por defecto** |
+| `seccion_cauce_aproximacion` | objeto: `b_m` (m), `z_HV` (H:V), `S` (m/m), `n` (—), `altura_total_m` (m) | **Topografía** del cauce aguas arriba del cruce (una sección típica, HDS-5 núm. 2.2.3 a.) · rugosidad del cauce natural | Sección del **cauce de aproximación**, con los cinco campos de `seccion_receptor_medida`. V5, con el método `perfil_de_remanso_paso_a_paso` de `remanso_derecho_via`, corre sobre ella el perfil de remanso desde la boca (el HW de M4 como condición de borde, paso directo) y mide hasta dónde la obra eleva la lámina más de `sobreelevacion_admisible_remanso_m` [A] sobre el tirante natural (el normal de Manning), contra la mitad de `ancho_derecho_via_m`. Familias A y B. Por punto o global (VE-4c, ficha T7B-01) | Sólo se lee con `remanso_derecho_via` = `perfil_de_remanso_paso_a_paso` y a nivel de expediente; entonces, sin ella, V5 se detiene con `DatoFaltanteError`. **No tiene valor por defecto**; si se declara incompleta, la carga se detiene. Una lámina por encima de `altura_total_m` deja V5 «método no evaluable» |
 
-Las cuatro claves de V5 y V8 las abrió T-7b (decisión del dueño del proyecto del
-2026-11-13; la cuarta, la cota de afectación, en el cierre de T-7b). Cada método de V5
-pide **su** dato: `embalse_a_nivel` el ancho del derecho de vía, `cota_de_afectacion` la
-cota. Los **criterios** que las habilitan —`remanso_derecho_via` (el método de V5),
+Las cuatro primeras claves de V5 y V8 las abrió T-7b (decisión del dueño del proyecto del
+2026-11-13; la cuarta, la cota de afectación, en el cierre de T-7b), y la quinta, la sección
+del cauce de aproximación, VE-4c. Cada método de V5 pide **sus** datos: `embalse_a_nivel` el
+ancho del derecho de vía, `cota_de_afectacion` la cota, `perfil_de_remanso_paso_a_paso` el
+ancho y la sección del cauce (y el criterio `sobreelevacion_admisible_remanso_m`, sin valor
+de archivo). Los **criterios** que las habilitan —`remanso_derecho_via` (el método de V5),
 `TR_evento_extremo` y `umbral_no_colapso_evento_extremo` (el periodo de retorno y el umbral
 de V8)— **no tienen valor de archivo**: los declara el **proyectista** (el método), y el
 **Propietario** con el estudio hidrológico (el periodo de retorno y qué se entiende por
@@ -500,7 +503,12 @@ test exige que esta lista las nombre):
   sólo si se adopta un TMC con `fabricacion_tmc` = `anular_empernada` (T-5).
 - `ancho_tributario_m` — sólo cuando el tramo del alivio no se conoce o el caudal se
   calcula (T-9).
-- `ancho_derecho_via_m` — sólo con `remanso_derecho_via` = `embalse_a_nivel` (T-7b).
+- `ancho_derecho_via_m` — sólo con `remanso_derecho_via` = `embalse_a_nivel` (T-7b) o
+  `perfil_de_remanso_paso_a_paso` (VE-4c).
+- `seccion_cauce_aproximacion` y `sobreelevacion_admisible_remanso_m` [A] sin valor —
+  sólo con `remanso_derecho_via` = `perfil_de_remanso_paso_a_paso` (VE-4c, ficha T7B-01):
+  la sección del cauce de aproximación sobre la que corre el perfil de remanso de V5 y
+  dónde termina.
 - `TW_receptor` — sólo si **ninguna** vía de la Sec. 1.3 es recorrible: sin TW declarado,
   sin `cota_TW`, sin `Q_receptor_m3s`, sin sección medida y con `seccion_receptor` vacío
   (`servicio.tw_sin_via_de_sec_1_3`); con la sección de archivo de `seccion_receptor` nunca
