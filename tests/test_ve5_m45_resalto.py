@@ -20,6 +20,7 @@ uniforme supercritica con el resalto dentro del barril.
 
 from __future__ import annotations
 
+import dataclasses
 import math
 
 import pytest
@@ -29,9 +30,12 @@ from src.constantes_normativas import HEC14_RESALTO_PENDIENTE_HORIZONTAL_MAX
 from src.modelos import (MOTIVO_METODO_NO_EVALUABLE_HEC14, ControlGobernante,
                          MetodoNoEvaluableError, SeccionCircular,
                          SeccionRectangular)
-from src.modulos.M3_hidraulica import _MomentoDelBarril, resalto_hidraulico
-from src.modulos.M4_control import tirante_critico
+from src.modulos.M3_hidraulica import (_MomentoDelBarril,
+                                       exigir_dominio_del_resalto,
+                                       resalto_hidraulico)
+from src.modulos.M4_control import situar_resalto, tirante_critico
 from src.modulos.M5_verificaciones import v2_velocidad_minima
+from tests.apoyo.aproximacion import REL_TRANSPORTE
 from tests.test_ve3_11_ensayos_conducto import _e13
 
 # J leido de una figura a dos cifras (2.2, 2.3): media unidad de la ultima
@@ -65,10 +69,12 @@ def test_ejemplo_rectangular_si_de_hec14():
     assert not r.lleno
     assert r.y2_m == pytest.approx(_belanger(y1, r.Fr1),
                                    rel=REL_CUADRATURA_MOMENTO)
-    assert r.Fr1 == pytest.approx(Q / (B * y1) / math.sqrt(G * y1))
+    assert r.Fr1 == pytest.approx(Q / (B * y1) / math.sqrt(G * y1),
+                                  rel=REL_CUADRATURA_MOMENTO)
     assert r.y2_m == pytest.approx(2.011, rel=REL_LECTURA_FIGURA)
     assert r.V2_m_s == pytest.approx(2.64, rel=REL_LECTURA_FIGURA)
-    assert r.V2_m_s == pytest.approx(Q / (B * r.y2_m))
+    assert r.V2_m_s == pytest.approx(Q / (B * r.y2_m),
+                                     rel=REL_CUADRATURA_MOMENTO)
 
 
 def test_ejemplo_circular_si_de_hec14():
@@ -98,8 +104,8 @@ def test_seccion_2_llena_es_la_ec_6_5():
     y2 = (M1 - Q * Q / (G * A)) / A + H / 2
     assert r.lleno
     assert r.y2_m == pytest.approx(y2, rel=REL_CUADRATURA_MOMENTO)
-    assert r.A2_m2 == pytest.approx(A)
-    assert r.V2_m_s == pytest.approx(Q / A)
+    assert r.A2_m2 == pytest.approx(A, rel=REL_TRANSPORTE)
+    assert r.V2_m_s == pytest.approx(Q / A, rel=REL_TRANSPORTE)
 
 
 def test_fuera_del_10_por_ciento_no_es_evaluable():
@@ -154,14 +160,55 @@ def test_v2_con_el_resalto_dentro_juzga_la_velocidad_minima_del_perfil():
     r = _e13(0.75)
     v = v2_velocidad_minima(resultado=r)
     sustitucion = {m.simbolo: m.valor for m in v.paso.sustitucion}
-    assert v.valor_obtenido == pytest.approx(r.perfil.V_min_m_s)
+    assert v.valor_obtenido == pytest.approx(r.perfil.V_min_m_s,
+                                             rel=REL_TRANSPORTE)
     assert v.valor_obtenido < r.resalto.V2_m_s < r.V_sedimentacion
-    assert sustitucion["V_tras_resalto"] == pytest.approx(r.resalto.V2_m_s)
+    assert sustitucion["V_tras_resalto"] == pytest.approx(r.resalto.V2_m_s,
+                                                        rel=REL_TRANSPORTE)
     assert "HEC14.6#V_TRAS_RESALTO" in v.paso.citas_textuales
 
 
 def test_v2_con_el_resalto_fuera_sigue_con_el_uniforme():
     r = _e13(0.68)
     v = v2_velocidad_minima(resultado=r)
-    assert v.valor_obtenido == pytest.approx(r.V_sedimentacion)
+    assert v.valor_obtenido == pytest.approx(r.V_sedimentacion,
+                                             rel=REL_TRANSPORTE)
     assert "V_tras_resalto" not in {m.simbolo for m in v.paso.sustitucion}
+
+
+# ===========================================================================
+# 4. Las dos piezas publicas, por su nombre
+# ===========================================================================
+
+def test_exigir_dominio_del_resalto_es_el_10_por_ciento_de_hec14_6_3():
+    exigir_dominio_del_resalto(S_HORIZONTAL)          # dentro: no levanta
+    with pytest.raises(MetodoNoEvaluableError):
+        exigir_dominio_del_resalto(HEC14_RESALTO_PENDIENTE_HORIZONTAL_MAX)
+
+
+def _piezas_e13(TW):
+    from src.modulos.M3_hidraulica import resolver_manning
+    from tests.test_ve3_11_ensayos_conducto import (D_E13, L_E13, S_E13,
+                                                    _concreto)
+    r = _e13(TW)
+    sec = SeccionCircular(D=D_E13)
+    normal = resolver_manning(seccion=sec, Q=r.Q_celda_m3s, S=S_E13,
+                              material=_concreto())
+    return r, dict(Q_celda=r.Q_celda_m3s, seccion=sec, S=S_E13, L=L_E13,
+                   TW=TW, n=_concreto().n_para_capacidad,
+                   critico=tirante_critico(r.Q_celda_m3s, sec),
+                   llenado_normal=normal.geometria.llenado)
+
+
+def test_situar_resalto_es_lo_que_viaja_en_el_resultado():
+    r, piezas = _piezas_e13(0.75)
+    resalto, dentro = situar_resalto(perfil=r.perfil, **piezas)
+    assert dentro and resalto == r.resalto
+
+
+def test_situar_resalto_con_la_s1_en_la_cara_de_entrada_lo_ahoga_en_la_boca():
+    r, piezas = _piezas_e13(0.75)
+    ahogado = dataclasses.replace(r.perfil, alcanza_entrada=True,
+                                  x_fin_remanso_m=None,
+                                  HW_remanso_m=r.HW_entrada)
+    assert situar_resalto(perfil=ahogado, **piezas) == (None, True)

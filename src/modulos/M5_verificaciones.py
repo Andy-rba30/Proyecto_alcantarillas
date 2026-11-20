@@ -4395,7 +4395,10 @@ def v9_disponibilidad_diametro(*, D: float, material: Material) -> Verificacion:
     return Verificacion(
         cumple=cumple,
         numeral=NUMERAL_V9,
-        valor_obtenido=D_comparado,
+        # El de CALCULO, como siempre: es el diametro con que el punto se
+        # dimensiona (el JSON y la memoria lo leen de aqui). Con la serie
+        # inglesa el paso imprime ademas el designado, que es el comparado.
+        valor_obtenido=D,
         valor_admisible=material.D_max,
         criterio_aplicado=criterio,
         codigo="V9",

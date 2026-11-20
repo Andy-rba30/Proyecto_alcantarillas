@@ -126,9 +126,12 @@ def _escalones(serie, n: int) -> list:
 
 # La serie de 6 in de la ficha de 'diametros_normalizados', cortada por el
 # tope de la norma de producto de cada material (2.70 / 2.10 / 1.50 m).
+# REESCRITO DECLARANDOLO (VE-5, lote m45, item 24): el tope del concreto se
+# compara con el DESIGNADO del escalon y el de 108 in (2.7432 m) es el tubo
+# designado de 2700 mm (AASHTO M 170M Table 6): entra.
 SEIS_IN_CONCRETO = ["0.9144", "1.0668", "1.2192", "1.3716", "1.524",
                     "1.6764", "1.8288", "1.9812", "2.1336", "2.286",
-                    "2.4384", "2.5908"]
+                    "2.4384", "2.5908", "2.7432"]
 SEIS_IN = {
     CONCRETO: SEIS_IN_CONCRETO,
     TMC: SEIS_IN_CONCRETO[:8],         # hasta 1.9812 <= 2.10

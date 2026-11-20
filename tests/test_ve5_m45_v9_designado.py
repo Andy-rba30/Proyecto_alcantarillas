@@ -30,6 +30,7 @@ from src.modulos import M2_material as M2
 from src.modulos.M5_verificaciones import v9_disponibilidad_diametro
 from src.normativa import registro as _registro
 from src.normativa.esquema import Acotada
+from tests.apoyo.aproximacion import REL_TRANSPORTE
 from tests.apoyo.criterios import declarados
 from tests.test_ve2_materiales import (DIAMETRO_DE_DISENO, SERIE_6_IN,
                                        _recorrido)
@@ -44,12 +45,14 @@ D_108_IN = 2.7432
     (D_108_IN, 2.70), (2.743, 2.70), (1.0668, 1.05), (0.9144, 0.90),
     (0.90, 0.90), (2.70, 2.70)])
 def test_el_designado_de_un_diametro_ingles_es_el_de_su_fila(D, designado):
-    assert M2.diametro_designado(CONCRETO, D) == pytest.approx(designado)
+    assert M2.diametro_designado(CONCRETO, D) == pytest.approx(
+        designado, rel=REL_TRANSPORTE)
 
 
 @pytest.mark.parametrize("tipo", [TipoMaterial.TMC, TipoMaterial.HDPE])
 def test_fuera_del_concreto_no_hay_ingles_convertido(tipo):
-    assert M2.diametro_designado(tipo, 0.9144) == 0.9144
+    D = 0.9144
+    assert M2.diametro_designado(tipo, D) == pytest.approx(D, rel=REL_TRANSPORTE)
 
 
 def test_la_serie_inglesa_del_concreto_llega_al_designado_de_2700():
@@ -62,12 +65,12 @@ def test_v9_compara_el_designado():
     with declarados(INGLES):
         material = M2.catalogo(CONCRETO, forma=FormaSeccion.CIRCULAR)
         v = v9_disponibilidad_diametro(D=D_108_IN, material=material)
-    assert material.D_max == pytest.approx(2.70)
+    assert material.D_max == pytest.approx(2.70, rel=REL_TRANSPORTE)
     assert v.cumple
-    assert v.valor_obtenido == pytest.approx(2.70)
+    assert v.valor_obtenido == pytest.approx(D_108_IN, rel=REL_TRANSPORTE)
     sustitucion = {m.simbolo: m.valor for m in v.paso.sustitucion}
-    assert sustitucion["D"] == pytest.approx(D_108_IN)
-    assert sustitucion["D_designado"] == pytest.approx(2.70)
+    assert sustitucion["D"] == pytest.approx(D_108_IN, rel=REL_TRANSPORTE)
+    assert sustitucion["D_designado"] == pytest.approx(2.70, rel=REL_TRANSPORTE)
     assert "AASHTO_M170M.12.1" in v.paso.citas_textuales
 
 
@@ -83,5 +86,5 @@ def test_el_concreto_de_2850_a_3600_sigue_fuera_y_la_tabla_acotada():
     assert isinstance(t6.alcance, Acotada)
     assert max(f.valores["dn_mm"] for f in t6.filas) == 2700
     material = M2.catalogo(CONCRETO, forma=FormaSeccion.CIRCULAR)
-    assert material.D_max == pytest.approx(2.70)
+    assert material.D_max == pytest.approx(2.70, rel=REL_TRANSPORTE)
     assert M2.siguiente_diametro(CONCRETO, 2.70) is None

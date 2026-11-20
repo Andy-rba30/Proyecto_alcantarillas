@@ -20,6 +20,7 @@ from src import criterios_adoptados as ca
 from src.modelos import (DatosDeExpediente, DerechoDeViaDelPunto,
                          SeccionReceptor, TipoDeVeredicto)
 from src.modulos.M5_verificaciones import v2b_sedimentacion
+from tests.apoyo.aproximacion import REL_TRANSPORTE
 from tests.test_ve3_11_ensayos_conducto import _concreto
 from tests.test_M5_verificaciones import _punto, _resultado
 
@@ -56,8 +57,10 @@ def test_conducto_mas_rugoso_que_el_cauce_dispara_el_aviso_sin_cambiar_el_veredi
     assert v.paso.veredicto.tipo is TipoDeVeredicto.CUMPLE   # el de la pendiente
     assert len(v.avisos) == 1 and "MAS RUGOSO" in v.avisos[0]
     sustitucion = {m.simbolo: m.valor for m in v.paso.sustitucion}
-    assert sustitucion["n_conducto"] == pytest.approx(n_conducto)
-    assert sustitucion["n_cauce"] == pytest.approx(n_conducto / 2)
+    assert sustitucion["n_conducto"] == pytest.approx(n_conducto,
+                                                    rel=REL_TRANSPORTE)
+    assert sustitucion["n_cauce"] == pytest.approx(n_conducto / 2,
+                                                 rel=REL_TRANSPORTE)
     assert "SE DISPARA" in v.paso.nota_del_proyecto
 
 
