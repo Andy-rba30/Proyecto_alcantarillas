@@ -668,7 +668,11 @@ def test_f_la_sesion_de_la_gui_lleva_id_huella_sitio_y_corridas(tmp_path):
     pga = sesion["sitio"]["valores"]["PGA_roca_B"]
     assert pga["valor"] == pytest.approx(0.30, rel=REL_TRANSPORTE)
     assert (pga["trazabilidad"], pga["fecha"], pga["origen"]) == (TRAZ_B, FECHA, "sitio_B.json")
-    assert sesion["corridas"] == []
+    # Desde VE-5 la corrida va embebida, con su informe entero: el hijo la
+    # formatea y no recalcula (fichas EXT-10-04 y UI5-01 b).
+    (corrida,) = sesion["corridas"]
+    assert corrida["generado_utc"] == informe.generado
+    assert isinstance(corrida[ses.CAMPO_INFORME_SERIALIZADO], dict)
     # La ventana arma el MISMO conjunto de claves (leido de su AST).
     arbol = ast.parse(GUI.read_text(encoding="utf-8-sig"))
     funcion = _funcion(arbol, "_datos_de_sesion")

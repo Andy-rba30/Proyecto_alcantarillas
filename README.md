@@ -137,7 +137,9 @@ python -m gui.app          # la ventana
 
 Código de salida de la CLI: `0` si el expediente cierra, `1` si corre y no cierra (hay
 etapas bloqueadas, puntos sin dimensionar o verificaciones incumplidas), `2` si no se
-puede correr (una entrada que no se puede leer).
+puede correr (una entrada que no se puede leer), `3` si corrió y no pudo escribir una
+salida (disco lleno, sin permiso): lo ya escrito queda entero y el mensaje nombra el
+destino.
 
 ### La ventana
 

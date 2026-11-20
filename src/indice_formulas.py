@@ -404,6 +404,15 @@ def emisores_por_fundamento() -> Dict[str, Tuple[str, ...]]:
     return {k: tuple(v) for k, v in salida.items()}
 
 
+# --- VE-5 (ficha VE2-02) --- El id de un fundamento: `F<n>.<nombre>`, y
+# tambien `FH.<nombre>` (la hidrologia de la Fase 1-bis) y los nombres con
+# punto interior (`F5.V2b.REGIMEN`). Hasta VE-5 el patron era
+# `F\d+\.[A-Za-z0-9_]+` y el indice rotulaba «sin mencion fuera del
+# registro» a `FH.FACTOR_P24`, que entra por `eleccion()` desde
+# `MH_hidrologia`, y a `F5.V2b.REGIMEN`.
+PATRON_ID_DE_FUNDAMENTO = r"F[0-9H]+\.[A-Za-z0-9_.]+"
+
+
 def menciones_del_fundamento() -> Dict[str, Tuple[str, ...]]:
     """
     {fundamento_id: (modulos de src/ que escriben el id como literal, ...)},
@@ -420,7 +429,7 @@ def menciones_del_fundamento() -> Dict[str, Tuple[str, ...]]:
         arbol = ast.parse(ruta.read_text(encoding="utf-8"), filename=ruta.name)
         for nodo in ast.walk(arbol):
             if isinstance(nodo, ast.Constant) and isinstance(nodo.value, str) \
-                    and re.fullmatch(r"F\d+\.[A-Za-z0-9_]+", nodo.value):
+                    and re.fullmatch(PATRON_ID_DE_FUNDAMENTO, nodo.value):
                 modulos = salida.setdefault(nodo.value, [])
                 if ruta.stem not in modulos:
                     modulos.append(ruta.stem)

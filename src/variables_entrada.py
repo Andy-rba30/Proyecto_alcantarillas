@@ -102,6 +102,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
+from src import constantes_normativas as _cn
 from src import criterios_adoptados as _ca
 from src import datos_sitio as _ds
 from src import dominios as _dominios
@@ -1425,6 +1426,68 @@ _EXTERNOS: Dict[str, _Externo] = {
 }
 
 
+# ---------------------------------------------------------------------------
+# Poblacion 5 - los ensayos OPCIONALES del JSON (VE-5, ficha T4-09)
+# ---------------------------------------------------------------------------
+# Los seis ensayos de durabilidad (`modelos.ENSAYOS_DE_DURABILIDAD`, que son
+# las claves de `servicio.CLAVES_DE_DURABILIDAD`). Entran por el MISMO JSON
+# que los datos externos, en `globales` (el sitio entero) o en `puntos` (una
+# calicata), y NO son de `servicio.CLAVES_EXTERNAS`: ninguna etapa los exige,
+# y el pre-vuelo lee esa tupla como «dato que una etapa exige». Hasta VE-5 no
+# estaban en ningun censo y la ayuda del JSON no los nombraba. El concepto y
+# la unidad son los del docstring de `modelos.EnsayosDurabilidad`, que es el
+# contrato del dato; el dominio, el de la puerta (`servicio._dato_de_durabilidad`).
+_FUENTE_DE_LOS_ENSAYOS = ("el EMS o el estudio de campo (docs/contrato_entradas.md); "
+                          "se declara en --datos-externos, en 'globales' para el "
+                          "sitio entero o en 'puntos' por calicata. Opcional y sin "
+                          "valor por defecto: sin ensayos la matriz no actua y la "
+                          "memoria lo dice")
+_FASE_DE_LOS_ENSAYOS = "Fase 3 - Tipo, material y durabilidad"
+
+_ENSAYOS: Dict[str, _Externo] = {
+    "sulfatos_suelo_ppm": _Externo(
+        concepto="Sulfato soluble en agua presente en el SUELO, en mg/kg (ppm "
+                 "en peso); E.060 Tabla 4.4 lo tabula en porcentaje en peso "
+                 "(1 % = 10 000 ppm)",
+        unidad="ppm",
+        resolucion=Libre(que_lo_fija=_FUENTE_DE_LOS_ENSAYOS,
+                         dominio="ppm >= 0 y <= 10^6 (dominios.PPM_MAX_FISICO)"),
+        dominio="PPM_MAX_FISICO", fase_declarada=_FASE_DE_LOS_ENSAYOS),
+    "sulfatos_agua_ppm": _Externo(
+        concepto="Sulfato (SO4) en el AGUA, en ppm: la otra escala de la misma "
+                 "tabla de E.060, y no la misma magnitud que en el suelo",
+        unidad="ppm",
+        resolucion=Libre(que_lo_fija=_FUENTE_DE_LOS_ENSAYOS,
+                         dominio="ppm >= 0 y <= 10^6 (dominios.PPM_MAX_FISICO)"),
+        dominio="PPM_MAX_FISICO", fase_declarada=_FASE_DE_LOS_ENSAYOS),
+    "cloruros_ppm": _Externo(
+        concepto="Cloruros en el suelo o en el agua",
+        unidad="ppm",
+        resolucion=Libre(que_lo_fija=_FUENTE_DE_LOS_ENSAYOS,
+                         dominio="ppm >= 0 y <= 10^6 (dominios.PPM_MAX_FISICO)"),
+        dominio="PPM_MAX_FISICO", fase_declarada=_FASE_DE_LOS_ENSAYOS),
+    "pH": _Externo(
+        concepto="pH del suelo o del agua; si hay los dos, el mas alejado de 7",
+        unidad="pH",
+        resolucion=Libre(que_lo_fija=_FUENTE_DE_LOS_ENSAYOS,
+                         dominio="> 0 y <= 14 (dominios.PH_MAX_FISICO)"),
+        dominio="PH_MAX_FISICO", fase_declarada=_FASE_DE_LOS_ENSAYOS),
+    "resistividad_ohm_cm": _Externo(
+        concepto="Resistividad del suelo o del agua; si hay las dos, la menor",
+        unidad="ohm-cm",
+        resolucion=Libre(que_lo_fija=_FUENTE_DE_LOS_ENSAYOS, dominio="> 0 y finito"),
+        fase_declarada=_FASE_DE_LOS_ENSAYOS),
+    "abrasion": _Externo(
+        concepto="Nivel de abrasion del sitio, de la Table 8-4 de WSDOT "
+                 "(constantes_normativas.NIVELES_DE_ABRASION); es dato de "
+                 "CAMPO y el programa no lo deduce de la velocidad",
+        unidad="nivel",
+        resolucion=Libre(que_lo_fija=_FUENTE_DE_LOS_ENSAYOS,
+                         opciones=tuple(_cn.NIVELES_DE_ABRASION)),
+        fase_declarada=_FASE_DE_LOS_ENSAYOS),
+}
+
+
 _META_SITIO: Dict[str, _Meta] = {
     "PGA_roca_B": _Meta(unidad="g"),
     "ZONA_SISMICA_LA_UNION": _Meta(
@@ -1482,6 +1545,8 @@ _META_SITIO: Dict[str, _Meta] = {
 
 _META_CRITERIOS: Dict[str, _Meta] = {
     "D_max_catalogo": _Meta(unidad="m"),
+    # --- VE-5 (ficha T8-11) --- lo lee `M6.avisos_de_transcripcion`.
+    "techos_de_transcripcion_fase_6": _Meta(unidad="min, m y Pa"),
     "F_pga": _Meta(unidad="-"),
     "F_pga_lectura_columna_extrema": _Meta(unidad="-"),
     "HW_D_max": _Meta(unidad="-"),
@@ -1963,6 +2028,21 @@ def _construir() -> Dict[str, VariableDeEntrada]:
             nota=ext.nota,
         )
 
+    for clave, ext in _ENSAYOS.items():
+        cons = _consumidores(clave)
+        salida[clave] = VariableDeEntrada(
+            clave=clave,
+            concepto=ext.concepto,
+            unidad=ext.unidad,
+            poblacion=Poblacion.DATO_EXTERNO_OPCIONAL,
+            resolucion=ext.resolucion,
+            fase=_fase(clave, ext.fase_declarada, cons),
+            consumido_por=cons,
+            criterio_destino=ext.criterio_destino,
+            dominio=ext.dominio,
+            nota=ext.nota,
+        )
+
     for clave, dato in _ds.DATOS_SITIO.items():
         meta = _META_SITIO[clave]
         cons = _consumidores(clave)
@@ -2054,6 +2134,7 @@ def _verificar_censo() -> None:
     esperado = {
         Poblacion.COLUMNA_CSV: set(COLUMNAS),
         Poblacion.DATO_EXTERNO: set(_EXTERNOS),
+        Poblacion.DATO_EXTERNO_OPCIONAL: set(_ENSAYOS),
         Poblacion.DATO_SITIO: set(_ds.DATOS_SITIO),
         Poblacion.CRITERIO: set(_ca.CRITERIOS),
     }
@@ -2114,7 +2195,8 @@ def _verificar_variable(v: VariableDeEntrada) -> None:
                 )
     if (isinstance(v.resolucion, Libre) and v.resolucion.opciones
             and v.poblacion not in (Poblacion.COLUMNA_CSV,
-                                    Poblacion.DATO_EXTERNO)):
+                                    Poblacion.DATO_EXTERNO,
+                                    Poblacion.DATO_EXTERNO_OPCIONAL)):
         raise ValueError(
             f"'{v.clave}' declara `Libre.opciones` fuera del CSV y de los "
             "datos externos; el conjunto cerrado de un criterio vive en su "
@@ -2174,8 +2256,9 @@ def variable(clave: str) -> VariableDeEntrada:
     except KeyError:
         raise KeyError(
             f"'{clave}' no es una variable de entrada de este expediente. Las "
-            f"hay en cuatro poblaciones: {len(COLUMNAS)} columnas del CSV, "
+            f"hay en cinco poblaciones: {len(COLUMNAS)} columnas del CSV, "
             f"{len(_EXTERNOS)} datos externos, "
+            f"{len(_ENSAYOS)} ensayos opcionales del JSON, "
             f"{len(_ds.DATOS_SITIO)} datos de sitio y "
             f"{len(_ca.CRITERIOS)} criterios adoptados"
         ) from None

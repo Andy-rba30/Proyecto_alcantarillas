@@ -21,8 +21,8 @@ Que se mide, en orden (`tests/test_ui5_decisiones.py` lo juzga):
   2. otra corrida, y «Examinar…» con la MISMA ruta;
   3. otra corrida, y la misma ruta tecleada otra vez (borrar y escribir);
   4. otra corrida: los siete se encienden de nuevo;
-  5. la frontera de la decision: cambiar el JSON de datos externos NO
-     invalida (EXT-8);
+  5. cambiar el JSON de datos externos: hasta VE-5 era la frontera de la
+     decision y no invalidaba (EXT-8); desde VE-5 invalida (ficha UI5-01 a);
   6. otra corrida, y «Cargar sesion» con otro CSV: el motivo es el de la
      sesion, no el del CSV;
   7. otra corrida, y «Nuevo proyecto»: lo mismo;
@@ -166,7 +166,8 @@ def main(salida: Path) -> int:
         _correr(ventana, raiz)
         r["tras_volver_a_correr"] = _exportadores(ventana)
 
-        # 5. La frontera: el JSON de datos externos no invalida.
+        # 5. El JSON de datos externos: desde VE-5 (ficha UI5-01 a) tambien
+        #    invalida, con su propio motivo.
         ventana.datos_externos_var.set(str(otro_externos))
         r["tras_cambiar_externos"] = _estado(ventana, raiz)
 

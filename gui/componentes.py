@@ -842,7 +842,8 @@ def unidades_de_rueda(*, num, delta):
 class MarcoScroll(ttk.Frame):
     """Contenedor con scroll vertical: el contenido se agrega en `.interior`."""
 
-    def __init__(self, master, fondo=FONDO, estilo_interior="Fondo.TFrame", **kw):
+    def __init__(self, master, fondo=FONDO, estilo_interior="Fondo.TFrame",
+                 relleno=14, **kw):  # literal-ok: margen interior del marco, px
         super().__init__(master, style=estilo_interior, **kw)
         self.canvas = tk.Canvas(self, highlightthickness=0, borderwidth=0,
                                 background=fondo)
@@ -852,7 +853,10 @@ class MarcoScroll(ttk.Frame):
         self.canvas.pack(side="left", fill="both", expand=True)
         self.vbar.pack(side="right", fill="y")
 
-        self.interior = ttk.Frame(self.canvas, padding=14, style=estilo_interior)
+        # `relleno` es el margen del interior: 14 px en las pestañas 1 y 4,
+        # que son la vista entera; cero en la columna derecha de la pestaña 2
+        # (VE-5, ficha UI3-01), cuyos paneles ya traen el suyo.
+        self.interior = ttk.Frame(self.canvas, padding=relleno, style=estilo_interior)
         self._id_win = self.canvas.create_window((0, 0), window=self.interior, anchor="nw")
 
         self.interior.bind("<Configure>", self._ajustar_region)
@@ -887,6 +891,94 @@ class MarcoScroll(ttk.Frame):
         self.canvas.yview_scroll(
             unidades_de_rueda(num=getattr(evt, "num", 0),
                               delta=getattr(evt, "delta", 0)), "units")
+
+
+class FilaFluida(ttk.Frame):
+    """
+    Una fila de botones que se PARTE en varias cuando no cabe (VE-5, ficha
+    UI4-01).
+
+    La fila de exportacion de la pestaña 4 se repartia a mano en filas fijas
+    medidas a 1100 px, y a 900 px --- el ancho minimo de la ventana --- el
+    ultimo boton salia cortado: el ancho de un boton depende de la tipografia
+    y de la escala de la pantalla, que la ventana no elige. Aqui cada boton
+    se coloca a la derecha del anterior mientras quepa en el ancho que el
+    contenedor le da a la fila, y si no, empieza una fila nueva debajo. El
+    orden de los botones es el de `agregar` y no cambia nunca: solo cambia
+    donde se parte.
+
+    Se coloca con `place` y no con `grid`: en una rejilla las columnas se
+    comparten entre filas y una fila partida mediria mas que la suma de sus
+    botones. Como `place` no propaga el tamaño, la fila declara su alto
+    (`configure(height=...)`) cada vez que se recoloca.
+    """
+
+    def __init__(self, master, *, separacion=8, **kw):  # literal-ok: hueco entre botones, px
+        super().__init__(master, **kw)
+        self.separacion = separacion
+        self._elementos = []
+        self._disposicion = None
+        self.bind("<Configure>", self._al_configurar, add="+")
+
+    def agregar(self, widget, *, ipadx=0, ipady=0):
+        """
+        Añade `widget` (hijo de esta fila) al final. `ipadx`/`ipady` son el
+        relleno interior que antes iba en el `pack`: un `tk.Button` lo lleva
+        en sus propias opciones `padx`/`pady`, de modo que su ancho pedido ya
+        lo incluye y un cambio de texto lo recoloca solo.
+        """
+        if ipadx or ipady:
+            widget.configure(padx=widget.winfo_pixels(widget.cget("padx")) + ipadx,
+                             pady=widget.winfo_pixels(widget.cget("pady")) + ipady)
+        self._elementos.append(widget)
+        widget.bind("<Configure>", lambda _e: self.recolocar(), add="+")
+        self.recolocar()
+
+    def filas_para(self, ancho):
+        """
+        Las filas (tuplas de indices de `agregar`) en que caben los botones
+        con `ancho` px. Un ancho sin medir todavia (Tk da 1 antes de mapear)
+        los deja en una sola fila.
+        """
+        filas, actual, usado = [], [], 0
+        for indice, widget in enumerate(self._elementos):
+            pide = widget.winfo_reqwidth()
+            if actual and ancho > 1 and usado + pide > ancho:
+                filas.append(tuple(actual))
+                actual, usado = [], 0
+            actual.append(indice)
+            usado += pide + self.separacion
+        if actual:
+            filas.append(tuple(actual))
+        return tuple(filas)
+
+    def disposicion(self):
+        """Las filas en que esta partida ahora (las mide la suite)."""
+        return self._disposicion
+
+    def _al_configurar(self, evt):
+        if evt.widget is self:
+            self.recolocar(evt.width)
+
+    def recolocar(self, ancho=None):
+        ancho = self.winfo_width() if ancho is None else ancho
+        filas = self.filas_para(ancho)
+        y, ancho_mayor = 0, 0
+        for numero, fila in enumerate(filas):
+            if numero:
+                y += self.separacion
+            x, alto = 0, 0
+            for indice in fila:
+                widget = self._elementos[indice]
+                widget.place(x=x, y=y)
+                x += widget.winfo_reqwidth() + self.separacion
+                alto = max(alto, widget.winfo_reqheight())
+            ancho_mayor = max(ancho_mayor, x - self.separacion)
+            y += alto
+        self._disposicion = filas
+        if (self.winfo_pixels(self.cget("height") or 0) != y
+                or self.winfo_pixels(self.cget("width") or 0) != ancho_mayor):
+            self.configure(height=y, width=ancho_mayor)
 
 
 class CampoValidable:

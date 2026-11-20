@@ -56,6 +56,8 @@ diferencia importa porque se corrigen en sitios distintos:
       Desde T-6 tambien `bombeo` y `peralte`, la pendiente transversal de la
       plataforma en el cruce: opcionales, excluyentes entre si, y sin ellas
       la longitud por extremo toma la plataforma horizontal y lo avisa.
+      Desde VE-5 (ficha T6-04) las dos y `S_conducto` tienen bandera
+      (`--bombeo`, `--peralte`, `--s-conducto`) y campo en la pestaña 1.
       Y, desde T-8, las de la Fase 6, tambien opcionales y por punto o
       globales: `tipo_terreno_receptor` y `tipo_terreno_entrada` (fila de
       la Tabla N 11 del Manual: el material del cauce a la salida y a la
@@ -2390,6 +2392,14 @@ def plantilla_por_alcance(alcance: str,
 # Familia C la fija).
 PREFIJO_PROGRESO = "progreso:"
 
+# --- VE-5 (ficha UI5-01 c) --- EL CODIGO DE SALIDA DE UNA ESCRITURA QUE
+# FALLA. Los de antes son el contrato del README (§4): 0 cierra, 1 corre y no
+# cierra (y escribe la memoria), 2 no se pudo correr. Uno distinto de los
+# tres porque no es ninguno de ellos: la corrida termino y lo que fallo es el
+# disco. El hijo del PDF de la ventana no lo cuenta entre los que dejan
+# memoria (`gui.exportacion_pdf.CODIGOS_DE_SALIDA_CON_MEMORIA`).
+CODIGO_ESCRITURA_FALLIDA = 3  # literal-ok: codigo de salida del proceso, no una magnitud
+
 
 def _informar_progreso(etapa: str, hecho: int, total: int) -> None:
     print(f"{PREFIJO_PROGRESO} {hecho}/{total} {etapa}", flush=True)
@@ -2542,6 +2552,43 @@ def _comparar_con_la_corrida_embebida(informe: Informe,
             "desde entonces; revise antes de dar la memoria por vigente")
 
 
+def _informe_de_la_corrida_embebida(sesion: Optional[SesionSerializada]) -> Informe:
+    """
+    --- VE-5 (fichas EXT-10-04 y UI5-01 b) --- El `Informe` de la ULTIMA
+    corrida de la sesion que trae su informe entero
+    (`sesion.CAMPO_INFORME_SERIALIZADO`), reconstruido por
+    `serializacion_informe.informe_desde_dict`, que solo construye
+    dataclasses y enums de `src`.
+
+    LA GARANTIA DE QUE ES LA CORRIDA: el volcado del informe reconstruido
+    tiene que ser, entero y sin tolerancias, el `informe_json` que la misma
+    corrida embebida trae. Si difieren --- un informe de otra version del
+    programa, o un archivo retocado --- no se formatea nada (`ValueError`):
+    una memoria que no es la de su corrida es peor que ninguna.
+    """
+    from src import serializacion_informe as _serializacion
+    if sesion is None:
+        raise ValueError("hace falta una --sesion")
+    corridas = [c for c in sesion.corridas if isinstance(c, dict)
+                and isinstance(c.get(_sesion.CAMPO_INFORME_SERIALIZADO), dict)]
+    if not corridas:
+        raise ValueError(
+            "la sesion no trae ninguna corrida con su informe entero "
+            f"('{_sesion.CAMPO_INFORME_SERIALIZADO}'): «Guardar sesion» no lo "
+            "escribe; lo escribe la ventana para el PDF. Corra sin "
+            "--corrida-embebida para recalcular")
+    corrida = corridas[-1]
+    informe = _serializacion.informe_desde_dict(corrida[_sesion.CAMPO_INFORME_SERIALIZADO])
+    propio = json.loads(json.dumps(informe_json(informe), ensure_ascii=False,
+                                   allow_nan=False))
+    if propio != corrida.get("informe_json"):
+        raise ValueError(
+            "el informe embebido no es el de su volcado ('informe_json' de la "
+            "misma corrida): la sesion es de otra version del programa o se "
+            "retoco. No se formatea; corra sin --corrida-embebida")
+    return informe
+
+
 def _bandera_explicita(argv: Optional[Sequence[str]], nombre: str) -> bool:
     """Si `nombre` (p. ej. `--alcance`) vino escrito en la linea de comandos."""
     tokens = list(sys.argv[1:] if argv is None else argv)
@@ -2588,6 +2635,13 @@ def _parser() -> argparse.ArgumentParser:
                         "el mismo camino con guardia que «Cargar sesion». "
                         "Una bandera escrita aqui gana a lo que la sesion "
                         "trae; --declarar compone encima")
+    p.add_argument("--corrida-embebida", action="store_true",
+                   dest="corrida_embebida",
+                   help="con --sesion: NO recalcula. Formatea la ultima "
+                        "corrida embebida en la sesion con su informe "
+                        "entero (la que la ventana escribe para el PDF), "
+                        "despues de comprobar que es la de su volcado. No "
+                        "lee el CSV ni los demas archivos de la sesion")
     p.add_argument("--progreso", action="store_true",
                    help=f"imprime en stdout una linea «{PREFIJO_PROGRESO} "
                         "hecho/total etapa» por punto de la memoria y por "
@@ -2661,6 +2715,16 @@ def _parser() -> argparse.ArgumentParser:
     p.add_argument("--categoria-tr", dest="categoria_tr",
                    help="fila de la Tabla N 02: quebrada_importante o "
                         "quebrada_menor (Sec. 2.2, Familia A)")
+    # --- VE-5 (ficha T6-04) --- las tres que solo entraban por el JSON.
+    p.add_argument("--s-conducto", type=float, dest="S_conducto",
+                   help="pendiente del barril, m/m (0 = horizontal; si no, "
+                        "la del cauce)")
+    p.add_argument("--bombeo", type=float, dest="bombeo",
+                   help="bombeo de la plataforma en tangente, m/m "
+                        "(DG-2018 304.05; excluyente con --peralte)")
+    p.add_argument("--peralte", type=float, dest="peralte",
+                   help="peralte de la plataforma en curva, m/m con signo "
+                        "(DG-2018 304.06; excluyente con --bombeo)")
     p.add_argument("--criterios", action="store_true",
                    help="imprime tambien la declaracion completa de los "
                         "datos de sitio [S] y de los criterios usados "
@@ -3030,6 +3094,11 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     if args.prevuelo and args.barridos:
         parser.error("--prevuelo y --barrido no se combinan: el pre-vuelo no corre "
                      "y el barrido corre una vez por valor")
+    if args.corrida_embebida and (args.sesion is None or args.prevuelo
+                                  or args.barridos or args.declaraciones):
+        parser.error("--corrida-embebida va con --sesion y sin --prevuelo, "
+                     "--barrido ni --declarar: formatea una corrida ya hecha, "
+                     "no corre ninguna")
 
     # LOS DATOS DE SITIO DE LA OBRA (EXT-10): la bandera escrita gana al
     # bloque `sitio` de la sesion; sin bandera se aplica el bloque, y si la
@@ -3080,7 +3149,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     banderas = {"luz_m": args.luz, "TW_m": args.TW,
                 "longitud_m": args.longitud,
                 "L_hidraulico_m": args.l_hidraulico,
-                "categoria_tr": args.categoria_tr}
+                "categoria_tr": args.categoria_tr,
+                "S_conducto": args.S_conducto, "bombeo": args.bombeo,
+                "peralte": args.peralte}
     if sesion is not None:
         # Lo que la linea de comandos no trajo lo pone la sesion, campo a
         # campo: son las MISMAS claves (`sesion.banderas_de_externos`).
@@ -3088,6 +3159,21 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             if banderas.get(clave) is None:
                 banderas[clave] = valor
     progreso = _informar_progreso if args.progreso else None
+    if args.corrida_embebida:
+        # --- VE-5 (fichas EXT-10-04 y UI5-01 b) --- EL HIJO DEL PDF NO
+        # RECALCULA: formatea la corrida que la ventana embebio en la sesion,
+        # con su informe entero. Ni el CSV ni los demas archivos se releen:
+        # la memoria es la de ESA corrida, con su hora y sus huellas.
+        try:
+            informe = _informe_de_la_corrida_embebida(sesion)
+        except ValueError as exc:
+            print(f"No se puede formatear la corrida embebida: {exc}",
+                  file=sys.stderr)
+            return 2
+        print(volcar(informe, con_criterios=args.criterios))
+        print(f"\nMemoria de la corrida embebida en la sesion "
+              f"({informe.generado}): formateada sin recalcular.")
+        return _salidas_o_codigo(args, informe, plantilla, progreso)
     try:
         externos = cargar_datos_externos(args.datos_externos, banderas)
         if args.prevuelo:
@@ -3130,6 +3216,16 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         if comparacion:
             print(f"\n{comparacion}")
 
+    return _salidas_o_codigo(args, informe, plantilla, progreso)
+
+
+def _salidas_o_codigo(args: argparse.Namespace, informe: Any,
+                      plantilla: Path, progreso: Any) -> int:
+    """
+    Arma la memoria, escribe las salidas y devuelve el codigo de salida de
+    `main`. La comparten la corrida y, desde VE-5, la corrida embebida que
+    se formatea sin recalcular (`--corrida-embebida`).
+    """
     # LA MEMORIA SE ARMA ANTES DE ESCRIBIR EL JSON (PC-35): si la plantilla
     # no imprime un bloque que esta corrida SI produjo (`ValueError` del
     # contrato de marcadores, SIS-B-06), o si algun bloque de la memoria se
@@ -3147,6 +3243,25 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
               f"«{plantilla.name}»: {exc}", file=sys.stderr)
         return 2
 
+    try:
+        _escribir_las_salidas(args, informe, plantilla, progreso)
+    except OSError as exc:
+        # --- VE-5 (ficha UI5-01 c) --- UNA ESCRITURA QUE FALLA (disco lleno,
+        # sin permiso, un directorio que no existe y no se puede crear) no es
+        # un expediente que no cierra ni un fallo del programa: sale con su
+        # mensaje --- que nombra el destino (`escritura_atomica`) --- y con un
+        # codigo propio, `CODIGO_ESCRITURA_FALLIDA`. Hasta VE-5 salia con la
+        # traza de Python y el codigo 1, el mismo que «corre y no cierra».
+        # Lo ya escrito queda escrito y entero; lo que fallo deja intacto lo
+        # que hubiera en su destino.
+        print(f"No se pudo escribir una salida: {exc}", file=sys.stderr)
+        return CODIGO_ESCRITURA_FALLIDA
+    return 0 if informe.cerrado else 1
+
+
+def _escribir_las_salidas(args: argparse.Namespace, informe: Any,
+                          plantilla: Path, progreso: Any) -> None:
+    """El JSON y las memorias que la invocacion pidio, en ese orden."""
     destino = args.json_salida or args.csv.with_suffix(".informe.json")
     # Escritura atomica (E04): nunca un JSON a medias en disco.
     _sesion.escribir_json_atomico(destino, informe_json(informe))
@@ -3191,8 +3306,6 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     if args.csv_resumen_salida is not None:
         ruta = exportar_csv(informe, args.csv_resumen_salida)
         print(f"Cuadro resumen (CSV): {ruta}")
-
-    return 0 if informe.cerrado else 1
 
 
 def _exigir_plantilla_valida(plantilla: Path) -> None:

@@ -128,7 +128,8 @@ from src.modulos import M12_metrados as M12             # --- VE-5 met ---
 from src.modulos import ML_licuefaccion as ML
 from src.modulos.M1_clasificacion import clasificar, exigir_alcance
 from src.modulos.M2_material import matriz_durabilidad
-from src.modulos.M6_proteccion import (proteccion_entrada, proteccion_salida,
+from src.modulos.M6_proteccion import (avisos_de_transcripcion,
+                                       proteccion_entrada, proteccion_salida,
                                        socavacion_salida)
 from src.modulos import M3_hidraulica as M3
 from src.modulos import M4_control as M4                # --- T-7b --- (V8)
@@ -1802,6 +1803,9 @@ class InformePunto:
     # --- VE-5 (catlic) --- la Fase 0-bis del punto (`ML.evaluar_licuefaccion`):
     # no aplica, o el resultado del EMS contrastado. Lo que falta es Bloqueo.
     licuefaccion: Optional[Verificacion] = None
+    # --- VE-5 (ficha T8-11) --- los datos de la Fase 6 por encima de su
+    # techo de transcripcion declarado (`M6.avisos_de_transcripcion`).
+    avisos_de_transcripcion: List[str] = field(default_factory=list)
     geometria: Optional[CompatibilidadGeometrica] = None
     cama_apoyo: Optional[Any] = None
     # --- T-5 --- La Fase 8 del conducto de la seccion aceptada: la clase, la
@@ -2008,6 +2012,9 @@ class InformePunto:
             avisos.append(
                 f"{v.codigo}: indicador disparado; el diseño no se detiene"
                 + (f" -- {explicacion}" if explicacion else ""))
+        # --- VE-5 (ficha T8-11) --- los datos de la Fase 6 que parecen mal
+        # transcritos, delante de lo que la fase calculo con ellos.
+        avisos.extend(self.avisos_de_transcripcion)
         # --- T-8 --- Los de la Fase 6: lo que no se pudo comparar o estimar
         # por falta de un dato del sitio, lo que la fuente no cubre, y donde
         # lo adoptado queda por debajo de lo que HEC-14 daria.
@@ -4463,6 +4470,14 @@ def correr_punto(punto: PuntoCritico, externos: DatosExternos,
     # tambien en el punto que no llega a dimensionarse.
     informe.acceso_mantenimiento = externos.dato(punto.id,
                                                  CLAVE_ACCESO_MANTENIMIENTO)
+    # --- VE-5 (ficha T8-11) --- Los techos de transcripcion de los datos de
+    # la Fase 6, por la misma razon: son datos del punto y no dependen de
+    # ninguna fase, de modo que se avisan tambien en el punto que no llega a
+    # dimensionarse. Por `_etapa`: un techo mal declarado es un `Bloqueo`.
+    informe.avisos_de_transcripcion = _etapa(
+        informe.bloqueos, FASE_PROTECCION, "techos de transcripcion",
+        lambda: avisos_de_transcripcion(
+            lambda clave: externos.valor(punto.id, clave))) or []
 
     if punto.familia is Familia.C:
         _declarar_alcance_familia_c(informe)

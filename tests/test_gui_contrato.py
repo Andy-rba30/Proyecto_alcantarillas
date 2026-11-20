@@ -496,8 +496,11 @@ def test_la_ventana_declara_por_el_modulo_de_declaracion_y_no_por_su_cuenta():
     """
     llamadas = {ast.unparse(nodo.func) for nodo in ast.walk(ARBOL_VENTANA)
                 if isinstance(nodo, ast.Call)}
-    assert {"dec.declarar_desde_tabla", "dec.declarar_en_rango",
-            "dec.declarar_valor"} <= llamadas
+    # Desde VE5-GUI (ficha EB-06, T11-10) la emergente declara por la MISMA
+    # puerta que la pestaña 2, `src.editores.declarar_desde_la_ventana`, que
+    # enruta a `declaracion.py` con su procedencia (lo fija
+    # `tests/test_ve5_gui.py::test_37_la_puerta_de_la_ventana_es_la_de_la_pestana_2`).
+    assert "sed.declarar_desde_la_ventana" in llamadas
     # Sobre el ARBOL y no sobre el texto (SIS-C-01/SIS-C-02): buscar la cadena
     # la encontraria dentro del docstring que explica por que NO se llama, y
     # el test quedaria rojo sobre un comentario --- el reverso exacto del
@@ -2063,7 +2066,9 @@ def test_la_ayuda_de_entrada_se_abre_de_verdad(tmp_path):
 
     # 1. Las dos tablas se llenan con lo que el censo dice, y con nada mas.
     assert obs["filas_csv_csv"] == list(m0.COLUMNAS)
-    assert len(obs["filas_json_csv"]) == len(cli.CLAVES_EXTERNAS)
+    # Desde VE-5 (ficha T4-09) la tabla lleva ademas los ensayos opcionales.
+    assert len(obs["filas_json_csv"]) == (len(cli.CLAVES_EXTERNAS)
+                                          + len(cli.CLAVES_DE_DURABILIDAD))
 
     # 2. Cada icono abre la ventana en SU pestana, la de conceptos incluida.
     assert "CSV" in obs["pestana_activa_csv"]

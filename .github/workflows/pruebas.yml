@@ -1,0 +1,44 @@
+# La suite del entregable en la integracion continua, CON LOS TESTS DE VENTANA
+# (VE-5, fichas SIS-F-01 y C09-01).
+#
+# Los tests que levantan la ventana de verdad (`tests/apoyo/gui_*_real.py`) se
+# SALTAN donde ningun interprete puede crear un `Tk` (`tests/test_gui_contrato.py::
+# _interprete_con_ventana`). Hasta VE-5 no habia integracion continua, y la
+# ficha decia lo que faltaba: un entorno grafico, no un test mas. Aqui lo pone
+# un servidor X virtual (`xvfb-run`, el mismo envoltorio que la suite usa en
+# local) y el Tk del sistema.
+#
+# Sin el repositorio de normas (`NORMAS_DIR`, privado por copyright) los tests
+# que abren un PDF se saltan con su motivo (`conftest.py`): la verificacion
+# contra las fuentes sigue siendo de la sesion que enlaza ese repositorio.
+name: Pruebas
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  suite:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Tk, servidor X virtual y librerias de weasyprint
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            python3-tk tk-dev xvfb xauth libpango-1.0-0 libpangoft2-1.0-0
+      - name: Dependencias
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt -r requirements-dev.txt
+      - name: La ventana se puede levantar
+        run: xvfb-run -a python -c "import tkinter, ttkbootstrap; r = tkinter.Tk(); r.destroy()"
+      - name: Suite del entregable, con los tests de ventana
+        run: xvfb-run -a python -m pytest -q -p no:cacheprovider --no-header

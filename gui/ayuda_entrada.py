@@ -316,7 +316,9 @@ class VentanaAyudaEntrada(tk.Toplevel):
 
         cab = ttk.Frame(p, padding=(8, 8, 8, 0))
         cab.grid(row=0, column=0, sticky="ew")
-        ttk.Label(cab, text=f"El JSON admite {len(fichas)} claves, y solo esas.",
+        ttk.Label(cab, text=f"El JSON admite {len(fichas)} claves que una etapa "
+                            f"puede pedir y {len(ay.fichas_de_ensayos_opcionales())} "
+                            "ensayos opcionales de durabilidad (tabla de abajo).",
                   font=comp.tipografia().ui(comp.CUERPO_PT, "bold")).pack(anchor="w")
         ttk.Label(
             cab,
@@ -362,6 +364,14 @@ class VentanaAyudaEntrada(tk.Toplevel):
                 values=(f.clave, f.resumen_de_familias,
                         f"{f.concepto} [{f.unidad}] · se lee de: "
                         f"{f.de_donde_sale}"))
+        # LOS ENSAYOS OPCIONALES (VE-5, ficha T4-09): el mismo JSON los
+        # admite y ninguna etapa los exige; van al final, rotulados.
+        for f in ay.fichas_de_ensayos_opcionales():
+            self.tree_json.insert(
+                "", "end", iid=f.clave,
+                values=(f.clave, f.resumen_de_familias,
+                        f"OPCIONAL (ensayo de durabilidad) · {f.concepto} "
+                        f"[{f.unidad}] · se lee de: {f.de_donde_sale}"))
 
         # LAS OCHO TIENEN FICHA, y las ocho salen del censo de
         # `variables_entrada` (EXT-G-03): las dos que son columna del CSV

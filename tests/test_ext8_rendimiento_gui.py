@@ -323,7 +323,9 @@ def test_pc10_import_cli_no_carga_weasyprint_ni_scipy_ni_el_censo():
     assert antes == {"weasyprint": False, "scipy": False, "censo": False}, antes
     assert despues["censo_despues"] is True
     from src import variables_entrada as ve
+    # VE-5 (ficha T4-09): mas la quinta poblacion, los ensayos opcionales.
     assert despues["n"] == len(ve.VARIABLES) == len(ca.CRITERIOS) + len(ve._EXTERNOS) \
+        + len(ve._ENSAYOS) \
         + len(__import__("src.datos_sitio", fromlist=["DATOS_SITIO"]).DATOS_SITIO) \
         + len(__import__("src.modulos.M0_carga", fromlist=["COLUMNAS"]).COLUMNAS)
 
@@ -463,7 +465,9 @@ def test_pc11_el_esquema_de_sesion_vive_fuera_de_la_gui_y_la_gui_lo_reexporta():
     assert ses.banderas_de_externos({"luz_m": "1,5", "l_hidraulico": "",
                                      "categoria_tr": "quebrada_menor"}) == {
         "luz_m": "1.5", "TW_m": None, "longitud_m": None,
-        "L_hidraulico_m": None, "categoria_tr": "quebrada_menor"}
+        "L_hidraulico_m": None, "categoria_tr": "quebrada_menor",
+        # VE-5 (ficha T6-04): los tres campos que solo entraban por el JSON.
+        "S_conducto": None, "bombeo": None, "peralte": None}
 
 
 def test_pc11_la_cli_restaura_la_sesion_serializada_con_sus_procedencias(tmp_path):
