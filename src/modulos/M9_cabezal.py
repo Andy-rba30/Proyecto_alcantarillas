@@ -2674,14 +2674,50 @@ def validar_talud_delante_del_punto(valor: Any, *,
                                     id_punto: Optional[str] = None) -> dict:
     """
     Forma y dominio de `talud_delante_del_cabezal_del_punto`, normalizada a
-    {"entrada": talud | None, "salida": talud | None}; cada talud, con el
-    validador del [S] de corredor (`validar_talud_delante`).
+    {"entrada": x | None, "salida": x | None}. Cada x es la geometria del
+    talud (`validar_talud_delante`, el validador del [S] de corredor) o
+    --- dictamen Fable (VE-7 lote A, (iii)) --- el texto
+    `TERRENO_HORIZONTAL`: el terreno de delante de ESE cabezal es
+    horizontal, aunque el corredor diga talud.
     """
+    def _uno(x):
+        if x == TERRENO_HORIZONTAL:
+            return TERRENO_HORIZONTAL
+        return validar_talud_delante(x, id_punto=id_punto)
+
     if isinstance(valor, dict) and valor and set(valor) <= set(EXTREMOS):
-        return {e: (validar_talud_delante(valor[e], id_punto=id_punto)
-                    if e in valor else None) for e in EXTREMOS}
-    limpio = validar_talud_delante(valor, id_punto=id_punto)
-    return {e: dict(limpio) for e in EXTREMOS}
+        return {e: (_uno(valor[e]) if e in valor else None)
+                for e in EXTREMOS}
+    limpio = _uno(valor)
+    return {e: (limpio if isinstance(limpio, str) else dict(limpio))
+            for e in EXTREMOS}
+
+
+def _terreno_delante(entorno: EntornoDelCabezal
+                     ) -> Tuple[str, Optional[dict], str]:
+    """
+    --- dictamen Fable (VE-7 lote A, (iii)) --- (terreno, talud, origen) de
+    delante de este cabezal: lo del PUNTO gana -- una geometria de talud ->
+    `TERRENO_TALUD` con ella; «horizontal» -> `TERRENO_HORIZONTAL` --; sin
+    declaracion, el criterio de corredor 'terreno_delante_del_cabezal' y,
+    con talud, el [S] de corredor de su geometria.
+    """
+    del_punto = getattr(entorno, "talud_delante", None)
+    if del_punto == TERRENO_HORIZONTAL:
+        return TERRENO_HORIZONTAL, None, "del punto"
+    if del_punto:
+        return (TERRENO_TALUD,
+                validar_talud_delante(del_punto, id_punto=entorno.id_punto),
+                "del punto")
+    terreno = ca.valor(CRITERIO_TERRENO_DELANTE)
+    if terreno not in (TERRENO_HORIZONTAL, TERRENO_TALUD):
+        raise DatoInvalidoError(CRITERIO_TERRENO_DELANTE, valor=terreno,
+                                motivo=f"se espera '{TERRENO_HORIZONTAL}' o "
+                                       f"'{TERRENO_TALUD}'")
+    talud = (validar_talud_delante(ca.valor(CRITERIO_TALUD_DELANTE),
+                                   id_punto=entorno.id_punto)
+             if terreno == TERRENO_TALUD else None)
+    return terreno, talud, "de corredor"
 
 
 def capacidad_portante_zapata_en_talud(*, B: float, H_s: float, b: float,
@@ -8815,11 +8851,9 @@ def _q_nominal(entorno: EntornoDelCabezal, datos: dict, suelo: dict,
             "ecuacion de capacidad de carga de 10.6.3.1.2a es de suelo; hace "
             "falta la resistencia nominal del EMS (`q_n_kpa`)",
             entorno.id_punto)
-    terreno = ca.valor(CRITERIO_TERRENO_DELANTE)
-    if terreno not in (TERRENO_HORIZONTAL, TERRENO_TALUD):
-        raise DatoInvalidoError(CRITERIO_TERRENO_DELANTE, valor=terreno,
-                                motivo=f"se espera '{TERRENO_HORIZONTAL}' o "
-                                       f"'{TERRENO_TALUD}'")
+    # --- dictamen Fable (VE-7 lote A, (iii)) --- el terreno de delante:
+    # el del punto gana (talud o «horizontal»), si no el de corredor.
+    terreno, talud, origen_terreno = _terreno_delante(entorno)
     D_f, D_w, texto = _empotramiento_delante(entorno, datos)
     if inclinacion is None:
         inclinacion = ca.valor(CRITERIO_INCLINACION_PORTANTE)
@@ -8849,10 +8883,7 @@ def _q_nominal(entorno: EntornoDelCabezal, datos: dict, suelo: dict,
         # Puentes (retirados) y les pasaba H_s = 0.
         # --- VE-7 (lote A, A6; ficha VE5M9-03) --- la del PUNTO gana a la
         # de corredor ('talud_delante_del_cabezal_del_punto').
-        del_punto = getattr(entorno, "talud_delante", None)
-        talud = validar_talud_delante(
-            del_punto if del_punto else ca.valor(CRITERIO_TALUD_DELANTE),
-            id_punto=entorno.id_punto)
+        del_punto = origen_terreno == "del punto"
         D_w_base = max(D_w - D_f, 0.0)
         q_0, det0 = resistencia_portante_nominal(
             suelo=suelo, B_efectivo=B_efectivo, D_f=0.0, D_w=D_w_base,
@@ -8875,7 +8906,8 @@ def _q_nominal(entorno: EntornoDelCabezal, datos: dict, suelo: dict,
                    f"{detalle['RC_BC']:.4f} de la Tabla {detalle['tabla']} "
                    f"({detalle['columna']}, B/H_s = {detalle['B_H']:.3f}, "
                    f"beta = {talud['beta_grados']:g} grados"
-                   + (f"; geometria del punto, '{DATO_TALUD_DELANTE_DEL_PUNTO}'"
+                   + (f"; terreno delante: del punto, "
+                      f"'{DATO_TALUD_DELANTE_DEL_PUNTO}'"
                       if del_punto else "") + ") sobre c·N_cm + "
                    "0.5·gamma·B'·N_gamma_m, sin empotramiento; "
                    + texto_forma), detalle
@@ -8888,7 +8920,8 @@ def _q_nominal(entorno: EntornoDelCabezal, datos: dict, suelo: dict,
                    forma=forma)
     return q_n, ("ecuacion de AASHTO 10.6.3.1.2a con B' = B - 2e, "
                  f"D_f = {D_f:.3f} m ({texto}), factores de inclinacion "
-                 f"'{inclinacion}' y {texto_forma}"), detalle
+                 f"'{inclinacion}' y {texto_forma}; terreno delante: "
+                 f"{origen_terreno}"), detalle
 
 
 def _resistencia_al_deslizamiento(suelo: dict, combo: CombinacionDeEstabilidad

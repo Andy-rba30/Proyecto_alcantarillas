@@ -81,3 +81,74 @@ def test_dos_puntos_con_taludes_distintos_dan_rcbc_distintos(
     rc1 = {x for _, _, x in r1}
     rc2 = {x for _, _, x in r2}
     assert rc1.isdisjoint(rc2)
+
+
+# ===========================================================================
+# Dictamen Fable, abierto (iii): el terreno de delante tambien por punto
+# ===========================================================================
+
+def _q_del_portante(entorno, monkeypatch):
+    """Los (H_s, beta, RC_BC) con que el ensamble paso por la zapata en
+    talud; vacio si no paso."""
+    vistos = []
+    original = M9.capacidad_portante_zapata_en_talud
+
+    def espia(**kw):
+        q, det = original(**kw)
+        vistos.append((kw["H_s"], kw["beta_grados"], det["RC_BC"]))
+        return q, det
+
+    monkeypatch.setattr(M9, "capacidad_portante_zapata_en_talud", espia)
+    e = M9.ensamble_estabilidad(entorno, EST)
+    monkeypatch.setattr(M9, "capacidad_portante_zapata_en_talud", original)
+    return vistos, e
+
+
+def _dice_del_punto(e):
+    return any("terreno delante: del punto" in str(p) for p in e.pasos) or \
+        any("terreno delante: del punto" in str(v.paso)
+            for v in e.verificaciones)
+
+
+def test_la_clave_admite_horizontal_por_extremo():
+    assert M9.validar_talud_delante_del_punto("horizontal") == {
+        "entrada": "horizontal", "salida": "horizontal"}
+    assert M9.validar_talud_delante_del_punto(
+        {"entrada": "horizontal", "salida": PUNTO_1}) == {
+        "entrada": "horizontal", "salida": PUNTO_1}
+    with pytest.raises(DatoInvalidoError):
+        M9.validar_talud_delante_del_punto("vertical")
+
+
+def test_el_talud_del_punto_activa_la_zapata_en_talud_con_corredor_horizontal(
+        tanteo, monkeypatch):
+    with declarados({"terreno_delante_del_cabezal": "horizontal"}):
+        vistos, e = _q_del_portante(
+            dataclasses.replace(tanteo, talud_delante=PUNTO_1), monkeypatch)
+        assert vistos
+        assert [x for h, b, _ in vistos for x in (h, b)] == pytest.approx(
+            [2.0, 15.0] * len(vistos), rel=REL_TRANSPORTE)
+        assert _dice_del_punto(e)
+        sin, _ = _q_del_portante(tanteo, monkeypatch)
+    assert not sin
+
+
+def test_horizontal_del_punto_gana_a_un_corredor_en_talud(
+        tanteo, monkeypatch):
+    with declarados({"terreno_delante_del_cabezal": "talud_descendente",
+                     "talud_delante_del_cabezal": CORREDOR}):
+        vistos, e = _q_del_portante(
+            dataclasses.replace(tanteo, talud_delante="horizontal"),
+            monkeypatch)
+    assert not vistos
+    assert _dice_del_punto(e)
+
+
+def test_sin_declaracion_rige_el_corredor(tanteo, monkeypatch):
+    with declarados({"terreno_delante_del_cabezal": "talud_descendente",
+                     "talud_delante_del_cabezal": CORREDOR}):
+        vistos, e = _q_del_portante(tanteo, monkeypatch)
+    assert vistos
+    assert [x for h, b, _ in vistos for x in (h, b)] == pytest.approx(
+        [4.0, 20.0] * len(vistos), rel=REL_TRANSPORTE)
+    assert not _dice_del_punto(e)

@@ -8176,10 +8176,11 @@ class EntornoDelCabezal:
     # "altura_aplicacion_m", "incluye_hidrodinamica", "documento", "fecha",
     # "metodo"}. Solo se consume donde el programa no calcula el empuje.
     empuje_sismico: Optional[dict] = None
-    # --- VE-7 (lote A, A6) --- La geometria del talud de delante de ESTE
-    # cabezal declarada por punto (`talud_delante_del_cabezal_del_punto`),
-    # {"H_s_m", "beta_grados", "b_m"}; None: rige el [S] de corredor.
-    talud_delante: Optional[dict] = None
+    # --- VE-7 (lote A, A6 y dictamen Fable (iii)) --- El terreno de delante
+    # de ESTE cabezal declarado por punto (`talud_delante_del_cabezal_del_
+    # punto`): la geometria del talud, {"H_s_m", "beta_grados", "b_m"}, o el
+    # texto "horizontal". None: rige el corredor.
+    talud_delante: Optional[Any] = None
     # --- VE-7 (lote A, A7) --- el muro de cabecera es PARALELO A LA VIA
     # (`EmbocaduraDelPunto.orientacion`, una fila de la Carta 11): es
     # paralelo al trafico, y la sobrecarga viva lo lee.
