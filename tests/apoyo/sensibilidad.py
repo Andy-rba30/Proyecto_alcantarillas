@@ -353,6 +353,16 @@ NO_BARRIBLES: Dict[str, str] = {
     # --- VE-4d --- el desborde admitido de V8, que el juego no declara (su
     # umbral es «sin_desborde_de_la_plataforma»).
     "caudal_unitario_admisible_desborde_m2s": _R_SIN_VALOR,
+    # --- VE-4c --- la sobreelevacion admisible del perfil de remanso de V5
+    # (0 a 0.30 m), que solo se lee con el metodo
+    # «perfil_de_remanso_paso_a_paso», que el juego no declara.
+    "sobreelevacion_admisible_remanso_m": (
+        _R_SIN_VALOR + "; y el juego no lo lee (metodo de V5 sin perfil de "
+        "remanso)"),
+    # --- VE-4a --- la fila de phi de 11.6.3.7 para el FS DECLARADO de E4 y
+    # E5, que el juego no declara.
+    "fila_phi_estabilidad_global": (
+        _R_SIN_VALOR + "; y el juego no lo lee (sin FS de E4/E5 declarado)"),
     "coeficientes_desborde_plataforma": (
         "la Figura 3.11 del HDS-5 digitalizada (curvas por superficie); "
         + _R_ANALOGIA + "; y el juego no lo lee (umbral sin desborde)"),

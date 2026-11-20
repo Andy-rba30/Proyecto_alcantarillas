@@ -25,7 +25,11 @@ import pytest
 from src import criterios_adoptados as ca
 from src import declaracion as dec
 from src import editores as sed
+<<<<<<< HEAD
 from tests.apoyo.aproximacion import ABS_CERO, REL_TRANSPORTE
+=======
+from tests.apoyo.aproximacion import REL_TRANSPORTE
+>>>>>>> claude/ve5-fixve4
 
 RAIZ = Path(__file__).resolve().parent.parent
 
@@ -177,9 +181,16 @@ def test_37_la_ventana_declara_por_la_puerta_de_editores_y_no_por_declaracion():
     llamadas = {ast.unparse(n.func) for n in ast.walk(metodo) if isinstance(n, ast.Call)}
     assert any(l.endswith("declarar_desde_la_ventana") for l in llamadas), llamadas
     assert not any(l.startswith("dec.declarar") for l in llamadas), llamadas
+<<<<<<< HEAD
     # El campo de la nota existe: un atributo `nota_var` en el arbol.
     assert any(isinstance(n, ast.Attribute) and n.attr == "nota_var"
                for n in ast.walk(arbol))
+=======
+    nombres = {n.attr if isinstance(n, ast.Attribute) else n.id
+               for n in ast.walk(arbol)
+               if isinstance(n, (ast.Attribute, ast.Name))}
+    assert "nota_var" in nombres
+>>>>>>> claude/ve5-fixve4
 
 
 def test_37_la_puerta_de_la_ventana_es_la_de_la_pestana_2():

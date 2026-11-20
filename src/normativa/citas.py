@@ -16283,7 +16283,17 @@ HDS5_3_1_5_UN_TRAMO = _cita(
                    "la fuente define la cota de la cresta en el punto bajo "
                    "del columpio; el borde de la plataforma de la entrada "
                    "puede no serlo si la rasante del cruce no es el punto "
-                   "bajo"),
+                   "bajo",
+                   # --- VE-5 fixve4 (revision de la fusion, hallazgo 4) ---
+                   "con un solo tramo la fuente toma como HWr el tirante "
+                   "HIDRAULICO (area de desborde en el columpio entre el "
+                   "ancho superficial), y el programa usa el tirante sobre "
+                   "la cota de la cresta, que en el punto bajo es el MAYOR: "
+                   "con L igual al ancho superficial, la Ec. 3.9 sobrestima "
+                   "Q_o. El perfil del columpio no es dato del programa y "
+                   "el tirante hidraulico no se calcula; la longitud "
+                   "declarada tiene que ser coherente con ese tirante (una "
+                   "longitud equivalente, no el ancho superficial)"),
         a_favor=("la fuente lo da por adecuado para el diseño de "
                  "alcantarillas, y su ejemplo DG 1.5 lo usa («The roadway "
                  "profile may be approximated as a broad crested weir 200 ft "

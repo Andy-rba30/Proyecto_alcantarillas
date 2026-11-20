@@ -802,6 +802,15 @@ METODO_QUE_EXIGE_LA_CLAVE: Dict[str, Tuple[str, ...]] = {
     # --- VE-4d --- y la de V8, la OPCION del umbral que la pide.
     CLAVE_LONGITUD_CRESTA_DESBORDE: (UMBRAL_V8_DESBORDE_ADMITIDO,),
 }
+# --- VE-5 fixve4 --- Y los criterios que la verificacion lee ANTES del que
+# la hace exigible: con cualquiera de ellos vacio, la verificacion se detiene
+# en el (bloque 1) y el dato todavia no falta. La cresta del desborde la pide
+# el umbral de V8, pero V8 se detiene antes en 'TR_evento_extremo' (revision
+# de la fusion de VE-4, hallazgo 7: el pre-vuelo la anunciaba como falta que
+# detiene con solo el umbral declarado).
+CRITERIOS_PREVIOS_DE_LA_CLAVE: Dict[str, Tuple[str, ...]] = {
+    CLAVE_LONGITUD_CRESTA_DESBORDE: ("TR_evento_extremo",),
+}
 VERIFICACION_QUE_EXIGE_LA_CLAVE: Dict[str, str] = {
     CLAVE_ANCHO_DERECHO_VIA: "V5",
     CLAVE_COTA_AFECTACION: "V5",
@@ -3400,7 +3409,23 @@ def _estabilidades(informe: InformePunto, entornos, bloqueos) -> list:
                 lambda e=entorno, c=condicion: ensamble_estabilidad(e, c))
             if resultado is not None:
                 estabilidades.append(resultado)
+                # --- VE-5 fixve4 --- una fila E4/E5 declarada que su
+                # criterio sin valor no deja decidir es un `Bloqueo` del
+                # punto (CriterioPendienteError), sin tumbar E1 a E3.
+                for codigo, clave in resultado.pendientes_por_criterio:
+                    _etapa(bloqueos, FASE_CABEZAL,
+                           etapa_de_global_declarada(entorno.extremo, codigo,
+                                                     condicion.value),
+                           lambda k=clave: ca.valor(k))
     return estabilidades
+
+
+def etapa_de_global_declarada(extremo: str, codigo: str,
+                              condicion: str) -> str:
+    """--- VE-5 fixve4 --- El rotulo del contraste del FS declarado de E4 o
+    E5 que espera un criterio (sin la palabra de las etapas E1-E3)."""
+    return (f"contraste del FS declarado de {codigo} del cabezal de "
+            f"{extremo}, condicion {condicion} (VE-4a)")
 
 
 def _fase_9(informe: InformePunto,

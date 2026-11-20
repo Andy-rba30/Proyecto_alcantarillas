@@ -310,6 +310,7 @@ TOL_LECTURA_FIGURA_HEC14 = 0.01
 
 
 # ---------------------------------------------------------------------------
+<<<<<<< HEAD
 # --- VE-5 (mh, ficha T1-07) --- El punto fijo tiempo de concentracion <-> I
 # ---------------------------------------------------------------------------
 # Izzard y la onda cinematica (Tabla N 05 del Manual de Hidrologia) llevan la
@@ -330,3 +331,24 @@ TOL_LECTURA_FIGURA_HEC14 = 0.01
 # 1e-10 y 1e-12, y el mismo caudal a 3e-11 relativo.
 TOL_REL_PUNTO_FIJO_TC = 1e-10
 ITERACIONES_MAX_PUNTO_FIJO_TC = 200
+=======
+# --- VE-5 fixve4 --- Si una raiz del reparto del desborde es una raiz
+# ---------------------------------------------------------------------------
+# `M4.repartir_caudal_con_desborde` busca con `brentq` el caudal del conducto
+# Q_c con Q_c + Q_o = Q_total (HDS-5 num. 3.1.5), y antes los dos extremos
+# del intervalo, los Q_c con que el agua llega a un tirante dado sobre la
+# cresta. `brentq` supone la funcion CONTINUA, y la carga de M4 no lo es:
+# salta donde cambia el control que gobierna o el regimen del barril
+# (medido: O 1.50 m, S = 0.004, L = 30 m, TW = 0.5 m, HW salta de 1.061 a
+# 1.126 m entre Q = 2.04 y 2.05 m3/s). Sobre un salto `brentq` converge al
+# salto y devuelve un Q_c que NO cumple la ecuacion; estas dos tolerancias
+# dicen cuando el residuo es el del solver (TOL_BRENT sobre Q_c por la
+# pendiente de la funcion) y cuando es un salto. NO MUEVEN NINGUNA MAGNITUD:
+# una raiz verdadera las cumple con ordenes de margen (medido sobre el
+# ejemplo DG 1.5 del HDS-5 con la carga de M4: residuo relativo del balance
+# ~1e-11, del tirante ~1e-11 m) y un salto las incumple por decenas de
+# centimetros o de m3/s; solo deciden si el tanteo se detiene con «metodo no
+# evaluable» en vez de devolver un reparto que no reparte.
+TOL_REL_BALANCE_REPARTO_DESBORDE = 1e-6
+TOL_ABS_TIRANTE_TANTEO_DESBORDE_M = 1e-6
+>>>>>>> claude/ve5-fixve4
