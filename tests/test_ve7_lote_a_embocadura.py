@@ -184,6 +184,42 @@ def test_un_corredor_con_un_marco_carta_10_y_otro_carta_11_corre_entero(
     assert CARTA_10 in c02.coherencia_embocadura
 
 
+def test_la_memoria_lista_la_embocadura_por_punto(corredor_de_dos_marcos):
+    """
+    Dictamen Fable (A2): la fila de cada uno de los dos criterios lleva el
+    valor de proyecto y, aparte, el de cada punto que lo piso; el JSON
+    igual. Sin la clave (contexto sin criterios por punto) el bloque es
+    identico byte a byte al de la memoria sin esas marcas.
+    """
+    import dataclasses
+    import re
+    from src.modulos import M11_reporte as M11
+    csv, externos = corredor_de_dos_marcos
+    with declarados(DECLARACIONES_DEL_CAJON):
+        with declarados({"embocadura_cabezal": M9.EMBOCADURA_CABEZAL_RECTO}):
+            informe = cli.correr(csv, externos, alcance=cli.ALCANCE_PERFIL)
+    ctx = informe.contexto
+    assert dict(ctx.criterios_por_punto["embocadura_cajon"]) == {
+        "C-01": CARTA_11_30, "C-02": CARTA_10}
+    assert dict(ctx.criterios_por_punto["ke_entrada_cajon"]) == {
+        "C-01": ESCUADRA, "C-02": ESCUADRA}
+    html = M11.bloque_criterios(ctx)
+    for criterio, proyecto in (("embocadura_cajon", "cajon_concreto_aletas_30_75"),
+                               ("ke_entrada_cajon", "cajon_aletas_30_75_escuadra")):
+        assert ctx.valor_efectivo(criterio) == proyecto
+    assert html.count("embocadura_cajon_del_punto</code>): C-01 = ") == 2
+    assert CARTA_11_30 in html and CARTA_10 in html
+    sin = M11.bloque_criterios(dataclasses.replace(ctx, criterios_por_punto={}))
+    assert "embocadura_cajon_del_punto" not in sin
+    assert re.sub(r'<b class="pendiente"> \[por punto .*?\]</b>', "",
+                  html) == sin
+    usados = {u["clave"]: u for u in
+              cli.informe_json(informe)["criterios"]["usados"]}
+    assert usados["embocadura_cajon"]["por_punto"] == {
+        "C-01": CARTA_11_30, "C-02": CARTA_10}
+    assert "por_punto" not in usados.get("n_celdas_cajon", {})
+
+
 def test_A8_el_cabezal_paralelo_avisa_el_borde_libre_esviado_de_la_losa():
     """La embocadura paralela a la via avisa que el borde libre esviado de
     la losa no se verifica y nombra las vigas de borde de C12.11.2.1, que

@@ -1499,7 +1499,11 @@ def _informe_json_base(informe: Informe, bloqueantes: Any,
                         "etiqueta": ca.criterio(k).etiqueta,
                         "valor": _num(contexto.valor_efectivo(k)),
                         "declarado_en_caliente": contexto.declarado_en_caliente(k),
-                        "concepto": ca.criterio(k).concepto}
+                        "concepto": ca.criterio(k).concepto,
+                        # --- dictamen Fable (VE-7 lote A, A2) --- el valor
+                        # de los puntos que lo pisaron, solo si los hay.
+                        **({"por_punto": dict(contexto.criterios_por_punto[k])}
+                           if k in contexto.criterios_por_punto else {})}
                        for k in contexto.criterios_usados],
             "sin_valor_declarados": list(contexto.criterios_sin_valor),
             "declarados_en_caliente": list(contexto.declarados_en_caliente),

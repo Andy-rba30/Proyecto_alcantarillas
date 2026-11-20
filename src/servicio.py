@@ -5225,12 +5225,31 @@ def correr(ruta_csv: Path, externos: DatosExternos,
     informe.contexto = capturar_contexto(
         csv_sha1=sha1_de_bytes(datos_csv),
         cuencas_sha1=None if hidrologia is None else hidrologia.cuencas_sha1,
-        estacion_sha1=None if hidrologia is None else hidrologia.estacion_sha1)
+        estacion_sha1=None if hidrologia is None else hidrologia.estacion_sha1,
+        criterios_por_punto=criterios_por_punto(informe.puntos))
     return informe
 
 
+def criterios_por_punto(puntos) -> Dict[str, Dict[str, Any]]:
+    """
+    --- dictamen Fable (VE-7 lote A, A2) --- {criterio: {id_punto: valor}}
+    de los criterios que cada punto piso para si: hoy, la embocadura del
+    marco declarada por punto, solo donde se APLICO (Familia C).
+    """
+    salida: Dict[str, Dict[str, Any]] = {}
+    for p in puntos:
+        declarada = getattr(p, "embocadura_cajon_del_punto", None)
+        if declarada is None:
+            continue
+        for campo, criterio in CRITERIO_DE_CAMPO_EMBOCADURA.items():
+            salida.setdefault(criterio, {})[p.punto.id] = declarada[campo]
+    return salida
+
+
 def capturar_contexto(*, csv_sha1: str, cuencas_sha1: Optional[str] = None,
-                      estacion_sha1: Optional[str] = None) -> ContextoCorrida:
+                      estacion_sha1: Optional[str] = None,
+                      criterios_por_punto: Optional[dict] = None
+                      ) -> ContextoCorrida:
     """
     La foto del estado del proceso AHORA, como `ContextoCorrida`.
 
@@ -5276,7 +5295,8 @@ def capturar_contexto(*, csv_sha1: str, cuencas_sha1: Optional[str] = None,
         datos_declarados_en_caliente=tuple(ds.datos_declarados_en_caliente()),
         datos_pisados_en_caliente=tuple(ds.datos_pisados_en_caliente()),
         datos_sin_valor=tuple(ds.datos_sin_valor()),
-        cuencas_sha1=cuencas_sha1, estacion_sha1=estacion_sha1)
+        cuencas_sha1=cuencas_sha1, estacion_sha1=estacion_sha1,
+        criterios_por_punto=copy.deepcopy(criterios_por_punto or {}))
 
 
 def _avisar_ids_desconocidos(informe: Informe, externos: DatosExternos) -> None:

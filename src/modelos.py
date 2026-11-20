@@ -4046,6 +4046,12 @@ class ContextoCorrida:
     # la linea base no cambia.
     cuencas_sha1: Optional[str] = None
     estacion_sha1: Optional[str] = None
+    # --- dictamen Fable (VE-7 lote A, A2) --- LOS CRITERIOS QUE UN PUNTO
+    # PISO PARA SI (`embocadura_cajon_del_punto`): {criterio: {id_punto:
+    # valor}}. Sin ellos la tabla de criterios diria, para esos puntos, el
+    # valor de proyecto con que NO corrieron. Vacio por defecto.
+    criterios_por_punto: Mapping[str, Mapping[str, Any]] = \
+        MappingProxyType({})
 
     def __post_init__(self) -> None:
         # `frozen` solo impide REASIGNAR los campos; un dict dentro seguia
@@ -4053,6 +4059,9 @@ class ContextoCorrida:
         # el JSON y el HTML de una corrida ya pasada sin excepcion (auditoria
         # adversarial de EXT-4). Los mapas quedan de solo lectura y las
         # secuencias, tuplas: la foto no se puede retocar, ni a proposito.
+        object.__setattr__(self, "criterios_por_punto", MappingProxyType({
+            k: MappingProxyType(dict(v))
+            for k, v in dict(self.criterios_por_punto).items()}))
         for campo in ("valores_efectivos", "procedencias", "datos_efectivos"):
             valor = getattr(self, campo)
             if not isinstance(valor, MappingProxyType):
