@@ -3012,6 +3012,10 @@ class ProteccionSalida:
     # «manual» y cuando HEC-14 no es evaluable en el punto).
     d50_laushey: Optional[float] = None
     rige_la_envolvente: bool = False
+    # --- VE-4g --- La poza de enrocado de HEC-14 Sec. 10.1, donde el apron
+    # no llega (marco, conducto de mas de 60 in). None si el apron se evaluo
+    # o si la poza tampoco es evaluable (varios barriles, Froude de 3 o mas).
+    poza: Optional["PozaDeEnrocado"] = None
 
 
 # ---------------------------------------------------------------------------
@@ -3104,6 +3108,53 @@ class ClaseHEC14:
     espesor: Optional[float] = None       # m
     ancho_final: Optional[float] = None   # m
     paso: Optional["PasoDeMemoria"] = None
+
+
+@dataclass(frozen=True)
+class PozaDeEnrocado:
+    """
+    --- VE-4g --- La poza de enrocado (riprap basin) de HEC-14 Sec. 10.1:
+    la hoya PRE-FORMADA y revestida que la Tabla 1.1 da donde el apron de la
+    Sec. 10.2 no llega (marco, conducto de mas de 60 in). La dimensiona el
+    procedimiento del num. 10.1.5 (`M6.poza_de_enrocado_hec14`).
+
+    DOS PIEDRAS, y no se confunden: `D50_dimensionamiento` es con la que se
+    resuelve la Ec. (10.1) y `D50_piedra` la que REVISTE la poza. Son la
+    misma salvo que la piedra disponible de hs/D50 < 2: entonces la poza se
+    dimensiona con la piedra de hs/D50 = 2 exacto y se reviste con la mayor
+    («A basin sized for smaller riprap may be lined with larger riprap»,
+    `dimensionada_con_menor`). Bajo D50/ye = 0.1, el limite de los ensayos,
+    la piedra se sube a 0.1·ye (`piedra_subida`).
+    """
+
+    y_equivalente: float                  # m - ye (num. 10.1.1)
+    Fr: float                             # Vo/(g·ye)^0.5
+    TW: float                             # m
+    Co: float                             # Ec. (10.2) o (10.3)
+    relacion_co: str                      # 'envolvente' o 'mejor_ajuste'
+    D50_minimo: float                     # m - 0.1·ye
+    D50_piedra: float                     # m - la que reviste
+    D50_dimensionamiento: float           # m - con la que se resuelve hs
+    dimensionada_con_menor: bool
+    piedra_subida: bool
+    hs: float                             # m - profundidad de la poza
+    Wo: float                             # m - ancho del conducto en la boca
+    longitud_poza: float                  # m - Ls
+    longitud_apron: float                 # m - LA = LB - Ls
+    longitud_total: float                 # m - LB (extendida si hizo falta)
+    longitud_sin_extender: float          # m - LB del paso 3
+    ancho_final: float                    # m - WB = Wo + (2/3)·LB
+    espesor: float                        # m - 2·D50 en piso y lados
+    espesor_talud: float                  # m - 3·D50 en el talud de salida
+    yc_salida: float                      # m - tirante critico en la salida
+    V_salida_poza: float                  # m/s - Vc en la salida
+    V_admisible: Optional[float] = None   # m/s - Vallow; None sin el dato
+    extendida: bool = False               # el apron se alargo hasta Vallow
+    # Paso 5: TW/yo > 0.75 pide proteccion aguas abajo (Figura 10.3); None
+    # si falta el tirante de borde yo.
+    proteccion_adicional: Optional[bool] = None
+    pasos: Tuple["PasoDeMemoria", ...] = ()
+    avisos: Tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)

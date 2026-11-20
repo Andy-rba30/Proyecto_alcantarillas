@@ -379,7 +379,7 @@ def test_cada_paso_de_la_poza_cita_su_fuente():
         V_admisible=2.1)
     codigos = [x.codigo for x in p.pasos]
     assert codigos == ["6.5p", "6.6p"]
-    reg = _registro.registro()
+    reg = _registro.construir()
     for x in p.pasos:
         for cita_id in x.citas_textuales:
             reg.cita(cita_id)

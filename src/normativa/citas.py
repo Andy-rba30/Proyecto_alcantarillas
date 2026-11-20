@@ -15827,4 +15827,277 @@ AASHTO_C11_6_5_3_NIVEL_MEDIO = _cita(
                  "pueda sostener que el relleno se vacia la declara")),
 )
 
+# ===========================================================================
+# --- VE-4g / VE-5 (lote m6) --- HEC-14 3a ed., Sec. 10.1, la POZA DE
+# ENROCADO (riprap basin): la alternativa que la Tabla 1.1 da donde el apron
+# de la Sec. 10.2 no llega. Leidas en la capa de texto de las paginas; las
+# Figuras 10.1 y 10.2 (taludes 2:1, abocinado 1:3, espesores) por imagen.
+# ===========================================================================
+FECHA_VE4G = "2026-11-20"
+POR_VE4G = "validacion/VE-4g · lectura directa de la pagina por la sesion"
+VE4G = (FECHA_VE4G, POR_VE4G)
+
+HEC14_T1_1_POZA = _cita(
+    id="HEC14.1#T1_1_POZA",
+    fuente_id="HEC14",
+    numeral="1, Table 1.1",
+    titulo_numeral="CHAPTER 1: ENERGY DISSIPATOR DESIGN",
+    pagina_impresa="1-2",
+    pagina_pdf=15,
+    pagina_pdf_titulo=14,
+    texto_literal=Verbatim(
+        texto="Table 1.1. Energy Dissipators and Limitations",
+        pagina_pdf=15),
+    caracter=Caracter.APROXIMACION,
+    metodo=AMBOS,
+    sesion=VE4G,
+    nota=("La fila «Riprap basin» (Chapter 10) da en la columna «Froude "
+          "Number» el limite «< 3» («At release point from culvert or "
+          "channel», nota 7) y en la de tailwater «Not needed»; NO lleva la "
+          "nota 8 del alto del conducto, que cuelga solo de la fila «Riprap "
+          "apron» (cita HEC14.1#T1_1_APRON). Por eso la poza es la "
+          "alternativa donde el apron no llega: un marco o un conducto de "
+          "mas de 60 in. Leida por texto y contrastada por imagen."),
+)
+
+HEC14_10_1_1_ENSAYOS = _cita(
+    id="HEC14.10.1.1#ENSAYOS",
+    fuente_id="HEC14",
+    numeral="10.1.1",
+    titulo_numeral="10.1.1 Design Development",
+    pagina_impresa="10-2",
+    pagina_pdf=203,
+    texto_literal=Verbatim(
+        texto=("Tests were conducted with pipes from 152 mm (6 in) to 914 mm "
+               "(24 in) and 152 mm (6 in) high model box culverts from 305 mm "
+               "(12 in) to 610 mm (24 in) in width."),
+        pagina_pdf=203),
+    caracter=Caracter.DEFINICION,
+    sesion=VE4G,
+    nota=("Los ensayos son de UN conducto que descarga a la poza, tubo o "
+          "marco; la fuente no da el ancho Wo ni la hoya de varios barriles "
+          "descargando juntos. Es la razon por la que la poza de varios "
+          "barriles sale como metodo no evaluable. Los ensayos incluyen "
+          "MARCOS: la poza vale para la seccion rectangular, que el apron "
+          "de la Ec. (10.4) no cubre."),
+)
+
+HEC14_10_1_EC_10_1 = _cita(
+    id="HEC14.10.1#EC_10_1",
+    fuente_id="HEC14",
+    numeral="10.1.1",
+    titulo_numeral="10.1.1 Design Development",
+    pagina_impresa="10-3",
+    pagina_pdf=204,
+    pagina_pdf_titulo=203,
+    texto_literal=Verbatim(
+        texto=("To balance the need for avoiding an underdesigned basin "
+               "against the costs of oversizing a basin, an envelope design "
+               "relationship in the form of Equation 10.1 and Equation 10.2 "
+               "was developed."),
+        pagina_pdf=204),
+    caracter=Caracter.DEFINICION,
+    metodo=AMBOS,
+    sesion=VE4G,
+    nota=("La ecuacion, leida por imagen en la misma pagina: «hs/ye = "
+          "0.86·(D50/ye)^-0.55·(Vo/(g·ye)^0.5) - Co (10.1)», con hs la "
+          "profundidad de la poza, ye el tirante equivalente de borde (cita "
+          "HEC14.10.1.1#YE), D50 la piedra y Co el parametro del tirante del "
+          "receptor: Ec. (10.2), envolvente, 1.4 / 4.0(TW/ye) - 1.6 / 2.4 "
+          "con los bordes en TW/ye = 0.75 y 1.0; Ec. (10.3), mejor ajuste, "
+          "2.0 / 4.0(TW/ye) - 1.0 / 3.0. La fuente escribe los dos bordes "
+          "con «<» a ambos lados; las dos relaciones son continuas en ellos y "
+          "el borde no cambia el numero."),
+)
+
+HEC14_10_1_CO_ENVOLVENTE = _cita(
+    id="HEC14.10.1#CO_ENVOLVENTE",
+    fuente_id="HEC14",
+    numeral="10.1.1",
+    titulo_numeral="10.1.1 Design Development",
+    pagina_impresa="10-3",
+    pagina_pdf=204,
+    pagina_pdf_titulo=203,
+    texto_literal=Verbatim(
+        texto=("Use of the envelope design relationship (Equations 10.1 and "
+               "10.2) is recommended when the consequences of failure at or "
+               "near the design flow are severe."),
+        pagina_pdf=204),
+    caracter=Caracter.RECOMENDACION,
+    sesion=VE4G,
+    nota=("Sigue: «Use of the best fit design relationship (Equations 10.1 "
+          "and 10.3) is recommended when basin failure may easily be "
+          "addressed as part of routine maintenance. Intermediate risk "
+          "levels can be adopted by the use of intermediate values of Co.» "
+          "Sostiene el criterio [A] 'relacion_co_poza_enrocado_hec14'."),
+)
+
+HEC14_10_1_LONGITUDES = _cita(
+    id="HEC14.10.1#LONGITUDES",
+    fuente_id="HEC14",
+    numeral="10.1",
+    titulo_numeral="10.1 RIPRAP BASIN",
+    pagina_impresa="10-1",
+    pagina_pdf=202,
+    texto_literal=Verbatim(
+        texto=("The overall length of the basin (pool plus apron), LB, is "
+               "15hs, but no less than 4Wo."),
+        pagina_pdf=202),
+    caracter=Caracter.DEFINICION,
+    sesion=VE4G,
+    nota=("La frase anterior: «The length of the energy dissipating pool, "
+          "Ls, is 10hs, but no less than 3Wo; the length of the apron, LA, "
+          "is 5hs, but no less than Wo.» Los ejemplos resueltos toman LA = "
+          "LB - Ls (pag. 10-13: 7.3 - 5.5 = 1.8 m, menor que 5hs = 2.05 m): "
+          "el programa hace lo mismo. Wo es el ancho del conducto en la "
+          "boca (Figura 10.2: el marco de 2.44 m o el tubo de 1.83 m de los "
+          "ejemplos)."),
+)
+
+HEC14_10_1_2_ABOCINADO = _cita(
+    id="HEC14.10.1.2#ABOCINADO",
+    fuente_id="HEC14",
+    numeral="10.1.2",
+    titulo_numeral="10.1.2 Basin Length",
+    pagina_impresa="10-4",
+    pagina_pdf=205,
+    pagina_pdf_titulo=204,
+    texto_literal=Verbatim(
+        texto="A 3:1 flare angle is recommended for the basins walls.",
+        pagina_pdf=205),
+    caracter=Caracter.RECOMENDACION,
+    metodo=AMBOS,
+    sesion=VE4G,
+    nota=("Los ejemplos resueltos lo aplican como WB = Wo + 2(LB/3). La "
+          "Figura 10.2 (pag. 10-2, PDF 203), leida por imagen, dibuja ese "
+          "abocinado («1 / 3») y los taludes laterales 2:1, que son la z = 2 "
+          "de la Ec. (7.14) del paso 4."),
+)
+
+HEC14_10_1_5_RANGO = _cita(
+    id="HEC14.10.1.5#RANGO",
+    fuente_id="HEC14",
+    numeral="10.1.5",
+    titulo_numeral="10.1.5 Design Procedure",
+    pagina_impresa="10-5",
+    pagina_pdf=206,
+    texto_literal=Verbatim(
+        texto=("Check to see that hs/D50 ≥ 2 and D50/ye ≥ 0.1. If hs/D50 or "
+               "D50/ye is out of this range, try a different riprap size."),
+        pagina_pdf=206),
+    caracter=Caracter.APROXIMACION,
+    sesion=VE4G,
+    nota=("Son los limites de los ensayos con que se ajusto la ecuacion "
+          "(num. 10.1.1): se descartaron las corridas con D50/ye < 0.1 («did "
+          "not exhibit relationships that appeared useful for design») y "
+          "las de hs/D50 < 2 («not considered reliable for design»). Fuera "
+          "de ellos la Ec. (10.1) no se extrapola."),
+)
+
+HEC14_10_1_MAYOR_REVISTE = _cita(
+    id="HEC14.10.1#MAYOR_REVISTE",
+    fuente_id="HEC14",
+    numeral="10.1.5 (ejemplo resuelto)",
+    titulo_numeral="10.1.5 Design Procedure",
+    pagina_impresa="10-7",
+    pagina_pdf=208,
+    pagina_pdf_titulo=206,
+    texto_literal=Verbatim(
+        texto=("(A basin sized for smaller riprap may be lined with larger "
+               "riprap.)"),
+        pagina_pdf=208),
+    caracter=Caracter.PERMISO,
+    sesion=VE4G,
+    nota=("Lo dice el ejemplo del marco SI cuando la piedra disponible da "
+          "hs/D50 < 2: «try a riprap size that will yield hS/D50 close to, "
+          "but greater than, 2», y la poza se reviste con la piedra mayor "
+          "(«the next larger riprap size (D50 = 0.75 m) would be used to line "
+          "a basin with the given dimensions»). El programa resuelve la "
+          "piedra de hs/D50 = 2 exacto y reviste con la que el proyecto "
+          "pone. Los cuatro ejemplos repiten la frase."),
+)
+
+HEC14_10_1_5_SALIDA = _cita(
+    id="HEC14.10.1.5#SALIDA",
+    fuente_id="HEC14",
+    numeral="10.1.5",
+    titulo_numeral="10.1.5 Design Procedure",
+    pagina_impresa="10-5",
+    pagina_pdf=206,
+    texto_literal=Verbatim(
+        texto=("The allowable exit velocity may be taken as the estimated "
+               "normal velocity in the tailwater channel or a velocity "
+               "specified based on stability criteria, whichever is larger."),
+        pagina_pdf=206),
+    caracter=Caracter.PERMISO,
+    sesion=VE4G,
+    nota=("Del paso 4: «Determine the basin exit depth, yB = yc, and exit "
+          "velocity, VB = Vc and compare with the allowable exit velocity, "
+          "Vallow». yc por la Ec. (7.14), Q²/g = [yc(WB + z·yc)]³/(WB + "
+          "2z·yc). El programa toma como Vallow la de la Tabla Nº 11 del "
+          "Manual para el terreno declarado del receptor, que es un criterio "
+          "de estabilidad; no tiene la velocidad normal del cauce receptor y "
+          "no toma el mayor de las dos: lado conservador."),
+)
+
+HEC14_10_1_EXTENDER = _cita(
+    id="HEC14.10.1#EXTENDER",
+    fuente_id="HEC14",
+    numeral="10.1.5 (ejemplo resuelto)",
+    titulo_numeral="10.1.5 Design Procedure",
+    pagina_impresa="10-8",
+    pagina_pdf=209,
+    pagina_pdf_titulo=206,
+    texto_literal=Verbatim(
+        texto=("If the apron were extended (with a continued flare) such that "
+               "the total basin length was 28.4 m, the velocity would be "
+               "reduced to the allowable level."),
+        pagina_pdf=209),
+    caracter=Caracter.PERMISO,
+    sesion=VE4G,
+    nota=("Es la salida que el ejemplo da cuando la velocidad en la salida de "
+          "la poza supera la admisible (2.3 contra 2.1 m/s). El ejemplo CU "
+          "repite la frase con 90 ft. El programa la aplica: alarga el apron "
+          "con el mismo abocinado hasta que Vc = Vallow."),
+)
+
+HEC14_10_1_5_PASO_5 = _cita(
+    id="HEC14.10.1.5#PASO_5",
+    fuente_id="HEC14",
+    numeral="10.1.5",
+    titulo_numeral="10.1.5 Design Procedure",
+    pagina_impresa="10-5",
+    pagina_pdf=206,
+    texto_literal=Verbatim(
+        texto="If TW/yo ≤ 0.75, no additional riprap is needed.",
+        pagina_pdf=206),
+    caracter=Caracter.DEFINICION,
+    sesion=VE4G,
+    nota=("Sigue: «With high tailwater (TW/yo ≥ 0.75), estimate centerline "
+          "velocity at a series of downstream cross sections using Figure "
+          "10.3 to determine the size and extent of additional protection.»"),
+)
+
+HEC14_10_1_4_TALUD = _cita(
+    id="HEC14.10.1.4#TALUD",
+    fuente_id="HEC14",
+    numeral="10.1.4",
+    titulo_numeral="10.1.4 Riprap Details",
+    pagina_impresa="10-4",
+    pagina_pdf=205,
+    texto_literal=Verbatim(
+        texto=("Thickening of the riprap layer to 3D50 or 2Dmax on the "
+               "foreslope of the roadway culvert outlet is warranted because "
+               "of the severity of attack in the area and the necessity for "
+               "preventing undermining and consequent collapse of the "
+               "culvert."),
+        pagina_pdf=205),
+    caracter=Caracter.RECOMENDACION,
+    sesion=VE4G,
+    nota=("La frase anterior: «the recommended thickness of riprap for the "
+          "floor and sides of the basin is 2D50 or 1.50Dmax». La Figura 10.1 "
+          "(por imagen) rotula los dos: «3 d50 or 2 dmax» en el talud y «2d50 "
+          "or 1.5dmax» en el piso."),
+)
+
 CITAS: Dict[str, Cita] = {c.id: c for c in _TODAS}

@@ -583,6 +583,11 @@ def test_todo_fundamento_declarado_lo_usa_algun_paso(informe):
         # pantalla y de los aleros. Que se emite lo mide
         # tests/test_ve3_14_cabezal.py.
         "F9.DIMENSIONADO_PANTALLA",
+        # --- VE-4g --- LA POZA DE ENROCADO de HEC-14 Sec. 10.1: solo entra
+        # donde el apron no llega (marco o conducto de mas de 60 in), y esta
+        # corrida no tiene ningun punto asi. Que los dos pasos se emiten lo
+        # mide tests/test_ve4g_hec14_limites.py, pieza a pieza y por la Fase 6.
+        "F6.POZA", "F6.POZA_SALIDA",
         # LOS CINCO DEL CAJON, Y SU RAZON CAMBIO EN C5. Hasta C4 estaban aqui
         # porque EL PASO QUE LOS EMITIRIA NO EXISTIA. Ahora existe: los cinco
         # los emite `M2_material._pasos_del_marco` cuando el catalogo resuelve

@@ -1065,6 +1065,64 @@ GEOMETRIA_ADOPTADA = _fundamento(
         "un numero que no se puede construir."),
 )
 
+# --- VE-4g --- La poza de enrocado de HEC-14 Sec. 10.1.
+POZA = _fundamento(
+    id="F6.POZA",
+    fase=F6,
+    que_paso=("Profundidad de la poza de enrocado de HEC-14 y piedra con "
+              "que se dimensiona, por la Ec. (10.1)"),
+    por_que=(
+        "El apron de la Ec. (10.4) solo cubre un conducto circular de hasta "
+        "60 pulgadas de alto. Para un marco o un conducto mas alto, la "
+        "misma tabla de disipadores de HEC-14 ofrece la poza de enrocado: "
+        "una hoya pre-formada y revestida a la profundidad a la que la "
+        "descarga socavaria un colchon grueso de piedra, que disipa la "
+        "energia con un resalto dentro de ella. Su ecuacion vale para "
+        "marcos y para tubos --el tirante equivalente existe para eso-- y "
+        "se ajusto a ensayos con piedras de al menos una decima del tirante "
+        "y hoyas de al menos dos veces la piedra; fuera de esos limites no "
+        "se extrapola. Si la piedra disponible es mayor que la que deja "
+        "hs/D50 = 2, la fuente permite dimensionar la poza con la menor y "
+        "revestirla con la mayor. La relacion del tirante del receptor que "
+        "rige --envolvente o mejor ajuste-- la recomienda segun la "
+        "consecuencia de la falla, y el proyecto la declara."),
+    verbo=Verbo.RECOMIENDA,
+    citas=("HEC14.1#T1_1_POZA", "HEC14.10.1#EC_10_1",
+           "HEC14.10.1#CO_ENVOLVENTE", "HEC14.10.1.5#RANGO",
+           "HEC14.10.1#MAYOR_REVISTE", "HEC14.10.1.1#ENSAYOS",
+           "HEC14.10.1.1#YE", "HEC14.10.1#DOS_D50", "HEC14.10.1.4#TALUD"),
+    que_pasa_si_no_se_hace=(
+        "Un marco o un conducto de mas de 60 pulgadas quedaria protegido "
+        "solo por la formula de velocidad del Manual, sin la medida que "
+        "HEC-14 da para el."),
+)
+
+POZA_SALIDA = _fundamento(
+    id="F6.POZA_SALIDA",
+    fase=F6,
+    que_paso=("Longitud y ancho de la poza de enrocado y velocidad a su "
+              "salida contra la admisible"),
+    por_que=(
+        "La poza solo protege si la corriente sale de ella a una velocidad "
+        "que el cauce resiste. HEC-14 le da una longitud ligada a la "
+        "profundidad de la hoya, con un minimo en anchos del conducto, la "
+        "abre en planta a razon de 1:3 y comprueba que el tirante critico "
+        "a la salida, con los taludes laterales de la poza, deje una "
+        "velocidad no mayor que la admisible. Si la supera, su propio "
+        "ejemplo alarga el apron con el mismo abocinado hasta bajarla. Con "
+        "el tirante del receptor alto la corriente atraviesa la poza y "
+        "hace falta proteccion aguas abajo, que la fuente estima con la "
+        "atenuacion de la velocidad de su Figura 10.3."),
+    verbo=Verbo.RECOMIENDA,
+    citas=("HEC14.10.1#LONGITUDES", "HEC14.10.1.2#ABOCINADO",
+           "HEC14.10.1.5#SALIDA", "HEC14.10.1#EXTENDER",
+           "HEC14.10.1.5#PASO_5", "MC_HHD.4.1.1.3.6#T11"),
+    que_pasa_si_no_se_hace=(
+        "La poza podria entregar al cauce una corriente mas rapida que la "
+        "que el terreno resiste, y la erosion solo se correria aguas "
+        "abajo."),
+)
+
 FILTRO_ENROCADO = _fundamento(
     id="F6.FILTRO",
     fase=F6,

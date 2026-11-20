@@ -4697,6 +4697,59 @@ HEC14_APRON_ALTURA_MAX_M = 1.524
 # of 2.0D50» (apron, Sec. 10.2, pag. impresa 10-18).
 HEC14_ESPESOR_MIN_EN_D50 = 2.0
 
+# --- VE-4g --- HEC-14 Sec. 10.1, POZA DE ENROCADO (riprap basin), pags.
+# impresas 10-1 a 10-5 (PDF 202 a 206); leidas por texto, y las Figuras 10.1
+# y 10.2 por imagen. Es la alternativa que la Tabla 1.1 da al apron donde
+# este no llega (marco, conducto de mas de 60 in): fila «Riprap basin»,
+# Froude «< 3», sin limite de altura. Las cifras son las mismas en SI y en
+# unidades inglesas: la Ec. (10.1) es adimensional (hs/ye, D50/ye, Fr).
+#
+# Ec. (10.1):  hs/ye = 0.86·(D50/ye)^(-0.55)·(Vo/(g·ye)^0.5) - Co
+HEC14_POZA_COEFICIENTE_HS = 0.86
+HEC14_POZA_EXPONENTE_D50 = -0.55
+# Ec. (10.2) (envolvente) y (10.3) (mejor ajuste): Co por tramos de TW/ye,
+#   Co = bajo                            TW/ye < 0.75
+#   Co = pendiente·(TW/ye) + ordenada    0.75 < TW/ye < 1.0
+#   Co = alto                            1.0 < TW/ye
+# Guardadas como (bajo, pendiente, ordenada, alto). Las dos son continuas en
+# sus bordes (4·0.75 - 1.6 = 1.4; 4·1.0 - 1.6 = 2.4; y 2.0 y 3.0 en la otra).
+# CUAL rige es el criterio [A] 'relacion_co_poza_enrocado_hec14': la fuente
+# recomienda una u otra segun la consecuencia de la falla.
+HEC14_POZA_CO = {
+    "envolvente": (1.4, 4.0, -1.6, 2.4),
+    "mejor_ajuste": (2.0, 4.0, -1.0, 3.0),
+}
+HEC14_POZA_TW_SOBRE_YE_BAJO = 0.75
+HEC14_POZA_TW_SOBRE_YE_ALTO = 1.0
+# Paso 2 del procedimiento (num. 10.1.5): «Check to see that hs/D50 ≥ 2 and
+# D50/ye ≥ 0.1». Son los LIMITES DE LOS ENSAYOS (num. 10.1.1: se descartaron
+# las corridas con D50/ye < 0.1 y con hs/D50 < 2).
+HEC14_POZA_HS_SOBRE_D50_MIN = 2.0
+HEC14_POZA_D50_SOBRE_YE_MIN = 0.1
+# Table 1.1, fila «Riprap basin», columna «Froude Number» (pag. 1-2): «< 3».
+HEC14_POZA_FROUDE_MAX = 3.0
+# Sec. 10.1 (pag. 10-1): «Ls, is 10hs, but no less than 3Wo; the length of
+# the apron, LA, is 5hs, but no less than Wo. The overall length of the
+# basin (pool plus apron), LB, is 15hs, but no less than 4Wo.» Los ejemplos
+# resueltos toman LA = LB - Ls (pag. 10-13: 7.3 - 5.5 = 1.8 m).
+HEC14_POZA_LS_EN_HS = 10.0
+HEC14_POZA_LS_MIN_EN_WO = 3.0
+HEC14_POZA_LB_EN_HS = 15.0
+HEC14_POZA_LB_MIN_EN_WO = 4.0
+# «A 3:1 flare angle is recommended for the basins walls» (num. 10.1.2) y
+# los ejemplos resueltos: WB = Wo + 2·(LB/3). Es el mismo 1:3 por lado del
+# apron, nombrado aparte porque es de otra seccion.
+HEC14_POZA_ABOCINADO_POR_LONGITUD = 2.0 / 3.0
+# Figura 10.2 (por imagen): taludes laterales 2:1 (H:V) de la poza; es la z
+# de la Ec. (7.14) del paso 4, que los cuatro ejemplos escriben con z = 2.
+HEC14_POZA_TALUD_LATERAL_Z = 2.0
+# num. 10.1.4 (pag. 10-4) y Figura 10.1: «3D50 or 2Dmax on the foreslope of
+# the roadway culvert outlet»; el piso de la poza es 2D50
+# (`HEC14_ESPESOR_MIN_EN_D50`).
+HEC14_POZA_ESPESOR_TALUD_EN_D50 = 3.0
+# Paso 5 (pag. 10-5): «If TW/yo ≤ 0.75, no additional riprap is needed».
+HEC14_POZA_TW_SOBRE_YO_SIN_PROTECCION_ADICIONAL = 0.75
+
 # --- HEC-14 num. 3.1.3, Figuras 3.3 y 3.4: tirante de borde (T8-08) --------
 # Las dos familias de curvas yo/D = f(TW/D, KuQ/(B·D^1.5)) (marco, pag.
 # impresa 3-5, PDF 36) y yo/D = f(TW/D, KuQ/D^2.5) (tubo, pag. impresa 3-6,
