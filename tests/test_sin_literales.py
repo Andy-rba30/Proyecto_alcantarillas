@@ -896,6 +896,9 @@ CENSO_DE_MARCAS = {
     # da a un archivo que no existia el modo de siempre y no el 0600 de su
     # temporal. Es un modo del sistema de archivos, no una magnitud.
     "src/escritura_atomica.py": 1,
+    # VE-5 (ficha C8-02): cuantos caracteres de cada huella lleva el rotulo
+    # de una corrida para comparar. Presentacion, no una magnitud.
+    "src/estado_del_expediente.py": 1,
     # 28 -> 24 + 4: `Tooltip` y `MarcoScroll` se MOVIERON a
     # `gui/componentes.py` para que la ventana emergente los reutilice en vez
     # de copiarlos, y sus cuatro marcas viajaron con ellos (tres de offset de

@@ -8396,3 +8396,152 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   sueltas `verificar_estabilidad_global` / `verificar_talud` quedan como estaban: el método
   viaja ahora en la traza del dato declarado.
 - **Dónde vive:** `src/modulos/M9_cabezal.py::validar_estabilidad_global_declarada`
+
+
+# Parte LXI — Lo que VE-5 (lote «gui») dejó escrito: la ventana, la CLI y el hijo del PDF
+
+VE-5, lote «gui» (2026-11-20, rama `claude/ve5-gui`, sobre `70226de`), cierra los ítems 38 a 40 y
+43 a 49 del censo del 2026-11-20 (`proceso/planes_mejora/ve3_estado/CENSO_PENDIENTES_FABLE_2026-11-20.md`,
+sección 4). El 41 (editor de [S] en la ventana) no se hace: R4. Ningún número de cálculo cambia;
+cambian textos de la memoria (el rótulo de la rugosidad, los decimales de `D` con la serie de 6 in)
+y la huella de `criterios_adoptados.py` (un criterio nuevo, opcional y sin valor). Los documentos
+generados (`indice_formulas.md`, línea base) no se regeneran aquí: los regenera el integrador.
+
+## VE5GUI-38 · La pestaña 2 se desplaza y las filas de exportación se parten solas
+
+- **Cerrado (ítem 38; fichas UI3-01 y UI4-01):** la columna derecha de la pestaña 2 es un
+  `MarcoScroll` (con `relleno=0`): con el editor de un criterio de tabla, a 900 × 620 el contenido
+  pide 1103 px y la vista da 423, y desplazándolo se llega a «Aplicar», «Quitar», «Barrido…», «Ver
+  la norma…» y «Guardar en archivo fuente». Las tres filas de exportación de la pestaña 4 son
+  `componentes.FilaFluida`, que coloca cada botón a la derecha del anterior mientras quepa y si no
+  parte la fila, sin reordenar: el ancho de un botón depende de la tipografía de la pantalla, que
+  la ventana no elige. Medido en ventana real (`tests/apoyo/gui_ve5_real.py`): a 900 × 620 los
+  siete caben, y con la letra agrandada se parten y siguen cabiendo.
+- **Abierto:** la medida sigue siendo de xvfb, no de la pantalla del autor (ficha UI4-01).
+- **Qué haría falta:** nada más que esa medida.
+- **Dónde vive:** `gui/componentes.py::FilaFluida`
+
+## VE5GUI-40 · `S_conducto`, `bombeo` y `peralte` con campo y bandera
+
+- **Cerrado (ítem 40; ficha T6-04):** `sesion.CLAVE_EXTERNA_DE_CAMPO` y `gui/app.py::CAMPOS_EXTERNOS`
+  las suman (la sección donde aparecen la deriva `familias_que_usan`), la CLI tiene
+  `--s-conducto`, `--bombeo` y `--peralte`, y viajan en la sesión como las demás. Una sesión de un
+  formato anterior abre con los tres campos vacíos (un campo que la sesión no trae es un campo
+  vacío; `FORMATO_SESION` no cambia). La exclusión bombeo/peralte sigue en
+  `exigir_transversales_compatibles`, también con banderas.
+- **Abierto:** nada.
+- **Qué haría falta:** nada.
+- **Dónde vive:** `src/sesion.py::CLAVE_EXTERNA_DE_CAMPO`
+
+## VE5GUI-39 · Temporales únicos al exportar y el fallo de escritura sin traza
+
+- **Cerrado (ítem 39; ficha UI5-01 (c) y (d)):** `exportar_html`, `exportar_html_resumida`,
+  `exportar_csv` y `sesion.escribir_json_atomico` escriben por `escritura_atomica.escribir_atomico`
+  (temporal único, corto y oculto; sigue el enlace y conserva el modo); la copia que abre el
+  navegador lleva un nombre único. `cli.main` atrapa el `OSError` de las salidas y sale con
+  `CODIGO_ESCRITURA_FALLIDA` = 3 y un mensaje que nombra el destino; lo ya escrito queda entero.
+  El hijo del PDF no cuenta el 3 entre los códigos que dejan memoria.
+  El README (§4) documenta el código 3.
+- **Abierto:** nada.
+- **Qué haría falta:** nada.
+- **Dónde vive:** `cli.py::CODIGO_ESCRITURA_FALLIDA`
+
+## VE5GUI-46 · Ids `FH.*` en el índice, la fila de rugosidad y los decimales de `D`
+
+- **Cerrado (ítem 46; fichas VE2-02, VE2-A (2)(3) y VE1-01):** el índice reconoce `FH.<nombre>` y
+  los ids con punto interior (`PATRON_ID_DE_FUNDAMENTO`); la fila de M11 dice «Rugosidad (n de
+  Manning)» y «Fila o fuente del n», sin suponer la doble n; el comentario de `Material.pasos` ya no
+  dice «vacía en la circular»; y `modelos.cifras_de_dimension` da a las magnitudes `D`, `B` y `H`
+  (las de forma y las cuatro `D` de M4) los decimales del rótulo: 0.90 sigue «0.90», 1.0668 dice
+  «1.0668».
+- **Abierto:** `docs/indice_formulas.md` no se regeneró (lo regenera el integrador; ya estaba
+  desincronizado en la base). Las `D` de M5, M6 y M9 que usan `CIFRAS_MAGNITUD` (3) siguen con tres
+  decimales.
+- **Qué haría falta:** regenerar el índice; extender `cifras_de_dimension` a esas `D` si el dueño lo
+  pide (archivos de otros lotes).
+- **Dónde vive:** `src/modelos.py::cifras_de_dimension`
+
+## VE5GUI-43 · Los ensayos de durabilidad, quinta población del censo
+
+- **Cerrado (ítem 43; ficha T4-09):** `Poblacion.DATO_EXTERNO_OPCIONAL` censa los seis ensayos
+  (`variables_entrada._ENSAYOS`, con concepto, unidad, dominio y la Fase 3; `abrasion` con sus
+  opciones de la Tabla 8-4 de WSDOT); la ayuda del JSON los lista rotulados como opcionales
+  (`ayuda_entrada.fichas_de_ensayos_opcionales`); el pre-vuelo no los cuenta como falta (siguen
+  fuera de `CLAVES_EXTERNAS`).
+- **Abierto:** el panel de la pestaña 1 para los ensayos no se abrió: son datos por calicata, y un
+  campo global los pondría iguales en todos los puntos (la misma razón por la que R4 deja los [S]
+  en la sesión). `cabezal_declarado` sigue fuera del censo; unificar los sulfatos con
+  `exposicion_quimica_ems` y el criterio para acero corrugado siguen en T4-09.
+- **Qué haría falta:** una decisión del dueño sobre el panel y sobre `cabezal_declarado`.
+- **Dónde vive:** `src/variables_entrada.py::_ENSAYOS`
+
+## VE5GUI-44 · Techos de transcripción de la Fase 6, como aviso (decisión pendiente de Fable)
+
+- **Cerrado (ítem 44; ficha T8-11):** el criterio [A] de perfil `techos_de_transcripcion_fase_6`
+  (opcional, sin valor) da, cuando se declara, un techo por dato (`duracion_caudal_pico_min`,
+  `profundidad_socavacion_estimada_m`, `material_lecho_salida.D84_m` y `.Sv_Pa`), y cada punto
+  avisa, al empezar y aunque no llegue a dimensionarse, el dato que lo pasa
+  (`M6.avisos_de_transcripcion`, desde `correr_punto`), sin rechazarlo ni mover un
+  resultado. Un techo mal declarado es un `Bloqueo` del punto.
+- **Por qué sin valor:** ninguna fuente de `normas/` da los techos (HEC-14 Cap. 5, págs. 5-1 a 5-7)
+  y la sesión no pudo consultar a Fable: tomó la decisión más conservadora, que es no fijar ningún
+  techo de archivo. Sin declarar, la corrida es la de antes de VE-5.
+- **Qué haría falta:** la decisión de Fable o del dueño sobre los techos de archivo (y su respaldo).
+  La cadena `"1.0"` de `_numero_externo` sigue como estaba (ficha T8-11).
+- **Dónde vive:** `src/modulos/M6_proteccion.py::avisos_de_transcripcion`
+
+## VE5GUI-49 · El hijo del PDF formatea la corrida embebida; las entradas de la pestaña 1 invalidan
+
+- **Cerrado (ítem 49; fichas UI5-01 (a)(b), UI2-01 (b), EXT-8-02 y EXT-10-04; decisión del dueño):**
+  `src/serializacion_informe.py` da al `Informe` ida y vuelta por JSON etiquetado, sin `pickle`:
+  sólo construye dataclasses y enums de `src`, repone sin `__init__`, rechaza campos de otra
+  versión y conserva la IDENTIDAD de los objetos compartidos (la memoria reconoce un paso ya impreso
+  por identidad; sin ella `expediente_cabezal` imprimía un paso «repetido» de más). La sesión de
+  trabajo del hijo embebe la corrida con su informe entero (`sesion_de_la_corrida`,
+  `corrida_para_sesion(con_informe=True)`), y el hijo corre `cli.py --sesion … --corrida-embebida`:
+  no relee el CSV ni ningún archivo, comprueba que el volcado del informe cargado es EXACTAMENTE el
+  `informe_json` de la misma corrida y formatea; la memoria sale idéntica a la de la ventana (medido
+  sobre las corridas de referencia). Y el JSON de datos externos, el de datos de sitio, los datos
+  que no están en el CSV y el alcance invalidan el informe (`MOTIVO_ENTRADA_CAMBIADA`); abrir una
+  sesión o un proyecto nuevo escriben esos campos después de retirar el informe con su motivo.
+- **Abierto:** «Guardar sesión» no embebe el informe entero (pesa megabytes: 7 MB la sesión de
+  `expediente_cabezal`), de modo que `--corrida-embebida` sólo vale con la sesión de trabajo del
+  hijo; una sesión sin él recalcula como antes, y `ProcesoPdf` sólo pide la bandera cuando la sesión
+  la trae (`trae_la_corrida_embebida`).
+- **Qué haría falta:** si el dueño quiere memorias sin recalcular desde una sesión guardada, que
+  «Guardar sesión» embeba el informe (o lo guarde aparte).
+- **Dónde vive:** `src/serializacion_informe.py::informe_desde_dict`
+
+## VE5GUI-45 · Estado del expediente: discrepancias abiertas y corridas para comparar
+
+- **Cerrado (ítem 45; ficha C8-02):** `Registro.discrepancias_abiertas` tiene consumidor de
+  producción: la pestaña 4 pinta, en un panel propio, las abiertas contra la hoja de ruta
+  (`estado_del_expediente.discrepancias_abiertas`), con independencia de la corrida. Y la pestaña 4
+  ofrece comparar la corrida vigente con una ANTERIOR de la sesión, de una lista derivada de las
+  corridas embebidas (`corridas_para_comparar`, la más reciente primero), por el comparador de E14.
+- **Abierto:** la CLI no imprime el estado del expediente (la ventana sí).
+- **Qué haría falta:** una bandera de la CLI, si se pide.
+- **Dónde vive:** `src/estado_del_expediente.py::discrepancias_abiertas`
+
+## VE5GUI-47 · El chequeo dimensional llega a M6–M10; los fundamentos sin ejercitar siguen
+
+- **Cerrado en parte (ítem 47; fichas I4-01 (b), T10-02 y T11-06):** las tres corridas de
+  referencia emiten 401 pasos de M6 a M10 (M9 244, M7 74, M6 43, M8 31, M10 9), y
+  `tests/test_ve5_dimensional_m6_m10.py` les aplica las dos comprobaciones del piloto que no
+  necesitan relación escrita: toda unidad tiene dimensión (el mapa del piloto más ocho unidades
+  propias de estas fases) y todo umbral es conmensurable con su resultado. Ninguna inconsistencia.
+- **Abierto:** las RELACIONES por paso de M6–M10 (401 pasos, a mano desde su fórmula), y los 32
+  fundamentos que ninguna corrida de referencia ejercita (entre ellos los ocho de la Fase 8 del TMC
+  y del HDPE, `F9.CICLOPEO`, `F6.FILTRO`, `F6.SOCAVACION` y cuatro `FH.*` del método racional): hace
+  falta una cuarta corrida de referencia (fixture) que los recorra, y regenerar el índice.
+- **Qué haría falta:** esa corrida y esas relaciones, en una sesión propia.
+- **Dónde vive:** `tests/test_ve5_dimensional_m6_m10.py::UNIDADES_DE_M6_A_M10`
+
+## VE5GUI-48 · La integración continua corre los tests de ventana
+
+- **Cerrado (ítem 48; fichas SIS-F-01 y C09-01):** `.github/workflows/pruebas.yml` instala el Tk del
+  sistema, `xvfb` y las librerías de weasyprint, comprueba que la ventana se levanta y corre la
+  suite entera bajo `xvfb-run -a`, el envoltorio con que la suite busca un Tk.
+- **Abierto:** sin `NORMAS_DIR` (repositorio privado) los tests que abren un PDF se saltan allí.
+- **Qué haría falta:** un secreto con acceso al repositorio de normas, si el dueño lo quiere en CI.
+- **Dónde vive:** `tests/test_ve5_gui.py::test_48_la_integracion_continua_corre_la_suite_bajo_un_servidor_x`

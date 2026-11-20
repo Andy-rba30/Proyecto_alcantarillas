@@ -2066,7 +2066,9 @@ def test_la_ayuda_de_entrada_se_abre_de_verdad(tmp_path):
 
     # 1. Las dos tablas se llenan con lo que el censo dice, y con nada mas.
     assert obs["filas_csv_csv"] == list(m0.COLUMNAS)
-    assert len(obs["filas_json_csv"]) == len(cli.CLAVES_EXTERNAS)
+    # Desde VE-5 (ficha T4-09) la tabla lleva ademas los ensayos opcionales.
+    assert len(obs["filas_json_csv"]) == (len(cli.CLAVES_EXTERNAS)
+                                          + len(cli.CLAVES_DE_DURABILIDAD))
 
     # 2. Cada icono abre la ventana en SU pestana, la de conceptos incluida.
     assert "CSV" in obs["pestana_activa_csv"]

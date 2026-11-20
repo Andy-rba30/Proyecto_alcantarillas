@@ -89,6 +89,12 @@ CAMPOS_DE_UN_DATO_DE_SITIO = ("valor", "trazabilidad", "fecha")
 # dos huellas y el volcado entero de `cli.informe_json`.
 CAMPOS_DE_UNA_CORRIDA = ("generado_utc", "alcance", "csv_sha1",
                          "criterios_sha1", "informe_json")
+# Y uno OPCIONAL (VE-5, fichas EXT-10-04 y UI5-01 b): el informe entero con
+# ida y vuelta (`src/serializacion_informe.py`), que la ventana embebe en la
+# sesion de trabajo del hijo del PDF para que este FORMATEE la corrida en vez
+# de recalcularla (`cli.py --corrida-embebida`). «Guardar sesion» no lo
+# escribe: pesa megabytes y una sesion guardada se compara, no se formatea.
+CAMPO_INFORME_SERIALIZADO = "informe_serializado"
 
 # La traduccion rotulo-de-ventana -> clave-de-expediente. Es UNA, y la usan
 # la anotacion de familias de la pestana 1, `_leer_banderas` de la ventana y
@@ -205,6 +211,11 @@ def errores_de_sesion(data: Any) -> List[str]:
                 errores.append(f"'corridas[{indice}].informe_json' tiene que ser "
                                "un objeto con claves y trae "
                                f"{type(corrida['informe_json']).__name__}")
+            serializado = corrida.get(CAMPO_INFORME_SERIALIZADO)
+            if serializado is not None and not isinstance(serializado, dict):
+                errores.append(f"'corridas[{indice}].{CAMPO_INFORME_SERIALIZADO}' "
+                               "tiene que ser un objeto con claves y trae "
+                               f"{type(serializado).__name__}")
     return errores
 
 
@@ -356,20 +367,29 @@ def sesion_vacia(app_version: str) -> Dict[str, Any]:
     }
 
 
-def corrida_para_sesion(informe: Any, informe_json: Dict[str, Any]) -> Dict[str, Any]:
+def corrida_para_sesion(informe: Any, informe_json: Dict[str, Any], *,
+                        con_informe: bool = False) -> Dict[str, Any]:
     """
     Una corrida tal como la sesion la embebe (E04): su marca, su alcance, las
     dos huellas del `ContextoCorrida` y el volcado entero. Es lo que permite
     a la CLI, al abrir la sesion, decir si su corrida REPRODUCE la guardada.
+
+    Con `con_informe` (VE-5) lleva ademas el informe entero con ida y vuelta
+    (`CAMPO_INFORME_SERIALIZADO`): es la corrida que el hijo del PDF formatea
+    sin recalcular.
     """
     contexto = informe.contexto
-    return {
+    corrida = {
         "generado_utc": informe.generado,
         "alcance": informe.alcance,
         "csv_sha1": contexto.csv_sha1,
         "criterios_sha1": contexto.criterios_sha1,
         "informe_json": informe_json,
     }
+    if con_informe:
+        from src import serializacion_informe
+        corrida[CAMPO_INFORME_SERIALIZADO] = serializacion_informe.informe_a_dict(informe)
+    return corrida
 
 
 def sin_origen_de_los_datos_de_sitio(informe_json: Dict[str, Any]) -> Dict[str, Any]:
@@ -423,17 +443,16 @@ def escribir_json_atomico(ruta: Path, data: Any) -> None:
     --- VE-5 (ficha UI5-01 d) --- por `escritura_atomica.escribir_atomico`,
     la de los PDF y las memorias: hasta VE-5 el temporal llevaba el nombre
     del destino (un nombre largo no cabia), no seguia un enlace simbolico y
-    no conservaba el modo del archivo previo. El texto se arma ANTES de
-    abrir el temporal: un dato que no es JSON (un NaN) no deja nada en disco.
+    no conservaba el modo del archivo previo. Un dato que no es JSON (un
+    NaN) o un fallo a mitad dejan el destino como estaba y ningun temporal.
     """
     from src import escritura_atomica
     ruta = Path(ruta)
     ruta.parent.mkdir(parents=True, exist_ok=True)
-    texto = json.dumps(data, ensure_ascii=False, indent=2, allow_nan=False)
 
     def escribir(temporal: Path) -> None:
         with Path(temporal).open("w", encoding="utf-8") as f:
-            f.write(texto)
+            json.dump(data, f, ensure_ascii=False, indent=2, allow_nan=False)
             f.flush()
             os.fsync(f.fileno())
 

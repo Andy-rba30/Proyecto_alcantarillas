@@ -314,6 +314,7 @@ from src.modulos import M11_reporte as M11
 # de los tres registros tipograficos va cada linea ---; aqui solo se pinta.
 # Mismo reparto que `ventana_normativa`, y por las mismas razones.
 from src import traza_punto as tp
+from src import estado_del_expediente as estexp
 
 # `ayuda_ent` y no `ayuda`: `ayuda` es el nombre de la variable de bucle de
 # CAMPOS_EXTERNOS, en `_construir_tab_datos`, que es la MISMA funcion donde
@@ -387,8 +388,9 @@ BOTONES_DE_EXPORTACION = ("btn_json", "btn_html", "btn_pdf", "btn_csv",
 BOTONES_PDF = ("btn_pdf", "btn_pdf_resumida")
 # La ayuda del HTML resumido, en UN sitio (revision de UI-2). Lo que dice del
 # encabezado de trazabilidad vale entre las dos memorias en HTML: las dos se
-# escriben aqui, del mismo informe. Las de PDF las escribe un proceso que
-# vuelve a correr la obra, y su ayuda lo dice (`expdf.AVISO_EL_HIJO_RECALCULA`).
+# escriben aqui, del mismo informe. Las de PDF las escribe un proceso aparte
+# que, desde VE-5, formatea ese mismo informe sin recalcular, y su ayuda lo
+# dice (`expdf.AVISO_EL_HIJO_NO_RECALCULA`).
 AYUDA_HTML_RESUMIDA = (
     "La memoria RESUMIDA, para imprimir: por punto el resultado,\n"
     "los veredictos, los avisos, los criterios [A] y lo que detuvo\n"
@@ -416,6 +418,10 @@ MOTIVO_EXPORTANDO_PDF = "el PDF se esta escribiendo en un proceso aparte"
 # que el usuario ve.
 CADENCIA_SONDEO_PDF_MS = 250   # literal-ok: cadencia del sondeo del subproceso, ms
 MOTIVO_EJECUTANDO = "la corrida esta en marcha"
+# VE-5 (ficha C8-02): comparar la corrida vigente con una ANTERIOR de la
+# misma sesion pide las dos.
+MOTIVO_SIN_CORRIDAS_PARA_COMPARAR = (
+    "hace falta una corrida vigente y otra anterior embebida en la sesion")
 MOTIVO_SIN_PUNTO = "seleccione un punto en la tabla de arriba"
 # Los dos motivos con que un informe deja de estar vigente (EXT-4, PC-15).
 # El primero es el de los cuatro gestos que cambian el estado declarado; el
@@ -447,6 +453,17 @@ def texto_sin_informe(motivo):
 MOTIVO_CSV_CAMBIADO = (
     "el informe de la ultima corrida ya no describe el estado actual: se "
     "cambio el CSV de puntos despues de correr. Vuelva a ejecutar el calculo")
+# VE-5 (decision del dueño, ficha UI5-01 a): el MISMO gesto con las demas
+# entradas de la pestaña 1 que la corrida lee --- el JSON de datos externos,
+# el de datos de sitio, los datos que no estan en el CSV y el alcance ---.
+# Hasta VE-5 no invalidaban (EXT-8: el hijo del PDF usaba las entradas
+# fotografiadas al correr), y la ventana exportaba un informe que ya no
+# describia lo que estaba a la vista.
+MOTIVO_ENTRADA_CAMBIADA = (
+    "el informe de la ultima corrida ya no describe el estado actual: se "
+    "cambio una entrada de la pestaña 1 (el JSON de datos externos, el de "
+    "datos de sitio, un dato que no esta en el CSV o el alcance) despues de "
+    "correr. Vuelva a ejecutar el calculo")
 
 # Los filtros de estado de la tabla de criterios (pestana 2). Cada entrada es
 # (rotulo, tag), y el `tag` es el MISMO que devuelve `_estado_criterio`: filtrar
@@ -698,7 +715,8 @@ class ExpedienteApp:
         # dependen del alcance, y un anticipo que describe el alcance anterior
         # es la clase de desfase que este panel existe para evitar.
         self.alcance_var.trace_add(
-            "write", lambda *_a: (self._refiltrar(), self._pintar_anticipo()))
+            "write", lambda *_a: (self._al_cambiar_una_entrada(), self._refiltrar(),
+                                  self._pintar_anticipo()))
         # Y la anotacion de la pestana 1 se rehace al cambiar el CSV, que es
         # cuando cambian las familias del expediente (el anticipo tambien:
         # `_releer_familias` termina repintandolo). Desde UI-5 el gesto
@@ -707,9 +725,14 @@ class ExpedienteApp:
         # El bloque 4 del anticipo (PF-2) depende ademas del JSON de datos
         # externos y de las banderas de esta pestaña: sin estas trazas se
         # quedaba viejo hasta tocar el CSV o el alcance (auditor de PF-2).
-        self.datos_externos_var.trace_add("write", lambda *_a: self._pintar_anticipo())
+        # Desde VE-5 (ficha UI5-01 a) las mismas trazas retiran ademas el
+        # informe vigente, y tambien la del JSON de datos de sitio.
+        self.datos_externos_var.trace_add(
+            "write", lambda *_a: (self._al_cambiar_una_entrada(), self._pintar_anticipo()))
+        self.datos_sitio_var.trace_add("write", lambda *_a: self._al_cambiar_una_entrada())
         for _var in self.externos_vars.values():
-            _var.trace_add("write", lambda *_a: self._pintar_anticipo())
+            _var.trace_add(
+                "write", lambda *_a: (self._al_cambiar_una_entrada(), self._pintar_anticipo()))
         # Y los dos campos de la hidrologia (UI-1): cambiar cualquiera invalida
         # el informe vigente --- la proxima corrida sacaria el caudal de otro
         # sitio --- y repinta el anticipo, que con ellos deja de llamar
@@ -794,6 +817,18 @@ class ExpedienteApp:
         self._invalidar_informe(MOTIVO_HIDROLOGIA_CAMBIADA)
         self._pintar_anticipo()
 
+    def _al_cambiar_una_entrada(self):
+        """
+        El gesto de escribir en una entrada de la pestaña 1 que la corrida
+        lee y que no es el CSV ni la hidrologia (VE-5, decision del dueño,
+        ficha UI5-01 a): el JSON de datos externos, el de datos de sitio, un
+        dato de la seccion de los que no estan en el CSV, o el alcance. Es el
+        gesto del CSV, con su propio motivo, y cuenta igual: toda escritura.
+        Abrir una sesion o un proyecto nuevo escriben estos campos DESPUES de
+        retirar el informe con su motivo, de modo que no lo pisan.
+        """
+        self._invalidar_informe(MOTIVO_ENTRADA_CAMBIADA)
+
     def _al_cambiar_el_csv(self):
         """
         El gesto de escribir en el campo del CSV de puntos (UI-5, decision
@@ -855,6 +890,9 @@ class ExpedienteApp:
         # seleccionar la fila, y un borrador de la pestaña no se pierde por
         # eso (`_al_seleccionar_criterio`, N2).
         self._refiltrar()
+        # Y la lista de corridas para comparar se vacia (VE-5): sin informe
+        # vigente no hay con que comparar.
+        self._refrescar_corridas_para_comparar()
 
     # ------------------------------------------------------------------
     # Construccion de la interfaz
@@ -3000,6 +3038,22 @@ class ExpedienteApp:
             lbl.grid(row=fila, column=1, sticky="w", padx=12, pady=3)
             self.lbl_resumen[txt] = lbl
 
+        # LO ABIERTO CON INDEPENDENCIA DE LA CORRIDA (VE-5, ficha C8-02): las
+        # discrepancias que siguen abiertas contra la hoja de ruta, del
+        # registro normativo (`Registro.discrepancias_abiertas`). La memoria
+        # imprime solo las que SU corrida toca; esto es el estado del
+        # expediente entero, y no cambia al correr.
+        abiertas = estexp.discrepancias_abiertas()
+        panel_discrepancias = Panel(
+            p, f"Discrepancias abiertas contra la hoja de ruta ({len(abiertas)})")
+        panel_discrepancias.pack(fill="x", pady=(0, 10))
+        self.lbl_discrepancias = ttk.Label(
+            panel_discrepancias.interior,
+            text=("\n".join(f"• {d.linea()}" for d in abiertas)
+                  or "Ninguna: la hoja de ruta y las fuentes no discrepan en nada abierto."),
+            style="Ayuda.TLabel", wraplength=820, justify="left")
+        self.lbl_discrepancias.pack(anchor="w")
+
         panel_bloqueos = Panel(p, "Criterios pendientes que bloquearon una etapa (Sec. 0.7)")
         panel_bloqueos.pack(fill="x", pady=(0, 10))
         ttk.Label(panel_bloqueos.interior,
@@ -3161,6 +3215,29 @@ class ExpedienteApp:
         self.btn_cancelar_pdf.pack(side="right", padx=(8, 0), ipadx=6)
         self.proceso_pdf = None
 
+        # COMPARAR CON UNA CORRIDA ANTERIOR DE LA SESION (VE-5, ficha C8-02):
+        # la sesion embebe cada corrida con su volcado (E04), y la lista se
+        # deriva de alli (`estado_del_expediente.corridas_para_comparar`). La
+        # comparacion es la del boton de arriba (`src/comparador.py`): nunca
+        # recalcula. Fuera del grupo de exportacion a proposito: necesita
+        # ademas una corrida anterior, y su motivo lo dice.
+        f_corridas = ttk.Frame(p)
+        f_corridas.pack(fill="x", pady=(8, 0))
+        ttk.Label(f_corridas, text="Corrida anterior de la sesion:").pack(side="left")
+        self.corrida_a_comparar_var = tk.StringVar()
+        self.cmb_corridas = ttk.Combobox(f_corridas, state="readonly", width=60,
+                                         textvariable=self.corrida_a_comparar_var)
+        self.cmb_corridas.pack(side="left", padx=(6, 8))
+        self.btn_comparar_corrida = BotonAccion(
+            f_corridas, "Comparar con esa corrida", fondo=comp.TEXTO_SUAVE,
+            command=self.comparar_con_corrida,
+            motivo=MOTIVO_SIN_CORRIDAS_PARA_COMPARAR,
+            ayuda="Compara el volcado de esta corrida con el de una corrida\n"
+                  "anterior embebida en la sesion (hora, alcance y huellas\n"
+                  "del CSV y de los criterios en la lista). No corre nada.")
+        self.btn_comparar_corrida.pack(side="left", ipadx=6, ipady=3)
+        self._corridas_para_comparar = ()
+
     def _ayuda_del_pdf(self, vista=expdf.VISTA_COMPLETA):
         """
         Por que via saldra el PDF, DICHO ANTES DE PULSAR y no despues.
@@ -3191,7 +3268,7 @@ class ExpedienteApp:
                         "UN PROCESO APARTE, como la completa: la ventana sigue\n"
                         "viva, el progreso se ve abajo y se puede cancelar.\n"
                         "La hoja ya esta en A4.\n"
-                        + expdf.AVISO_EL_HIJO_RECALCULA)
+                        + expdf.AVISO_EL_HIJO_NO_RECALCULA)
             return ("weasyprint no esta operativo en esta maquina. NO es un\n"
                     "bloqueo: al pulsar se escribe la memoria resumida en\n"
                     "HTML junto al destino que elijas y se abre en el\n"
@@ -3205,7 +3282,7 @@ class ExpedienteApp:
             return ("Escribe el PDF con weasyprint EN UN PROCESO APARTE:\n"
                     "la ventana sigue viva, el progreso se ve abajo y se\n"
                     "puede cancelar. La hoja ya esta configurada en A4.\n"
-                    + expdf.AVISO_EL_HIJO_RECALCULA + "\n"
+                    + expdf.AVISO_EL_HIJO_NO_RECALCULA + "\n"
                     + limite)
         return ("weasyprint no esta operativo en esta maquina: o no esta\n"
                 "instalado, o esta instalado y sus librerias nativas (GTK,\n"
@@ -3336,6 +3413,7 @@ class ExpedienteApp:
         self.volcado_de_la_corrida = cli.informe_json(self.informe)
         self.corridas.append(ses.corrida_para_sesion(
             self.informe, self.volcado_de_la_corrida))
+        self._refrescar_corridas_para_comparar()
         self._llenar_tabla_puntos()
         self._llenar_resumen()
         # La pestana 2 se repinta porque acaba de aparecer el tercer filtro:
@@ -3832,6 +3910,35 @@ class ExpedienteApp:
         self._mostrar_comparacion(resultado, ruta)
         return resultado
 
+    def _refrescar_corridas_para_comparar(self):
+        """
+        La lista de corridas anteriores de la sesion (VE-5, ficha C8-02): las
+        embebidas MENOS la vigente, que es la ultima; sin informe vigente,
+        ninguna. El boton se enciende solo si hay con que comparar.
+        """
+        anteriores = (estexp.corridas_para_comparar(self.corridas[:-1])
+                      if self.informe is not None else ())
+        self._corridas_para_comparar = anteriores
+        self.cmb_corridas.configure(values=[c.rotulo for c in anteriores])
+        self.corrida_a_comparar_var.set(anteriores[0].rotulo if anteriores else "")
+        self.btn_comparar_corrida.estado(bool(anteriores),
+                                         MOTIVO_SIN_CORRIDAS_PARA_COMPARAR)
+
+    def comparar_con_corrida(self, rotulo=None):
+        """
+        La corrida vigente contra una ANTERIOR de la sesion, por su rotulo
+        (VE-5, ficha C8-02). Es `comparar_informe` sin ir al disco: el otro
+        volcado es el que la sesion embebio. Devuelve el resultado.
+        """
+        rotulo = self.corrida_a_comparar_var.get() if rotulo is None else rotulo
+        elegida = next((c for c in self._corridas_para_comparar
+                        if c.rotulo == rotulo), None)
+        if self.informe is None or elegida is None:
+            return None
+        resultado = compa.comparar(self.volcado_de_la_corrida, elegida.informe_json)
+        self._mostrar_comparacion(resultado, f"la corrida de la sesion {elegida.rotulo}")
+        return resultado
+
     def _mostrar_comparacion(self, resultado, ruta):
         ventana = tk.Toplevel(self.root, background=comp.SUPERFICIE)
         ventana.title("Comparacion de dos informe_json")
@@ -3971,6 +4078,11 @@ class ExpedienteApp:
                 "nada:\n- " + "\n- ".join(errores))
             return
 
+        aviso = self._aplicar_bloques_de_sesion(data, origen=f"sesion {Path(ruta).name}")
+        # LOS CAMPOS DE LA PESTAÑA 1, DESPUES de los bloques, que ya retiraron
+        # el informe con el motivo de la sesion: el gesto de cada campo (el
+        # de la hidrologia desde UI-1, el del CSV desde UI-5 y los demas desde
+        # VE-5) no pisa ese motivo con el suyo.
         self.proyecto_var.set(data.get("proyecto", ""))
         self.datos_externos_var.set(data.get("datos_externos", ""))
         self.datos_sitio_var.set(data.get("datos_sitio", ""))
@@ -3986,13 +4098,8 @@ class ExpedienteApp:
         if alcance not in (cli.ALCANCE_PERFIL, cli.ALCANCE_EXPEDIENTE):
             alcance = cli.ALCANCE_EXPEDIENTE
         self.alcance_var.set(alcance)
-
-        aviso = self._aplicar_bloques_de_sesion(data, origen=f"sesion {Path(ruta).name}")
         # El CSV y las dos rutas de la hidrologia (formato 4; una sesion v3
-        # las trae vacias tras migrar). DESPUES de los bloques, que ya
-        # retiraron el informe con el motivo de la sesion: el gesto de los
-        # tres campos (UI-1; el del CSV desde UI-5) no pisa ese motivo con el
-        # suyo.
+        # las trae vacias tras migrar).
         self.csv_var.set(data.get("csv", ""))
         self.cuencas_var.set(data.get("cuencas", ""))
         self.estacion_var.set(data.get("estacion", ""))
@@ -4024,15 +4131,16 @@ class ExpedienteApp:
                 "campos. Los archivos del repositorio no se tocan. ¿Continuar?"):
             return
         data = ses.sesion_vacia(APP_VERSION)
+        aviso = self._aplicar_bloques_de_sesion(data, origen="proyecto nuevo")
+        # Vacios, y despues de los bloques por la misma razon que en «Cargar
+        # sesion» (la hidrologia desde UI-1, el CSV desde UI-5, los demas
+        # campos desde VE-5).
         self.proyecto_var.set(data["proyecto"])
         self.datos_externos_var.set(data["datos_externos"])
         self.datos_sitio_var.set(data["datos_sitio"])
         for var in self.externos_vars.values():
             var.set("")
         self.alcance_var.set(data["alcance"])
-        aviso = self._aplicar_bloques_de_sesion(data, origen="proyecto nuevo")
-        # Vacios, como los demas campos (UI-1; el CSV desde UI-5), y despues
-        # de los bloques por la misma razon que en «Cargar sesion».
         self.csv_var.set(data["csv"])
         self.cuencas_var.set(data["cuencas"])
         self.estacion_var.set(data["estacion"])

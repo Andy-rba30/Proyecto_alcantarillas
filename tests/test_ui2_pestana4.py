@@ -388,20 +388,20 @@ def test_a_la_ayuda_no_promete_el_encabezado_de_la_completa_al_pdf_del_hijo(
         app, monkeypatch):
     """
     Revision de UI-2: la ayuda del PDF resumido decia «Sale del mismo informe
-    que la completa (mismo encabezado de trazabilidad)», y el hijo VUELVE A
-    CORRER la obra: su hora de corrida es otra (y sus huellas, las de los
-    archivos al exportar). Las dos ayudas de PDF lo dicen con UN texto
-    (`expdf.AVISO_EL_HIJO_RECALCULA`); la del HTML resumido, que se escribe
-    aqui del mismo informe, solo promete el encabezado entre los dos HTML.
+    que la completa (mismo encabezado de trazabilidad)», y el hijo VOLVIA A
+    CORRER la obra: su hora de corrida era otra. Desde VE-5 (fichas
+    EXT-10-04 y UI5-01 b) el hijo formatea la corrida de la ventana sin
+    recalcular, y las dos ayudas de PDF lo dicen con UN texto
+    (`expdf.AVISO_EL_HIJO_NO_RECALCULA`); la del HTML resumido, que se
+    escribe aqui del mismo informe, promete el encabezado entre los dos HTML.
     """
     monkeypatch.setattr(app.M11, "_WEASYPRINT_SONDEADO", True)
     monkeypatch.setattr(app.M11, "WeasyHTML", object())
     for vista in (app.expdf.VISTA_RESUMIDA, app.expdf.VISTA_COMPLETA):
         ayuda = app.ExpedienteApp._ayuda_del_pdf(object(), vista=vista)
-        assert app.expdf.AVISO_EL_HIJO_RECALCULA in ayuda, vista
-        assert "mismo encabezado" not in ayuda, vista
+        assert app.expdf.AVISO_EL_HIJO_NO_RECALCULA in ayuda, vista
         assert "proceso aparte" in ayuda.lower(), vista
-    assert "VUELVE A CORRER" in app.expdf.AVISO_EL_HIJO_RECALCULA
+    assert "NO vuelve a correr" in app.expdf.AVISO_EL_HIJO_NO_RECALCULA
     assert "HTML" in app.AYUDA_HTML_RESUMIDA and "mismo encabezado" in app.AYUDA_HTML_RESUMIDA
     creados = ast.unparse(_funcion(ARBOL_GUI, "_construir_tab_resumen"))
     assert "ayuda=AYUDA_HTML_RESUMIDA" in creados
@@ -691,7 +691,10 @@ def test_b_un_pdf_cortado_a_mitad_por_el_hijo_real_no_se_entrega(tmp_path, expdf
     assert not proceso.ruta_pdf_de_trabajo.exists(), "M11 dejo un PDF de trabajo cortado"
     assert not list(proceso.directorio_trabajo.glob("*.parcial"))
     assert estado is expdf.EstadoPdf.FALLIDO, proceso.detalle
-    assert "codigo 1" in proceso.detalle
+    # Desde VE-5 (ficha UI5-01 c) la CLI atrapa el `OSError` de la escritura
+    # y sale con su codigo propio y su mensaje, no con la traza y el 1.
+    assert f"codigo {cli.CODIGO_ESCRITURA_FALLIDA}" in proceso.detalle
+    assert "Traceback" not in salida_del_hijo
     assert destino.read_bytes() == PDF_ANTERIOR
 
 
@@ -1007,13 +1010,15 @@ def test_d_el_pdf_resumido_de_la_ventana_sale_por_el_hijo(ventana_real):
     assert any(M11.ETAPA_PDF in p for p in pdf["progreso_visto"]), pdf["progreso_visto"]
     assert pdf["cancelacion_termino"] and pdf["estado_cancelado"] == "cancelado"
     assert pdf["cancelada_no_existe"] and pdf["rotulo_cancelado"].startswith("Cancelado")
-    # El hijo corrio LA MISMA obra que la ventana: su JSON, salvo la hora.
+    # El hijo formateo LA MISMA corrida que la ventana: desde VE-5 su JSON es
+    # el de la ventana, con la hora incluida (no recalcula).
     hijo = json.loads((salida / "hijo_resumida.json").read_text(encoding="utf-8"))
     ventana = json.loads((salida / "ventana.json").read_text(encoding="utf-8"))
     assert ses.sin_marca_de_tiempo(hijo) == ses.sin_marca_de_tiempo(ventana)
-    # Y la ayuda del boton dice que el hijo recalcula (revision de UI-2).
+    assert hijo == ventana
+    # Y la ayuda del boton dice que el hijo no recalcula.
     import gui.exportacion_pdf as expdf
-    assert expdf.AVISO_EL_HIJO_RECALCULA in r["tras_correr"]["ayuda_pdf_resumida"]
+    assert expdf.AVISO_EL_HIJO_NO_RECALCULA in r["tras_correr"]["ayuda_pdf_resumida"]
 
 
 def test_d_la_resumida_en_pdf_de_la_ventana_lleva_la_hidrologia(ventana_real):

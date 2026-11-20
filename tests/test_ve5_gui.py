@@ -25,6 +25,7 @@ import pytest
 from src import criterios_adoptados as ca
 from src import declaracion as dec
 from src import editores as sed
+from tests.apoyo.aproximacion import ABS_CERO, REL_TRANSPORTE
 
 RAIZ = Path(__file__).resolve().parent.parent
 
@@ -66,10 +67,13 @@ def test_42_la_fila_de_la_segunda_tabla_entra_con_su_procedencia_y_sin_nota():
 
 
 def test_42_elegir_la_fila_por_su_referencia_calificada():
+    # Una clave corta que no se repite entre las tablas se guarda corta (VE-5,
+    # lote «gui»: `tests/test_pf6_cabos.py`), y la calificada sigue valiendo.
     e = sed.esquema_de(N_CAJON)
     o = next(o for o in e.opciones_de_tabla if o.fila == "concreto_afinado")
-    assert o.referencia == f"{T09}#concreto_afinado"
-    p = sed.declarar(N_CAJON, "concreto_afinado", fila=o.referencia)
+    assert o.referencia == "concreto_afinado"
+    assert sed.declarar(N_CAJON, "concreto_afinado", fila=o.referencia).tabla_id == T09
+    p = sed.declarar(N_CAJON, "concreto_afinado", fila=f"{T09}#concreto_afinado")
     assert p.tabla_id == T09
 
 
@@ -94,8 +98,9 @@ def test_42_una_fila_que_no_existe_en_ninguna_tabla_se_rechaza():
 
 def test_42_el_texto_que_nombra_una_fila_de_la_segunda_tabla_es_esa_fila():
     e = sed.esquema_de(N_CAJON)
-    assert sed.fila_implicita(e, "concreto_afinado") == f"{T09}#concreto_afinado"
-    assert sed.fila_implicita(e, "concrete_boxes") == f"{TB1}#concrete_boxes"
+    # Claves que no se repiten entre las dos tablas: viajan cortas (VE-5).
+    assert sed.fila_implicita(e, "concreto_afinado") == "concreto_afinado"
+    assert sed.fila_implicita(e, "concrete_boxes") == "concrete_boxes"
 
 
 def test_42_un_criterio_de_una_sola_tabla_no_cambia():
@@ -129,7 +134,7 @@ def test_37_un_numero_que_difiere_de_la_celda_exige_nota_y_con_ella_entra():
     p = sed.declarar_desde_la_ventana(KE, 0.55, tabla_id=KE_TC2, fila=fila_id, nota=NOTA)
     assert p.tabla_id == KE_TC2 and p.filas == (KE_FILA,)
     assert p.nota == NOTA
-    assert ca.valor(KE) == pytest.approx(0.55)
+    assert ca.valor(KE) == pytest.approx(0.55, rel=REL_TRANSPORTE)
 
 
 def test_37_la_fila_de_la_tabla_sin_nota_sigue_entrando_como_antes():
@@ -172,8 +177,9 @@ def test_37_la_ventana_declara_por_la_puerta_de_editores_y_no_por_declaracion():
     llamadas = {ast.unparse(n.func) for n in ast.walk(metodo) if isinstance(n, ast.Call)}
     assert any(l.endswith("declarar_desde_la_ventana") for l in llamadas), llamadas
     assert not any(l.startswith("dec.declarar") for l in llamadas), llamadas
-    texto = (RAIZ / "gui" / "ventana_normativa.py").read_text(encoding="utf-8")
-    assert "nota_var" in texto
+    # El campo de la nota existe: un atributo `nota_var` en el arbol.
+    assert any(isinstance(n, ast.Attribute) and n.attr == "nota_var"
+               for n in ast.walk(arbol))
 
 
 def test_37_la_puerta_de_la_ventana_es_la_de_la_pestana_2():
@@ -231,9 +237,9 @@ def test_40_la_cli_lleva_las_tres_banderas_a_los_datos_externos(monkeypatch, tmp
                        "--s-conducto", "0.004", "--bombeo", "0.02",
                        "--peralte", "-0.03", "--json", str(tmp_path / "i.json")])
     assert codigo == 2
-    assert vistas["S_conducto"] == 0.004
-    assert vistas["bombeo"] == 0.02
-    assert vistas["peralte"] == -0.03
+    assert vistas["S_conducto"] == pytest.approx(0.004, rel=REL_TRANSPORTE)
+    assert vistas["bombeo"] == pytest.approx(0.02, rel=REL_TRANSPORTE)
+    assert vistas["peralte"] == pytest.approx(-0.03, rel=REL_TRANSPORTE)
 
 
 def test_40_las_banderas_pisan_al_global_del_json_y_conservan_la_exclusion(tmp_path):
@@ -242,7 +248,8 @@ def test_40_las_banderas_pisan_al_global_del_json_y_conservan_la_exclusion(tmp_p
     json_ = tmp_path / "ext.json"
     json_.write_text('{"globales": {"bombeo": 0.02}}', encoding="utf-8")
     ext = cli.cargar_datos_externos(json_, {"bombeo": 0.0, "peralte": 0.04})
-    assert ext.valor("X", "bombeo") == 0.0 and ext.valor("X", "peralte") == 0.04
+    assert ext.valor("X", "bombeo") == pytest.approx(0.0, abs=ABS_CERO)
+    assert ext.valor("X", "peralte") == pytest.approx(0.04, rel=REL_TRANSPORTE)
     with pytest.raises(DatoInvalidoError):
         cli.cargar_datos_externos(json_, {"peralte": 0.04})
 
@@ -379,3 +386,285 @@ def test_46_la_fila_de_rugosidad_no_supone_la_regla_de_doble_n(informe_de_perfil
     assert "Rugosidad (regla de doble n)" not in html
     assert "<b>Rugosidad (n de Manning)</b>" in html
     assert "Fila de la Tabla N 09: ninguna" not in html
+
+
+# ===========================================================================
+# 49 · El hijo del PDF formatea la corrida embebida; las entradas invalidan
+# ===========================================================================
+
+def _corrida(nombre):
+    from src import indice_formulas as ind
+    referencia = next(r for r in ind.CORRIDAS_DE_REFERENCIA if r.nombre == nombre)
+    return referencia, ind.correr_referencia(referencia)
+
+
+@pytest.mark.parametrize("nombre", ["perfil_guia", "expediente_cabezal"])
+def test_49_el_informe_tiene_ida_y_vuelta_y_da_la_misma_memoria(nombre):
+    import json
+    import cli
+    from src import serializacion_informe as si
+    from src.modulos import M11_reporte as M11
+    _ref, informe = _corrida(nombre)
+    texto = json.dumps(si.informe_a_dict(informe), ensure_ascii=False, allow_nan=False)
+    vuelta = si.informe_desde_dict(json.loads(texto))
+    assert cli.informe_json(vuelta) == cli.informe_json(informe)
+    # La identidad de los pasos compartidos se conserva: la memoria no
+    # imprime un paso «repetido» de mas (medido en expediente_cabezal).
+    assert M11.memoria_html(vuelta) == M11.memoria_html(informe)
+    assert M11.memoria_resumida_html(vuelta) == M11.memoria_resumida_html(informe)
+
+
+@pytest.mark.parametrize("malo", [
+    {"__dc__": "os:PathLike", "campos": {}, "__n__": 0},
+    {"__dc__": "src.escritura_atomica:archivo_real", "campos": {}, "__n__": 0},
+    {"__dc__": "src.modelos:Magnitud", "campos": {"nombre": "x"}, "__n__": 0},
+    {"__enum__": "builtins:object", "miembro": "x"},
+    {"__ref__": 7},
+])
+def test_49_el_cargador_no_construye_nada_fuera_de_las_clases_de_src(malo):
+    from src import serializacion_informe as si
+    with pytest.raises(ValueError):
+        si.informe_desde_dict({"formato": si.FORMATO_INFORME_SERIALIZADO, "informe": malo})
+    with pytest.raises(ValueError):
+        si.informe_desde_dict({"formato": 99, "informe": None})
+
+
+def _sesion_del_hijo(tmp_path, nombre="perfil_guia"):
+    import shutil
+    from src import sesion as ses
+    from gui import exportacion_pdf as expdf
+    referencia, informe = _corrida(nombre)
+    csv = tmp_path / "puntos.csv"
+    shutil.copyfile(referencia.csv, csv)
+    sesion = expdf.sesion_de_la_corrida(
+        informe, proyecto="DATOS DE PRUEBA", csv=str(csv), datos_externos="",
+        externos={}, alcance=informe.alcance,
+        formato_version=ses.FORMATO_SESION, app_version="1.0")
+    return informe, sesion, csv
+
+
+def test_49_la_sesion_del_hijo_trae_la_corrida_y_el_comando_la_pide(tmp_path):
+    from gui import exportacion_pdf as expdf
+    _informe, sesion, _csv = _sesion_del_hijo(tmp_path)
+    assert expdf.trae_la_corrida_embebida(sesion)
+    proceso = expdf.ProcesoPdf(sesion=sesion, destino=tmp_path / "m.pdf",
+                               directorio_trabajo=tmp_path / "trabajo",
+                               plantilla=Path("p.html"),
+                               interprete="interprete-que-no-existe")
+    proceso.iniciar()
+    assert "--corrida-embebida" in proceso.comando
+    assert not expdf.trae_la_corrida_embebida({"corridas": []})
+
+
+def test_49_la_cli_formatea_la_corrida_sin_releer_el_csv(tmp_path, capsys):
+    import json
+    import cli
+    from src import sesion as ses
+    from src.modulos import M11_reporte as M11
+    informe, sesion, csv = _sesion_del_hijo(tmp_path)
+    ruta = tmp_path / "s.json"
+    ses.escribir_json_atomico(ruta, sesion)
+    csv.unlink()                      # el hijo no lo relee
+    plantilla = cli.plantilla_por_alcance(informe.alcance)
+    codigo = cli.main(["--sesion", str(ruta), "--corrida-embebida",
+                       "--html", str(tmp_path / "m.html"),
+                       "--json", str(tmp_path / "i.json"),
+                       "--plantilla", str(plantilla)])
+    salida = capsys.readouterr()
+    assert codigo in (0, 1), salida.err
+    assert "formateada sin recalcular" in salida.out
+    html = (tmp_path / "m.html").read_text(encoding="utf-8")
+    assert html == M11.memoria_html(informe, proyecto="DATOS DE PRUEBA",
+                                    ruta_plantilla=plantilla)
+    # Con la hora de la corrida: es la misma, no otra.
+    assert json.loads((tmp_path / "i.json").read_text(encoding="utf-8")) == \
+        json.loads(json.dumps(cli.informe_json(informe), ensure_ascii=False))
+
+
+def test_49_un_informe_que_no_es_el_de_su_volcado_no_se_formatea(tmp_path, capsys):
+    import cli
+    from src import sesion as ses
+    _informe, sesion, _csv = _sesion_del_hijo(tmp_path)
+    sesion["corridas"][0]["informe_json"]["generado_utc"] = "1999-01-01T00:00:00Z"
+    ruta = tmp_path / "s.json"
+    ses.escribir_json_atomico(ruta, sesion)
+    codigo = cli.main(["--sesion", str(ruta), "--corrida-embebida",
+                       "--html", str(tmp_path / "m.html"),
+                       "--json", str(tmp_path / "i.json")])
+    assert codigo == 2
+    assert "no es el de su volcado" in capsys.readouterr().err
+    assert not (tmp_path / "m.html").exists() and not (tmp_path / "i.json").exists()
+
+
+def test_49_sin_corrida_embebida_la_bandera_lo_dice(tmp_path, capsys):
+    import cli
+    from src import sesion as ses
+    _informe, sesion, _csv = _sesion_del_hijo(tmp_path)
+    sesion["corridas"] = []
+    ruta = tmp_path / "s.json"
+    ses.escribir_json_atomico(ruta, sesion)
+    assert cli.main(["--sesion", str(ruta), "--corrida-embebida",
+                     "--json", str(tmp_path / "i.json")]) == 2
+    assert "no trae ninguna corrida con su informe entero" in capsys.readouterr().err
+    with pytest.raises(SystemExit):
+        cli.main([str(RAIZ / "tests" / "ejemplo_puntos_perfil.csv"), "--corrida-embebida"])
+
+
+def test_49_las_entradas_de_la_pestana_1_invalidan_y_las_sesiones_no_las_pisan():
+    """
+    Por el AST de la ventana (sin Tk): las trazas de los campos que la
+    corrida lee llaman a `_al_cambiar_una_entrada`, y «Cargar sesion» y
+    «Nuevo proyecto» escriben esos campos DESPUES de retirar el informe con
+    el motivo de la sesion. La medida en ventana real esta en
+    `tests/test_ve5_gui_ventana.py`.
+    """
+    arbol = ast.parse((RAIZ / "gui" / "app.py").read_text(encoding="utf-8"))
+    funciones = {n.name: ast.unparse(n) for n in ast.walk(arbol)
+                 if isinstance(n, ast.FunctionDef)}
+    init = funciones["__init__"]
+    for var in ("datos_externos_var", "datos_sitio_var", "alcance_var"):
+        traza = next(l for l in init.splitlines() if f"self.{var}.trace_add" in l)
+        assert "_al_cambiar_una_entrada" in traza or "_al_cambiar_una_entrada" in \
+            init[init.index(f"self.{var}.trace_add"):][:300], var
+    for nombre in ("cargar_sesion", "nuevo_proyecto"):
+        cuerpo = funciones[nombre]
+        bloques = cuerpo.index("self._aplicar_bloques_de_sesion(")
+        for var in ("self.datos_externos_var.set(", "self.datos_sitio_var.set(",
+                    "self.alcance_var.set(", "var.set("):
+            assert cuerpo.index(var) > bloques, (nombre, var)
+
+
+# ===========================================================================
+# 48 · La integración continua corre los tests de ventana (SIS-F-01, C09-01)
+# ===========================================================================
+
+def test_48_la_integracion_continua_corre_la_suite_bajo_un_servidor_x():
+    flujo = (RAIZ / ".github" / "workflows" / "pruebas.yml").read_text(encoding="utf-8")
+    assert "xvfb" in flujo and "python3-tk" in flujo
+    # La suite entera, y con el envoltorio con que la suite busca un Tk.
+    assert "xvfb-run -a python -m pytest" in flujo
+    # La sonda que la suite usa para decidir si salta las ventanas, como paso
+    # propio: si el Tk no se levanta, el flujo falla en vez de saltarlas.
+    assert "tkinter.Tk()" in flujo
+    assert "pip install -r requirements.txt -r requirements-dev.txt" in flujo
+
+
+# ===========================================================================
+# 43 · Los ensayos de durabilidad en el censo, la ayuda y el pre-vuelo (T4-09)
+# ===========================================================================
+
+def test_43_los_seis_ensayos_son_la_quinta_poblacion_del_censo():
+    from src import servicio
+    from src import variables_entrada as ve
+    from src.modelos import ENSAYOS_DE_DURABILIDAD, Poblacion
+    censados = {v.clave for v in ve.VARIABLES.values()
+                if v.poblacion is Poblacion.DATO_EXTERNO_OPCIONAL}
+    assert censados == set(ENSAYOS_DE_DURABILIDAD) == set(servicio.CLAVES_DE_DURABILIDAD)
+    # No son de CLAVES_EXTERNAS: ninguna etapa los exige.
+    assert not censados & set(servicio.CLAVES_EXTERNAS)
+    for clave in censados:
+        v = ve.variable(clave)
+        assert v.concepto and v.unidad and v.fase
+        assert "M2_material" in v.consumido_por
+    from src import constantes_normativas as cn
+    assert ve.variable("abrasion").resolucion.opciones == tuple(cn.NIVELES_DE_ABRASION)
+
+
+def test_43_la_ayuda_del_json_los_nombra_rotulados_como_opcionales():
+    from src import ayuda_entrada as ay
+    from src.modelos import ENSAYOS_DE_DURABILIDAD
+    fichas = ay.fichas_de_ensayos_opcionales()
+    assert [f.clave for f in fichas] == list(ENSAYOS_DE_DURABILIDAD)
+    assert all(f.concepto and f.de_donde_sale for f in fichas)
+    # La ventana de ayuda los pinta: la llamada esta en su arbol.
+    arbol = ast.parse((RAIZ / "gui" / "ayuda_entrada.py").read_text(encoding="utf-8"))
+    assert any(isinstance(n, ast.Call)
+               and ast.unparse(n.func) == "ay.fichas_de_ensayos_opcionales"
+               for n in ast.walk(arbol))
+
+
+def test_43_el_prevuelo_no_los_cuenta_como_falta():
+    """Sin ningun ensayo declarado, ninguno sale como dato que falta."""
+    import cli
+    from src import anticipo
+    from src.modelos import ENSAYOS_DE_DURABILIDAD
+    csv = RAIZ / "tests" / "ejemplo_puntos_perfil.csv"
+    for alcance in (cli.ALCANCE_PERFIL, cli.ALCANCE_EXPEDIENTE):
+        faltas = anticipo.datos_faltantes_por_punto(
+            csv, cli.cargar_datos_externos(None, {}), alcance)
+        texto = repr(faltas)
+        for clave in ENSAYOS_DE_DURABILIDAD:
+            assert f"'{clave}'" not in texto, (alcance, clave)
+
+
+# ===========================================================================
+# 45 · Estado del expediente: discrepancias abiertas y corridas (C8-02)
+# ===========================================================================
+
+def test_45_las_discrepancias_abiertas_tienen_consumidor_y_son_las_del_registro():
+    from src import estado_del_expediente as estexp
+    from src.normativa import registro
+    abiertas = estexp.discrepancias_abiertas()
+    assert [d.id for d in abiertas] == [d.id for d in registro.construir().discrepancias_abiertas()]
+    assert abiertas, "el censo del 2026-11-20 tiene dos abiertas"
+    for d in abiertas:
+        assert d.id in d.linea() and d.gana in d.linea()
+    arbol = ast.parse((RAIZ / "gui" / "app.py").read_text(encoding="utf-8"))
+    assert any(isinstance(n, ast.Call)
+               and ast.unparse(n.func) == "estexp.discrepancias_abiertas"
+               for n in ast.walk(arbol))
+
+
+def test_45_las_corridas_para_comparar_son_las_que_traen_volcado_y_la_ultima_primero():
+    from src import estado_del_expediente as estexp
+    corridas = [
+        {"generado_utc": "2026-11-20T01:00:00Z", "alcance": "perfil",
+         "csv_sha1": "a" * 40, "criterios_sha1": "b" * 40, "informe_json": {"x": 1}},
+        {"generado_utc": "2026-11-20T02:00:00Z", "alcance": "perfil"},   # sin volcado
+        "no es una corrida",
+        {"generado_utc": "2026-11-20T03:00:00Z", "alcance": "expediente",
+         "csv_sha1": "c" * 40, "criterios_sha1": "d" * 40, "informe_json": {"x": 2}},
+    ]
+    lista = estexp.corridas_para_comparar(corridas)
+    assert [c.indice for c in lista] == [3, 0]
+    assert lista[0].rotulo.startswith("2026-11-20T03:00:00Z · expediente · CSV cccccccc")
+    assert lista[1].informe_json == {"x": 1}
+
+
+# ===========================================================================
+# 44 · Techos de transcripción de la Fase 6, como aviso (T8-11)
+# ===========================================================================
+
+class _Lecho:
+    def __init__(self, D84_m=None, Sv_Pa=None):
+        self.D84_m, self.Sv_Pa = D84_m, Sv_Pa
+
+
+def test_44_sin_declarar_no_hay_aviso():
+    from src.modulos import M6_proteccion as M6
+    datos = {"duracion_caudal_pico_min": 1e9, "material_lecho_salida": _Lecho(D84_m=5.0)}
+    assert ca.CRITERIOS["techos_de_transcripcion_fase_6"].valor is None
+    assert ca.CRITERIOS["techos_de_transcripcion_fase_6"].opcional
+    assert M6.avisos_de_transcripcion(datos.get) == []
+
+
+def test_44_declarado_avisa_lo_que_pasa_su_techo_y_nada_mas(monkeypatch):
+    from src.modulos import M6_proteccion as M6
+    monkeypatch.setitem(ca._OVERRIDES, "techos_de_transcripcion_fase_6",
+                        {"D84_m": 1.0, "duracion_caudal_pico_min": 1440.0})
+    datos = {"duracion_caudal_pico_min": 60.0,
+             "material_lecho_salida": _Lecho(D84_m=5.0, Sv_Pa=1e300)}
+    avisos = M6.avisos_de_transcripcion(datos.get)
+    assert len(avisos) == 1
+    assert "material_lecho_salida.D84_m = 5 m" in avisos[0]
+    assert "ningun resultado cambia" in avisos[0]
+
+
+@pytest.mark.parametrize("malo", [{"D84": 1.0}, {"D84_m": -1.0}, {"D84_m": True},
+                                  {"Sv_Pa": float("inf")}])
+def test_44_un_techo_mal_declarado_no_se_ignora(malo, monkeypatch):
+    from src.modulos import M6_proteccion as M6
+    from src.modelos import DatoInvalidoError
+    monkeypatch.setitem(ca._OVERRIDES, "techos_de_transcripcion_fase_6", malo)
+    with pytest.raises(DatoInvalidoError):
+        M6.avisos_de_transcripcion(lambda clave: None)

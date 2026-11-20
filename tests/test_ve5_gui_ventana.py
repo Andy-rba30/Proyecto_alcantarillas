@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Lote VE5-GUI en la ventana de verdad (ítems 38 y 40 del censo del
+Lote VE5-GUI en la ventana de verdad (ítems 38, 40 y 49 del censo del
 2026-11-20): lo que el doble de `tkinter` no puede ver. Corre
 `tests/apoyo/gui_ve5_real.py` en un proceso limpio, con el mismo intérprete y
 el mismo `xvfb-run` que los demás tests de ventana, y se salta diciendo por
@@ -82,3 +82,23 @@ def test_40_una_sesion_de_formato_3_los_deja_vacios(ventana_real):
     assert ventana_real["tras_sesion_v3"] == {"S_conducto": "", "bombeo": "",
                                               "peralte": "", "luz_m": "2.0"}
     assert ventana_real["dialogos_de_error"] == []
+
+
+def test_49_las_entradas_de_la_pestana_1_invalidan_el_informe(ventana_real):
+    import gui.app as gapp
+    for gesto, estado in ventana_real["invalidacion"].items():
+        assert estado["corrio"], gesto
+        assert estado["informe_es_None"], gesto
+        assert estado["motivo"] == gapp.MOTIVO_ENTRADA_CAMBIADA, gesto
+
+
+def test_45_la_pestana_4_lista_las_discrepancias_abiertas_y_las_corridas(ventana_real):
+    from src import estado_del_expediente as estexp
+    c = ventana_real["comparar"]
+    for d in estexp.discrepancias_abiertas():
+        assert d.id in c["discrepancias"]
+    # Cuatro corridas de la misma obra antes de esta: la lista las ofrece,
+    # la mas reciente primero, y la comparacion con la misma obra es igual.
+    assert len(c["corridas"]) >= 1 and c["elegida"] == c["corridas"][0]
+    assert c["boton_encendido"] and c["iguales"] is True
+    assert c["tras_invalidar"] == {"corridas": [], "boton_encendido": False}

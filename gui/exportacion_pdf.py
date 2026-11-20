@@ -46,9 +46,14 @@ La sesion serializada es la MISMA que «Guardar sesion» escribe (formato de
 hidrologia (desde el formato 4, UI-1), banderas, alcance y los
 criterios declarados CON su procedencia, que la CLI repone por
 `declaracion.restaurar_sesion` --- el mismo camino con guardia que la
-ventana ---. Por eso el PDF del hijo describe la corrida de la ventana y no
-otra: `sin_marca_de_tiempo` deja comparar los dos JSON, y el test de EXT-8
-lo comprueba. El `--json` va a un archivo de trabajo aparte para que el hijo
+ventana ---. Hasta VE-5 el hijo VOLVIA A CORRER esa sesion y el PDF
+describia otra corrida de la misma sesion (otra hora, las huellas de los
+archivos al exportar). Desde VE-5 (fichas EXT-10-04 y UI5-01 b) la sesion de
+trabajo embebe la corrida de la ventana con su informe entero
+(`src/serializacion_informe.py`) y el hijo la FORMATEA sin recalcular
+(`cli.py --corrida-embebida`), despues de comprobar que el informe es el de
+su volcado: el PDF es de la MISMA corrida que la memoria en HTML de la
+ventana. El `--json` va a un archivo de trabajo aparte para que el hijo
 no pise el `<csv>.informe.json` del usuario.
 
 Que hace este modulo y que no
@@ -124,16 +129,18 @@ CODIGOS_DE_SALIDA_CON_MEMORIA = (0, 1)
 # los lectores buscan). Es un limite del FORMATO, no un valor del expediente.
 COLA_DEL_PDF_BYTES = 1024   # literal-ok: ventana del trailer %%EOF de la referencia de PDF, bytes
 
-# LO QUE EL PDF DEL HIJO ES, dicho antes de pulsar (revision de UI-2). El
-# hijo VUELVE A CORRER la obra con la sesion de la corrida (ficha EXT-8-02):
-# su encabezado de trazabilidad lleva la hora de ESA corrida, no la de la
-# ventana, y las huellas de los archivos tal como esten al exportar. Un solo
-# texto para las ayudas de los dos botones de PDF.
-AVISO_EL_HIJO_RECALCULA = (
-    "El proceso aparte VUELVE A CORRER la obra con la sesion de esta\n"
-    "corrida: el encabezado de trazabilidad del PDF lleva la hora de\n"
-    "ESA corrida, no la de la ventana, y las huellas de los archivos\n"
-    "tal como esten en disco al exportar.")
+# LO QUE EL PDF DEL HIJO ES, dicho antes de pulsar (revision de UI-2). Hasta
+# VE-5 el hijo VOLVIA A CORRER la obra con la sesion de la corrida (ficha
+# EXT-8-02) y su encabezado llevaba la hora de ESA corrida; desde VE-5
+# (decision del dueño, fichas EXT-10-04 y UI5-01 b) FORMATEA la corrida de la
+# ventana, embebida en su sesion de trabajo con su informe entero
+# (`sesion_de_la_corrida`, `cli.py --corrida-embebida`). Un solo texto para
+# las ayudas de los dos botones de PDF.
+AVISO_EL_HIJO_NO_RECALCULA = (
+    "El proceso aparte NO vuelve a correr la obra: formatea el informe\n"
+    "de esta corrida, embebido en su sesion, despues de comprobar que es\n"
+    "el de su volcado. El PDF lleva el mismo encabezado de trazabilidad\n"
+    "que la memoria en HTML de esta ventana.")
 
 # LAS DOS VISTAS DE LA MEMORIA QUE EL HIJO SABE ESCRIBIR (T-12, UI-2): la
 # completa (el anexo digital) y la resumida (la que se imprime), las dos del
@@ -162,12 +169,16 @@ class EstadoPdf(str, Enum):
 def comando_exportar_pdf(*, interprete: str, cli: Path, sesion: Path,
                          destino: Path, json_aparte: Path,
                          plantilla: Optional[Path] = None,
-                         vista: str = VISTA_COMPLETA) -> List[str]:
+                         vista: str = VISTA_COMPLETA,
+                         corrida_embebida: bool = False) -> List[str]:
     """
     La linea de comandos del hijo. Es el contrato con `cli.main`.
 
     `vista` elige la bandera (`BANDERA_DE_LA_VISTA`); el resto de la linea
-    es el mismo para las dos. La completa exige su plantilla --- la del
+    es el mismo para las dos. `corrida_embebida` (VE-5) pide al hijo que
+    formatee la corrida de la sesion sin recalcular: `ProcesoPdf` lo pide
+    siempre que la sesion la trae, que es siempre que la arma
+    `sesion_de_la_corrida`. La completa exige su plantilla --- la del
     alcance de la corrida, la que la ventana elige con
     `cli.plantilla_por_alcance` ---; la resumida no la lleva, porque la CLI
     solo la aplica a `--html` y `--pdf`.
@@ -178,8 +189,12 @@ def comando_exportar_pdf(*, interprete: str, cli: Path, sesion: Path,
     if vista == VISTA_COMPLETA and plantilla is None:
         raise ValueError("la memoria completa necesita su plantilla (la del "
                          "alcance de la corrida)")
-    comando = [str(interprete), str(cli), "--sesion", str(sesion),
-               BANDERA_DE_LA_VISTA[vista], str(destino), "--json", str(json_aparte)]
+    comando = [str(interprete), str(cli), "--sesion", str(sesion)]
+    if corrida_embebida:
+        # VE-5: el hijo formatea la corrida embebida en la sesion y no
+        # recalcula (`cli.py --corrida-embebida`).
+        comando.append("--corrida-embebida")
+    comando += [BANDERA_DE_LA_VISTA[vista], str(destino), "--json", str(json_aparte)]
     if vista == VISTA_COMPLETA:
         comando += ["--plantilla", str(plantilla)]
     return comando + ["--progreso"]
@@ -246,9 +261,36 @@ def sesion_de_la_corrida(informe: Any, *, proyecto: str, csv: str,
         "criterios": {"valores": valores, "procedencias": procedencias},
         "sitio": {"valores": sitio},
         "csv_sha1": contexto.csv_sha1,
-        # El hijo recalcula (ficha EXT-8-02): no necesita las corridas.
-        "corridas": [],
+        # --- VE-5 (fichas EXT-10-04 y UI5-01 b) --- LA CORRIDA, CON SU
+        # INFORME ENTERO: el hijo la formatea y no recalcula
+        # (`cli.py --corrida-embebida`), y antes comprueba que el informe es
+        # el de su volcado. Las entradas de arriba se quedan: dicen de que
+        # obra es la corrida, y con ellas la sesion se puede volver a correr.
+        "corridas": [_sesion.corrida_para_sesion(
+            informe, _volcado_de(informe), con_informe=True)],
     }
+
+
+def trae_la_corrida_embebida(sesion: Dict[str, Any]) -> bool:
+    """
+    Si la sesion trae una corrida con su informe entero: la que el hijo
+    formatea sin recalcular (VE-5). La de la ventana la trae siempre
+    (`sesion_de_la_corrida`); una sesion escrita a mano o por «Guardar
+    sesion» no, y con ella el hijo corre la obra como hasta VE-5.
+    """
+    return any(isinstance(c, dict)
+               and isinstance(c.get(_sesion.CAMPO_INFORME_SERIALIZADO), dict)
+               for c in sesion.get("corridas") or ())
+
+
+def _volcado_de(informe: Any) -> Dict[str, Any]:
+    """
+    El `informe_json` de la corrida como queda tras el viaje por JSON (las
+    tuplas pasan a listas): es la forma con que el hijo lo compara.
+    """
+    from cli import informe_json
+    return json.loads(json.dumps(informe_json(informe), ensure_ascii=False,
+                                 allow_nan=False))
 
 
 # `sin_marca_de_tiempo` vive en `src/sesion.py` desde EXT-10 (la CLI la usa
@@ -313,7 +355,8 @@ class ProcesoPdf:
             interprete=self.interprete, cli=self.raiz / "cli.py",
             sesion=self.ruta_sesion, destino=self.ruta_pdf_de_trabajo,
             plantilla=self.plantilla, json_aparte=self.ruta_json,
-            vista=self.vista)
+            vista=self.vista,
+            corrida_embebida=trae_la_corrida_embebida(self.sesion))
         self._salida = self.ruta_salida.open("w+b")
         try:
             self._proceso = subprocess.Popen(

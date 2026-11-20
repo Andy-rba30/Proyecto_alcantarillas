@@ -2380,6 +2380,43 @@ def _comparar_con_la_corrida_embebida(informe: Informe,
             "desde entonces; revise antes de dar la memoria por vigente")
 
 
+def _informe_de_la_corrida_embebida(sesion: Optional[SesionSerializada]) -> Informe:
+    """
+    --- VE-5 (fichas EXT-10-04 y UI5-01 b) --- El `Informe` de la ULTIMA
+    corrida de la sesion que trae su informe entero
+    (`sesion.CAMPO_INFORME_SERIALIZADO`), reconstruido por
+    `serializacion_informe.informe_desde_dict`, que solo construye
+    dataclasses y enums de `src`.
+
+    LA GARANTIA DE QUE ES LA CORRIDA: el volcado del informe reconstruido
+    tiene que ser, entero y sin tolerancias, el `informe_json` que la misma
+    corrida embebida trae. Si difieren --- un informe de otra version del
+    programa, o un archivo retocado --- no se formatea nada (`ValueError`):
+    una memoria que no es la de su corrida es peor que ninguna.
+    """
+    from src import serializacion_informe as _serializacion
+    if sesion is None:
+        raise ValueError("hace falta una --sesion")
+    corridas = [c for c in sesion.corridas if isinstance(c, dict)
+                and isinstance(c.get(_sesion.CAMPO_INFORME_SERIALIZADO), dict)]
+    if not corridas:
+        raise ValueError(
+            "la sesion no trae ninguna corrida con su informe entero "
+            f"('{_sesion.CAMPO_INFORME_SERIALIZADO}'): «Guardar sesion» no lo "
+            "escribe; lo escribe la ventana para el PDF. Corra sin "
+            "--corrida-embebida para recalcular")
+    corrida = corridas[-1]
+    informe = _serializacion.informe_desde_dict(corrida[_sesion.CAMPO_INFORME_SERIALIZADO])
+    propio = json.loads(json.dumps(informe_json(informe), ensure_ascii=False,
+                                   allow_nan=False))
+    if propio != corrida.get("informe_json"):
+        raise ValueError(
+            "el informe embebido no es el de su volcado ('informe_json' de la "
+            "misma corrida): la sesion es de otra version del programa o se "
+            "retoco. No se formatea; corra sin --corrida-embebida")
+    return informe
+
+
 def _bandera_explicita(argv: Optional[Sequence[str]], nombre: str) -> bool:
     """Si `nombre` (p. ej. `--alcance`) vino escrito en la linea de comandos."""
     tokens = list(sys.argv[1:] if argv is None else argv)
@@ -2426,6 +2463,13 @@ def _parser() -> argparse.ArgumentParser:
                         "el mismo camino con guardia que «Cargar sesion». "
                         "Una bandera escrita aqui gana a lo que la sesion "
                         "trae; --declarar compone encima")
+    p.add_argument("--corrida-embebida", action="store_true",
+                   dest="corrida_embebida",
+                   help="con --sesion: NO recalcula. Formatea la ultima "
+                        "corrida embebida en la sesion con su informe "
+                        "entero (la que la ventana escribe para el PDF), "
+                        "despues de comprobar que es la de su volcado. No "
+                        "lee el CSV ni los demas archivos de la sesion")
     p.add_argument("--progreso", action="store_true",
                    help=f"imprime en stdout una linea «{PREFIJO_PROGRESO} "
                         "hecho/total etapa» por punto de la memoria y por "
@@ -2877,6 +2921,11 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     if args.prevuelo and args.barridos:
         parser.error("--prevuelo y --barrido no se combinan: el pre-vuelo no corre "
                      "y el barrido corre una vez por valor")
+    if args.corrida_embebida and (args.sesion is None or args.prevuelo
+                                  or args.barridos or args.declaraciones):
+        parser.error("--corrida-embebida va con --sesion y sin --prevuelo, "
+                     "--barrido ni --declarar: formatea una corrida ya hecha, "
+                     "no corre ninguna")
 
     # LOS DATOS DE SITIO DE LA OBRA (EXT-10): la bandera escrita gana al
     # bloque `sitio` de la sesion; sin bandera se aplica el bloque, y si la
@@ -2937,6 +2986,21 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             if banderas.get(clave) is None:
                 banderas[clave] = valor
     progreso = _informar_progreso if args.progreso else None
+    if args.corrida_embebida:
+        # --- VE-5 (fichas EXT-10-04 y UI5-01 b) --- EL HIJO DEL PDF NO
+        # RECALCULA: formatea la corrida que la ventana embebio en la sesion,
+        # con su informe entero. Ni el CSV ni los demas archivos se releen:
+        # la memoria es la de ESA corrida, con su hora y sus huellas.
+        try:
+            informe = _informe_de_la_corrida_embebida(sesion)
+        except ValueError as exc:
+            print(f"No se puede formatear la corrida embebida: {exc}",
+                  file=sys.stderr)
+            return 2
+        print(volcar(informe, con_criterios=args.criterios))
+        print(f"\nMemoria de la corrida embebida en la sesion "
+              f"({informe.generado}): formateada sin recalcular.")
+        return _salidas_o_codigo(args, informe, plantilla, progreso)
     try:
         externos = cargar_datos_externos(args.datos_externos, banderas)
         if args.prevuelo:
@@ -2979,6 +3043,16 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         if comparacion:
             print(f"\n{comparacion}")
 
+    return _salidas_o_codigo(args, informe, plantilla, progreso)
+
+
+def _salidas_o_codigo(args: argparse.Namespace, informe: Any,
+                      plantilla: Path, progreso: Any) -> int:
+    """
+    Arma la memoria, escribe las salidas y devuelve el codigo de salida de
+    `main`. La comparten la corrida y, desde VE-5, la corrida embebida que
+    se formatea sin recalcular (`--corrida-embebida`).
+    """
     # LA MEMORIA SE ARMA ANTES DE ESCRIBIR EL JSON (PC-35): si la plantilla
     # no imprime un bloque que esta corrida SI produjo (`ValueError` del
     # contrato de marcadores, SIS-B-06), o si algun bloque de la memoria se

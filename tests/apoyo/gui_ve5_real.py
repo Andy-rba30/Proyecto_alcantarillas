@@ -20,9 +20,12 @@ Que se mide, en orden:
      vista y desplazandola se llega a los cinco botones del panel;
   3. (item 40, ficha T6-04) los tres campos nuevos de la pestaña 1 existen,
      viajan en «Guardar sesion» y una sesion de formato 3 sin ellos los deja
-     vacios.
+     vacios;
+  4. (item 49, ficha UI5-01 a) tras una corrida, escribir en el JSON de
+     datos de sitio, en un dato que no esta en el CSV o en el alcance retira
+     el informe con `MOTIVO_ENTRADA_CAMBIADA`.
 
-DATOS DE PRUEBA: ninguno de calculo; la ventana no corre el pipeline.
+DATOS DE PRUEBA: el CSV de perfil de ejemplo.
 """
 
 import json
@@ -36,6 +39,7 @@ CRITERIO_DE_TABLA = "n_manning_cajon"
 BOTONES_DEL_PANEL = ("btn_aplicar_corrida", "btn_quitar_declarado",
                      "btn_barrido", "btn_ventana_norma", "btn_guardar_archivo")
 CAMPOS_NUEVOS = ("S_conducto", "bombeo", "peralte")
+CSV_PERFIL = RAIZ / "tests" / "ejemplo_puntos_perfil.csv"
 
 
 def _caben(ventana, raiz):
@@ -148,6 +152,51 @@ def main(salida: Path) -> int:
         raiz.update()
         r["tras_sesion_v3"] = {c: ventana.externos_vars[c].get()
                                for c in CAMPOS_NUEVOS + ("luz_m",)}
+        # 4. Las entradas de la pestaña 1 invalidan el informe.
+        import cli
+        gestos = {
+            "datos_sitio": lambda: ventana.datos_sitio_var.set("otro_sitio.json"),
+            "externo": lambda: ventana.externos_vars["luz_m"].set("3,1"),
+            "alcance": lambda: ventana.alcance_var.set(
+                cli.ALCANCE_EXPEDIENTE if ventana.alcance_var.get() == cli.ALCANCE_PERFIL
+                else cli.ALCANCE_PERFIL),
+        }
+        r["invalidacion"] = {}
+        for nombre, gesto in gestos.items():
+            ventana.csv_var.set(str(CSV_PERFIL))
+            ventana.datos_sitio_var.set("")
+            ventana.alcance_var.set(cli.ALCANCE_PERFIL)
+            for c in ventana.externos_vars.values():
+                c.set("")
+            ventana.ejecutar_pipeline()
+            raiz.update()
+            corrio = ventana.informe is not None
+            gesto()
+            raiz.update()
+            r["invalidacion"][nombre] = {
+                "corrio": corrio, "informe_es_None": ventana.informe is None,
+                "motivo": ventana.btn_json.motivo}
+        # 5. (item 45, ficha C8-02) las discrepancias abiertas y la lista de
+        #    corridas anteriores para comparar, en la pestaña 4.
+        ventana.alcance_var.set(cli.ALCANCE_PERFIL)
+        for c in ventana.externos_vars.values():
+            c.set("")
+        ventana.ejecutar_pipeline()
+        raiz.update()
+        r["comparar"] = {
+            "discrepancias": ventana.lbl_discrepancias.cget("text"),
+            "corridas": list(ventana.cmb_corridas.cget("values")),
+            "boton_encendido": str(ventana.btn_comparar_corrida.cget("state")) == "normal",
+            "elegida": ventana.corrida_a_comparar_var.get()}
+        # La ventana de texto del resultado no se abre: se lee el objeto.
+        ventana._mostrar_comparacion = lambda res, ruta: None
+        resultado = ventana.comparar_con_corrida()
+        r["comparar"]["iguales"] = None if resultado is None else resultado.iguales
+        ventana.csv_var.set(str(CSV_PERFIL))
+        raiz.update()
+        r["comparar"]["tras_invalidar"] = {
+            "corridas": list(ventana.cmb_corridas.cget("values")),
+            "boton_encendido": str(ventana.btn_comparar_corrida.cget("state")) == "normal"}
         r["dialogos_de_error"] = [list(map(str, d)) for d in dialogos if d[0] == "error"]
     finally:
         raiz.destroy()
