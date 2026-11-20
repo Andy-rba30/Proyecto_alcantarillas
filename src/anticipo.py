@@ -706,6 +706,21 @@ def datos_faltantes_por_punto(ruta_csv: Any, externos: Any,
                        "ALTERNA): el pre-vuelo no sabe si detiene",
                        "sin regla de pre-vuelo", False)
 
+        # --- VE-5 (catlic) --- la Fase 0-bis: el resultado de licuefaccion
+        # del EMS, a expediente. Estima de MAS: la zona leida y el NF del
+        # punto pueden hacer que AASHTO 10.5.4.2 no la exija.
+        if familia is not None and not servicio._difiere(alcance, "ML_licuefaccion"):
+            ems = externos.dato(id_punto, servicio.CLAVE_LICUEFACCION_EMS)
+            if ems is None:
+                anadir(servicio.CLAVE_LICUEFACCION_EMS, EXTERNO,
+                       servicio.DETALLE_FALTA_LICUEFACCION,
+                       servicio.ETAPA_LICUEFACCION, True)
+            elif ems.valor.get("resultado") == servicio.ML.RESULTADO_LICUA and \
+                    not ems.valor.get("mitigacion"):
+                anadir(servicio.CLAVE_LICUEFACCION_EMS + ".mitigacion",
+                       EXTERNO, servicio.DETALLE_FALTA_MITIGACION,
+                       servicio.ETAPA_LICUEFACCION, True)
+
         # --- VE-4b --- lo que detendria la Fase 1-bis (ficha T1-04) ------
         # El servicio lo anticipa con la misma precedencia que la corrida:
         # el caudal declarado (celda o JSON) gana y solo se contrasta el

@@ -3877,6 +3877,8 @@ lo que la cadena suponía y la fuente no sostiene.
 
 ## T4-06 · `DIAMETRO_MIN_TMC_SELVA_ALTA_RECOMENDADO` se conserva sin consumidor: la «rama inactiva» de la hoja de ruta no existe y no se le inventa una
 
+- **Cerrado en VE-5 (lote catlic): ver la ficha VE5-CAT-01.** Lo que sigue es el texto de T-4.
+
 - **Qué se difirió:** programar la rama de selva alta que la hoja de ruta §3.1 pide
   («programar la rama y declararla inactiva»). `INF-5.1.16`.
 - **Por qué:** comprobado por AST sobre `src/modulos/`, `src/servicio.py` y
@@ -8504,6 +8506,7 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
 - **Dónde vive:** `src/modulos/M9_cabezal.py::validar_estabilidad_global_declarada`
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 ## VE5-M6-01 · La poza de enrocado de HEC-14 Sec. 10.1 entra donde el apron no llega (VE-4g, ítem 2 del censo)
 
 - **Cerrado:** `M6.poza_de_enrocado_hec14` sigue el procedimiento del núm. 10.1.5 (Ec. 10.1
@@ -8738,3 +8741,80 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   `terreno_delante_del_cabezal`); y corregir la §9.3 de la hoja de ruta.
 - **Dónde vive:** `src/modulos/M9_cabezal.py::coeficiente_rcbc`
 >>>>>>> claude/ve5-m9
+=======
+## VE5-CAT-01 · La rama de selva alta del TMC: [S] `region_natural` y la recomendación como piso del catálogo (cierre de T4-06)
+
+- **Cerrado (VE-5, lote catlic, 2026-11-20):** la entrada que faltaba es el [S] de corredor
+  `region_natural` (categoría costa / sierra / selva_alta / selva_baja; La Unión = `costa`,
+  nivel perfil, medido). `M2.piso_de_selva_alta` lo lee siempre que el material es TMC; con
+  `selva_alta`, `M2.siguiente_diametro` arranca la serie del TMC en el primer escalón que no
+  baja de Ф 48" y `M2.catalogo` emite el paso `F3.SELVA_ALTA_TMC` con verbo **RECOMIENDA**
+  (la cita `MC_HHD.4.1.1.3.7a` es RECOMENDACION). En la costa la rama no actúa. La constante
+  salió de `CONSTANTES_DE_REFERENCIA`.
+- **Por qué así (decisión pendiente de Fable, tomada del lado seguro):** (1) la recomendación
+  se aplica como piso del catálogo y no como aviso, porque la hoja de ruta §3.1 manda
+  programar la rama y el piso es el lado seguro frente al flujo de barros; (2) el designado
+  de 1200 mm de AASHTO M 36 queda por debajo de 48 in = 1219.2 mm y no se toma por el
+  «Ф 48”» (ninguna fuente del repositorio los equipara para el acero corrugado; la
+  equivalencia de M 170M Table 6 es del concreto): el primer escalón es 1.35 m; (3) las
+  cuatro características del párrafo anterior se presumen para todo cruce de un corredor
+  declarado de selva alta.
+- **Qué haría falta:** que Fable o el dueño confirme (1) y (2) o elija aviso sin piso o
+  1200 mm por equivalencia [N→]; pasar la condición `COND-SELVA-ALTA` del registro de
+  `PorExpresion` a `PorDatoDeSitio("region_natural")` (toca la ventana normativa y los
+  manifiestos generados).
+- **Dónde vive:** `src/modulos/M2_material.py::piso_de_selva_alta`
+
+## VE5-CAT-02 · La cuneta trapezoidal de la Tabla Nº 34 (región > 3000 mm/año): el fondo como campo de `seccion_cuneta` (cierre de lo que T9-01 dejó diferido)
+
+- **Cerrado (VE-5, lote catlic, 2026-11-20):** `seccion_cuneta` tiene un quinto campo,
+  `ancho_fondo_m` (valor de archivo 0 = la triangular de siempre; ventana 0–1.20 m). Con
+  fondo, `M10.capacidad_cuneta` calcula la sección TRAPEZOIDAL (`M10.geometria_cuneta`:
+  A = b·y + (Z1+Z2)·y²/2, P = b + y·(√(1+Z1²)+√(1+Z2²)); el tirante a la velocidad límite
+  por brentq) y la contrasta con la fila «Muy lluviosa (>3000 mm/año)» de la Tabla Nº 34
+  (pág. impresa 178, PDF 181): profundidad 0.30, ancho 1.20 y la nota «* Sección
+  Trapezoidal con un ancho mínimo de fondo de 0.30»; por debajo, `DatoInvalidoError` con el
+  campo culpable (la tabla lo exige: «las dimensiones mínimas serán»). La fila pasó de
+  `NoUsada` a `Usada` en el registro; `CapacidadCuneta.ancho_fondo_m` lo lleva al informe.
+- **Por qué así:** (1) el ancho de la tabla se lee, con fondo, del borde de la rasante a la
+  vertical del pie del talud exterior, de modo que Z1 = (a − b)/d: es LECTURA del proyecto
+  (la fuente no dibuja la trapezoidal), declarada en la nota del paso 10.2, y la única con
+  la que la fila da Z1 = 3, como la triangular de 1600 a < 3000 mm/año; (2) el campo es
+  obligatorio en la puerta y en M10 (sin él no se supone sección): una sesión que declaró
+  `seccion_cuneta` antes de VE-5 tiene que añadirlo; (3) la región pluvial sigue sin ser
+  dato: la ventana de profundidad empieza en 0.40 (fila de 1600 a < 3000), de modo que la
+  trapezoidal mínima exacta (0.30 de profundidad) no se puede declarar y una más honda sí.
+- **Qué haría falta:** la región pluvial del corredor en año FEN como dato (el estudio
+  hidrológico), para elegir la fila de la Tabla Nº 34 que rige en vez de deducirla de la
+  forma declarada; la sección rectangular sigue sin implementarse.
+- **Dónde vive:** `src/modulos/M10_espaciamiento.py::geometria_cuneta`
+
+## VE5-CAT-03 · Fase 0-bis: la licuefacción como resultado declarado del EMS, con bloqueo de expediente donde AASHTO 10.5.4.2 la exige
+
+- **Cerrado (VE-5, lote catlic, 2026-11-20; decisión del dueño adoptada, censo ítem 6):**
+  módulo nuevo `ML_licuefaccion` (Fase 0-bis), corrido por `servicio._fase_licuefaccion`
+  para cada punto clasificado y **sólo a expediente** (la corrida de perfil lo difiere
+  entero: `MODULOS_DIFERIDOS_POR_ALCANCE`). Decide si AASHTO 10.5.4.2 (PDF 1323) exige la
+  evaluación —zona 3 o 4 por el [S] nuevo `zona_sismica_aashto` (sin leer no se supone 1
+  ni 2, como la §9.2 hace con la exención de 11.5.4.2), NF ≤ 50 ft de la columna del
+  punto, suelo presumido mientras el EMS no lo descarte, con `PERFIL_SUELO_PRESUNTO`
+  dicho al lado— y, donde la exige, pide el dato `licuefaccion_ems` (E.050 38.3, cita
+  nueva `E050.38.3`): sin él, o con `licua` sin mitigación, `DatoFaltanteError` y el
+  expediente no cierra. Declarado, se contrasta con `demanda_sismica_licuefaccion` y
+  `Mw_licuefaccion`, que con `PERFIL_SUELO_PRESUNTO` salieron del censo
+  `SIN_CONSUMIDOR_Y_SIN_MEDIDA` (7 → 3, con `clase_sitio`). Paso `F0.LICUEFACCION` (verbo
+  OBLIGA). Censo §5: `ML.contrastar_clase_sitio` contrasta la clase medida, si se declara,
+  con las filas de `F_pga` (F: método no evaluable, 3.10.2; fuera: inválido; dentro: aviso).
+- **Por qué así (decisión pendiente de Fable, tomada del lado seguro):** (1) el dato es
+  por punto con `globales` admitido (el 38.3 habla del potencial «de la zona»; el NF y el
+  suelo varían por cruce) y el del punto gana; (2) la M_w del EMS no puede ser menor que
+  la adoptada (una M_w mayor baja el MSF) y su Tr no puede ser menor; (3) la mitigación
+  declarada se imprime y no se verifica; (4) no hay calculadora CSR/CRR.
+- **Qué haría falta:** el EMS real por punto; la lectura de S_1 y la clase de sitio para
+  `zona_sismica_aashto`; la M_w adoptada; una sección propia de la memoria y del JSON
+  para la Fase 0-bis (hoy viaja como `InformePunto.licuefaccion`, su paso y sus avisos);
+  y corregir la hoja de ruta (Fase 0-bis y §0.5 dicen que la licuefacción queda fuera del
+  script, sin el bloqueo de expediente).
+- **Dónde vive:** `src/modulos/ML_licuefaccion.py::evaluar_licuefaccion`
+
+>>>>>>> claude/ve5-catlic

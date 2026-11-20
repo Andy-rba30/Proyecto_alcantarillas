@@ -1063,12 +1063,10 @@ CRITERIOS: Dict[str, Criterio] = {
 
     "PERFIL_SUELO_PRESUNTO": Criterio(
         valor="S5",
-        # NIVEL DECLARADO Y NO MEDIDO: no lo consume NINGUN modulo (ver
-        # `sin_consumidor`, aqui abajo), asi que no hay corrida que lo pueda
-        # invocar ni medicion que citar. Se clasifica con los otros criterios
-        # de la Fase 0-bis de licuefaccion --- 'clase_sitio' y
-        # 'Mw_licuefaccion', que ya la declaran de expediente ---: el
-        # procedimiento entero pertenece al expediente tecnico.
+        # NIVEL POR CONSUMIDOR (VE-5, lote catlic): lo lee la Fase 0-bis
+        # (`ML.evaluar_licuefaccion`) para decir con que perfil se presume la
+        # condicion de suelo de AASHTO 10.5.4.2, y la corrida de perfil
+        # difiere ese modulo entero (MODULOS_DIFERIDOS_POR_ALCANCE).
         nivel=NIVEL_EXPEDIENTE,
         etiqueta="S",
         forma=FORMA_STR,
@@ -1110,8 +1108,10 @@ CRITERIOS: Dict[str, Criterio] = {
                      "ensayo que la cierre. Ambito: todo el corredor mientras "
                      "sea presuncion; con SPT pasa a ser dato por calicata y "
                      "entonces le corresponde una columna del CSV, no esta "
-                     "entrada. NO LO INVOCA NINGUN MODULO DE src/modulos/ -- "
-                     "y la clase de sitio de AASHTO tampoco entra en el "
+                     "entrada. DESDE VE-5 LO LEE LA FASE 0-bis "
+                     "(ML_licuefaccion), que presume con el la condicion de "
+                     "suelo de AASHTO 10.5.4.2 mientras el EMS no la "
+                     "descarte -- y la clase de sitio de AASHTO no entra en el "
                      "calculo: el criterio 'clase_sitio' es hoy un [S] SIN "
                      "VALOR y lo que la cadena sismica consume es el factor "
                      "'F_pga' --, pero LLAMARLO "
@@ -1140,18 +1140,6 @@ CRITERIOS: Dict[str, Criterio] = {
                                "decidir si es unico para el tramo o varia por "
                                "calicata; si varia, no se corrige el valor: se "
                                "convierte en columna del CSV",
-        sin_consumidor="Ningun modulo de calculo lo invoca: la clasificacion "
-                       "sismica que gobierna la cadena es la de AASHTO, y la "
-                       "evaluacion de licuefaccion que usaria este perfil "
-                       "esta declarada fuera del alcance del script "
-                       "(Sec. 0.5). NO INVOCARLO NO ES IGNORARLO: la "
-                       "prohibicion condicionada que trae la fila S5 es una "
-                       "obligacion del EXPEDIENTE, no un numero del calculo, "
-                       "y por eso viaja a la memoria como nota normativa "
-                       "(M9.condicion_normativa_cabezal) en vez de como "
-                       "criterio invocado. Se conserva declarado, y no "
-                       "borrado, para que el ensayo que lo cerraria siga "
-                       "pedido",
         resolucion=DeEnsayo(
             ensayo="clasificacion del perfil de suelo de E.030 (S0-S5) "
                    "sobre la caracterizacion geotecnica del corredor",
@@ -1333,25 +1321,13 @@ CRITERIOS: Dict[str, Criterio] = {
                         "ensayo responde a la pregunta de licuefaccion "
                         "(criterio 'PERFIL_SUELO_PRESUNTO') y se detiene a "
                         "mitad de la columna que esta clase necesita",
-        sin_consumidor="NINGUN MODULO DE PRODUCCION LO INVOCA, Y ES "
-                       "DELIBERADO: el vacio se DECLARA, no se interpone. La "
-                       "cadena sismica no consume la clase de sitio, consume "
-                       "el FACTOR, y el factor esta declarado por 'F_pga' con "
-                       "su fundamento propio y su rango. Invocar este "
-                       "criterio desde `M9.cadena_sismica()` detendria el "
-                       "dimensionamiento entero del cabezal -- todo valor "
-                       "None invocado lanza CriterioPendienteError -- sin que "
-                       "ninguna norma lo exija, y contra el hecho de que el "
-                       "proyecto PUEDE dimensionar hoy bajo la eleccion de "
-                       "filas declarada. La memoria no lo pierde por no "
-                       "invocarlo: entra por `criterios_sin_valor()`, que es "
-                       "la puerta que le corresponde a un vacio declarado, y "
-                       "la nota normativa completa -- por que el expediente "
-                       "decia Clase F y por que deja de decirlo -- viaja a "
-                       "las dos plantillas por "
-                       "`M9.condicion_normativa_cabezal()`. Eso es lo que "
-                       "cierra SIS-B-01: el defecto era el valor, no la falta "
-                       "de cableado",
+        # NO SE INTERPONE, Y DESDE VE-5 (lote catlic) TIENE CONSUMIDOR: la
+        # Fase 0-bis (`ML.contrastar_clase_sitio`) lo lee con
+        # `valor_si_declarado`, de modo que sin valor la cadena sismica sigue
+        # con 'F_pga' y nada se detiene (el vacio se DECLARA, SIS-B-01); con
+        # la clase medida, la contrasta con las filas de 'F_pga': la fila F
+        # es metodo no evaluable (Art. 3.10.2), una clase fuera de las filas
+        # es dato invalido sobre 'F_pga', y dentro de varias, un aviso.
         resolucion=DeEnsayo(
             ensayo="medicion de la rigidez de los 30.48 m superiores (Vs30, "
                    "N o su) segun AASHTO Art. 3.10.3.1",
@@ -4449,7 +4425,10 @@ CRITERIOS: Dict[str, Criterio] = {
         valor={"profundidad_m": 0.40,       # m, Tabla Nº 34, muy lluviosa
                "ancho_m": 1.20,             # m, Tabla Nº 34, muy lluviosa
                "talud_exterior_HV": 1.0,    # H:V, eleccion [A] (justificacion)
-               "borde_libre_m": 0.0},       # m, la «cuneta llena» del Manual
+               "borde_libre_m": 0.0,        # m, la «cuneta llena» del Manual
+               # VE-5 (catlic, T9-01): 0 = triangular; > 0 = la trapezoidal
+               # de la Tabla Nº 34 para mas de 3000 mm/año (nota «*»).
+               "ancho_fondo_m": 0.0},       # m
         # DE PERFIL: lo consume M10, y la Fase 10 corre a perfil (no esta en
         # MODULOS_DIFERIDOS_POR_ALCANCE). Lo MIDE `tests/test_t9_espaciamiento.py`
         # con una corrida de perfil que calcula la capacidad.
@@ -4483,13 +4462,20 @@ CRITERIOS: Dict[str, Criterio] = {
         sensibilidad={"profundidad_m": (0.40, 0.60),     # m
                       "ancho_m": (1.20, 2.40),           # m
                       "talud_exterior_HV": (0.10, 2.0),  # H:V
-                      "borde_libre_m": (0.0, 0.10)},     # m
-        concepto="Seccion TRIANGULAR de la cuneta del tramo que descarga en la "
+                      "borde_libre_m": (0.0, 0.10),      # m
+                      # 0 = triangular; 1.20 = el ancho minimo de la fila
+                      # (el fondo no puede llegar al ancho). Un fondo entre
+                      # 0 y 0.30 lo rechaza M10: la nota «*» de la Tabla Nº
+                      # 34 pide 0.30 como minimo (VE-5, T9-01).
+                      "ancho_fondo_m": (0.0, 1.20)},     # m
+        concepto="Seccion de la cuneta del tramo que descarga en la "
                  "alcantarilla de alivio: profundidad d y ancho a (Figura Nº "
                  "27 del num. 4.1.2.1: el ancho se mide del borde de la "
                  "rasante a la vertical del vertice, a = Z1·d), talud "
-                 "exterior (H:V) y borde libre bajo el que se calcula la "
-                 "capacidad",
+                 "exterior (H:V), borde libre bajo el que se calcula la "
+                 "capacidad y ancho de fondo: 0 es la TRIANGULAR; mayor que "
+                 "0, la TRAPEZOIDAL de la Tabla Nº 34 para mas de 3000 "
+                 "mm/año (fondo minimo 0.30 m, VE-5)",
         justificacion="Decide la seccion con que la Fase 10 calcula la "
                       "capacidad de la cuneta (VB2) y, con ella, la longitud "
                       "a la que se agota (L_hidraulico) cuando no se declara. "
@@ -4547,7 +4533,9 @@ CRITERIOS: Dict[str, Criterio] = {
                         "por region pluvial y el talud exterior es el del "
                         "corte",
             dominio="profundidad_m > 0, ancho_m > 0, talud_exterior_HV > 0, "
-                    "0 <= borde_libre_m < profundidad_m",
+                    "0 <= borde_libre_m < profundidad_m, ancho_fondo_m = 0 "
+                    "(triangular) o 0.30 <= ancho_fondo_m < ancho_m "
+                    "(trapezoidal, Tabla Nº 34 nota «*»)",
         ),
     ),
 
@@ -5590,6 +5578,9 @@ CRITERIOS: Dict[str, Criterio] = {
 
     "Mw_licuefaccion": Criterio(
         valor=None,                 # VACIO: bloquea la evaluacion de licuefaccion
+        # NIVEL POR CONSUMIDOR (VE-5, lote catlic): lo lee la Fase 0-bis
+        # (`ML._contrastar_declarada`) cuando el EMS declara su resultado de
+        # licuefaccion; la corrida de perfil difiere ese modulo entero.
         nivel=NIVEL_EXPEDIENTE,
         # SIGUE [A] (VE-3, ficha VE2-05, decision del dueño), aunque se
         # resuelva `DeEnsayo` como los dos parametros del suelo que pasaron
@@ -5605,12 +5596,6 @@ CRITERIOS: Dict[str, Criterio] = {
         fuente="PENDIENTE: desagregacion del peligro sismico o adopcion justificada "
                "del sismo de diseno de la subduccion del norte peruano",
         reemplazado_por="Estudio de peligro sismico especifico",
-        sin_consumidor="La evaluacion de licuefaccion esta declarada FUERA "
-                       "del alcance del script (Sec. 0.5): el script no "
-                       "calcula el factor de seguridad a licuefaccion, de "
-                       "modo que nada invoca el MSF ni su Mw. Se declara "
-                       "vacio para que el expediente lo programe, no porque "
-                       "falte cablearlo",
         resolucion=DeEnsayo(
             ensayo="desagregacion del peligro sismico del sitio, o adopcion "
                    "justificada del sismo de diseño de la subduccion del "
@@ -5624,12 +5609,10 @@ CRITERIOS: Dict[str, Criterio] = {
 
     "demanda_sismica_licuefaccion": Criterio(
         valor=1000,                 # anios
-        # NIVEL DECLARADO Y NO MEDIDO: no lo consume NINGUN modulo (ver
-        # `sin_consumidor`, aqui abajo), asi que no hay corrida que lo pueda
-        # invocar ni medicion que citar. Se clasifica con los otros criterios
-        # de la Fase 0-bis de licuefaccion --- 'clase_sitio' y
-        # 'Mw_licuefaccion', que ya la declaran de expediente ---: el
-        # procedimiento entero pertenece al expediente tecnico.
+        # NIVEL MEDIDO (VE-5, lote catlic): lo invoca la Fase 0-bis
+        # (`ML.evaluar_licuefaccion`) en la corrida `--alcance expediente` y
+        # no en la de perfil, que difiere ese modulo entero. Hasta VE-5 no lo
+        # consumia ningun modulo.
         nivel=NIVEL_EXPEDIENTE,
         etiqueta="A",
         forma=FORMA_INT,
@@ -5641,19 +5624,6 @@ CRITERIOS: Dict[str, Criterio] = {
                       "disenada a 1000 es incoherencia de niveles de seguridad",
         fuente="Coherencia con el marco del Manual de Puentes",
         sensibilidad=(475, 1000),
-        sin_consumidor="Igual que 'Mw_licuefaccion': la evaluacion de "
-                       "licuefaccion esta fuera del alcance del script "
-                       "(Sec. 0.5) y nada la invoca. Es uno de los dos "
-                       "criterios CON valor y sin invocacion -- el otro es "
-                       "'PERFIL_SUELO_PRESUNTO', en esta misma tabla -- y por "
-                       "eso no caia en ninguno de los "
-                       "bloques de la memoria: ni usado, ni vacio, ni "
-                       "opcional. Desaparecia del HTML. La adopcion "
-                       "(Tr = 1000 anios, §0.6 de la hoja de ruta, "
-                       "descartando el sismo de 475 anios de E.030) tiene que "
-                       "estar en la memoria aunque este calculo no corra: es "
-                       "la que fija la demanda que el estudio geotecnico del "
-                       "expediente debe exigirle al suelo",
         resolucion=Libre(
             que_lo_fija="el proyectista, por coherencia de niveles de "
                         "seguridad con el marco del Manual de Puentes",

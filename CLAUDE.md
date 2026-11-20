@@ -83,7 +83,8 @@ nombre de `--proyecto`; comparar dos rótulos por texto se probó y se refutó,
 ficha EXT-10-03—; (4) la ventana normativa sigue sin declarar
 [S] (regla R4: el camino es la sesión, no un campo de formulario). Y todo
 `DatoSitio` lleva `nivel`, como los criterios: medido por corridas, la de
-perfil no lee ningún [S] y la de expediente sólo `PGA_roca_B`
+perfil sólo lee `region_natural` (desde VE-5-catlic, la rama de selva alta
+del TMC) y la de expediente además `PGA_roca_B`
 (`tests/test_ext10_multiobra.py`).
 
 Tabla y elección se separan siempre: los valores de una tabla normativa son
@@ -434,9 +435,17 @@ consecuencias que conviene leer antes de tocar el campo:
   con esas palabras, apoyados en `variables_entrada.consumido_por`.
 - **El límite se conoce por MUTACIÓN, no por lectura.** Cambiando el nivel de
   cinco de los trece murieron cuatro tests y sobrevivió uno:
+<<<<<<< HEAD
   `demanda_sismica_licuefaccion`, que no tiene consumidor. De los **seis** sin
   consumidor —seis desde VE-5-m9, que le dio consumidor a
   `capacidad_portante_adm` (`M9.suelo_de_fundacion`); contados de nuevo por las correcciones de T-11 (H11), porque
+=======
+  `demanda_sismica_licuefaccion`, que entonces no tenía consumidor (desde
+  VE-5-catlic lo tiene: la Fase 0-bis, `ML_licuefaccion`, que consume también
+  `Mw_licuefaccion`, `PERFIL_SUELO_PRESUNTO` y `clase_sitio`). De los **tres** sin
+  consumidor (siete hasta VE-5-catlic)
+  —contados de nuevo por las correcciones de T-11 (H11), porque
+>>>>>>> claude/ve5-catlic
   esta frase decía «ocho» desde T-7b, que le dio consumidor real a
   `c_phi_fundacion` (el ensamble de estabilidad de M9)— (ocho hasta T-7b;
   nueve hasta T-7a, que le dio consumidor real a `angulo_aletas`

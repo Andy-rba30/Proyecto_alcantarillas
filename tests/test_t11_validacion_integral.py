@@ -648,7 +648,7 @@ def test_el_censo_del_paragrafo_6_dice_que_criterio_no_tiene_consumidor():
     """
     from tests.test_nivel_medido import SIN_CONSUMIDOR_Y_SIN_MEDIDA
     assert set(V._sin_consumidor()) == set(SIN_CONSUMIDOR_Y_SIN_MEDIDA)
-    assert len(SIN_CONSUMIDOR_Y_SIN_MEDIDA) == 7
+    assert len(SIN_CONSUMIDOR_Y_SIN_MEDIDA) == 3    # 7 hasta VE-5 (catlic)
     texto = V.DOCUMENTO.read_text(encoding="utf-8")
     seccion_6 = texto[texto.index("## 6. Criterios sin valor de archivo"):]
     no_censados = {l.split("|")[1].strip().strip("`")

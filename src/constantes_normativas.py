@@ -4463,8 +4463,9 @@ CONSTANTES_DE_REFERENCIA = (
                                  # 'diametros_normalizados' (D_INICIO). Ver
                                  # DIAMETRO_MIN_AMBITO: su numeral lo
                                  # condiciona y exceptua a los cruces de canal
-    "DIAMETRO_MIN_TMC_SELVA_ALTA_RECOMENDADO",   # recomendacion, solo TMC y
-                                 # solo selva alta: no aplica en costa
+    # 'DIAMETRO_MIN_TMC_SELVA_ALTA_RECOMENDADO' SALIO DE ESTA LISTA EN VE-5
+    # (catlic, ficha T4-06): la lee `M2.piso_de_selva_alta` con el [S]
+    # 'region_natural'. En la costa la rama no actua; existe.
     "LONG_MAX_CUNETA",           # Fase 10 recibe L_hidraulico declarado
     "CBR_MIN_SUBRASANTE",        # requisito del paquete estructural vial
     "COMPACTACION_CORONA",       # requisitos de ejecucion (EG-2013), sin
@@ -5463,6 +5464,12 @@ _T34 = _reg.tabla("MC_HHD.T34")
 CUNETA_DIMENSIONES_MINIMAS_T34 = {
     _T34.clave_corta(_f): (_f.valores["profundidad_m"], _f.valores["ancho_m"])
     for _f in _T34.filas}                                     # m
+# --- VE-5 (catlic, ficha T9-01) --- la fila «Muy lluviosa (>3000 mm/año)»
+# lleva la llamada «*», cuya nota al pie (pag. impresa 178, PDF 181) dice:
+# «* Sección Trapezoidal con un ancho mínimo de fondo de 0.30». La fuente no
+# escribe la unidad; la tabla entera esta en metros (encabezados «(M)»).
+CUNETA_FILA_TRAPEZOIDAL_T34 = "muy_lluviosa_mas_de_3000"
+CUNETA_FONDO_MIN_TRAPEZOIDAL_T34 = 0.30                       # m
 
 # --- num. 4.1.2 c), pag. impresa 172, PDF 175 ------------------------------
 # «La pendiente longitudinal (i) debe estar comprendida entre la condición de
@@ -6553,3 +6560,24 @@ EXCENTRICIDAD_MIN_MURO_CONCRETO_SIMPLE_E060 = 0.10
 # que CEDE con una pantalla mas baja. Se convierte con el factor exacto.
 ALTURA_VOLADIZO_ACTIVO_PIE = 5.0
 ALTURA_VOLADIZO_ACTIVO_M = ALTURA_VOLADIZO_ACTIVO_PIE * PIE_EN_METROS
+
+
+# ---- VE-5 (lote catlic) · Fase 0-bis: cuando AASHTO EXIGE evaluar la ---------
+# ---- licuefaccion (10.5.4.2) y las cuatro zonas sismicas de 3.10.6 -----------
+# AASHTO LRFD 9a ed., 10.5.4.2, pag. impresa 10-34 (PDF 1323; cita
+# AASHTO_LRFD_9.10.5.4.2): «A liquefaction assessment shall be conducted for
+# Seismic Zones 3 and 4 if both of the following conditions are present:
+# Ground Water Level—The groundwater level anticipated at the site is within
+# 50.0 ft of the existing ground surface or the final ground surface,
+# whichever is lower» (y la condicion de suelo, que solo el EMS puede leer).
+# Y el mismo numeral: «the potential for liquefaction in Seismic Zone 2
+# should also be considered» cuando hay arenas sueltas saturadas.
+# AASHTO 3.10.6, pag. impresa 3-108 (PDF 162): «Each bridge shall be
+# assigned to one of the four seismic zones in accordance with Table
+# 3.10.6-1».
+ZONAS_SISMICAS_AASHTO = (1, 2, 3, 4)
+ZONAS_SISMICAS_EXIGEN_LICUEFACCION = (3, 4)
+ZONA_SISMICA_LICUEFACCION_A_CONSIDERAR = 2
+# 50.0 ft convertidos con el factor exacto; el imperial no entra al calculo.
+PROF_NF_LICUEFACCION_PIE = 50.0
+PROF_NF_LICUEFACCION_SI = PROF_NF_LICUEFACCION_PIE * PIE_EN_METROS   # m

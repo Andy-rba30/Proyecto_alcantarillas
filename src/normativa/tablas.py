@@ -5897,11 +5897,10 @@ T34 = _tabla(
                     etiqueta_literal="Muy lluviosa (>3000 mm/año)",
                     valores={"profundidad_m": 0.30, "ancho_m": 1.20},
                     llamadas_a_nota=("*",),
-                    uso=NoUsada(por_que_no=(
-                        "seccion TRAPEZOIDAL (nota *): la Fase 10 calcula la "
-                        "seccion triangular que el num. 4.1.2.1 prefiere; la "
-                        "trapezoidal no esta implementada (ficha T9 de "
-                        "docs/decisiones_diferidas.md)"))),
+                    # VE-5 (catlic, T9-01): minimo de la seccion TRAPEZOIDAL
+                    # (nota *), contra el que M10 contrasta una cuneta
+                    # declarada con fondo.
+                    uso=Usada(por=("M10.capacidad_cuneta",))),
     ),
     notas_al_pie=(
         NotaAlPie(marca="*", texto=Verbatim(

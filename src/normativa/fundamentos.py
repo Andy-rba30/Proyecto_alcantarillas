@@ -97,6 +97,43 @@ F10 = "Fase 10 - Alcantarillas de alivio: espaciamiento"
 # --- T-7a --- la Fase 9 deja de ser solo una nota de proyecto: el cabezal
 # por punto emite pasos, y sus fundamentos viven aqui con los demas.
 F9 = "Fase 9 - Cabezal y aletas"
+# --- VE-5 (lote catlic) --- la Fase 0-bis de la hoja de ruta: licuefaccion.
+F0_BIS = "Fase 0-bis - Licuefaccion"
+
+
+# ===========================================================================
+# Fase 0-bis - Licuefaccion (VE-5, lote catlic)
+# ===========================================================================
+# Verbo OBLIGA: las dos citas son EXIGENCIA («shall be conducted», «el PR
+# debe incluir en su EMS»). Lo que el programa hace no es la evaluacion
+# --la calculadora CSR/CRR esta fuera del alcance (decision del dueño)--
+# sino exigir su RESULTADO, declarado por el EMS, donde la fuente la exige.
+LICUEFACCION = _fundamento(
+    id="F0.LICUEFACCION",
+    fase=F0_BIS,
+    que_paso=("Evaluacion de licuefaccion del punto: donde AASHTO 10.5.4.2 la "
+              "exige, el resultado declarado del EMS y, si licua, su medida "
+              "de mitigacion"),
+    por_que=(
+        "Un suelo granular saturado puede perder momentaneamente su "
+        "resistencia al corte durante el sismo, y con ello asentar la obra y "
+        "desplazar lateralmente el terraplen. AASHTO exige evaluarlo en las "
+        "zonas sismicas 3 y 4 cuando el nivel freatico esta en los 50 ft "
+        "superiores y el suelo tiene las caracteristicas de su numeral, y "
+        "E.050 pone ese analisis en el EMS, a cargo de su profesional "
+        "responsable. El programa no calcula el potencial: exige el resultado "
+        "declarado del EMS donde la norma exige la evaluacion, contrasta que "
+        "use la demanda sismica y la magnitud que el proyecto adopta, y no "
+        "cierra el expediente con un suelo que licua sin medida de "
+        "mitigacion."),
+    verbo=Verbo.OBLIGA,
+    citas=("AASHTO_LRFD_9.10.5.4.2",       # EXIGENCIA -> sostiene OBLIGA
+           "E050.38.3"),                   # EXIGENCIA
+    que_pasa_si_no_se_hace=(
+        "El expediente se cerraria sobre la llanura licuable del Bajo Piura "
+        "sin que nadie hubiera dicho si el suelo licua, que es el "
+        "condicionante mayor del proyecto (Fase 0-bis de la hoja de ruta)."),
+)
 
 
 # ===========================================================================
@@ -205,6 +242,30 @@ D_MIN = _fundamento(
         "caudal, que en los puntos de poco Q de este corredor es bastante "
         "menor de 0.90 m, y el expediente quedaria con conductos "
         "inmantenibles."),
+)
+
+
+# --- VE-5 (lote catlic, ficha T4-06) --- la rama de selva alta. Verbo
+# RECOMIENDA porque la cita lo es («Se recomienda utilizar...»): la memoria
+# no puede decir que la norma obliga a un TMC de 48" en selva alta.
+SELVA_ALTA_TMC = _fundamento(
+    id="F3.SELVA_ALTA_TMC",
+    fase=F3,
+    que_paso="Diametro minimo del TMC en zonas de selva alta (Ф 48\")",
+    por_que=(
+        "En los cauces tipicos de la selva alta --encajonados, de pendiente "
+        "media a fuerte, con taludes granulares erosionables-- el flujo es de "
+        "barros, con caudal solido por lo menos dos veces el liquido, y un "
+        "conducto pequeño se obstruye. Por eso el Manual recomienda, en esas "
+        "zonas, alcantarillas TMC de por lo menos 48 pulgadas. Es una "
+        "recomendacion y no una exigencia; la hoja de ruta manda programar la "
+        "rama y el proyecto la aplica como piso del catalogo del TMC."),
+    verbo=Verbo.RECOMIENDA,
+    citas=("MC_HHD.4.1.1.3.7a",),
+    que_pasa_si_no_se_hace=(
+        "En un corredor de selva alta el catalogo ofreceria un TMC de 0.90 m "
+        "en cauces de flujo de barros, contra la recomendacion expresa del "
+        "Manual, y la memoria no diria que la recomendacion existe."),
 )
 
 

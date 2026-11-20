@@ -365,7 +365,10 @@ def test_el_consumidor_sale_del_codigo_y_no_de_los_comentarios():
     # (`M9.embocadura_del_punto`): el censo lo recogio solo, igual que
     # `TW_receptor`. Quedan los otros dos.
     assert ve.variable("angulo_aletas").consumido_por == ("M9_cabezal",)
-    for clave in ("capacidad_portante_adm", "clase_sitio"):
+    # 'clase_sitio' salio en VE-5 (catlic): la lee la Fase 0-bis
+    # (`ML.contrastar_clase_sitio`) cuando el EMS la declara.
+    assert ve.variable("clase_sitio").consumido_por == ("ML_licuefaccion",)
+    for clave in ("capacidad_portante_adm",):
         assert ve.variable(clave).consumido_por == (), clave
         assert clave in ve.variables_sin_consumidor()
     # `ke_entrada` LLEVA DOS DESDE S21 Y NO ES UNA REGRESION: es el segundo
