@@ -125,6 +125,13 @@ FICHA_DEL_METODO: Tuple[Tuple[str, str, str], ...] = (
      "procedimiento general de cortante de AASHTO 5.7.3.4.2"),
     ("ALCANCE DEL REQUISITO DE LA SEC. 2.3", "VC1-01",
      "la alteracion de la rasante hidraulica del canal (Familia C)"),
+    # --- VE-5 met --- un rubro de la Fase 11 que no se mide (el acero sin
+    # armado del cabezal, el enrocado de varios barriles, la zanja de varios
+    # tubos): lo que falta lo nombra el propio bloqueo; la ficha es la de
+    # los metrados.
+    ("(metrados, Fase 11)", "VE5-MET-01",
+     "lo que el bloqueo del rubro de la Fase 11 nombra (el armado del "
+     "cabezal, o una geometria que el EG-2013 no mide)"),
 )
 
 
