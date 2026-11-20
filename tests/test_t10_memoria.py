@@ -442,6 +442,8 @@ def test_cada_alcance_declarado_nombra_una_ficha_que_existe():
     assert {a.clave for a in ALCANCE_DECLARADO} == {
         "armado_seccion_marco", "cabezal_paralelo_a_la_via",
         "iteracion_ancho_zapata_cabezal",
+        # VE-7: lo que sigue fuera de los aleros como muro (ficha VE7-01).
+        "aleros_como_muro",
         # VE-5 (m8): 'flotacion_marco_sin_peso_propio' salio (V7 pesa el marco).
         "tirante_de_borde_hec14", "escalon_regla_salida_hw_1_2_d"}
     for a in ALCANCE_DECLARADO:

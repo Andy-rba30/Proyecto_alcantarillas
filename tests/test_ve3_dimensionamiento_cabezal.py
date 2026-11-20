@@ -155,7 +155,10 @@ def test_es_el_menor_ancho_de_la_grilla_que_cumple(dimensionado,
 
 def test_la_memoria_explica_el_dimensionamiento(dimensionado):
     cab = _punto(dimensionado).cabezal
-    pasos = [p for p in cab.pasos if p.fundamento_id == "F9.DIMENSIONADO"]
+    # --- VE-7 --- el de la zapata de los aleros va con su propio codigo
+    # (`.alero`), por la misma regla (tests/test_ve7_alero_estabilidad.py).
+    pasos = [p for p in cab.pasos if p.fundamento_id == "F9.DIMENSIONADO"
+             and not p.codigo.endswith(M9.SUFIJO_ALERO)]
     assert {p.codigo for p in pasos} == {"9.3.d.e", "9.3.d.s"}
     for p in pasos:
         assert p.por_que
@@ -228,12 +231,12 @@ def test_el_armado_usa_la_geometria_final(monkeypatch):
     vistos = {}
     original = servicio._fase_9_armado
 
-    def espia(informe, entornos):
+    def espia(informe, entornos, *resto):    # VE-7: y los aleros verificados
         if informe.punto.id == "A-01":
             vistos.update({e.extremo: e.geometria.B for e in entornos})
             vistos["final"] = {g.extremo: g.B
                                for g in informe.cabezal.geometrias}
-        return original(informe, entornos)
+        return original(informe, entornos, *resto)
 
     monkeypatch.setattr(servicio, "_fase_9_armado", espia)
     _correr()

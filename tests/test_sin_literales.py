@@ -1092,6 +1092,9 @@ CENSO_DE_MARCAS = {
     # --- T-9 --- los exponentes de Manning (ecuacion (117)) y el 3/2 de las
     # ecuaciones (4.2) y (4.5) del num. 4.1.2.1 a).
     "src/modulos/M10_espaciamiento.py": 2,
+    # --- VE-7 (dictamen Fable, abierto (c)) --- la media de h² con h lineal
+    # a lo largo del alero de gravedad (el 3 de (h1² + h1·h2 + h2²)/3).
+    "src/modulos/M12_metrados.py": 1,
     "src/normativa/extraccion/__main__.py": 5,
     "src/normativa/extraccion/pdf.py": 6,
     "src/normativa/manifiesto.py": 3,

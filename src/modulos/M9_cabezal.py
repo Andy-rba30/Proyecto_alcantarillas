@@ -329,6 +329,7 @@ from src.modelos import (CIFRAS_FACTOR, CadenaSismica, CasoDemandaSismica,
                      PresionContactoBase, RecubrimientoDiseno,
                      RequisitosDurabilidad,
                      ReferenciaNormativa, Verificacion)
+from src.tolerancias import FRACCIONES_DE_ESTABILIDAD_DEL_ALERO  # VE-7
 from src.tolerancias import (TOL_ANGULO_CUNA, TOL_UMBRAL_NORMATIVO,
                              TRAMOS_CUNA_DE_TANTEO)
 
@@ -4136,7 +4137,12 @@ DIMENSIONES_DECLARABLES = (
     "espesor_zapata_m", "ancho_punta_m", "longitud_aleros_m",
     "altura_final_aleros_m", "espesor_aleros_m", "longitud_losa_m",
     "espesor_losa_m", "profundidad_dentellon_m",
+    # --- VE-7 (dictamen Fable, abierto (d)) --- la zapata PROPIA de los
+    # aleros: gana y no se itera (sin ella parte de la del cabezal).
+    "ancho_zapata_aleros_m", "espesor_zapata_aleros_m",
 )
+CAMPO_ANCHO_ZAPATA_ALEROS = "ancho_zapata_aleros_m"
+CAMPO_ESPESOR_ZAPATA_ALEROS = "espesor_zapata_aleros_m"
 CAMPO_TIPO_DECLARADO = "tipo"
 # --- T-7a, integracion (decision del dueño del 2026-11-13) --- El angulo del
 # alero LARGO (el que forma alfa + theta con la bajada del talud), en grados
@@ -4818,12 +4824,20 @@ def predimensionar_aleros(*, embocadura: EmbocaduraDelPunto,
             "se alarga")
     e_decl = "espesor_aleros_m" in declaradas
     e = declaradas["espesor_aleros_m"] if e_decl else espesor
+    # --- VE-7 (dictamen Fable, abierto (d)) --- la zapata propia de los
+    # aleros, declarada: gana sobre la del cabezal (que es solo el punto de
+    # partida de su dimensionamiento) y no se itera.
+    bz_decl = CAMPO_ANCHO_ZAPATA_ALEROS in declaradas
+    ez_decl = CAMPO_ESPESOR_ZAPATA_ALEROS in declaradas
     aleros = Aleros(angulo_grados=alfa, angulo_largo_grados=alfa_largo,
                     esviaje_grados=float(theta),
                     longitud_corto=L_corto, longitud_largo=L_largo,
                     altura_inicial=altura_inicial, altura_final=H_f,
-                    espesor=e, ancho_zapata=ancho_zapata,
-                    espesor_zapata=espesor_zapata)
+                    espesor=e,
+                    ancho_zapata=(declaradas[CAMPO_ANCHO_ZAPATA_ALEROS]
+                                  if bz_decl else ancho_zapata),
+                    espesor_zapata=(declaradas[CAMPO_ESPESOR_ZAPATA_ALEROS]
+                                    if ez_decl else espesor_zapata))
     de_L = frozenset(de_altura_inicial) | (
         frozenset({"altura_final_aleros_m"}) if h_f_decl else frozenset())
     sustitucion = (f"({altura_inicial:.3f} - {H_f:.3f})·{talud:g}")
@@ -4854,7 +4868,15 @@ def predimensionar_aleros(*, embocadura: EmbocaduraDelPunto,
         _dim("espesor de los aleros", e,
              "el de la pantalla del cabezal en la corona", CRITERIO_GEOMETRIA,
              e_decl, de=de_espesor),
-    )
+    ) + tuple(
+        _dim(nombre, valor, "dato externo del punto (`cabezal_declarado."
+             f"{campo}`)", CRITERIO_GEOMETRIA, True)
+        for nombre, valor, campo, declarado in (
+            ("ancho de la zapata de los aleros", aleros.ancho_zapata,
+             CAMPO_ANCHO_ZAPATA_ALEROS, bz_decl),
+            ("espesor de la zapata de los aleros", aleros.espesor_zapata,
+             CAMPO_ESPESOR_ZAPATA_ALEROS, ez_decl))
+        if declarado)
     return aleros, dims, nota
 
 
@@ -5222,6 +5244,25 @@ def predimensionar_cabezal(*, extremo: ExtremoDelConducto,
         reglas=reglas, declaradas=declaradas,
         de_altura_inicial=de["corona"], de_espesor=de["e_corona"],
         id_punto=id_punto)
+    if aleros is not None and CAMPO_ANCHO_ZAPATA_ALEROS in declaradas:
+        # --- VE-7 (abierto (d)) --- el ancho propio declarado tiene que
+        # alcanzar para el fuste del alero (y, en gravedad, para la punta y
+        # la base de su franja del arranque).
+        if tipo == TIPO_GRAVEDAD:
+            H0 = H_c - aleros.espesor_zapata
+            necesario = punta + aleros.espesor + (e_base - e_corona) * H0 / (
+                H_c - e_z)
+        else:
+            necesario = aleros.espesor
+        if aleros.ancho_zapata < necesario - TOL_UMBRAL_NORMATIVO:
+            raise DatoInvalidoError(
+                f"cabezal_declarado.{CAMPO_ANCHO_ZAPATA_ALEROS}",
+                valor=aleros.ancho_zapata, id_punto=id_punto,
+                motivo=f"la zapata de los aleros declarada "
+                       f"({aleros.ancho_zapata:.3f} m) no alcanza para el "
+                       f"fuste del alero ({necesario:.3f} m"
+                       + (" con la punta y la base de su franja"
+                          if tipo == TIPO_GRAVEDAD else "") + ")")
     if alero_por_armado is not None:
         # --- VE-6 (ficha VE6M9-03) --- el alero dimensionado por el armado
         # de SUS dos secciones (`_dimensionar_aleros`), no por el de la
@@ -5546,6 +5587,34 @@ def verificar_compatibilidad_cabezal(*, geometria: GeometriaCabezal,
         citas=((CITA_CICLOPEO_LIMITES,) if geometria.tipo == TIPO_GRAVEDAD
                else ("E060.7.7.1",)))
     v.append(Verificacion(**kv, paso=paso("F9.DIMENSIONES", **kp)))
+    # --- VE-7 (abierto (d)) --- CB6 de la zapata de los aleros, si su
+    # espesor se DECLARO: bajo el minimo de su tipo es NO CUMPLE, no error.
+    al = geometria.aleros
+    if al is not None and any(
+            d.nombre == "espesor de la zapata de los aleros"
+            and d.origen == ORIGEN_DIMENSION_DECLARADA
+            for d in geometria.dimensiones):
+        kp, kv = _verificacion_cb(
+            codigo="CB6", extremo=ext,
+            que=f"Espesor de la zapata de los aleros frente al minimo del "
+                f"cabezal de {geometria.tipo}",
+            formula="espesor de la zapata de los aleros >= minimo del tipo",
+            obtenido=al.espesor_zapata, admisible=minimo_ez,
+            mayor_o_igual=True,
+            sustitucion=(Magnitud("minimo", minimo_ez, "m", texto_minimo,
+                                  cifras=CIFRAS_MAGNITUD),),
+            resultado=Magnitud("espesor_zapata_aleros", al.espesor_zapata,
+                               "m", "declarado (`cabezal_declarado."
+                               f"{CAMPO_ESPESOR_ZAPATA_ALEROS}`)",
+                               cifras=CIFRAS_MAGNITUD),
+            descripcion_umbral=texto_minimo, cita=cita_minimo,
+            aplicacion=("el mismo minimo de la zapata del cabezal, por ser "
+                        "de su mismo tipo"),
+            criterio=(CRITERIO_GEOMETRIA if geometria.tipo == TIPO_GRAVEDAD
+                      else CRITERIO_PERALTE_ZAPATA_ARMADA))
+        codigo_al = f"CB6.{ext[0]}.alero"
+        kp["codigo"] = kv["codigo"] = codigo_al
+        v.append(Verificacion(**kv, paso=paso("F9.DIMENSIONES", **kp)))
     # CB7: la base del dentellon contra el terreno y contra la hoya
     if geometria.losa is not None:
         lo = geometria.losa
@@ -6383,7 +6452,8 @@ from src.constantes_normativas import (  # noqa: E402
     NUMERAL_PHI_ESTABILIDAD_GLOBAL, PHI_ESTABILIDAD_GLOBAL_11_6_3_7)
 from src.modelos import (  # noqa: E402
     CARGA_DC, CARGA_EH, CARGA_EQ, CARGA_EV, CARGA_LS, CARGA_WA,
-    ELEMENTO_ALEROS, ELEMENTO_PANTALLA, ELEMENTO_ZAPATA, MARCO_ASD,
+    ELEMENTO_ALEROS, ELEMENTO_PANTALLA, ELEMENTO_ZAPATA,
+    ELEMENTO_ZAPATA_ALEROS, MURO_ALERO, MURO_CABEZAL, MARCO_ASD,
     MARCO_ENVOLVENTE, MARCO_LRFD, MARCO_RIGE_ASD, MARCO_RIGE_LRFD,
     MOTIVO_METODO_NO_EVALUABLE_CABEZAL, REGLAS_DE_MARCO, CargaDeCabezal,
     CombinacionDeEstabilidad, CriterioPendienteError, DatoFaltanteError,
@@ -8250,8 +8320,16 @@ def _q_nominal(entorno: EntornoDelCabezal, datos: dict, suelo: dict,
                         "longitud de la zapata del cabezal (L de la Tabla "
                         "10.6.3.1.2a-3), que la geometria no trae")
     profundidad = forma == FORMA_Y_PROFUNDIDAD
+    # --- VE-7 (abierto (b)) --- una L infinita es la lectura de ZAPATA
+    # CORRIDA de la franja del alero (`estabilidad_del_alero` la contrasta
+    # con la del alero corto): s = 1, y d_q si se declaro.
+    corrida_del_alero = longitud is not None and math.isinf(longitud)
+    if corrida_del_alero:
+        longitud = None
     texto_forma = ("zapata corrida, s = d_q = 1" if forma == FORMA_CORRIDA
-                   else f"factores de forma con L = {longitud:.3f} m"
+                   else ("zapata corrida (L infinita), s = 1"
+                         if corrida_del_alero
+                         else f"factores de forma con L = {longitud:.3f} m")
                    + (" y d_q (ec. 10.6.3.1.2a-10)" if profundidad else ""))
     if terreno == TERRENO_TALUD:
         # --- VE-5 (ficha T7B-04) --- la RC_BC de AASHTO 10.6.3.1.2c sobre
@@ -9774,30 +9852,36 @@ def _paso_y_aviso_de_las_diferidas(entorno: EntornoDelCabezal,
     """
     codigos = [c for c, _ in pendientes]
     dos = len(codigos) == len(CODIGOS_GLOBALES)
+    # --- VE-7 (dictamen Fable, decision 4) --- con aleros, lo diferido es
+    # del cabezal Y de sus aleros (sus franjas tampoco tienen E4 ni E5).
+    de_quien = ("del cabezal y de sus aleros"
+                if entorno.geometria.aleros is not None else "del cabezal")
     if dos:
-        que = (f"E4 y E5, estabilidad global y del talud: cabezal de "
-               f"{entorno.extremo}")
+        que = (f"E4 y E5, estabilidad global y del talud {de_quien}: "
+               f"cabezal de {entorno.extremo}")
         estado = "diferidas al expediente con el EMS"
         nota = ("No son un cumplimiento: el cabezal queda verificado en E1 "
                 "a E3 y PENDIENTE en estas dos, que necesitan la "
                 "estratigrafia completa y un analisis de superficies de "
                 "falla.")
         aviso = (f"Cabezal de {entorno.extremo} de {entorno.id_punto}: E4 y "
-                 "E5 (estabilidad global del muro y del talud) NO se "
+                 "E5 (estabilidad global del muro y del talud) "
+                 f"{de_quien} NO se "
                  "evaluan; quedan diferidas al expediente con el estudio de "
                  "suelos (AASHTO LRFD 11.6.3.7; E.050 39.13.6 b y Art. 30.3)")
     else:
         codigo = codigos[0]
         otro = next(c for c in CODIGOS_GLOBALES if c != codigo)
-        que = (f"{codigo}, {NOMBRE_DE_LA_GLOBAL[codigo]}: cabezal de "
-               f"{entorno.extremo}")
+        que = (f"{codigo}, {NOMBRE_DE_LA_GLOBAL[codigo]} {de_quien}: "
+               f"cabezal de {entorno.extremo}")
         estado = "diferida al expediente con el EMS"
         nota = (f"No es un cumplimiento: el cabezal queda verificado en E1 "
                 f"a E3 y con el FS declarado en {otro}, y PENDIENTE en esta, "
                 "que necesita la estratigrafia completa y un analisis de "
                 "superficies de falla.")
         aviso = (f"Cabezal de {entorno.extremo} de {entorno.id_punto}: "
-                 f"{codigo} ({NOMBRE_DE_LA_GLOBAL[codigo]}) NO se evalua; "
+                 f"{codigo} ({NOMBRE_DE_LA_GLOBAL[codigo]}) {de_quien} NO "
+                 "se evalua; "
                  "queda diferida al expediente con el estudio de suelos "
                  f"({NUMERAL_DE_LA_GLOBAL[codigo]}); {otro} se contrasta "
                  "con el FS declarado del analisis externo")
@@ -9813,7 +9897,9 @@ def _paso_y_aviso_de_las_diferidas(entorno: EntornoDelCabezal,
 
 
 def ensamble_estabilidad(entorno: EntornoDelCabezal,
-                         condicion: CondicionAnalisis
+                         condicion: CondicionAnalisis, *,
+                         muro: str = MURO_CABEZAL,
+                         fraccion_alero: float = 0
                          ) -> EstabilidadDelCabezal:
     """
     La estabilidad externa de UN cabezal en UNA condicion (INF-4.4, INF-4.5,
@@ -9838,10 +9924,20 @@ def ensamble_estabilidad(entorno: EntornoDelCabezal,
     que el punto declare su factor de seguridad del analisis externo
     (`entorno.estabilidad_global`, VE-4a): entonces se contrastan en los dos
     marcos y van en `globales` (`_filas_globales_declaradas`).
+
+    --- VE-7 (ficha VE7-01) --- Con `muro` = `MURO_ALERO` el `entorno` es la
+    franja del arranque de los aleros (`estabilidad_del_alero`): las mismas
+    filas, combinaciones, criterios y citas, con codigos `.alero` y rotulos
+    del alero; no repite el paso de E4 y E5 diferidas ni los avisos del
+    sitio, que ya dice el cabezal.
     """
     if condicion not in CONDICIONES_DE_ESTABILIDAD:
         raise DatoInvalidoError("condicion", valor=condicion,
                                 motivo="estatico o sismico")
+    if muro not in (MURO_CABEZAL, MURO_ALERO):
+        raise DatoInvalidoError("muro", valor=muro,
+                                motivo="el cabezal o la franja de su alero")
+    es_alero = muro == MURO_ALERO
     g = entorno.geometria
     regla = _regla_de_marco()
     # --- VE-5 (ficha T7B-14) --- el muro que NO cede ya no se detiene aqui:
@@ -9850,7 +9946,8 @@ def ensamble_estabilidad(entorno: EntornoDelCabezal,
                                              id_punto=entorno.id_punto)
     cargas, datos = cargas_del_cabezal(entorno, condicion)
     combos = combinaciones_de_estabilidad(cargas, datos, condicion, g.B)
-    sufijo = f"{ABREVIATURA_DE_CONDICION[condicion]}.{entorno.extremo[0]}"
+    sufijo = (f"{ABREVIATURA_DE_CONDICION[condicion]}.{entorno.extremo[0]}"
+              + (sufijo_de_la_franja(fraccion_alero) if es_alero else ""))
     verificaciones = (
         _verificaciones_lrfd(entorno, datos, suelo, combos, condicion,
                              _decide(MARCO_LRFD, regla), sufijo)
@@ -9868,7 +9965,7 @@ def ensamble_estabilidad(entorno: EntornoDelCabezal,
     pendientes = tuple(p for p in PENDIENTES_E4_E5 if p[0] not in declarada)
     globales, por_criterio = _filas_globales_declaradas(
         entorno, condicion, regla, sufijo)
-    if condicion is CondicionAnalisis.ESTATICO:
+    if condicion is CondicionAnalisis.ESTATICO and not es_alero:
         if pendientes:
             paso_global, aviso_global = _paso_y_aviso_de_las_diferidas(
                 entorno, origen_suelo, pendientes)
@@ -9902,17 +9999,25 @@ def ensamble_estabilidad(entorno: EntornoDelCabezal,
                 "marco LRFD supone al menos 6.0 in (0.15 m) de material "
                 "granular compactado bajo la zapata (AASHTO 10.6.3.4), que "
                 "tiene que estar en los planos")
-    avisos.extend(avisos_de_la_sobrecarga_del_punto(entorno))
+    if not es_alero:
+        avisos.extend(avisos_de_la_sobrecarga_del_punto(entorno))
     # --- VE-5 fixve4 --- lo declarado que su criterio sin valor no deja
     # decidir VUELVE a `pendientes`, con el motivo, y viaja aparte para que
     # el servicio lo lleve como `Bloqueo` (CriterioPendienteError).
+    # --- VE-7 (dictamen Fable, decision 4) --- el FS declarado de E4/E5 es
+    # del cabezal: cubre los aleros solo si el analisis externo los incluyo.
+    if globales and not es_alero and g.aleros is not None:
+        avisos.append(
+            f"Cabezal de {entorno.extremo} de {entorno.id_punto}: el FS "
+            "declarado de E4/E5 cubre los aleros solo si el analisis externo "
+            "incluyo su seccion; el programa no lo comprueba")
     for codigo, clave, motivo in por_criterio:
         pendientes += ((codigo, motivo),)
         avisos.append(
             f"Cabezal de {entorno.extremo} de {entorno.id_punto}: {codigo} "
             f"({NOMBRE_DE_LA_GLOBAL[codigo]}), condicion {condicion.value}, "
             f"queda PENDIENTE de '{clave}' [A]: {motivo}")
-    return EstabilidadDelCabezal(
+    estabilidad = EstabilidadDelCabezal(
         id_punto=entorno.id_punto, extremo=entorno.extremo,
         condicion=condicion, regla_de_marco=regla, cargas=cargas,
         combinaciones=combos, verificaciones=tuple(verificaciones),
@@ -9930,6 +10035,8 @@ def ensamble_estabilidad(entorno: EntornoDelCabezal,
         regimen=datos["regimen"], K0=datos["K0"], globales=globales,
         pendientes_por_criterio=tuple((codigo, clave)
                                       for codigo, clave, _ in por_criterio))
+    return (_rotular_como_alero(estabilidad, fraccion_alero) if es_alero
+            else estabilidad)
 
 
 def _sin_parar(calculo):
@@ -11409,7 +11516,7 @@ from src.modelos import (  # noqa: E402
     MINIMOS_MAS_EXIGENTE, MOTIVO_METODO_NO_EVALUABLE_ARMADO,
     REGIMEN_RESISTENCIA_CEDENTE, REGIMEN_RESISTENCIA_K0,
     REGIMENES_DE_RESISTENCIA, REGLAS_DE_MINIMOS, SECCION_ALERO,
-    SECCION_ALERO_MITAD,
+    SECCION_ALERO_MITAD, SECCION_TALON_ALERO,
     SECCION_PANTALLA, SECCION_PUNTA, SECCION_TALON, SolicitacionDeArmado,
     TRACCION_NULA)
 
@@ -13606,7 +13713,10 @@ def diseno_flexion_corte(*, momento: Optional[float] = None,
 # El armado de UN cabezal: elemento por elemento, y su tabla
 # ---------------------------------------------------------------------------
 
-ELEMENTOS_ARMADOS = (ELEMENTO_PANTALLA, ELEMENTO_ZAPATA, ELEMENTO_ALEROS)
+# --- VE-7 (ficha VE7-01) --- y la zapata de los aleros (su talon, sobre la
+# franja del arranque), con el procedimiento de la zapata del cabezal.
+ELEMENTOS_ARMADOS = (ELEMENTO_PANTALLA, ELEMENTO_ZAPATA, ELEMENTO_ALEROS,
+                     ELEMENTO_ZAPATA_ALEROS)
 
 
 def _altura_y_longitud(entorno: EntornoDelCabezal) -> Tuple[float, float]:
@@ -13627,6 +13737,31 @@ def _altura_y_longitud(entorno: EntornoDelCabezal) -> Tuple[float, float]:
 FRACCION_MITAD_ALERO = 1 / 2
 
 
+def altura_del_fuste_del_alero(g: GeometriaCabezal, fraccion: float
+                               ) -> float:
+    """
+    --- VE-7 --- La altura del fuste de la franja del alero a la `fraccion`
+    de su longitud, sobre la zapata del alero: H_c - e_z,alero - Δ, con Δ =
+    (h0 - H_f)·fraccion. Puede ser <= 0 (la franja no tiene fuste).
+    """
+    al = g.aleros
+    bajada = max(al.altura_inicial - al.altura_final, 0.0) * fraccion
+    return g.altura_total - al.espesor_zapata - bajada
+
+
+def espesor_de_la_base_del_alero_de_gravedad(g: GeometriaCabezal,
+                                             H_franja: float) -> float:
+    """
+    --- VE-7 (abierto (c)) --- El espesor en la base del fuste del alero de
+    un cabezal de GRAVEDAD de altura `H_franja`: el del alero en la corona
+    mas el ensanche del cabezal por metro de altura,
+
+        e_base = e_alero + (e_base,cab - e_corona,cab)·H_franja / H_cab
+    """
+    return (g.aleros.espesor + (g.espesor_base_muro - g.espesor_corona)
+            * H_franja / g.H)
+
+
 def entorno_de_la_seccion_del_alero(entorno: EntornoDelCabezal,
                                     fraccion: float) -> EntornoDelCabezal:
     """
@@ -13638,8 +13773,9 @@ def entorno_de_la_seccion_del_alero(entorno: EntornoDelCabezal,
       H       H_c - e_zapata del alero - Δ, sobre la zapata del alero
       fuste   el espesor del alero, uniforme
       zapata  la del alero (ancho y espesor de `Aleros`), TODA como talon:
-              la franja no tiene punta que armar aqui (la zapata del alero
-              queda fuera, ficha T7C-04) y el plano virtual queda en su
+              la franja no tiene punta (desde VE-7 su talon se arma y la
+              franja del arranque se verifica como muro, ficha VE7-01) y
+              el plano virtual queda en su
               extremo -- del lado de mas empuje con el plano virtual; con la
               cuña sobre la cara del fuste, la de archivo, no cambia nada --
       relleno la corona y el relleno retenido Δ mas abajo; el borde de la
@@ -13663,26 +13799,716 @@ def entorno_de_la_seccion_del_alero(entorno: EntornoDelCabezal,
             motivo="la seccion del alero va de su arranque (0) a su punta "
                    "(1)")
     bajada = max(al.altura_inicial - al.altura_final, 0.0) * fraccion
-    H = g.altura_total - al.espesor_zapata - bajada
-    talon = al.ancho_zapata - al.espesor
+    H = altura_del_fuste_del_alero(g, fraccion)
     if not H > 0:
         raise DatoInvalidoError(
             "aleros", valor=H, id_punto=entorno.id_punto,
             motivo=f"la franja del alero a {fraccion:g}·L no deja fuste "
                    "sobre su zapata")
+    # --- VE-7 (dictamen Fable, abierto (c)) --- con el cabezal de GRAVEDAD
+    # la franja es la seccion del cabezal cortada a su altura: corona del
+    # espesor del alero, la base con el mismo ensanche por metro de altura
+    # que el cabezal, y la punta del cabezal; el talon es lo que queda.
+    if g.tipo == TIPO_GRAVEDAD:
+        e_base = espesor_de_la_base_del_alero_de_gravedad(g, H)
+        punta = g.ancho_punta
+    else:
+        e_base, punta = al.espesor, 0.0
+    talon = al.ancho_zapata - punta - e_base
     if not talon >= 0:
         raise DatoInvalidoError(
-            "aleros", valor=al.espesor, id_punto=entorno.id_punto,
-            motivo=f"el alero ({al.espesor:.3f} m) es mas grueso que su "
-                   f"zapata ({al.ancho_zapata:.3f} m)")
+            "aleros", valor=al.ancho_zapata, id_punto=entorno.id_punto,
+            motivo=f"la zapata del alero ({al.ancho_zapata:.3f} m) no "
+                   f"alcanza para su punta ({punta:.3f} m) y su fuste "
+                   f"({e_base:.3f} m)")
+    # --- VE-7 (dictamen Fable, abierto (b)) --- la longitud de la franja
+    # es la del alero CORTO, no la del cabezal: es la L de la Tabla
+    # 10.6.3.1.2a-3 que la estabilidad del alero lee
+    # (`estabilidad_del_alero` contrasta ademas la zapata corrida).
+    longitud = (al.longitud_corto if al.longitud_corto > TOL_UMBRAL_NORMATIVO
+                else None)
     seccion = _reemplazar(
         g, H=H, B=al.ancho_zapata, espesor_zapata=al.espesor_zapata,
-        espesor_corona=al.espesor, espesor_base_muro=al.espesor,
-        ancho_punta=0.0, ancho_talon=talon,
+        espesor_corona=al.espesor, espesor_base_muro=e_base,
+        ancho_punta=punta, ancho_talon=talon, longitud=longitud,
         cota_coronacion=g.cota_coronacion - bajada, aleros=None, losa=None,
         dimensiones=())
     return _reemplazar(entorno, geometria=seccion,
                        cota_relleno=entorno.cota_relleno - bajada)
+
+
+# ===========================================================================
+# --- VE-7 (ficha VE7-01, cierre de T7C-04; dictamen Fable del 2026-11-20)
+# --- EL ALERO COMO MURO
+# ===========================================================================
+# Hasta VE-7 el alero se ARMABA por sus secciones (VE-6) y no se VERIFICABA
+# como muro. Desde VE-7 cada alero se verifica como muro con su propia
+# zapata, con el ENSAMBLE DEL CABEZAL (`ensamble_estabilidad`, `muro` =
+# `MURO_ALERO`): las mismas filas E1 a E3, combinaciones, criterios y citas
+# (AASHTO LRFD 11.6.3.2, 11.6.3.3 y 11.6.3.6; bajo sismo, 11.6.5, con el
+# regimen cedente/no cedente vigente).
+#
+# EN VARIAS FRANJAS, NO SOLO EN EL ARRANQUE (dictamen Fable, abierto (a)):
+# el alero baja con el talud de h0 a H_f, pero el borde de la plataforma no
+# baja, de modo que detras de cada franja hacia la punta el relleno SUBE
+# mas y la pendiente equivalente -- y con ella K_A (3.11.5.8.1, C3.11.5.8.1-1)
+# -- crece: la franja del arranque no rige siempre. Se verifican las franjas
+# de `FRACCIONES_DE_ESTABILIDAD_DEL_ALERO` (0, L/4, L/2, 3L/4, L), cada una
+# con la geometria de `entorno_de_la_seccion_del_alero`; una franja sin
+# fuste no se verifica y el paso lo declara. Las franjas de los dos aleros
+# (corto y largo) a la misma fraccion son la misma seccion.
+#
+# Si alguna no cumple, la zapata de los aleros (un ancho por cabezal) crece
+# por el TALON con la regla y el tope de la del cabezal
+# ('dimensionamiento_zapata_cabezal' [A], tope el de la franja del
+# arranque) hasta que cumplan todas; al tope, NO FACTIBLE con estos
+# criterios. Su peralte crece por el armado de su talon, armado en cada
+# franja con el procedimiento de la zapata del cabezal. Con el cabezal de
+# GRAVEDAD la franja es la seccion del cabezal cortada a su altura, y el
+# cuerpo se verifica como ciclopeo (`verificacion_ciclopea_del_alero`).
+# Una dimension PROPIA declarada (`ancho_zapata_aleros_m`,
+# `espesor_zapata_aleros_m`) gana y no se itera; la del cabezal es solo el
+# punto de partida.
+
+SUFIJO_ALERO = ".alero"
+# La franja del arranque (fraccion 0 de la longitud del alero).
+FRACCION_ARRANQUE_ALERO = 0
+DIMENSION_ZAPATA_ALEROS = "ancho de la zapata de los aleros"
+DIMENSION_PERALTE_ZAPATA_ALEROS = "espesor de la zapata de los aleros"
+# Las filas de la verificacion ciclopea del CABEZAL que no se repiten en el
+# alero: el material (es el mismo concreto) y el aviso del vano.
+FILAS_CICLOPEAS_SOLO_DEL_CABEZAL = ("C4", "C5")
+
+
+def sufijo_de_la_franja(fraccion: float) -> str:
+    """
+    El sufijo de los codigos de la franja del alero a la `fraccion` de su
+    longitud: `.alero` en el arranque (los codigos de antes de las
+    franjas), `.alero.25`, `.alero.50`, `.alero.75`, `.alero.100` despues.
+    """
+    if fraccion <= TOL_UMBRAL_NORMATIVO:
+        return SUFIJO_ALERO
+    return f"{SUFIJO_ALERO}.{format(fraccion, '.0%').rstrip('%')}"
+
+
+def alero_verificable_como_muro(entorno: EntornoDelCabezal) -> bool:
+    """--- VE-7 --- Si el cabezal tiene aleros (de voladizo o de gravedad)."""
+    return entorno.geometria.aleros is not None
+
+
+def fracciones_del_alero(entorno: EntornoDelCabezal
+                         ) -> Tuple[Tuple[float, ...], Tuple[float, ...]]:
+    """
+    (las fracciones de `FRACCIONES_DE_ESTABILIDAD_DEL_ALERO` cuya franja
+    tiene fuste, las que no): una franja sin fuste no es un muro que
+    verificar.
+    """
+    g = entorno.geometria
+    con, sin = [], []
+    for f in FRACCIONES_DE_ESTABILIDAD_DEL_ALERO:
+        (con if altura_del_fuste_del_alero(g, f) > TOL_UMBRAL_NORMATIVO
+         else sin).append(f)
+    return tuple(con), tuple(sin)
+
+
+def franja_del_alero(entorno: EntornoDelCabezal, fraccion: float
+                     ) -> EntornoDelCabezal:
+    """
+    --- VE-7 --- La franja del alero a la `fraccion` de su longitud como
+    muro: la seccion de `entorno_de_la_seccion_del_alero`, sin el FS
+    declarado de E4 y E5 del cabezal (es del cabezal, no del alero).
+    """
+    if not alero_verificable_como_muro(entorno):
+        raise DatoInvalidoError(
+            "aleros", valor=None, id_punto=entorno.id_punto,
+            motivo="el cabezal no tiene aleros que verificar como muro")
+    return _reemplazar(entorno_de_la_seccion_del_alero(entorno, fraccion),
+                       estabilidad_global=None)
+
+
+def franja_del_arranque_del_alero(entorno: EntornoDelCabezal
+                                  ) -> EntornoDelCabezal:
+    """--- VE-7 --- La franja del arranque (`franja_del_alero` en 0)."""
+    return franja_del_alero(entorno, FRACCION_ARRANQUE_ALERO)
+
+
+def _rotulo_de_la_franja(extremo: str, fraccion: float) -> str:
+    return (f"alero del cabezal de {extremo} (franja a {fraccion:g}·L, como "
+            "muro en voladizo)")
+
+
+def _rotular_como_alero(est: EstabilidadDelCabezal,
+                        fraccion: float = FRACCION_ARRANQUE_ALERO
+                        ) -> EstabilidadDelCabezal:
+    """
+    Los rotulos del ensamble de la franja del alero: «cabezal de X» pasa a
+    «alero del cabezal de X (franja a f·L, ...)» en los pasos, las filas y
+    los avisos. Las cifras no se tocan.
+    """
+    de = f"cabezal de {est.extremo}"
+    a = _rotulo_de_la_franja(est.extremo, fraccion)
+
+    def que(texto: str) -> str:
+        return texto.replace(de, a) if de in texto else f"{texto}: {a}"
+
+    def rotular_paso(p):
+        return None if p is None else _reemplazar(p, que=que(p.que))
+
+    def rotular_fila(v):
+        return _reemplazar(v, paso=rotular_paso(v.paso),
+                           numeral=(v.numeral.replace(de, a)
+                                    if isinstance(v.numeral, str)
+                                    else v.numeral))
+
+    prefijo = f"Cabezal de {est.extremo} de {est.id_punto}"
+    nuevo = (f"Alero del cabezal de {est.extremo} de {est.id_punto} (franja "
+             f"a {fraccion:g}·L, como muro en voladizo)")
+    return _reemplazar(
+        est, muro=MURO_ALERO, fraccion_alero=fraccion,
+        pasos=tuple(rotular_paso(p) for p in est.pasos),
+        verificaciones=tuple(rotular_fila(v) for v in est.verificaciones),
+        globales=tuple(rotular_fila(v) for v in est.globales),
+        avisos=tuple(x.replace(prefijo, nuevo, 1) for x in est.avisos))
+
+
+def _lecturas_de_la_forma(franja: EntornoDelCabezal
+                          ) -> Tuple[EntornoDelCabezal, ...]:
+    """
+    --- VE-7 (dictamen Fable, abierto (b)) --- Las lecturas de la zapata de
+    la franja para la capacidad portante (AASHTO 10.6.3.1.1 y la Tabla
+    10.6.3.1.2a-3): con la zapata corrida de archivo, una; con forma
+    declarada, la zapata corrida (L infinita, s = 1) y la de L = longitud
+    del alero corto, de las que rige la de menor resistencia.
+    """
+    forma = _eleccion(CRITERIO_FORMA_PROFUNDIDAD, OPCIONES_FORMA_PROFUNDIDAD)
+    g = franja.geometria
+    corrida = _reemplazar(franja, geometria=_reemplazar(g, longitud=math.inf))
+    if forma == FORMA_CORRIDA:
+        return (franja,)
+    if g.longitud is None:
+        return (corrida,)
+    return (franja, corrida)
+
+
+def _portante_de_menor_resistencia(lecturas: Sequence[EstabilidadDelCabezal]
+                                   ) -> EstabilidadDelCabezal:
+    """La primera lectura con, fila por fila de la capacidad portante (E1),
+    la de menor resistencia de todas; las demas filas no dependen de L."""
+    base = lecturas[0]
+    if len(lecturas) == 1:
+        return base
+    nuevas = []
+    for v in base.verificaciones:
+        if not (v.codigo or "").startswith("E1-"):
+            nuevas.append(v)
+            continue
+        otras = [w for e in lecturas for w in e.verificaciones
+                 if w.codigo == v.codigo]
+        rige = min(otras, key=lambda w: w.valor_admisible)
+        nota = ((rige.paso.nota_del_proyecto or "") + " Franja del alero: "
+                "rige la lectura de MENOR resistencia de la zapata corrida y "
+                "de la de L = longitud del alero corto (AASHTO 10.6.3.1.2a, "
+                "Tabla 10.6.3.1.2a-3); la L del cabezal no se usa.")
+        nuevas.append(_reemplazar(rige, paso=_reemplazar(
+            rige.paso, nota_del_proyecto=nota.strip())))
+    return _reemplazar(base, verificaciones=tuple(nuevas))
+
+
+def estabilidad_del_alero(entorno: EntornoDelCabezal,
+                          condicion: CondicionAnalisis,
+                          fraccion: float = FRACCION_ARRANQUE_ALERO
+                          ) -> EstabilidadDelCabezal:
+    """
+    --- VE-7 (ficha VE7-01) --- E1 a E3 de AASHTO LRFD 11.6 (11.6.3.2,
+    11.6.3.3, 11.6.3.6 y, bajo sismo, 11.6.5) de los aleros del cabezal del
+    `entorno`, en UNA condicion, sobre la franja a la `fraccion` de su
+    longitud (`franja_del_alero`), con el ensamble del cabezal y codigos
+    `<fila>.<condicion>.<extremo>` + `sufijo_de_la_franja`. Con forma
+    declarada en el portante, rige la menor de las dos lecturas de la
+    zapata (`_lecturas_de_la_forma`). Se detiene como el del cabezal
+    (`ErrorProyecto`) en lo que falte.
+    """
+    lecturas = [ensamble_estabilidad(f, condicion, muro=MURO_ALERO,
+                                     fraccion_alero=fraccion)
+                for f in _lecturas_de_la_forma(franja_del_alero(entorno,
+                                                                fraccion))]
+    return _portante_de_menor_resistencia(lecturas)
+
+
+def _estabilidad_evaluable_del_alero(entorno: EntornoDelCabezal
+                                     ) -> List[EstabilidadDelCabezal]:
+    """Todas las franjas con fuste y condiciones que se pueden evaluar; lo
+    demas lo bloquea el servicio al evaluar la geometria final (como
+    `_estabilidades_evaluables` del cabezal)."""
+    evaluadas = []
+    for fraccion in fracciones_del_alero(entorno)[0]:
+        for condicion in CONDICIONES_DE_ESTABILIDAD:
+            try:
+                evaluadas.append(estabilidad_del_alero(entorno, condicion,
+                                                       fraccion))
+            except ErrorProyecto:
+                continue
+    return evaluadas
+
+
+def entorno_con_zapata_de_alero(entorno: EntornoDelCabezal, **cambios
+                         ) -> EntornoDelCabezal:
+    g = entorno.geometria
+    return _reemplazar(entorno, geometria=_reemplazar(
+        g, aleros=_reemplazar(g.aleros, **cambios)))
+
+
+def paso_de_las_franjas_del_alero(entorno: EntornoDelCabezal
+                                  ) -> PasoDeMemoria:
+    """
+    --- VE-7 --- El paso que dice en que franjas se verifico el alero como
+    muro y cuales no tienen fuste (no se verifican: no es un bloqueo).
+    """
+    con, sin = fracciones_del_alero(entorno)
+    g = entorno.geometria
+    return paso(
+        "F9.DIMENSIONES", codigo=f"9.3.f.{entorno.extremo[0]}{SUFIJO_ALERO}",
+        que=(f"Franjas de los aleros del cabezal de {entorno.extremo} que se "
+             "verifican como muro"),
+        formula=("H(f) = H_c - e_z,alero - (h0 - H_f)·f, f en "
+                 + ", ".join(f"{f:g}" for f in
+                             FRACCIONES_DE_ESTABILIDAD_DEL_ALERO)
+                 + "; se verifica la franja con H(f) > 0"),
+        sustitucion=tuple(
+            Magnitud(f"H({f:g})", altura_del_fuste_del_alero(g, f), "m",
+                     "con fuste: se verifica" if f in con else
+                     "SIN fuste: no hay muro que verificar",
+                     cifras=CIFRAS_MAGNITUD)
+            for f in FRACCIONES_DE_ESTABILIDAD_DEL_ALERO),
+        resultado=Magnitud("franjas verificadas", len(con), "",
+                           ("todas" if not sin else
+                            "sin fuste: " + ", ".join(f"{f:g}·L"
+                                                      for f in sin))),
+        nota_del_proyecto=(
+            "Con el borde de la plataforma fijo, el relleno sube mas detras "
+            "de cada franja hacia la punta y la pendiente equivalente crece "
+            "(AASHTO 3.11.5.8.1, C3.11.5.8.1-1): la franja del arranque no "
+            "rige siempre, y se verifican todas. La discretizacion es "
+            "`FRACCIONES_DE_ESTABILIDAD_DEL_ALERO`."))
+
+
+@dataclass(frozen=True)
+class DimensionadoDeZapataDelAlero:
+    """
+    --- VE-7 --- Lo que `dimensionar_zapata_del_alero` entrega para UN
+    cabezal: el ancho adoptado de la zapata de los aleros (el primero de la
+    grilla con el que cumplen todas las franjas o, al tope, el mayor
+    probado), si cumple, si llego al tope, los intentos, el paso de memoria
+    y los avisos.
+    """
+
+    extremo: str
+    ancho_partida: float
+    ancho: float
+    cumple: bool
+    al_tope: bool
+    intentos: Tuple[IntentoDeZapata, ...]
+    paso: PasoDeMemoria
+    avisos: Tuple[str, ...] = ()
+
+
+def dimensionar_zapata_del_alero(entorno: EntornoDelCabezal, *,
+                                 declarado: bool = False
+                                 ) -> Optional[DimensionadoDeZapataDelAlero]:
+    """
+    --- VE-7 (ficha VE7-01) --- El ancho de la zapata de los aleros cuyas
+    franjas no cumplen E1 a E3 (todas las franjas con fuste y las
+    condiciones evaluables), con la MISMA regla que la del cabezal
+    (`dimensionar_zapata_por_estabilidad`, AASHTO LRFD 11.6.3.2, 11.6.3.3,
+    11.6.3.6 y 11.6.5):
+
+        B_k = B_0 + k·paso,  B_k <= B_max = fraccion_ancho_max·H_c
+
+    'dimensionamiento_zapata_cabezal' [A]; B_0 es el ancho que el alero
+    trae (el del cabezal, declarado o no, o el de la regla) y H_c la altura
+    total de la franja del arranque. Un ancho por cabezal; crece el TALON.
+    Al tope queda el mayor ancho probado, que no cumple, con su aviso: NO
+    FACTIBLE con estos criterios (no se propone otra cosa).
+
+    None si no hay nada que dimensionar (sin aleros, nada evaluable, todo
+    cumple) o si el ancho PROPIO de la zapata de los aleros se declaro
+    (`declarado`, `ancho_zapata_aleros_m`): gana y no se itera. Sin el
+    criterio, `CriterioPendienteError`.
+    """
+    if declarado or not alero_verificable_como_muro(entorno):
+        return None
+    evaluadas = _estabilidad_evaluable_del_alero(entorno)
+    if not evaluadas or all(e.cumple for e in evaluadas):
+        return None
+    paso_m, fraccion = _regla_de_dimensionamiento()
+    ext = entorno.extremo
+    franja = franja_del_arranque_del_alero(entorno).geometria
+    H_c = franja.H + franja.espesor_zapata
+    tope = fraccion * H_c
+    B0 = entorno.geometria.aleros.ancho_zapata
+    intentos = [_intento(ext, B0, evaluadas)]
+    k = 0
+    while True:
+        k += 1
+        B = B0 + k * paso_m
+        if B > tope + TOL_UMBRAL_NORMATIVO:
+            intentos[-1] = replace(intentos[-1], al_tope=True)
+            break
+        intento = _intento(ext, B, _estabilidad_evaluable_del_alero(
+            entorno_con_zapata_de_alero(entorno, ancho_zapata=B)))
+        intentos.append(intento)
+        if intento.cumple:
+            break
+    ultimo = intentos[-1]
+    cumple = ultimo.cumple
+    ancho = ultimo.B
+    p = paso(
+        "F9.DIMENSIONADO", codigo=f"9.3.d.{ext[0]}{SUFIJO_ALERO}",
+        que=(f"Ancho de la zapata de los aleros del cabezal de {ext}, "
+             "dimensionado por estabilidad (todas sus franjas, como muro)"),
+        formula=("B_k = B_0 + k·paso, k = 0, 1, 2, ...: el primer B_k con el "
+                 "que E1 a E3 del marco que decide cumplen en todas las "
+                 "franjas y las condiciones evaluadas, con B_k <= B_max = "
+                 "fraccion_ancho_max·H_c; crece el talon"),
+        sustitucion=(
+            Magnitud("B_0", B0, "m", "ancho de partida de la zapata de los "
+                     "aleros: el de la zapata del cabezal (se desplanta con "
+                     "el)"),
+            Magnitud("paso", paso_m, "m",
+                     f"criterio '{CRITERIO_DIMENSIONAMIENTO_ZAPATA}' [A], el "
+                     "mismo de la zapata del cabezal"),
+            Magnitud("B_max", tope, "m",
+                     f"{fraccion:g}·H_c, H_c = {H_c:.3f} m (la franja del "
+                     f"arranque), criterio "
+                     f"'{CRITERIO_DIMENSIONAMIENTO_ZAPATA}' [A]"),
+        ),
+        resultado=Magnitud(
+            "B", ancho, "m",
+            "dimensionada por estabilidad" if cumple else
+            "ZAPATA DE LOS ALEROS NO FACTIBLE con estos criterios: queda el "
+            "mayor ancho probado"),
+        nota_del_proyecto=(
+            "Crece el talon. Intentos: " + _texto_intentos(intentos)))
+    avisos = ()
+    if not cumple:
+        pendientes = (", ".join(ultimo.incumplidas)
+                      or "condiciones sin evaluar")
+        avisos = (
+            f"Aleros del cabezal de {ext} de {entorno.id_punto}: ZAPATA DE "
+            f"LOS ALEROS NO FACTIBLE con estos criterios: creciendo por el "
+            f"talon hasta el tope B_max = {tope:.3f} m ({fraccion:g}·H_c, "
+            f"criterio '{CRITERIO_DIMENSIONAMIENTO_ZAPATA}'), las franjas "
+            f"del alero no cumplen {pendientes}; queda B = {ancho:.3f} m",)
+    return DimensionadoDeZapataDelAlero(
+        extremo=ext, ancho_partida=B0, ancho=ancho, cumple=cumple,
+        al_tope=ultimo.al_tope, intentos=tuple(intentos), paso=p,
+        avisos=avisos)
+
+
+def incumplidas_del_armado_de_la_zapata_del_alero(
+        entorno: EntornoDelCabezal) -> Optional[Tuple[str, ...]]:
+    """
+    --- VE-7 --- Las filas A1 a A4 y A6 del talon de la zapata de los aleros
+    que no cumplen, en TODAS las franjas, o None si el armado no se puede
+    evaluar (crecer el peralte no lo arregla: el servicio registra el
+    `Bloqueo` al armar la geometria final). Vacia sin aleros o con el
+    cabezal de gravedad (no se arma).
+    """
+    g = entorno.geometria
+    if g.aleros is None or g.tipo == TIPO_GRAVEDAD:
+        return ()
+    try:
+        piezas = armar_elemento(entorno, ELEMENTO_ZAPATA_ALEROS)
+    except ErrorProyecto:
+        return None
+    return tuple(v.codigo for p in piezas for v in p.verificaciones
+                 if not v.cumple
+                 and (v.codigo or "").split(".")[0]
+                 in FILAS_DEL_ARMADO_DE_LA_ZAPATA)
+
+
+@dataclass(frozen=True)
+class DimensionadoDePeralteDelAlero:
+    """
+    --- VE-7 --- Lo que `dimensionar_peralte_del_alero` entrega para UN
+    cabezal: el peralte adoptado de la zapata de los aleros, si su armado
+    cumple, los intentos (texto), el paso de memoria y los avisos.
+    """
+
+    extremo: str
+    espesor_partida: float
+    espesor: float
+    cumple: bool
+    intentos: Tuple[str, ...]
+    paso: PasoDeMemoria
+    avisos: Tuple[str, ...] = ()
+
+
+def dimensionar_peralte_del_alero(entorno: EntornoDelCabezal, *,
+                                  declarado: bool = False
+                                  ) -> Optional[DimensionadoDePeralteDelAlero]:
+    """
+    --- VE-7 (ficha VE7-01) --- El peralte de la zapata de los aleros cuyo
+    talon no se puede armar en alguna franja (A1 a A4 y A6, AASHTO LRFD
+    5.6.3.2, 5.7.3.3, 5.6.3.3, 5.10.3.2 y 5.6.7), con la MISMA regla que el
+    de la zapata del cabezal (`dimensionar_peralte_por_armado`): e_k = e_0 +
+    k·paso ('dimensionamiento_zapata_cabezal' [A]), el primero con el que
+    el talon cumple en todas, con tope fisico (la franja del arranque tiene
+    que dejar fuste). La estabilidad de TODAS las franjas se re-verifica con
+    cada peralte: si una fila que cumplia deja de cumplir, se detiene en el
+    anterior y lo dice. e_0 es el que el alero trae (el del cabezal).
+
+    None si no hay nada que dimensionar (cumple, no se puede evaluar, sin
+    aleros, cabezal de gravedad) o si el peralte PROPIO se declaro
+    (`declarado`, `espesor_zapata_aleros_m`): gana y no se itera.
+    """
+    if declarado or not alero_verificable_como_muro(entorno):
+        return None
+    inc = incumplidas_del_armado_de_la_zapata_del_alero(entorno)
+    if not inc:
+        return None
+    paso_m, _fraccion = _regla_de_dimensionamiento()
+    ext = entorno.extremo
+    al = entorno.geometria.aleros
+    e0 = al.espesor_zapata
+    franja = franja_del_arranque_del_alero(entorno).geometria
+    tope = franja.H + franja.espesor_zapata
+    base = set(_intento(ext, al.ancho_zapata, _estabilidad_evaluable_del_alero(
+        entorno)).incumplidas)
+    trazas = [f"{e0:.3f} m: no cumplen " + ", ".join(inc)]
+    adoptado, cumple, detenido = e0, False, ""
+    k = 0
+    while True:
+        k += 1
+        e = e0 + k * paso_m
+        if not e < tope - TOL_UMBRAL_NORMATIVO:
+            detenido = (f"el peralte llego al tope fisico (la altura de la "
+                        f"franja del arranque, {tope:.3f} m)")
+            break
+        prueba = entorno_con_zapata_de_alero(entorno, espesor_zapata=e)
+        inc = incumplidas_del_armado_de_la_zapata_del_alero(prueba)
+        if inc is None:
+            trazas.append(f"{e:.3f} m: armado no evaluable")
+            detenido = "el armado del talon dejo de ser evaluable"
+            break
+        nuevas = sorted(set(_intento(
+            ext, al.ancho_zapata, _estabilidad_evaluable_del_alero(
+                prueba)).incumplidas) - base)
+        if nuevas:
+            trazas.append(f"{e:.3f} m: la estabilidad deja de cumplir ("
+                          + ", ".join(nuevas) + ")")
+            detenido = ("al engrosarla la estabilidad de las franjas deja de "
+                        "cumplir")
+            break
+        adoptado = e
+        if inc:
+            trazas.append(f"{e:.3f} m: no cumplen " + ", ".join(inc))
+            continue
+        trazas.append(f"{e:.3f} m: cumple")
+        cumple = True
+        break
+    p = paso(
+        "F9.DIMENSIONADO_PERALTE", codigo=f"9.3.e.{ext[0]}{SUFIJO_ALERO}",
+        que=(f"Peralte de la zapata de los aleros del cabezal de {ext}, "
+             "dimensionado por el armado de su talon en todas las franjas"),
+        formula=("e_k = e_0 + k·paso, k = 0, 1, 2, ...: el primer e_k con el "
+                 "que la flexion, el cortante sin estribos, el acero minimo, "
+                 "el espaciamiento y la fisuracion del talon cumplen en todas "
+                 "las franjas, con e_k menor que la altura de la franja del "
+                 "arranque; la estabilidad se re-verifica con cada peralte"),
+        sustitucion=(
+            Magnitud("e_0", e0, "m", "peralte de partida: el de la zapata "
+                     "del cabezal, que el alero hereda"),
+            Magnitud("paso", paso_m, "m",
+                     f"criterio '{CRITERIO_DIMENSIONAMIENTO_ZAPATA}' [A], el "
+                     "mismo de la zapata del cabezal"),
+            Magnitud("H_c", tope, "m", "altura total de la franja del "
+                     "arranque: tope fisico"),
+        ),
+        resultado=Magnitud(
+            "e_z", adoptado, "m",
+            "dimensionado por armado" if cumple else
+            "el mayor peralte probado: el armado del talon NO cumple"),
+        nota_del_proyecto=(
+            "Intentos: " + " -> ".join(trazas) + ". La altura sobre el "
+            "refuerzo inferior (A8, E.060 15.7) la hereda de la zapata del "
+            "cabezal: el peralte de los aleros parte del suyo y solo crece, "
+            "de modo que si A8 cumple en el cabezal cumple aqui."))
+    avisos = () if cumple else (
+        f"Aleros del cabezal de {ext} de {entorno.id_punto}: el "
+        f"dimensionamiento del peralte de su zapata se detuvo en "
+        f"{adoptado:.3f} m porque {detenido}: el talon no cumple su armado",)
+    return DimensionadoDePeralteDelAlero(
+        extremo=ext, espesor_partida=e0, espesor=adoptado, cumple=cumple,
+        intentos=tuple(trazas), paso=p, avisos=avisos)
+
+
+def verificacion_ciclopea_del_alero(entorno: EntornoDelCabezal,
+                                    fraccion: float = FRACCION_ARRANQUE_ALERO
+                                    ) -> ArmadoDelCabezal:
+    """
+    --- VE-7 (dictamen Fable, abierto (c)) --- El cuerpo del alero de un
+    cabezal de GRAVEDAD en la franja a la `fraccion` de su longitud, con la
+    verificacion ciclopea del cabezal (`verificar_cabezal_ciclopeo` sobre la
+    franja): C1 a C3 y C6 a C8, con codigos + `sufijo_de_la_franja`. C4 y C5
+    (el material, que es el del cabezal) y el aviso del vano no se repiten.
+    El cuerpo NO se itera: lo que no cumple sale NO CUMPLE.
+    """
+    g = entorno.geometria
+    if g.aleros is None or g.tipo != TIPO_GRAVEDAD:
+        raise DatoInvalidoError(
+            "aleros", valor=g.tipo, id_punto=entorno.id_punto,
+            motivo="la verificacion ciclopea del alero es la del cabezal de "
+                   "gravedad con aleros")
+    a = verificar_cabezal_ciclopeo(franja_del_alero(entorno, fraccion))
+    sufijo = sufijo_de_la_franja(fraccion)
+    de = f"cabezal de {entorno.extremo}"
+    rotulo = _rotulo_de_la_franja(entorno.extremo, fraccion)
+
+    def rotular(v):
+        codigo = f"{v.codigo}{sufijo}"
+        p = v.paso
+        if p is not None:
+            p = _reemplazar(p, codigo=codigo, que=(
+                p.que.replace(de, rotulo) if de in p.que
+                else f"{p.que}: {rotulo}"))
+        return _reemplazar(v, codigo=codigo, paso=p)
+
+    filas = tuple(rotular(v) for v in a.verificaciones
+                  if (v.codigo or "").split(".")[0]
+                  not in FILAS_CICLOPEAS_SOLO_DEL_CABEZAL)
+    prefijo = _aviso_cabezal(entorno)
+    nuevo = (f"Alero del cabezal de {entorno.extremo} de {entorno.id_punto} "
+             f"(franja a {fraccion:g}·L, cuerpo ciclopeo)")
+    return _reemplazar(
+        a, verificaciones=filas,
+        pasos=tuple(v.paso for v in filas if v.paso is not None),
+        avisos=tuple(x.replace(prefijo, nuevo, 1) for x in a.avisos
+                     if "vano del conducto" not in x))
+
+
+def con_zapata_del_alero(g: GeometriaCabezal, ancho: Optional[float] = None,
+                         *, espesor: Optional[float] = None,
+                         origen: str = ORIGEN_DIMENSION_ESTABILIDAD,
+                         regla: str = "") -> GeometriaCabezal:
+    """
+    --- VE-7 --- La geometria del cabezal con la zapata de los aleros de
+    `ancho` (dimensionada por estabilidad, con `origen`) y/o de `espesor`
+    (dimensionado por el armado de su talon), y sus dimensiones. Lo demas
+    no se mueve: el alero no entra en la estabilidad ni en el armado del
+    cabezal.
+    """
+    nuevas, cambios = [], {}
+    if ancho is not None:
+        cambios["ancho_zapata"] = ancho
+        nuevas.append(DimensionDeCabezal(
+            nombre=DIMENSION_ZAPATA_ALEROS, valor=ancho, unidad="m",
+            origen=origen,
+            regla=regla or ("el menor de la grilla B_0 + k·paso con el que "
+                            "todas las franjas de los aleros cumplen E1 a E3 "
+                            "como muro; crece el talon"),
+            criterio=CRITERIO_DIMENSIONAMIENTO_ZAPATA))
+    if espesor is not None:
+        cambios["espesor_zapata"] = espesor
+        nuevas.append(DimensionDeCabezal(
+            nombre=DIMENSION_PERALTE_ZAPATA_ALEROS, valor=espesor, unidad="m",
+            origen=ORIGEN_DIMENSION_ARMADO,
+            regla=("el menor de la grilla e_0 + k·paso con el que el armado "
+                   "del talon de la zapata de los aleros cumple en todas las "
+                   "franjas"),
+            criterio=CRITERIO_DIMENSIONAMIENTO_ZAPATA))
+    nombres = {d.nombre for d in nuevas}
+    dims = tuple(d for d in g.dimensiones if d.nombre not in nombres) \
+        + tuple(nuevas)
+    return _reemplazar(g, aleros=_reemplazar(g.aleros, **cambios),
+                       dimensiones=dims)
+
+
+def integrar_estabilidad_de_aleros(
+        cabezal: CabezalDelPunto,
+        estabilidades: Sequence[EstabilidadDelCabezal],
+        dimensionados: Sequence[DimensionadoDeZapataDelAlero] = (),
+        peraltes: Sequence[DimensionadoDePeralteDelAlero] = (),
+        ciclopeos: Sequence[ArmadoDelCabezal] = (),
+        pasos_de_franjas: Sequence[PasoDeMemoria] = (),
+        avisos: Sequence[str] = ()) -> CabezalDelPunto:
+    """
+    --- VE-7 --- El cabezal con la verificacion de sus aleros como muro:
+    las filas E1 a E3 (y C1 a C8 del alero de gravedad) se suman a las del
+    cabezal (la via por la que el informe las cuenta), los pasos (franjas,
+    dimensionados, estabilidad, cuerpo) y los avisos a los suyos, la zapata
+    de los aleros dimensionada en su geometria y los objetos enteros en
+    `estabilidad_aleros`. Un cabezal cuyos aleros no se evaluaron en alguna
+    franja y condicion se avisa, como el cabezal.
+    """
+    from src.modelos import ORIGEN_DIMENSION_ESTABILIDAD_INCOMPLETA
+    estabilidades = tuple(estabilidades)
+    lista = list(cabezal.avisos)
+    lista.extend(a for a in avisos if a not in lista)
+    geometrias = {g.extremo: g for g in cabezal.geometrias}
+    esperadas = {
+        g.extremo: len(fracciones_del_alero(_EntornoMinimo(g))[0])
+        * len(CONDICIONES_DE_ESTABILIDAD)
+        for g in cabezal.geometrias if g.aleros is not None}
+    for d in dimensionados:
+        lista.extend(a for a in d.avisos if a not in lista)
+        if abs(d.ancho - d.ancho_partida) <= TOL_UMBRAL_NORMATIVO:
+            continue
+        evaluadas = [e for e in estabilidades if e.extremo == d.extremo]
+        incompleta = len(evaluadas) < esperadas.get(d.extremo, 0)
+        geometrias[d.extremo] = con_zapata_del_alero(
+            geometrias[d.extremo], d.ancho,
+            origen=(ORIGEN_DIMENSION_ESTABILIDAD_INCOMPLETA if incompleta
+                    else ORIGEN_DIMENSION_ESTABILIDAD),
+            regla=("" if not incompleta else
+                   "el menor de la grilla B_0 + k·paso con el que las franjas "
+                   "evaluadas de los aleros cumplen E1 a E3; SIN las franjas "
+                   "o condiciones que no se pudieron evaluar (ver sus "
+                   "bloqueos)"))
+    for d in peraltes:
+        lista.extend(a for a in d.avisos if a not in lista)
+        if abs(d.espesor - d.espesor_partida) > TOL_UMBRAL_NORMATIVO:
+            geometrias[d.extremo] = con_zapata_del_alero(
+                geometrias[d.extremo], espesor=d.espesor)
+    for e in estabilidades:
+        lista.extend(a for a in e.avisos if a not in lista)
+    for c in ciclopeos:
+        lista.extend(a for a in c.avisos if a not in lista)
+    for extremo, n in esperadas.items():
+        evaluadas = [e for e in estabilidades if e.extremo == extremo]
+        if evaluadas and len(evaluadas) < n:
+            lista.append(
+                f"Aleros del cabezal de {extremo} de {cabezal.id_punto}: su "
+                f"estabilidad como muro se evaluo SOLO en {len(evaluadas)} de "
+                f"{n} franjas y condiciones (ver «Etapas bloqueadas»)")
+    return _reemplazar(
+        cabezal, entrada=geometrias["entrada"], salida=geometrias["salida"],
+        verificaciones=cabezal.verificaciones + tuple(
+            v for e in estabilidades for v in e.verificaciones + e.globales)
+        + tuple(v for c in ciclopeos for v in c.verificaciones),
+        pasos=(cabezal.pasos + tuple(pasos_de_franjas)
+               + tuple(d.paso for d in dimensionados)
+               + tuple(d.paso for d in peraltes)
+               + tuple(p for e in estabilidades for p in e.pasos)
+               + tuple(p for c in ciclopeos for p in c.pasos)),
+        avisos=tuple(lista), estabilidad_aleros=estabilidades,
+        intentos_de_zapata_aleros=tuple(i for d in dimensionados
+                                        for i in d.intentos))
+
+
+@dataclass(frozen=True)
+class _EntornoMinimo:
+    """Lo unico que `fracciones_del_alero` lee de un entorno: su geometria."""
+
+    geometria: GeometriaCabezal
+
+
+def clave_del_talon_del_alero(fraccion: float) -> str:
+    """--- VE-7 --- La clave de la seccion del talon de la zapata de los
+    aleros en la franja a la `fraccion` de su longitud: `talon_alero` en el
+    arranque, `talon_alero_25` ... `talon_alero_100` despues."""
+    sufijo = sufijo_de_la_franja(fraccion)[len(SUFIJO_ALERO):]
+    return SECCION_TALON_ALERO + sufijo.replace(".", "_")
 
 
 def armar_elemento(entorno: EntornoDelCabezal, elemento: str,
@@ -13701,8 +14527,11 @@ def armar_elemento(entorno: EntornoDelCabezal, elemento: str,
                 a L/2) y la mitad de su longitud (tramo de L/2 a L), cada
                 una con las solicitaciones del fuste de su franja
                 (`entorno_de_la_seccion_del_alero`), con el espesor del
-                alero. Sin caida (h0 = H_f), solo el arranque. Su zapata NO
-                se arma (ficha T7C-04).
+                alero. Sin caida (h0 = H_f), solo el arranque.
+      zapata de los aleros
+                (VE-7, ficha VE7-01) su talon en la cara del alero, con las
+                solicitaciones de la franja del arranque y el procedimiento
+                de la zapata del cabezal.
 
     El servicio la llama una vez por elemento para que lo que un elemento
     no pueda evaluar quede como `Bloqueo` del punto y los otros dos sigan.
@@ -13755,6 +14584,47 @@ def armar_elemento(entorno: EntornoDelCabezal, elemento: str,
                 cara=cara, es_zapata=True, vuelo=vuelo, ancho_seccion=g.B,
                 contraste_e060=sol["e060"].get(clave),
                 momento_servicio=servicio.get(clave), **comun))
+    elif elemento == ELEMENTO_ZAPATA_ALEROS:
+        # --- VE-7 (ficha VE7-01) --- el TALON de la zapata de los aleros,
+        # en la cara del alero, en CADA franja que se verifica como muro
+        # (dictamen Fable, abierto (a)), con sus solicitaciones y el
+        # procedimiento de la zapata del cabezal: presion de contacto
+        # lineal, el metodo del talon de 'momento_talon_cabezal' y las
+        # mismas filas. La franja no tiene punta. La tabla adopta la de
+        # mayor acero (`ensamblar_armado`).
+        # Una franja cuyas solicitaciones no se pueden evaluar (su
+        # estabilidad lleva el mismo `Bloqueo`) no detiene las demas; si no
+        # se puede evaluar ninguna, se detiene con el primer motivo.
+        if g.aleros is None:
+            return ()
+        fallida = None
+        for fraccion in fracciones_del_alero(entorno)[0]:
+            franja = franja_del_alero(entorno, fraccion)
+            try:
+                sol_f = solicitaciones_de_resistencia(franja)
+            except ErrorProyecto:
+                fallida = fraccion if fallida is None else fallida
+                continue
+            vuelo = sol_f["datos"]["talon"]
+            if not (vuelo > TOL_UMBRAL_NORMATIVO
+                    and sol_f["secciones"][SECCION_TALON]):
+                continue
+            piezas.append(diseno_flexion_corte(
+                solicitaciones=sol_f["secciones"][SECCION_TALON],
+                espesor=g.aleros.espesor_zapata,
+                elemento=ELEMENTO_ZAPATA_ALEROS,
+                clave=clave_del_talon_del_alero(fraccion),
+                seccion=(f"talon de la zapata de los aleros del {lugar}, en "
+                         f"la cara del alero (franja a {fraccion:g}·L)"),
+                cara="superior (bajo el relleno), armadura transversal",
+                es_zapata=True, vuelo=vuelo, ancho_seccion=franja.geometria.B,
+                contraste_e060=sol_f["e060"].get(SECCION_TALON),
+                momento_servicio=sol_f.get("servicio", {}).get(SECCION_TALON),
+                **comun))
+        if not piezas and fallida is not None:
+            # ninguna franja evaluable: la primera que fallo se detiene
+            # otra vez, con su propio motivo
+            solicitaciones_de_resistencia(franja_del_alero(entorno, fallida))
     else:
         if g.aleros is None:
             return ()
@@ -13967,7 +14837,8 @@ def _fila_de_durabilidad_no_aplica(entorno: EntornoDelCabezal, *, fc: float,
 
 def ensamblar_armado(entorno: EntornoDelCabezal,
                      piezas: Sequence[ArmadoDeSeccion],
-                     solicitaciones: Optional[dict] = None
+                     solicitaciones: Optional[dict] = None, *,
+                     alero_verificado: bool = False
                      ) -> ArmadoDelCabezal:
     """
     El `ArmadoDelCabezal` de UN cabezal de voladizo armado a partir de sus
@@ -14106,13 +14977,18 @@ def ensamblar_armado(entorno: EntornoDelCabezal,
             "no se inventa")
 
     # --- la tabla de armado ---------------------------------------------------
+    # --- VE-7 --- de los talones de la zapata de los aleros (uno por
+    # franja) la tabla adopta el de MAYOR acero: es una sola zapata.
+    talones = [p for p in piezas if p.elemento == ELEMENTO_ZAPATA_ALEROS]
+    rige_talon = max(talones, key=lambda p: p.As_adoptado, default=None)
     tabla = [FilaDeArmado(
         elemento=p.elemento,
         posicion=f"{p.clave}: {p.cara}",
         As_requerido=p.As_resistencia,
         As_minimo=max(p.As_minimo_flexion, p.As_minimo_constructivo),
         origen_minimo=p.origen_minimo, As_adoptado=p.As_adoptado,
-        gobierna=p.gobierna, s_max=p.s_max, barra=p.barra) for p in piezas]
+        gobierna=p.gobierna, s_max=p.s_max, barra=p.barra) for p in piezas
+        if p.elemento != ELEMENTO_ZAPATA_ALEROS or p is rige_talon]
     comun = dict(fy=mat["fy"], regla=regla, catalogo=catalogo, hm=hm, lm=lm)
     claves = {p.clave for p in piezas}
     if SECCION_PANTALLA in claves:
@@ -14135,16 +15011,32 @@ def ensamblar_armado(entorno: EntornoDelCabezal,
             ancho=g.B, **comun))
     if SECCION_ALERO in claves:
         # --- dictamen Fable de VE-6 --- lo que el armado del alero NO es.
-        avisos.append(
-            f"{quien}: el alero esta ARMADO por sus secciones y no verificado "
-            "como muro: su zapata y su estabilidad (E1 a E3 de AASHTO 11.6) "
-            "no se calculan (ficha T7C-04)")
+        # --- VE-7 (ficha VE7-01) --- desde VE-7 el servicio verifica la
+        # franja del arranque como muro (`estabilidad_del_alero`) y lo dice
+        # con `alero_verificado`; el aviso queda para cuando no corrio (su
+        # etapa se bloqueo, o una puerta de tanteo que no la corre).
+        if not alero_verificado:
+            avisos.append(
+                f"{quien}: el alero esta ARMADO por sus secciones y no "
+                "verificado como muro: su estabilidad (E1 a E3 de AASHTO "
+                "11.6) no se evaluo en todas sus franjas y las dos "
+                "condiciones (ver «Etapas bloqueadas»; ficha VE7-01)")
         tabla.append(_fila_de_reparto(
             elemento=ELEMENTO_ALEROS,
             posicion="aleros: armadura horizontal, cada cara",
             es_zapata=False, direccion="horizontal",
             espesor=g.aleros.espesor,
             ancho=min(g.aleros.altura_inicial, max(g.aleros.longitudes)),
+            **comun))
+    if rige_talon is not None:
+        # --- VE-7 --- el reparto de la zapata de los aleros, como el de la
+        # zapata del cabezal: a lo largo del alero, cada cara.
+        tabla.append(_fila_de_reparto(
+            elemento=ELEMENTO_ZAPATA_ALEROS,
+            posicion="zapata de los aleros: armadura longitudinal (a lo "
+                     "largo del alero), cada cara",
+            es_zapata=True, direccion="reparto",
+            espesor=g.aleros.espesor_zapata, ancho=g.aleros.ancho_zapata,
             **comun))
     sin_barra = [f.posicion for f in tabla if f.barra is None]
     if sin_barra:
@@ -14272,9 +15164,9 @@ def ensamblar_armado(entorno: EntornoDelCabezal,
         "barras de 5/8\" en las aberturas de los muros de concreto simple; "
         "para el armado, por analogia) no se dimensiona --; ni la losa de "
         "entrega ni el dentellon, que la geometria del cabezal trae y no se "
-        "arman; ni el desarrollo ni los empalmes de las barras; ni la "
-        "zapata de los aleros (su fuste se arma en el arranque y en la "
-        "mitad de su longitud, VE-6). Arma la "
+        "arman; ni el desarrollo ni los empalmes de las barras (la zapata "
+        "de los aleros se arma en el talon de la franja del arranque, "
+        "VE-7). Arma la "
         "geometria que recibe sin iterarla: si el cabezal no pasa su "
         "estabilidad (filas E1 a E3), el armado es el de una geometria que "
         "todavia hay que ampliar")
@@ -14370,7 +15262,8 @@ def _armado_con_el_otro_regimen(p: ArmadoDeSeccion, regimen: str
     return otro, adoptado, barra
 
 
-def armado_del_cabezal(entorno: EntornoDelCabezal) -> ArmadoDelCabezal:
+def armado_del_cabezal(entorno: EntornoDelCabezal, *,
+                       alero_verificado: bool = False) -> ArmadoDelCabezal:
     """
     El armado completo de UN cabezal, de una sola llamada: sus tres
     elementos y su tabla si es de voladizo armado, o la verificacion de la
@@ -14385,7 +15278,8 @@ def armado_del_cabezal(entorno: EntornoDelCabezal) -> ArmadoDelCabezal:
     piezas = []
     for elemento in ELEMENTOS_ARMADOS:
         piezas.extend(armar_elemento(entorno, elemento, sol))
-    return ensamblar_armado(entorno, piezas, sol)
+    return ensamblar_armado(entorno, piezas, sol,
+                            alero_verificado=alero_verificado)
 
 
 # ---------------------------------------------------------------------------

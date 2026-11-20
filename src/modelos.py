@@ -2590,6 +2590,17 @@ ALCANCE_DECLARADO: Tuple[AlcanceDeclarado, ...] = (
                "como llega; los parametros son los de prueba hasta el EMS"),
         ficha="T7B-09",
         simbolo="M9_cabezal.dimensionar_zapata_por_estabilidad"),
+    AlcanceDeclarado(
+        clave="aleros_como_muro",
+        # --- VE-7 (ficha VE7-01, cierre de T7C-04; dictamen Fable) --- el
+        # alero se verifica como muro en sus franjas, de voladizo o de
+        # gravedad; lo que sigue fuera es lo que el texto dice.
+        texto=("Los aleros se verifican como muro (E1 a E3, y el cuerpo "
+               "ciclopeo en el de gravedad) en cinco franjas de su longitud "
+               "(0, L/4, L/2, 3L/4 y L), no entre ellas; su zapata es una "
+               "zapata CORRIDA de un solo ancho y un solo peralte por cabezal, "
+               "y el cuerpo del alero de gravedad no se itera"),
+        ficha="VE7-01", simbolo="M9_cabezal.estabilidad_del_alero"),
     # --- VE-5 (m8, item 26 del censo) --- 'flotacion_marco_sin_peso_propio'
     # SALIO: V7 pesa el concreto del marco (`M5.peso_propio_conducto_kn_m`,
     # con 'peso_especifico_concreto_kn_m3'); ficha T3-08 cerrada.
@@ -5507,6 +5518,18 @@ class CabezalDelPunto:
     # no se dimensiono (el armado cumplio con la regla, el espesor se
     # declaro, el cabezal es de gravedad o el armado no se pudo evaluar).
     intentos_de_pantalla: Tuple[str, ...] = ()
+    # --- VE-7 (ficha VE7-01, cierre de T7C-04) --- La estabilidad de los
+    # ALEROS de cada cabezal de voladizo, como muro en voladizo con su
+    # zapata (la franja del arranque, `M9.estabilidad_del_alero`): hasta
+    # cuatro, como la del cabezal. Van aparte de `estabilidad` para que lo
+    # que itera el cabezal no las mezcle; sus filas E1 a E3 viajan TAMBIEN
+    # en `verificaciones`. Vacio = no hay aleros de voladizo, o su etapa se
+    # bloqueo (el punto lleva el `Bloqueo`).
+    estabilidad_aleros: Tuple["EstabilidadDelCabezal", ...] = ()
+    # Los anchos de la zapata de los aleros que su dimensionamiento por
+    # estabilidad PROBO (el primero, el de partida: el de la zapata del
+    # cabezal). Vacio = no se dimensiono.
+    intentos_de_zapata_aleros: Tuple["IntentoDeZapata", ...] = ()
 
     @property
     def geometrias(self) -> Tuple[GeometriaCabezal, GeometriaCabezal]:
@@ -7984,7 +8007,17 @@ TIPOS_DE_CARGA_DEL_CABEZAL = (CARGA_DC, CARGA_EV, CARGA_EH, CARGA_LS,
 ELEMENTO_PANTALLA = "pantalla"
 ELEMENTO_ZAPATA = "zapata"
 ELEMENTO_ALEROS = "aleros"
-ELEMENTOS_DEL_CABEZAL = (ELEMENTO_PANTALLA, ELEMENTO_ZAPATA, ELEMENTO_ALEROS)
+# --- VE-7 (ficha VE7-01, cierre de T7C-04) --- la zapata de los aleros: su
+# talon se arma con el procedimiento de la zapata del cabezal, sobre la
+# franja del arranque del alero.
+ELEMENTO_ZAPATA_ALEROS = "zapata de los aleros"
+ELEMENTOS_DEL_CABEZAL = (ELEMENTO_PANTALLA, ELEMENTO_ZAPATA, ELEMENTO_ALEROS,
+                         ELEMENTO_ZAPATA_ALEROS)
+
+# --- VE-7 --- De que muro es un ensamble de estabilidad: el cabezal, o la
+# franja del arranque de sus aleros verificada como muro en voladizo.
+MURO_CABEZAL = "cabezal"
+MURO_ALERO = "alero"
 
 
 @dataclass(frozen=True)
@@ -8230,6 +8263,14 @@ class EstabilidadDelCabezal:
     # `globales`, vuelven a `pendientes` con su motivo y el servicio las
     # lleva como `Bloqueo` del punto (`servicio._estabilidades`).
     pendientes_por_criterio: Tuple[Tuple[str, str], ...] = ()
+    # --- VE-7 (ficha VE7-01) --- `MURO_CABEZAL`, o `MURO_ALERO` si es la
+    # franja del arranque de los aleros verificada como muro en voladizo
+    # (`M9.estabilidad_del_alero`): sus codigos llevan el sufijo `.alero`.
+    muro: str = MURO_CABEZAL
+    # --- VE-7 (dictamen Fable, abierto (a)) --- con `MURO_ALERO`, la
+    # fraccion de la longitud del alero de la franja verificada (0 el
+    # arranque, 1 la punta); None en el cabezal.
+    fraccion_alero: Optional[float] = None
 
     def del_marco(self, marco: str) -> Tuple["Verificacion", ...]:
         return tuple(v for v in self.verificaciones
@@ -8295,8 +8336,12 @@ SECCION_ALERO = "alero"
 # --- VE-6 (ficha VE6M9-03) --- la segunda seccion del alero, la de la mitad
 # de su longitud: arma el tramo de L/2 a L (la del arranque, el de 0 a L/2).
 SECCION_ALERO_MITAD = "alero_mitad"
+# --- VE-7 (ficha VE7-01) --- el talon de la zapata de los aleros, en la cara
+# del alero (la franja del arranque no tiene punta).
+SECCION_TALON_ALERO = "talon_alero"
 SECCIONES_DEL_ARMADO = (SECCION_PANTALLA, SECCION_PUNTA, SECCION_TALON,
-                        SECCION_ALERO, SECCION_ALERO_MITAD)
+                        SECCION_ALERO, SECCION_ALERO_MITAD,
+                        SECCION_TALON_ALERO)
 
 
 @dataclass(frozen=True)

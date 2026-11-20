@@ -696,7 +696,10 @@ def test_p7_p9_A01_con_los_datos_de_prueba_las_doce_filas_y_A8(tmp_path):
         a8 = filas[f"A8.zapata.{ext}"]
         assert a8.cumple
         assert a8.valor_obtenido == pytest.approx(0.30635, abs=TOL_CINCO)
-    assert sorted(v.codigo for v in a01.incumplidas()) == [
+    # --- VE-7 --- las de los aleros como muro (`.alero`, sin dimensionar:
+    # el criterio del paso esta vacio en esta corrida) van aparte.
+    assert sorted(v.codigo for v in a01.incumplidas()
+                  if ".alero" not in v.codigo) == [
         "E1-LRFD.sis.e", "E1-LRFD.sis.s", "E3-LRFD.est.e", "E3-LRFD.est.s"]
     # el paso de combinaciones del punto dice el modificador
     assert any("mismo eta_I del conducto" in p.nota_del_proyecto

@@ -253,6 +253,7 @@ ausencia no detiene nada.
 | `espesor_corona_m`, `espesor_base_muro_m` | m | Proyectista | Espesores de la pantalla |
 | `ancho_zapata_m`, `espesor_zapata_m`, `ancho_punta_m` | m | Proyectista | Zapata (el talón es lo que queda) |
 | `longitud_aleros_m`, `altura_final_aleros_m`, `espesor_aleros_m` | m | Proyectista | Aleros (la longitud declarada vale para los dos) |
+| `ancho_zapata_aleros_m`, `espesor_zapata_aleros_m` | m | Proyectista | La zapata PROPIA de los aleros (VE-7): gana y no se itera, aunque sea menor que la del cabezal; sin ella parte de la del cabezal y crece por su estabilidad y por el armado de su talón. El ancho no puede ser menor que el fuste del alero (más la punta y la base en gravedad); un espesor bajo el mínimo del tipo sale como fila CB6 del alero que no cumple |
 | `angulo_alero_largo_grados` | grados con la pared del barril, en [0, 90) | Proyectista | El α del alero LARGO de un cruce esviado (el que forma α + θ con la bajada del talud): declararlo menor lo acorta (aleros asimétricos). Con un marco, el ke y la carta siguen con el α de la regla y la corrida lo avisa |
 | `longitud_losa_m`, `espesor_losa_m`, `profundidad_dentellon_m` | m | Proyectista | Losa de entrega y dentellón |
 | `tipo` | texto | **Propietario** · proyectista | `voladizo_armado` o `gravedad_ciclopeo` (sin él, la regla por altura) |

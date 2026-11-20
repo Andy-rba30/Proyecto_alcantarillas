@@ -208,8 +208,10 @@ def test_el_ancho_de_la_seccion_de_la_mitad_es_el_de_su_franja(tanteo,
 
 
 def test_el_armado_avisa_que_el_alero_no_se_verifica_como_muro(tanteo):
+    # --- VE-7 --- el aviso apunta ya a la ficha que cerro T7C-04, y sale
+    # solo si la verificacion como muro no corrio (tests/test_ve7_...).
     a = M9.armado_del_cabezal(_con_aleros(tanteo))
-    assert any("no verificado como muro" in x and "T7C-04" in x
+    assert any("no verificado como muro" in x and "VE7-01" in x
                for x in a.avisos)
     assert not any("no verificado como muro" in x
                    for x in M9.armado_del_cabezal(tanteo).avisos)
