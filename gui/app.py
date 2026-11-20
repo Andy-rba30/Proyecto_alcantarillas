@@ -3033,6 +3033,21 @@ class ExpedienteApp:
         self.txt_cabezal.configure(yscroll=scroll_cab.set)
         scroll_cab.grid(row=0, column=1, sticky="ns")
 
+        # --- VE-5 met --- LA FASE 11: el cuadro de compatibilidad rasante-
+        # alcantarilla y los metrados por partida del EG-2013, con el MISMO
+        # texto que la CLI imprime (`cli._lineas_metrados`).
+        panel_metrados = Panel(p, "Compatibilidad rasante y metrados (Fase 11)")
+        panel_metrados.pack(fill="x", pady=(0, 10))
+        f_met = ttk.Frame(panel_metrados.interior)
+        f_met.pack(fill="both", expand=False)
+        f_met.columnconfigure(0, weight=1)
+        self.txt_metrados = comp.texto_prosa(f_met, height=8, wrap="word")
+        self.txt_metrados.grid(row=0, column=0, sticky="nsew")
+        self.txt_metrados.configure(state="disabled")
+        scroll_met = ttk.Scrollbar(f_met, orient="vertical", command=self.txt_metrados.yview)
+        self.txt_metrados.configure(yscroll=scroll_met.set)
+        scroll_met.grid(row=0, column=1, sticky="ns")
+
         panel_exportacion = Panel(p, "Exportacion")
         panel_exportacion.pack(fill="x", pady=(0, 10))
         p = panel_exportacion.interior
@@ -3497,12 +3512,16 @@ class ExpedienteApp:
         """
         if motivo is not None or self.informe is None:
             comp.escribir_lineas_de_cli(self.txt_cabezal, ())
+            comp.escribir_lineas_de_cli(self.txt_metrados, ())  # VE-5 met
             self.lbl_cabezal.config(text=MOTIVO_SIN_CORRIDA_CABEZAL if motivo is None
                                     else motivo)
             return
         self.lbl_cabezal.config(text="")
         comp.escribir_lineas_de_cli(self.txt_cabezal,
                                     cli._lineas_cabezal(self.informe.cabezal))
+        # --- VE-5 met --- la Fase 11, con el texto de la CLI.
+        comp.escribir_lineas_de_cli(self.txt_metrados,
+                                    cli._lineas_metrados(self.informe))
 
     # ------------------------------------------------------------------
     # Exportacion

@@ -143,6 +143,8 @@ _FASE_DE_MODULO: Dict[str, str] = {
     "M9_cabezal": "Fase 9 - Cabezal y aletas",
     "M10_espaciamiento": "Fase 10 - Alcantarillas de alivio",
     "M11_reporte": "Fase 11 - Entregables",
+    # --- VE-5 met --- los metrados y el cuadro de compatibilidad.
+    "M12_metrados": "Fase 11 - Entregables",
     "MD": "Bucle de diseño (Fases 3 a 8)",
 }
 

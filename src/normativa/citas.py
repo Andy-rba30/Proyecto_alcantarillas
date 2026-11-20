@@ -15827,4 +15827,368 @@ AASHTO_C11_6_5_3_NIVEL_MEDIO = _cita(
                  "pueda sostener que el relleno se vacia la declara")),
 )
 
+# ===========================================================================
+# --- VE-5 (lote «met», item 8 del censo; Fase 11 de la v8, entregables 8 y
+# 9) --- Las reglas de MEDICION del EG-2013 con que se metran los conductos,
+# los cabezales, su excavacion, el enrocado de salida y el geotextil. Leidas
+# en la capa de texto de cada pagina (desfase +8 del corpus). Son reglas de
+# medicion y pago del contrato, no de diseño: dicen QUE se mide, en que
+# unidad y entre que lineas.
+# ===========================================================================
+FECHA_VE5_MET = "2026-11-20"
+POR_VE5_MET = "validacion/VE-5 met · lectura directa de la pagina por la sesion"
+VE5_MET = (FECHA_VE5_MET, POR_VE5_MET)
+
+EG2013_501_01_CLASES = _cita(
+    id="EG2013.501.01#CLASES",
+    fuente_id="EG2013",
+    numeral="501.01",
+    titulo_numeral="Excavación para estructuras",
+    pagina_impresa="885",
+    pagina_pdf=893,
+    texto_literal=Verbatim(
+        texto=("Las excavaciones para estructuras se clasificarán de acuerdo "
+               "con las características de los materiales excavados y la "
+               "posición del nivel freático."),
+        pagina_pdf=893),
+    caracter=Caracter.DEFINICION,
+    sesion=VE5_MET,
+    nota=("Las cuatro clases que siguen son las cuatro partidas de 501.10: "
+          "roca en seco (501.A), roca bajo agua (501.B), material comun en "
+          "seco (501.C) y material comun bajo agua (501.D). «Bajo agua» es "
+          "«en donde la presencia permanente de agua dificulte los trabajos "
+          "de excavación» (pag. impresa 886); roca, el material que se excava "
+          "«mediante el uso sistemático de explosivos»."),
+)
+
+EG2013_501_04_CARAS = _cita(
+    id="EG2013.501.04#CARAS",
+    fuente_id="EG2013",
+    numeral="501.04",
+    titulo_numeral="Requerimientos de construcción",
+    pagina_impresa="886",
+    pagina_pdf=894,
+    texto_literal=Verbatim(
+        texto=("En general, los lados de la excavación tendrán caras "
+               "verticales conforme a las dimensiones de la estructura, "
+               "cuando no sea necesario utilizar encofrados para el vaciado "
+               "del cimiento."),
+        pagina_pdf=894),
+    caracter=Caracter.EXIGENCIA,
+    sesion=VE5_MET,
+    nota=("Es el defecto del sobreancho: cero, la excavacion ceñida a la "
+          "estructura. La frase siguiente es el permiso de los 45 cm "
+          "(EG2013.501.04#ENCOFRADO)."),
+)
+
+EG2013_501_04_ENCOFRADO = _cita(
+    id="EG2013.501.04#ENCOFRADO",
+    fuente_id="EG2013",
+    numeral="501.04",
+    titulo_numeral="Requerimientos de construcción",
+    pagina_impresa="886",
+    pagina_pdf=894,
+    texto_literal=Verbatim(
+        texto=("Cuando la utilización de encofrados sea necesaria, la "
+               "excavación se podrá extender hasta 45 cm fuera de las caras "
+               "verticales del pie de la zapata de la estructura."),
+        pagina_pdf=894),
+    caracter=Caracter.PERMISO,
+    sesion=VE5_MET,
+    nota=("PERMISO con tope: «se podrá extender hasta 45 cm». Es el techo de "
+          "la ventana del criterio 'sobreancho_excavacion_estructuras_m'; si "
+          "hacen falta encofrados lo decide el proyecto."),
+)
+
+EG2013_501_09 = _cita(
+    id="EG2013.501.09",
+    fuente_id="EG2013",
+    numeral="501.09",
+    titulo_numeral="Medición",
+    pagina_impresa="890",
+    pagina_pdf=898,
+    texto_literal=Verbatim(
+        texto=("Las medidas de las excavaciones para estructuras serán en "
+               "volumen en metros cúbicos (m3), aproximado al décimo de metro "
+               "cúbico en su posición original determinado dentro de las "
+               "líneas indicadas en el Proyecto y aprobadas por el Supervisor. "
+               "En las excavaciones para estructuras y alcantarillas toda "
+               "medida se hará con base en caras verticales."),
+        pagina_pdf=898),
+    caracter=Caracter.EXIGENCIA,
+    sesion=VE5_MET,
+    nota=("«En su posición original»: el volumen se mide en banco, sin "
+          "esponjamiento; el transporte del material excavado se paga por la "
+          "Seccion 700 (501.10). Las «líneas indicadas en el Proyecto» son "
+          "las de la estructura (501.04) y, para las zanjas de los tubos, el "
+          "ancho que fijan 506.06, 507.05 y 508.04."),
+)
+
+EG2013_503_12 = _cita(
+    id="EG2013.503.12",
+    fuente_id="EG2013",
+    numeral="503.12",
+    titulo_numeral="Medición",
+    pagina_impresa="935",
+    pagina_pdf=943,
+    texto_literal=Verbatim(
+        texto=("La unidad de medida será el metro cúbico (m3), aproximado al "
+               "décimo de metro cúbico, de mezcla de concreto realmente "
+               "suministrada, colocada y consolidada en obra, aprobada por el "
+               "Supervisor."),
+        pagina_pdf=943),
+    caracter=Caracter.EXIGENCIA,
+    sesion=VE5_MET,
+    nota=("«Realmente suministrada, colocada y consolidada»: el volumen "
+          "NETO, con el vano del conducto descontado y sin factor de "
+          "desperdicio, que 503.13 pone en el precio unitario "
+          "(EG2013.503.13#DESPERDICIOS)."),
+)
+
+EG2013_503_13_DESPERDICIOS = _cita(
+    id="EG2013.503.13#DESPERDICIOS",
+    fuente_id="EG2013",
+    numeral="503.13",
+    titulo_numeral="Pago",
+    pagina_impresa="935",
+    pagina_pdf=943,
+    texto_literal=Verbatim(
+        texto=("el suministro, almacenamiento, desperdicios, cargas, "
+               "transportes, descargas y mezclas de todos los materiales "
+               "constitutivos de la mezcla"),
+        pagina_pdf=943),
+    caracter=Caracter.DEFINICION,
+    sesion=VE5_MET,
+    nota=("Lo que el precio unitario del concreto «deberá cubrir»: el "
+          "desperdicio esta en el precio, no en la cantidad. 504.11 dice lo "
+          "mismo del acero («corte, desperdicios, doblamiento»)."),
+)
+
+EG2013_504_01_PESOS = _cita(
+    id="EG2013.504.01#PESOS",
+    fuente_id="EG2013",
+    numeral="504.01 c., Tabla 504-01",
+    titulo_numeral="Peso de las barras por unidad de longitud",
+    pagina_impresa="940",
+    pagina_pdf=948,
+    texto_literal=Verbatim(
+        texto="Peso de las barras por unidad de longitud",
+        pagina_pdf=948),
+    caracter=Caracter.DEFINICION,
+    sesion=VE5_MET,
+    nota=("La tabla da, por barra, el diametro nominal en mm y pulgadas y el "
+          "peso en kg/m: 1/4\" 0,25; 3/8\" 0,56; 1/2\" 1,00; 5/8\" 1,55; 3/4\" "
+          "2,24; 7/8\" 3,04; 1\" 3,97; 1 1/8\" 5,06; 1 1/4\" 6,41; 1 3/8\" "
+          "7,91; 1 3/4\" 11,38; 2 1/4\" 20,24. Transcritos en "
+          "`constantes_normativas.PESO_BARRA_KG_M_EG2013`. La remision esta "
+          "en 504.01 c. (pag. impresa 939): «Los pesos unitarios, se indican "
+          "en la Tabla 504-01»."),
+)
+
+EG2013_504_10 = _cita(
+    id="EG2013.504.10",
+    fuente_id="EG2013",
+    numeral="504.10",
+    titulo_numeral="Medición",
+    pagina_impresa="946",
+    pagina_pdf=954,
+    pagina_pdf_titulo=953,
+    texto_literal=Verbatim(
+        texto=("La medida para barras se basará en el peso computado para los "
+               "tamaños y longitudes de barras utilizadas, usando los pesos "
+               "unitarios indicados en la Tabla 504-01."),
+        pagina_pdf=954),
+    caracter=Caracter.EXIGENCIA,
+    sesion=VE5_MET,
+    nota=("La unidad es el kilogramo, «aproximado al décimo de kilogramo» "
+          "(pag. impresa 945). «Longitudes de barras utilizadas» son las del "
+          "despiece de los planos (504.03): con anclajes, ganchos y los "
+          "empalmes indicados en el Proyecto, y sin los «empalmes adicionales "
+          "a los indicados en el Proyecto». El programa entrega el acero por "
+          "metro de cada cara, no el despiece."),
+)
+
+_LONGITUD_TUBERIA = ("La medida se hará entre las caras exteriores de los "
+                     "extremos de la tubería o los cabezales, según el caso, "
+                     "a lo largo del eje longitudinal y siguiendo la "
+                     "pendiente de la tubería.")
+
+EG2013_506_14_LONGITUD = _cita(
+    id="EG2013.506.14#LONGITUD",
+    fuente_id="EG2013",
+    numeral="506.14",
+    titulo_numeral="Medición",
+    pagina_impresa="964",
+    pagina_pdf=972,
+    texto_literal=Verbatim(texto=_LONGITUD_TUBERIA, pagina_pdf=972),
+    caracter=Caracter.EXIGENCIA,
+    sesion=VE5_MET,
+    nota=("Tuberia de concreto reforzado, en metros lineales «aproximado al "
+          "decímetro». La partida 506.A se paga «según el diámetro interno» "
+          "(506.15) e incluye el solado y la sujecion granulares."),
+)
+
+EG2013_507_12_LONGITUD = _cita(
+    id="EG2013.507.12#LONGITUD",
+    fuente_id="EG2013",
+    numeral="507.12",
+    titulo_numeral="Medición",
+    pagina_impresa="977",
+    pagina_pdf=985,
+    texto_literal=Verbatim(texto=_LONGITUD_TUBERIA, pagina_pdf=985),
+    caracter=Caracter.EXIGENCIA,
+    sesion=VE5_MET,
+    nota=("Tuberia metalica corrugada; la partida 507.A se paga «según el "
+          "diámetro y espesor o calibre de la tubería» (507.13) e incluye el "
+          "solado de material granular."),
+)
+
+EG2013_508_11_LONGITUD = _cita(
+    id="EG2013.508.11#LONGITUD",
+    fuente_id="EG2013",
+    numeral="508.11",
+    titulo_numeral="Medición",
+    pagina_impresa="987",
+    pagina_pdf=995,
+    texto_literal=Verbatim(texto=_LONGITUD_TUBERIA, pagina_pdf=995),
+    caracter=Caracter.EXIGENCIA,
+    sesion=VE5_MET,
+    nota=("Tuberia de polietileno de alta densidad; la partida 508.A se paga "
+          "«según el diámetro de la tubería» (508.12) e incluye la cama de "
+          "asiento."),
+)
+
+EG2013_506_06_ZANJA = _cita(
+    id="EG2013.506.06#ZANJA",
+    fuente_id="EG2013",
+    numeral="506.06",
+    titulo_numeral="506.06 Preparación del terreno base",
+    pagina_impresa="960",
+    pagina_pdf=968,
+    texto_literal=Verbatim(
+        texto=("Cuando la tubería se vaya a colocar en una zanja excavada, el "
+               "ancho total de ésta deberá ser igual al diámetro exterior de "
+               "los tubos más 60 cm por lo menos, salvo que los planos indiquen "
+               "un valor diferente."),
+        pagina_pdf=968),
+    caracter=Caracter.EXIGENCIA,
+    sesion=VE5_MET,
+    nota=("«Por lo menos»: es el minimo, y es el que el metrado toma como "
+          "linea del Proyecto mientras los planos no indiquen otra. 507.06 "
+          "remite a este mismo ancho para el solado del TMC."),
+)
+
+EG2013_506_07_SOLADO = _cita(
+    id="EG2013.506.07#ESPESOR",
+    fuente_id="EG2013",
+    numeral="506.07",
+    titulo_numeral="506.07 Solado",
+    pagina_impresa="960",
+    pagina_pdf=968,
+    texto_literal=Verbatim(
+        texto=("de por lo menos 15 cm de espesor compactado, y un ancho igual "
+               "al diámetro exterior de la tubería más 60 cm por lo menos."),
+        pagina_pdf=968),
+    caracter=Caracter.EXIGENCIA,
+    sesion=VE5_MET,
+    nota=("El solado granular bajo el tubo de concreto reforzado; 507.06 "
+          "manda construir el del TMC «de acuerdo con el procedimiento "
+          "descrito en la Subsección 506.07». El metrado toma el minimo como "
+          "linea del Proyecto: el fondo de la zanja queda a 15 cm bajo el "
+          "fondo exterior del tubo."),
+)
+
+EG2013_507_05_ZANJA = _cita(
+    id="EG2013.507.05#ZANJA",
+    fuente_id="EG2013",
+    numeral="507.05",
+    titulo_numeral="507.05 Preparación del terreno base",
+    pagina_impresa="973",
+    pagina_pdf=981,
+    texto_literal=Verbatim(
+        texto=("La excavación deberá tener una amplitud tal, que el ancho "
+               "total de la excavación tenga 1,5 veces el diámetro del tubo."),
+        pagina_pdf=981),
+    caracter=Caracter.EXIGENCIA,
+    sesion=VE5_MET,
+    nota=("«El diámetro del tubo»: el nominal, que en el TMC es el interior "
+          "(507.A se designa por su diametro)."),
+)
+
+EG2013_508_04_ZANJA = _cita(
+    id="EG2013.508.04#ZANJA",
+    fuente_id="EG2013",
+    numeral="508.04",
+    titulo_numeral="508.04 Preparación del terreno y excavación",
+    pagina_impresa="983",
+    pagina_pdf=991,
+    texto_literal=Verbatim(
+        texto=("La excavación deberá tener una amplitud tal, que su ancho "
+               "total sea 2 veces el diámetro del tubo y se ejecutará según "
+               "lo indicado en la Sección 501."),
+        pagina_pdf=991),
+    caracter=Caracter.EXIGENCIA,
+    sesion=VE5_MET,
+    nota="El diametro nominal del tubo de HDPE, que es el interior.",
+)
+
+EG2013_508_05_CAMA = _cita(
+    id="EG2013.508.05#CAMA",
+    fuente_id="EG2013",
+    numeral="508.05",
+    titulo_numeral="508.05 Preparación de la cama de asiento del tubo",
+    pagina_impresa="983",
+    pagina_pdf=991,
+    texto_literal=Verbatim(
+        texto=("El espesor estará entre 0,15 m y 0,30 m, no se admitirá "
+               "espesores menores a 0,15 m."),
+        pagina_pdf=991),
+    caracter=Caracter.EXIGENCIA,
+    sesion=VE5_MET,
+    nota=("La frase siguiente sube la cama a 30 cm «en roca o suelo blando». "
+          "El metrado toma el minimo de 0,15 m como linea del Proyecto; el "
+          "suelo de fundacion que pida mas lo dice el EMS."),
+)
+
+EG2013_511_13 = _cita(
+    id="EG2013.511.13",
+    fuente_id="EG2013",
+    numeral="511.13",
+    titulo_numeral="Medición",
+    pagina_impresa="1018",
+    pagina_pdf=1026,
+    texto_literal=Verbatim(
+        texto=("Para todas las aplicaciones de geotextiles mencionados en "
+               "esta sección la unidad de medida será el metro cuadrado (m²). "
+               "Los traslapes no se diferenciarán en la medida y estarán "
+               "incluidos en ella."),
+        pagina_pdf=1026),
+    caracter=Caracter.EXIGENCIA,
+    sesion=VE5_MET,
+    nota=("El area cubierta, sin sumar traslapes: el geotextil bajo el "
+          "enrocado de salida se mide con el area en planta del enrocado. "
+          "Partida 511.A (511.14)."),
+)
+
+EG2013_603_10 = _cita(
+    id="EG2013.603.10",
+    fuente_id="EG2013",
+    numeral="603.10",
+    titulo_numeral="Medición",
+    pagina_impresa="1064",
+    pagina_pdf=1072,
+    texto_literal=Verbatim(
+        texto=("La unidad de medida será el metro lineal (m) de defensa "
+               "ribereña ejecutada integralmente de acuerdo al Proyecto y "
+               "aprobada por el Supervisor."),
+        pagina_pdf=1072),
+    caracter=Caracter.DEFINICION,
+    sesion=VE5_MET,
+    nota=("La Seccion 603 «Defensas ribereñas» es la unica del EG-2013 que "
+          "mide enrocado, y lo mide por metro lineal de defensa de taludes y "
+          "riberas (603.01). El enrocado de salida de una alcantarilla no es "
+          "una defensa ribereña: el EG-2013 no le da partida propia, y el "
+          "metrado lo entrega en m3 para una partida especial del proyecto."),
+)
+
 CITAS: Dict[str, Cita] = {c.id: c for c in _TODAS}
