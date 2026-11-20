@@ -215,7 +215,14 @@ CORRIDAS_IMPORTTIME = 3
 # compatibilidad rasante-alcantarilla de cada punto (Fase 11, entregable 9),
 # que la memoria imprime en los dos alcances. El techo sube a la medida
 # nueva, pegado como los anteriores.
-KB_POR_PUNTO_MAX = 110.0
+# --- integracion de VE-5 (2026-11-20) --- 111.8 KB por punto, medidos con este
+# mismo metodo sobre la rama integrada (met, m6, m45, m8, m9, mh, catlic, gui,
+# fixve4): +1.9 KB por el portico del marco (m8), la Fase 0-bis (catlic), los
+# avisos de transcripcion (gui), el contraste chi-cuadrado (mh) y la fila de
+# compatibilidad y el desglose del metrado en el bloque del punto (la memoria
+# imprime ahora todo el texto que el JSON trae, T-10). El techo sube a la
+# medida nueva, pegado como los anteriores.
+KB_POR_PUNTO_MAX = 112.0
 # Paginas por punto: 14.0 medidas en EXT-8; 16.0 en E-A con los dos pasos
 # del perfil por escalon; 18.7 sobre `5bca7c6` y 20.7 con T-6, 31.7 con
 # T-3, 32.3 con T-9 y 31.0 con T-10 (ver arriba).

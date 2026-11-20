@@ -99,8 +99,6 @@ from __future__ import annotations
 import math
 from typing import Optional, Sequence, Tuple
 
-from scipy.optimize import brentq
-
 from src import criterios_adoptados as ca
 from src.constantes_normativas import (CUNETA_STRICKLER_T32,
                                        CUNETA_T32_ROTULO, CUNETA_T33_ROTULO,
@@ -400,6 +398,7 @@ def caudal_a_velocidad(*, v: float, n: float, S: float, Z1: float,
     y_hi = 2 * Rh_v
     while not exceso(y_hi) > 0:
         y_hi *= 2
+    from scipy.optimize import brentq   # perezoso: `import cli` no carga scipy (PC-10)
     y_v = brentq(exceso, y_lo, y_hi, xtol=TOL_BRENT)
     A_v, _P, _R = geometria_cuneta(y=y_v, Z1=Z1, Z2=Z2, b=b)
     return y_v, A_v * v

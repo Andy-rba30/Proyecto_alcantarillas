@@ -156,7 +156,7 @@ from __future__ import annotations
 import math
 from typing import Any, Callable, Dict, List, NamedTuple, Optional, Tuple
 
-from scipy.optimize import brentq
+
 
 from src import criterios_adoptados as ca
 from src.constantes_fisicas import G, RHO_AGUA
@@ -1243,6 +1243,7 @@ def salida_critica_de_la_poza(*, Q: float, ancho_fondo: float,
         return area * area * area / (ancho_fondo + 2 * z * y) - objetivo
 
     y_rect = math.cbrt(objetivo / ancho_fondo ** 2)
+    from scipy.optimize import brentq   # perezoso: `import cli` no carga scipy (PC-10)
     yc = brentq(exceso, y_rect * TOL_UMBRAL_NORMATIVO, y_rect)
     area = yc * (ancho_fondo + z * yc)
     return yc, area, Q / area
@@ -1265,6 +1266,7 @@ def _ancho_para_la_velocidad(Q: float, V_objetivo: float, ancho_desde: float,
                        f"critica baja a {V_objetivo!r} m/s con Q = {Q!r} "
                        "m3/s: la pareja caudal-velocidad admisible no cabe")
         ancho_desde, hasta = hasta, hasta * 2
+    from scipy.optimize import brentq   # perezoso: `import cli` no carga scipy (PC-10)
     return brentq(exceso, ancho_desde, hasta)
 
 
@@ -1371,6 +1373,7 @@ def poza_de_enrocado_hec14(*, V: Magnitud, Q_celda: float, seccion: Seccion,
                        f"= {TW / ye:.2f}, Co = {Co:.2f}): la fuente descarto "
                        "los ensayos de hs/D50 < 2",
                 rotulo=MOTIVO_METODO_NO_EVALUABLE_HEC14)
+        from scipy.optimize import brentq   # perezoso: `import cli` no carga scipy (PC-10)
         x_dim = brentq(holgura, x_min, x_piedra)
     D50_dim = x_dim * ye
     hs = hs_sobre_ye(x_dim) * ye
