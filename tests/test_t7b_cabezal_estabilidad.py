@@ -797,7 +797,8 @@ def test_las_tres_claves_de_V5_y_V8_son_datos_externos_por_punto():
         "longitud_cresta_desborde_m")
     for clave in servicio.CLAVES_DE_V5_Y_V8:
         assert clave in servicio.CLAVES_EXTERNAS
-    assert len(servicio.CLAVES_EXTERNAS) == 28
+    # VE-5 (lote m45, item 18): 29, con `arrastre_de_solidos` (V6).
+    assert len(servicio.CLAVES_EXTERNAS) == 29
     assert "desnivel_perfil_canal_m" in servicio.CLAVES_EXTERNAS
     cota = "cota_afectacion_aguas_arriba_msnm"
     assert {f.value for f in servicio.FAMILIAS_QUE_USAN[cota]} == {"A", "B"}

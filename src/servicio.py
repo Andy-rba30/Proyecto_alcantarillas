@@ -792,6 +792,22 @@ CLAVE_DESNIVEL_PERFIL_CANAL = "desnivel_perfil_canal_m"
 CLAVES_EXTERNAS += (CLAVE_DESNIVEL_PERFIL_CANAL,)
 CLAVES_QUE_ADMITEN_CERO += (CLAVE_DESNIVEL_PERFIL_CANAL,)
 FAMILIAS_QUE_USAN[CLAVE_DESNIVEL_PERFIL_CANAL] = (Familia.C,)
+# --- VE-5 (lote m45, item 18; fichas EXT-2-01 y T3-05) --- V6: SI EL CAUCE
+# DEL PUNTO ARRASTRA palizada, troncos o material de cauce. El Manual (num.
+# 4.1.1.3.4 a), pag. impresa 72, PDF 75; cita MC_HHD.4.1.1.3.4a#MULTIPLES)
+# pide que el diseño de alcantarillas multiples «tenga en cuenta la
+# capacidad de arrastre del curso natural», recomendando seccion libre sin
+# subdivisiones. Es un [S] POR PUNTO (inspeccion del cauce), booleano, por
+# punto o global, opcional y sin valor por defecto. Lo lee V6 solo cuando
+# el punto tiene mas de una celda: con `false` la multicelda se acepta; con
+# `true` o sin declarar, no. No hay fila en FAMILIAS_QUE_USAN: V6 corre en
+# las tres familias. Y no es una falta para el pre-vuelo: sin el dato V6 no
+# se detiene, rechaza la multicelda (el lado de la recomendacion), de modo
+# que va con las de via alterna.
+CLAVE_ARRASTRE_DE_SOLIDOS = M5.CLAVE_ARRASTRE_DE_SOLIDOS
+CLAVES_BOOLEANAS += (CLAVE_ARRASTRE_DE_SOLIDOS,)
+CLAVES_EXTERNAS += (CLAVE_ARRASTRE_DE_SOLIDOS,)
+EXTERNOS_CON_VIA_ALTERNA += (CLAVE_ARRASTRE_DE_SOLIDOS,)
 ETAPA_BUCLE_DE_MD = "material y diametro (bucle de MD)"
 DETALLE_FALTA_DESNIVEL_CANAL = M5.DETALLE_FALTA_DESNIVEL_CANAL
 # --- T-7b --- EL SUELO DE FUNDACION DEL CABEZAL, POR PUNTO: los mismos
@@ -2498,8 +2514,14 @@ def _datos_de_expediente(informe: InformePunto, externos: DatosExternos,
     # --- VE-3.6 --- VC3 (Familia C): el desnivel del perfil del canal.
     desnivel = (externos.valor(punto.id, CLAVE_DESNIVEL_PERFIL_CANAL)
                 if punto.familia is Familia.C else None)
+    # --- VE-5 (item 18) --- V6: el arrastre de solidos del cauce del punto.
+    arrastre = externos.dato(punto.id, CLAVE_ARRASTRE_DE_SOLIDOS)
     return DatosDeExpediente(derecho_de_via=derecho, evento_extremo=evento,
-                             desnivel_perfil_canal_m=desnivel)
+                             desnivel_perfil_canal_m=desnivel,
+                             arrastre_de_solidos=(None if arrastre is None
+                                                  else arrastre.valor),
+                             origen_arrastre=("" if arrastre is None
+                                              else arrastre.origen))
 
 
 def _diferir_verificacion(informe: InformePunto, codigo: str,
@@ -2695,7 +2717,8 @@ def _verificador_perfil(informe: InformePunto,
         for pieza in (
             lambda: M5.v6_material_solido_arrastre(material=material,
                                                    seccion=seccion,
-                                                   Q=resultado.Q),
+                                                   Q=resultado.Q,
+                                                   expediente=expediente),
             lambda: M5.v7_flotacion(punto=punto, material=material,
                                     seccion=seccion, resultado=resultado),
         ):

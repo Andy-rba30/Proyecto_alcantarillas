@@ -89,6 +89,10 @@ diferencia importa porque se corrigen en sitios distintos:
       Y, desde VE-4d, `longitud_cresta_desborde_m` (m; la longitud de la
       cresta por la que la plataforma desborda, del perfil de la via), que
       lee V8 con el umbral «desborde_admitido_con_terraplen_protegido».
+      Y, desde VE-5, `arrastre_de_solidos` (booleano, [S] por punto de la
+      inspeccion del cauce: si arrastra palizada, troncos o material de
+      cauce), que lee V6 con mas de una celda: con `false` acepta la
+      multicelda (Manual, num. 4.1.1.3.4 a)).
   (b) COLUMNAS QUE UNA FAMILIA DEJA VACIAS POR TABLERO. `Q_m3s` y `S_cauce`.
       La columna existe y para la Familia C va vacia a proposito
       (`M0_carga._VACIAS_FAMILIA_C`): su valor no lo tiene quien escribe el

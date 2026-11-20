@@ -102,7 +102,12 @@ SEIS_EXTERNAS = ("luz_m", "TW_m", "longitud_m", "S_conducto",
                  # C; este censo se habia quedado sin el desde VE-3.6.
                  "desnivel_perfil_canal_m",
                  # --- VE-4d --- la cresta del desborde admitido de V8.
-                 "longitud_cresta_desborde_m")
+                 "longitud_cresta_desborde_m",
+                 # --- VE-4c --- la seccion del cauce de aproximacion (el
+                 # perfil de remanso de V5); faltaba aqui desde VE-4c.
+                 "seccion_cauce_aproximacion",
+                 # --- VE-5 (m45, item 18) --- el arrastre del cauce, V6.
+                 "arrastre_de_solidos")
 
 
 def _formas_de(clave):

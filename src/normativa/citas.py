@@ -4201,10 +4201,13 @@ CAJON_MULTIPLES = _cita(
                 por_que=("la capacidad de arrastre del curso -- palizada, "
                          "troncos, material de cauce -- no es una magnitud "
                          "que este programa calcule ni una columna del CSV: "
-                         "se establece con inspeccion del cauce"),
-                que_lo_cerraria=("una caracterizacion del arrastre por punto, "
-                                 "que hoy no entra al calculador por ninguna "
-                                 "via")),
+                         "se establece con inspeccion del cauce, y es de "
+                         "CADA punto, no del corredor"),
+                que_lo_cerraria=("la caracterizacion del arrastre por punto, "
+                                 "`arrastre_de_solidos` de --datos-externos "
+                                 "(VE-5), que V6 lee para aceptar o no la "
+                                 "multicelda; la eleccion de un criterio no "
+                                 "la resuelve")),
             efecto_si_indeterminada=Efecto.ADVIERTE,
             justificacion_de_no_bloquear=(
                 "la recomendacion apunta a la seccion UNICA, que es la que "

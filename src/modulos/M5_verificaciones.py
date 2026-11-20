@@ -505,6 +505,9 @@ CRITERIO_REMANSO = "remanso_derecho_via"
 CRITERIO_SOBREELEVACION_REMANSO = "sobreelevacion_admisible_remanso_m"
 # --- VE-4c --- el dato externo de la seccion del cauce de aproximacion.
 CLAVE_SECCION_CAUCE = "seccion_cauce_aproximacion"
+# --- VE-5 (item 18) --- el dato por punto que V6 lee con N > 1 (la clave la
+# registra `servicio.CLAVE_ARRASTRE_DE_SOLIDOS`, que la nombra igual).
+CLAVE_ARRASTRE_DE_SOLIDOS = "arrastre_de_solidos"
 CRITERIO_EVENTO_EXTREMO = "TR_evento_extremo"
 # --- T-7b --- el umbral con que V8 juzga el «no colapso».
 CRITERIO_UMBRAL_V8 = "umbral_no_colapso_evento_extremo"
@@ -3279,9 +3282,22 @@ def vc1_borde_libre_canal(*, punto: PuntoCritico,
 
 def v6_material_solido_arrastre(*, material: Material,
                                 seccion: Optional[Seccion] = None,
-                                Q: Optional[float] = None) -> Verificacion:
+                                Q: Optional[float] = None,
+                                expediente: Optional[DatosDeExpediente] = None
+                                ) -> Verificacion:
     """
     Con palizada: seccion unica mayor, nunca multiple (Sec. 3.1).
+
+    --- VE-5 (lote m45, item 18; fichas EXT-2-01 y T3-05) --- LA PUERTA DEL
+    ARRASTRE. El Manual, num. 4.1.1.3.4 a) (pag. impresa 72, PDF 75; cita
+    `MC_HHD.4.1.1.3.4a#MULTIPLES`), condiciona la recomendacion de seccion
+    unica a la «capacidad de arrastre del curso natural (palizada, troncos y
+    material de cauce)». Con N > 1 V6 lee `expediente.arrastre_de_solidos`
+    (`arrastre_de_solidos` de --datos-externos, [S] por punto de la
+    inspeccion del cauce): con `False` el curso no arrastra y la multicelda
+    se ACEPTA; con `True` no se acepta (la recomendacion rige); sin declarar
+    sigue sin aceptarse, como hasta VE-5, y el paso dice que dato falta. Con
+    una celda el dato no se consulta: la seccion unica cumple siempre.
 
     --- T-3 --- (cadena T, INF-0.4) CON N > 1 LA FILA DICE QUE SE RECHAZA, y
     no solo cuantas celdas: el reparto Q/N que MD ya hace (EXT-2), el tabique
@@ -3353,9 +3369,32 @@ def v6_material_solido_arrastre(*, material: Material,
             f"monolitico vaciado in situ: la separacion de tubos del num. "
             f"4.1.1.3.4 a) -- D/2 entre 0.40 y 1.00 m, entre superficies "
             f"externas -- es de TUBERIAS con relleno entre ellas); ancho "
-            f"exterior total {ancho:.2f} m. No se acepta mientras no haya "
-            f"dato de arrastre del cauce (ficha EXT-2-01)")
-    cumple = celdas == 1
+            f"exterior total {ancho:.2f} m")
+    arrastre = None if expediente is None else expediente.arrastre_de_solidos
+    origen_arrastre = ("" if expediente is None
+                       else expediente.origen_arrastre)
+    sin_arrastre = arrastre is False
+    cumple = celdas == 1 or sin_arrastre
+    if celdas > 1:
+        obtenido += (
+            "; el cauce NO arrastra palizada, troncos ni material de cauce "
+            f"('{CLAVE_ARRASTRE_DE_SOLIDOS}' = false: {origen_arrastre}): la "
+            "multicelda se acepta" if sin_arrastre else
+            "; el cauce ARRASTRA palizada, troncos o material de cauce "
+            f"('{CLAVE_ARRASTRE_DE_SOLIDOS}' = true: {origen_arrastre}): la "
+            "recomendacion de seccion unica rige" if arrastre else
+            f"; sin '{CLAVE_ARRASTRE_DE_SOLIDOS}' declarado para el punto "
+            "(--datos-externos): no se acepta mientras no se sepa si el "
+            "cauce arrastra (ficha EXT-2-01)")
+    if celdas > 1:
+        magnitud_arrastre = Magnitud(
+            "arrastre", ("no" if sin_arrastre else "si" if arrastre
+                         else "no declarado"), "",
+            (f"'{CLAVE_ARRASTRE_DE_SOLIDOS}' de --datos-externos, [S] por "
+             f"punto de la inspeccion del cauce: {origen_arrastre}")
+            if arrastre is not None else
+            f"'{CLAVE_ARRASTRE_DE_SOLIDOS}' no declarado para el punto",
+            cifras=None)
     # --- T-10 --- EL PASO, que V6 no tenia («constatacion declarativa sin
     # magnitud ni umbral», censo `SIN_FUNDAMENTO`). Desde C5 y T-3 V6 cuenta
     # celdas, que SI es una magnitud, y la fuente que la sostiene RECOMIENDA:
@@ -3371,9 +3410,11 @@ def v6_material_solido_arrastre(*, material: Material,
             "F5.V6",
             codigo="V6",
             que="Seccion unica con arrastre: numero de celdas del conducto",
-            formula="N_celdas = 1",
+            formula=("N_celdas = 1, salvo que el cauce del punto no arrastre "
+                     f"('{CLAVE_ARRASTRE_DE_SOLIDOS}' = false)"),
             sustitucion=(
-                Magnitud("N_celdas", celdas, "celda", procedencia),),
+                Magnitud("N_celdas", celdas, "celda", procedencia),
+                *((magnitud_arrastre,) if celdas > 1 else ())),
             resultado=Magnitud("N_celdas", celdas, "celda", obtenido),
             umbral=_umbral_de(
                 "V6", valor=1, unidad="celda",
@@ -3383,9 +3424,16 @@ def v6_material_solido_arrastre(*, material: Material,
             veredicto=_veredicto(
                 cumple, 1 - celdas, "celda",
                 "una sola celda: la seccion libre no se subdivide"
+                if celdas == 1 else
+                "mas de una celda en un cauce declarado SIN arrastre: la "
+                "condicion de la recomendacion no se da y la multicelda se "
+                "acepta"
                 if cumple else
-                "mas de una celda: no se acepta mientras no haya un dato "
-                "de sitio sobre la capacidad de arrastre del cauce (ficha "
+                "mas de una celda en un cauce que ARRASTRA: rige la "
+                "recomendacion de seccion libre sin subdivisiones"
+                if arrastre else
+                "mas de una celda: no se acepta mientras no se declare si el "
+                f"cauce arrastra ('{CLAVE_ARRASTRE_DE_SOLIDOS}', ficha "
                 "EXT-2-01)"),
         ),
     )
@@ -4834,7 +4882,8 @@ def verificar(*, punto: PuntoCritico, material: Material,
                             else expediente.derecho_de_via))[1],
         lambda: v6_material_solido_arrastre(material=material,
                                             seccion=seccion,
-                                            Q=resultado.Q),
+                                            Q=resultado.Q,
+                                            expediente=expediente),
         lambda: v7_flotacion(punto=punto, material=material,
                              seccion=seccion, resultado=resultado),
         pieza_v8,

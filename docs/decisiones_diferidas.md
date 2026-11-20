@@ -1546,6 +1546,13 @@ argumento para que nadie las lea como olvido.
   declarado. Con ese dato, `test_V6_sigue_rechazando_el_multicelda` se
   reescribe en la misma sesión.
 - **Dónde vive:** `src/modulos/M5_verificaciones.py::v6_material_solido_arrastre`
+- **Cerrado (VE-5, lote m45, ítem 18):** la entrada existe: `arrastre_de_solidos`, booleano
+  por punto o global de `--datos-externos` ([S] de la inspección del cauce), en
+  `servicio.CLAVES_EXTERNAS` (29), con ficha en `variables_entrada` y fila en
+  `docs/contrato_entradas.md`. Viaja en `DatosDeExpediente` y V6 la lee con N > 1: `false`
+  acepta la multicelda; `true` o sin declarar, no. Tests:
+  `tests/test_ve5_m45_arrastre_v6.py`; `test_V6_sigue_rechazando_el_multicelda` sigue
+  valiendo sin el dato.
 
 ## EXT-2-02 · El JSON de la CLI no lleva `Q_celda_m3s` ni `numero_celdas` todavía
 
@@ -5117,8 +5124,9 @@ Doce fichas; las cinco últimas son de la auditoría.
   TUBERÍAS con relleno compactado entre ellas, y la fila la nombra para decir por qué no la
   aplica (cita `MC_HHD.4.1.1.3.4a#SEPARACION`). La cadena T pedía usarla: la fuente no la
   da para un marco. (3) V7 se evalúa por celda: con N > 1 no carga el marco entero.
-- **Qué haría falta:** un dato de sitio sobre la capacidad de arrastre del canal para
-  decidir la multicelda; y, si se adopta, V7 sobre la sección completa.
+- **Cerrado (VE-5, lote m45, ítem 18):** (1) el dato existe —`arrastre_de_solidos`, ficha
+  EXT-2-01— y V6 acepta la multicelda en un cauce declarado sin arrastre.
+- **Qué haría falta:** si se adopta la multicelda, V7 sobre la sección completa.
 - **Dónde vive:** `src/modulos/M5_verificaciones.py::v6_material_solido_arrastre`
 
 ## T3-06 · La geometría del marco queda en `modelos.GeometriaMarco` para la Fase 8 y el cabezal; M8 no se toca

@@ -1081,6 +1081,32 @@ _EXTERNOS: Dict[str, _Externo] = {
              "la consume, y por eso la fase se declara",
     ),
 
+    # --- VE-5 (lote m45, item 18; fichas EXT-2-01 y T3-05) --- el dato por
+    # punto que decide si V6 acepta la multicelda.
+    "arrastre_de_solidos": _Externo(
+        concepto="Si el cauce del punto ARRASTRA palizada, troncos o material "
+                 "de cauce: la «capacidad de arrastre del curso natural» que "
+                 "el num. 4.1.1.3.4 a) del Manual de Hidrologia pide tener en "
+                 "cuenta antes de subdividir la seccion. Booleano, opcional, "
+                 "[S] por punto. Solo cuenta con mas de una celda: con `false` "
+                 "V6 acepta la multicelda; con `true` o sin declarar, no",
+        unidad="booleano",
+        resolucion=Libre(
+            que_lo_fija="la inspeccion del cauce (estudio hidrologico o "
+                        "reconocimiento de campo; para un canal, la Junta de "
+                        "Usuarios), punto a punto o para todo el corredor; "
+                        "es entrada del proyecto, opcional y sin valor por "
+                        "defecto",
+            opciones=("true", "false"),
+        ),
+        criterio_destino="n_celdas_cajon",
+        fase_declarada=_FASE_DE_MODULO["M5_verificaciones"],
+        nota="La lee `servicio._datos_de_expediente` y la pasa a "
+             "`M5.v6_material_solido_arrastre` en `DatosDeExpediente`; "
+             "ningun modulo de calculo la consume por su nombre, y por eso "
+             "la fase se declara",
+    ),
+
     # --- T-6 --- La pendiente transversal de la plataforma en el cruce. Las
     # dos entran a `M7.longitud_del_conducto` como argumento, resueltas por
     # `servicio._resolver_longitud`, y por eso la fase se declara.

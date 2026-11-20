@@ -7648,6 +7648,12 @@ class DatosDeExpediente:
     # --- VE-3.6 --- VC3 (Familia C): el desnivel F que el perfil del canal
     # provee en el cruce (`desnivel_perfil_canal_m` de --datos-externos).
     desnivel_perfil_canal_m: Optional[float] = None
+    # --- VE-5 (item 18, fichas EXT-2-01 y T3-05) --- V6: si el cauce del
+    # punto arrastra palizada, troncos o material de cauce
+    # (`arrastre_de_solidos` de --datos-externos, booleano, [S] por punto de
+    # la inspeccion del cauce), con su origen. None si no se declaro.
+    arrastre_de_solidos: Optional[bool] = None
+    origen_arrastre: str = ""
 
 
 # ---------------------------------------------------------------------------
