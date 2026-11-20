@@ -1174,6 +1174,7 @@ CAIDA = _fundamento(
     verbo=Verbo.RECOMIENDA,
     citas=("HEC14.11.1.3#SALIDA_COLGADA", "HEC14.11.1.3#LIMITES",
            "HEC14.11.1.3#SUBCRITICO", "HEC14.11.1.3#Y3",
+           "HEC14.11.1.3#EC_11_5", "HEC14.11.1.3#EC_11_6",
            "HEC14.11.1.3#ANCHO_APROXIMACION"),
     que_pasa_si_no_se_hace=(
         "La salida colgada quedaria sin medida que disipe la caida, y el "
