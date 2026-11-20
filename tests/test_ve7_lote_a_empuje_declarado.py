@@ -260,3 +260,54 @@ def test_con_relleno_muy_abierto_exige_la_hidrodinamica(tanteo):
         entorno, empuje_sismico=[_declarado(hidro=True, k_h=K_H_TANTEO)]),
         SIS)
     assert datos["metodo_incremento"] == M9.METODO_INCREMENTO_DECLARADO
+
+
+# ===========================================================================
+# Dictamen Fable, abierto (ii): el armado con el empuje declarado
+# ===========================================================================
+
+def test_el_armado_consume_el_declarado_con_la_cuna_sobre_la_pantalla(
+        tanteo, monkeypatch):
+    """Con la cuña sobre la pantalla de archivo y el empuje declarado, el
+    Evento Extremo I del armado va con el plano virtual del talon y arma;
+    sin el declarado, el armado sale solo de Resistencia I."""
+    _inestable(monkeypatch)
+    ca.establecer_valor_dinamico("carga_pantalla_cabezal",
+                                 "cuna_sobre_la_pantalla")
+    sin = M9.solicitaciones_de_resistencia(tanteo)
+    assert any("SOLO de Resistencia I" in a for a in sin["avisos"])
+    entorno = dataclasses.replace(tanteo, empuje_sismico=[_declarado()])
+    sol = M9.solicitaciones_de_resistencia(entorno)
+    assert not any("SOLO de Resistencia I" in a for a in sol["avisos"])
+    assert any("empuje sismico DECLARADO" in a for a in sol["avisos"])
+    _, datos = M9.cargas_del_cabezal(entorno, SIS)
+    cargas, _ = M9.cargas_del_cabezal(entorno, SIS)
+    arranque = M9.empujes_sobre_el_arranque(
+        cargas, datos, entorno.geometria.espesor_zapata)
+    # el plano virtual: EH.h integrado sobre el arranque, no la cara
+    P_total, _ = M9.diagrama_del_suelo_sobre(datos, 0.0)
+    P, M = M9.diagrama_del_suelo_sobre(datos,
+                                       entorno.geometria.espesor_zapata)
+    eh = next(c for c in cargas if c.codigo == "EH.h")
+    assert arranque["EH.h"][0] == pytest.approx(P * eh.H / P_total,
+                                                rel=REL_TRANSPORTE)
+
+
+def test_el_armado_sigue_detenido_si_falta_el_declarado_de_su_k_h(
+        tanteo, monkeypatch):
+    """El muro que no cede arma con k_h = 1.0·k_h0 (11.6.5.4): un declarado
+    solo del k_h de la estabilidad no le sirve, y el aviso nombra el k_h
+    que hace falta."""
+    monkeypatch.setattr(M9, "cadena_sismica", lambda: SimpleNamespace(
+        k_h=K_H_INESTABLE, k_v=0.0, k_h0=0.80))
+    ca.establecer_valor_dinamico("regimen_resistencia_elementos_cabezal",
+                                 "no_cedente_k0")
+    entorno = dataclasses.replace(tanteo, empuje_sismico=[_declarado()])
+    sol = M9.solicitaciones_de_resistencia(entorno)
+    aviso = next(a for a in sol["avisos"] if "SOLO de Resistencia I" in a)
+    assert "k_h = 0.8" in aviso and "NO casa" in aviso
+    # con el declarado de su k_h, arma
+    con = dataclasses.replace(tanteo, empuje_sismico=[
+        _declarado(), _declarado(k_h=0.80, P_AE=70.0)])
+    sol = M9.solicitaciones_de_resistencia(con)
+    assert not any("SOLO de Resistencia I" in a for a in sol["avisos"])

@@ -7013,6 +7013,15 @@ CAMPOS_EMPUJE_SISMICO = ("P_AE_kn_m", "altura_aplicacion_m",
 # analisis, de k_h distinto (el de la estabilidad y el 1.0·k_h0 del armado
 # del muro que no cede).
 MAX_EMPUJES_POR_EXTREMO = 2
+# --- dictamen Fable (abierto (ii)) --- lo que la solicitacion y el cabezal
+# dicen del armado con el empuje declarado.
+NOTA_ARMADO_CON_EMPUJE_DECLARADO = (
+    "; Evento Extremo I con el empuje sismico DECLARADO, entero sobre el "
+    "plano virtual del talon (AASHTO 11.6.5.2.2 y 11.6.5.3; sin la cuña "
+    "sobre la cara de la pantalla)")
+CITAS_ARMADO_CON_EMPUJE_DECLARADO = (
+    "AASHTO_LRFD_9.11.6.5.2.2#ALTURA", "AASHTO_LRFD_9.11.6.5.3#DISTRIBUCION",
+    "AASHTO_LRFD_9.11.6.5.4#NO_CEDENTE", "AASHTO_LRFD_9.11.6.5.3#VALIDEZ")
 CAMPOS_TRAZA_EMPUJE = CAMPOS_TRAZA_GLOBAL
 METODO_INCREMENTO_DECLARADO = (
     "empuje sismico DECLARADO por un analisis externo "
@@ -9548,8 +9557,15 @@ def empujes_sobre_el_arranque(cargas: tuple, datos: dict, e_z: float, *,
     alto = max(h - e_z, 0.0)
     salida = {}
     cara = None
-    if _eleccion(CRITERIO_CARGA_PANTALLA, (PANTALLA_PLANO_VIRTUAL,
-                                           PANTALLA_CUNA)) == PANTALLA_CUNA:
+    # --- dictamen Fable (VE-7 lote A, abierto (ii)) --- con el empuje
+    # sismico DECLARADO el Evento Extremo I va entero con el plano virtual
+    # del talon (EH, LS y EQ), que es el del analisis declarado (AASHTO
+    # 11.6.5.2.2); la cuña sobre la cara no se calcula con un empuje que el
+    # programa no sabe calcular. Resistencia I y Servicio no cambian.
+    if datos.get("empuje_sismico_declarado"):
+        pass
+    elif _eleccion(CRITERIO_CARGA_PANTALLA, (PANTALLA_PLANO_VIRTUAL,
+                                             PANTALLA_CUNA)) == PANTALLA_CUNA:
         # --- VE-3.14, opcion 10 --- la cuña sobre la cara de la pantalla,
         # en la misma proporcion con que cada juego (activo o reposo) escala
         # el diagrama del plano virtual.
@@ -9681,7 +9697,9 @@ def solicitaciones_por_elemento(entorno: EntornoDelCabezal, cargas: tuple,
             elemento=ELEMENTO_PANTALLA, seccion="arranque de la pantalla",
             combinacion=combo.nombre, V_u=V_p, M_u=M_p,
             nota="diagrama de cada empuje integrado por encima del "
-                 "arranque; inercia de la pantalla sola"))
+                 "arranque; inercia de la pantalla sola"
+                 + (NOTA_ARMADO_CON_EMPUJE_DECLARADO
+                    if datos.get("empuje_sismico_declarado") else "")))
         salida.append(SolicitacionDeElemento(**marca, 
             elemento=ELEMENTO_ALEROS,
             seccion="arranque del alero (altura inicial, la del cabezal)",
@@ -13387,6 +13405,13 @@ def solicitaciones_de_resistencia(entorno: EntornoDelCabezal) -> dict:
                 "enteros; la reduccion (1 - k_v) de los pesos solo entra en "
                 "la estabilidad (E1 a E3)")
         combos_s = combinaciones_de_estabilidad(cargas_s, datos_s, sis, g.B)
+        if datos_s.get("empuje_sismico_declarado"):
+            d = datos_s["empuje_sismico_declarado"]
+            avisos.append(
+                f"{quien}: el Evento Extremo I del armado usa el empuje "
+                f"sismico DECLARADO ({d['documento']}, k_h = {d['k_h']:g})"
+                + NOTA_ARMADO_CON_EMPUJE_DECLARADO + " ("
+                + ", ".join(CITAS_ARMADO_CON_EMPUJE_DECLARADO) + ")")
         ced_s = solicitaciones_por_elemento(entorno, cargas_s, combos_s,
                                             datos_s)
         sismico = True
