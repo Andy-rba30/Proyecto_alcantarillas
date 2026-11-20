@@ -578,11 +578,8 @@ def _delta_de_7A(punto: PuntoCritico, material: Material, seccion: Seccion,
     solo_resguardo = incumplidas == {CODIGO_RESGUARDO}
     if solo_resguardo and (resultado.control_gobernante
                            is not ControlGobernante.ENTRADA):
-        return None, ("No se da delta de rasante para ese escalon: de lo que "
-                      f"se le evaluo solo incumple {CODIGO_RESGUARDO} (el "
-                      "resguardo), pero gobierna el control de SALIDA y su HW "
-                      "cambia con la longitud, que crece con la rasante: el "
-                      "delta exigiria iterar 7.A con 7.B")
+        return _delta_del_resguardo_bajo_salida(punto, material, seccion,
+                                                resultado)
     if incumplidas and not solo_resguardo:
         return None, ("No se da delta de rasante para ese escalon: de lo que "
                       f"se le evaluo incumple {_codigos(completadas)}, y "
@@ -628,6 +625,59 @@ def _delta_de_7A(punto: PuntoCritico, material: Material, seccion: Seccion,
         "porque a ese escalon le faltan las verificaciones que no llegaron a "
         "evaluarse, la longitud y el HW cambian y los escalones menores se "
         f"reevaluan con mas relleno{provisional}")
+
+
+MENSAJE_SIN_DELTA_BAJO_SALIDA = (
+    "No se da delta de rasante para ese escalon: de lo que se le evaluo solo "
+    f"incumple {CODIGO_RESGUARDO} (el resguardo), pero gobierna el control "
+    "de SALIDA y su HW cambia con la longitud, que crece con la rasante: el "
+    "delta exigiria iterar 7.A con 7.B")
+
+
+def _delta_del_resguardo_bajo_salida(punto: PuntoCritico, material: Material,
+                                     seccion: Seccion,
+                                     resultado: ResultadoHidraulico
+                                     ) -> Tuple[Optional[float], str]:
+    """
+    --- VE-7 lote B, B2 (VE6-34 / VE3-08 H3a; decision del consultor Fable,
+    triaje VE-7, 2026-11-20) --- El delta del resguardo de un escalon que no
+    cabe y solo incumple V4 BAJO CONTROL DE SALIDA, como COTA INFERIOR
+    rigurosa y sin iterar 7.A con 7.B.
+
+    Por que el HW de ENTRADA: el HW gobernante es el mayor de los dos
+    (HDS-5 num. 3.3.5, pag. impresa 3.25, `HDS5_3ED.3.3.5#GOBIERNA`: «The
+    higher of the two is designated the controlling headwater elevation»),
+    de modo que nunca baja del de entrada; y el de entrada lo fijan la
+    seccion, la embocadura y el caudal, no la longitud (Sec. 4.2). Con la
+    rasante nueva la longitud crece y el HW de salida cambia, pero el
+    gobernante sigue siendo >= HW_entrada: el delta con HW_entrada es lo
+    MINIMO que ese escalon necesita. Si con HW_entrada el resguardo ya cabe,
+    no hay cota inferior util y se conserva el mensaje anterior.
+    """
+    tamizado_rasante = import_module(MODULO_GEOMETRIA).tamizado_rasante
+    try:
+        t = tamizado_rasante(punto=punto, material=material, seccion=seccion,
+                             HW=resultado.HW_entrada)
+    except ErrorProyecto as exc:
+        return None, (f"{MENSAJE_SIN_DELTA_BAJO_SALIDA}; y el tamizado con el "
+                      "HW de entrada no se pudo calcular -- "
+                      f"{type(exc).__name__}: {exc}")
+    if t.factible:
+        return None, MENSAJE_SIN_DELTA_BAJO_SALIDA
+    provisional = f". PROVISIONAL: {t.aviso}" if t.provisional else ""
+    return t.delta_rasante_m, (
+        f"Delta de rasante de 7.A para ese escalon: {t.delta_rasante_m:.3f} m, "
+        "cota inferior con el HW de entrada (gobierna la condicion "
+        f"{t.condicion_gobernante.value}: entrada {t.cota_entrada:.3f} msnm + "
+        f"HW_entrada {t.HW:.3f} m + resguardo {t.resguardo:.3f} m + paquete "
+        f"{t.espesor_paquete:.3f} m = rasante minima {t.cota_rasante_min:.3f} "
+        f"msnm; la actual es {t.cota_rasante_actual:.3f}). El escalon solo "
+        "incumplia V4 y gobierna el control de SALIDA, cuyo HW cambia con la "
+        f"longitud; el gobernante ({resultado.HW:.3f} m hoy) nunca baja del "
+        "de entrada, que no depende de la longitud (HDS-5 num. 3.3.5). Es "
+        "COTA INFERIOR para ese escalon, no el remedio verificado del punto: "
+        "con la rasante nueva la corrida se repite (VE-7, ficha "
+        f"VE7B-04){provisional}")
 
 
 def _nota_delta_resguardo(t) -> str:
@@ -846,9 +896,31 @@ def _motivo_escalon_sin_cabida(seccion: Seccion, sin_cabida: EscalonSinCabida,
         evaluado = "lo que se le evaluo antes cumple"
     else:
         evaluado = f"de lo que se le evaluo antes incumple {_codigos(completadas)}"
+    # --- VE-7 lote B, B1 --- solo con un escalon mas bajo por delante; sin
+    # el, el texto es el de T11-03 (la traza del tubo no cambia).
+    sigue = ("" if mas_bajo is None else
+             f"; queda un escalon mas bajo en la progresion "
+             f"({mas_bajo.etiqueta()}), que baja la clave: la progresion "
+             "sigue")
     return (f"{_lugar_sin_cabida(seccion, sin_cabida)}: no hay relleno sobre "
             "la clave, y la verificacion que lo pesa y las que la siguen en "
-            f"la tabla no se evaluan; {evaluado}")
+            f"la tabla no se evaluan; {evaluado}{sigue}")
+
+
+def _mas_bajo_o_ninguno(material: Material,
+                        seccion: Seccion) -> Optional[Seccion]:
+    """
+    --- VE-7 lote B, B1 --- `_escalon_restante_mas_bajo` para la rama «no
+    cabe» del bucle. Si recorrer el resto de la progresion levanta un
+    `ErrorProyecto` (un escalon no designado mas arriba, por ejemplo), se lee
+    como «ninguno mas bajo»: es exactamente lo que el bucle hacia antes de
+    VE-7 en esta rama --descartar por rasante--, y el escalon que reventaria
+    lo dira el material cuando se llegue a el, no esta consulta.
+    """
+    try:
+        return _escalon_restante_mas_bajo(material, seccion)
+    except ErrorProyecto:
+        return None
 
 
 def _motivo_descarte_por_rasante(seccion: Seccion,
@@ -1088,15 +1160,33 @@ def disenar_material(punto: PuntoCritico, material: Material, *,
             sin_cabida = _escalon_sin_cabida(punto, material, seccion, exc,
                                              completadas, resultado)
             if sin_cabida is not None:
+                # --- VE-7 lote B, B1 (VE6-34 / T11-03 (5); decision del
+                # consultor Fable, triaje VE-7, 2026-11-20) --- la regla del
+                # escalon mas bajo de G1 vale tambien aqui: en el marco la
+                # serie (B, H) no se ordena por altura y un par siguiente
+                # mas bajo baja la clave y puede caber. Se registra y la
+                # progresion SIGUE; el material se descarta por rasante solo
+                # si no queda ninguno mas bajo. En el tubo nunca lo hay y la
+                # traza es la de siempre.
+                mas_bajo = _mas_bajo_o_ninguno(material_del_catalogo,
+                                               seccion)
                 _registrar(registrar, material, seccion, aceptado=False,
                            motivo=_motivo_escalon_sin_cabida(
-                               seccion, sin_cabida, completadas),
+                               seccion, sin_cabida, completadas,
+                               mas_bajo=mas_bajo),
                            verificaciones=completadas, resultado=resultado,
                            sin_cabida=sin_cabida)
-                es_el_primero = not visitadas[:-1]
-                return None, _motivo_descarte_por_rasante(
-                    seccion, sin_cabida,
-                    None if es_el_primero else ultimo_motivo)
+                if mas_bajo is None:
+                    es_el_primero = not visitadas[:-1]
+                    return None, _motivo_descarte_por_rasante(
+                        seccion, sin_cabida,
+                        None if es_el_primero else ultimo_motivo)
+                ultimo_motivo = _motivo_escalon_sin_cabida(
+                    seccion, sin_cabida, completadas, mas_bajo=mas_bajo)
+                ultimo_por_fase_8 = False
+                material = material_del_catalogo
+                seccion = siguiente_seccion(material, seccion)
+                continue
             _registrar(registrar, material, seccion, aceptado=False,
                        motivo=_motivo_escalon_fallido(seccion, exc),
                        verificaciones=completadas,

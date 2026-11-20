@@ -6936,12 +6936,11 @@ y un test regenera cada uno.
 - **Abierto:** (1) el delta no es el remedio verificado del punto: con la rasante nueva la
   corrida se repite, y un escalón menor que hoy sólo incumple V4 o V7 podría cerrar con
   menos. (2) Si el escalón que no cabe incumple sólo V4, el tamizado daría un delta por
-  resguardo, que depende del HW: no se informa. (5) Un marco con alturas declaradas no
-  crecientes se detiene en el primer escalón que no cabe, como antes. (6) El inválido de
+  resguardo, que depende del HW: no se informa. (5) cerrado en VE-7 (ficha VE7B-03). (6) El inválido de
   antes de la Fase 5 que detiene a UN solo material no bloquea ni decide (el `campo` del
   arranque: cerrado en VE-7, ficha VE7B-01).
 - **VE-6 (ítem 34):** el abierto (2) queda cerrado bajo control de ENTRADA (ficha VE6-34);
-  bajo control de salida sigue sin darse.
+  bajo salida, con el HW de entrada desde VE-7 (ficha VE7B-04).
 - **Qué haría falta:** para (1), el tamizado previo de 7.A corrido antes del bucle con la
   sección máxima supuesta, que el servicio no corre; para (6), decisión del dueño.
 - **Dónde vive:** `src/modulos/MD.py::_resumen_por_rasante`
@@ -9182,12 +9181,10 @@ cambios están aplicados en estas fichas.
   «Addendum VE-6» en la nota T11-03 de §7.B.
 - **Decisiones (aprobadas por Fable con cambios):** H7 sólo con V10, la única cuya independencia
   de la sección se demuestra; el delta bajo salida exigiría iterar 7.A con 7.B y no se inventa.
-- **Abierto:** H7 con V2, V2b y V7; el delta de V4 bajo salida; la rama «no cabe» de T11-03 en el
-  marco sigue deteniéndose en el primer par que no cabe aunque quede uno más bajo (abierto (5) de
-  T11-03, anterior a VE-6); la fila NF de VE3-13 sin iterar el peralte (M9 en otra rama; «inflar el
+- **Abierto:** H7 con V2, V2b y V7; el delta de V4 bajo salida y la rama «no cabe» del marco se
+  cerraron en VE-7 (fichas VE7B-04 y VE7B-03); la fila NF de VE3-13 sin iterar el peralte (M9 en otra rama; «inflar el
   peralte no es diseño», decisión de VE-3.14 que sólo el dueño revierte).
-- **Qué haría falta:** la monotonía de V2/V2b/V7 con D; iterar 7.A con 7.B; aplicar la regla del
-  escalón más bajo también a la rama «no cabe»; la decisión del dueño sobre la fila NF.
+- **Qué haría falta:** la monotonía de V2/V2b/V7 con D; la decisión del dueño sobre la fila NF.
 - **Dónde vive:** `src/modulos/MD.py::_escalon_sin_cobertura`
 
 # Parte LXIV — Lo que VE-7 (lote B) dejó escrito: la progresión, el pórtico, los metrados y la hidrología
@@ -9224,3 +9221,36 @@ cambios están aplicados en estas fichas.
   que se leyó; las seis filas de 2850 a 3600 de la Table 6 siguen ilegibles (VE2-G (3)).
 - **Qué haría falta:** imprimir la fila leída en el paso de V7; otro ejemplar de M 170M.
 - **Dónde vive:** `src/modulos/M2_material.py::espesor_pared`
+
+## VE7B-03 · La regla del escalón más bajo vale también en la rama «no cabe» (cierre de T11-03 (5))
+
+- **Cerrado (VE-7 lote B, B1):** en el `except` de `MD.disenar_material`, si el escalón no cabe bajo
+  la subrasante (`_escalon_sin_cabida`) y queda en la progresión uno MÁS BAJO
+  (`_escalon_restante_mas_bajo`, la regla de G1 de VE6-34), el escalón se registra con «queda un
+  escalón más bajo… la progresión sigue» y la progresión continúa; el material se descarta por
+  rasante sólo si no queda ninguno. En el tubo (progresión ascendente) nunca lo hay y la traza es
+  idéntica, palabra por palabra (`tests/test_ve7_lote_b_md.py`). Si recorrer el resto levanta un
+  `ErrorProyecto`, se lee «ninguno» (`_mas_bajo_o_ninguno`): era lo que el bucle hacía antes.
+- **Decisión del consultor Fable (triaje VE-7, 2026-11-20):** registrar y seguir; descartar por
+  rasante sólo sin escalón más bajo.
+- **Abierto:** si después del par que no cabe ningún otro cierra y el catálogo se agota, el motivo es
+  el del último escalón («descartado por diámetro requerido»), no «por rasante», y el punto no lleva
+  el delta del par que no cupo.
+- **Qué haría falta:** decidir si un material que tuvo un escalón sin cabida y agotó el catálogo
+  sale por rasante con ese delta.
+- **Dónde vive:** `src/modulos/MD.py::_mas_bajo_o_ninguno`
+
+## VE7B-04 · El delta del resguardo bajo control de salida, con el HW de entrada (cierre del abierto de VE6-34)
+
+- **Cerrado (VE-7 lote B, B2; VE3-08 H3a):** el escalón que no cabe y sólo incumple V4 bajo control
+  de SALIDA recibe el delta de 7.A calculado con `resultado.HW_entrada`
+  (`MD._delta_del_resguardo_bajo_salida`). Es cota inferior rigurosa sin iterar 7.A con 7.B: el HW
+  gobernante es el mayor de los dos (`HDS5_3ED.3.3.5#GOBIERNA`, pág. impresa 3.25) y el de entrada
+  no depende de la longitud. La nota lo dice («cota inferior con el HW de entrada») y da el HW
+  gobernante de hoy. Si con el HW de entrada el resguardo ya cabe, se conserva el mensaje anterior
+  (`MENSAJE_SIN_DELTA_BAJO_SALIDA`).
+- **Decisión del consultor Fable (triaje VE-7, 2026-11-20):** el HW de entrada como cota inferior.
+- **Abierto:** el delta con el HW gobernante real exigiría iterar 7.A con 7.B (la longitud crece con
+  la rasante); no se hace.
+- **Qué haría falta:** una pasada de MD con la rasante y la longitud nuevas.
+- **Dónde vive:** `src/modulos/MD.py::_delta_del_resguardo_bajo_salida`
