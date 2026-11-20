@@ -152,6 +152,7 @@ from src.modulos.M8_estructural import (CODIGOS_FASE_8,
                                         cama_apoyo_relleno_lateral,
                                         disenar_portico,
                                         exigir_canto_del_portico,
+                                        exigir_distribucion_del_portico,
                                         seleccionar_clase_calibre,
                                         verificar_conducto)
 from src.modulos.M9_cabezal import (aviso_ambiente_corrosivo,
@@ -4169,6 +4170,9 @@ def _fase_8(informe: InformePunto) -> None:
                 # canto declarar (ficha VE7B-11).
                 _etapa(informe.bloqueos, FASE_ESTRUCTURAL, ETAPA_PORTICO_MARCO,
                        lambda: exigir_canto_del_portico(portico, punto.id))
+                _etapa(informe.bloqueos, FASE_ESTRUCTURAL, ETAPA_PORTICO_MARCO,
+                       lambda: exigir_distribucion_del_portico(portico,
+                                                              punto.id))
     informe.cama_apoyo = _etapa(informe.bloqueos, FASE_ESTRUCTURAL,
                                 "cama de apoyo y relleno lateral (item 4)",
                                 lambda: cama_apoyo_relleno_lateral(material))
@@ -4949,6 +4953,14 @@ def _fase_11_metrados(informe: InformePunto) -> None:
     for elemento in M12.RENGLONES_NO_MEDIDOS:
         if elemento == M12.NO_MEDIDO_EMBOQUILLADO and \
                 informe.proteccion_entrada is None:
+            continue
+        # dictamen Fable (defecto 7, ii-b.3): la cama, solo en el marco; la
+        # distribucion, solo si el portico la hace obligatoria.
+        if elemento == M12.NO_MEDIDO_CAMA and \
+                material.forma is not FormaSeccion.RECTANGULAR:
+            continue
+        if elemento == M12.NO_MEDIDO_DISTRIBUCION and not (
+                portico is not None and portico.distribucion_obligatoria):
             continue
         _rubro(M12.etapa_no_medido(elemento),
                lambda e=elemento: M12.renglon_no_medido(

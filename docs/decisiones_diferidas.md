@@ -9332,8 +9332,11 @@ cambios están aplicados en estas fichas.
   `servicio._fase_11_metrados` suma el bucle (cambio mínimo en `servicio.py`).
 - **Decisión del consultor Fable (triaje VE-7, 2026-11-20):** renglón explícito «no medido» con
   motivo en la fase de los metrados.
+- **Revisado por Fable (dictamen del consultor, 2026-11-20): defecto 7, aplicado.** En una tubería
+  la cama la paga la partida del tubo (nota del paso 11.1): el «no medido» de la cama sale sólo en el
+  marco. Desde (ii-b.3), también el de la distribución de la losa superior cuando es obligatoria.
 - **Abierto:** a expediente el punto con cabezal ya no queda sin bloqueos de la Fase 11 mientras
-  estas tres partes no se metren: es lo que la decisión pide decir. Su medición sigue sin hacerse.
+  estas partes no se metren: es lo que la decisión pide decir. Su medición sigue sin hacerse.
 - **Qué haría falta:** la sección del relleno y de la cama de los planos; la geometría del
   zampeado y del dentellón de la entrada (ficha T8-03).
 - **Dónde vive:** `src/modulos/M12_metrados.py::renglon_no_medido`
@@ -9397,17 +9400,19 @@ cambios están aplicados en estas fichas.
 ## VE7B-12 · El acero del pórtico del marco se metra con sus armados (VE5-MET-01)
 
 - **Cerrado (VE-7 lote B, B6):** `M12.renglones_acero_portico` mide el acero del pórtico (504.10,
-  partida 504.A) con los armados de `DisenoPortico` (las caras traccionadas y, desde B4, las de
-  mínimo) por la longitud de metrado del barril a lo largo del eje (la del conducto, 11.1): P = (1 +
-  i)·Σ (L_eje/s)·largo·w, con w de la Tabla 504-01 (`EG2013.504.01#PESOS`) e i de
-  `incremento_acero_por_despiece`, que es la puerta (`CriterioPendienteError` sin él, como en el
-  cabezal). Lectura del proyecto, en la nota del paso: cada cara de cada miembro lleva en todo su
-  largo entre ejes la barra de su sección con más acero (`M8.largos_de_los_miembros`,
-  `M8.miembros_de_las_secciones`). `servicio._fase_11_metrados` pasa `estructural.portico` (cambio
-  mínimo) y el aviso «el acero del marco no se metra» sólo sale sin pórtico.
-- **Decisión del consultor Fable (triaje VE-7, 2026-11-20):** armados × longitud de metrado, Tabla
-  504-01, tras la puerta del incremento.
-- **Abierto:** el acero longitudinal (de distribución, 9.7.3.2) del marco no se diseña ni se metra;
-  la envolvente por miembro es del lado seguro y no el despiece del plano.
-- **Qué haría falta:** el refuerzo de distribución del pórtico y el despiece declarado.
+  partida 504.A) con sus armados y la longitud de metrado del barril a lo largo del eje, Tabla 504-01
+  (`EG2013.504.01#PESOS`), tras la puerta `incremento_acero_por_despiece`. `servicio._fase_11_metrados`
+  pasa `estructural.portico`; el aviso del acero del marco sólo sale sin pórtico.
+- **Revisado por Fable (dictamen del consultor, 2026-11-20): defecto 4 y (ii-b), aplicados.** (a) El
+  LONGITUDINAL mínimo de 5.10.6 (12.11.5.3.1) se diseña (`DisenoPortico.longitudinales`, la fila de
+  reparto de M9 con el ancho real, paso `F8.PORTICO_LONGITUDINAL`) y se metra: Σ (largo/s)·L_eje·w.
+  (b) La barra transversal mide largo entre ejes + canto − 2·recubrimiento (el menor de los armados
+  del miembro: lado seguro; `M8.espesores_de_los_miembros`). (c) Un pórtico que no cumple no se
+  metra: `MetodoNoEvaluableError` «armado no cerrado». (ii-b.3) Con menos de 2.0 ft hasta la rasante
+  la distribución de la losa superior es obligatoria: `M8.exigir_distribucion_del_portico` bloquea la
+  etapa del pórtico y M12 da el renglón «no medido» de la distribución (9.7.3.2).
+- **Abierto (bloqueo declarado):** 9.7.3.2 no está en el registro; al transcribirla, incluir también
+  5.12.2.1 de la 9.ª ed. (exceptúa «culvert tops… fill exceeds 2.0 ft»; citado de memoria: verificar
+  contra el PDF). Los cantos separados no proceden (dictamen, (ii-a)).
+- **Qué haría falta:** transcribir 9.7.3.2 y 5.12.2.1 y diseñar la distribución.
 - **Dónde vive:** `src/modulos/M12_metrados.py::renglones_acero_portico`

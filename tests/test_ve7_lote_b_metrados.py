@@ -31,15 +31,18 @@ def _a01(corrida):
     return next(p for p in corrida.puntos if p.punto.id == "A-01")
 
 
-def test_los_tres_no_medidos_son_bloqueos_de_la_fase_de_metrados(corrida):
+def test_los_no_medidos_son_bloqueos_de_la_fase_de_metrados(corrida):
     a01 = _a01(corrida)
     assert a01.metrado is not None and a01.metrado.renglones
     no_medidos = [b for b in a01.bloqueos
                   if b.fase == servicio.FASE_METRADOS
                   and b.etapa.endswith(": no medido")]
     etapas = {b.etapa for b in no_medidos}
+    # Dictamen Fable (defecto 7): en una TUBERIA la cama la paga la partida
+    # del tubo, y su «no medido» era falso: dos bloqueos, no tres.
+    assert a01.resultado.material.forma.value == "circular"
     assert etapas == {M12.etapa_no_medido(e)
-                      for e in (M12.NO_MEDIDO_RELLENO, M12.NO_MEDIDO_CAMA,
+                      for e in (M12.NO_MEDIDO_RELLENO,
                                 M12.NO_MEDIDO_EMBOQUILLADO)}
     for b in no_medidos:
         assert b.tipo is TipoDeBloqueo.METODO_NO_EVALUABLE

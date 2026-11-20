@@ -852,6 +852,15 @@ def renglones_acero_portico(*, portico, cabezal, S: float
     el portico no lo diseña (`M8.DIFERIDO_PORTICO`).
     """
     from src.modulos import M8_estructural as M8     # perezoso, como M9
+    # --- dictamen Fable (defecto 4c) --- un armado que no cierra no se metra.
+    if not portico.cumple:
+        raise MetodoNoEvaluableError(
+            "acero del portico del marco", id_punto=cabezal.id_punto,
+            procedimiento="el armado del portico cerrado: declarar el canto "
+                          "que lo cierra (ficha VE7B-11)",
+            motivo="armado no cerrado: el portico incumple sus "
+                   "verificaciones y sus barras no son las del plano",
+            rotulo=MOTIVO_METODO_NO_EVALUABLE_METRADO)
     i = ca.valor(CRITERIO_INCREMENTO_ACERO)
     L = cabezal.longitud_metrado
     if L is None:
@@ -862,7 +871,26 @@ def renglones_acero_portico(*, portico, cabezal, S: float
     L_eje = L * math.sqrt(1 + S ** 2)
     g = portico.geometria
     largos = M8.largos_de_los_miembros(g)
+    espesores = M8.espesores_de_los_miembros(g)
     miembro_de = M8.miembros_de_las_secciones(g)
+    # --- dictamen Fable (defecto 4b) --- la barra transversal mide el largo
+    # entre ejes + el canto - 2 recubrimientos (de cara exterior a cara
+    # exterior del miembro); el recubrimiento, el MENOR de los armados del
+    # miembro (barra mas larga: lado seguro del metrado), o el menor del
+    # portico si el miembro no tiene cara armada.
+    rec_por_miembro: Dict[str, float] = {}
+    for a in portico.armados:
+        m_a = miembro_de[a.clave.rsplit(".", 1)[0]]
+        r = a.recubrimiento_mm / MILIMETROS_POR_METRO
+        rec_por_miembro[m_a] = min(r, rec_por_miembro.get(m_a, r))
+    if not rec_por_miembro:
+        raise MetodoNoEvaluableError(
+            "acero del portico del marco", id_punto=cabezal.id_punto,
+            procedimiento="una cara armada del portico",
+            motivo="ninguna cara armada da el recubrimiento con que se mide "
+                   "el largo de las barras",
+            rotulo=MOTIVO_METODO_NO_EVALUABLE_METRADO)
+    rec_min = min(rec_por_miembro.values())
     caras = [(a.clave, a.barra) for a in portico.armados] + [
         (f.posicion.split(":", 1)[0], f.barra) for f in portico.minimos]
     por_cara: Dict[Tuple[str, str], object] = OrderedDict()
@@ -886,21 +914,41 @@ def renglones_acero_portico(*, portico, cabezal, S: float
     filas_sust = []
     for (miembro, cara), b in por_cara.items():
         w = PESO_BARRA_KG_M_EG2013[b.designacion]
-        largo = largos[miembro]
+        rec = rec_por_miembro.get(miembro, rec_min)
+        largo = largos[miembro] + espesores[miembro] - 2 * rec
         peso = (L_eje / b.espaciamiento) * largo * w
         clave = f"Ø {b.designacion}\""
         por_barra[clave] = por_barra.get(clave, 0.0) + peso
         filas_sust.append(_m(
             f"{miembro}.{cara}", peso, "kg",
-            f"{b.texto}: ({L_eje:.3f}/{b.espaciamiento:.3f})·{largo:.3f}·"
-            f"{w:.2f} kg/m"))
+            f"{b.texto}: ({L_eje:.3f}/{b.espaciamiento:.3f})·({largos[miembro]:.3f}"
+            f" + {espesores[miembro]:.3f} - 2·{rec:.3f})·{w:.2f} kg/m"))
+    # --- dictamen Fable (ii-b.2) --- el longitudinal minimo de 5.10.6: las
+    # barras corren a lo largo del barril, (largo / s) por cara.
+    for f in portico.longitudinales:
+        miembro, cara = f.posicion.split(":", 1)[0].rsplit(".", 1)
+        b = f.barra
+        if b is None:
+            raise DatoFaltanteError(
+                "barra del armado", id_punto=cabezal.id_punto,
+                detalle=f"el acero longitudinal del portico no propone barra "
+                        f"para «{f.posicion}» (504.10)")
+        w = PESO_BARRA_KG_M_EG2013[b.designacion]
+        peso = (largos[miembro] / b.espaciamiento) * L_eje * w
+        clave = f"Ø {b.designacion}\""
+        por_barra[clave] = por_barra.get(clave, 0.0) + peso
+        filas_sust.append(_m(
+            f"{miembro}.{cara} (longitudinal)", peso, "kg",
+            f"{b.texto}: ({largos[miembro]:.3f}/{b.espaciamiento:.3f})·"
+            f"{L_eje:.3f}·{w:.2f} kg/m"))
     neto = sum(por_barra.values())
     P = (1 + i) * neto
     codigo, texto = PARTIDA_ACERO_EG2013
     p = paso(
         "F11.ACERO", codigo=f"{CODIGO_ACERO}.marco",
         que="Metrado del acero de refuerzo del portico del marco",
-        formula="P = (1 + i)·Σ (L_eje/s)·largo·w",
+        formula=("P = (1 + i)·[Σ (L_eje/s)·(largo + t - 2 r)·w + "
+                 "Σ (largo/s)·L_eje·w]"),
         formula_cita_id="EG2013.504.10",
         sustitucion=(_m("L_eje", L_eje, "m", "longitud del barril a lo largo "
                         "del eje y siguiendo la pendiente (11.1)"),)
@@ -912,11 +960,13 @@ def renglones_acero_portico(*, portico, cabezal, S: float
         veredicto=_sin_veredicto("metrado: no se contrasta"),
         citas_textuales=("EG2013.504.10", CITA_PESO_BARRA_EG2013),
         nota_del_proyecto=(
-            "Lectura del proyecto: cada cara de cada miembro lleva en todo su "
-            "largo entre ejes la barra de su seccion con mas acero por metro "
+            "Lectura del proyecto: cada cara de cada miembro lleva, de cara "
+            "exterior a cara exterior (largo entre ejes + canto - 2 "
+            "recubrimientos), la barra de su seccion con mas acero por metro "
             "(envolvente del miembro); las caras sin traccion, el minimo de "
-            "5.10.6. El acero longitudinal (de distribucion) del marco no se "
-            "metra: el portico no lo diseña. " + NOTA_SIN_DESPERDICIO))
+            "5.10.6; y el longitudinal minimo de 5.10.6 corre a lo largo del "
+            "barril. La distribucion de la losa superior (9.7.3.2) no se "
+            "metra. " + NOTA_SIN_DESPERDICIO))
     return (RenglonDeMetrado(
         rubro=RUBRO_ACERO, elemento="portico del marco", partida=codigo,
         descripcion=texto, unidad=UNIDAD_KG, cantidad=P, paso=p,
@@ -1067,6 +1117,8 @@ def renglones_proteccion_salida(*, proteccion, seccion, celdas: int
 NO_MEDIDO_RELLENO = "relleno para estructuras (EG-2013 502.A)"
 NO_MEDIDO_CAMA = "cama de apoyo del conducto"
 NO_MEDIDO_EMBOQUILLADO = "revestimiento de la entrada (emboquillado)"
+NO_MEDIDO_DISTRIBUCION = ("acero de distribucion de la losa superior del "
+                          "marco (9.7.3.2)")
 
 # (que se omite, que haria falta para medirlo, por que no se mide hoy)
 RENGLONES_NO_MEDIDOS: Dict[str, Tuple[str, str]] = OrderedDict((
@@ -1076,17 +1128,21 @@ RENGLONES_NO_MEDIDOS: Dict[str, Tuple[str, str]] = OrderedDict((
         "el programa no tiene la seccion del relleno: la Fase 9 da el "
         "cabezal y la 7.B la cota del conducto, no las lineas del relleno")),
     (NO_MEDIDO_CAMA, (
-        "el espesor y el ancho de la cama de la seccion tipica del plano",
-        "la excavacion baja hasta el fondo de la cama (506.07, 508.05), pero "
-        "la cama no tiene renglon propio en el cuadro: en la tuberia la nota "
-        "del paso 11.1 la deja en la partida del tubo, y en el marco no se "
-        "mide")),
+        "el espesor y el ancho de la cama del marco de la seccion tipica del "
+        "plano",
+        "la cama del marco vaciado en sitio no tiene renglon propio en el "
+        "cuadro (en una tuberia la paga la partida del tubo: nota del paso "
+        "11.1)")),
     (NO_MEDIDO_EMBOQUILLADO, (
         "la geometria del zampeado y del dentellon de la entrada (planos del "
         "expediente; ficha T8-03)",
         "la proteccion de la entrada declara la CLASE de revestimiento "
         "('tipo_proteccion_entrada') y ninguna fuente del repositorio le da "
         "dimensiones")),
+    (NO_MEDIDO_DISTRIBUCION, (
+        "el refuerzo de distribucion de AASHTO LRFD 9.7.3.2, por transcribir",
+        "con menos de 2.0 ft de relleno es obligatorio y el portico no lo "
+        "diseña (ficha VE7B-12)")),
 ))
 
 

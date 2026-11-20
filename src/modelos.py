@@ -7557,6 +7557,12 @@ class DisenoPortico:
     # adopta: 'espesor_pared_cajon' mueve la clave, V4, V7 y G1.
     canto_que_cierra_m: Optional[float] = None
     canto_buscado_hasta_m: Optional[float] = None
+    # --- VE-7, dictamen Fable (ii-b) --- el acero LONGITUDINAL minimo de
+    # 5.10.6 (12.11.5.3.1), una `FilaDeArmado` por miembro y cara; y si el
+    # relleno hasta la rasante es menor de 2.0 ft, la distribucion de la losa
+    # superior (9.7.3.2) es obligatoria y no esta implementada.
+    longitudinales: Tuple[Any, ...] = ()
+    distribucion_obligatoria: bool = False
 
     @property
     def cumple(self) -> bool:

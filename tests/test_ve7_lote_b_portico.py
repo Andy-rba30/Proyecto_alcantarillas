@@ -241,59 +241,133 @@ def test_b5_el_canto_anterior_de_la_grilla_no_cierra(a01):
 # B6: el acero del portico, metrado (VE5-MET-01)
 # ===========================================================================
 
+# El portico que CIERRA (ficha VE7B-11): t = 0.30 m con el relleno reducido.
+T_CIERRA = 0.30
+
+
+def _portico_cerrado():
+    from tests.fixtures.casos_patron import CP_FASE_8_ESTRUCTURAL as CP
+    declarado = dict(DECLARACIONES_CAJON, espesor_pared_cajon=T_CIERRA)
+    d = _disenar(CP["punto_A01"](), H_rel=1.0 - (T_CIERRA - 0.20),
+                 declaraciones=declarado)
+    assert d.cumple
+    return d, declarado
+
+
 def test_b6_el_acero_del_portico_a_mano():
     """
-    El portico de prueba (una celda de 2.0 x 1.5 m, t = 0.20 m): las losas
-    miden B + t = 2.20 m entre ejes y las paredes H + t = 1.70 m. Cada cara
-    de cada miembro lleva la barra de mayor acero por metro de sus
-    secciones; P = (1 + i)·Σ (L_eje/s)·largo·w con w de la Tabla 504-01 y
-    L_eje = L·sqrt(1 + S^2).
+    El portico cerrado (una celda de 2.0 x 1.5 m, t = 0.30): losas de
+    B + t = 2.30 m y paredes de H + t = 1.80 m entre ejes. TRANSVERSAL: cada
+    cara de cada miembro lleva la barra de mayor acero de sus secciones, de
+    cara exterior a cara exterior (largo + t - 2 r, r el menor recubrimiento
+    de los armados del miembro), (L_eje/s) barras. LONGITUDINAL (5.10.6):
+    (largo/s) barras de L_eje por miembro y cara. P = (1 + i)·Σ con w de la
+    Tabla 504-01 y L_eje = L·sqrt(1 + S^2).
     """
     from types import SimpleNamespace
     from src.constantes_normativas import PESO_BARRA_KG_M_EG2013
     from src.modulos import M12_metrados as M12
     from tests.apoyo.criterios import declarados
-    from tests.fixtures.casos_patron import CP_FASE_8_ESTRUCTURAL as CP
-    d = _disenar(CP["punto_A01"]())
-    largo_a_mano = {"losa_superior_1": 2.20, "losa_inferior_1": 2.20,
-                    "pared_0": 1.70, "pared_1": 1.70}
+    d, declarado = _portico_cerrado()
+    largo_a_mano = {"losa_superior_1": 2.30, "losa_inferior_1": 2.30,
+                    "pared_0": 1.80, "pared_1": 1.80}
     L, S, i = 10.0, 0.01, 0.10
     L_eje = L * math.sqrt(1 + S ** 2)
+
+    def miembro(sec):
+        return next(m for m in largo_a_mano if sec.startswith(m + "_"))
+    rec = {}
+    for a in d.armados:
+        m = miembro(a.clave.rsplit(".", 1)[0])
+        rec[m] = min(rec.get(m, 1e9), a.recubrimiento_mm / 1000)
     mejor = {}
     for clave, barra in ([(a.clave, a.barra) for a in d.armados]
                          + [(f.posicion.split(":", 1)[0], f.barra)
                             for f in d.minimos]):
         sec, cara = clave.rsplit(".", 1)
-        miembro = next(m for m in largo_a_mano if sec.startswith(m + "_"))
-        if (miembro, cara) not in mejor or \
-                barra.As_provisto > mejor[(miembro, cara)].As_provisto:
-            mejor[(miembro, cara)] = barra
+        k = (miembro(sec), cara)
+        if k not in mejor or barra.As_provisto > mejor[k].As_provisto:
+            mejor[k] = barra
     assert len(mejor) == 8                       # 4 miembros x 2 caras
-    neto = sum((L_eje / b.espaciamiento) * largo_a_mano[m]
-               * PESO_BARRA_KG_M_EG2013[b.designacion]
-               for (m, _c), b in mejor.items())
+    transversal = sum(
+        (L_eje / b.espaciamiento)
+        * (largo_a_mano[m] + T_CIERRA - 2 * rec.get(m, min(rec.values())))
+        * PESO_BARRA_KG_M_EG2013[b.designacion]
+        for (m, _c), b in mejor.items())
+    assert len(d.longitudinales) == 8
+    longitudinal = sum(
+        (largo_a_mano[f.posicion.split(".", 1)[0]] / f.barra.espaciamiento)
+        * L_eje * PESO_BARRA_KG_M_EG2013[f.barra.designacion]
+        for f in d.longitudinales)
     cabezal = SimpleNamespace(longitud_metrado=L, id_punto="A-01")
-    with declarados(dict(DECLARACIONES_CAJON,
-                         incremento_acero_por_despiece=i)):
+    with declarados(dict(declarado, incremento_acero_por_despiece=i)):
         (r,) = M12.renglones_acero_portico(portico=d, cabezal=cabezal, S=S)
     assert r.partida == "504.A" and r.unidad == "kg"
-    assert r.cantidad == pytest.approx((1 + i) * neto, rel=REL_CONVERSION)
+    assert r.cantidad == pytest.approx((1 + i) * (transversal + longitudinal),
+                                       rel=REL_CONVERSION)
     assert {"EG2013.504.10", "EG2013.504.01#PESOS"} <= set(
         r.paso.citas_textuales)
+
+
+def test_b6_el_portico_que_no_cierra_no_se_metra():
+    from types import SimpleNamespace
+    from src.modelos import MetodoNoEvaluableError
+    from src.modulos import M12_metrados as M12
+    from tests.apoyo.criterios import declarados
+    from tests.fixtures.casos_patron import CP_FASE_8_ESTRUCTURAL as CP
+    d = _disenar(CP["punto_A01"]())
+    assert not d.cumple
+    with declarados(dict(DECLARACIONES_CAJON,
+                         incremento_acero_por_despiece=0.10)):
+        with pytest.raises(MetodoNoEvaluableError) as exc:
+            M12.renglones_acero_portico(
+                portico=d, cabezal=SimpleNamespace(longitud_metrado=10.0,
+                                                   id_punto="A-01"), S=0.01)
+    assert "armado no cerrado" in str(exc.value)
 
 
 def test_b6_sin_el_incremento_el_acero_del_portico_se_detiene():
     from types import SimpleNamespace
     from src.modelos import CriterioPendienteError
     from src.modulos import M12_metrados as M12
-    from tests.apoyo.criterios import sin_valor
-    from tests.fixtures.casos_patron import CP_FASE_8_ESTRUCTURAL as CP
-    d = _disenar(CP["punto_A01"]())
-    with sin_valor("incremento_acero_por_despiece"):
+    from tests.apoyo.criterios import declarados, sin_valor
+    d, declarado = _portico_cerrado()
+    with declarados(declarado), sin_valor("incremento_acero_por_despiece"):
         with pytest.raises(CriterioPendienteError):
             M12.renglones_acero_portico(
                 portico=d, cabezal=SimpleNamespace(longitud_metrado=10.0,
                                                    id_punto="A-01"), S=0.01)
+
+
+def test_iib_el_longitudinal_es_la_fila_de_reparto_con_el_ancho_real():
+    from src.modulos import M9_cabezal as M9_
+    from tests.apoyo.criterios import declarados
+    d, declarado = _portico_cerrado()
+    with declarados(declarado):
+        f0 = d.longitudinales[0]
+        miembro = f0.posicion.split(".", 1)[0]
+        mat = M9_.materiales_del_armado()
+        esperado = M9_._fila_de_reparto(
+            elemento=M8.ELEMENTO_PORTICO, posicion=f0.posicion,
+            es_zapata=True, direccion="reparto", espesor=T_CIERRA,
+            ancho=M8.largos_de_los_miembros(d.geometria)[miembro],
+            fy=mat["fy"], regla=M9_._regla_de_minimos(),
+            catalogo=M9_.catalogo_de_barras(), hm=None, lm=None)
+    assert f0 == esperado
+    assert M8.espesores_de_los_miembros(d.geometria)[miembro] == \
+        pytest.approx(T_CIERRA, rel=REL_TRANSPORTE)
+
+
+def test_iib_con_menos_de_2_pies_la_distribucion_detiene(a01):
+    from src.modelos import MetodoNoEvaluableError
+    somero = _disenar(a01, H_rel=0.30)          # 0.30 + 0.15 < 0.6096 m
+    assert somero.distribucion_obligatoria
+    with pytest.raises(MetodoNoEvaluableError) as exc:
+        M8.exigir_distribucion_del_portico(somero, a01.id)
+    assert "9.7.3.2" in str(exc.value)
+    hondo = _disenar(a01, H_rel=1.0)
+    assert not hondo.distribucion_obligatoria
+    M8.exigir_distribucion_del_portico(hondo, a01.id)    # no levanta
 
 
 def test_b6_los_largos_y_los_miembros_de_la_geometria_a_mano():
