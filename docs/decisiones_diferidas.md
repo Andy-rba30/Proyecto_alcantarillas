@@ -9390,6 +9390,7 @@ Fable (triaje VE-7, 2026-11-20): Fable decidió QUÉ hacer; estas fichas dicen c
   es ahora `E060.22.10.2.2#VOLADIZO`, seguida de `E060.22.10.2#CICLOPEO`; ningún número cambia.
   Tests: `test_A11_*` en `tests/test_ve7_lote_c_voladizo.py` y el orden en
   `tests/test_ve5_m9_ciclopeo.py`. Manifiestos, trazabilidad e índice regenerados en el sello.
+- **Qué haría falta:** nada: cerrado en A11.
 - **Dónde vive:** `src/normativa/citas.py::E060_22_10_2_2_VOLADIZO`
 
 ## VE7C-02 · `F9.LONGITUD`: la cercanía a la longitud aproximada es recomendación y la juzga el refinamiento (C2)
