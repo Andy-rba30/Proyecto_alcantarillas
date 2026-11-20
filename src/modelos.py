@@ -2564,10 +2564,12 @@ ALCANCE_DECLARADO: Tuple[AlcanceDeclarado, ...] = (
         ficha="T5-07", simbolo="M8_estructural.disenar_portico"),
     AlcanceDeclarado(
         clave="cabezal_paralelo_a_la_via",
-        texto=("El cabezal PARALELO a la via no se calcula: en las tres "
-               "familias el cabezal es normal al eje del conducto, que es lo "
-               "que supone la hidraulica (ke y cartas del HDS-5); el paralelo "
-               "queda como alternativa solo para el marco, diferida"),
+        # --- VE-6 --- El paralelo SIN aleros del marco ya se calcula (Carta
+        # 11, ficha VE6-T7A03); lo que sigue fuera es lo que el texto dice.
+        texto=("El cabezal PARALELO a la via solo se calcula en un marco y "
+               "sin aleros, cuando 'embocadura_cajon' declara una fila de la "
+               "Carta 11 del HDS-5; en los tubos, y con aleros (Carta 12, "
+               "escala 3), el cabezal es normal al eje del conducto"),
         ficha="T7A-03", simbolo="M9_cabezal.predimensionar_aleros"),
     AlcanceDeclarado(
         clave="iteracion_ancho_zapata_cabezal",
@@ -6442,6 +6444,11 @@ class EscalonSinCabida:
     cota_subrasante: float                # msnm - la del CSV (Sec. 1.2)
     delta_rasante_m: Optional[float] = None
     nota: str = ""
+    # --- VE-6 (item 34, H8 de los ensayos del conducto) --- True cuando la
+    # clave SI cabe bajo la subrasante pero no deja la COBERTURA MINIMA bajo
+    # la rasante (G1 de 7.A, evaluada dentro del bucle sobre el escalon que
+    # cumple toda la Fase 5). El delta es entonces el de G1 para ese escalon.
+    por_cobertura: bool = False
 
     @property
     def exceso_m(self) -> float:

@@ -6948,6 +6948,8 @@ y un test regenera cada uno.
   crecientes se detiene en el primer escalón que no cabe, como antes. (6) El inválido de
   antes de la Fase 5 que detiene a UN solo material no bloquea ni decide; el `campo` del
   arranque negativo es `D`, no `diametros_normalizados`.
+- **VE-6 (ítem 34):** el abierto (2) queda cerrado bajo control de ENTRADA (ficha VE6-34);
+  bajo control de salida sigue sin darse.
 - **Qué haría falta:** para (1), el tamizado previo de 7.A corrido antes del bucle con la
   sección máxima supuesta, que el servicio no corre; para (6), decisión del dueño, y que M2
   valide el arranque de la progresión.
@@ -8242,6 +8244,8 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   T11-03: el HW depende de la longitud); E06
   (titular por V3), H7 (la progresión sigue tras una falla que sólo empeora) y H8 (cobertura G1
   fuera del bucle).
+- **VE-6 (ítem 34):** H8 (G1 dentro del bucle), H7 con V10 y el delta con V4 bajo control de
+  entrada quedan cerrados (ficha VE6-34); siguen H7 con V2/V2b/V7 y el delta bajo salida.
 - **Qué haría falta:** iterar 7.A con el HW para dar el delta de resguardo.
 - **Dónde vive:** `src/modulos/M5_verificaciones.py::v1_borde_libre`
 
@@ -8319,6 +8323,7 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   zapata queda no factible con los criterios de archivo, y se dice.
 - **Abierto:** la fila NF de los casos en que la zapata no cabe no itera el peralte (H-6); ver
   VE3-17 para las opciones de criterio.
+- **VE-6 (ítem 34):** sigue abierto; la razón y lo que haría falta, en la ficha VE6-34.
 - **Qué haría falta:** la decisión 9 del dueño (ver VE3-17) para que el talón se calcule con el método exacto, y, si se quiere, iterar el peralte también en las filas NF.
 - **Dónde vive:** `src/modulos/M9_cabezal.py::dimensionar_zapata_por_estabilidad`
 
@@ -9032,3 +9037,29 @@ decisiones ambiguas las tomó ella, y cada ficha dice cuál, por qué y con qué
   28, otra rama); la solera varía S·B·tan θ a lo largo de la cara (milímetros).
 - **Qué haría falta:** los aleros del paralelo y la nota de 9.2.2 al integrar el ítem 28.
 - **Dónde vive:** `src/modulos/M9_cabezal.py::_embocadura_paralela`
+
+## VE6-34 · La progresión del catálogo: G1 dentro del bucle, V10 la detiene y el delta con V4 bajo control de entrada
+
+- **Cerrado (ítem 34 del censo; fichas VE3-08 H7/H8/H3 a y T11-03 (2)):** (a) **H8**: el escalón
+  que cumple toda la Fase 5 pasa por la COBERTURA de 7.A antes de adoptarse
+  (`MD._escalon_sin_cobertura`, con `M7.tamizado_rasante`); si la rasante no se la deja, el material
+  se descarta por rasante con el delta de G1 (`EscalonSinCabida.por_cobertura`): un escalón mayor
+  sube la clave y no la mejora. Sólo la cobertura: el resguardo ya es V4. Si el tamizado no se
+  puede calcular, el escalón se adopta como antes. (b) **H7 con V10**: una V10 incumplida detiene
+  la progresión (`VERIFICACIONES_INDEPENDIENTES_DE_LA_SECCION`): juzga `ResultadoHidraulico.S`, la
+  misma en todo escalón. (c) **T11-03 (2)**: el escalón que no cabe y sólo incumple V4 da el delta
+  del resguardo cuando gobierna el control de ENTRADA (su HW no depende de la longitud y el
+  gobernante no baja de él con la rasante nueva: cota inferior para ese escalón); bajo SALIDA, no.
+- **Decisiones de la sesión:** H7 sólo con V10, porque es la única cuya independencia de la sección
+  se demuestra por el código (V2, V2b y V7 dependen de la sección y su monotonía no está probada:
+  detenerlas podría cambiar un diseño). El delta de (c) bajo salida exigiría iterar 7.A con 7.B (el
+  HW de salida cambia con la longitud, en los dos sentidos según gobierne TW o (y_c + D)/2): no se
+  inventa. La nota de T11-03 de la hoja de ruta (§7.B, «sólo se da cuando es geometría pura»)
+  describe el alcance anterior y sigue así mientras el dueño no la actualice.
+- **Abierto:** H7 con V2, V2b y V7; el delta de V4 bajo control de salida; la fila NF de VE3-13
+  sin iterar el peralte (M9: el lote del cabezal está en otra rama, y con una zapata corrida que no
+  cumple dentro del tope «inflar el peralte no es diseño», decisión de VE-3.14 que sólo el dueño
+  revierte).
+- **Qué haría falta:** una demostración (o un barrido) de la monotonía de V2/V2b/V7 con D; iterar
+  7.A con 7.B para el delta bajo salida; la decisión del dueño sobre la fila NF.
+- **Dónde vive:** `src/modulos/MD.py::_escalon_sin_cobertura`
