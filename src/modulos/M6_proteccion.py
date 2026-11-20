@@ -183,11 +183,19 @@ from src.constantes_normativas import (
     HEC14_POZA_TALUD_LATERAL_Z, HEC14_POZA_TW_SOBRE_YE_ALTO,
     HEC14_POZA_TW_SOBRE_YE_BAJO,
     HEC14_POZA_TW_SOBRE_YO_SIN_PROTECCION_ADICIONAL,
+    HEC14_CAIDA_APROXIMACION_EN_YC, HEC14_CAIDA_BLOQUE_ALTO_EN_YC,
+    HEC14_CAIDA_BLOQUE_ANCHO_EN_YC, HEC14_CAIDA_HO_MAX_M,
+    HEC14_CAIDA_HO_SOBRE_YC_MAX, HEC14_CAIDA_HO_SOBRE_YC_MIN,
+    HEC14_CAIDA_L2_EN_YC, HEC14_CAIDA_L3_MIN_EN_YC, HEC14_CAIDA_LS_DENOMINADOR,
+    HEC14_CAIDA_LS_NUMERADOR, HEC14_CAIDA_L_ORDENADA, HEC14_CAIDA_L_PENDIENTE,
+    HEC14_CAIDA_L_RADICANDO, HEC14_CAIDA_MURO_SOBRE_TW_EN_YC,
+    HEC14_CAIDA_UMBRAL_EN_YC, HEC14_CAIDA_WO_MIN_EN_YC, HEC14_CAIDA_Y3_EN_YC,
     REGIMENES_DE_FLUJO_T11, TERRENO_T11_ROTULO, V_MAX_NO_REVESTIDOS)
 from src.modelos import (
     CIFRAS_FACTOR, CIFRAS_FINA, CIFRAS_MAGNITUD, ApronHEC14, ClaseHEC14,
     ControlGobernante, TIPO_LECHO_COHESIVO,
-    DatoFaltanteError, DatoInvalidoError, EleccionDeProyecto, FroudeSalida,
+    DatoFaltanteError, DatoInvalidoError, EleccionDeProyecto,
+    EstructuraDeCaida, FroudeSalida,
     HoyaDeSocavacion, LimiteNumericoError, Magnitud, MaterialLecho,
     MetodoNoEvaluableError, MOTIVO_METODO_NO_EVALUABLE_HEC14,
     ORIGEN_SOCAVACION_DECLARADA,
@@ -2915,6 +2923,279 @@ def _nota_de_sensibilidad(dimension: str, valor: float, theta: float, t: float,
             f"(×{factor:.3f}).")
 
 
+# ---------------------------------------------------------------------------
+# --- VE-5 (lote m6) --- Estructura de caida recta de HEC-14 (num. 11.1.3)
+# ---------------------------------------------------------------------------
+
+def _longitud_de_caida(cota: float, yc: float) -> float:
+    """Ec. (11.12) con `ho`, o (11.14) con `h2`: (-0.406 + (3.195 - 4.368·x/yc)^0.5)·yc."""
+    return (HEC14_CAIDA_L_ORDENADA + math.sqrt(
+        HEC14_CAIDA_L_RADICANDO - HEC14_CAIDA_L_PENDIENTE * cota / yc)) * yc
+
+
+def caida_recta_hec14(*, Q: float, ancho_vertedero: float, desnivel_h: float,
+                      tirante_aguas_abajo: float,
+                      aproximacion_supercritica: bool = False
+                      ) -> EstructuraDeCaida:
+    """
+    Estructura de caida recta con estanque de bloques y umbral, HEC-14 num.
+    11.1.3 (pags. impresas 11-5 a 11-8), con los dos ejemplos resueltos de
+    las pags. 11-9 a 11-11 como oraculo. Las cotas se miden desde la cresta,
+    negativas hacia abajo, como en la fuente.
+
+        q  = Q / Wo;  yc = (q^2/g)^(1/3)                         Ec. (11.5)
+        y3 = 2.15·yc                                             Ec. (11.7)
+        h2 = -(h - yo)                                           Ec. (11.8)
+        ho = h2 - y3                                             Ec. (11.9)
+        Lf = (-0.406 + (3.195 - 4.368·ho/yc)^0.5)·yc             Ec. (11.12)
+        Lt = (-0.406 + (3.195 - 4.368·h2/yc)^0.5)·yc             Ec. (11.14)
+        Ls = (0.691 + 0.228·(Lt/yc)^2 - ho/yc)·yc
+             / (0.185 + 0.456·Lt/yc)                             Ec. (11.13)
+        L1 = (Lf + Ls)/2;  L2 = 0.8·yc;  L3 = 1.75·yc (el minimo)
+        LB = L1 + L2 + L3                                        Ec. (11.10)
+
+    y los bloques (0.8·yc de alto, 0.4·yc de ancho y separacion), el umbral
+    (0.4·yc), el muro sobre el receptor en la salida (0.85·yc) y la
+    aproximacion revestida aguas arriba de la cresta (3·yc).
+
+    `desnivel_h` es la cresta sobre el lecho del receptor (en la salida de
+    una alcantarilla, la solera de salida sobre el lecho) y
+    `tirante_aguas_abajo` el tirante normal del receptor, yo.
+
+    LIMITES (`MetodoNoEvaluableError`, rotulo de HEC-14), en este orden: la
+    llegada supercritica (paso 2; la rejilla del num. 11.1.2 no se
+    implementa), el receptor que no queda bajo la cresta (sin lamina
+    aireada), Wo de 1.5·yc o menos, |ho| de 15 ft (4.572 m) o mas, y |ho|/yc
+    fuera de 1 a 15.
+    """
+    _exigir_positivo("Q", Q, "caudal que cae, m3/s")
+    _exigir_positivo("Wo", ancho_vertedero, "ancho del vertedero, m")
+    _exigir_positivo("h", desnivel_h, "desnivel de la cresta sobre el lecho, m")
+    _exigir_no_negativo("yo", tirante_aguas_abajo,
+                        "tirante normal del receptor, m")
+    que = "estructura de caida recta (HEC-14 num. 11.1.3)"
+    if aproximacion_supercritica:
+        raise MetodoNoEvaluableError(
+            que,
+            procedimiento="la rejilla de HEC-14 (num. 11.1.2) u otro "
+                          "disipador para la llegada supercritica, fuera del "
+                          "alcance de este programa",
+            motivo="el flujo llega supercritico a la caida y la fuente pide "
+                   "verificar condiciones subcriticas (paso 2)",
+            rotulo=MOTIVO_METODO_NO_EVALUABLE_HEC14)
+    q = Q / ancho_vertedero
+    yc = math.cbrt(q * q / G)
+    y3 = HEC14_CAIDA_Y3_EN_YC * yc
+    h2 = -(desnivel_h - tirante_aguas_abajo)
+    if not h2 < -TOL_UMBRAL_NORMATIVO:
+        raise MetodoNoEvaluableError(
+            que,
+            procedimiento="otra estructura: el receptor no deja caer la "
+                          "lamina",
+            motivo=f"el tirante del receptor ({tirante_aguas_abajo:.3f} m) no "
+                   f"queda bajo la cresta (desnivel {desnivel_h:.3f} m): la "
+                   "estructura pide la lamina aireada, con el receptor bajo "
+                   "la cresta (Ec. 11.8)",
+            rotulo=MOTIVO_METODO_NO_EVALUABLE_HEC14)
+    if not ancho_vertedero > HEC14_CAIDA_WO_MIN_EN_YC * yc + TOL_UMBRAL_NORMATIVO:
+        raise MetodoNoEvaluableError(
+            que,
+            procedimiento="un vertedero mas ancho, con su transicion",
+            motivo=f"el vertedero ({ancho_vertedero:.3f} m) no supera "
+                   f"{HEC14_CAIDA_WO_MIN_EN_YC:g}·yc = "
+                   f"{HEC14_CAIDA_WO_MIN_EN_YC * yc:.3f} m (num. 11.1.3, "
+                   "condicion 3)",
+            rotulo=MOTIVO_METODO_NO_EVALUABLE_HEC14)
+    ho = h2 - y3
+    if not -ho < HEC14_CAIDA_HO_MAX_M - TOL_UMBRAL_NORMATIVO:
+        raise MetodoNoEvaluableError(
+            que,
+            procedimiento="varias caidas escalonadas u otro disipador, que "
+                          "este programa no dimensiona",
+            motivo=f"la caida total de la cresta al piso del estanque es "
+                   f"{-ho:.3f} m y la fuente limita el diseño a menos de 15 "
+                   f"ft = {HEC14_CAIDA_HO_MAX_M:.3f} m (num. 11.1.3, "
+                   "condicion 1)",
+            rotulo=MOTIVO_METODO_NO_EVALUABLE_HEC14)
+    relativa = -ho / yc
+    if not (HEC14_CAIDA_HO_SOBRE_YC_MIN - TOL_UMBRAL_NORMATIVO < relativa
+            < HEC14_CAIDA_HO_SOBRE_YC_MAX + TOL_UMBRAL_NORMATIVO):
+        raise MetodoNoEvaluableError(
+            que,
+            procedimiento="otro disipador para esta caida relativa",
+            motivo=f"la caida relativa |ho|/yc es {relativa:.2f} y la fuente "
+                   f"limita el diseño a entre "
+                   f"{HEC14_CAIDA_HO_SOBRE_YC_MIN:g} y "
+                   f"{HEC14_CAIDA_HO_SOBRE_YC_MAX:g} (num. 11.1.3, "
+                   "condicion 2)",
+            rotulo=MOTIVO_METODO_NO_EVALUABLE_HEC14)
+    depresion = -ho - desnivel_h
+    Lf = _longitud_de_caida(ho, yc)
+    Lt = _longitud_de_caida(h2, yc)
+    a, b = HEC14_CAIDA_LS_NUMERADOR
+    c, d = HEC14_CAIDA_LS_DENOMINADOR
+    Ls = (a + b * (Lt / yc) ** 2 - ho / yc) * yc / (c + d * Lt / yc)
+    L1 = (Lf + Ls) / 2
+    L2 = HEC14_CAIDA_L2_EN_YC * yc
+    L3 = HEC14_CAIDA_L3_MIN_EN_YC * yc
+    LB = L1 + L2 + L3
+    avisos: List[str] = []
+    if depresion < -TOL_UMBRAL_NORMATIVO:
+        avisos.append(
+            f"Caida recta: el piso del estanque (y3 = {y3:.3f} m bajo el "
+            f"nivel del receptor) queda {-depresion:.3f} m SOBRE el lecho: el "
+            "receptor da mas agua que la que el estanque pide (TW > y3), el "
+            "resalto se ahoga y la fuente advierte que puede hacer falta "
+            "alargar el estanque")
+    paso_cotas = paso(
+        "F6.CAIDA",
+        codigo="6.15",
+        que="Cotas de la estructura de caida recta de HEC-14 (desde la "
+            "cresta, negativas hacia abajo)",
+        formula="yc = (q^2/g)^(1/3);  y3 = 2.15 yc;  h2 = -(h - yo);  "
+                "ho = h2 - y3",
+        formula_cita_id="HEC14.11.1.3#Y3",
+        citas_textuales=("HEC14.11.1.3#Y3", "HEC14.11.1.3#LIMITES",
+                         "HEC14.11.1.3#SALIDA_COLGADA",
+                         "HEC14.11.1.3#SUBCRITICO",
+                         "HEC14.11.1.3#ANCHO_APROXIMACION"),
+        sustitucion=(
+            Magnitud("Q", Q, "m3/s", "caudal del cruce", cifras=CIFRAS_FINA),
+            Magnitud("Wo", ancho_vertedero, "m",
+                     "ancho del vertedero: el de los barriles en la salida "
+                     "(lectura del proyecto, cita "
+                     "HEC14.11.1.3#ANCHO_APROXIMACION)",
+                     cifras=CIFRAS_MAGNITUD),
+            Magnitud("h", desnivel_h, "m",
+                     "desnivel de la cresta (solera de salida) sobre el "
+                     "lecho del receptor", cifras=CIFRAS_MAGNITUD),
+            Magnitud("yo", tirante_aguas_abajo, "m",
+                     "tirante del receptor (Sec. 1.3)",
+                     cifras=CIFRAS_MAGNITUD),
+            Magnitud("yc", yc, "m", f"tirante critico sobre la cresta, q = "
+                     f"{q:.3f} m2/s", cifras=CIFRAS_MAGNITUD),
+            Magnitud("y3", y3, "m", "agua sobre el piso del estanque",
+                     cifras=CIFRAS_MAGNITUD),
+            Magnitud("h2", h2, "m", "nivel del receptor bajo la cresta",
+                     cifras=CIFRAS_MAGNITUD)),
+        resultado=Magnitud("ho", ho, "m",
+                           f"piso del estanque bajo la cresta; el piso baja "
+                           f"{depresion:.3f} m bajo el lecho; |ho|/yc = "
+                           f"{relativa:.2f}", cifras=CIFRAS_MAGNITUD),
+        veredicto=Veredicto(
+            tipo=TipoDeVeredicto.SIN_VEREDICTO,
+            explicacion="dimensionamiento [C] dentro de los limites de la "
+                        "fuente: caida de menos de 15 ft, |ho|/yc entre 1 y "
+                        "15 y Wo mayor que 1.5·yc"))
+    paso_estanque = paso(
+        "F6.CAIDA_ESTANQUE",
+        codigo="6.16",
+        que="Longitud, bloques, umbral, muros y aproximacion de la "
+            "estructura de caida recta",
+        formula="LB = (Lf + Ls)/2 + 0.8 yc + 1.75 yc;  bloques 0.8 yc x "
+                "0.4 yc;  umbral 0.4 yc;  muro 0.85 yc sobre el TW;  "
+                "aproximacion 3 yc",
+        formula_cita_id="HEC14.11.1.3#LONGITUD",
+        citas_textuales=("HEC14.11.1.3#LONGITUD", "HEC14.11.1.3#BLOQUES"),
+        sustitucion=(
+            Magnitud("Lf", Lf, "m", "Ec. (11.12)", cifras=CIFRAS_MAGNITUD),
+            Magnitud("Lt", Lt, "m", "Ec. (11.14)", cifras=CIFRAS_MAGNITUD),
+            Magnitud("Ls", Ls, "m", "Ec. (11.13)", cifras=CIFRAS_MAGNITUD),
+            Magnitud("L1", L1, "m", "Ec. (11.11)", cifras=CIFRAS_MAGNITUD),
+            Magnitud("L2", L2, "m", "Ec. (11.15)", cifras=CIFRAS_MAGNITUD),
+            Magnitud("L3", L3, "m", "Ec. (11.16), el minimo",
+                     cifras=CIFRAS_MAGNITUD)),
+        resultado=Magnitud(
+            "LB", LB, "m",
+            f"longitud del estanque; bloques de "
+            f"{HEC14_CAIDA_BLOQUE_ALTO_EN_YC * yc:.3f} m de alto y "
+            f"{HEC14_CAIDA_BLOQUE_ANCHO_EN_YC * yc:.3f} m de ancho y "
+            f"separacion; umbral de {HEC14_CAIDA_UMBRAL_EN_YC * yc:.3f} m; "
+            f"muro {HEC14_CAIDA_MURO_SOBRE_TW_EN_YC * yc:.3f} m sobre el "
+            f"receptor; aproximacion revestida "
+            f"{HEC14_CAIDA_APROXIMACION_EN_YC * yc:.2f} m",
+            cifras=CIFRAS_MAGNITUD),
+        veredicto=Veredicto(
+            tipo=TipoDeVeredicto.SIN_VEREDICTO,
+            explicacion="proporciones de la fuente en el tirante critico"))
+    return EstructuraDeCaida(
+        Q=Q, ancho_vertedero=ancho_vertedero, q=q, yc=yc,
+        desnivel_h=desnivel_h, tirante_aguas_abajo=tirante_aguas_abajo,
+        y3=y3, h2=h2, ho=ho, depresion_piso=depresion, Lf=Lf, Lt=Lt, Ls=Ls,
+        L1=L1, L2=L2, L3=L3, longitud=LB,
+        altura_bloques=HEC14_CAIDA_BLOQUE_ALTO_EN_YC * yc,
+        ancho_bloques=HEC14_CAIDA_BLOQUE_ANCHO_EN_YC * yc,
+        altura_umbral=HEC14_CAIDA_UMBRAL_EN_YC * yc,
+        muro_sobre_tw=HEC14_CAIDA_MURO_SOBRE_TW_EN_YC * yc,
+        longitud_aproximacion=HEC14_CAIDA_APROXIMACION_EN_YC * yc,
+        pasos=(paso_cotas, paso_estanque), avisos=tuple(avisos))
+
+
+_CAIDA = "Salida colgada, caida recta de HEC-14 (Cap. 11)"
+
+
+def _caida_de_la_fase(*, resultado: ResultadoHidraulico, seccion: Seccion,
+                      altura_caida_m: Optional[float],
+                      pendiente_maxima_gobierna: bool,
+                      avisos: List[str]) -> Optional[EstructuraDeCaida]:
+    """
+    --- VE-5 (lote m6) --- Si la salida queda colgada de modo que la Fase 6
+    no la cierra con la hoya del Cap. 5, la estructura de caida recta del
+    Cap. 11 de HEC-14 (decision del dueño: dentro del alcance). Dos
+    disparadores:
+
+      * la pendiente MAXIMA gobierna (`M7.pendiente_adoptada`, origen
+        «maxima»): el conducto queda mas tendido que su cauce y el desnivel
+        queda en la salida (ficha T6-02);
+      * la caida pasa la ultima fila de la Tabla 5.2 (4 alturas del
+        conducto), donde la hoya no se extrapola.
+
+    El vertedero es el ancho total de los barriles en la salida (n·B o n·D,
+    `Interpretacion` de la cita HEC14.11.1.3#ANCHO_APROXIMACION); yo es el TW
+    del punto; la llegada es supercritica si el tirante normal del barril
+    queda bajo el critico (la regla de `flujo_supercritico`). Dentro de la
+    Fase 6 un `MetodoNoEvaluableError` se vuelve AVISO.
+    """
+    if altura_caida_m is None or not altura_caida_m > TOL_UMBRAL_NORMATIVO:
+        return None
+    Hd = altura_caida_m / seccion.altura
+    fuera_de_tabla = Hd > HEC14_SOCAVACION_CH[-1][0] + TOL_UMBRAL_NORMATIVO
+    if not (pendiente_maxima_gobierna or fuera_de_tabla):
+        return None
+    por_que = ("gobierna la pendiente maxima del conducto y el desnivel del "
+               "cauce queda en la salida (ficha T6-02)"
+               if pendiente_maxima_gobierna else
+               f"la salida queda {Hd:.2f} alturas del conducto sobre el lecho "
+               f"y la Tabla 5.2 de HEC-14 llega a "
+               f"{HEC14_SOCAVACION_CH[-1][0]:g}")
+    if resultado.TW_m is None:
+        avisos.append(f"{_CAIDA}: {por_que}, y NO se evaluo -- el "
+                      "resultado hidraulico no trae el tirante del receptor")
+        return None
+    ancho = resultado.numero_celdas * (
+        seccion.B if isinstance(seccion, SeccionRectangular) else seccion.D)
+    llegada_supercritica = bool(flujo_supercritico(resultado.y_normal,
+                                                   resultado.y_critico))
+    try:
+        caida = caida_recta_hec14(
+            Q=resultado.Q, ancho_vertedero=ancho, desnivel_h=altura_caida_m,
+            tirante_aguas_abajo=resultado.TW_m,
+            aproximacion_supercritica=llegada_supercritica)
+    except MetodoNoEvaluableError as error:
+        avisos.append(
+            f"{_CAIDA}: {por_que}, y la estructura NO se evaluo -- "
+            f"{error.motivo}. Hace falta: {error.procedimiento}")
+        return None
+    avisos.append(
+        f"{_CAIDA}: {por_que}. La salida se cierra con una estructura de "
+        f"caida recta de {caida.longitud:.2f} m de estanque, "
+        f"con el piso {caida.depresion_piso:.2f} m bajo el lecho, bloques de "
+        f"{caida.altura_bloques:.2f} m y umbral de {caida.altura_umbral:.2f} m "
+        "(pasos 6.15 y 6.16)")
+    avisos.extend(caida.avisos)
+    return caida
+
+
 def socavacion_salida(*, resultado: ResultadoHidraulico, seccion: Seccion,
                       altura_caida_m: Optional[float] = None,
                       material: Optional[MaterialLecho] = None,
@@ -2923,7 +3204,8 @@ def socavacion_salida(*, resultado: ResultadoHidraulico, seccion: Seccion,
                       longitud_proteccion_m: Optional[float] = None,
                       proteccion_requerida: Optional[bool] = None,
                       cota_fondo_receptor: Optional[float] = None,
-                      cota_solera_salida: Optional[float] = None
+                      cota_solera_salida: Optional[float] = None,
+                      pendiente_maxima_gobierna: bool = False
                       ) -> SocavacionSalida:
     """
     La profundidad de socavacion a la salida que la Fase 6 ENTREGA AL
@@ -3141,9 +3423,15 @@ def socavacion_salida(*, resultado: ResultadoHidraulico, seccion: Seccion,
                         "para el desplante y la Figura 10.1 de la poza, otro "
                         "metodo, la mide desde la solera de salida",
                 clave_criterio=CRITERIO_REFERENCIA),)))
+    caida = _caida_de_la_fase(
+        resultado=resultado, seccion=seccion, altura_caida_m=altura_caida_m,
+        pendiente_maxima_gobierna=pendiente_maxima_gobierna, avisos=avisos)
+    if caida is not None:
+        pasos.extend(caida.pasos)
     return SocavacionSalida(
         profundidad_para_desplante=profundidad, origen=origen,
         estimada=estimada, declarada_m=declarada_m,
         motivo_no_estimada="" if estimada is not None else motivo,
         pasos=tuple(pasos), avisos=tuple(avisos), referencia=referencia,
-        cota_referencia=cota_ref, cota_fondo_de_la_hoya=cota_hoya)
+        cota_referencia=cota_ref, cota_fondo_de_la_hoya=cota_hoya,
+        caida=caida)

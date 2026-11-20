@@ -1123,6 +1123,58 @@ POZA_SALIDA = _fundamento(
         "abajo."),
 )
 
+# --- VE-5 (lote m6) --- La estructura de caida recta de HEC-14 Cap. 11.
+CAIDA = _fundamento(
+    id="F6.CAIDA",
+    fase=F6,
+    que_paso=("Cotas de la estructura de caida recta de HEC-14 en la salida "
+              "colgada: tirante critico, nivel del receptor y piso del "
+              "estanque"),
+    por_que=(
+        "Cuando la solera de salida queda colgada sobre el lecho --porque el "
+        "conducto no puede seguir la pendiente de su cauce, o porque la "
+        "caida pasa la ultima fila de la tabla de socavacion--, el chorro "
+        "cae al cauce con una energia que la hoya local no describe. HEC-14 "
+        "da para una caida a la salida de una alcantarilla la estructura de "
+        "caida recta: un vertedero seguido de un estanque con bloques y "
+        "umbral, cuyas medidas salen del tirante critico sobre la cresta. "
+        "El estanque necesita bastante agua sobre su piso para que el "
+        "resalto quede dentro, y por eso el piso se baja bajo el lecho "
+        "cuando el receptor no la da; y la lamina tiene que caer aireada, "
+        "con el nivel del receptor bajo la cresta. La fuente limita el "
+        "diseño a caidas de hasta 15 pies, a caidas relativas entre 1 y 15 "
+        "tirantes criticos, a un vertedero de mas de 1.5 tirantes criticos "
+        "y a la llegada subcritica."),
+    verbo=Verbo.RECOMIENDA,
+    citas=("HEC14.11.1.3#SALIDA_COLGADA", "HEC14.11.1.3#LIMITES",
+           "HEC14.11.1.3#SUBCRITICO", "HEC14.11.1.3#Y3",
+           "HEC14.11.1.3#ANCHO_APROXIMACION"),
+    que_pasa_si_no_se_hace=(
+        "La salida colgada quedaria sin medida que disipe la caida, y el "
+        "desnivel que el conducto no sigue se lo llevaria el cauce."),
+)
+
+CAIDA_ESTANQUE = _fundamento(
+    id="F6.CAIDA_ESTANQUE",
+    fase=F6,
+    que_paso=("Longitud del estanque, bloques, umbral, muros y aproximacion "
+              "revestida de la estructura de caida recta"),
+    por_que=(
+        "El estanque tiene que contener el punto donde cae la lamina, el "
+        "tramo hasta los bloques y el resalto que los bloques y el umbral "
+        "fuerzan; HEC-14 da cada tramo con una ecuacion en el tirante "
+        "critico, y con ellas un estanque mas corto que el de una losa lisa. "
+        "Los bloques, el umbral, la altura de los muros sobre el receptor y "
+        "el tramo revestido aguas arriba de la cresta, donde el flujo se "
+        "acelera, salen de la misma fuente como proporciones del tirante "
+        "critico."),
+    verbo=Verbo.RECOMIENDA,
+    citas=("HEC14.11.1.3#LONGITUD", "HEC14.11.1.3#BLOQUES"),
+    que_pasa_si_no_se_hace=(
+        "La caida tendria cotas y no un estanque que construir: la lamina "
+        "podria caer fuera de el y el resalto escaparse al cauce."),
+)
+
 FILTRO_ENROCADO = _fundamento(
     id="F6.FILTRO",
     fase=F6,

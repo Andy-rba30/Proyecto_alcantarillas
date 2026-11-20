@@ -3158,6 +3158,47 @@ class PozaDeEnrocado:
 
 
 @dataclass(frozen=True)
+class EstructuraDeCaida:
+    """
+    --- VE-5 (lote m6) --- La estructura de caida recta de HEC-14 num.
+    11.1.3 (estanque de bloques y umbral del St. Anthony Falls) para la
+    salida que queda colgada sobre el lecho: cuando gobierna la pendiente
+    maxima del conducto o cuando la caida supera la Tabla 5.2. La dimensiona
+    `M6.caida_recta_hec14`.
+
+    LAS COTAS VERTICALES SE MIDEN DESDE LA CRESTA y son NEGATIVAS hacia
+    abajo, como las escribe la fuente: `h2` es el nivel del receptor y `ho`
+    el piso del estanque. `depresion_piso` = -ho - h: cuanto baja el piso
+    bajo el lecho del receptor (negativo si queda por encima).
+    """
+
+    Q: float                              # m3/s
+    ancho_vertedero: float                # m - Wo
+    q: float                              # m2/s - Q/Wo
+    yc: float                             # m - Ec. (11.5)
+    desnivel_h: float                     # m - cresta sobre el lecho
+    tirante_aguas_abajo: float            # m - yo del receptor
+    y3: float                             # m - Ec. (11.7)
+    h2: float                             # m - Ec. (11.8), negativo
+    ho: float                             # m - Ec. (11.9), negativo
+    depresion_piso: float                 # m
+    Lf: float                             # m - Ec. (11.12)
+    Lt: float                             # m - Ec. (11.14)
+    Ls: float                             # m - Ec. (11.13)
+    L1: float                             # m - Ec. (11.11)
+    L2: float                             # m - Ec. (11.15)
+    L3: float                             # m - Ec. (11.16), el minimo
+    longitud: float                       # m - LB, Ec. (11.10)
+    altura_bloques: float                 # m
+    ancho_bloques: float                  # m - ancho y separacion
+    altura_umbral: float                  # m
+    muro_sobre_tw: float                  # m
+    longitud_aproximacion: float          # m - revestida aguas arriba
+    pasos: Tuple["PasoDeMemoria", ...] = ()
+    avisos: Tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
 class RequisitoDeFiltro:
     """
     El filtro bajo el enrocado, como REQUISITO DECLARADO y no como diseño.
@@ -3279,6 +3320,11 @@ class SocavacionSalida:
     referencia: Optional[str] = None
     cota_referencia: Optional[float] = None       # msnm
     cota_fondo_de_la_hoya: Optional[float] = None  # msnm
+    # --- VE-5 (lote m6) --- La estructura de caida recta de HEC-14 Cap. 11
+    # cuando la salida queda colgada (pendiente maxima del conducto, o caida
+    # mas alla de la Tabla 5.2). None si no hace falta o no es evaluable
+    # (lo dice un aviso).
+    caida: Optional["EstructuraDeCaida"] = None
 
 
 @dataclass(frozen=True)

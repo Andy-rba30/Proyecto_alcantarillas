@@ -588,6 +588,11 @@ def test_todo_fundamento_declarado_lo_usa_algun_paso(informe):
         # corrida no tiene ningun punto asi. Que los dos pasos se emiten lo
         # mide tests/test_ve4g_hec14_limites.py, pieza a pieza y por la Fase 6.
         "F6.POZA", "F6.POZA_SALIDA",
+        # --- VE-5 (lote m6) --- LA CAIDA RECTA de HEC-14 Cap. 11: solo con
+        # la salida colgada (pendiente maxima o mas alla de la Tabla 5.2), y
+        # esta corrida no tiene ningun punto asi. Que se emiten lo mide
+        # tests/test_ve5_m6_caida.py, pieza a pieza y por la Fase 6.
+        "F6.CAIDA", "F6.CAIDA_ESTANQUE",
         # LOS CINCO DEL CAJON, Y SU RAZON CAMBIO EN C5. Hasta C4 estaban aqui
         # porque EL PASO QUE LOS EMITIRIA NO EXISTIA. Ahora existe: los cinco
         # los emite `M2_material._pasos_del_marco` cuando el catalogo resuelve

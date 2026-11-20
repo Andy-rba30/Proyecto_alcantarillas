@@ -4750,6 +4750,51 @@ HEC14_POZA_ESPESOR_TALUD_EN_D50 = 3.0
 # Paso 5 (pag. 10-5): «If TW/yo ≤ 0.75, no additional riprap is needed».
 HEC14_POZA_TW_SOBRE_YO_SIN_PROTECCION_ADICIONAL = 0.75
 
+# --- VE-5 (lote m6) --- HEC-14 Cap. 11, ESTRUCTURA DE CAIDA RECTA (num.
+# 11.1.3, pags. impresas 11-6 a 11-8, PDF 227 a 229; las Ec. 11.5 a 11.16 por
+# imagen). El estanque de bloques y umbral del St. Anthony Falls (Donnelly y
+# Blaisdell, 1954). Decision del dueño: dentro del alcance, para la salida
+# colgada (pendiente maxima o mas alla de la Tabla 5.2). Las cifras son las
+# mismas en SI y en unidades inglesas: todas son relaciones con yc.
+#   y3 = 2.15·yc                                               Ec. (11.7)
+HEC14_CAIDA_Y3_EN_YC = 2.15
+#   Lf = (-0.406 + (3.195 - 4.368·ho/yc)^0.5)·yc               Ec. (11.12)
+#   Lt = (-0.406 + (3.195 - 4.368·h2/yc)^0.5)·yc               Ec. (11.14)
+HEC14_CAIDA_L_ORDENADA = -0.406
+HEC14_CAIDA_L_RADICANDO = 3.195
+HEC14_CAIDA_L_PENDIENTE = 4.368
+#   Ls = (0.691 + 0.228·(Lt/yc)^2 - ho/yc)·yc / (0.185 + 0.456·Lt/yc)
+#                                                              Ec. (11.13)
+HEC14_CAIDA_LS_NUMERADOR = (0.691, 0.228)
+HEC14_CAIDA_LS_DENOMINADOR = (0.185, 0.456)
+#   L2 = 0.8·yc (11.15);  L3 >= 1.75·yc (11.16): se toma el minimo.
+HEC14_CAIDA_L2_EN_YC = 0.8
+HEC14_CAIDA_L3_MIN_EN_YC = 1.75
+# Bloques del piso: «a height of 0.8yc with a width and spacing of 0.4yc»;
+# umbral final: «The end sill height should be 0.4yc»; muro en la salida:
+# «above the tailwater elevation by 0.85yc»; aproximacion revestida: «a
+# distance upstream from the headwall equal to 3yc».
+HEC14_CAIDA_BLOQUE_ALTO_EN_YC = 0.8
+HEC14_CAIDA_BLOQUE_ANCHO_EN_YC = 0.4
+HEC14_CAIDA_UMBRAL_EN_YC = 0.4
+HEC14_CAIDA_MURO_SOBRE_TW_EN_YC = 0.85
+HEC14_CAIDA_APROXIMACION_EN_YC = 3.0
+# Limites (num. 11.1.3): «1. Total drop, ho, less than 4.6 m (15 ft) with
+# sufficient tailwater. 2. Relative drop, ho/yc, between 1.0 and 15. 3.
+# Crest length, Wo, greater than 1.5yc.» La Tabla 1.1 repite el primero
+# («Drop < 4.6 m (15 ft)», nota 5) y limita el Froude de llegada a «< 1».
+#
+# LA FUENTE DA DOS CIFRAS Y NO SON LA MISMA, como en el alto del apron: 15 ft
+# = 4.572 m. Rige 4.572 m, la cifra en las unidades de los ensayos (el mismo
+# criterio que `HEC14_APRON_ALTURA_MAX_M`, 60 in), y es ademas el lado
+# conservador de un limite de aplicabilidad. Ningun ejemplo de la fuente cae
+# entre las dos.
+# Imperial: 15 ft, el que la fuente escribe al lado. 15·0.3048 = 4.572 m.
+HEC14_CAIDA_HO_MAX_M = 4.572
+HEC14_CAIDA_HO_SOBRE_YC_MIN = 1.0
+HEC14_CAIDA_HO_SOBRE_YC_MAX = 15.0
+HEC14_CAIDA_WO_MIN_EN_YC = 1.5
+
 # --- HEC-14 num. 3.1.3, Figuras 3.3 y 3.4: tirante de borde (T8-08) --------
 # Las dos familias de curvas yo/D = f(TW/D, KuQ/(B·D^1.5)) (marco, pag.
 # impresa 3-5, PDF 36) y yo/D = f(TW/D, KuQ/D^2.5) (tubo, pag. impresa 3-6,

@@ -16100,4 +16100,176 @@ HEC14_10_1_4_TALUD = _cita(
           "or 1.5dmax» en el piso."),
 )
 
+# --- VE-5 (lote m6) --- HEC-14 Cap. 11, la ESTRUCTURA DE CAIDA RECTA (num.
+# 11.1.3): la salida colgada. Leidas en la capa de texto; las Ec. 11.5 a
+# 11.16 y la Figura 11.3, por imagen.
+HEC14_11_CULVERT = _cita(
+    id="HEC14.11.1.3#SALIDA_COLGADA",
+    fuente_id="HEC14",
+    numeral="11.1.3",
+    titulo_numeral="11.1.3 Straight Drop Structure Design Features",
+    pagina_impresa="11-8",
+    pagina_pdf=229,
+    pagina_pdf_titulo=226,
+    texto_literal=Verbatim(
+        texto=("This may be to address a drop at the outlet of a culvert "
+               "resulting from erosion or headcutting or it may be to flatten "
+               "a channel to a series of subcritical slopes and drops."),
+        pagina_pdf=229),
+    caracter=Caracter.DEFINICION,
+    sesion=VE4G,
+    nota=("Del paso 1 del procedimiento: «Estimate the elevation difference "
+          "required between the approach and tailwater channel, h.» Es lo "
+          "que pone la estructura a la salida de una alcantarilla colgada: "
+          "el desnivel h es la altura de la solera de salida sobre el lecho "
+          "del receptor, y la cresta es la solera de salida."),
+)
+
+HEC14_11_LIMITES = _cita(
+    id="HEC14.11.1.3#LIMITES",
+    fuente_id="HEC14",
+    numeral="11.1.3",
+    titulo_numeral="11.1.3 Straight Drop Structure Design Features",
+    pagina_impresa="11-6",
+    pagina_pdf=227,
+    pagina_pdf_titulo=226,
+    texto_literal=Verbatim(
+        texto="The recommended design is limited to the following conditions:",
+        pagina_pdf=227),
+    caracter=Caracter.APROXIMACION,
+    sesion=VE4G,
+    nota=("Siguen las tres condiciones: «1. Total drop, ho, less than 4.6 m "
+          "(15 ft) with sufficient tailwater. 2. Relative drop, ho/yc, "
+          "between 1.0 and 15. 3. Crest length, Wo, greater than 1.5yc.» La "
+          "Tabla 1.1 (pag. 1-2) repite la primera en su nota 5 («Drop < 4.6 "
+          "m (15 ft)») y da a la fila «Straight drop structure» el Froude "
+          "«< 1» y el tailwater «Required». Las dos cifras de la primera no "
+          "coinciden (15 ft = 4.572 m): rige 4.572 m "
+          "(`constantes_normativas.HEC14_CAIDA_HO_MAX_M`)."),
+)
+
+HEC14_11_SUBCRITICO = _cita(
+    id="HEC14.11.1.3#SUBCRITICO",
+    fuente_id="HEC14",
+    numeral="11.1.3",
+    titulo_numeral="11.1.3 Straight Drop Structure Design Features",
+    pagina_impresa="11-8",
+    pagina_pdf=229,
+    pagina_pdf_titulo=226,
+    texto_literal=Verbatim(
+        texto=("Calculate normal flow conditions approaching the drop to "
+               "verify subcritical conditions."),
+        pagina_pdf=229),
+    caracter=Caracter.DEFINICION,
+    sesion=VE4G,
+    nota=("Paso 2; sigue «If not subcritical, repeat step 1.» El flujo de "
+          "llegada supercritico solo lo trata la fuente con la rejilla del "
+          "num. 11.1.2, que no se implementa. El programa lee el regimen del "
+          "barril con la misma regla que M6 usa para todo: el tirante normal "
+          "contra el critico."),
+)
+
+HEC14_11_Y3 = _cita(
+    id="HEC14.11.1.3#Y3",
+    fuente_id="HEC14",
+    numeral="11.1.3",
+    titulo_numeral="11.1.3 Straight Drop Structure Design Features",
+    pagina_impresa="11-6",
+    pagina_pdf=227,
+    pagina_pdf_titulo=226,
+    texto_literal=Verbatim(
+        texto=("First, the tailwater depth above the floor of the stilling "
+               "basin must be calculated from Equation 11.7."),
+        pagina_pdf=227),
+    caracter=Caracter.DEFINICION,
+    metodo=AMBOS,
+    sesion=VE4G,
+    nota=("Las ecuaciones, por imagen: yc = (q²/g)^(1/3) (11.5), y3 = "
+          "2.15·yc (11.7), h2 = -(h - yo) (11.8, «Using the crest as the "
+          "reference point, this distance is a negative number») y ho = h2 - "
+          "y3 (11.9). yo es el tirante normal del cauce de aguas abajo."),
+)
+
+HEC14_11_LONGITUD = _cita(
+    id="HEC14.11.1.3#LONGITUD",
+    fuente_id="HEC14",
+    numeral="11.1.3",
+    titulo_numeral="11.1.3 Straight Drop Structure Design Features",
+    pagina_impresa="11-7",
+    pagina_pdf=228,
+    pagina_pdf_titulo=226,
+    texto_literal=Verbatim(
+        texto=("From Figure 11.3 it can be seen that the total basin length "
+               "is the sum of three components."),
+        pagina_pdf=228),
+    caracter=Caracter.DEFINICION,
+    metodo=AMBOS,
+    sesion=VE4G,
+    nota=("LB = L1 + L2 + L3 (11.10); L1 = (Lf + Ls)/2 (11.11); Lf = (-0.406 "
+          "+ (3.195 - 4.368·ho/yc)^0.5)·yc (11.12); Ls = (0.691 + "
+          "0.228·(Lt/yc)² - ho/yc)·yc/(0.185 + 0.456·Lt/yc) (11.13); Lt = "
+          "(-0.406 + (3.195 - 4.368·h2/yc)^0.5)·yc (11.14); L2 = 0.8·yc "
+          "(11.15); L3 ≥ 1.75·yc (11.16). Leidas por imagen en las pags. "
+          "11-7 y 11-8; los ejemplos resueltos las reproducen (Lf = 3.01, Lt "
+          "= 1.90, Ls = 3.30 m en el SI)."),
+)
+
+HEC14_11_BLOQUES = _cita(
+    id="HEC14.11.1.3#BLOQUES",
+    fuente_id="HEC14",
+    numeral="11.1.3",
+    titulo_numeral="11.1.3 Straight Drop Structure Design Features",
+    pagina_impresa="11-8",
+    pagina_pdf=229,
+    pagina_pdf_titulo=226,
+    texto_literal=Verbatim(
+        texto=("The floor blocks should be proportioned to have a height of "
+               "0.8yc with a width and spacing of 0.4yc."),
+        pagina_pdf=229),
+    caracter=Caracter.RECOMENDACION,
+    sesion=VE4G,
+    nota=("Sigue: «The basin will perform acceptably if the width and "
+          "spacing varies within plus or minus 0.15yc. The blocks should be "
+          "square in plan and should occupy between 50 percent and 60 "
+          "percent of the stilling basin width. The end sill height should "
+          "be 0.4yc.» Y para la salida y la entrada: «the sidewall height at "
+          "the basin exit should be above the tailwater elevation by "
+          "0.85yc», aleros a 45° con coronacion 1:1, y «riprap or paving "
+          "should be provided for a distance upstream from the headwall "
+          "equal to 3yc»."),
+)
+
+HEC14_11_ANCHO = _cita(
+    id="HEC14.11.1.3#ANCHO_APROXIMACION",
+    fuente_id="HEC14",
+    numeral="11.1.3",
+    titulo_numeral="11.1.3 Straight Drop Structure Design Features",
+    pagina_impresa="11-8",
+    pagina_pdf=229,
+    pagina_pdf_titulo=226,
+    texto_literal=Verbatim(
+        texto=("The bottom width of the approach channel should be equal to "
+               "the spillway notch length, Wo, at the headwall."),
+        pagina_pdf=229),
+    caracter=Caracter.RECOMENDACION,
+    sesion=VE4G,
+    interpretacion=Interpretacion(
+        texto=("En la salida de una alcantarilla el canal de aproximacion es "
+               "el barril, y el proyecto toma como ancho del vertedero Wo el "
+               "ancho total de los barriles en la salida: n·B en un marco y "
+               "n·D en un tubo, sin los tabiques. Es el lado conservador: un "
+               "Wo menor da un caudal unitario y un yc mayores, y con ellos "
+               "un estanque mas largo y mas hondo."),
+        en_contra=("la fuente diseña con un vertedero rectangular; un tubo no "
+                   "tiene ancho de fondo y su vertedero es una transicion "
+                   "que el proyecto no dibuja",
+                   "con varios barriles, el ancho real de la cresta incluye "
+                   "los tabiques"),
+        a_favor=("el caudal sale de la boca del conducto y no de un ancho "
+                 "mayor: tomar uno mayor abriria el chorro sin estructura "
+                 "que lo abra",
+                 "la condicion Wo > 1.5·yc se comprueba con ese ancho y "
+                 "rechaza el tubo estrecho para un caudal grande")),
+)
+
 CITAS: Dict[str, Cita] = {c.id: c for c in _TODAS}
