@@ -889,6 +889,20 @@ def espesor_pared(material: Material, D: float) -> float:
                    "0.113, ...}}, con el diametro designado en MILIMETROS "
                    "como clave y el espesor en METROS como valor")
     designado = round(D * MILIMETROS_POR_METRO)
+    # --- VE-7 lote B, B9 (VE2-G (2); decision del consultor Fable, triaje
+    # VE-7, 2026-11-20) --- EL DIAMETRO INGLES CONVERTIDO ES EL MISMO TUBO
+    # QUE SU DESIGNADO (AASHTO M 170M num. 12.1, «the designated diameter or
+    # the converted English diameter», y Table 6): si el criterio no trae la
+    # fila del ingles (1067 mm para 42 in), se lee la del designado de su
+    # fila de la Table 6 (1050 mm). Una fila declarada para el ingles gana:
+    # es lo que el proyectista escribio. `diametro_designado` devuelve el
+    # propio D si no es ingles de ninguna fila, y la rama de abajo sigue
+    # deteniendo el diametro sin fila.
+    if designado not in por_diametro:
+        designado_de_la_fila = round(
+            diametro_designado(material.tipo, D) * MILIMETROS_POR_METRO)
+        if designado_de_la_fila in por_diametro:
+            designado = designado_de_la_fila
     if designado not in por_diametro:
         raise DatoFaltanteError(
             f"{CRITERIO_ESPESOR_PARED}[{material.tipo.value}][{designado}]",
@@ -929,6 +943,28 @@ _FUENTE_DEL_ESPESOR = {
         "en 48 in (1200 mm); para 1350 y 1500 mm hace falta el diametro "
         "exterior de la ficha del fabricante"),
 }
+
+
+def fila_de_pared_leida(material: Material,
+                        D: float) -> Optional[Tuple[int, int]]:
+    """
+    --- VE-7, dictamen Fable (defecto 10; ficha VE7B-02) --- Si
+    `espesor_pared` leyo la pared de la fila del DESIGNADO porque el criterio
+    no trae la del diametro ingles convertido: (designado en mm, diametro
+    redondeado al mm), p. ej. (1050, 1067). None si leyo la fila del propio
+    diametro, o si el material no tiene tabla por diametro.
+    """
+    if material.forma is FormaSeccion.RECTANGULAR or \
+            not isinstance(material.espesor_pared, dict):
+        return None
+    redondeado = round(D * MILIMETROS_POR_METRO)
+    if redondeado in material.espesor_pared:
+        return None
+    designado = round(diametro_designado(material.tipo, D)
+                      * MILIMETROS_POR_METRO)
+    if designado == redondeado or designado not in material.espesor_pared:
+        return None
+    return designado, redondeado
 
 
 def procedencia_del_espesor(material: Material) -> Tuple[str, str, str]:
@@ -1023,6 +1059,30 @@ def _espesor_valido(campo: str, t: Any, *, que_es: str) -> float:
 # insuficiente para la mitad de las secciones del proyecto.
 
 
+def _exigir_arranque_positivo(inicio: Any) -> None:
+    """
+    --- VE-7 lote B, B12 (T11-03 (6); decision del consultor Fable, triaje
+    VE-7, 2026-11-20) --- El ARRANQUE de la progresion es un diametro, y un
+    diametro no nulo ni negativo: se rechaza AQUI, sobre el criterio que lo
+    declara, con `campo='diametros_normalizados'`.
+
+    Hasta VE-7 la puerta del criterio no acotaba el inicio (a proposito,
+    `criterios_adoptados._verificar_campos_de_la_progresion`) y lo rechazaba
+    la seccion sobre el dato `D`, que el usuario no escribio: el bloqueo
+    nombraba un dato del punto donde lo que hay que corregir es un criterio.
+    Con el campo del criterio, `MD.disenar_punto` lo trata como el valor de
+    un criterio que el consumidor rechaza (bloqueo DATO_INVALIDO con la
+    clave). Forma MAT-D13: la condicion en positivo y negada, para que un NaN
+    caiga del lado que se detiene.
+    """
+    if not inicio > 0:
+        raise DatoInvalidoError(
+            CRITERIO_DIAMETROS, valor=inicio,
+            motivo=f"el arranque de la progresion ({inicio!r} m) no es un "
+                   "diametro: tiene que ser positivo. Se corrige el inicio "
+                   f"declarado en '{CRITERIO_DIAMETROS}' (VE-7, B12)")
+
+
 def siguiente_diametro(material: MaterialLike,
                        D: Optional[float] = None) -> Optional[float]:
     """
@@ -1057,6 +1117,7 @@ def siguiente_diametro(material: MaterialLike,
     tope, _clave, _rotulo = tope_de_diametro(tipo)
 
     if D is None:
+        _exigir_arranque_positivo(inicio)
         primero = _primer_escalon_sobre_el_piso(
             inicio, paso, tope, piso_de_selva_alta(tipo))
         if primero is not None:

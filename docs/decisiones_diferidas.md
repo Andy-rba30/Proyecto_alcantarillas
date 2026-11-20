@@ -4139,8 +4139,9 @@ tres más (`T1-07` a `T1-09`) las dejó la auditoría adversarial de la misma se
   [C], no [A]. Lo que falta no es fuente sino forma de entrada: hoy el CSV de cuencas es
   una fila por obra, con un área que tiene que coincidir con `area_ha`, y varias subáreas
   por obra cambian el contrato, que decide su dueño.
-- **Qué haría falta:** la forma de las subáreas en `docs/contrato_entradas.md`, la cita de
-  la Eq. 2-4 en el registro y ΣC·A en el paso del coeficiente.
+- **Cerrado en VE-7 (lote B, B10; ficha VE7B-06):** la columna opcional `subareas` y ΣC·A/ΣA en
+  el paso del coeficiente. La cita de la Eq. 2-4 sigue sin registrar.
+- **Qué haría falta:** la cita de la Eq. 2-4 en el registro.
 - **Dónde vive:** `src/modulos/MH_hidrologia.py::_paso_c`
 
 ## T1-06 · `MetodoNoEvaluableError` admite un rótulo propio para la hidrología
@@ -4896,6 +4897,9 @@ se corrigieron donde las auditorías las desmintieron (cada una lo dice).
   llevan los fundamentos F9.ARM_* (rótulo «Fase 9»). Decisiones pendientes de Fable (sin
   subagentes en la sesión): reutilizar para el marco `phi_relleno_trasdos` y los criterios
   de material, recubrimiento y exposición del cabezal; la altura de la Tabla 3.11.6.4-1.
+- **VE-7 (lote B):** el canto que cerraría se busca y se dice en el bloqueo, sin adoptarlo (VE7B-11);
+  las caras sin tracción llevan el mínimo de 5.10.6 (VE7B-09); el agua exterior entra (VE7B-10); el
+  acero del pórtico se metra (VE7B-12).
 - **Qué haría falta:** separar los cantos en la geometría del programa y dimensionar la
   losa por su armado, como el peralte del cabezal (VE-3.9).
 - **Dónde vive:** `src/modulos/M8_estructural.py::disenar_portico`
@@ -6938,15 +6942,13 @@ y un test regenera cada uno.
 - **Abierto:** (1) el delta no es el remedio verificado del punto: con la rasante nueva la
   corrida se repite, y un escalón menor que hoy sólo incumple V4 o V7 podría cerrar con
   menos. (2) Si el escalón que no cabe incumple sólo V4, el tamizado daría un delta por
-  resguardo, que depende del HW: no se informa. (5) Un marco con alturas declaradas no
-  crecientes se detiene en el primer escalón que no cabe, como antes. (6) El inválido de
-  antes de la Fase 5 que detiene a UN solo material no bloquea ni decide; el `campo` del
-  arranque negativo es `D`, no `diametros_normalizados`.
+  resguardo, que depende del HW: no se informa. (5) cerrado en VE-7 (ficha VE7B-03). (6) El inválido de
+  antes de la Fase 5 que detiene a UN solo material no bloquea ni decide (el `campo` del
+  arranque: cerrado en VE-7, ficha VE7B-01).
 - **VE-6 (ítem 34):** el abierto (2) queda cerrado bajo control de ENTRADA (ficha VE6-34);
-  bajo control de salida sigue sin darse.
+  bajo salida, con el HW de entrada desde VE-7 (ficha VE7B-04).
 - **Qué haría falta:** para (1), el tamizado previo de 7.A corrido antes del bucle con la
-  sección máxima supuesta, que el servicio no corre; para (6), decisión del dueño, y que M2
-  valide el arranque de la progresión.
+  sección máxima supuesta, que el servicio no corre; para (6), decisión del dueño.
 - **Dónde vive:** `src/modulos/MD.py::_resumen_por_rasante`
 
 ## T11-04 · Validación externa: HDS-5 y HEC-14 contra sus ejemplos resueltos; HY-8 sólo como procedimiento, con la tolerancia que el dueño aceptó
@@ -7838,15 +7840,13 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   (VE-1 H2). Tolerancia `TOL_UMBRAL_NORMATIVO` en metros, no de centímetro: 375, 525, 675
   y 825 mm son designados. Un escalón no positivo lo sigue rechazando la hidráulica
   (rama de error de la línea base). Con los valores de archivo ningún número se mueve.
-- **Abierto:** (1) cerrado en VE-5 (abajo). (2) Con la opción inglesa, 'espesor_pared_conducto' necesita las filas 914, 1067…
-  (su clave es el diámetro redondeado al mm, `M2.espesor_pared`); leer la pared de la
-  fila designada sería otra decisión, no tomada. (3) Las seis filas de 2850 a 3600 de la
+- **Abierto:** (1) cerrado en VE-5 (abajo). (2) cerrado en VE-7 (ficha VE7B-02: la pared del
+  inglés es la del designado). (3) Las seis filas de 2850 a 3600 de la
   Table 6 no se transcriben (`Acotada`).
 - **Cerrado (VE-5, ítem 24), (1):** el tope y V9 comparan el designado
   (`M2.diametro_designado`); 108 in entra como 2700 mm. (3) releída por imagen: sigue
   ilegible (2830, iM8, 3333, U38, 3S05 y la última fila).
-- **Qué haría falta:** (2) decidir si la pared del diámetro inglés es la del designado;
-  (3) otro ejemplar de M 170M, no recompuesto.
+- **Qué haría falta:** (3) otro ejemplar de M 170M, no recompuesto.
 - **Dónde vive:** `src/modulos/M2_material.py::_exigir_escalon_designado`
 
 ## VE2-C · V7: el nivel de agua de diseño es una elección [A] del Propietario
@@ -8632,8 +8632,8 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   longitudes del despiece (504.03) y ninguna fuente del repositorio da una fracción de
   anclajes y empalmes; la Tabla 503-07 da clases, no usos, y heredar la del cabezal fijaría
   sin diseño si la losa es simple o reforzada.
-- **Abierto:** el relleno para estructuras (502.A) y la cama no se metran; el acero del marco
-  (`armado_seccion_marco`); el emboquillado sin geometría; la zanja de varios tubos y el
+- **Abierto:** el relleno para estructuras (502.A), la cama y el emboquillado no se metran, y desde
+  VE-7 lo dicen como bloqueos «no medido» (ficha VE7B-08); el acero del marco (ficha VE7B-12); la zanja de varios tubos y el
   enrocado de varios barriles, no evaluables. La hoja de ruta (Fase 11, ítem 8) cita una
   «Sección 500» que no existe y omite 501, 511 y la falta de partida del enrocado.
 - **Qué haría falta:** para el acero, que el programa calcule ganchos, desarrollo y empalmes
@@ -8656,13 +8656,11 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   cobertura mínima de la Tabla 12.6.6.3-1 (F8.COBERTURA, medida hasta la rasante porque la
   fuente cuenta la base): sin ella INCUMPLE y el escalón se rechaza, no es «no evaluable».
 - **Abierto:** el largo del área cargada A TRAVÉS del tubo de concreto somero no lo fija la
-  fuente: `carga_viva_tubo_concreto_somero` [A] sin valor (L_T, la cota superior que
-  C4.6.2.10.2 permite, recomendada; o L_T + LLDF·1.0 ft). Difiere sólo con el tándem sobre
-  tubos de B_c entre 1.22 y 1.82 m. Sigue sin método (`MetodoNoEvaluableError`): el tubo de
+  fuente: `carga_viva_tubo_concreto_somero` [A] tiene desde VE-7 valor de archivo L_T (ficha
+  VE7B-05); L_T + LLDF·1.0 ft queda en la ventana. Sigue sin método (`MetodoNoEvaluableError`): el tubo de
   concreto bajo pavimento rígido entre 9 y 12 in («more comprehensive methods») y el
   flexible con 1.0 ft o menos que cumple la cobertura (sólo justo en 1.0 ft).
-- **Qué haría falta:** la decisión del dueño sobre el criterio; los métodos completos para
-  el tubo con menos de 1.0 ft. Con el pórtico (ficha T5-07) la presión de la franja se
+- **Qué haría falta:** los métodos completos para el tubo con menos de 1.0 ft. Con el pórtico (ficha T5-07) la presión de la franja se
   aplica al marco como carga concentrada sobre la losa.
 - **Dónde vive:** `src/modulos/M8_estructural.py::_carga_viva_en_la_franja`
 # Parte LXI — Lo que VE-5 (lote M9) dejó escrito: el cabezal
@@ -8892,9 +8890,9 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   `seccion_cuneta` antes de VE-5 tiene que añadirlo; (3) la región pluvial sigue sin ser
   dato: la ventana de profundidad empieza en 0.40 (fila de 1600 a < 3000), de modo que la
   trapezoidal mínima exacta (0.30 de profundidad) no se puede declarar y una más honda sí.
-- **Qué haría falta:** la región pluvial del corredor en año FEN como dato (el estudio
-  hidrológico), para elegir la fila de la Tabla Nº 34 que rige en vez de deducirla de la
-  forma declarada; la sección rectangular sigue sin implementarse.
+- **Cerrado en VE-7 (lote B, B11; ficha VE7B-07):** la región pluvial es el [S] opcional
+  `precipitacion_anual_corredor_mm`; declarado, la fila de la Tabla Nº 34 sale de él.
+- **Qué haría falta:** la sección rectangular sigue sin implementarse.
 - **Dónde vive:** `src/modulos/M10_espaciamiento.py::geometria_cuneta`
 
 ## VE5-CAT-03 · Fase 0-bis: la licuefacción como resultado declarado del EMS, con bloqueo de expediente donde AASHTO 10.5.4.2 la exige
@@ -8984,10 +8982,12 @@ generados (`indice_formulas.md`, línea base) no se regeneran aquí: los regener
   (las de forma y las cuatro `D` de M4) los decimales del rótulo: 0.90 sigue «0.90», 1.0668 dice
   «1.0668».
 - **Abierto:** `docs/indice_formulas.md` no se regeneró (lo regenera el integrador; ya estaba
-  desincronizado en la base). Las `D` de M5 y M6 que usan `CIFRAS_MAGNITUD` (3) siguen con tres
-  decimales (la de M9, desde VE7A-10, con los del rótulo).
-- **Qué haría falta:** regenerar el índice; extender `cifras_de_dimension` a esas `D` si el dueño lo
-  pide (archivos de otros lotes).
+  desincronizado en la base).
+- **Cerrado (VE-7: lote A, VE7A-10, y lote B, B13; decisión del consultor Fable, triaje VE-7,
+  2026-11-20):** las `D` de M9 y las cinco `Magnitud("D", …)` de M5 (V4b, V9) y M6 (apron y clase
+  de HEC-14) usan `cifras_de_dimension`; `tests/test_ve7_lote_b_cifras.py` lo fija por AST y con el
+  paso de V9 en 1.0668 m.
+- **Qué haría falta:** regenerar el índice.
 - **Dónde vive:** `src/modelos.py::cifras_de_dimension`
 
 ## VE5GUI-43 · Los ensayos de durabilidad, quinta población del censo
@@ -9204,12 +9204,10 @@ cambios están aplicados en estas fichas.
   «Addendum VE-6» en la nota T11-03 de §7.B.
 - **Decisiones (aprobadas por Fable con cambios):** H7 sólo con V10, la única cuya independencia
   de la sección se demuestra; el delta bajo salida exigiría iterar 7.A con 7.B y no se inventa.
-- **Abierto:** H7 con V2, V2b y V7; el delta de V4 bajo salida; la rama «no cabe» de T11-03 en el
-  marco sigue deteniéndose en el primer par que no cabe aunque quede uno más bajo (abierto (5) de
-  T11-03, anterior a VE-6); la fila NF de VE3-13 sin iterar el peralte (M9 en otra rama; «inflar el
+- **Abierto:** H7 con V2, V2b y V7; el delta de V4 bajo salida y la rama «no cabe» del marco se
+  cerraron en VE-7 (fichas VE7B-04 y VE7B-03); la fila NF de VE3-13 sin iterar el peralte (M9 en otra rama; «inflar el
   peralte no es diseño», decisión de VE-3.14 que sólo el dueño revierte).
-- **Qué haría falta:** la monotonía de V2/V2b/V7 con D; iterar 7.A con 7.B; aplicar la regla del
-  escalón más bajo también a la rama «no cabe»; la decisión del dueño sobre la fila NF.
+- **Qué haría falta:** la monotonía de V2/V2b/V7 con D; la decisión del dueño sobre la fila NF.
 - **Dónde vive:** `src/modulos/MD.py::_escalon_sin_cobertura`
 
 # Parte LXIV-A — Lo que VE-7 (lote A) dejó escrito: la embocadura, el sismo del cabezal y la Fase 9
@@ -9508,3 +9506,239 @@ Fable (triaje VE-7, 2026-11-20): Fable decidió QUÉ hacer; estas fichas dicen c
 - **Abierto:** la línea base cambia (`cli_expediente.txt`, JSON): la regenera el integrador.
 - **Qué haría falta:** regenerar la línea base.
 - **Dónde vive:** `src/comparador.py::CLAVES_DEL_PUNTO_CON_REGLA_PROPIA`
+# Parte LXIV — Lo que VE-7 (lote B) dejó escrito: la progresión, el pórtico, los metrados y la hidrología
+
+## VE7B-01 · El arranque de la progresión lo valida M2 sobre el criterio (cierre de T11-03 (6))
+
+- **Cerrado (VE-7 lote B, B12):** un `inicio` de 'diametros_normalizados' no positivo lo rechaza
+  `M2.siguiente_diametro` antes de construir ningún escalón, con `DatoInvalidoError` sobre
+  `campo='diametros_normalizados'` (`M2._exigir_arranque_positivo`, forma MAT-D13: `not inicio > 0`).
+  Hasta VE-7 lo rechazaba la sección sobre el dato `D`, que el usuario no escribió. Como el campo es
+  un criterio, `MD.disenar_punto` lo trata por `_exigir_criterios_validos` (bloqueo DATO_INVALIDO con
+  la clave). La puerta del criterio sigue sin acotar el inicio: el consumidor lo hace.
+- **Decisión del consultor Fable (triaje VE-7, 2026-11-20):** validar en M2 con el campo del
+  criterio. Verificado antes: no estaba (la puerta lo dejaba pasar a propósito y M3 lo rechazaba).
+- **Revisado por Fable (dictamen del consultor, 2026-11-20): conforme, aplicado sin cambios.**
+- **Abierto:** la línea base de la rama de error (`tests/linea_base_familia_c/`, corrida 3) cambia
+  de texto («Dato invalido en 'diametros_normalizados'»): el test la fija y la regeneración queda
+  para la integración, porque los archivos de la línea base llevan además la huella de los
+  criterios, que cambia con cada lote. El inválido de antes de la Fase 5 que detiene a UN material
+  sigue sin bloquear ni decidir (T11-03 (6), primera mitad).
+- **Qué haría falta:** regenerar la línea base al integrar (`sh tests/linea_base_familia_c/regenerar.sh`).
+- **Dónde vive:** `src/modulos/M2_material.py::_exigir_arranque_positivo`
+
+## VE7B-02 · La pared del diámetro inglés convertido es la de su designado (cierre de VE2-G (2))
+
+- **Cerrado (VE-7 lote B, B9):** si 'espesor_pared_conducto' no trae la fila del diámetro redondeado
+  al mm (1067 para 1.0668 m), `M2.espesor_pared` lee la del designado de la misma fila de AASHTO
+  M 170M Table 6 (`M2.diametro_designado`: 1050). Fundamento: el núm. 12.1 (`AASHTO_M170M.12.1`,
+  «the designated diameter or the converted English diameter») trata a los dos como el MISMO tubo
+  de la serie. Una fila declarada para el inglés gana; un diámetro sin fila ni designado sigue
+  deteniéndose con `DatoFaltanteError`. Con la progresión de archivo no se mueve ningún número.
+- **Decisión del consultor Fable (triaje VE-7, 2026-11-20):** leer la fila del designado cuando no
+  existe la del inglés.
+- **Revisado por Fable (dictamen del consultor, 2026-11-20): defecto 10, aplicado.** El paso de V7
+  imprime «fila leida: 1050 (designado de 1067)» (`M2.fila_de_pared_leida`).
+- **Abierto:** las seis filas de 2850 a 3600 de la Table 6 siguen ilegibles (VE2-G (3)).
+- **Qué haría falta:** otro ejemplar de M 170M.
+- **Dónde vive:** `src/modulos/M2_material.py::espesor_pared`
+
+## VE7B-03 · La regla del escalón más bajo vale también en la rama «no cabe» (cierre de T11-03 (5))
+
+- **Cerrado (VE-7 lote B, B1):** en el `except` de `MD.disenar_material`, si el escalón no cabe bajo
+  la subrasante (`_escalon_sin_cabida`) y queda en la progresión uno MÁS BAJO
+  (`_escalon_restante_mas_bajo`, la regla de G1 de VE6-34), el escalón se registra con «queda un
+  escalón más bajo… la progresión sigue» y la progresión continúa; el material se descarta por
+  rasante sólo si no queda ninguno. En el tubo (progresión ascendente) nunca lo hay y la traza es
+  idéntica, palabra por palabra (`tests/test_ve7_lote_b_md.py`). Si recorrer el resto levanta un
+  `ErrorProyecto`, se lee «ninguno» (`_mas_bajo_o_ninguno`): era lo que el bucle hacía antes.
+- **Decisión del consultor Fable (triaje VE-7, 2026-11-20):** registrar y seguir; descartar por
+  rasante sólo sin escalón más bajo.
+- **Revisado por Fable (dictamen del consultor, 2026-11-20): abierto (iii), aplicado.** Si tras un
+  escalón sin cabida (o sin cobertura de G1) que dejó seguir la progresión el catálogo se agota sin
+  cerrar, el material sale POR RASANTE con el escalón de menor delta (`MD._el_de_menor_delta`) y
+  «los escalones más bajos que quedaban no cierran»; `disenar_punto` toma ALGÚN escalón con
+  `sin_cabida`, no sólo el último, y el punto lleva su delta. La traza del tubo no cambia.
+- **Abierto:** ninguno propio; el delta sigue siendo cota inferior para ese escalón (T11-03).
+- **Qué haría falta:** nada más para esta ficha.
+- **Dónde vive:** `src/modulos/MD.py::_mas_bajo_o_ninguno`
+
+## VE7B-04 · El delta del resguardo bajo control de salida, con el HW de entrada (cierre del abierto de VE6-34)
+
+- **Cerrado (VE-7 lote B, B2; VE3-08 H3a):** el escalón que no cabe y sólo incumple V4 bajo control
+  de SALIDA recibe el delta de 7.A calculado con `resultado.HW_entrada`
+  (`MD._delta_del_resguardo_bajo_salida`). Es cota inferior rigurosa sin iterar 7.A con 7.B: el HW
+  gobernante es el mayor de los dos (`HDS5_3ED.3.3.5#GOBIERNA`, pág. impresa 3.25) y el de entrada
+  no depende de la longitud. La nota lo dice («cota inferior con el HW de entrada») y da el HW
+  gobernante de hoy. Si con el HW de entrada el resguardo ya cabe, se conserva el mensaje anterior
+  (`MENSAJE_SIN_DELTA_BAJO_SALIDA`).
+- **Decisión del consultor Fable (triaje VE-7, 2026-11-20):** el HW de entrada como cota inferior.
+- **Revisado por Fable (dictamen del consultor, 2026-11-20): conforme, aplicado sin cambios.**
+- **Abierto:** el delta con el HW gobernante real exigiría iterar 7.A con 7.B (la longitud crece con
+  la rasante); no se hace.
+- **Qué haría falta:** una pasada de MD con la rasante y la longitud nuevas.
+- **Dónde vive:** `src/modulos/MD.py::_delta_del_resguardo_bajo_salida`
+
+## VE7B-05 · El largo del área cargada sobre el tubo de concreto somero: el del neumático, valor de archivo (VE4F-01)
+
+- **Cerrado (VE-7 lote B, B8):** `carga_viva_tubo_concreto_somero` [A] de perfil tiene valor de
+  archivo `largo_del_neumatico` (L_T). Es el área menor y la presión mayor: con el camión las dos
+  lecturas cargan igual, y con el tándem sobre tubos de B_c entre s_a = 1.22 m y s_a + E_span =
+  1.82 m el segundo eje entra antes y entero, de modo que W_L(L_T) ≥ W_L(E_span). El comentario de la
+  franja permite despreciar el aumento por el relleno (`AASHTO_LRFD_9.C4.6.2.10.2#E_SPAN`,
+  PERMISO): es la cota superior. `e_span_a_un_pie` sigue en la ventana. Censos: sale de los
+  criterios de perfil sin valor (`tests/test_criterios_adoptados.py`, `tests/test_cierre_perfil.py`)
+  y de la tabla y el ejemplo de `docs/guia_perfil.md` (editados a mano, sin regenerar la guía).
+- **Decisión del consultor Fable (triaje VE-7, 2026-11-20):** L_T como valor de archivo, por el
+  lado seguro.
+- **Revisado por Fable (dictamen del consultor, 2026-11-20): conforme, aplicado sin cambios.**
+- **Abierto:** los tubos de concreto con menos de 1.0 ft y bajo pavimento rígido de 9 a 12 in
+  siguen sin método (ficha VE4F-01).
+- **Qué haría falta:** una disposición de AASHTO o del Manual de Puentes que fije el largo; si el
+  dueño prefiere la otra lectura, declararla.
+- **Dónde vive:** `src/modulos/M8_estructural.py::lectura_del_tubo_de_concreto_somero`
+
+## VE7B-06 · El coeficiente de escorrentía ponderado por subáreas (cierre de VE5-MH-01)
+
+- **Cerrado (VE-7 lote B, B10):** columna opcional `subareas` del CSV de cuencas, con Σáreas = el área
+  de la cuenca (`TOL_REL_AREA_ESCRITA_DOS_VECES`; si no, `DatoInvalidoError` sobre `subareas`), y
+  C = ΣC·A/ΣA (`coeficiente_ponderado`, fundamento `FH.C_SUBAREAS`: superposición de la ecuación (28)
+  con la misma I y tc, sobre `MC_HHD.3.12.2`). Sin la columna, todo igual.
+- **Revisado por Fable (dictamen del consultor, 2026-11-20): decisión 1 y abierto (i), aplicados.** El
+  C tecleado se rechaza (`FH.C`: el programa no acepta un coeficiente tecleado): la forma es
+  «cobertura/suelo[/S_terreno]:area_ha» y, en una superficie vial, «cobertura:area_ha», con los
+  validadores de `cargar_cuencas` (`MH._subareas`, `Cuenca.subareas` de cuatro campos). Cada C_k sale
+  de su tabla (`MH._paso_c_por_subareas(cuenca, TR)`): la Tabla Nº 08 con la S de la subárea o la
+  `S_terreno` de la cuenca, o la tabla vial con su incremento por periodo de retorno; el paso imprime
+  cobertura, suelo, S, columna, C_k, A_k y la laguna del 1 %. Con `subareas`, `cobertura` y `suelo`
+  de la fila van vacíos (con valor, «contradice a otro dato»). La memoria ya no nombra la Eq. 2-4.
+- **Abierto (bloqueo declarado):** la Eq. 2-4 del WSDOT Hydraulics Manual no se nombra hasta tener el
+  PDF de WSDOT y registrar su cita; `FH.C_SUBAREAS` se sostiene con `MC_HHD.3.12.2`.
+- **Qué haría falta:** el PDF de WSDOT y la cita de la Eq. 2-4.
+- **Dónde vive:** `src/modulos/MH_hidrologia.py::coeficiente_ponderado`
+
+## VE7B-07 · La región pluvial de la Tabla Nº 34 como [S] opcional (cierre de VE5-CAT-02)
+
+- **Cerrado (VE-7 lote B, B11):** `precipitacion_anual_corredor_mm` es un [S] de corredor OPCIONAL
+  (estudio hidrológico, sin valor; `DatoSitio.opcional`, fuera de `datos_sin_valor()`, leído con
+  `ds.valor_si_declarado`). Declarado, `M10.capacidad_cuneta` toma SU fila
+  (`fila_de_la_tabla_34`, límites [N] `CUNETA_PRECIPITACION_MIN_FILA_T34` de los rótulos) y exige
+  sus mínimos (`_contrastar_con_la_tabla_34`): con > 3000 mm/año la triangular es
+  `DatoInvalidoError` y la trapezoidal pide 0.30 × 1.20 con fondo 0.30; con 500 mm/año, 0.30 ×
+  0.75. Sin declarar: aviso «fila de la Tabla Nº 34 no verificada» y lo de siempre. Con fondo,
+  el piso de `profundidad_m` baja a 0.30 en la puerta (`criterios_adoptados._PISO_CONDICIONADO`);
+  la triangular sigue en 0.40 y las esquinas de la ventana siguen siendo válidas.
+- **Decisión del consultor Fable (triaje VE-7, 2026-11-20):** [S] opcional, contraste contra su
+  fila y aviso sin él.
+- **Revisado por Fable (dictamen del consultor, 2026-11-20): 2a y 2b, aplicados.** (2a) 3000 mm/año
+  exactos van a la trapezoidal por la convención de límite inferior cerrado de los rótulos (no por
+  ser la más exigente: 0.30 × 1.20 con fondo 0.30 = 0.225 m² < 0.24 m² de la triangular 0.40 × 1.20),
+  y la nota del paso dice que la fuente no cubre ese valor. (2b) Sin la precipitación, una
+  trapezoidal de menos de 0.40 m se detiene: `DatoFaltanteError` sobre
+  `precipitacion_anual_corredor_mm` (esa profundidad sólo la concede la fila de más de 3000).
+- **Abierto:** (1) con la precipitación de una fila seca o lluviosa, una triangular más chica que
+  0.40 × 1.20 sólo entra pisando la ventana del criterio (la puerta no ve el [S]); (2) el editor de
+  la pestaña 2 valida cada campo con su ventana (0.40): la trapezoidal de 0.30 entra por el literal y
+  por la CLI.
+- **Qué haría falta:** una ventana del criterio que dependa de un [S] declarado por sesión.
+- **Dónde vive:** `src/modulos/M10_espaciamiento.py::fila_de_la_tabla_34`
+
+## VE7B-08 · Lo que la Fase 11 no metra sale como renglón «no medido» (VE5-MET-01)
+
+- **Cerrado (VE-7 lote B, B7):** el relleno para estructuras (502.A), la cama de apoyo y el
+  revestimiento de la entrada (emboquillado, sólo si el punto tiene protección de entrada) salen,
+  en cada punto metrado, como `Bloqueo` de `servicio.FASE_METRADOS` con la etapa
+  «metrado de …: no medido» (`M12.etapa_no_medido`), `MetodoNoEvaluableError` con
+  `MOTIVO_METODO_NO_EVALUABLE_METRADO`, el motivo («no medido: …») y lo que haría falta para medirlo
+  (`M12.RENGLONES_NO_MEDIDOS`). Es la regla de `modelos.MetradoDelPunto` («un renglón que no se pudo
+  medir … es un `Bloqueo`»): el cuadro ya no los omite en silencio y los demás rubros siguen.
+  `servicio._fase_11_metrados` suma el bucle (cambio mínimo en `servicio.py`).
+- **Decisión del consultor Fable (triaje VE-7, 2026-11-20):** renglón explícito «no medido» con
+  motivo en la fase de los metrados.
+- **Revisado por Fable (dictamen del consultor, 2026-11-20): defecto 7, aplicado.** En una tubería
+  la cama la paga la partida del tubo (nota del paso 11.1): el «no medido» de la cama sale sólo en el
+  marco. Desde (ii-b.3), también el de la distribución de la losa superior cuando es obligatoria.
+- **Abierto:** a expediente el punto con cabezal ya no queda sin bloqueos de la Fase 11 mientras
+  estas partes no se metren: es lo que la decisión pide decir. Su medición sigue sin hacerse.
+- **Qué haría falta:** la sección del relleno y de la cama de los planos; la geometría del
+  zampeado y del dentellón de la entrada (ficha T8-03).
+- **Dónde vive:** `src/modulos/M12_metrados.py::renglon_no_medido`
+
+## VE7B-09 · Las caras del pórtico que no se traccionan llevan el mínimo de 5.10.6 (T5-07 (3))
+
+- **Cerrado (VE-7 lote B, B4):** la cara que ninguna combinación de resistencia tracciona lleva una
+  `FilaDeArmado` de retracción y temperatura (`DisenoPortico.minimos`, `M8._minimo_de_la_cara`): la
+  fila de reparto del cabezal, `M9._fila_de_reparto`, importada sin modificarla (5.10.6 y E.060 9.7.2
+  con la regla del más exigente), con su barra. 12.11.5.3.1 lo manda (nota de la cita
+  `AASHTO_LRFD_9.12.11.5.3.1`). Paso `F8.PORTICO_MINIMOS`. Toda cara de toda sección tiene acero.
+- **Revisado por Fable (dictamen del consultor, 2026-11-20): defecto 3, aplicado.** 5.10.6 se
+  calculaba con b = h; ahora con el ANCHO REAL del elemento, el largo del miembro entre ejes
+  (`M8.largos_de_los_miembros`), como la decisión 3 del dueño en O-2 para el cabezal: en las caras de
+  mínimo y en las armadas (`ancho_seccion` de `M9.diseno_flexion_corte`). El oráculo discrimina con
+  t = 0.40 y la regla «solo AASHTO».
+- **Abierto:** el desarrollo y los empalmes siguen fuera (`M8.DIFERIDO_PORTICO`); el acero
+  longitudinal y la distribución, en la ficha VE7B-12.
+- **Qué haría falta:** transcribir 5.10.8 para el pórtico.
+- **Dónde vive:** `src/modulos/M8_estructural.py::_minimo_de_la_cara`
+
+## VE7B-10 · El agua exterior del pórtico con el freático sobre la losa inferior (T5-07 (5))
+
+- **Cerrado (VE-7 lote B, B3):** con el nivel sobre el eje de la losa inferior
+  (`M8._agua_exterior_del_portico`) el pórtico suma `WA_ext` (hidrostático en las paredes) y el EH
+  bajo el nivel con el peso SUMERGIDO, en dos tramos lineales (el diagrama del ensamble de M9), con
+  las citas del agua del ensamble (`AASHTO_LRFD_9.3.11.3`, `MP.2.4.4.1.3#SUMERGIDO`). Exige
+  `peso_especifico_saturado_relleno_kn_m3`. `WA_ext` entra con γ_WA en el horizontal máximo y no en
+  el del agua interior. La subpresión no flexa (reacción lineal; lectura declarada). Con el nivel
+  bajo la losa, los números de antes. Oráculo de pendiente-deflexión (1 %).
+- **Revisado por Fable (dictamen del consultor, 2026-11-20): defectos 1 y 2 y decisión 3,
+  aplicados.** (1) El nivel es el de V7: lectura + `margen_estacional_nf_v7_m` si está declarado
+  (negativo, `DatoInvalidoError`); sin él, la lectura cruda y el aviso «nivel sin ascenso
+  estacional». (2) Un nivel sobre la rasante es `DatoInvalidoError('NF_profundidad_m')`. (3) Con el
+  nivel sobre la losa superior, envolvente seco/sumergido: `EV_sum` = F_e·(σ′_v − σ_v) con γ_EV y
+  `WA_sup` = γ_w·d_w con γ_WA (η donde el EV va al máximo), en combinaciones DUPLICADAS con el
+  sufijo `SUFIJO_SUMERGIDO`; el paso imprime d_w, w_EV,sum y w_WA,sup.
+- **Abierto:** sin `NF_profundidad_m` el agua exterior no se evalúa (la columna la debe el EMS).
+- **Qué haría falta:** la lectura del freático en cada punto de marco.
+- **Dónde vive:** `src/modulos/M8_estructural.py::_agua_exterior_del_portico`
+
+## VE7B-11 · El pórtico que no cumple dice qué canto declarar, y no se lo auto-adopta (T5-07 (1))
+
+- **Cerrado (VE-7 lote B, B5):** si A1–A6 del pórtico no cumplen, `M8.disenar_portico` busca
+  (`_con_el_canto_que_cierra`) en la grilla de `dimensionamiento_zapata_cabezal` (su `paso_m`, el del
+  cabezal; aritmética decimal de `M2._escalon_de_la_serie`) el MENOR canto uniforme t_k = t_0 + k·paso
+  con el que cumple, con la sección interior fija y el relleno sobre la clave reducido en Δt (la losa
+  superior crece hacia arriba); el tope es físico (el relleno reducido > 0) y lo que no se puede
+  evaluar termina la búsqueda. El `DisenoPortico` sigue siendo el de t_0 y lleva
+  `canto_que_cierra_m`, `canto_buscado_hasta_m` y el paso `F8.PORTICO_CANTO`. La etapa del servicio
+  llama a `exigir_canto_del_portico`: `DatoInvalidoError` sobre `espesor_pared_cajon` con «declarar
+  `espesor_pared_cajon` >= X m y repetir» (cambio mínimo en `servicio._fase_8`). No se adopta porque
+  ese canto forma la clave física, V4, V7 y G1. Oráculo: el canto impreso, declarado con el relleno
+  reducido, cierra el pórtico; el anterior de la grilla no.
+- **Decisión del consultor Fable (triaje VE-7, 2026-11-20):** buscar y decir, no iterar.
+- **Revisado por Fable (dictamen del consultor, 2026-11-20): defecto 9, aplicado.** El bloqueo y el
+  paso dicen «= X m (el menor de la grilla que cierra)»; la búsqueda tiene tope
+  (`tolerancias.ITERACIONES_MAX_CANTO_PORTICO`, 20 escalones) y el paso lo imprime.
+- **Abierto:** el canto es uniforme; los cantos separados NO PROCEDEN (dictamen, (ii-a)). Con el
+  canto declarado la corrida se repite entera.
+- **Qué haría falta:** nada más mientras la geometría del programa tenga un solo canto.
+- **Dónde vive:** `src/modulos/M8_estructural.py::exigir_canto_del_portico`
+
+## VE7B-12 · El acero del pórtico del marco se metra con sus armados (VE5-MET-01)
+
+- **Cerrado (VE-7 lote B, B6):** `M12.renglones_acero_portico` mide el acero del pórtico (504.10,
+  partida 504.A) con sus armados y la longitud de metrado del barril a lo largo del eje, Tabla 504-01
+  (`EG2013.504.01#PESOS`), tras la puerta `incremento_acero_por_despiece`. `servicio._fase_11_metrados`
+  pasa `estructural.portico`; el aviso del acero del marco sólo sale sin pórtico.
+- **Revisado por Fable (dictamen del consultor, 2026-11-20): defecto 4 y (ii-b), aplicados.** (a) El
+  LONGITUDINAL mínimo de 5.10.6 (12.11.5.3.1) se diseña (`DisenoPortico.longitudinales`, la fila de
+  reparto de M9 con el ancho real, paso `F8.PORTICO_LONGITUDINAL`) y se metra: Σ (largo/s)·L_eje·w.
+  (b) La barra transversal mide largo entre ejes + canto − 2·recubrimiento (el menor de los armados
+  del miembro: lado seguro; `M8.espesores_de_los_miembros`). (c) Un pórtico que no cumple no se
+  metra: `MetodoNoEvaluableError` «armado no cerrado». (ii-b.3) Con menos de 2.0 ft hasta la rasante
+  la distribución de la losa superior es obligatoria: `M8.exigir_distribucion_del_portico` bloquea la
+  etapa del pórtico y M12 da el renglón «no medido» de la distribución (9.7.3.2).
+- **Abierto (bloqueo declarado):** 9.7.3.2 no está en el registro; al transcribirla, incluir también
+  5.12.2.1 de la 9.ª ed. (exceptúa «culvert tops… fill exceeds 2.0 ft»; citado de memoria: verificar
+  contra el PDF). Los cantos separados no proceden (dictamen, (ii-a)).
+- **Qué haría falta:** transcribir 9.7.3.2 y 5.12.2.1 y diseñar la distribución.
+- **Dónde vive:** `src/modulos/M12_metrados.py::renglones_acero_portico`

@@ -276,6 +276,7 @@ from src.modelos import (DatosDeExpediente, DerechoDeViaDelPunto,
                      UMBRAL_V8_DESBORDE_ADMITIDO,
                      UMBRAL_V8_SIN_DESBORDE, UMBRALES_V8)
 from src.modelos import (CIFRAS_FACTOR, CIFRAS_FINA, CIFRAS_MAGNITUD,
+                         cifras_de_dimension,
                      CIFRAS_PORCENTAJE, ControlGobernante, CotaDeEntrada,
                      DatoFaltanteError, DatoInvalidoError, EleccionDeProyecto,
                      ErrorProyecto, EstadoDeVerificacion, Familia, FormaSeccion,
@@ -293,7 +294,8 @@ from src.modulos.M2_material import (CRITERIO_CALIBRE_TMC,
                                  diametro_designado,
                                  espesor_pared,
                                  numero_de_celdas,
-                                 procedencia_del_espesor)
+                                 procedencia_del_espesor,
+                                 fila_de_pared_leida)
 from src.modulos.M8_estructural import (CRITERIO_FACTORES_CARGA,
                                     CRITERIO_NIVEL_AGUA_V7,
                                     NIVEL_V7_EN_LA_CLAVE, NIVELES_AGUA_V7,
@@ -2545,7 +2547,7 @@ def v4b_relacion_hw_d(*, D: float,
                          cifras=CIFRAS_MAGNITUD),
                 Magnitud("D", D, "m", "altura interior de la seccion "
                          "candidata (la dimension que el catalogo recorre)",
-                         cifras=CIFRAS_MAGNITUD),
+                         cifras=cifras_de_dimension(D)),
                 Magnitud("HW_D_max", admisible, "",
                          f"criterio '{CLAVE_HW_D_MAX}' [A]",
                          cifras=CIFRAS_FACTOR)),
@@ -3782,6 +3784,15 @@ def v7_flotacion(*, punto: PuntoCritico, material: Material,
                          "marco NO coincide con Bc; en una circular si, y esa "
                          "coincidencia es la que oculto el defecto hasta C7",
                          cifras=CIFRAS_MAGNITUD),
+                # --- VE-7, dictamen Fable (defecto 10; ficha VE7B-02) ---
+                *((Magnitud("fila leida", f"{fila[0]} (designado de "
+                            f"{fila[1]})", "mm",
+                            "fila de pared del diametro DESIGNADO: el "
+                            "criterio no trae la del ingles convertido, y "
+                            "los dos son el mismo tubo (AASHTO M 170M num. "
+                            "12.1 y Table 6)"),)
+                  if (fila := fila_de_pared_leida(material, seccion.altura))
+                  else ()),
                 Magnitud("altura_relleno", altura_relleno, "m",
                          "cota de subrasante menos cota de clave FISICA del "
                          "punto: el relleno que de verdad hay encima, no el "
@@ -4423,7 +4434,7 @@ def v9_disponibilidad_diametro(*, D: float, material: Material) -> Verificacion:
                          "altura interior de la seccion candidata"
                          + (" (diametro ingles convertido, AASHTO M 170M "
                             "num. 12.1)" if ingles else ""),
-                         cifras=CIFRAS_MAGNITUD),
+                         cifras=cifras_de_dimension(D)),
                 *((Magnitud("D_designado", D_comparado, "m",
                             "diametro DESIGNADO del mismo tubo (AASHTO M "
                             "170M Table 6): es el que pertenece a la serie y "

@@ -740,6 +740,10 @@ def test_todo_fundamento_declarado_lo_usa_algun_paso(informe):
         # referencia `expediente_cabezal`.
         "F11.CONDUCTO", "F11.EXCAVACION", "F11.CONCRETO", "F11.ACERO",
         "F11.ENROCADO",
+        # --- VE-7 lote B, B10 --- el C ponderado por subareas solo sale con
+        # la columna `subareas` del CSV de cuencas, que esta corrida no
+        # trae. Lo mide `tests/test_ve7_lote_b_subareas.py`.
+        "FH.C_SUBAREAS",
     }
     declarados = set(F.FUNDAMENTOS)
     huerfanos = declarados - emitidos - del_bloque_fijo - sin_alcanzar

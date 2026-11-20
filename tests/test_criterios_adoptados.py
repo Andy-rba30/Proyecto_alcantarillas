@@ -182,10 +182,12 @@ def test_todo_criterio_de_perfil_sin_valor_tiene_ficha_declarable():
     # dato de ENSAYO que V7 lee con esa alternativa y el nivel sobre la
     # clave: paso de expediente a perfil porque una corrida de perfil se
     # detiene en el. Su VALOR lo da el ensayo del relleno.
-    # --- VE-4f --- 'carga_viva_tubo_concreto_somero' (ficha VE4F-01) y
+    # --- VE-4f --- 'carga_viva_tubo_concreto_somero' (ficha VE4F-01) estuvo
+    # aqui hasta VE-7 (lote B, B8: valor de archivo «largo_del_neumatico»,
+    # ficha VE7B-05).
     # --- VE-5 (mh) --- 'factores_idf_regional' (ficha T1-05), [S] de un
     # estudio regional: su VALOR lo da ese estudio.
-    assert sorted(claves) == ["TW_receptor", "carga_viva_tubo_concreto_somero",
+    assert sorted(claves) == ["TW_receptor",
                               "factores_idf_regional", "homogeneidad_serie_fen",
                               "margen_estacional_nf_v7_m",
                               "peso_especifico_saturado_relleno_kn_m3"]

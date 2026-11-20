@@ -1540,6 +1540,9 @@ _META_SITIO: Dict[str, _Meta] = {
     # VE-5 (catlic, Fase 0-bis): decide si AASHTO 10.5.4.2 exige evaluar la
     # licuefaccion; la lee `ML_licuefaccion`.
     "zona_sismica_aashto": _Meta(unidad="-"),
+    # VE-7 lote B, B11: la region pluvial de la Tabla Nº 34; la lee
+    # `M10.capacidad_cuneta`, solo si se declara (opcional).
+    "precipitacion_anual_corredor_mm": _Meta(unidad="mm/año"),
     "existe_informacion_secundaria_tramo": _Meta(
         unidad="-",
         fase_declarada="Fase 1 - Datos de entrada (num. 4.2 del Manual de "

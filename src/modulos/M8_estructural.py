@@ -274,6 +274,7 @@ from src.modelos import (CIFRAS_FACTOR, CIFRAS_FINA, CIFRAS_MAGNITUD,
                          CamaApoyoRelleno, CargaVivaEnterrada,
                          CondicionAnalisis, DatoFaltanteError,
                          DatoInvalidoError, DemandaMarco, DisenoPortico,
+                         ErrorProyecto,
                          EsfuerzoDeSeccion, GeometriaPortico,
                          SolicitacionDeArmado,
                          EstadoDeVerificacion, FactoresFlotacion,
@@ -285,6 +286,7 @@ from src.modelos import (CIFRAS_FACTOR, CIFRAS_FINA, CIFRAS_MAGNITUD,
                          SeccionRectangular, TipoDeVeredicto,
                          TipoMaterial, Umbral, Verificacion, Veredicto, paso)
 from src.modulos.M2_material import espesor_pared, numero_de_celdas
+from src.tolerancias import ITERACIONES_MAX_CANTO_PORTICO   # dictamen Fable
 from src.tolerancias import (DIVISIONES_MIEMBRO_PORTICO,
                              POSICIONES_CARGA_VIVA_POR_CELDA, TOL_BRENT,
                              TOL_UMBRAL_NORMATIVO,
@@ -3609,6 +3611,10 @@ ELEMENTO_PORTICO = "portico"
 CODIGO_PASO_PORTICO_CARGAS = "F8.PORTICO_CARGAS"
 CODIGO_PASO_PORTICO_COMBINACIONES = "F8.PORTICO_COMBINACIONES"
 CODIGO_PASO_PORTICO_ANALISIS = "F8.PORTICO_ANALISIS"
+CODIGO_PASO_PORTICO_MINIMOS = "F8.PORTICO_MINIMOS"      # VE-7 lote B, B4
+CODIGO_PASO_PORTICO_CANTO = "F8.PORTICO_CANTO"          # VE-7 lote B, B5
+CODIGO_PASO_PORTICO_LONGITUDINAL = "F8.PORTICO_LONGITUDINAL"   # dictamen Fable
+CRITERIO_ESPESOR_CAJON = "espesor_pared_cajon"
 NUMERAL_F8_PORTICO = ("AASHTO LRFD 12.11 (12.11.2, 12.11.4, 12.11.5) y "
                       "Seccion 5; Tabla 3.4.1-1 del Manual de Puentes")
 
@@ -3623,6 +3629,17 @@ CASO_LS = "LS"
 CASO_WA = "WA"
 CASO_LL = "LL+IM"
 CASOS_PERMANENTES = (CASO_DC, CASO_EV, CASO_EH, CASO_LS, CASO_WA)
+# --- VE-7 lote B, B3 (T5-07 (5)) --- el agua EXTERIOR sobre las paredes, con
+# el nivel freatico sobre el eje de la losa inferior. Solo existe en esos
+# puntos: sin el, los casos y las envolventes son los de antes.
+CASO_WA_EXT = "WA_ext"
+# --- VE-7, dictamen Fable (decision 3) --- con el nivel sobre la losa
+# superior: lo que el relleno sumergido le quita al EV seco (F_e sigma'_v
+# menos F_e sigma_v, con gamma_EV) y el agua sobre la losa (gamma_w d_w, con
+# gamma_WA). Entran en combinaciones DUPLICADAS: la envolvente seco/sumergido.
+CASO_EV_SUM = "EV_sum"
+CASO_WA_SUP = "WA_sup"
+SUFIJO_SUMERGIDO = " (relleno sumergido sobre la losa superior)"
 
 ESTADO_RESISTENCIA = "Resistencia I"
 ESTADO_SERVICIO = "Servicio I"
@@ -3640,10 +3657,11 @@ DIFERIDO_PORTICO = (
     "con 'espesor_pared_cajon', y el portico se analiza con ese espesor en "
     "losas, paredes y tabiques); (2) el refuerzo de distribucion de la losa "
     "superior con menos de 2.0 ft de relleno (9.7.3.2, que 12.11.2.1 manda) "
-    "y las vigas de borde de C12.11.2.1; (3) el acero de las caras que no "
-    "se traccionan en ninguna combinacion (lleva el de 5.10.6, que no se "
-    "tabula); (4) el desarrollo y los empalmes de las barras; (5) el empuje "
-    "del agua EXTERIOR con el nivel freatico sobre la losa inferior; y (6) "
+    "y las vigas de borde de C12.11.2.1; (3) [desde VE-7 el acero de las "
+    "caras que no se traccionan se tabula con el minimo de 5.10.6]; (4) el "
+    "desarrollo y los empalmes de las barras; (5) [desde VE-7 el agua "
+    "EXTERIOR entra en las paredes con el nivel sobre la losa inferior, y "
+    "sobre la losa superior con la envolvente seco/sumergido]; y (6) "
     "el V_c de la Eq. 5.12.7.3-1 para las losas con 2.0 ft o mas, que la "
     "fuente PERMITE y el proyecto no toma (rige 5.7)")
 
@@ -3984,6 +4002,26 @@ def secciones_del_portico(g: GeometriaPortico):
     return tuple(secciones)
 
 
+def largos_de_los_miembros(g: GeometriaPortico) -> dict:
+    """
+    --- VE-7 lote B, B6 --- {miembro: largo entre ejes, m} de las losas, las
+    paredes y los tabiques del portico (`_miembros_del_portico`). Lo lee el
+    metrado del acero del portico (`M12.renglones_acero_portico`).
+    """
+    return {m.nombre: m.L for m in _miembros_del_portico(g)}
+
+
+def espesores_de_los_miembros(g: GeometriaPortico) -> dict:
+    """--- VE-7, dictamen Fable (defecto 4) --- {miembro: canto, m}."""
+    return {m.nombre: m.espesor for m in _miembros_del_portico(g)}
+
+
+def miembros_de_las_secciones(g: GeometriaPortico) -> dict:
+    """--- VE-7 lote B, B6 --- {seccion de diseño: miembro al que pertenece}."""
+    return {nombre: miembro
+            for (nombre, miembro, *_r) in secciones_del_portico(g)}
+
+
 def _esfuerzos(res, secciones) -> dict:
     """{seccion: (M, |V|, N de compresion)} de un resultado del modelo."""
     salida = {}
@@ -4153,9 +4191,76 @@ def _casos_de_carga(*, punto: PuntoCritico, material: Material,
         return gamma_p * min(z, e_paq) + gamma_s * max(0.0, z - e_paq)
     z_sup = H_total + t_sup / 2
     z_inf = H_total + t_sup + g.altura_libre_m + t_inf / 2
-    p_sup, p_inf = k0 * sigma_v(z_sup), k0 * sigma_v(z_inf)
-    casos[CASO_EH] = (_en_la_pared(g, 0, 0.0, h, p_inf, p_sup)
-                      + _en_la_pared(g, N, 0.0, h, -p_inf, -p_sup))
+    # --- VE-7 lote B, B3 --- con el nivel freatico sobre el eje de la losa
+    # inferior, bajo el agua el suelo empuja con su peso SUMERGIDO y el agua
+    # aparte (AASHTO 3.11.3; Manual de Puentes 2.4.4.1.3): el diagrama del
+    # ensamble de M9 (seco, su continuacion y el sumergido).
+    agua = _agua_exterior_del_portico(punto, z_sup=z_sup, z_inf=z_inf)
+    avisos_agua: Tuple[str, ...] = ()
+    mags_sumergido: Tuple[Magnitud, ...] = ()
+    if agua is not None and agua[2] is None:
+        avisos_agua = (
+            f"portico del marco: nivel sin ascenso estacional -- el agua "
+            f"exterior se toma en la lectura de NF_profundidad_m; "
+            f"'{CRITERIO_MARGEN_NF_V7}' [A] no esta declarado (con el, el "
+            "nivel sube como en V7)",)
+    if agua is None:
+        p_sup, p_inf = k0 * sigma_v(z_sup), k0 * sigma_v(z_inf)
+        casos[CASO_EH] = (_en_la_pared(g, 0, 0.0, h, p_inf, p_sup)
+                          + _en_la_pared(g, N, 0.0, h, -p_inf, -p_sup))
+    else:
+        z_nf, gamma_sat, _margen = agua
+        gamma_sum = gamma_sat - GAMMA_AGUA_KN_M3
+
+        def sigma_ef(z: float) -> float:
+            return sigma_v(min(z, z_nf)) + gamma_sum * max(0.0, z - z_nf)
+        p_sup, p_inf = k0 * sigma_ef(z_sup), k0 * sigma_ef(z_inf)
+        # La presion efectiva tiene un quiebre en el nivel: dos tramos
+        # lineales, cada uno exacto.
+        y_nf = min(z_inf - z_nf, h)
+        eh = []
+        for (y_a, y_b) in ((0.0, y_nf), (y_nf, h)):
+            if not y_b > y_a + TOL_UMBRAL_NORMATIVO:
+                continue
+            q_a, q_b = k0 * sigma_ef(z_inf - y_a), k0 * sigma_ef(z_inf - y_b)
+            eh += (_en_la_pared(g, 0, y_a, y_b, q_a, q_b)
+                   + _en_la_pared(g, N, y_a, y_b, -q_a, -q_b))
+        casos[CASO_EH] = eh
+        # WA_ext: la presion hidrostatica del agua exterior, gamma_w (z -
+        # z_NF), lineal en la pared mojada (triangular; trapecial si el
+        # nivel pasa el eje de la losa superior). La subpresion bajo la losa
+        # inferior no se aplica: con la reaccion del suelo LINEAL que el
+        # portico supone, una carga uniforme sobre la losa inferior la
+        # equilibra la misma reaccion y no flexa el portico.
+        w_inf = GAMMA_AGUA_KN_M3 * (z_inf - z_nf)
+        w_top = GAMMA_AGUA_KN_M3 * max(z_inf - h - z_nf, 0.0)
+        casos[CASO_WA_EXT] = (_en_la_pared(g, 0, 0.0, y_nf, w_inf, w_top)
+                              + _en_la_pared(g, N, 0.0, y_nf, -w_inf, -w_top))
+        # --- dictamen Fable (decision 3) --- con el nivel sobre la losa
+        # superior, la losa carga F_e sigma'_v (12.11.2.2.1) con gamma_EV mas
+        # el agua gamma_w d_w con gamma_WA (AASHTO 3.11.3; Manual de Puentes
+        # 2.4.4.1.3): dos casos que corrigen el EV seco, cada uno con la
+        # reaccion lineal que lo equilibra.
+        if z_nf < H_total - TOL_UMBRAL_NORMATIVO:
+            d_w = H_total - z_nf
+            w_sum = F_e * (sigma_ef(H_total) - sigma_v(H_total))
+            w_wa = GAMMA_AGUA_KN_M3 * d_w
+            casos[CASO_EV_SUM] = (
+                _en_la_losa(g, MIEMBRO_LOSA_SUPERIOR, 0.0, L, -w_sum, -w_sum)
+                + _reaccion_del_suelo(g, [(0.0, L, -w_sum, -w_sum)]))
+            casos[CASO_WA_SUP] = (
+                _en_la_losa(g, MIEMBRO_LOSA_SUPERIOR, 0.0, L, -w_wa, -w_wa)
+                + _reaccion_del_suelo(g, [(0.0, L, -w_wa, -w_wa)]))
+            mags_sumergido = (
+                Magnitud("d_w", d_w, "m", "agua sobre la losa superior: "
+                         "H_total - z_NF", cifras=CIFRAS_MAGNITUD),
+                Magnitud("w_EV,sum", w_sum, "kPa", "F_e (sigma'_v - sigma_v) "
+                         "en la cara de la losa superior: lo que el relleno "
+                         "sumergido le quita al EV seco (gamma_EV)",
+                         cifras=CIFRAS_MAGNITUD),
+                Magnitud("w_WA,sup", w_wa, "kPa", "gamma_w d_w, el agua "
+                         "sobre la losa superior (gamma_WA)",
+                         cifras=CIFRAS_MAGNITUD))
 
     # LS
     altura_muro = H_total + t_sup + g.altura_libre_m + t_inf
@@ -4226,14 +4331,87 @@ def _casos_de_carga(*, punto: PuntoCritico, material: Material,
         Magnitud("p_WA", p_fondo, "kPa", "presion del agua interior en la "
                  "cara superior de la losa inferior (conducto lleno)",
                  cifras=CIFRAS_MAGNITUD),
-    ) + tuple(
+    ) + (() if agua is None else (
+        Magnitud("z_NF", agua[0], "m", "profundidad del nivel freatico bajo "
+                 "la rasante: cota_rasante - (cota_terreno - "
+                 "NF_profundidad_m + margen)"
+                 + (f", margen '{CRITERIO_MARGEN_NF_V7}' = {agua[2]:g} m"
+                    if agua[2] is not None else
+                    ", nivel sin ascenso estacional (margen sin declarar)"),
+                 cifras=CIFRAS_MAGNITUD),
+        Magnitud("gamma_sat", agua[1], "kN/m3",
+                 f"'{CRITERIO_PESO_SATURADO}' [S], el relleno bajo el agua "
+                 "pesa gamma_sat - gamma_w", cifras=CIFRAS_FACTOR),
+        Magnitud("p_WA,ext", GAMMA_AGUA_KN_M3 * (z_inf - agua[0]), "kPa",
+                 "presion del agua exterior en el eje de la losa inferior, "
+                 "gamma_w (z_inf - z_NF)", cifras=CIFRAS_MAGNITUD),
+    )) + mags_sumergido + tuple(
         Magnitud(f"P_L del {nombre}", P_L, "kPa",
                  f"sobre {l_w:.3f} m paralelos al vano, "
                  f"{len(ejes)} area(s) cargada(s) a {separacion[nombre]:.3f} "
                  "m; se mueve a lo largo de la losa superior (paso F8.LL)",
                  cifras=CIFRAS_MAGNITUD)
         for nombre, P_L, l_w, ejes in vehiculos)
-    return casos, vehiculos, magnitudes, cv, w_ev
+    return casos, vehiculos, magnitudes, cv, w_ev, avisos_agua
+
+
+# --- VE-7 lote B, B3 --- las citas del agua del ensamble de M9: el suelo
+# bajo el agua con su peso sumergido y el agua aparte.
+_CITAS_AGUA_EXTERIOR = ("AASHTO_LRFD_9.3.11.3", "MP.2.4.4.1.3#SUMERGIDO")
+
+
+def _agua_exterior_del_portico(punto: PuntoCritico, *, z_sup: float,
+                               z_inf: float
+                               ) -> Optional[Tuple[float, float,
+                                                   Optional[float]]]:
+    """
+    --- VE-7 lote B, B3 (T5-07 (5); decision del consultor Fable, triaje
+    VE-7, 2026-11-20) --- El agua EXTERIOR del portico: (z_NF, gamma_sat),
+    con z_NF la profundidad del nivel freatico bajo la rasante, o None si el
+    nivel no pasa del eje de la losa inferior (o el punto no trae
+    'NF_profundidad_m'): entonces el portico es el de antes.
+
+    El nivel es el de V7 (`cota_nivel_agua_v7_del_nf`): la columna
+    'NF_profundidad_m' del CSV, medida bajo el terreno natural del cruce,
+    mas el ascenso estacional 'margen_estacional_nf_v7_m' [A] SI ESTA
+    DECLARADO (negativo, `DatoInvalidoError`); sin el, la lectura cruda y un
+    aviso (dictamen Fable, defecto 1):
+    z_NF = cota_rasante - (cota_terreno - NF_profundidad_m + margen). Un
+    nivel sobre la rasante (z_NF < 0) es `DatoInvalidoError` sobre la
+    columna (defecto 2). Devuelve (z_NF, gamma_sat, margen o None). Con el agua
+    arriba hace falta el peso del relleno bajo el agua, que es un dato de
+    ensayo: 'peso_especifico_saturado_relleno_kn_m3' (`CriterioPendienteError`
+    sin el; `DatoInvalidoError` si no supera al agua, como en V7).
+    `z_sup` no limita: con el nivel sobre la losa superior el agua de la
+    pared es trapecial.
+    """
+    nf = punto.NF_profundidad_m
+    if nf is None:
+        return None
+    margen = ca.valor_si_declarado(CRITERIO_MARGEN_NF_V7)
+    if margen is not None and not margen >= 0:
+        raise DatoInvalidoError(
+            CRITERIO_MARGEN_NF_V7, valor=margen, id_punto=punto.id,
+            motivo="el ascenso estacional del freatico no puede ser negativo: "
+                   "bajaria el nivel por debajo de la lectura de "
+                   "NF_profundidad_m")
+    z_nf = punto.cota_rasante - (punto.cota_terreno - nf + (margen or 0.0))
+    if not z_nf >= 0:
+        raise DatoInvalidoError(
+            "NF_profundidad_m", valor=nf, id_punto=punto.id,
+            motivo=f"el nivel freatico queda {-z_nf:.3f} m sobre la rasante "
+                   "(cota_terreno - NF_profundidad_m + margen > "
+                   "cota_rasante): el agua exterior del portico no se puede "
+                   "plantear sobre la via")
+    if not z_nf < z_inf - TOL_UMBRAL_NORMATIVO:
+        return None
+    gamma_sat = ca.valor(CRITERIO_PESO_SATURADO)     # CriterioPendienteError
+    if not (math.isfinite(gamma_sat) and gamma_sat > GAMMA_AGUA_KN_M3):
+        raise DatoInvalidoError(
+            CRITERIO_PESO_SATURADO, valor=gamma_sat, id_punto=punto.id,
+            motivo="tiene que ser mayor que el peso especifico del agua: "
+                   "el relleno bajo el nivel pesa el saturado menos el agua")
+    return z_nf, float(gamma_sat), margen
 
 
 def _carga_viva_en(g: GeometriaPortico, P_L: float, l_w: float, ejes,
@@ -4311,7 +4489,7 @@ def _factores_del_portico(material: Material) -> dict:
     }
 
 
-def combinaciones_del_portico(f: dict):
+def combinaciones_del_portico(f: dict, sumergido: bool = False):
     """
     Las combinaciones de C12.11.2.1 (tres envolventes, las de horizontal
     maximo con LS y sin LS), en Resistencia I con el eta de 1.3.2.1 (eta en
@@ -4331,11 +4509,15 @@ def combinaciones_del_portico(f: dict):
                        {CASO_DC: eta * g_dc[0], CASO_EV: eta * g_ev[0],
                         CASO_EH: eta * g_eh[0],
                         CASO_LS: eta * g_ll if con_ls else 0.0,
-                        CASO_WA: 0.0}, eta * g_ll, False))
+                        CASO_WA: 0.0, CASO_WA_EXT: eta * g_wa},
+                       eta * g_ll, False))
+    # El agua exterior se opone a la interior: en el horizontal minimo no
+    # entra (VE-7, B3).
     combos.append((f"{ESTADO_RESISTENCIA}, vertical max. y horizontal min. "
                    "(agua interior)", ESTADO_RESISTENCIA,
                    {CASO_DC: eta * g_dc[0], CASO_EV: eta * g_ev[0],
-                    CASO_EH: g_eh[1] / eta, CASO_LS: 0.0, CASO_WA: g_wa},
+                    CASO_EH: g_eh[1] / eta, CASO_LS: 0.0, CASO_WA: g_wa,
+                    CASO_WA_EXT: 0.0},
                    eta * g_ll, True))
     for con_ls in (True, False):
         sufijo = "con LS" if con_ls else "sin LS"
@@ -4344,18 +4526,37 @@ def combinaciones_del_portico(f: dict):
                        {CASO_DC: g_dc[1] / eta, CASO_EV: g_ev[1] / eta,
                         CASO_EH: eta * g_eh[0],
                         CASO_LS: eta * g_ll if con_ls else 0.0,
-                        CASO_WA: 0.0}, 0.0, False))
-    servicio = {caso: 1.0 for caso in CASOS_PERMANENTES}
+                        CASO_WA: 0.0, CASO_WA_EXT: eta * g_wa}, 0.0, False))
+    servicio = {caso: 1.0 for caso in CASOS_PERMANENTES + (CASO_WA_EXT,)}
     combos.append((f"{ESTADO_SERVICIO}, vertical max. y horizontal max.",
                    ESTADO_SERVICIO, dict(servicio, **{CASO_WA: 0.0}), 1.0,
                    False))
     combos.append((f"{ESTADO_SERVICIO}, vertical max. y horizontal min. "
                    "(agua interior)", ESTADO_SERVICIO,
-                   dict(servicio, **{CASO_LS: 0.0}), 1.0, True))
+                   dict(servicio, **{CASO_LS: 0.0, CASO_WA_EXT: 0.0}), 1.0,
+                   True))
     combos.append((f"{ESTADO_SERVICIO}, vertical min. y horizontal max.",
                    ESTADO_SERVICIO, dict(servicio, **{CASO_WA: 0.0}), 0.0,
                    False))
-    return tuple(combos)
+    if not sumergido:
+        return tuple(combos)
+    # --- dictamen Fable (decision 3) --- la envolvente seco/sumergido: cada
+    # combinacion se repite con EV_sum al factor de su EV y WA_sup con
+    # gamma_WA (por eta donde el EV va al maximo; 1.0 en Servicio I). Las
+    # originales los dejan fuera (factor 0, caso ausente del diccionario).
+    duplicadas = []
+    for (nombre, estado, factores, f_ll, reduce) in combos:
+        if estado == ESTADO_SERVICIO:
+            f_wa = 1.0
+        elif factores[CASO_EV] > g_ev[1] / eta + TOL_UMBRAL_NORMATIVO:
+            f_wa = eta * g_wa
+        else:
+            f_wa = g_wa
+        duplicadas.append((nombre + SUFIJO_SUMERGIDO, estado,
+                           dict(factores, **{CASO_EV_SUM: factores[CASO_EV],
+                                             CASO_WA_SUP: f_wa}),
+                           f_ll, reduce))
+    return tuple(combos) + tuple(duplicadas)
 
 
 def _envolvente_de_la_combinacion(combo, por_caso, ll, secciones):
@@ -4370,6 +4571,8 @@ def _envolvente_de_la_combinacion(combo, por_caso, ll, secciones):
     for (sec, _m, _s, _t, _d, centro_sup, _suelo) in secciones:
         M = V_perm = N = 0.0
         for caso, factor in factores.items():
+            if caso not in por_caso:      # WA_ext, solo con el NF arriba
+                continue
             m, v, n = por_caso[caso][sec]
             if caso == CASO_EH and reduce:
                 factor = factor * (_CN.REDUCCION_EMPUJE_3_11_7 if centro_sup
@@ -4417,15 +4620,29 @@ def disenar_portico(*, punto: PuntoCritico, material: Material,
     lee). La reduccion de 3.11.7 se combina con el gamma minimo y 1/eta, que
     la fuente permite no combinar: es el lado conservador del positivo.
     """
-    from src.modulos import M9_cabezal as M9      # perezoso: M9 importa de M2 y M6
     H_rel = _finito_positivo("altura_relleno", altura_relleno, punto.id)
     g = geometria_del_portico(material=material, seccion=seccion)
-    casos, vehiculos, mags, cv, w_ev = _casos_de_carga(
+    d = _disenar_portico_con(punto=punto, material=material, seccion=seccion,
+                             H_rel=H_rel, g=g)
+    if d.cumple:
+        return d
+    return _con_el_canto_que_cierra(d, punto=punto, material=material,
+                                    seccion=seccion, H_rel=H_rel)
+
+
+def _disenar_portico_con(*, punto: PuntoCritico, material: Material,
+                         seccion: Seccion, H_rel: float,
+                         g: GeometriaPortico) -> DisenoPortico:
+    """El analisis y el armado del portico con la geometria `g` y el relleno
+    `H_rel` (el cuerpo de `disenar_portico`, que VE-7 separa para buscar el
+    canto que cerraria sin repetirlo)."""
+    from src.modulos import M9_cabezal as M9      # perezoso: M9 importa de M2 y M6
+    casos, vehiculos, mags, cv, w_ev, avisos_agua = _casos_de_carga(
         punto=punto, material=material, seccion=seccion, g=g, H_rel=H_rel)
     por_caso, ll = analizar_portico(g, casos, vehiculos)
     secciones = secciones_del_portico(g)
     f = _factores_del_portico(material)
-    combos = combinaciones_del_portico(f)
+    combos = combinaciones_del_portico(f, sumergido=CASO_EV_SUM in casos)
     envolventes = {c[0]: _envolvente_de_la_combinacion(c, por_caso, ll,
                                                       secciones)
                    for c in combos}
@@ -4438,7 +4655,8 @@ def disenar_portico(*, punto: PuntoCritico, material: Material,
         formula_cita_id="AASHTO_LRFD_9.12.11.2.1#CARGAS",
         citas_textuales=("AASHTO_LRFD_9.12.11.2.3", "AASHTO_LRFD_9.3.11.5.2#K0",
                          "AASHTO_LRFD_9.3.11.6.4#APLICA",
-                         "AASHTO_LRFD_9.T3.11.6.4-1"),
+                         "AASHTO_LRFD_9.T3.11.6.4-1")
+        + (_CITAS_AGUA_EXTERIOR if CASO_WA_EXT in casos else ()),
         sustitucion=mags,
         resultado=Magnitud("w_EV", w_ev, "kPa", "presion de tierra sobre la "
                            "losa superior", cifras=CIFRAS_MAGNITUD),
@@ -4449,7 +4667,11 @@ def disenar_portico(*, punto: PuntoCritico, material: Material,
             "el empuje se toma entre los ejes de las losas; la sobrecarga "
             "viva lateral con la Tabla 3.11.6.4-1 de estribos, por analogia "
             "[N->]; y el agua interior con el conducto lleno. El agua "
-            "EXTERIOR no se considera (ficha T5-07)."))
+            "EXTERIOR entra con el nivel freatico sobre el eje de la losa "
+            "inferior (VE-7): triangular en las paredes y el suelo bajo el "
+            "nivel con su peso sumergido (AASHTO 3.11.3, Manual de Puentes "
+            "2.4.4.1.3); la subpresion no cambia la flexion, porque la "
+            "reaccion lineal del suelo la equilibra en la misma losa."))
     nombres_eta = (f"eta = {f['eta']:g} en las cargas de gamma maximo y "
                    f"1/eta en las de gamma minimo (1.3.2.1)")
     p_combos = paso(
@@ -4523,8 +4745,15 @@ def disenar_portico(*, punto: PuntoCritico, material: Material,
             "celda de su derecha). Contrastado con MnDOT §12.5 y con la "
             "solucion cerrada del marco cerrado (tests/test_ve5_portico_"
             "marco.py)."))
-    armados, verificaciones, pasos_armado, avisos = [], [], [], []
-    for (sec, _m, _s, t, desc, _c, contra_suelo) in secciones:
+    armados, verificaciones, pasos_armado = [], [], []
+    avisos = list(avisos_agua)
+    minimos = []
+    # --- dictamen Fable (defecto 3) --- 5.10.6 con el ANCHO REAL del
+    # elemento (decision 3 del dueño en O-2, `M9.acero_de_temperatura_aashto`:
+    # «el ancho es el real del elemento»): el largo del miembro entre ejes,
+    # en las caras armadas y en las de minimo.
+    largos = largos_de_los_miembros(g)
+    for (sec, miembro, _s, t, desc, _c, contra_suelo) in secciones:
         for signo, cara in ((1, CARA_INTERIOR), (-1, CARA_EXTERIOR)):
             indice = 0 if signo > 0 else 1
             sols = tuple(
@@ -4538,18 +4767,61 @@ def disenar_portico(*, punto: PuntoCritico, material: Material,
                     V_u_cedente=envolventes[c[0]][sec][2])
                 for c in resistencia)
             if not max(s.M_u for s in sols) > TOL_UMBRAL_NORMATIVO:
+                # --- VE-7 lote B, B4 (T5-07 (3); decision del consultor
+                # Fable, triaje VE-7, 2026-11-20) --- la cara que ninguna
+                # combinacion tracciona lleva el acero de retraccion y
+                # temperatura (12.11.5.3.1: «Shrinkage and temperature
+                # reinforcement shall be provided near the inside surfaces
+                # of walls and slabs in accordance with Article 5.10.6»).
+                # La fila es la de REPARTO del cabezal, la MISMA funcion de
+                # M9 (5.10.6 con el ancho de la seccion por metro, y E.060
+                # 9.7.2 con la regla del mas exigente): no se duplica.
+                minimos.append(_minimo_de_la_cara(
+                    M9, t, largos[miembro],
+                    f"{sec}.{cara}: {desc}, cara {cara} sin traccion en "
+                    "ninguna combinacion (12.11.5.3.1: retraccion y "
+                    "temperatura)"))
                 continue
             M_s = extremo(sec, signo, servicio)
             a = M9.diseno_flexion_corte(
                 solicitaciones=sols, espesor=t, elemento=ELEMENTO_PORTICO,
                 clave=f"{sec}.{cara}", seccion=desc, cara=cara,
                 es_zapata=True, momento_servicio=M_s,
+                ancho_seccion=largos[miembro],
                 contra_el_suelo=contra_suelo and cara == CARA_EXTERIOR,
                 regimen="portico cerrado (12.11)", id_punto=punto.id)
             armados.append(a)
             verificaciones.extend(a.verificaciones)
             pasos_armado.extend(a.pasos)
             avisos.extend(a.avisos)
+    p_minimos = _paso_de_los_minimos(minimos)
+    # --- dictamen Fable (ii-b.2) --- el acero LONGITUDINAL minimo de 5.10.6
+    # (12.11.5.3.1: «Shrinkage and temperature reinforcement shall be
+    # provided near the inside surfaces of walls and slabs»): una fila por
+    # miembro y cara, con la misma fila de reparto de M9 y el ancho real.
+    espesores = espesores_de_los_miembros(g)
+    longitudinales = [
+        _minimo_de_la_cara(M9, espesores[miembro], largo,
+                           f"{miembro}.{cara}: acero longitudinal (a lo "
+                           "largo del barril), cara " + cara)
+        for miembro, largo in largos.items()
+        for cara in (CARA_INTERIOR, CARA_EXTERIOR)]
+    p_longitudinal = _paso_de_los_minimos(
+        longitudinales, codigo=CODIGO_PASO_PORTICO_LONGITUDINAL,
+        que=("Portico del marco: acero longitudinal minimo de retraccion y "
+             "temperatura, por miembro y cara"),
+        rotulo="filas longitudinales")
+    avisos.extend(
+        f"portico del marco, {f.posicion}: ninguna barra del catalogo da el "
+        f"minimo de {f.As_minimo:.0f} mm2/m con s <= {f.s_max:.3f} m"
+        for f in longitudinales if f.barra is None)
+    H_total = H_rel + espesor_del_paquete(punto)
+    distribucion = not H_total >= (_CN.RELLENO_MIN_METODO_TUBO_CONCRETO_M
+                                   - TOL_UMBRAL_NORMATIVO)
+    avisos.extend(
+        f"portico del marco, {f.posicion}: ninguna barra del catalogo da el "
+        f"minimo de {f.As_minimo:.0f} mm2/m con s <= {f.s_max:.3f} m"
+        for f in minimos if f.barra is None)
     return DisenoPortico(
         geometria=g,
         casos=tuple((caso, tuple(EsfuerzoDeSeccion(s, m, *por_caso[caso][s])
@@ -4564,5 +4836,211 @@ def disenar_portico(*, punto: PuntoCritico, material: Material,
                 for (s, m, *_r) in secciones))
             for c in combos),
         armados=tuple(armados), verificaciones=tuple(verificaciones),
-        pasos=(p_cargas, p_combos, p_analisis) + tuple(pasos_armado),
-        avisos=tuple(dict.fromkeys(avisos)), diferido=(DIFERIDO_PORTICO,))
+        pasos=(p_cargas, p_combos, p_analisis) + tuple(pasos_armado)
+        + ((p_minimos,) if p_minimos is not None else ())
+        + ((p_longitudinal,) if p_longitudinal is not None else ()),
+        avisos=tuple(dict.fromkeys(avisos)), diferido=(DIFERIDO_PORTICO,),
+        minimos=tuple(minimos), longitudinales=tuple(longitudinales),
+        distribucion_obligatoria=distribucion)
+
+
+def _con_el_canto_que_cierra(d: DisenoPortico, *, punto: PuntoCritico,
+                             material: Material, seccion: Seccion,
+                             H_rel: float) -> DisenoPortico:
+    """
+    --- VE-7 lote B, B5 (T5-07 (1); decision del consultor Fable, triaje
+    VE-7, 2026-11-20) --- EL PORTICO NO ITERA EL CANTO, pero dice cual
+    cerraria. 'espesor_pared_cajon' es el canto de la geometria del programa
+    (M2, M5 y M7 forman con el la clave fisica, V4, V7 y G1): adoptarlo aqui
+    dejaria esas verificaciones con otro conducto. Si A1 a A6 no cumplen, se
+    busca en la grilla del dimensionamiento del cabezal
+    ('dimensionamiento_zapata_cabezal' [A], su paso: el mismo con que crecen
+    la zapata y su peralte) el MENOR canto uniforme t_k = t_0 + k·paso
+    (aritmetica decimal, `M2._escalon_de_la_serie`) con el que el portico
+    cumple, con la SECCION INTERIOR FIJA y el relleno sobre la clave
+    reducido en Δt = t_k - t_0 (la losa superior crece hacia arriba). El
+    tope es fisico: el relleno reducido tiene que seguir siendo positivo. Lo
+    que la busqueda no puede evaluar (un relleno fuera del dominio de la
+    carga viva) la termina. El resultado va en el `DisenoPortico`
+    (`canto_que_cierra_m`) y en un paso; el bloqueo lo levanta
+    `exigir_canto_del_portico`, que la etapa del servicio llama.
+    """
+    from src.modulos import M9_cabezal as M9
+    from src.modulos.M2_material import _escalon_de_la_serie
+    t0 = d.geometria.t_losa_superior_m
+    paso_m, _fraccion = M9._regla_de_dimensionamiento()
+    cierra, hasta, motivo_fin = None, t0, ""
+    tope = _escalon_de_la_serie(t0, paso_m, ITERACIONES_MAX_CANTO_PORTICO)
+    motivo_fin = (f"tope de la busqueda: {ITERACIONES_MAX_CANTO_PORTICO} "
+                  f"escalones, hasta {tope:.2f} m")
+    for k in range(1, ITERACIONES_MAX_CANTO_PORTICO + 1):
+        t = _escalon_de_la_serie(t0, paso_m, k)
+        H_k = H_rel - (t - t0)
+        if not H_k > TOL_UMBRAL_NORMATIVO:
+            motivo_fin = (f"con {t:.2f} m el relleno sobre la clave se "
+                          "agota (la seccion interior es fija)")
+            break
+        g_k = replace(d.geometria, t_losa_superior_m=t, t_losa_inferior_m=t,
+                      t_pared_m=t, t_tabique_m=t)
+        try:
+            d_k = _disenar_portico_con(punto=punto, material=material,
+                                       seccion=seccion, H_rel=H_k, g=g_k)
+        except ErrorProyecto as exc:
+            motivo_fin = (f"con {t:.2f} m el portico no se pudo evaluar -- "
+                          f"{type(exc).__name__}: {exc}")
+            break
+        hasta = t
+        if d_k.cumple:
+            cierra, motivo_fin = t, ""
+            break
+    incumplidas = sorted({v.codigo.split(".")[0] for v in d.verificaciones
+                          if not v.cumple})
+    p_canto = paso(
+        "F8.PORTICO", codigo=CODIGO_PASO_PORTICO_CANTO,
+        que=("Portico del marco: el canto uniforme que cerraria (no se "
+             "adopta)"),
+        formula=("t_k = t_0 + k·paso; H_rel,k = H_rel - (t_k - t_0); el menor "
+                 "t_k con A1 a A6 cumplidas"),
+        formula_cita_id="AASHTO_LRFD_9.12.11.5.1",
+        citas_textuales=("AASHTO_LRFD_9.12.11.5.1",),
+        sustitucion=(
+            Magnitud("t_0", t0, "m", f"'{CRITERIO_ESPESOR_CAJON}' [A], el "
+                     "canto de la geometria del programa", cifras=CIFRAS_MAGNITUD),
+            Magnitud("paso", paso_m, "m", "'dimensionamiento_zapata_cabezal' "
+                     "[A], el paso del cabezal", cifras=CIFRAS_MAGNITUD),
+            Magnitud("H_rel", H_rel, "m", "relleno sobre la clave con t_0",
+                     cifras=CIFRAS_MAGNITUD),
+            Magnitud("t buscado hasta", hasta, "m", motivo_fin or
+                     "el primero que cumple", cifras=CIFRAS_MAGNITUD),
+            Magnitud("tope", tope, "m", f"t_0 + {ITERACIONES_MAX_CANTO_PORTICO}"
+                     "·paso (ITERACIONES_MAX_CANTO_PORTICO)",
+                     cifras=CIFRAS_MAGNITUD)),
+        resultado=Magnitud("t_cierra", cierra if cierra is not None else "—",
+                           "m", "menor canto uniforme con el que el portico "
+                           "cumple", cifras=CIFRAS_MAGNITUD),
+        veredicto=Veredicto(
+            tipo=TipoDeVeredicto.SIN_VEREDICTO,
+            explicacion="busqueda, no verificacion: el canto no se adopta"),
+        nota_del_proyecto=(
+            f"Con {t0:.2f} m el portico incumple {', '.join(incumplidas)}. "
+            + (f"Declarar '{CRITERIO_ESPESOR_CAJON}' = {cierra:.2f} m (el "
+               "menor de la grilla que cierra) y repetir la corrida: el "
+               "canto mueve la clave fisica, V4, V7 "
+               "y G1, que se verifican con la geometria del programa."
+               if cierra is not None else
+               f"Ningun canto uniforme de la grilla cierra el portico "
+               f"({motivo_fin}).")))
+    return replace(d, pasos=d.pasos + (p_canto,), canto_que_cierra_m=cierra,
+                   canto_buscado_hasta_m=hasta)
+
+
+def exigir_distribucion_del_portico(portico: DisenoPortico,
+                                    id_punto: Optional[str] = None) -> None:
+    """
+    --- VE-7, dictamen Fable (ii-b.3) --- Con menos de 2.0 ft de relleno hasta
+    la rasante el refuerzo de DISTRIBUCION de la losa superior es obligatorio
+    (12.11.2.1 manda el 9.7.3.2), y el portico no lo diseña: la cita no esta
+    en el registro (por transcribir, con 5.12.2.1 de la 9.a ed.). Es un
+    procedimiento que falta: `MetodoNoEvaluableError` con el rotulo de la
+    Fase 8. Con 2.0 ft o mas, no hace nada.
+    """
+    if not portico.distribucion_obligatoria:
+        return
+    raise MetodoNoEvaluableError(
+        que="acero de distribucion de la losa superior del portico (9.7.3.2)",
+        procedimiento="el refuerzo de distribucion de AASHTO LRFD 9.7.3.2 (y "
+                      "5.12.2.1 de la 9.a ed.), por transcribir al registro",
+        motivo="el relleno hasta la rasante es menor de 2.0 ft "
+               f"({_CN.RELLENO_MIN_METODO_TUBO_CONCRETO_M:.4f} m): la "
+               "distribucion de la losa superior es obligatoria y este "
+               "programa no la diseña",
+        id_punto=id_punto, rotulo=MOTIVO_METODO_NO_EVALUABLE_ESTRUCTURAL)
+
+
+def exigir_canto_del_portico(portico: DisenoPortico,
+                             id_punto: Optional[str] = None) -> None:
+    """
+    --- VE-7 lote B, B5 --- El BLOQUEO del portico que no cumple: dice que
+    canto declarar ('espesor_pared_cajon' >= X y repetir) o que ninguno de
+    la grilla cierra. `DatoInvalidoError` sobre el criterio: el valor
+    declarado no cierra el portico y lo que hay que hacer es corregirlo. Con
+    el portico que cumple, no hace nada.
+    """
+    if portico.cumple:
+        return
+    incumplidas = sorted({v.codigo.split(".")[0]
+                          for v in portico.verificaciones if not v.cumple})
+    t0 = portico.geometria.t_losa_superior_m
+    if portico.canto_que_cierra_m is not None:
+        motivo = (f"el portico del marco no cumple {', '.join(incumplidas)} "
+                  f"con {t0:.2f} m: declarar '{CRITERIO_ESPESOR_CAJON}' = "
+                  f"{portico.canto_que_cierra_m:.2f} m (el menor de la "
+                  "grilla que cierra) y repetir (el canto mueve la clave, "
+                  "V4, V7 y G1: no se adopta solo)")
+    else:
+        hasta = portico.canto_buscado_hasta_m
+        motivo = (f"el portico del marco no cumple {', '.join(incumplidas)} "
+                  f"con {t0:.2f} m y ningun canto uniforme de la grilla lo "
+                  "cierra" + (f" (buscado hasta {hasta:.2f} m)"
+                              if hasta is not None else ""))
+    raise DatoInvalidoError(campo=CRITERIO_ESPESOR_CAJON, valor=t0,
+                            id_punto=id_punto, motivo=motivo)
+
+
+def _minimo_de_la_cara(M9, t: float, ancho: float, posicion: str):
+    """
+    --- VE-7 lote B, B4 --- La `FilaDeArmado` de una cara del portico que no
+    se tracciona en ninguna combinacion: `M9._fila_de_reparto`, la fila de
+    reparto del cabezal (AASHTO 5.10.6 por cara y por direccion, con el
+    ANCHO REAL del elemento --el largo del miembro entre ejes, dictamen
+    Fable, defecto 3--, y E.060 9.7.2 con la regla del mas exigente). La posicion empieza por la clave
+    de la cara («seccion.cara»), la misma de `ArmadoDeSeccion.clave`.
+    """
+    mat = M9.materiales_del_armado()
+    return M9._fila_de_reparto(
+        elemento=ELEMENTO_PORTICO,
+        posicion=posicion,
+        es_zapata=True, direccion="reparto", espesor=t, ancho=ancho,
+        fy=mat["fy"], regla=M9._regla_de_minimos(),
+        catalogo=M9.catalogo_de_barras(), hm=None, lm=None)
+
+
+def _paso_de_los_minimos(minimos, *, codigo: str = CODIGO_PASO_PORTICO_MINIMOS,
+                         que: str = ("Portico del marco: acero de retraccion "
+                                     "y temperatura en las caras que ninguna "
+                                     "combinacion tracciona"),
+                         rotulo: str = "caras con minimo"
+                         ) -> Optional[PasoDeMemoria]:
+    """--- VE-7 lote B, B4 --- El paso que imprime las filas de minimo (las
+    caras sin traccion, y desde el dictamen Fable las longitudinales)."""
+    if not minimos:
+        return None
+    return paso(
+        "F8.PORTICO", codigo=codigo,
+        que=que,
+        formula=("A_s >= 1.30 b h / [2 (b + h) f_y], 0.11 <= A_s <= 0.60 "
+                 "in2/ft por cara y direccion (5.10.6), b el largo del "
+                 "miembro; con la regla del mas exigente, y E.060 9.7.2"),
+        formula_cita_id="AASHTO_LRFD_9.5.10.6#TEMPERATURA",
+        citas_textuales=("AASHTO_LRFD_9.12.11.5.3.1",
+                         "AASHTO_LRFD_9.5.10.6#TEMPERATURA"),
+        sustitucion=tuple(
+            Magnitud(f"A_s {f.posicion.split(':', 1)[0]}", f.As_adoptado,
+                     "mm2/m", f"{f.gobierna}; "
+                     + (f"{f.barra.designacion} @ "
+                        f"{f.barra.espaciamiento:.3f} m"
+                        if f.barra is not None else "sin barra del catalogo"),
+                     cifras=CIFRAS_MAGNITUD)
+            for f in minimos),
+        resultado=Magnitud(rotulo, len(minimos), "",
+                           "filas de minimo de retraccion y temperatura"),
+        veredicto=Veredicto(
+            tipo=TipoDeVeredicto.SIN_VEREDICTO,
+            explicacion="minimo constructivo, no verificacion: la cara no "
+                        "tiene solicitacion que juzgar"),
+        nota_del_proyecto=(
+            "El acero de estas caras es el minimo de retraccion y "
+            "temperatura de la fila de reparto del cabezal "
+            "(`M9._fila_de_reparto`), con el ancho REAL del elemento: el "
+            "largo del miembro entre ejes (5.10.6, «least width of "
+            "component section»)."))

@@ -534,7 +534,11 @@ def test_declarar_los_dos_criterios_libera_acero_y_losa():
     a01 = next(p for p in informe.puntos if p.punto.id == "A-01")
     rubros = {r.rubro for r in a01.metrado.renglones}
     assert {"acero", "losa de entrega"} <= rubros
-    assert not [b for b in a01.bloqueos if b.fase.startswith("Fase 11")]
+    # Desde VE-7 (lote B, B7) los renglones que no se metran son bloqueos
+    # explicitos «no medido» (tests/test_ve7_lote_b_metrados.py); fuera de
+    # ellos, nada detiene la Fase 11.
+    assert not [b for b in a01.bloqueos if b.fase.startswith("Fase 11")
+                and not b.etapa.endswith(": no medido")]
     acero = [r for r in a01.metrado.renglones if r.rubro == "acero"]
     assert all(r.cantidad > 0 and r.partida == "504.A" for r in acero)
 

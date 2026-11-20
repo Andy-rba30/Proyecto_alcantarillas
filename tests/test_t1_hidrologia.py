@@ -1034,7 +1034,9 @@ def test_el_csv_de_cuencas_valida_claves_y_dominio(MH, tmp_path):
     assert set(MH.COLUMNAS_CUENCAS_OPCIONALES) == {"H_desnivel_m",
                                                   "ajuste_kirpich", "CN",
                                                   "c_retardo_izzard",
-                                                  "n_manning_superficial"}
+                                                  "n_manning_superficial",
+                                                  # VE-7, B10 (VE7B-06)
+                                                  "subareas"}
     with pytest.raises(DatoInvalidoError):        # dos filas para una obra
         MH.cargar_cuencas(_cuencas_con(tmp_path, [base, base]))
     sin_columna = tmp_path / "c.csv"

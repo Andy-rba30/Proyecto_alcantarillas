@@ -151,6 +151,8 @@ from src.modulos.M8_estructural import (CODIGOS_FASE_8,
                                         DIFERIDOS_QUE_EL_PORTICO_CIERRA,
                                         cama_apoyo_relleno_lateral,
                                         disenar_portico,
+                                        exigir_canto_del_portico,
+                                        exigir_distribucion_del_portico,
                                         seleccionar_clase_calibre,
                                         verificar_conducto)
 from src.modulos.M9_cabezal import (aviso_ambiente_corrosivo,
@@ -4384,6 +4386,13 @@ def _fase_8(informe: InformePunto) -> None:
                     diferido=tuple(d for d in e.diferido
                                    if d not in DIFERIDOS_QUE_EL_PORTICO_CIERRA)
                     + portico.diferido)
+                # --- VE-7 lote B, B5 --- el portico que no cumple dice que
+                # canto declarar (ficha VE7B-11).
+                _etapa(informe.bloqueos, FASE_ESTRUCTURAL, ETAPA_PORTICO_MARCO,
+                       lambda: exigir_canto_del_portico(portico, punto.id))
+                _etapa(informe.bloqueos, FASE_ESTRUCTURAL, ETAPA_PORTICO_MARCO,
+                       lambda: exigir_distribucion_del_portico(portico,
+                                                              punto.id))
     informe.cama_apoyo = _etapa(informe.bloqueos, FASE_ESTRUCTURAL,
                                 "cama de apoyo y relleno lateral (item 4)",
                                 lambda: cama_apoyo_relleno_lateral(material))
@@ -5203,8 +5212,29 @@ def _fase_11_metrados(informe: InformePunto) -> None:
                lambda: M12.renglones_proteccion_salida(
                    proteccion=informe.proteccion, seccion=seccion,
                    celdas=celdas))
+    # --- VE-7 lote B, B6 --- el acero del portico del marco, si se armo.
+    portico = getattr(informe.estructural, "portico", None)
+    if portico is not None:
+        _rubro(M12.ETAPA_ACERO_PORTICO, lambda: M12.renglones_acero_portico(
+            portico=portico, cabezal=c, S=g.S_conducto))
+    # --- VE-7 lote B, B7 --- lo que no se metra, renglon por renglon.
+    for elemento in M12.RENGLONES_NO_MEDIDOS:
+        if elemento == M12.NO_MEDIDO_EMBOQUILLADO and \
+                informe.proteccion_entrada is None:
+            continue
+        # dictamen Fable (defecto 7, ii-b.3): la cama, solo en el marco; la
+        # distribucion, solo si el portico la hace obligatoria.
+        if elemento == M12.NO_MEDIDO_CAMA and \
+                material.forma is not FormaSeccion.RECTANGULAR:
+            continue
+        if elemento == M12.NO_MEDIDO_DISTRIBUCION and not (
+                portico is not None and portico.distribucion_obligatoria):
+            continue
+        _rubro(M12.etapa_no_medido(elemento),
+               lambda e=elemento: M12.renglon_no_medido(
+                   e, id_punto=informe.punto.id))
     avisos: List[str] = []
-    if material.forma is FormaSeccion.RECTANGULAR:
+    if material.forma is FormaSeccion.RECTANGULAR and portico is None:
         avisos.append(AVISO_ACERO_DEL_MARCO)
     for renglon in renglones:
         avisos.extend(a for a in renglon.avisos if a not in avisos)

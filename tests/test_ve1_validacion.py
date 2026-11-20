@@ -658,8 +658,8 @@ def test_h2_la_guardia_rechaza_por_los_tres_caminos(caso, tmp_path):
     {"inicio": 0.90, "paso": 0.075},
     {"inicio": 1, "paso": 1},
     # El inicio NEGATIVO de la rama de error de la linea base: la puerta lo
-    # deja pasar y lo rechaza la seccion con DatoInvalidoError, dentro de
-    # ErrorProyecto (`tests/linea_base_familia_c/regenerar.sh`, corrida 3).
+    # deja pasar y lo rechaza M2 con DatoInvalidoError sobre el criterio
+    # (VE-7, B12), dentro de ErrorProyecto (`regenerar.sh`, corrida 3).
     {"inicio": -0.90, "paso": 0.15},
 ], ids=["archivo", "6_in", "75_mm", "enteros", "inicio_negativo"])
 def test_h2_guardia_lo_que_la_puerta_sigue_aceptando(valor):

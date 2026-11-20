@@ -176,14 +176,17 @@ def test_el_delta_del_resguardo_bajo_control_de_entrada(a01):
     assert "resguardo" in nota and "ENTRADA" in nota.upper()
 
 
-def test_el_delta_del_resguardo_no_se_da_bajo_control_de_salida(a01):
+def test_el_delta_del_resguardo_bajo_control_de_salida_es_el_del_hw_de_entrada(a01):
+    # Hasta VE-7 bajo control de SALIDA no se daba delta. Desde VE-7 (lote B,
+    # B2, ficha VE7B-04) se da con el HW de ENTRADA, cota inferior rigurosa;
+    # el oraculo independiente esta en `tests/test_ve7_lote_b_md.py`.
     r = dataclasses.replace(a01.resultado.resultado_hidraulico,
                             control_gobernante=ControlGobernante.SALIDA)
     material, seccion = a01.resultado.material, a01.resultado.seccion
     delta, nota = MD._delta_de_7A(_punto_bajo(a01, 1.20), material, seccion,
                                   [_v("V1", True), _v("V4", False)], r)
-    assert delta is None
-    assert "longitud" in nota
+    assert delta is not None and delta > 0
+    assert "cota inferior con el HW de entrada" in nota
 
 
 def test_con_otra_falla_ademas_de_v4_no_hay_delta(a01):

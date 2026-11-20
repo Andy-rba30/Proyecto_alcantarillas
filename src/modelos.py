@@ -7166,6 +7166,14 @@ class Cuenca:
     # estudio hidrologico: el programa no los elige ni los lee de una tabla.
     c_retardo_izzard: Optional[float] = None
     n_manning_superficial: Optional[float] = None
+    # --- VE-7 lote B, B10 (ficha VE5-MH-01; dictamen Fable, decision 1) ---
+    # OPCIONAL: las subareas de la cuenca con distinta cobertura, tuplas
+    # (cobertura, suelo, S o None, area en ha) de la columna `subareas`
+    # («cobertura/suelo[/S_terreno]:area_ha;...», o «cobertura:area_ha» en
+    # una superficie vial, con suelo ""). Cada C sale de su tabla, nunca
+    # tecleado; C = ΣC·A/ΣA (`MH._paso_c`). Con ella, `cobertura` y `suelo`
+    # de la fila van vacios.
+    subareas: Tuple[Tuple[str, str, Optional[float], float], ...] = ()
 
 
 @dataclass(frozen=True)
@@ -7573,6 +7581,23 @@ class DisenoPortico:
     pasos: Tuple["PasoDeMemoria", ...]
     avisos: Tuple[str, ...] = ()
     diferido: Tuple[str, ...] = ()
+    # --- VE-7 lote B, B4 (T5-07 (3)) --- las caras que ninguna combinacion
+    # tracciona, con el minimo de retraccion y temperatura de AASHTO 5.10.6
+    # que 12.11.5.3.1 manda (`FilaDeArmado`, la fila de reparto del cabezal).
+    minimos: Tuple[Any, ...] = ()
+    # --- VE-7 lote B, B5 (T5-07 (1)) --- si el portico no cumple: el menor
+    # canto UNIFORME de la grilla de 'dimensionamiento_zapata_cabezal' con
+    # el que cerraria (la seccion interior fija, el relleno reducido), o
+    # None si ninguno hasta el tope fisico; y hasta donde se busco. No se
+    # adopta: 'espesor_pared_cajon' mueve la clave, V4, V7 y G1.
+    canto_que_cierra_m: Optional[float] = None
+    canto_buscado_hasta_m: Optional[float] = None
+    # --- VE-7, dictamen Fable (ii-b) --- el acero LONGITUDINAL minimo de
+    # 5.10.6 (12.11.5.3.1), una `FilaDeArmado` por miembro y cara; y si el
+    # relleno hasta la rasante es menor de 2.0 ft, la distribucion de la losa
+    # superior (9.7.3.2) es obligatoria y no esta implementada.
+    longitudinales: Tuple[Any, ...] = ()
+    distribucion_obligatoria: bool = False
 
     @property
     def cumple(self) -> bool:

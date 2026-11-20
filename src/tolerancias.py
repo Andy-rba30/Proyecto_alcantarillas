@@ -331,6 +331,14 @@ TOL_LECTURA_FIGURA_HEC14 = 0.01
 TOL_REL_PUNTO_FIJO_TC = 1e-10
 ITERACIONES_MAX_PUNTO_FIJO_TC = 200
 
+# --- VE-7, dictamen Fable (defecto 9) --- El tope de la busqueda del canto
+# que cerraria el portico del marco (`M8._con_el_canto_que_cierra`): cuantos
+# escalones de la grilla se prueban, cada uno un analisis y un armado
+# enteros. No es un valor de proyecto: decide cuanto se busca, no que canto
+# se adopta (el canto no se adopta). Con el paso de archivo de 0.10 m son
+# 2.0 m de canto sobre el declarado; el paso que imprime dice el tope.
+ITERACIONES_MAX_CANTO_PORTICO = 20
+
 # --- VE-5 fixve4 --- Si una raiz del reparto del desborde es una raiz
 # ---------------------------------------------------------------------------
 # `M4.repartir_caudal_con_desborde` busca con `brentq` el caudal del conducto

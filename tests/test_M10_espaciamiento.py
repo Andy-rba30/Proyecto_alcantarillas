@@ -37,6 +37,12 @@ def test_el_caso_del_auditor_es_el_del_caso_patron(monkeypatch):
     original = ca.valor
     monkeypatch.setattr(ca, "valor", lambda clave: (
         dict(cp["seccion"]) if clave == "seccion_cuneta" else original(clave)))
+    # La seccion del caso patron (0.20 x 0.50) es el minimo de la fila SECA
+    # de la Tabla Nº 34 (<400 mm/año). Desde VE-7 (lote B, B11) M10 exige la
+    # fila que rige: se declara una precipitacion de esa region.
+    from src import datos_sitio as ds
+    monkeypatch.setattr(ds, "valor_si_declarado", lambda clave: (
+        300.0 if clave == M10.DATO_PRECIPITACION_ANUAL else None))
     c = M10.capacidad_cuneta(S_cuneta=cp["S"])
     assert c.Q_admisible_m3s == pytest.approx(cp["Q_adm"], rel=REL_CASO_PATRON)
     assert not M10.verificar_aporte(capacidad=c, Q_aporte_m3s=cp["Q"],
