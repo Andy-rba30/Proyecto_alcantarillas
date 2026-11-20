@@ -15478,6 +15478,7 @@ AASHTO_11_5_8_GLOBAL = _cita(
           "('estabilidad_global'). Hasta VE-4a estaba transcrito solo en la "
           "nota de la cita #EXTREMO; lo consume el contraste del FS sismico "
           "declarado de E4 y E5 en el marco LRFD."),
+)
 
 # ===========================================================================
 # --- VE-4c --- V5 por el PERFIL DE REMANSO del cauce de aproximacion (ficha
@@ -15563,6 +15564,7 @@ HDS5_2_2_5B_AUMENTO = _cita(
           "perfil de remanso, termina la curva donde la lamina baja a esa "
           "sobreelevacion sobre el tirante natural; el valor dentro de la "
           "banda 0 a 0.3 m es [A] ('sobreelevacion_admisible_remanso_m')."),
+)
 # --- VE-4d --- HDS-5 3a ed., num. 3.1.5 «Roadway Overtopping» y 5.4.5
 # «Embankment Overtopping»: el desborde admitido de V8 (ficha T7B-02). Leidas
 # en la capa de texto de las paginas; la Figura 3.11 es una imagen y se leyo
@@ -15768,6 +15770,7 @@ HDS5_5_4_5_HEC23 = _cita(
           "Cement.» HEC-23 no esta en el repositorio de normas: el diseño "
           "de la proteccion es del expediente, y su caudal unitario admisible "
           "es el criterio 'caudal_unitario_admisible_desborde_m2s' [A]."),
+)
 
 # ===========================================================================
 # --- VE-4e (ficha VE3-21) --- El nivel del agua del relleno bajo sismo. La

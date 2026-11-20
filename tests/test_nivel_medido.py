@@ -283,6 +283,8 @@ DE_UNA_VERIFICACION_DIFERIDA = {
 FUNCION_QUE_LO_LEE = {
     "umbral_no_colapso_evento_extremo": "v8_evento_extremo",
     "sobreelevacion_admisible_remanso_m": "_v5_perfil_de_remanso",
+    "caudal_unitario_admisible_desborde_m2s": "v8_evento_extremo",
+    "coeficientes_desborde_plataforma": "v8_evento_extremo",
 }
 
 # --- VE-2 (c2) --- UN CRITERIO QUE SOLO UNA ALTERNATIVA DE PERFIL LEE. El

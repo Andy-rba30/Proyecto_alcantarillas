@@ -788,15 +788,16 @@ def test_las_tres_claves_de_V5_y_V8_son_datos_externos_por_punto():
     aproximacion que pide el metodo del perfil de remanso; y cada clave de
     V5 la piden una TUPLA de metodos (el ancho, dos).
     """
-    # REESCRITO DECLARANDOLO (VE-4d): CINCO, con la longitud de la cresta
-    # del desborde admitido de V8; `CLAVES_EXTERNAS` pasa de 26 a 27.
+    # REESCRITO DECLARANDOLO (VE-4d): SEIS, con la longitud de la cresta
+    # del desborde admitido de V8; `CLAVES_EXTERNAS` pasa de 27 a 28 (VE-4c
+    # y VE-4d se hicieron en paralelo y se integraron juntas).
     assert servicio.CLAVES_DE_V5_Y_V8 == (
         "ancho_derecho_via_m", "Q_evento_extremo_m3s", "TW_evento_extremo_m",
         "cota_afectacion_aguas_arriba_msnm", "seccion_cauce_aproximacion",
         "longitud_cresta_desborde_m")
     for clave in servicio.CLAVES_DE_V5_Y_V8:
         assert clave in servicio.CLAVES_EXTERNAS
-    assert len(servicio.CLAVES_EXTERNAS) == 27
+    assert len(servicio.CLAVES_EXTERNAS) == 28
     assert "desnivel_perfil_canal_m" in servicio.CLAVES_EXTERNAS
     cota = "cota_afectacion_aguas_arriba_msnm"
     assert {f.value for f in servicio.FAMILIAS_QUE_USAN[cota]} == {"A", "B"}

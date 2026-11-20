@@ -11397,6 +11397,9 @@ CRITERIOS: Dict[str, Criterio] = {
             que_lo_fija="el proyectista, con el geotecnista, por la calidad "
                         "de los parametros y de la estratigrafia del EMS",
             dominio="una de las dos filas de la ventana",
+        ),
+    ),
+
     # --- VE-4d --- (ficha T7B-02) EL DESBORDE ADMITIDO de V8: dos criterios,
     # detras de los nueve de T-7b (que van seguidos) y no junto al umbral.
     "caudal_unitario_admisible_desborde_m2s": Criterio(
