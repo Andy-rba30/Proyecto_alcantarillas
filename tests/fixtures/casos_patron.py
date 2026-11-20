@@ -1890,6 +1890,60 @@ CP_HDS5_DG1 = {
 
 
 # ---------------------------------------------------------------------------
+# --- VE-4d --- HDS-5 3a ed., Design Guideline 1, DG 1.5 «RCB Performance
+# Curve» (pags. impresas DG1.11 a DG1.13, PDF 282 a 284): el ejemplo resuelto
+# de DESBORDE de la plataforma. Cajon de concreto de 7 x 7 ft con cabezal y
+# aristas en escuadra; la via, de grava, de 40 ft de ancho, se aproxima como
+# un vertedero de cresta ancha de 200 ft de largo. Todo en las unidades de la
+# pagina (pies); la conversion vive en el test.
+# ---------------------------------------------------------------------------
+CP_HDS5_DG15 = {
+    "fuente": "HDS-5 3a ed. (FHWA-HIF-12-026), DG 1.5, pags. impresas "
+              "DG1.11 (PDF 282, enunciado), DG1.12 (PDF 283, tabla de la "
+              "curva de comportamiento) y DG1.13 (PDF 284, solucion HY-8)",
+    # Enunciado (PDF 282): «Approximate Culvert Length La 200 ft», «Natural
+    # Stream Bed Slope So 0.05», «Elevation at Overtopping ELo 116 ft»,
+    # «Elevation at Culvert Invert ELi 100 ft», TW 4.1 ft con 1000 ft3/s;
+    # «The roadway is gravel with a width of 40 ft ... broad crested weir 200
+    # ft long».
+    "B_ft": 7.0, "D_ft": 7.0, "S": 0.05, "L_conducto_ft": 200.0,
+    "EL_i_ft": 100.0, "EL_o_ft": 116.0, "TW_ft": 4.1,
+    "L_ft": 200.0, "L_r_ft": 40.0,
+    # La carta del cajon con cabezal (90 grados) y aristas en escuadra es la
+    # Carta 8 (la que el ejemplo nombra, «Design Charts 8B»); n y k_e son los
+    # del formulario de DG 1.4 para el cajon de concreto en escuadra.
+    "carta": "cajon_concreto_aletas_90_15", "n": 0.012, "ke": 0.5,
+    # La tabla de la pag. DG1.12: Q_c contra EL_hi (ft3/s, ft). Es la curva
+    # del CONDUCTO que el ejemplo publica; con ella se contrasta el tanteo
+    # sin pasar por M4.
+    "curva_conducto_publicada": ((400.0, 108.1), (600.0, 111.6),
+                                 (700.0, 113.7), (800.0, 116.5),
+                                 (850.0, 117.9), (1000.0, 122.5)),
+    # La fila de 800 ft3/s (la unica de la tabla que es coherente con su
+    # propio total: «At Qc = 800 cfs, HWr = 0.5 ft, Qo = 2.7(200)(0.5)1.5 =
+    # 191 ft3/s», total 991). Las de 850 y 1000 ft3/s llevan HW_r de 1.5 y
+    # 6.5 ft que su EL_hi no da (117.9 - 116 = 1.9 ft) y totales que no son
+    # la suma: no se usan como oraculo.
+    "fila_800": {"Q_c_ft3_s": 800.0, "HW_r_ft": 0.5, "C_r": 2.7,
+                 "Q_o_ft3_s": 191.0, "Q_total_ft3_s": 991.0},
+    # Las dos lecturas de la Figura 3.11 (panel B, grava) que la tabla
+    # imprime con HW_r <= 4 ft. La de 6.5 ft (3.04) esta fuera del panel.
+    "lecturas_C_r_grava": ((0.5, 2.7), (1.5, 2.92)),
+    # Una lectura del ejemplo se da con dos cifras decimales: la tolerancia
+    # de la digitalizacion contra ella es media unidad de la segunda mas la
+    # resolucion del trazo (el grosor de la linea, ~0.005).
+    "tolerancia_C_r": 0.01,
+    # La solucion HY-8 (PDF 284): «overtopping begins at 798.5 ft3/s. At a
+    # combined flow of 1000 ft3/s, the culvert is discharging 816.23 ft3/s
+    # and 183.52 ft3/s goes over the roadway» y «HWi = 16.49 ft and Elhi =
+    # 116.49 ft».
+    "hy8": {"Q_total_ft3_s": 1000.0, "Q_c_ft3_s": 816.23,
+            "Q_o_ft3_s": 183.52, "EL_hi_ft": 116.49,
+            "Q_inicio_desborde_ft3_s": 798.5},
+}
+
+
+# ---------------------------------------------------------------------------
 # CP-13 · Hidrologia (Fase 1-bis, T-1): tiempo de concentracion, ajuste de
 # frecuencia, intensidad y metodo racional -- Manual de Hidrologia, cap. III
 # ---------------------------------------------------------------------------

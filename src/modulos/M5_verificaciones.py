@@ -272,6 +272,8 @@ from src.modelos import (DatosDeExpediente, DerechoDeViaDelPunto,
                      MOTIVO_METODO_NO_EVALUABLE_REMANSO,
                      MOTIVO_METODO_NO_EVALUABLE_REMANSO_PERFIL,
                      RAMA_REMANSO_M1, RAMA_REMANSO_S1,
+                     SUPERFICIE_CRESTA_GRAVA, SUPERFICIE_CRESTA_PAVIMENTADA,
+                     UMBRAL_V8_DESBORDE_ADMITIDO,
                      UMBRAL_V8_SIN_DESBORDE, UMBRALES_V8)
 from src.modelos import (CIFRAS_FACTOR, CIFRAS_FINA, CIFRAS_MAGNITUD,
                      CIFRAS_PORCENTAJE, ControlGobernante, CotaDeEntrada,
@@ -492,6 +494,24 @@ CLAVE_SECCION_CAUCE = "seccion_cauce_aproximacion"
 CRITERIO_EVENTO_EXTREMO = "TR_evento_extremo"
 # --- T-7b --- el umbral con que V8 juzga el «no colapso».
 CRITERIO_UMBRAL_V8 = "umbral_no_colapso_evento_extremo"
+# --- VE-4d --- (ficha T7B-02) el desborde admitido: el caudal unitario que
+# la proteccion del terraplen admite [A], la Figura 3.11 del HDS-5
+# digitalizada [C] y la superficie de la cresta, que es la condicion de
+# rodadura que el proyecto ya declara para la Tabla 12.6.6.3-1 (la constante
+# vive tambien en M7, que importa este modulo: no se puede importar de alli).
+CRITERIO_Q_ADM_DESBORDE_V8 = "caudal_unitario_admisible_desborde_m2s"
+CRITERIO_COEFICIENTES_DESBORDE_V8 = "coeficientes_desborde_plataforma"
+CRITERIO_CONDICION_PAVIMENTO_V8 = "condicion_pavimento"
+# Que curva de la Figura 3.11 corresponde a cada condicion de rodadura. La
+# figura solo trae «Paved» y «Gravel»: las dos condiciones pavimentadas son
+# la primera, y la via no pavimentada --un afirmado, en la red peruana-- se
+# lee con la de grava (interpretacion declarada en la memoria del paso).
+SUPERFICIE_DE_LA_CRESTA = {
+    "flexible": SUPERFICIE_CRESTA_PAVIMENTADA,
+    "rigido": SUPERFICIE_CRESTA_PAVIMENTADA,
+    "no_pavimentado": SUPERFICIE_CRESTA_GRAVA,
+}
+CLAVE_LONGITUD_CRESTA_V8 = "longitud_cresta_desborde_m"
 # La mitad [A] de la fila V2b: el acceso de mantenimiento en planos.
 CRITERIO_ACCESO_MANTENIMIENTO = "acceso_mantenimiento_v2b"
 # El REGIMEN con que se aplica la mitad evaluable de V2b (PF-4): umbral duro
@@ -3681,6 +3701,152 @@ def _v7_no_aplica(*, punto: PuntoCritico, cota_nivel: float, nf: float,
 # V8 - Evento extremo / FEN (Fase 5, V8)
 # ---------------------------------------------------------------------------
 
+def _v8_con_desborde(*, punto: PuntoCritico, seccion: Seccion,
+                     evento: EventoExtremoDelPunto, reparto, TR, Q_ext: float,
+                     q_adm: float, umbral_v8: str, condicion: str,
+                     superficie: str, clave_umbral: str, clave_admisible: str,
+                     clave_coeficientes: str, clave_condicion: str,
+                     clave_TR: str) -> Verificacion:
+    """
+    --- VE-4d --- La fila V8 con el umbral «desborde_admitido_con_terraplen_
+    protegido»: lee el reparto que el servicio calculo
+    (`M4.repartir_caudal_con_desborde`, HDS-5 num. 3.1.5) y compara el
+    caudal unitario sobre la plataforma, q = Q_plataforma / L, con el que la
+    proteccion del terraplen admite. No recalcula nada; las claves de los
+    criterios llegan como argumento porque los lee `v8_evento_extremo`.
+
+    LO QUE SIGUE DIFERIDO (ficha T7B-02):
+      * el diseño de la proteccion del talud de aguas abajo (HEC-23, que el
+        HDS-5 num. 5.4.5 cita y que no esta en el repositorio de normas) y
+        el sifonamiento por la carga sostenida: el admisible es el que ese
+        diseño de, y se declara;
+      * la cresta que crece con el nivel en una curva vertical en columpio
+        (varios tramos, Figura 3.12A): aqui es un tramo de longitud fija;
+      * el tirante y la velocidad sobre la via: «no colapsa» se juzga con el
+        caudal unitario, que el reparto da sin suponer el perfil del flujo;
+      * el reparto por debajo del caudal de diseño (si con el ya hay
+        desborde) y el coeficiente fuera de los ejes de la Figura 3.11
+        (HW_r > 4 ft en el panel B, HW_r/L_r > 0.32 en el A, k_t < 0.5):
+        `MetodoNoEvaluableError` con el rotulo del evento extremo.
+    """
+    q = reparto.q_unitario
+    cumple = q <= q_adm + TOL_UMBRAL_NORMATIVO
+    if not (math.isfinite(q) and math.isfinite(reparto.cota_embalse)):
+        raise LimiteNumericoError(
+            "caudal unitario sobre la plataforma", valor=q, id_punto=punto.id,
+            motivo="el reparto del evento extremo no dio un numero finito")
+    h = reparto.hidraulica
+    avisos = tuple(f"V8: {a}" for a in reparto.avisos)
+    sustitucion = [
+        Magnitud("TR_ext", TR, "años",
+                 f"criterio '{clave_TR}' [A], declarado",
+                 cifras=CIFRAS_MAGNITUD),
+        Magnitud("Q_ext", Q_ext, "m3/s", evento.origen,
+                 cifras=CIFRAS_MAGNITUD),
+        Magnitud("Q_conducto", reparto.Q_conducto, "m3/s",
+                 "caudal por el conducto, del tanteo; su carga es la de M4 "
+                 f"por la seccion candidata ({seccion.etiqueta()}), "
+                 f"{getattr(h, 'regimen', 'lamina libre')}, control que "
+                 f"gobierna: {h.control_gobernante.value}",
+                 cifras=CIFRAS_MAGNITUD),
+        Magnitud("Q_plataforma", reparto.Q_plataforma, "m3/s",
+                 "caudal sobre la plataforma, Ec. 3.9 del HDS-5"
+                 if reparto.desborda else
+                 "sin desborde: con todo el caudal por el conducto el embalse "
+                 "no alcanza la cresta",
+                 cifras=CIFRAS_MAGNITUD),
+        Magnitud("cota_embalse", reparto.cota_embalse, "msnm",
+                 "cota del agua comun al conducto y a la plataforma",
+                 cifras=CIFRAS_MAGNITUD),
+        Magnitud("cota_cresta", reparto.cota_cresta, "msnm",
+                 evento.origen_cota_desborde, cifras=CIFRAS_MAGNITUD),
+        Magnitud("L_cresta", reparto.longitud_cresta, "m",
+                 evento.origen_longitud_cresta, cifras=CIFRAS_MAGNITUD),
+        Magnitud("L_r", reparto.ancho_cresta, "m",
+                 "ancho de la cresta en la direccion del flujo: columna "
+                 "ancho_plataforma del CSV", cifras=CIFRAS_MAGNITUD),
+    ]
+    if reparto.desborda:
+        sustitucion += [
+            Magnitud("HW_r", reparto.HW_r, "m",
+                     "tirante aguas arriba sobre la cresta",
+                     cifras=CIFRAS_MAGNITUD),
+            Magnitud("h_t", reparto.h_t, "m",
+                     "agua de aguas abajo sobre la cresta (solera de salida "
+                     "+ TW_ext - cota de la cresta; 0 si no la alcanza)",
+                     cifras=CIFRAS_MAGNITUD),
+            Magnitud("C_r", reparto.C_r, "ft^0.5/s",
+                     f"Figura 3.11 del HDS-5, panel {reparto.panel}, curva "
+                     f"«{superficie}» (criterio '{clave_coeficientes}' [C]; "
+                     f"superficie de '{clave_condicion}' = «{condicion}»)",
+                     cifras=CIFRAS_FACTOR),
+            Magnitud("k_t", reparto.k_t, "-",
+                     "Figura 3.11 C del HDS-5, con h_t/HW_r",
+                     cifras=CIFRAS_FACTOR),
+            Magnitud("C_d", reparto.C_d_si, "m^0.5/s",
+                     "C_d (SI) = 0.552 · k_t · C_r (HDS-5 num. 3.1.5)",
+                     cifras=CIFRAS_FACTOR),
+        ]
+    return Verificacion(
+        cumple=cumple,
+        numeral=NUMERAL_V8,
+        valor_obtenido=q,
+        valor_admisible=q_adm,
+        criterio_aplicado=clave_admisible,
+        codigo="V8",
+        avisos=avisos,
+        paso=paso(
+            "F5.V8.DESBORDE", codigo="V8",
+            que="V8 con el desborde admitido: el caudal del evento extremo "
+                "repartido entre el conducto y la plataforma, y el caudal "
+                "unitario sobre la plataforma frente al admisible",
+            formula=("Q_ext = Q_conducto + Q_plataforma, a la misma cota;  "
+                     "Q_plataforma = C_d · L · HW_r^1.5, C_d = 0.552 k_t C_r;"
+                     "  q = Q_plataforma / L  <=  q_adm"),
+            formula_cita_id="HDS5_3ED.3.1.5#EC_3_9",
+            citas_textuales=("HDS5_3ED.3.1.5#TANTEO",
+                             "HDS5_3ED.5.4.5#DESBORDE_ACEPTADO"),
+            sustitucion=tuple(sustitucion),
+            resultado=Magnitud(
+                "q", q, "m3/s por m",
+                "caudal unitario sobre la plataforma, Q_plataforma / L",
+                cifras=CIFRAS_MAGNITUD),
+            umbral=Umbral(
+                descripcion="caudal unitario que la proteccion del talud de "
+                            "aguas abajo admite",
+                valor=q_adm, unidad="m3/s por m",
+                cita_id="HDS5_3ED.5.4.5#HEC23",
+                caracter="PERMISO",
+                aplicacion="umbral del proyecto: la fuente acepta el "
+                           "desborde y remite la proteccion del talud a "
+                           "HEC-23, sin fijar limite; criterio "
+                           f"'{clave_admisible}' [A]",
+                criterio_aplicado=clave_admisible),
+            veredicto=_veredicto(
+                cumple, q_adm - q, "m3/s por m",
+                ("el evento extremo no desborda la plataforma"
+                 if not reparto.desborda else
+                 "el caudal que pasa sobre la plataforma no supera el que la "
+                 "proteccion del terraplen admite" if cumple else
+                 "el caudal que pasa sobre la plataforma supera el que la "
+                 "proteccion del terraplen admite: hace falta una seccion "
+                 "mayor o una proteccion para mas caudal")),
+            nota_del_proyecto=(
+                f"Umbral '{umbral_v8}' ('{clave_umbral}', [A]): la fila V8 "
+                "admite el desborde y el proyecto juzga el no colapso con "
+                "el caudal unitario sobre la plataforma. La cresta es un "
+                "solo tramo horizontal a la cota de desborde, de la longitud "
+                "declarada (HDS-5 Figura 3.12B). La curva de la Figura 3.11 "
+                f"es la de «{superficie}» por la condicion de rodadura "
+                f"«{condicion}»: la figura solo distingue la cresta "
+                "pavimentada de la de grava, y una via no pavimentada se "
+                "lee con la de grava. No se diseña la proteccion del "
+                "terraplen (HEC-23, fuera del repositorio de normas) ni se "
+                "evalua el sifonamiento por la carga sostenida."
+                + (" " + " ".join(avisos) + "." if avisos else ""))),
+    )
+
+
 def v8_evento_extremo(*, punto: PuntoCritico,
                       resultado: ResultadoHidraulico,
                       material: Optional[Material] = None,
@@ -3708,8 +3874,23 @@ def v8_evento_extremo(*, punto: PuntoCritico,
       * 'umbral_no_colapso_evento_extremo' sin valor ->
         `CriterioPendienteError`: la hoja de ruta no dice como se juzga el
         colapso;
-      * el umbral declarado es el del desborde admitido, o la carga del
-        evento no se puede evaluar ni a presion -> `MetodoNoEvaluableError`.
+      * la carga del evento no se puede evaluar ni a presion ->
+        `MetodoNoEvaluableError`;
+      * --- VE-4d --- con el umbral del desborde admitido:
+        'caudal_unitario_admisible_desborde_m2s' sin valor ->
+        `CriterioPendienteError`; sin `longitud_cresta_desborde_m` ->
+        `DatoFaltanteError`; el reparto fuera de los ejes de la Figura 3.11
+        del HDS-5, o con la carga de diseño ya sobre la cresta ->
+        `MetodoNoEvaluableError` (rotulo del evento extremo). Hasta VE-4d
+        este umbral se detenia siempre con «metodo no evaluable».
+
+    CON EL DESBORDE ADMITIDO (VE-4d, ficha T7B-02) el caudal del evento se
+    REPARTE entre el conducto y la plataforma, que trabaja como vertedero de
+    cresta ancha (HDS-5 num. 3.1.5, Ec. 3.9, con el C_r y el k_t de la
+    Figura 3.11), por tanteo sobre el caudal del conducto
+    (`M4.repartir_caudal_con_desborde`, que arma el servicio en
+    `EventoExtremoDelPunto.repartir`), y V8 cumple si el caudal unitario
+    sobre la plataforma no supera el admisible (`_v8_con_desborde`).
 
     EL METODO: el caudal del evento se corre por la MISMA seccion, material,
     pendiente y longitud del CANDIDATO (M3 y M4, que resuelve el servicio:
@@ -3780,15 +3961,59 @@ def v8_evento_extremo(*, punto: PuntoCritico,
             motivo=f"el caudal del evento extremo ({Q_ext:.3f} m3/s) es "
                    f"menor que el de diseño ({resultado.Q:.3f} m3/s): V8 "
                    "verifica un periodo de retorno MAYOR")
-    if umbral_v8 != UMBRAL_V8_SIN_DESBORDE:
-        raise MetodoNoEvaluableError(
-            "V8", "flujo sobre la plataforma (HDS-5 num. 3.1.5) y erosion "
-            "del talud de aguas abajo",
-            "el umbral declarado en 'umbral_no_colapso_evento_extremo' "
-            "admite el desborde con el terraplen protegido, y juzgarlo "
-            "exige repartir el caudal entre el conducto y la plataforma: no "
-            "esta implementado",
-            id_punto=punto.id, rotulo=MOTIVO_METODO_NO_EVALUABLE_EVENTO_EXTREMO)
+    if umbral_v8 == UMBRAL_V8_DESBORDE_ADMITIDO:
+        # --- VE-4d --- (ficha T7B-02) el umbral que la fila literalmente
+        # admite. Se detiene, en este orden: el caudal unitario admisible
+        # sin valor -> criterio; sin la longitud de la cresta -> dato.
+        q_adm = ca.valor(CRITERIO_Q_ADM_DESBORDE_V8)   # CriterioPendienteError
+        if isinstance(q_adm, bool) or not isinstance(q_adm, (int, float)) \
+                or not math.isfinite(q_adm) or not q_adm > 0:
+            raise DatoInvalidoError(
+                CRITERIO_Q_ADM_DESBORDE_V8, valor=q_adm, id_punto=punto.id,
+                motivo="el caudal unitario admisible tiene que ser un numero "
+                       "finito y positivo (m3/s por metro de cresta)")
+        if evento.longitud_cresta_m is None:
+            raise DatoFaltanteError(
+                CLAVE_LONGITUD_CRESTA_V8, id_punto=punto.id,
+                detalle=(
+                    f"con '{CRITERIO_UMBRAL_V8}' = «{umbral_v8}» V8 reparte "
+                    "el caudal del evento extremo entre el conducto y la "
+                    "plataforma (HDS-5 num. 3.1.5, Ec. 3.9) y necesita la "
+                    "LONGITUD de la cresta por la que la via desborda, "
+                    "medida a lo largo de la via (el tramo de rasante bajo "
+                    "la cota del embalse): declarar "
+                    f"`{CLAVE_LONGITUD_CRESTA_V8}` por --datos-externos"))
+        if evento.repartir is None or material is None or seccion is None \
+                or evento.cota_desborde is None:
+            raise DatoFaltanteError(
+                "cota_desborde", id_punto=punto.id,
+                detalle="V8 con el desborde admitido necesita la seccion "
+                        "candidata, la funcion que reparte el caudal y la "
+                        "cota de desborde de la plataforma, que el servicio "
+                        "le entrega; una llamada suelta a "
+                        "`v8_evento_extremo` tiene que traerlas en `evento`")
+        coeficientes = ca.valor(CRITERIO_COEFICIENTES_DESBORDE_V8)
+        condicion = ca.valor(CRITERIO_CONDICION_PAVIMENTO_V8)
+        if condicion not in SUPERFICIE_DE_LA_CRESTA:
+            raise DatoInvalidoError(
+                CRITERIO_CONDICION_PAVIMENTO_V8, valor=condicion,
+                id_punto=punto.id,
+                motivo="se espera una de: "
+                       + ", ".join(SUPERFICIE_DE_LA_CRESTA))
+        superficie = SUPERFICIE_DE_LA_CRESTA[condicion]
+        reparto = evento.repartir(
+            seccion=seccion, material=material, superficie=superficie,
+            coeficientes=coeficientes, Q_minimo=resultado.Q,
+            HW_minimo=resultado.HW)
+        return _v8_con_desborde(
+            punto=punto, seccion=seccion, evento=evento, reparto=reparto,
+            TR=TR, Q_ext=Q_ext, q_adm=q_adm, umbral_v8=umbral_v8,
+            condicion=condicion, superficie=superficie,
+            clave_umbral=CRITERIO_UMBRAL_V8,
+            clave_admisible=CRITERIO_Q_ADM_DESBORDE_V8,
+            clave_coeficientes=CRITERIO_COEFICIENTES_DESBORDE_V8,
+            clave_condicion=CRITERIO_CONDICION_PAVIMENTO_V8,
+            clave_TR=CRITERIO_EVENTO_EXTREMO)
     if evento.resolver is None or material is None or seccion is None \
             or evento.cota_desborde is None:
         raise DatoFaltanteError(

@@ -3567,6 +3567,34 @@ V8_EVENTO_EXTREMO = _fundamento(
         "o por encima de la via."),
 )
 
+# --- VE-4d --- (ficha T7B-02) V8 con el desborde admitido.
+V8_DESBORDE_ADMITIDO = _fundamento(
+    id="F5.V8.DESBORDE",
+    fase=F5,
+    que_paso=("V8 con el desborde admitido: reparto del caudal del evento "
+              "extremo entre el conducto y la plataforma, y caudal unitario "
+              "sobre la plataforma frente al que la proteccion admite"),
+    por_que=(
+        "La fuente acepta que la via desborde en una crecida y, si desborda "
+        "a menudo, manda proteger el talud de aguas abajo. Cuando el agua "
+        "pasa sobre la via, el caudal del evento se reparte entre el "
+        "conducto y la plataforma, que trabaja como un vertedero de cresta "
+        "ancha, y la fuente da su ecuacion y su coeficiente y dice que el "
+        "reparto se busca por tanteo. El proyecto juzga que la via no "
+        "colapsa si el caudal por metro de cresta que pasa sobre ella no "
+        "supera el que la proteccion del terraplen admite, que es una "
+        "eleccion declarada."),
+    verbo=Verbo.PERMITE,
+    citas=("HDS5_3ED.5.4.5#DESBORDE_ACEPTADO", "HDS5_3ED.5.4.5#HEC23",
+           "HDS5_3ED.3.1.5#EC_3_9", "HDS5_3ED.3.1.5#CD_SI",
+           "HDS5_3ED.3.1.5#TANTEO",
+           "HDS5_3ED.3.1.5#UN_TRAMO", "HDS5_3ED.F3.11"),
+    que_pasa_si_no_se_hace=(
+        "Con el desborde admitido no habria con que juzgar la via: se sabria "
+        "que el agua pasa sobre ella, no cuanta ni si el terraplen la "
+        "resiste."),
+)
+
 EMPUJES_CABEZAL = _fundamento(
     id="F9.EMPUJES",
     fase=F9,

@@ -156,6 +156,7 @@ si no se declara:
 | `TW_evento_extremo_m` | no | número | — | las tres | nada a nivel de perfil; a expediente, con `TR_evento_extremo` declarado, V8 se detiene |
 | `cota_afectacion_aguas_arriba_msnm` | no | número | — | A, B | nada a nivel de perfil; a expediente, con `remanso_derecho_via` declarado, V5 se detiene |
 | `seccion_cauce_aproximacion` | no | objeto | — | A, B | nada a nivel de perfil; a expediente, con `remanso_derecho_via` declarado, V5 se detiene |
+| `longitud_cresta_desborde_m` | no | número | — | las tres | nada a nivel de perfil; a expediente, con `umbral_no_colapso_evento_extremo` declarado, V8 se detiene |
 | `desnivel_perfil_canal_m` | no | número | — | C | el pre-vuelo la lista como falta |
 <!-- fin: externos -->
 

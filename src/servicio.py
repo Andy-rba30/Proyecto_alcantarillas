@@ -180,7 +180,8 @@ from src.modulos.M9_cabezal import (CONDICIONES_DE_ESTABILIDAD,
                                     validar_suelo_fundacion)
 from src.modelos import (DatosDeExpediente, DerechoDeViaDelPunto,
                          EventoExtremoDelPunto, HidraulicaDelEventoExtremo,
-                         REGIMEN_EVENTO_LAMINA_LIBRE)
+                         REGIMEN_EVENTO_LAMINA_LIBRE,
+                         UMBRAL_V8_DESBORDE_ADMITIDO)          # --- VE-4d ---
 from src.constantes_normativas import (ANCHO_MIN_DERECHO_VIA_M,
                                        INCREMENTO_DERECHO_VIA_OBRAS_DRENAJE_M)
 from src.modulos.M10_espaciamiento import espaciamiento_alivio
@@ -709,6 +710,15 @@ CLAVES_CON_SIGNO: Tuple[str, ...] = ("peralte",)
 #       proteger en el limite del derecho de via aguas arriba, de la
 #       topografia del cruce. La lee V5 con el metodo «cota_de_afectacion».
 #       Admite cero y signo: es una cota en msnm, no una longitud.
+#
+# Y desde VE-4d (ficha T7B-02) una QUINTA, la del desborde admitido de V8:
+#
+#   longitud_cresta_desborde_m   la longitud de la cresta por la que la
+#       plataforma desborda, medida a lo largo de la via (la L de la Ec. 3.9
+#       del HDS-5, con la curva en columpio como un solo tramo horizontal).
+#       La lee V8 con 'umbral_no_colapso_evento_extremo' =
+#       «desborde_admitido_con_terraplen_protegido». Sin techo: no hay
+#       ninguno que derivar.
 CLAVE_ANCHO_DERECHO_VIA = "ancho_derecho_via_m"
 CLAVE_COTA_AFECTACION = "cota_afectacion_aguas_arriba_msnm"
 CLAVE_Q_EVENTO_EXTREMO = "Q_evento_extremo_m3s"
@@ -723,11 +733,13 @@ CLAVE_TW_EVENTO_EXTREMO = "TW_evento_extremo_m"
 #       «perfil_de_remanso_paso_a_paso»: el paso directo corre sobre ella.
 #       Familias A y B; opcional y sin valor por defecto.
 CLAVE_SECCION_CAUCE_APROXIMACION = "seccion_cauce_aproximacion"
+CLAVE_LONGITUD_CRESTA_DESBORDE = M5.CLAVE_LONGITUD_CRESTA_V8
 CLAVES_DE_V5_Y_V8: Tuple[str, ...] = (CLAVE_ANCHO_DERECHO_VIA,
                                       CLAVE_Q_EVENTO_EXTREMO,
                                       CLAVE_TW_EVENTO_EXTREMO,
                                       CLAVE_COTA_AFECTACION,
-                                      CLAVE_SECCION_CAUCE_APROXIMACION)
+                                      CLAVE_SECCION_CAUCE_APROXIMACION,
+                                      CLAVE_LONGITUD_CRESTA_DESBORDE)
 CLAVES_EXTERNAS += CLAVES_DE_V5_Y_V8
 CLAVES_OBJETO += (CLAVE_SECCION_CAUCE_APROXIMACION,)
 CLAVES_QUE_ADMITEN_CERO += (CLAVE_TW_EVENTO_EXTREMO, CLAVE_COTA_AFECTACION)
@@ -743,6 +755,7 @@ CRITERIO_QUE_EXIGE_LA_CLAVE: Dict[str, str] = {
     CLAVE_SECCION_CAUCE_APROXIMACION: "remanso_derecho_via",
     CLAVE_Q_EVENTO_EXTREMO: "TR_evento_extremo",
     CLAVE_TW_EVENTO_EXTREMO: "TR_evento_extremo",
+    CLAVE_LONGITUD_CRESTA_DESBORDE: "umbral_no_colapso_evento_extremo",
 }
 # Y, para las de V5, los METODOS declarados que la piden: cada metodo lee
 # sus datos y no los del otro (correcciones de T-7b, H2). Desde VE-4c son
@@ -753,6 +766,8 @@ METODO_QUE_EXIGE_LA_CLAVE: Dict[str, Tuple[str, ...]] = {
                               "perfil_de_remanso_paso_a_paso"),
     CLAVE_COTA_AFECTACION: ("cota_de_afectacion",),
     CLAVE_SECCION_CAUCE_APROXIMACION: ("perfil_de_remanso_paso_a_paso",),
+    # --- VE-4d --- y la de V8, la OPCION del umbral que la pide.
+    CLAVE_LONGITUD_CRESTA_DESBORDE: (UMBRAL_V8_DESBORDE_ADMITIDO,),
 }
 VERIFICACION_QUE_EXIGE_LA_CLAVE: Dict[str, str] = {
     CLAVE_ANCHO_DERECHO_VIA: "V5",
@@ -760,6 +775,7 @@ VERIFICACION_QUE_EXIGE_LA_CLAVE: Dict[str, str] = {
     CLAVE_SECCION_CAUCE_APROXIMACION: "V5",
     CLAVE_Q_EVENTO_EXTREMO: "V8",
     CLAVE_TW_EVENTO_EXTREMO: "V8",
+    CLAVE_LONGITUD_CRESTA_DESBORDE: "V8",
 }
 # --- VE-3.6 --- VC3 (Familia C): el desnivel F que el perfil del canal
 # provee en el cruce (USBR, Design of Small Canal Structures, num. 2-6). Es
@@ -2413,18 +2429,21 @@ def _datos_de_expediente(informe: InformePunto, externos: DatosExternos,
         origen_cota = ("rasante en el eje (columna cota_rasante): 7.B no "
                        "calculo el borde de la plataforma")
 
-    def resolver(*, seccion, material):
+    def resolver(*, seccion, material, Q=None):
         # (Correcciones de T-7b, H3.) En lamina libre, la hidraulica entera
         # de M4; si M3 no le encuentra tirante normal --el caudal del evento
         # no cabe en lamina libre--, el barril A PRESION con las mismas
         # piezas de M4 que no necesitan ese tirante. Antes devolvia None y
         # V8 quedaba «no evaluable» desde 1.29·Q en A-01.
+        # --- VE-4d --- `Q` es el caudal por el CONDUCTO cuando el reparto
+        # del desborde lo tantea; sin el, el del evento.
+        caudal = Q_ext.valor if Q is None else Q
         pendiente = S if S is not None else punto.exigir("S_cauce")
-        Q_celda, _ = M4.caudal_por_celda(Q_ext.valor, material)
+        Q_celda, _ = M4.caudal_por_celda(caudal, material)
         normal = M3.resolver_manning(seccion=seccion, Q=Q_celda, S=pendiente,
                                      material=material)
         if normal is not None:
-            r = M4.resolver_control(seccion=seccion, Q=Q_ext.valor,
+            r = M4.resolver_control(seccion=seccion, Q=caudal,
                                     S=pendiente, L=L, TW=TW_ext.valor,
                                     material=material, normal=normal)
             if r is not None:
@@ -2433,18 +2452,49 @@ def _datos_de_expediente(informe: InformePunto, externos: DatosExternos,
                     regimen=REGIMEN_EVENTO_LAMINA_LIBRE,
                     HW_entrada=r.HW_entrada, HW_salida=r.HW_salida,
                     nota="lamina libre: hidraulica completa de M4")
-        return M4.hidraulica_a_presion(seccion=seccion, Q=Q_ext.valor,
+        return M4.hidraulica_a_presion(seccion=seccion, Q=caudal,
                                        S=pendiente, L=L, TW=TW_ext.valor,
                                        material=material)
 
+    longitud_cresta = externos.dato(punto.id, CLAVE_LONGITUD_CRESTA_DESBORDE)
+
+    def repartir(*, seccion, material, superficie, coeficientes, Q_minimo,
+                 HW_minimo):
+        # --- VE-4d --- (ficha T7B-02) el reparto del caudal del evento
+        # entre el conducto y la plataforma (HDS-5 num. 3.1.5): la carga del
+        # conducto es la de `resolver` con el caudal que el tanteo prueba, la
+        # cresta es la cota de desborde de V8 con la longitud declarada y el
+        # ancho de la plataforma del CSV, y el agua de aguas abajo es la del
+        # receptor en el evento sobre la solera de salida.
+        pendiente = S if S is not None else punto.exigir("S_cauce")
+        cota_entrada = M5.cota_de_entrada(punto).valor
+        return M4.repartir_caudal_con_desborde(
+            Q_total=Q_ext.valor,
+            hidraulica_de=lambda Q_c: resolver(seccion=seccion,
+                                               material=material, Q=Q_c),
+            cota_entrada=cota_entrada, cota_cresta=cota_desborde,
+            longitud_cresta=longitud_cresta.valor,
+            ancho_cresta=punto.ancho_plataforma,
+            cota_agua_abajo=(cota_entrada - pendiente * L + TW_ext.valor),
+            superficie=superficie, coeficientes=coeficientes,
+            Q_minimo=Q_minimo, HW_minimo=HW_minimo)
+
+    con_evento = Q_ext is not None and TW_ext is not None
     evento = EventoExtremoDelPunto(
         Q_m3s=None if Q_ext is None else Q_ext.valor,
         TW_m=None if TW_ext is None else TW_ext.valor,
         origen=("" if Q_ext is None else
                 f"`{CLAVE_Q_EVENTO_EXTREMO}`, dato externo: {Q_ext.origen}"),
         cota_desborde=cota_desborde, origen_cota_desborde=origen_cota,
-        resolver=resolver if (Q_ext is not None and TW_ext is not None)
-        else None)
+        resolver=resolver if con_evento else None,
+        longitud_cresta_m=(None if longitud_cresta is None
+                           else longitud_cresta.valor),
+        origen_longitud_cresta=(
+            "" if longitud_cresta is None else
+            f"`{CLAVE_LONGITUD_CRESTA_DESBORDE}`, dato externo: "
+            f"{longitud_cresta.origen}"),
+        repartir=(repartir if con_evento and longitud_cresta is not None
+                  else None))
     # --- VE-3.6 --- VC3 (Familia C): el desnivel del perfil del canal.
     desnivel = (externos.valor(punto.id, CLAVE_DESNIVEL_PERFIL_CANAL)
                 if punto.familia is Familia.C else None)

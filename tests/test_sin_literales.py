@@ -1026,8 +1026,9 @@ CENSO_DE_MARCAS = {
     # 3 -> 8 en E-A: el 4/3 de la Ec. 3.7 en las dos pendientes de friccion
     # del perfil (`_pendiente_friccion`, `_pendiente_friccion_llena`; dos
     # literales por linea, el 4 y el 3) y el 100 que lleva la fraccion llena
-    # a porcentaje en el TEXTO del paso 4.3c.
-    "src/modulos/M4_control.py": 8,
+    # a porcentaje en el TEXTO del paso 4.3c. 8 -> 9 en VE-4d: el exponente
+    # 1.5 de la Ec. 3.9 del HDS-5 (`caudal_sobre_la_plataforma`).
+    "src/modulos/M4_control.py": 9,
     # --- T-5 --- 0 -> 27 con la Fase 8 real (INF-3.3.5). Todos son
     # coeficientes de las ecuaciones TRANSCRITAS de AASHTO LRFD que M8
     # escribe en la forma de la fuente: el 0.06 D_i y el 100 de (1 + IM/100)

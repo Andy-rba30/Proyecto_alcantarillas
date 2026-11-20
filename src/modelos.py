@@ -7492,7 +7492,19 @@ class EventoExtremoDelPunto:
     origen: str
     cota_desborde: Optional[float]
     origen_cota_desborde: str
-    resolver: Optional[Any] = None      # (seccion, material) -> ResultadoHidraulico | None
+    # (seccion, material, Q=None) -> HidraulicaDelEventoExtremo: la carga de
+    # la seccion con el caudal Q (el del evento si Q es None).
+    resolver: Optional[Any] = None
+    # --- VE-4d --- El umbral «desborde_admitido_con_terraplen_protegido»:
+    # la longitud de la cresta del vertedero que forma la plataforma (dato
+    # externo `longitud_cresta_desborde_m`, None si no se declaro), y la
+    # funcion con que el servicio REPARTE el caudal del evento entre el
+    # conducto y la plataforma (`M4.repartir_caudal_con_desborde`, que M5 no
+    # importa): (seccion, material, superficie, coeficientes, HW_minimo,
+    # Q_minimo) -> RepartoDelDesborde.
+    longitud_cresta_m: Optional[float] = None
+    origen_longitud_cresta: str = ""
+    repartir: Optional[Any] = None
 
 
 # Los dos regimenes con que V8 resuelve el caudal del evento extremo
@@ -7530,6 +7542,54 @@ class HidraulicaDelEventoExtremo:
     HW_entrada: float
     HW_salida: float
     nota: str = ""
+    avisos: Tuple[str, ...] = ()
+
+
+# --- VE-4d --- Las dos superficies de la cresta que la Figura 3.11 del HDS-5
+# distingue («Paved» y «Gravel»): las claves de las curvas en el criterio
+# 'coeficientes_desborde_plataforma'.
+SUPERFICIE_CRESTA_PAVIMENTADA = "pavimentada"
+SUPERFICIE_CRESTA_GRAVA = "grava"
+SUPERFICIES_CRESTA = (SUPERFICIE_CRESTA_PAVIMENTADA, SUPERFICIE_CRESTA_GRAVA)
+# Los dos paneles de la Figura 3.11 que dan C_r: A) HW_r/L_r > 0.15
+# (desborde profundo) y B) HW_r/L_r <= 0.15 (somero).
+PANEL_DESBORDE_PROFUNDO = "A (HW_r/L_r > limite)"
+PANEL_DESBORDE_SOMERO = "B (HW_r/L_r <= limite)"
+
+
+@dataclass(frozen=True)
+class RepartoDelDesborde:
+    """
+    --- VE-4d --- El reparto del caudal del evento extremo entre el conducto
+    y la plataforma (HDS-5 num. 3.1.5, Ec. 3.9), a la cota del agua comun a
+    los dos: Q_total = Q_conducto + Q_plataforma. Lo calcula
+    `M4.repartir_caudal_con_desborde` por tanteo sobre el caudal del
+    conducto, como manda la fuente («A trial and error process is
+    necessary»).
+
+    `desborda` es False cuando el embalse con TODO el caudal por el conducto
+    no alcanza la cresta: entonces Q_plataforma = 0 y los coeficientes del
+    vertedero no se leen (None). Las alturas se miden desde la cresta (HW_r)
+    y la cota del agua de aguas abajo sobre ella (h_t, 0 si no la alcanza).
+    """
+
+    Q_total: float
+    Q_conducto: float
+    Q_plataforma: float
+    cota_embalse: float
+    HW_conducto: float                  # m sobre la solera de entrada
+    hidraulica: "HidraulicaDelEventoExtremo"
+    desborda: bool
+    cota_cresta: float
+    longitud_cresta: float              # L de la Ec. 3.9, m
+    ancho_cresta: float                 # L_r de la Figura 3.11, m
+    HW_r: float = 0.0
+    h_t: float = 0.0
+    panel: str = ""
+    C_r: Optional[float] = None         # de la Figura 3.11, unidades inglesas
+    k_t: Optional[float] = None
+    C_d_si: Optional[float] = None      # = conversion * k_t * C_r
+    q_unitario: float = 0.0             # Q_plataforma / L, m2/s
     avisos: Tuple[str, ...] = ()
 
 

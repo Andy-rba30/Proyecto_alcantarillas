@@ -309,7 +309,10 @@ def test_las_ocho_claves_del_json_tienen_ficha_y_sale_del_censo():
                     "desnivel_perfil_canal_m",
                     # --- VE-4c --- la seccion del cauce de aproximacion
                     # del metodo del perfil de remanso de V5: veintitres.
-                    "seccion_cauce_aproximacion"}
+                    "seccion_cauce_aproximacion",
+                    # --- VE-4d --- la longitud de la cresta del desborde
+                    # admitido de V8: veinticuatro.
+                    "longitud_cresta_desborde_m"}
     for clave in seis:
         assert ve.variable(clave).poblacion is Poblacion.DATO_EXTERNO
 

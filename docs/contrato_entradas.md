@@ -183,17 +183,22 @@ la tabla):
 | `TW_evento_extremo_m` | m (admite 0: salida libre) | **Estudio hidrológico** · hidráulico del receptor | Tirante del receptor sobre el fondo de la salida **en ese evento**. No se reutiliza el de diseño: el receptor sube con la avenida (T-7b) | Con el caudal declarado y sin él, V8 se detiene con `DatoFaltanteError` |
 | `cota_afectacion_aguas_arriba_msnm` | msnm (admite cero y signo: es una cota) | **Topografía** del cruce (levantamiento del cauce y del límite del derecho de vía aguas arriba) | La cota del terreno o del bien a proteger en el **límite del derecho de vía aguas arriba**. V5, con el método `cota_de_afectacion` de `remanso_derecho_via` —el criterio de nivel que el HDS-5 núm. 2.2.5 sostiene—, la compara con la cota del embalse de diseño (cota de entrada + HW de M4). Familias A y B. Por punto o global (cierre de T-7b, H2) | Sólo se lee con `remanso_derecho_via` = `cota_de_afectacion` y a nivel de expediente; entonces, sin ella, V5 se detiene con `DatoFaltanteError`. **No tiene valor por defecto** |
 | `seccion_cauce_aproximacion` | objeto: `b_m` (m), `z_HV` (H:V), `S` (m/m), `n` (—), `altura_total_m` (m) | **Topografía** del cauce aguas arriba del cruce (una sección típica, HDS-5 núm. 2.2.3 a.) · rugosidad del cauce natural | Sección del **cauce de aproximación**, con los cinco campos de `seccion_receptor_medida`. V5, con el método `perfil_de_remanso_paso_a_paso` de `remanso_derecho_via`, corre sobre ella el perfil de remanso desde la boca (el HW de M4 como condición de borde, paso directo) y mide hasta dónde la obra eleva la lámina más de `sobreelevacion_admisible_remanso_m` [A] sobre el tirante natural (el normal de Manning), contra la mitad de `ancho_derecho_via_m`. Familias A y B. Por punto o global (VE-4c, ficha T7B-01) | Sólo se lee con `remanso_derecho_via` = `perfil_de_remanso_paso_a_paso` y a nivel de expediente; entonces, sin ella, V5 se detiene con `DatoFaltanteError`. **No tiene valor por defecto**; si se declara incompleta, la carga se detiene. Una lámina por encima de `altura_total_m` deja V5 «método no evaluable» |
+| `longitud_cresta_desborde_m` | m | **Trazo** (perfil longitudinal de la vía en el cruce) | Longitud de la cresta por la que la plataforma desborda, medida **a lo largo de la vía**: la L de la Ec. 3.9 del HDS-5 (núm. 3.1.5), con la curva vertical en columpio representada por **un solo tramo horizontal** a la cota de desborde que V8 ya usa (Figura 3.12B). V8, con el umbral `desborde_admitido_con_terraplen_protegido`, reparte el caudal del evento extremo entre el conducto y la plataforma con ella. El ancho de la cresta en la dirección del flujo es la columna `ancho_plataforma`. Por punto o global (VE-4d) | Sólo se lee con `umbral_no_colapso_evento_extremo` = `desborde_admitido_con_terraplen_protegido` y a nivel de expediente; entonces, sin ella, V8 se detiene con `DatoFaltanteError`. **No tiene valor por defecto** ni techo |
 
 Las cuatro primeras claves de V5 y V8 las abrió T-7b (decisión del dueño del proyecto del
-2026-11-13; la cuarta, la cota de afectación, en el cierre de T-7b), y la quinta, la sección
-del cauce de aproximación, VE-4c. Cada método de V5 pide **sus** datos: `embalse_a_nivel` el
+2026-11-13; la cuarta, la cota de afectación, en el cierre de T-7b), la quinta, la sección
+del cauce de aproximación, VE-4c, y la sexta, la longitud de la cresta del desborde de V8, VE-4d. Cada método de V5 pide **sus** datos: `embalse_a_nivel` el
 ancho del derecho de vía, `cota_de_afectacion` la cota, `perfil_de_remanso_paso_a_paso` el
 ancho y la sección del cauce (y el criterio `sobreelevacion_admisible_remanso_m`, sin valor
 de archivo). Los **criterios** que las habilitan —`remanso_derecho_via` (el método de V5),
 `TR_evento_extremo` y `umbral_no_colapso_evento_extremo` (el periodo de retorno y el umbral
 de V8)— **no tienen valor de archivo**: los declara el **proyectista** (el método), y el
 **Propietario** con el estudio hidrológico (el periodo de retorno y qué se entiende por
-«no colapsa»). Sin declararlos, V5 y V8 se detienen como siempre y nada cambia.
+«no colapsa»). Sin declararlos, V5 y V8 se detienen como siempre y nada cambia. Con el
+umbral `desborde_admitido_con_terraplen_protegido` (desde VE-4d) V8 pide además el
+criterio `caudal_unitario_admisible_desborde_m2s` [A] —el caudal por metro de cresta que
+la protección del talud de aguas abajo admite, sin valor de archivo: lo da el diseño de
+esa protección (HEC-23, fuera del repositorio de normas)— y la clave de la cresta.
 
 ### 3.1 Ensayos de durabilidad — opcionales, por el mismo JSON (T-4)
 

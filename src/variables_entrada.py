@@ -1364,6 +1364,29 @@ _EXTERNOS: Dict[str, _Externo] = {
         nota="Solo se lee con 'TR_evento_extremo' y `Q_evento_extremo_m3s` "
              "declarados; sin el, V8 se detiene con DatoFaltanteError",
     ),
+
+    # --- VE-4d --- la longitud de la cresta del vertedero de la plataforma.
+    "longitud_cresta_desborde_m": _Externo(
+        concepto="Longitud de la cresta por la que la plataforma desborda en "
+                 "el cruce, m, medida a lo largo de la via: la L de la Ec. "
+                 "3.9 del HDS-5 (num. 3.1.5), con la curva vertical en "
+                 "columpio representada por un solo tramo horizontal a la "
+                 "cota de desborde (Figura 3.12B). V8 la lee con el umbral "
+                 "«desborde_admitido_con_terraplen_protegido»",
+        unidad="m",
+        resolucion=Libre(
+            que_lo_fija="el perfil longitudinal de la via en el cruce (el "
+                        "tramo de rasante bajo la cota del embalse); dato "
+                        "por punto, opcional y sin valor por defecto",
+            dominio="m > 0 y finito",
+        ),
+        fase_declarada=_FASE_DE_MODULO["M5_verificaciones"],
+        nota="Solo se lee con 'umbral_no_colapso_evento_extremo' = "
+             "«desborde_admitido_con_terraplen_protegido» y a nivel de "
+             "expediente; sin el dato, V8 se detiene con DatoFaltanteError. "
+             "La lee `servicio._datos_de_expediente` y se la pasa a "
+             "`M5.v8_evento_extremo`",
+    ),
 }
 
 
@@ -1533,6 +1556,11 @@ _META_CRITERIOS: Dict[str, _Meta] = {
                        "`q_adm_kpa` del suelo de fundacion)"),
     # --- T-7b --- el ensamble de estabilidad y el evento extremo de V8.
     "umbral_no_colapso_evento_extremo": _Meta(unidad="-"),
+    # --- VE-4d --- el desborde admitido de V8 (los lee V8, Fase 5).
+    "caudal_unitario_admisible_desborde_m2s": _Meta(unidad="m3/s por m"),
+    "coeficientes_desborde_plataforma": _Meta(
+        unidad="C_r en ft^0.5/s (Figura 3.11), k_t y conversion: -; "
+               "abscisas: HW_r/L_r, HW_r en m, h_t/HW_r"),
     "marco_estabilidad_cabezal": _Meta(unidad="-"),
     "fila_phi_estabilidad_cabezal": _Meta(unidad="-"),
     # --- VE-4a --- la fila de phi de 11.6.3.7 para el FS declarado de E4/E5.

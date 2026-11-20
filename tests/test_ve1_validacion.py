@@ -684,7 +684,8 @@ def test_h2_guardia_el_valor_de_archivo_de_todos_los_criterios_sigue_pasando():
     # 149 desde VE-3.12: 'relleno_max_contraste_acpa_m' (decision 6 del dueño).
     # 153 desde VE-3.14; 154 desde VE-4a: 'fila_phi_estabilidad_global'.
     # 155 desde VE-4c: 'sobreelevacion_admisible_remanso_m' (ficha T7B-01).
-    assert len(ca.CRITERIOS) == 155 and barridos > 100, (len(ca.CRITERIOS),
+    # 157 desde VE-4d: los dos criterios del desborde admitido de V8.
+    assert len(ca.CRITERIOS) == 157 and barridos > 100, (len(ca.CRITERIOS),
                                                           barridos)
 
 
