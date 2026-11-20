@@ -9161,10 +9161,9 @@ cambios están aplicados en estas fichas.
   de la Carta 11 detiene con `DatoInvalidoError` todo marco fuera de banda (con chaflán, todo el que
   no tenga 15/30/45° exactos): seguro pero restrictivo. (2) El extremo oblicuo del marco no se
   verifica en M8 (sin numeral atribuido). (3) Carta 12 escala 3 (paralelo con aleros) sin banda; la
-  nota del paso 9.2.2 y la h_eq por orientación, con el ítem 28. (4) Anterior a VE-6: la Carta 10
-  con cabezal normal admite cualquiera de los dos ke sin emparejar el borde.
+  nota del paso 9.2.2 y la h_eq por orientación, con el ítem 28. (4) Cerrado en VE7A-01.
 - **Qué haría falta:** declaración de la embocadura por punto; el extremo oblicuo en M8; los aleros
-  del paralelo; emparejar el borde de la Carta 10.
+  del paralelo.
 - **Dónde vive:** `src/modulos/M9_cabezal.py::_embocadura_paralela`
 
 ## VE6-34 · La progresión del catálogo: G1 dentro del bucle, V10 la detiene y el delta con V4 bajo control de entrada
@@ -9189,3 +9188,23 @@ cambios están aplicados en estas fichas.
 - **Qué haría falta:** la monotonía de V2/V2b/V7 con D; iterar 7.A con 7.B; aplicar la regla del
   escalón más bajo también a la rama «no cabe»; la decisión del dueño sobre la fila NF.
 - **Dónde vive:** `src/modulos/MD.py::_escalon_sin_cobertura`
+
+# Parte LXIV-A — Lo que VE-7 (lote A) dejó escrito: la embocadura, el sismo del cabezal y la Fase 9
+
+VE-7, lote A (2026-11-20, rama `claude/ve7-lote-a`, base `cb15e32`) implementa lo que el triaje VE-7
+del consultor Fable decidió para el cabezal y su embocadura. Cada ficha dice la decisión, la cita y
+el test; lo que la sesión tuvo que decidir sin dictamen va rotulado «pendiente de revisión Fable».
+
+## VE7A-01 · La Carta 10 con cabezal normal empareja el ke por el borde de su fila (cierra VE6-T7A03 (4))
+
+- **Cerrado:** `KE_C2_POR_FILA_SIN_ALETAS` (constantes, [N] por lectura de rótulos): el chaflán de
+  3/4" y la escala 2 de la Carta 8 («90° and 15° wingwall flares») sólo con la escuadra (ke 0.5);
+  los biseles de 45° y 33.7° con la biselada (0.2) o la escuadra. `M9.filas_hds5_del_cajon` la
+  aplica en la rama sin aletas, como `KE_C2_POR_FILA_CARTA_11` en la del paralelo.
+- **Decisión del consultor Fable (triaje VE-7, 2026-11-20):** es LECTURA de los rótulos, no frase
+  literal: la Tabla A.1 separa «chamfers» de «bevels» y la C.2 da 0.2 sólo a «beveled edges on 3
+  sides». Ningún dorado usaba la Carta 8 e2 con 0.2 (el ejemplo del HDS-5 con 0.2 es el bisel de
+  45°): no hubo declaración que corregir.
+- **Abierto:** nada de esta ficha.
+- **Qué haría falta:** nada; una frase literal de la fuente que empareje borde y fila la sustituiría.
+- **Dónde vive:** `src/constantes_normativas.py::KE_C2_POR_FILA_SIN_ALETAS`

@@ -5655,6 +5655,24 @@ KE_C2_POR_FILA_CARTA_11: "dict[str, frozenset]" = {
     "cajon_concreto_bisel_45_esviaje_10_45": frozenset(
         {"cajon_sin_aletas_redondeado_3", "cajon_sin_aletas_escuadra_3"}),
 }
+# --- VE-7 (lote A, A1; triaje VE-7 de Fable, 2026-11-20) --- LO MISMO PARA
+# EL CABEZAL NORMAL SIN ALETAS (las filas de `CAJON_A1_SIN_ALETAS`): el borde
+# de la fila de la Tabla A.1 empareja el ke de la C.2 («Headwall parallel to
+# embankment (no wingwalls)»). Es la MISMA lectura de los rotulos que
+# `KE_C2_POR_FILA_CARTA_11`, no una frase literal: la Carta 10 separa «3/4"
+# chamfers» de «45° bevels» y «33.7° bevels», y la C.2 da 0.2 solo a
+# «Rounded on 3 edges ... or beveled edges on 3 sides». El chaflan y la
+# escala 2 de la Carta 8 («90° and 15° wingwall flares», arista viva), solo
+# la escuadra; los dos biseles, la de bordes biselados y la escuadra.
+KE_C2_POR_FILA_SIN_ALETAS: "dict[str, frozenset]" = {
+    "cajon_concreto_cabezal_90_chaflan": frozenset(
+        {"cajon_sin_aletas_escuadra_3"}),
+    "cajon_concreto_cabezal_90_bisel_45": frozenset(
+        {"cajon_sin_aletas_redondeado_3", "cajon_sin_aletas_escuadra_3"}),
+    "cajon_concreto_cabezal_90_bisel_337": frozenset(
+        {"cajon_sin_aletas_redondeado_3", "cajon_sin_aletas_escuadra_3"}),
+    "cajon_concreto_aletas_90_15": frozenset({"cajon_sin_aletas_escuadra_3"}),
+}
 
 
 # ===========================================================================

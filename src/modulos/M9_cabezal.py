@@ -4070,6 +4070,7 @@ from src.constantes_normativas import (BANDAS_ALETAS_CAJON_A1,  # noqa: E402
                                        BANDAS_ALETAS_CAJON_C2,
                                        BANDAS_ESVIAJE_CABEZAL_CAJON_A1,
                                        KE_C2_POR_FILA_CARTA_11,
+                                       KE_C2_POR_FILA_SIN_ALETAS,
                                        CAJON_A1_SIN_ALETAS,
                                        CAJON_C2_SIN_ALETAS,
                                        NUMERAL_ZAPATA_CONCRETO_SIMPLE)
@@ -4390,7 +4391,17 @@ def filas_hds5_del_cajon(embocadura: EmbocaduraDelPunto
               else CAJON_C2_SIN_ALETAS)
         return a1, c2
     if embocadura.angulo_aletas is None:
-        return CAJON_A1_SIN_ALETAS, CAJON_C2_SIN_ALETAS
+        # --- VE-7 (lote A, A1) --- el cabezal normal sin aletas: el ke se
+        # empareja con el BORDE de la fila declarada
+        # (`KE_C2_POR_FILA_SIN_ALETAS`, la lectura de los rotulos de
+        # `KE_C2_POR_FILA_CARTA_11`): el chaflan y la escala 2 de la Carta
+        # 8, solo la escuadra; los biseles, la biselada y la escuadra.
+        declarada = ca.valor_si_declarado(CRITERIO_EMBOCADURA_CAJON)
+        c2 = (KE_C2_POR_FILA_SIN_ALETAS[declarada]
+              if declarada in CAJON_A1_SIN_ALETAS
+              and declarada in KE_C2_POR_FILA_SIN_ALETAS
+              else CAJON_C2_SIN_ALETAS)
+        return CAJON_A1_SIN_ALETAS, c2
     angulo = embocadura.angulo_aletas
     a1 = frozenset(k for k, bandas in BANDAS_ALETAS_CAJON_A1.items()
                    if any(_en_banda(angulo, b) for b in bandas))
