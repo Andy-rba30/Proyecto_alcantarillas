@@ -274,6 +274,7 @@ from src.modelos import (CIFRAS_FACTOR, CIFRAS_FINA, CIFRAS_MAGNITUD,
                          CamaApoyoRelleno, CargaVivaEnterrada,
                          CondicionAnalisis, DatoFaltanteError,
                          DatoInvalidoError, DemandaMarco, DisenoPortico,
+                         ErrorProyecto,
                          EsfuerzoDeSeccion, GeometriaPortico,
                          SolicitacionDeArmado,
                          EstadoDeVerificacion, FactoresFlotacion,
@@ -3610,6 +3611,8 @@ CODIGO_PASO_PORTICO_CARGAS = "F8.PORTICO_CARGAS"
 CODIGO_PASO_PORTICO_COMBINACIONES = "F8.PORTICO_COMBINACIONES"
 CODIGO_PASO_PORTICO_ANALISIS = "F8.PORTICO_ANALISIS"
 CODIGO_PASO_PORTICO_MINIMOS = "F8.PORTICO_MINIMOS"      # VE-7 lote B, B4
+CODIGO_PASO_PORTICO_CANTO = "F8.PORTICO_CANTO"          # VE-7 lote B, B5
+CRITERIO_ESPESOR_CAJON = "espesor_pared_cajon"
 NUMERAL_F8_PORTICO = ("AASHTO LRFD 12.11 (12.11.2, 12.11.4, 12.11.5) y "
                       "Seccion 5; Tabla 3.4.1-1 del Manual de Puentes")
 
@@ -4514,9 +4517,23 @@ def disenar_portico(*, punto: PuntoCritico, material: Material,
     lee). La reduccion de 3.11.7 se combina con el gamma minimo y 1/eta, que
     la fuente permite no combinar: es el lado conservador del positivo.
     """
-    from src.modulos import M9_cabezal as M9      # perezoso: M9 importa de M2 y M6
     H_rel = _finito_positivo("altura_relleno", altura_relleno, punto.id)
     g = geometria_del_portico(material=material, seccion=seccion)
+    d = _disenar_portico_con(punto=punto, material=material, seccion=seccion,
+                             H_rel=H_rel, g=g)
+    if d.cumple:
+        return d
+    return _con_el_canto_que_cierra(d, punto=punto, material=material,
+                                    seccion=seccion, H_rel=H_rel)
+
+
+def _disenar_portico_con(*, punto: PuntoCritico, material: Material,
+                         seccion: Seccion, H_rel: float,
+                         g: GeometriaPortico) -> DisenoPortico:
+    """El analisis y el armado del portico con la geometria `g` y el relleno
+    `H_rel` (el cuerpo de `disenar_portico`, que VE-7 separa para buscar el
+    canto que cerraria sin repetirlo)."""
+    from src.modulos import M9_cabezal as M9      # perezoso: M9 importa de M2 y M6
     casos, vehiculos, mags, cv, w_ev = _casos_de_carga(
         punto=punto, material=material, seccion=seccion, g=g, H_rel=H_rel)
     por_caso, ll = analizar_portico(g, casos, vehiculos)
@@ -4686,6 +4703,120 @@ def disenar_portico(*, punto: PuntoCritico, material: Material,
         + ((p_minimos,) if p_minimos is not None else ()),
         avisos=tuple(dict.fromkeys(avisos)), diferido=(DIFERIDO_PORTICO,),
         minimos=tuple(minimos))
+
+
+def _con_el_canto_que_cierra(d: DisenoPortico, *, punto: PuntoCritico,
+                             material: Material, seccion: Seccion,
+                             H_rel: float) -> DisenoPortico:
+    """
+    --- VE-7 lote B, B5 (T5-07 (1); decision del consultor Fable, triaje
+    VE-7, 2026-11-20) --- EL PORTICO NO ITERA EL CANTO, pero dice cual
+    cerraria. 'espesor_pared_cajon' es el canto de la geometria del programa
+    (M2, M5 y M7 forman con el la clave fisica, V4, V7 y G1): adoptarlo aqui
+    dejaria esas verificaciones con otro conducto. Si A1 a A6 no cumplen, se
+    busca en la grilla del dimensionamiento del cabezal
+    ('dimensionamiento_zapata_cabezal' [A], su paso: el mismo con que crecen
+    la zapata y su peralte) el MENOR canto uniforme t_k = t_0 + k·paso
+    (aritmetica decimal, `M2._escalon_de_la_serie`) con el que el portico
+    cumple, con la SECCION INTERIOR FIJA y el relleno sobre la clave
+    reducido en Δt = t_k - t_0 (la losa superior crece hacia arriba). El
+    tope es fisico: el relleno reducido tiene que seguir siendo positivo. Lo
+    que la busqueda no puede evaluar (un relleno fuera del dominio de la
+    carga viva) la termina. El resultado va en el `DisenoPortico`
+    (`canto_que_cierra_m`) y en un paso; el bloqueo lo levanta
+    `exigir_canto_del_portico`, que la etapa del servicio llama.
+    """
+    from src.modulos import M9_cabezal as M9
+    from src.modulos.M2_material import _escalon_de_la_serie
+    t0 = d.geometria.t_losa_superior_m
+    paso_m, _fraccion = M9._regla_de_dimensionamiento()
+    cierra, hasta, motivo_fin = None, t0, ""
+    k = 1
+    while True:
+        t = _escalon_de_la_serie(t0, paso_m, k)
+        H_k = H_rel - (t - t0)
+        if not H_k > TOL_UMBRAL_NORMATIVO:
+            motivo_fin = (f"con {t:.2f} m el relleno sobre la clave se "
+                          "agota (la seccion interior es fija)")
+            break
+        g_k = replace(d.geometria, t_losa_superior_m=t, t_losa_inferior_m=t,
+                      t_pared_m=t, t_tabique_m=t)
+        try:
+            d_k = _disenar_portico_con(punto=punto, material=material,
+                                       seccion=seccion, H_rel=H_k, g=g_k)
+        except ErrorProyecto as exc:
+            motivo_fin = (f"con {t:.2f} m el portico no se pudo evaluar -- "
+                          f"{type(exc).__name__}: {exc}")
+            break
+        hasta = t
+        if d_k.cumple:
+            cierra = t
+            break
+        k += 1
+    incumplidas = sorted({v.codigo.split(".")[0] for v in d.verificaciones
+                          if not v.cumple})
+    p_canto = paso(
+        "F8.PORTICO", codigo=CODIGO_PASO_PORTICO_CANTO,
+        que=("Portico del marco: el canto uniforme que cerraria (no se "
+             "adopta)"),
+        formula=("t_k = t_0 + k·paso; H_rel,k = H_rel - (t_k - t_0); el menor "
+                 "t_k con A1 a A6 cumplidas"),
+        formula_cita_id="AASHTO_LRFD_9.12.11.5.1",
+        citas_textuales=("AASHTO_LRFD_9.12.11.5.1",),
+        sustitucion=(
+            Magnitud("t_0", t0, "m", f"'{CRITERIO_ESPESOR_CAJON}' [A], el "
+                     "canto de la geometria del programa", cifras=CIFRAS_MAGNITUD),
+            Magnitud("paso", paso_m, "m", "'dimensionamiento_zapata_cabezal' "
+                     "[A], el paso del cabezal", cifras=CIFRAS_MAGNITUD),
+            Magnitud("H_rel", H_rel, "m", "relleno sobre la clave con t_0",
+                     cifras=CIFRAS_MAGNITUD),
+            Magnitud("t buscado hasta", hasta, "m", motivo_fin or
+                     "el primero que cumple", cifras=CIFRAS_MAGNITUD)),
+        resultado=Magnitud("t_cierra", cierra if cierra is not None else "—",
+                           "m", "menor canto uniforme con el que el portico "
+                           "cumple", cifras=CIFRAS_MAGNITUD),
+        veredicto=Veredicto(
+            tipo=TipoDeVeredicto.SIN_VEREDICTO,
+            explicacion="busqueda, no verificacion: el canto no se adopta"),
+        nota_del_proyecto=(
+            f"Con {t0:.2f} m el portico incumple {', '.join(incumplidas)}. "
+            + (f"Declarar '{CRITERIO_ESPESOR_CAJON}' >= {cierra:.2f} m y "
+               "repetir la corrida: el canto mueve la clave fisica, V4, V7 "
+               "y G1, que se verifican con la geometria del programa."
+               if cierra is not None else
+               f"Ningun canto uniforme de la grilla cierra el portico "
+               f"({motivo_fin}).")))
+    return replace(d, pasos=d.pasos + (p_canto,), canto_que_cierra_m=cierra,
+                   canto_buscado_hasta_m=hasta)
+
+
+def exigir_canto_del_portico(portico: DisenoPortico,
+                             id_punto: Optional[str] = None) -> None:
+    """
+    --- VE-7 lote B, B5 --- El BLOQUEO del portico que no cumple: dice que
+    canto declarar ('espesor_pared_cajon' >= X y repetir) o que ninguno de
+    la grilla cierra. `DatoInvalidoError` sobre el criterio: el valor
+    declarado no cierra el portico y lo que hay que hacer es corregirlo. Con
+    el portico que cumple, no hace nada.
+    """
+    if portico.cumple:
+        return
+    incumplidas = sorted({v.codigo.split(".")[0]
+                          for v in portico.verificaciones if not v.cumple})
+    t0 = portico.geometria.t_losa_superior_m
+    if portico.canto_que_cierra_m is not None:
+        motivo = (f"el portico del marco no cumple {', '.join(incumplidas)} "
+                  f"con {t0:.2f} m: declarar '{CRITERIO_ESPESOR_CAJON}' >= "
+                  f"{portico.canto_que_cierra_m:.2f} m y repetir (el canto "
+                  "mueve la clave, V4, V7 y G1: no se adopta solo)")
+    else:
+        hasta = portico.canto_buscado_hasta_m
+        motivo = (f"el portico del marco no cumple {', '.join(incumplidas)} "
+                  f"con {t0:.2f} m y ningun canto uniforme de la grilla lo "
+                  "cierra" + (f" (buscado hasta {hasta:.2f} m)"
+                              if hasta is not None else ""))
+    raise DatoInvalidoError(campo=CRITERIO_ESPESOR_CAJON, valor=t0,
+                            id_punto=id_punto, motivo=motivo)
 
 
 def _minimo_de_la_cara(M9, sec: str, cara: str, desc: str, t: float):

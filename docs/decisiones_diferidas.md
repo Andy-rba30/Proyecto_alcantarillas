@@ -4897,6 +4897,9 @@ se corrigieron donde las auditorías las desmintieron (cada una lo dice).
   llevan los fundamentos F9.ARM_* (rótulo «Fase 9»). Decisiones pendientes de Fable (sin
   subagentes en la sesión): reutilizar para el marco `phi_relleno_trasdos` y los criterios
   de material, recubrimiento y exposición del cabezal; la altura de la Tabla 3.11.6.4-1.
+- **VE-7 (lote B):** el canto que cerraría se busca y se dice en el bloqueo, sin adoptarlo (VE7B-11);
+  las caras sin tracción llevan el mínimo de 5.10.6 (VE7B-09); el agua exterior entra (VE7B-10); el
+  acero del pórtico se metra (VE7B-12).
 - **Qué haría falta:** separar los cantos en la geometría del programa y dimensionar la
   losa por su armado, como el peralte del cabezal (VE-3.9).
 - **Dónde vive:** `src/modulos/M8_estructural.py::disenar_portico`
@@ -9376,3 +9379,22 @@ cambios están aplicados en estas fichas.
   por debajo según γ_sat y F_e; no se eligió. (2) Sin `NF_profundidad_m` el agua exterior no se evalúa.
 - **Qué haría falta:** decidir la carga vertical sumergida de la losa superior.
 - **Dónde vive:** `src/modulos/M8_estructural.py::_agua_exterior_del_portico`
+
+## VE7B-11 · El pórtico que no cumple dice qué canto declarar, y no se lo auto-adopta (T5-07 (1))
+
+- **Cerrado (VE-7 lote B, B5):** si A1–A6 del pórtico no cumplen, `M8.disenar_portico` busca
+  (`_con_el_canto_que_cierra`) en la grilla de `dimensionamiento_zapata_cabezal` (su `paso_m`, el del
+  cabezal; aritmética decimal de `M2._escalon_de_la_serie`) el MENOR canto uniforme t_k = t_0 + k·paso
+  con el que cumple, con la sección interior fija y el relleno sobre la clave reducido en Δt (la losa
+  superior crece hacia arriba); el tope es físico (el relleno reducido > 0) y lo que no se puede
+  evaluar termina la búsqueda. El `DisenoPortico` sigue siendo el de t_0 y lleva
+  `canto_que_cierra_m`, `canto_buscado_hasta_m` y el paso `F8.PORTICO_CANTO`. La etapa del servicio
+  llama a `exigir_canto_del_portico`: `DatoInvalidoError` sobre `espesor_pared_cajon` con «declarar
+  `espesor_pared_cajon` >= X m y repetir» (cambio mínimo en `servicio._fase_8`). No se adopta porque
+  ese canto forma la clave física, V4, V7 y G1. Oráculo: el canto impreso, declarado con el relleno
+  reducido, cierra el pórtico; el anterior de la grilla no.
+- **Decisión del consultor Fable (triaje VE-7, 2026-11-20):** buscar y decir, no iterar.
+- **Abierto:** el canto es uniforme (losas, paredes y tabiques); los cantos separados siguen sin
+  existir en la geometría del programa (T5-07). Con el canto declarado la corrida se repite entera.
+- **Qué haría falta:** separar los cantos en M2/M5/M7.
+- **Dónde vive:** `src/modulos/M8_estructural.py::exigir_canto_del_portico`

@@ -7550,6 +7550,13 @@ class DisenoPortico:
     # tracciona, con el minimo de retraccion y temperatura de AASHTO 5.10.6
     # que 12.11.5.3.1 manda (`FilaDeArmado`, la fila de reparto del cabezal).
     minimos: Tuple[Any, ...] = ()
+    # --- VE-7 lote B, B5 (T5-07 (1)) --- si el portico no cumple: el menor
+    # canto UNIFORME de la grilla de 'dimensionamiento_zapata_cabezal' con
+    # el que cerraria (la seccion interior fija, el relleno reducido), o
+    # None si ninguno hasta el tope fisico; y hasta donde se busco. No se
+    # adopta: 'espesor_pared_cajon' mueve la clave, V4, V7 y G1.
+    canto_que_cierra_m: Optional[float] = None
+    canto_buscado_hasta_m: Optional[float] = None
 
     @property
     def cumple(self) -> bool:

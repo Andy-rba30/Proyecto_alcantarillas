@@ -171,3 +171,53 @@ def test_b3_el_empuje_bajo_el_nf_es_el_sumergido(a01):
         rel=REL_CONVERSION)
     assert {"AASHTO_LRFD_9.3.11.3", "MP.2.4.4.1.3#SUMERGIDO"} <= set(
         d.pasos[0].citas_textuales)
+
+
+# ===========================================================================
+# B5: el canto que cerraria, sin adoptarlo
+# ===========================================================================
+
+def test_b5_el_canto_impreso_declarado_cierra_el_portico(a01):
+    """
+    Con 0.20 m el portico de prueba no cumple (A1, A2). El bloqueo dice el
+    canto; declarado, con la MISMA seccion interior y el relleno sobre la
+    clave reducido en lo que crecio la losa, el portico cumple y el bloqueo
+    calla.
+    """
+    import re
+    from src.modelos import DatoInvalidoError
+    d = _disenar(a01, H_rel=1.0)
+    assert not d.cumple
+    with pytest.raises(DatoInvalidoError) as exc:
+        M8.exigir_canto_del_portico(d, a01.id)
+    assert exc.value.campo == "espesor_pared_cajon"
+    texto = str(exc.value)
+    assert "y repetir" in texto
+    X = float(re.search(r">= (\d+\.\d+) m", texto).group(1))
+    assert X == pytest.approx(d.canto_que_cierra_m, rel=REL_TRANSPORTE)
+    t0 = d.geometria.t_losa_superior_m
+    assert X > t0
+    declarado = dict(DECLARACIONES_CAJON, espesor_pared_cajon=X)
+    d2 = _disenar(a01, H_rel=1.0 - (X - t0), declaraciones=declarado)
+    assert d2.cumple
+    assert d2.canto_que_cierra_m is None
+    M8.exigir_canto_del_portico(d2, a01.id)            # no levanta
+
+
+def test_b5_el_canto_anterior_de_la_grilla_no_cierra(a01):
+    """El MENOR: un paso por debajo del impreso el portico no cumple."""
+    d = _disenar(a01, H_rel=1.0)
+    X, t0 = d.canto_que_cierra_m, d.geometria.t_losa_superior_m
+    from tests.apoyo.criterios import declarados
+    from src.modulos import M9_cabezal as M9_
+    with declarados(DECLARACIONES_CAJON):
+        paso_m = M9_._regla_de_dimensionamiento()[0]
+    anterior = X - paso_m
+    if anterior > t0 + REL_CONVERSION:
+        declarado = dict(DECLARACIONES_CAJON, espesor_pared_cajon=anterior)
+        assert not _disenar(a01, H_rel=1.0 - (anterior - t0),
+                            declaraciones=declarado).cumple
+    paso = next(p for p in d.pasos if p.codigo == M8.CODIGO_PASO_PORTICO_CANTO)
+    assert "no se adopta" in paso.que
+    # el portico que se devuelve es el de 0.20 m: no se auto-adopta
+    assert d.geometria.t_pared_m == pytest.approx(t0, rel=REL_TRANSPORTE)

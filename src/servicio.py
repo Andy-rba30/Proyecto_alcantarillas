@@ -151,6 +151,7 @@ from src.modulos.M8_estructural import (CODIGOS_FASE_8,
                                         DIFERIDOS_QUE_EL_PORTICO_CIERRA,
                                         cama_apoyo_relleno_lateral,
                                         disenar_portico,
+                                        exigir_canto_del_portico,
                                         seleccionar_clase_calibre,
                                         verificar_conducto)
 from src.modulos.M9_cabezal import (aviso_ambiente_corrosivo,
@@ -4164,6 +4165,10 @@ def _fase_8(informe: InformePunto) -> None:
                     diferido=tuple(d for d in e.diferido
                                    if d not in DIFERIDOS_QUE_EL_PORTICO_CIERRA)
                     + portico.diferido)
+                # --- VE-7 lote B, B5 --- el portico que no cumple dice que
+                # canto declarar (ficha VE7B-11).
+                _etapa(informe.bloqueos, FASE_ESTRUCTURAL, ETAPA_PORTICO_MARCO,
+                       lambda: exigir_canto_del_portico(portico, punto.id))
     informe.cama_apoyo = _etapa(informe.bloqueos, FASE_ESTRUCTURAL,
                                 "cama de apoyo y relleno lateral (item 4)",
                                 lambda: cama_apoyo_relleno_lateral(material))
