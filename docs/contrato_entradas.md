@@ -331,7 +331,9 @@ calcula el empuje y si casan k_h, k_v y el plano (h ≤ `altura_plano_m`). Y una
 tercera, por punto **o en `globales`**, con un valor para los dos cabezales o
 `{"entrada": …, "salida": …}`: `talud_delante_del_cabezal_del_punto` (la geometría
 `{'H_s_m', 'beta_grados', 'b_m'}` del [S] `talud_delante_del_cabezal`, validada con su mismo
-validador), que **gana** sobre la de corredor (ficha VE7A-06).
+validador, o el texto `"horizontal"`), que **gana** sobre el corredor: un talud del punto activa
+la zapata en talud aunque `terreno_delante_del_cabezal` diga horizontal, y `"horizontal"` la
+desactiva aunque diga talud (ficha VE7A-06).
 
 ### 3.4 Lo que el armado del cabezal necesita (T-7c)
 

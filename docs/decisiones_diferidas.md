@@ -9207,20 +9207,18 @@ el test; lo que la sesión tuvo que decidir sin dictamen va rotulado «pendiente
 
 ## VE7A-02 · La embocadura del marco se declara por punto (cierra VE6-T7A03 (1))
 
-- **Cerrado:** clave `embocadura_cajon_del_punto` = {`carta`, `ke`} de `--datos-externos`, sólo
-  por punto (en `globales` se rechaza), en `servicio.CLAVES_DE_CABEZAL`, validada al cargar por
-  `M9.validar_embocadura_cajon_del_punto` (las dos filas, de cajón, y nada más). En un punto de la
-  Familia C `servicio.correr_punto` pisa `embocadura_cajon` y `ke_entrada_cajon` con
-  `ca.establecer_valor_dinamico` (la carta primero) y en `finally` repone lo que había: la
-  declaración en caliente previa o el archivo. La coherencia sigue en
-  `verificar_coherencia_embocadura_cajon`, y su nota (paso 9.0.0) dice «declarada por punto».
-  En otra familia no se aplica y se avisa.
-- **Decisión del consultor Fable (triaje VE-7, 2026-11-20):** la clave por punto y la puerta en
-  caliente con `try/finally`. **Pendiente de revisión Fable:** la memoria lista el criterio
-  usado con su valor de proyecto (la fotografía del contexto se toma al salir de `correr`); el
-  valor del punto lo imprime el paso 9.0.0.
-- **Abierto:** el pre-vuelo no la anuncia (no es una falta: sin ella rige la de proyecto).
-- **Qué haría falta:** si el dueño lo pide, una columna de la memoria con la embocadura por punto.
+- **Cerrado:** clave `embocadura_cajon_del_punto` = {`carta`, `ke`}, sólo por punto, validada
+  por `M9.validar_embocadura_cajon_del_punto`. En la Familia C `servicio.correr_punto` pisa
+  `embocadura_cajon` y `ke_entrada_cajon` en caliente (la carta primero) y en `finally` repone lo
+  que había; la coherencia sigue en `verificar_coherencia_embocadura_cajon` y el paso 9.0.0 dice
+  «declarada por punto». En otra familia no se aplica y se avisa.
+- **Revisado por Fable (dictamen del consultor, 2026-11-20):** aprobado con cambios, aplicados: la memoria no puede quedar falsa para el punto.
+  `ContextoCorrida.criterios_por_punto` ({criterio: {id_punto: valor}}, de
+  `servicio.criterios_por_punto`) lleva lo que cada punto pisó; la fila de los dos criterios en
+  `M11.bloque_criterios` y en el JSON (`por_punto`) dice el valor de cada punto al lado del de
+  proyecto. Sin la clave, la memoria no cambia (test byte a byte).
+- **Abierto:** nada de esta ficha; el pre-vuelo no la anuncia (no es una falta).
+- **Qué haría falta:** nada.
 - **Dónde vive:** `src/servicio.py::correr_punto`
 
 ## VE7A-03 · C8 a media altura decide con cualquier criterio de tracción (cierra VE6M9-01 (b))
@@ -9238,50 +9236,49 @@ el test; lo que la sesión tuvo que decidir sin dictamen va rotulado «pendiente
 
 ## VE7A-04 · C8 con k_v ≠ 0: el peso estabilizante va con (1 − k_v) (cierra VE6M9-01 (a))
 
-- **Cerrado:** e = [M_H − W·(1 − k_v)·(t/2 − x_W)] / [W·(1 − k_v)], signo desfavorable (la
-  aceleración vertical hacia arriba aligera el cuerpo); la inercia horizontal sigue con la masa
-  entera, k_h·W. El paso lleva `k_v` en la sustitución y la fórmula. Con k_v = 0 nada cambia.
-- **Decisión del consultor Fable (triaje VE-7, 2026-11-20):** (1 − k_v) dicho en el paso, y un
-  aviso si el ensamble E1–E3 no lo aplica a los pesos. **Verificado:** `cargas_del_cabezal` usa
-  k_v sólo en el empuje (P_AE con (1 − k_v), la cuña y ψ); DC y EV del sismo son los del estático
-  (test). Con k_v ≠ 0 el cabezal avisa que E1–E3 quedan del lado favorable en esa medida. El
-  ensamble no se tocó.
-- **Abierto:** el ensamble E1–E3 sin (1 − k_v) en los pesos.
-- **Qué haría falta:** decidir si el ensamble aplica k_v a los pesos (cambia E1–E3 y sus dorados
-  con k_v ≠ 0; hoy k_v = 0 es el de archivo, prescrito).
+- **Cerrado:** C8 lleva el peso estabilizante con (1 − k_v), signo desfavorable; la inercia
+  horizontal sigue con k_h·W entero. Con k_v = 0 nada cambia.
+- **Revisado por Fable (dictamen del consultor, 2026-11-20):** aprobado con cambios, aplicados (abierto (i)): el ensamble E1–E3 también.
+  `cargas_del_cabezal` añade bajo sismo, sólo con |k_v| > 0, `C_EQ_KV` = −k_v·(W_w + W_s) en el
+  centro de gravedad de los pesos; `combinaciones_de_estabilidad` le da 1.0 en las filas de
+  excentricidad, deslizamiento y volteo (los dos casos de 11.6.5.1) y 0 en las de portante. Es
+  genérico (todo muro que use el ensamble). El armado lleva los pesos enteros y lo avisa. Se
+  retiró el aviso de C8. Citas `CITAS_K_V_EN_LOS_PESOS` (A11.3.1, MP 2.8.1.1.14.2.1, 11.6.5.1).
+- **Abierto:** nada de esta ficha (k_v = 0 es el de archivo, prescrito).
+- **Qué haría falta:** nada.
 - **Dónde vive:** `src/modulos/M9_cabezal.py::_verificar_cuerpo_bajo_sismo`
 
 ## VE7A-05 · El empuje sísmico declarado por punto y cabezal donde el programa no lo calcula (VE5M9-02, VE3-15)
 
-- **Cerrado:** clave `empuje_sismico_declarado` (sólo por punto; por cabezal `P_AE_kn_m`,
-  `altura_aplicacion_m`, `incluye_hidrodinamica` y la traza `documento`, `fecha`, `metodo`),
-  validada por `M9.validar_empuje_sismico_declarado`, patrón de VE4A-01. `cargas_del_cabezal` la
-  consume SÓLO donde levantaba `MetodoNoEvaluableError`: la cuña sin máximo (ψ ≥ φ: el GLE de
-  A11.3.3) y el relleno muy abierto con agua, que exige `incluye_hidrodinamica` = true (si no,
-  `DatoInvalidoError`). Sin declararla, el bloqueo nombra la clave. Paso 9.2.4 con la traza y las
-  citas `AASHTO_LRFD_9.3.11.5.8.1#CUNA` (la frase del GLE) y `C11.6.5.3#AGUA_ABIERTO`.
-- **Decisión del consultor Fable (triaje VE-7, 2026-11-20):** la puerta y dónde se consume.
-  **Pendientes de revisión Fable (lado seguro):** el P_AE es horizontal y sin vertical; no baja
-  del estático (dP ≥ 0); la altura del incremento entre h/3 y h; un k_h distinto del de la
-  estabilidad (el 1.0·k_h0 del armado, si difiere) no lo usa; K_AE equivalente para el reparto.
-  Se añadió `EntornoDelCabezal.empuje_sismico` en `src/modelos.py` (fuera del lote).
-- **Abierto:** la cuña sobre la cara de la pantalla del armado no lo usa (sigue detenida).
-- **Qué haría falta:** la revisión de Fable de las cinco decisiones; el GLE en el programa.
+- **Cerrado:** clave `empuje_sismico_declarado`, sólo por punto; por cabezal un objeto o hasta dos
+  de k_h distinto: `P_AE_kn_m` (componente horizontal del empuje TOTAL del suelo sobre el plano
+  vertical del talón de altura h, 11.6.5.2.2, sin la hidrostática), `altura_aplicacion_m`,
+  `incluye_hidrodinamica`, `k_h`, `k_v`, `altura_plano_m` y la traza. Se consume sólo donde
+  `cargas_del_cabezal` levantaba `MetodoNoEvaluableError` en la cuña SÍSMICA (ψ ≥ φ) o con relleno
+  muy abierto (exige la hidrodinámica); nunca sustituye un empuje calculado (lo avisa).
+- **Revisado por Fable (dictamen del consultor, 2026-11-20):** aprobado con cambios, aplicados: casa por k_h, k_v y plano (h ≤ `altura_plano_m`); si no, el
+  bloqueo dice qué no casa. P_AE menor que el activo se rechaza; con el reposo rigiendo honra
+  `empuje_sismico_muro_que_no_cede`. z del incremento sin techo y con los pisos h/3 y h/2: el
+  momento no baja del declarado. K_AE equivalente sólo se imprime. Citas 11.6.5.3#VALIDEZ,
+  3.11.5.8.1#CUNA (A11.3.3) y #DISTRIBUCION. El armado (abierto (ii)) usa el plano virtual del
+  talón con el declarado de su k_h. Campo `EntornoDelCabezal.empuje_sismico` en `src/modelos.py`.
+- **Abierto:** el GLE en el programa.
+- **Qué haría falta:** nada más del dictamen.
 - **Dónde vive:** `src/modulos/M9_cabezal.py::validar_empuje_sismico_declarado`
 
 ## VE7A-06 · La geometría del talud de delante del cabezal, por punto (VE5M9-03)
 
 - **Cerrado:** clave `talud_delante_del_cabezal_del_punto` de `--datos-externos`, por punto o en
   `globales`, con un valor para los dos cabezales o `{"entrada": …, "salida": …}`, en
-  `servicio.CLAVES_DE_CABEZAL` y validada con el validador del [S]
-  (`M9.validar_talud_delante_del_punto` → `validar_talud_delante`). Viaja en
-  `EntornoDelCabezal.talud_delante` (campo nuevo en `src/modelos.py`) y `M9._q_nominal` la usa
-  en lugar del [S] de corredor `talud_delante_del_cabezal`; el paso de E3 dice «geometría del
-  punto». Dos puntos con taludes distintos dan RC_BC distintos (test).
-- **Decisión del consultor Fable (triaje VE-7, 2026-11-20):** gana al corredor, como VE6M9-04.
-- **Abierto:** `terreno_delante_del_cabezal` (si hay talud o no) sigue de corredor: declarar la
-  geometría en un punto no la activa si el corredor dice terreno horizontal.
-- **Qué haría falta:** si el dueño lo pide, `terreno_delante_del_cabezal` por punto.
+  `servicio.CLAVES_DE_CABEZAL`; cada valor es la geometría del talud (validada con el validador
+  del [S]) o el texto «horizontal». Viaja en `EntornoDelCabezal.talud_delante`.
+- **Revisado por Fable (dictamen del consultor, 2026-11-20):** aprobado con cambios, aplicados (abierto (iii)): el terreno de delante también es del punto.
+  `M9._terreno_delante`: un talud del punto → zapata en talud (RC_BC, 10.6.3.1.2c) aunque el
+  corredor diga horizontal; «horizontal» → 10.6.3.1.2a aunque el corredor diga talud; sin
+  declaración, `terreno_delante_del_cabezal` y su [S]. El paso de E3 dice «terreno delante: del
+  punto». Dos puntos con taludes distintos dan RC_BC distintos.
+- **Abierto:** nada de esta ficha.
+- **Qué haría falta:** nada.
 - **Dónde vive:** `src/modulos/M9_cabezal.py::validar_talud_delante_del_punto`
 
 ## VE7A-07 · La h_eq con el cabezal paralelo a la vía (VE6-T7A03 (3))
@@ -9316,14 +9313,13 @@ el test; lo que la sesión tuvo que decidir sin dictamen va rotulado «pendiente
 ## VE7A-09 · Lo que dejaría de cumplirse con la longitud entre cabezales bloquea el expediente (VE6-22)
 
 - **Cerrado:** en `servicio._fase_9_refinamiento`, si `_lo_que_no_se_cumpliria` no está vacío
-  (V4 con Δ = HW(L_cab) − HW(L) mayor que su margen, o V1 re-evaluada que deja de cumplir),
-  además del aviso hay un `Bloqueo` de la Fase 9 (`FASE_CABEZAL`, etapa
-  `ETAPA_REFINAMIENTO_LONGITUD`, sólo a expediente: la Fase 9 no corre a perfil) con el remedio
-  «declarar `longitud_m` = L_cab». A-01 no cambia (sin nada que no se cumpla, sin bloqueo).
-- **Decisión del consultor Fable (triaje VE-7, 2026-11-20):** el bloqueo con ese remedio.
-  **Pendiente de revisión Fable:** el tipo es `DatoFaltanteError` con `campo` = `longitud_m`
-  (el revisor tiene que AÑADIR la longitud final, la regla de CLAUDE.md), no un incumplimiento:
-  V1 y V4 siguen juzgadas con la carga del diseño.
+  (V4 con Δ = HW(L_cab) − HW(L) mayor que su margen, o V1 re-evaluada que deja de cumplir), además
+  del aviso hay un `Bloqueo` de la Fase 9 (`FASE_CABEZAL`, `ETAPA_REFINAMIENTO_LONGITUD`, sólo a
+  expediente), `DatoFaltanteError` sobre `longitud_m`, con el remedio «declarar `longitud_m` =
+  L_cab». A-01 no cambia.
+- **Revisado por Fable (dictamen del consultor, 2026-11-20):** aprobado con cambios, aplicados: el aviso termina «el expediente queda bloqueado hasta declarar
+  `longitud_m` (VE7A-09)» y el docstring de `_lo_que_no_se_cumpliria` ya no dice que nada
+  bloquea. El tipo y el campo quedan aprobados.
 - **Abierto:** no se itera MD con L_cab (VE6-22).
 - **Qué haría falta:** nada; declarar `longitud_m` lo destraba y verifica el punto entero.
 - **Dónde vive:** `src/servicio.py::_fase_9_refinamiento`
