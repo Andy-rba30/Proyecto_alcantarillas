@@ -144,7 +144,8 @@ from src.modelos import (CIFRAS_FINA, CIFRAS_MAGNITUD, LEYENDA_CAUDAL_CALCULADO,
                          DatoFaltanteError, DatoInvalidoError,
                          EleccionDeProyecto, EntradaHidrologica, ErrorProyecto,
                          LimiteNumericoError, Magnitud, MetodoNoEvaluableError,
-                         ObstaculoAnticipado, PasoDeMemoria, RegistroDeLluvia, SerieDeEstacion,
+                         ObstaculoAnticipado, PasoDeMemoria, RegistroDeLluvia,
+                         SerieDeEstacion,
                          TipoDeVeredicto, Umbral, Veredicto, eleccion, paso)
 from src.normativa import registro as _registro_normativo
 from src.tolerancias import (TOL_ABS_MISMO_MAXIMO_ANUAL_MM,
