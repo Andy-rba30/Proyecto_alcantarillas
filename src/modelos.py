@@ -2588,12 +2588,9 @@ ALCANCE_DECLARADO: Tuple[AlcanceDeclarado, ...] = (
                "como llega; los parametros son los de prueba hasta el EMS"),
         ficha="T7B-09",
         simbolo="M9_cabezal.dimensionar_zapata_por_estabilidad"),
-    AlcanceDeclarado(
-        clave="flotacion_marco_sin_peso_propio",
-        texto=("V7 del marco no pesa el concreto del marco (DC = 0, del lado "
-               "seguro): se revisara cuando llegue la seccion real del canal "
-               "de la ANA o de la Junta de usuarios"),
-        ficha="T3-08", simbolo="M5_verificaciones.v7_flotacion"),
+    # --- VE-5 (m8, item 26 del censo) --- 'flotacion_marco_sin_peso_propio'
+    # SALIO: V7 pesa el concreto del marco (`M5.peso_propio_conducto_kn_m`,
+    # con 'peso_especifico_concreto_kn_m3'); ficha T3-08 cerrada.
     # --- T8-08 (cerrada) --- Las Figuras 3.3 y 3.4 de HEC-14 estan
     # digitalizadas desde el cierre de la ficha; lo que queda declarado es
     # lo que las figuras no cubren. La entrada de T8-09 (la regla del maximo

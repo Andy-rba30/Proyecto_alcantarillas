@@ -37,6 +37,12 @@ REL = 1e-9
 # con descarga libre.
 L_PRUEBA = 20.0
 TW_PRUEBA = 0.0
+# El caudal del escalon de 0.90 m que no pide otra plancha: desde VE-5 (m45)
+# MD descarta antes de la Fase 5 un conducto que no transporta Q en flujo libre
+# (Sec. 4.1), y con el Q de A-01 (1.167 m3/s, S = 0.006) el TMC de 0.90 m ya no
+# llega a la Fase 8. Con este Q lo transporta y el escalon se juzga por su
+# plancha, que es lo que el test mide.
+Q_ESCALON_090 = 0.30
 ADOPTADA = "68x13/2.01"
 REQUERIDA = "68x13/2.77"
 
@@ -135,7 +141,7 @@ def test_un_escalon_que_no_pide_otra_plancha_no_se_repite(a01, tmc):
     alcanza; se acepta a la primera, con la adoptada."""
     traza = []
     resultado, _ = MD.disenar_material(
-        a01, tmc, Q=a01.Q_m3s, S=a01.S_cauce, L=L_PRUEBA, TW=TW_PRUEBA,
+        a01, tmc, Q=Q_ESCALON_090, S=a01.S_cauce, L=L_PRUEBA, TW=TW_PRUEBA,
         verificar=_verificador_desde(0.90), registrar=traza.append)
     assert resultado is not None
     assert resultado.seccion.altura == pytest.approx(0.90, rel=REL)

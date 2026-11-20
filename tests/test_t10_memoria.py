@@ -441,7 +441,8 @@ def test_cada_alcance_declarado_nombra_una_ficha_que_existe():
     # `M4_control.tirante_de_borde`.
     assert {a.clave for a in ALCANCE_DECLARADO} == {
         "armado_seccion_marco", "cabezal_paralelo_a_la_via",
-        "iteracion_ancho_zapata_cabezal", "flotacion_marco_sin_peso_propio",
+        "iteracion_ancho_zapata_cabezal",
+        # VE-5 (m8): 'flotacion_marco_sin_peso_propio' salio (V7 pesa el marco).
         "tirante_de_borde_hec14", "escalon_regla_salida_hw_1_2_d"}
     for a in ALCANCE_DECLARADO:
         assert f"## {a.ficha} · " in texto, a.ficha
