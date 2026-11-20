@@ -11294,7 +11294,7 @@ CRITERIOS: Dict[str, Criterio] = {
                  "geotecnicos y estratigrafia bien definidos (0.75) o muy "
                  "variables o con informacion limitada (0.65)",
         justificacion="Decide el minimo del marco LRFD con que se contrasta "
-                      "el factor de seguridad DECLARADO de E4 y E5 "
+                      "el factor de seguridad declarado de E4 y E5 "
                       "(`estabilidad_global_declarada`, VE-4a): FS >= 1/phi, "
                       "por la lectura del comentario C11.6.3.7 (cita "
                       "AASHTO_LRFD_9.C11.6.3.7#FS). La fuente da las dos "
@@ -11305,8 +11305,8 @@ CRITERIOS: Dict[str, Criterio] = {
                       "real, que el programa no tiene. La hoja de ruta no la "
                       "fija (§9.3 da solo los FS de E.050, del marco ASD). "
                       "Por eso no tiene valor de archivo. Sin declarar, la "
-                      "fila estatica CUMPLE si el FS alcanza 1/0.65, NO "
-                      "CUMPLE si no alcanza ni 1/0.75 y sale INDICADOR «no "
+                      "fila estatica cumple si el FS alcanza 1/0.65, no "
+                      "cumple si no alcanza ni 1/0.75 y sale como indicador «no "
                       "decidida» entre los dos. Bajo sismo no hay eleccion: "
                       "11.5.8 fija 0.9",
         fuente="AASHTO LRFD 9a ed., 11.6.3.7 y C11.6.3.7, pag. impresa 11-25 "
