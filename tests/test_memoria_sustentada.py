@@ -537,6 +537,11 @@ def test_todo_fundamento_declarado_lo_usa_algun_paso(informe):
         # tests/test_t7b_cabezal_estabilidad.py, de punta a punta por
         # `servicio.correr` y pieza a pieza.
         "F5.V5", "F5.V8",
+        # --- VE-4c --- el paso de V5 por el perfil de remanso, por la misma
+        # razon que F5.V5 y ademas su sobreelevacion admisible y la seccion
+        # del cauce, sin valor ni dato en la corrida. Lo mide
+        # tests/test_ve4c_v5_remanso.py, pieza a pieza y de punta a punta.
+        "F5.V5_PERFIL",
         "F9.EMPUJES", "F9.SOBRECARGA", "F9.AGUA", "F9.SISMO",
         "F9.COMBINACIONES", "F9.E1_LRFD", "F9.E2_LRFD", "F9.E3_LRFD",
         "F9.E_ASD", "F9.GLOBAL",

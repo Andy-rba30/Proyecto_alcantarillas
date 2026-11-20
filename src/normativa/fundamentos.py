@@ -3537,6 +3537,7 @@ V5_PERFIL_REMANSO = _fundamento(
         "faja."),
     verbo=Verbo.DEFINE,
     citas=("HDS5_3ED.2.2.5#EMBALSE", "HDS5_3ED.2.2.5b#AUMENTO",
+           "HDS5_3ED.2.2.3a#SECCION_TIPICA", "HDS5_3ED.2.2.3e#NORMAL",
            "DG2018.304.07.01", "DG2018.304.07.02"),
     que_pasa_si_no_se_hace=(
         "El remanso de la obra podria levantar el agua sobre el predio de un "
