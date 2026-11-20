@@ -64,6 +64,8 @@ import pytest
 
 import cli
 from src import criterios_adoptados as ca
+from src import datos_sitio as ds
+from src import servicio
 from src import indice_formulas as ind
 from src import sesion as ses
 from src.modulos import M11_reporte as M11
@@ -397,16 +399,6 @@ def r(tmp_path_factory):
     return SimpleNamespace(salida=salida, datos=datos)
 
 
-# --- VE-7, lote C (C6) --- Las corridas de referencia que el recorrido de
-# la ventana (`tests/apoyo/gui_ui4_recorrido_real.py`) teclea. La cuarta,
-# `materiales_y_ramas`, se escribio para el indice de formulas y el recorrido
-# todavia no la teclea (declara criterios de tabla --el perfil del HDPE, el
-# tope del catalogo-- que la pestaña 2 recibe de otra forma): queda fuera,
-# dicho, y la ficha VE7C-06 lo deja abierto.
-RECORRIDAS_POR_LA_VENTANA = [c.nombre for c in ind.CORRIDAS_DE_REFERENCIA
-                             if c.nombre != "materiales_y_ramas"]
-
-
 def _json(salida, nombre):
     return json.loads((salida / nombre).read_text(encoding="utf-8"))
 
@@ -416,7 +408,7 @@ def json_de_la_cli(tmp_path_factory):
     """El JSON que `cli.py` escribe con las MISMAS entradas que la ventana tecleo."""
     salida = tmp_path_factory.mktemp("ui4_cli")
     hechos = {}
-    for referencia in (recorrido.corrida(n) for n in RECORRIDAS_POR_LA_VENTANA):
+    for referencia in ind.CORRIDAS_DE_REFERENCIA:
         destino = salida / f"{referencia.nombre}.json"
         hecho = subprocess.run(
             [sys.executable, str(RAIZ / "cli.py"), *recorrido.argumentos_de_la_cli(referencia),
@@ -465,7 +457,7 @@ def test_c1_el_cuadro_resumen_de_la_ventana_es_el_de_la_linea_base(r):
     assert ventana == (LINEA_BASE / recorrido.RESUMEN_DE_LA_LINEA_BASE).read_bytes()
 
 
-@pytest.mark.parametrize("nombre", RECORRIDAS_POR_LA_VENTANA)
+@pytest.mark.parametrize("nombre", [c.nombre for c in ind.CORRIDAS_DE_REFERENCIA])
 def test_c2_la_corrida_de_la_ventana_es_la_de_la_cli(r, json_de_la_cli, nombre):
     medido = r.datos[nombre]
     assert all(medido["examinar"].values()), medido["examinar"]
@@ -478,7 +470,10 @@ def test_c2_la_corrida_de_la_ventana_es_la_de_la_cli(r, json_de_la_cli, nombre):
     assert all(e["encendido"] for e in medido["exportadores"].values())
 
 
-@pytest.mark.parametrize("nombre", ["expediente_cabezal", "hidrologia_calculada"])
+# --- VE-7 (dictamen Fable, (iv)) --- toda corrida de referencia con
+# declaraciones, la cuarta incluida.
+@pytest.mark.parametrize("nombre", [c.nombre for c in ind.CORRIDAS_DE_REFERENCIA
+                                    if c.declaraciones])
 def test_c2_las_declaraciones_entraron_por_la_pestana_2(r, nombre):
     """
     Cada valor tecleado en «Valor nuevo» y aplicado con el boton; la nota,
@@ -525,7 +520,7 @@ def test_c3_el_detalle_dice_el_caudal_calculado_la_proteccion_la_fase_8_y_el_cab
     assert any(l.startswith("Fase 9 estabilidad del cabezal") for l in cabezal)
 
 
-@pytest.mark.parametrize("nombre", RECORRIDAS_POR_LA_VENTANA)
+@pytest.mark.parametrize("nombre", [c.nombre for c in ind.CORRIDAS_DE_REFERENCIA])
 def test_c4_el_panel_del_cabezal_del_proyecto_es_el_de_la_cli(r, nombre):
     medido = r.datos[nombre]
     panel = medido["panel_del_cabezal"]
@@ -614,6 +609,52 @@ def test_c6_guardar_nuevo_cargar_y_ejecutar_da_el_mismo_json(r):
         _json(r.salida, "ciclo_antes.json"))
 
 
+# --- VE-7, lote C (dictamen Fable, (v)) --- LAS CLASES DE DIFERENCIA que la
+# sesion v3 (version anterior, no se regenera) tiene con la corrida de hoy,
+# cada una con su causa. `d` es [donde, campo, a, b]: a es la corrida de HOY
+# y b la guardada en la sesion.
+_BLOQUEO_FASE_0_BIS = (f"bloqueo DatoFaltanteError en "
+                       f"«{servicio.ETAPA_LICUEFACCION}»")
+
+
+def _diferencia_admitida(d, v3) -> bool:
+    donde, campo, a, b = d
+    # 1) la huella del archivo de criterios (UI-5)
+    if [donde, campo] == ["expediente", "criterios_sha1"]:
+        return True
+    # 2) criterios: una clave NUEVA del archivo, y los recuentos y el
+    #    concepto que el archivo cambio (VE-2, VE-3.15, VE-5, VE-6)
+    if donde == "criterios":
+        if campo in ca.CRITERIOS and a == "presente" and b == "<ausente>":
+            return True
+        return campo in ("sin_valor_declarados[len]", "sin_consumidor[len]",
+                         "n_manning_cajon.concepto")
+    # 3) datos de sitio: un [S] nuevo (`region_natural`, VE-5) y sus recuentos
+    if donde == "datos_sitio":
+        if campo in ds.DATOS_SITIO and a == "presente" and b == "<ausente>":
+            return True
+        return campo in ("sin_valor_declarados[len]",
+                         "trazabilidad_incompleta[len]")
+    # 4) el cabezal del proyecto: solo el texto de sus notas
+    if donde == "cabezal":
+        return campo.startswith("cabezal.notas[")
+    # 6) raiz `metrados` (VE-5 met), que la corrida v3 no tenia
+    if donde == "metrados":
+        return campo == "metrados" and b == "None"
+    # 5) puntos: el bloqueo de la Fase 0-bis (VE-5 catlic), presente hoy
+    if campo == _BLOQUEO_FASE_0_BIS:
+        return a == "presente" and b == "<ausente>"
+    # 6) puntos, tras el comparador cerrado (VE-7 (ii)): la clave que el
+    #    punto v3 no tenia y el aviso de la cimentacion provisional
+    if campo == "compatibilidad_rasante":
+        return b == "None"
+    if campo == "avisos[len]":
+        return (v3["avisos_nuevos"].get(donde) == [servicio.AVISO_CIMENTACION_PROVISIONAL]
+                and v3["avisos_retirados"].get(donde) == []
+                and int(a) == int(b) + 1)
+    return False
+
+
 def test_c7_la_sesion_v3_se_abre_reproduce_y_se_reescribe(r):
     v3 = r.datos["sesion_v3"]
     assert v3["cuencas"] == "" and v3["estacion"] == ""
@@ -635,31 +676,24 @@ def test_c7_la_sesion_v3_se_abre_reproduce_y_se_reescribe(r):
     if fixture["corridas"][-1]["criterios_sha1"] == huella:
         assert v3["reproduce"], v3["comparacion"]
     else:
-        # CAMBIADO EN VE-2, declarando la causa, con las dos razones que
-        # cada parte escribio por su lado: (a), (g) y (c2) suman criterios
-        # que la corrida de hoy lista como USADOS mientras la del fixture
-        # --de una version anterior, que no se regenera-- no los conoce; y
-        # (c2) suma un criterio SIN valor ('margen_estacional_nf_v7_m'), y
-        # con el el recuento de los vacios del volcado. Las dos solo las
-        # puede producir el archivo de criterios: lo admitido es la huella,
-        # ese recuento y un criterio usado HOY que la corrida guardada no
-        # tenia. Ningun punto, ningun numero, nada sin comparar.
-        guardada = fixture["corridas"][-1]["informe_json"]["criterios"]["usados"]
-        conocidos = {c["clave"] for c in guardada}
-        diferencias = v3["diferencias"]
-        assert ["expediente", "criterios_sha1"] in diferencias, v3["comparacion"]
-        for seccion, clave in diferencias:
-            # CAMBIADO EN EL CIERRE DE VE-3.15, declarando la causa: T11-10
-            # reescribio el CONCEPTO de 'n_manning_cajon' (admite la fila o el
-            # par del encofrado de HDS-5 B.3); el comparador lo ve como una
-            # diferencia del texto del criterio, no de ningun punto ni numero.
-            if [seccion, clave] in (["expediente", "criterios_sha1"],
-                                    ["criterios", "sin_valor_declarados[len]"],
-                                    ["criterios", "n_manning_cajon.concepto"]):
-                continue
-            assert seccion == "criterios" and clave not in conocidos \
-                and clave in ca.CRITERIOS, v3["comparacion"]
+        # CAMBIADO EN VE-7 (dictamen Fable del 2026-11-20, abierto (v)): la
+        # expectativa admite las diferencias por CLASE, cada una con su causa
+        # (`_diferencia_admitida`), y no solo por donde estan. Ver la ficha
+        # VE7C-07. El fixture v3 NO se regenera (su LEEME).
+        assert ["expediente", "criterios_sha1"] in [d[:2] for d in v3["diferencias"]], \
+            v3["comparacion"]
+        no_admitidas = [d for d in v3["diferencias"]
+                        if not _diferencia_admitida(d, v3)]
+        assert not no_admitidas, no_admitidas
+        # La clase 5 es EXIGIDA, no solo admitida: el bloqueo de la Fase
+        # 0-bis en los cuatro puntos.
+        assert {d[0] for d in v3["diferencias"]
+                if d[1] == _BLOQUEO_FASE_0_BIS} == {"A-01", "A-02", "B-01", "C-01"}
         assert v3["no_comparables"] == 0 and v3["puntos_solo_en_uno"] == 0
+        for d in v3["diferencias"]:
+            assert not d[1].split(".")[0].split("[")[0] in (
+                "diseno", "verificaciones", "iteraciones", "dimensionado"), d
+            assert not d[1].startswith("verificacion "), d
     reescrita = v3["reescrita"]
     assert reescrita["formato_version"] == ses.FORMATO_SESION
     assert reescrita["id_igual"] and reescrita["errores"] == []
