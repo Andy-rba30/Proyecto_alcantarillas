@@ -886,3 +886,51 @@ def test_el_FS_declarado_cubre_los_aleros_solo_si_el_analisis_los_incluyo(
     sin = M9.ensamble_estabilidad(
         replace(tanteo, estabilidad_global=declarada), EST)
     assert not any("cubre los aleros" in a for a in sin.avisos)
+
+
+@pytest.mark.lento
+def test_el_servicio_itera_desde_lo_del_cabezal_y_respeta_lo_propio():
+    """
+    Decisiones 3 y 5 del dictamen, de punta a punta (salida de A-01 del
+    juego de la validacion integral, cuya zapata de los aleros crece con
+    los datos de prueba): con el ancho DEL CABEZAL declarado los aleros
+    crecen desde el y se avisa; con el ancho PROPIO declarado no se itera y
+    las filas que no cumplen salen NO CUMPLE.
+    """
+    from tests.apoyo import validacion_integral as V
+
+    def salida_de_A01(declarado):
+        informe = V.correr_juego(V.aplicar(V.juego_completo(), [(
+            "externo", "A-01", "cabezal_declarado",
+            {"salida": declarado})]))
+        p = next(x for x in informe.puntos if x.punto.id == "A-01")
+        salida_de_A01.informe = informe
+        return p.cabezal, p.cabezal.salida
+
+    cab, g = salida_de_A01({"ancho_zapata_m": 2.95})
+    assert g.B == pytest.approx(2.95, abs=TOL)
+    assert g.aleros.ancho_zapata > 2.95 + TOL
+    assert any("es mayor que la declarada del cabezal" in a
+               and "ancho_zapata_aleros_m" in a for a in cab.avisos)
+
+    cab, g = salida_de_A01({"ancho_zapata_aleros_m": 2.95})
+    assert g.aleros.ancho_zapata == pytest.approx(2.95, abs=TOL)
+    assert not cab.intentos_de_zapata_aleros
+    filas = [v for v in cab.verificaciones
+             if ".s.alero" in (v.codigo or "")]
+    assert filas and not all(v.cumple for v in filas)
+    # el JSON lleva el valor y el origen «declarada»; el metrado lo mide
+    from cli import informe_json
+    from src.modelos import ORIGEN_DIMENSION_DECLARADA
+    from src.modulos import M12_metrados as M12
+    datos = informe_json(salida_de_A01.informe)
+    punto = next(x for x in datos["puntos"] if x["id"] == "A-01")
+    geo = next(c for c in punto["cabezal"]["cabezales"]
+               if c["extremo"] == "salida")
+    assert geo["aleros"]["ancho_zapata_m"] == pytest.approx(2.95, abs=TOL)
+    dim = next(d for d in geo["dimensiones"]
+               if d["nombre"] == M9.DIMENSION_ZAPATA_ALEROS)
+    assert dim["origen"] == ORIGEN_DIMENSION_DECLARADA
+    partes = dict(M12.volumen_cabezal(g, 0.0))
+    assert partes["zapata del alero corto"] == pytest.approx(
+        2.95 * g.aleros.espesor_zapata * g.aleros.longitud_corto, rel=TOL)

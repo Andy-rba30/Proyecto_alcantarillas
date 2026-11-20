@@ -2592,14 +2592,14 @@ ALCANCE_DECLARADO: Tuple[AlcanceDeclarado, ...] = (
         simbolo="M9_cabezal.dimensionar_zapata_por_estabilidad"),
     AlcanceDeclarado(
         clave="aleros_como_muro",
-        # --- VE-7 (ficha VE7-01, cierre de T7C-04) --- el alero ya se
-        # verifica como muro y su zapata se dimensiona y se arma; lo que
-        # sigue fuera es lo que el texto dice.
-        texto=("Los aleros del cabezal de voladizo se verifican como muro en "
-               "voladizo (E1 a E3) solo en su franja del ARRANQUE, la mas "
-               "alta, con la zapata toda talon; las franjas intermedias no se "
-               "verifican, y los aleros del cabezal de gravedad no se "
-               "verifican como muro"),
+        # --- VE-7 (ficha VE7-01, cierre de T7C-04; dictamen Fable) --- el
+        # alero se verifica como muro en sus franjas, de voladizo o de
+        # gravedad; lo que sigue fuera es lo que el texto dice.
+        texto=("Los aleros se verifican como muro (E1 a E3, y el cuerpo "
+               "ciclopeo en el de gravedad) en cinco franjas de su longitud "
+               "(0, L/4, L/2, 3L/4 y L), no entre ellas; su zapata es una "
+               "zapata CORRIDA de un solo ancho y un solo peralte por cabezal, "
+               "y el cuerpo del alero de gravedad no se itera"),
         ficha="VE7-01", simbolo="M9_cabezal.estabilidad_del_alero"),
     # --- VE-5 (m8, item 26 del censo) --- 'flotacion_marco_sin_peso_propio'
     # SALIO: V7 pesa el concreto del marco (`M5.peso_propio_conducto_kn_m`,
