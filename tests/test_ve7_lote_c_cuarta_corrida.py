@@ -62,15 +62,25 @@ SIN_EJERCITAR = {
         "(y/D)max*D; medido en A-03 de la quinta: TW = 1.0 m adopta Ø 1.35 m",
         "tests/test_ve5_m6_figura_10_3.py::"
         "test_la_fase_6_con_el_tw_alto_forma_la_envolvente"),
-    "F9.DIMENSIONADO_PERALTE": (
-        "peralte de la zapata por armado: por `correr_referencia` (y por "
-        "`validacion_integral.correr_juego` fuera de pytest) la zapata de "
-        "A-01 del juego de T-11 conserva el peralte de la regla "
-        "(`intentos_de_peralte` vacio, medido); el test de abajo lo ve "
-        "crecer bajo la suite: divergencia abierta, ficha VE7C-06",
-        "tests/test_ve3_peralte_cabezal.py::"
-        "test_el_peralte_crece_solo_donde_hace_falta"),
+    "FH.C_SUBAREAS": (
+        "C ponderado por subareas (VE-7 lote B, B10, ficha VE7B-06): solo "
+        "sale con la columna opcional `subareas` del CSV de cuencas, y "
+        "ningun `cuencas.csv` de las corridas de referencia la trae "
+        "(medido); entro al censo al integrar el lote B",
+        "tests/test_ve7_lote_b_subareas.py::"
+        "test_cada_C_es_la_celda_de_la_tabla_08"),
 }
+# `F9.DIMENSIONADO_PERALTE` SALIO DEL CENSO al integrar el lote A (ficha
+# VE7C-06): lo emite la zapata de los ALEROS (`9.3.e.s.alero`, A-04 de la
+# quinta y la cuarta). La de la zapata del cabezal (`9.3.p.*`) sigue sin
+# puerta, y no por pytest ni por conftest: con 'momento_talon_cabezal' =
+# «exacto» (archivo, decision 9 del dueño, VE-3.15; AASHTO 11.6.1.2 y
+# 10.6.5) el talon de la salida de A-01 del juego de T-11 pide M_u = 76.8
+# kN·m/m en vez de los 239.3 del peso entero, A1/A2 del talon cumplen con
+# el peralte de la regla y el bucle no entra; `test_ve3_peralte_cabezal` lo
+# ve crecer porque corre con los valores PREVIOS a VE-3.15
+# (`valores_previos_ve3_15`, «peso_entero»). Lo fija
+# `test_ic_el_peralte_sin_puerta_es_por_el_metodo_del_talon`.
 # Trinquete: SOLO DECRECE. El dictamen fijo 5 como tope; medido, 2.
 MAX_SIN_EJERCITAR = 2
 
@@ -204,3 +214,87 @@ def test_C6_lo_que_no_cumple_es_exactamente_lo_censado(emitidos):
     linea = ind.verificaciones_que_no_cumplen(informe)
     assert linea.startswith(ind.ROTULO_NO_CUMPLEN)
     assert "NO ES UN DISEÑO VÁLIDO" in ind.CORRIDAS_DE_REFERENCIA[3].rotulo
+
+
+# --- VE-7, depuracion del peralte (ficha VE7C-06) --- La «divergencia» del
+# censo NO era pytest contra fuera de pytest, ni conftest (cuyas
+# declaraciones `correr_referencia` y `validacion_integral.correr` vacian al
+# entrar: medido, la misma corrida con y sin `import conftest` da lo mismo).
+# Era el criterio 'momento_talon_cabezal': `tests/test_ve3_peralte_cabezal.py`
+# corre con los valores de archivo PREVIOS a VE-3.15 (fixture de modulo
+# `valores_previos_ve3_15`), y de los cinco solo «peso_entero» hace crecer el
+# peralte (medido clave a clave). Con el valor de archivo «exacto» el talon
+# descuenta la reaccion del terreno y A1/A2 cumplen con el de la regla: el
+# bucle de `M9.dimensionar_peralte_por_armado` no entra. Diferencia legitima
+# de datos, no defecto. Este test la fija por las dos puertas: la de
+# referencia (sin crecer) y el mismo juego con la otra opcion declarada por
+# la guardia de `--declarar` (crece y emite el fundamento).
+CLAVE_TALON = "momento_talon_cabezal"
+PASO_DEL_PERALTE_M = 0.10             # 'dimensionamiento_zapata_cabezal'
+ABS_MM = 5e-7
+
+
+def _a01(informe):
+    return next(p for p in informe.puntos if p.punto.id == "A-01")
+
+
+def _veredictos(cab, codigos):
+    return {v.codigo: v.cumple for a in cab.armado for v in a.verificaciones
+            if v.codigo in codigos}
+
+
+def test_ic_el_peralte_sin_puerta_es_por_el_metodo_del_talon(emitidos):
+    from src import criterios_adoptados as ca
+    from src.modelos import ORIGEN_DIMENSION_ARMADO, ORIGEN_DIMENSION_REGLA
+    from src.modulos import M9_cabezal as M9
+    from tests.apoyo import validacion_integral as V
+
+    # 1. La referencia: «exacto» de archivo, y ninguna corrida lo declara.
+    assert ca.CRITERIOS[CLAVE_TALON].valor == "exacto"
+    for c in ind.CORRIDAS_DE_REFERENCIA:
+        assert CLAVE_TALON not in c.declaraciones, c.nombre
+    # Ningun cabezal de ninguna corrida itera el peralte.
+    for nombre, (_e, _el, informe) in emitidos.items():
+        for p in informe.puntos:
+            if p.cabezal is not None:
+                assert p.cabezal.intentos_de_peralte == (), (nombre,
+                                                             p.punto.id)
+    # El A-01 del juego de T-11 con cabezal es el de la quinta (en
+    # `hidrologia_calculada` su caudal calculado no deja dimensionarlo):
+    # la salida conserva el peralte de la regla porque A1/A2 del talon
+    # CUMPLEN con el.
+    assert _a01(emitidos["hidrologia_calculada"][2]).cabezal is None
+    cab = _a01(emitidos[QUINTA][2]).cabezal
+    assert next(d for d in cab.salida.dimensiones
+                if d.nombre == "espesor de la zapata").origen \
+        == ORIGEN_DIMENSION_REGLA
+    talon_s = ("A1.talon.s", "A2.talon.s")
+    assert _veredictos(cab, talon_s) == {c: True for c in talon_s}
+    # La puerta que el fundamento SI tiene en las corridas de referencia es
+    # la zapata de los ALEROS (VE-7 lote A, codigo `9.3.e.<x>.alero`): la de
+    # la zapata del cabezal (`9.3.p.<x>`) no la abre ninguna.
+    del_peralte = {p.codigo for _e, _el, informe in emitidos.values()
+                   for p in ind.pasos_de_la_corrida(informe)
+                   if p.fundamento_id == "F9.DIMENSIONADO_PERALTE"}
+    assert del_peralte
+    assert all(c.endswith(M9.SUFIJO_ALERO) for c in del_peralte), del_peralte
+
+    # 2. El MISMO juego con «peso_entero» declarado (la otra opcion de la
+    # ventana, la que `valores_previos_ve3_15` pone en el archivo): A1/A2 del
+    # talon no cumplen con la regla, el peralte crece un paso y el fundamento
+    # se emite. Si esto deja de crecer, la explicacion del censo cae.
+    informe = V.correr_juego(V.aplicar(
+        V.juego_completo(), [("declarar", CLAVE_TALON, "peso_entero")]))
+    cab = _a01(informe).cabezal
+    intentos = [i for i in cab.intentos_de_peralte if i.extremo == "salida"]
+    assert intentos[0].espesor_zapata == pytest.approx(
+        cab.entrada.espesor_zapata, abs=ABS_MM)   # el de la regla
+    assert set(talon_s) <= set(intentos[0].incumplidas)
+    assert intentos[-1].cumple
+    assert cab.salida.espesor_zapata == pytest.approx(
+        intentos[0].espesor_zapata + PASO_DEL_PERALTE_M, abs=ABS_MM)
+    assert next(d for d in cab.salida.dimensiones
+                if d.nombre == "espesor de la zapata").origen \
+        == ORIGEN_DIMENSION_ARMADO
+    assert "9.3.p.s" in {p.codigo for p in cab.pasos
+                         if p.fundamento_id == "F9.DIMENSIONADO_PERALTE"}
