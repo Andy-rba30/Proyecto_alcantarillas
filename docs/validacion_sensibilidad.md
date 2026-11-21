@@ -54,7 +54,7 @@
 | sin consumidor | `umbral_area_quebrada_importante_ha` | [A] | 50.0–200.0 | 100.0, 50.0, 200.0 | juego | LEÍDO, SIN EFECTO MEDIBLE | — |
 | hidrología | `distribucion_precipitacion_maxima` | [A] | mejor_ajuste_ks / normal / lognormal_2p / gumbel / lognormal_3p / gamma_2p / gamma_3p / log_pearson_3 / log_gumbel | 'mejor_ajuste_ks', 'normal', 'lognormal_2p', 'gumbel', 'lognormal_3p', 'gamma_2p', 'gamma_3p', 'log_pearson_3', 'log_gumbel' | juego | NO LO LEE LA CORRIDA | hidrología: sólo la lee el caudal calculado, y en el juego el caudal es el declarado |
 | hidrología | `nivel_significancia_ks` | [A] | 0.01–0.1 | 0.05, 0.01, 0.1 | juego | NO LO LEE LA CORRIDA | hidrología: sólo lo lee el caudal calculado |
-| hidrología | `intervalos_de_clase_chi_cuadrado` | [A] | sturges / raiz_de_n | 'sturges', 'raiz_de_n' | juego | NO LO LEE LA CORRIDA | SIN RAZÓN ESCRITA |
+| hidrología | `intervalos_de_clase_chi_cuadrado` | [A] | sturges / raiz_de_n | 'sturges', 'raiz_de_n' | juego | NO LO LEE LA CORRIDA | hidrología: sólo lo lee la prueba chi-cuadrado del caudal calculado, y en el juego el caudal es el declarado |
 | hidrología | `relacion_intensidad_duracion` | [A] | dick_peschke / tabla_04_coeficientes_de_duracion / idf_regional_ec17 | 'dick_peschke', 'tabla_04_coeficientes_de_duracion', 'idf_regional_ec17' | juego | NO LO LEE LA CORRIDA | hidrología: sólo la lee el caudal calculado |
 | hidrología | `duracion_minima_lluvia_min` | [C] | 5.0–15.0 | 5.0, 15.0 | juego | NO LO LEE LA CORRIDA | hidrología: sólo la lee el caudal calculado |
 | hidrología | `tc_fuera_de_la_poblacion_del_metodo` | [A] | no_evaluable / indicador_con_aviso | 'no_evaluable', 'indicador_con_aviso' | juego | NO LO LEE LA CORRIDA | hidrología: sólo la lee el caudal calculado |
@@ -82,7 +82,7 @@
 | conducto | `nivel_agua_diseno_v7` | [A] | en_la_clave / nf_del_punto | 'en_la_clave', 'nf_del_punto' | juego | MUEVE EL DISEÑO | diseño: A-01 con 'nf_del_punto': Concreto reforzado, Ø 0.90 m → no dimensiona; A-02 con 'nf_del_punto': Concreto reforzado, Ø 0.90 m → no dimensiona; B-01 con 'nf_del_punto': Concreto reforzado, Ø 0.90 m → no dimensiona; C-01 con 'nf_del_punto': Concreto reforzado, marco 1.20 × 0.90 m → no dimensiona · veredictos que cambian: A-01 con 'nf_del_punto': 297; A-02 con 'nf_del_punto': 297; B-01 con 'nf_del_punto': 297; C-01 con 'nf_del_punto': 389 |
 | conducto | `fabricacion_tmc` | [A] | helicoidal / anular_remachada_simple / anular_remachada_doble / anular_empernada | 'anular_remachada_simple', 'helicoidal', 'anular_remachada_doble', 'anular_empernada' | juego | NO LO LEE LA CORRIDA | ningún punto adopta TMC: el concreto es el primer candidato |
 | conducto | `relleno_estructural_hdpe` | [A] | Sn-100 / Sn-95 / Si-95 / Cl-95 | 'Si-95', 'Sn-100', 'Sn-95', 'Cl-95' | juego | NO LO LEE LA CORRIDA | ningún punto adopta HDPE: el concreto es el primer candidato |
-| conducto | `carga_viva_tubo_concreto_somero` | [A] | largo_del_neumatico / e_span_a_un_pie | 'largo_del_neumatico', 'e_span_a_un_pie' | juego | NO LO LEE LA CORRIDA | SIN RAZÓN ESCRITA |
+| conducto | `carga_viva_tubo_concreto_somero` | [A] | largo_del_neumatico / e_span_a_un_pie | 'largo_del_neumatico', 'e_span_a_un_pie' | juego | NO LO LEE LA CORRIDA | sólo lo lee un tubo de concreto con cobertura menor a 2.0 ft (0.6096 m); los tubos del juego tienen relleno mayor |
 | conducto | `talud_terraplen` | [A] | 1.5–2.0 | 2.0, 1.5 | juego | MUEVE VEREDICTOS | veredictos que cambian: A-01 con 1.5: 1; A-02 con 1.5: 2; B-01 con 1.5: 3; C-01 con 1.5: 2 |
 | protección | `espesor_proteccion_salida` | [A] | 1.5–2.0 | 1.75, 1.5, 2.0 | juego | LEÍDO, SIN EFECTO MEDIBLE | — |
 | protección | `longitud_proteccion_salida` | [A] | 3.0–8.0 | 5.0, 3.0, 8.0 | juego | LEÍDO, SIN EFECTO MEDIBLE | — |
@@ -107,7 +107,7 @@
 | cabezal | `momento_talon_cabezal` | [A] | peso_entero / exacto | 'exacto', 'peso_entero' | juego | MUEVE VEREDICTOS | veredictos que cambian: A-01 con 'peso_entero': 3; A-02 con 'peso_entero': 1 |
 | cabezal | `carga_pantalla_cabezal` | [A] | plano_virtual_del_talon / cuna_sobre_la_pantalla | 'cuna_sobre_la_pantalla', 'plano_virtual_del_talon' | juego | LEÍDO, SIN EFECTO MEDIBLE | — |
 | cabezal | `distribucion_incremento_sismico` | [A] | segun_regimen / fraccion_de_h / distribucion_estatica | 'segun_regimen', 'fraccion_de_h', 'distribucion_estatica' | juego | MUEVE VEREDICTOS | veredictos que cambian: B-01 con 'fraccion_de_h': 2 |
-| cabezal | `empuje_sismico_muro_que_no_cede` | [A] | reposo_mas_incremento / mayor_de_reposo_y_total | 'reposo_mas_incremento', 'mayor_de_reposo_y_total' | juego | NO LO LEE LA CORRIDA | SIN RAZÓN ESCRITA |
+| cabezal | `empuje_sismico_muro_que_no_cede` | [A] | reposo_mas_incremento / mayor_de_reposo_y_total | 'reposo_mas_incremento', 'mayor_de_reposo_y_total' | juego | NO LO LEE LA CORRIDA | sólo lo lee la estabilidad del cabezal con `regimen_cabezal` = 'no_cedente'; en el juego los cabezales son cedentes (lo mide el barrido de `regimen_cabezal`) |
 | cabezal | `agua_del_relleno_bajo_sismo` | [C] | se_mueve_con_el_suelo / relleno_muy_abierto | 'se_mueve_con_el_suelo', 'relleno_muy_abierto' | juego | NO LO LEE LA CORRIDA | el trasdós del juego es drenado (valor de archivo desde VE-3.16) y su freático queda bajo las zapatas: no hay agua en el plano de empuje bajo sismo, que es lo único que lee la elección (VE-3.14, C11.6.5.3) |
 | sin consumidor | `clase_concreto_losa_entrega` | [A] | C / D / E / F / G | 'E', 'C', 'D', 'F', 'G' | juego | LEÍDO, SIN EFECTO MEDIBLE | — |
 
@@ -130,7 +130,7 @@ Con la zapata que propone la regla de T-7a, SIN dimensionar (base `juego_cabezal
 | `factores_inclinacion_carga_portante` | 'aplicar' | pasa en A-01, C-01 | no pasa en ninguno | pasa en C-01 | pasa en A-01, C-01 |
 | `factores_inclinacion_carga_portante` | 'omitir' | pasa en A-01, A-02, B-01, C-01 | pasa en A-01, A-02, B-01, C-01 | pasa en C-01 | pasa en A-01, C-01 |
 
-Ninguno de los dos hace pasar E3 estática a la ENTRADA: ahí el deslizamiento lo resuelve la zapata más ancha —la que el dimensionamiento de VE-3.5 adopta, o la declarada de la variante `zapata_declarada_3m` de `docs/validacion_integral.md` §5—, no la lectura de un [A].
+En los tubos circulares (A-01, A-02 y B-01) ninguno de los dos hace pasar E3 estática a la ENTRADA: ahí el deslizamiento lo resuelve la zapata más ancha —la que el dimensionamiento de VE-3.5 adopta, o la declarada de la variante `zapata_declarada_3m` de `docs/validacion_integral.md` §5—, no la lectura de un [A]. En C-01 (marco con pared de 0.30 m desde VE-7, ficha VE7B-11, que eleva 0.10 m la coronación y ensancha la zapata de la regla a 1.715 m), E3 estática a la entrada sí pasa con la fila de φ de muros (40.94 ≤ 41.46 kN/m) y vuelve a fallar al pasar a la fila de zapatas (33.17 kN/m).
 
 ### 3.2 `v_max_concreto_eleccion`: lo que el dueño decidió y de qué depende el resultado
 

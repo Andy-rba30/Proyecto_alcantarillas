@@ -769,18 +769,22 @@ def test_la_hidrologia_calculada_entra_al_indice_de_formulas():
                   if p.caudal is not None and p.caudal.calculado}
     assert calculados == {"A-01", "A-02", "B-01"}
     texto = ind.INDICE_FORMULAS.read_text(encoding="utf-8")
-    cuadro_4 = texto[texto.index("## 4. Fundamentos que la corrida"):]
-    # CAMBIADO EN VE-2 (decision (f) del dueño, VE1-02; ficha VE2-F), y se
-    # declara la causa: desde VE-2 la Fase 1-bis tiene tres fundamentos mas,
-    # los del metodo racional modificado (FH.RM_*), que solo emite una cuenca
-    # de 10 a 770 km2. Las tres cuencas de esta corrida tienen menos de
-    # 10 km2 (8.5, 2.1 y 0.18), son las del juego de la validacion integral
-    # y no se tocan; los tres pasos los mide `tests/test_ve2_hidrologia.py`.
-    # Cualquier OTRO fundamento de la Fase 1-bis sigue sin poder faltar.
-    sin_alcanzar_por_area = ("`FH.RM_INTENSIDAD`", "`FH.RM_C`", "`FH.RM_CAUDAL`")
-    for f in sin_alcanzar_por_area:
-        assert f in cuadro_4, f
-        cuadro_4 = cuadro_4.replace(f, "")
+    i4 = texto.index("## 4. Fundamentos que la corrida")
+    cuerpo = texto[:i4]
+    cuadro_4 = texto[i4:]
+    # CAMBIADO EN EL CIERRE DE VE-7 (ficha VE7C-06), declarandolo: desde VE-7
+    # la cuarta corrida de referencia (`materiales_y_ramas`, con cuenca de
+    # 10 a 770 km2) SI ejercita los tres fundamentos del metodo racional
+    # modificado (`FH.RM_*`), que salen del cuadro 4 y entran en §2. En §4.2
+    # solo queda `FH.C_SUBAREAS` (VE-7 lote B, ficha VE7B-06: columna opcional
+    # `subareas`, que ninguna corrida de referencia trae; medido en
+    # `tests/test_ve7_lote_b_subareas.py`). Cualquier OTRO fundamento de la
+    # Fase 1-bis sigue sin poder faltar.
+    for f in ("`FH.RM_INTENSIDAD`", "`FH.RM_C`", "`FH.RM_CAUDAL`"):
+        assert f in cuerpo, f
+        assert f not in cuadro_4, f
+    assert "`FH.C_SUBAREAS`" in cuadro_4
+    cuadro_4 = cuadro_4.replace("`FH.C_SUBAREAS`", "")
     # Y VE-2 (d), declarandolo: el fundamento de la ELECCION del factor de
     # intervalo fijo viaja dentro del paso del ajuste (1b.2), no como paso
     # propio, y el cuadro solo cuenta pasos (como F5.V7_FILA). Esta corrida

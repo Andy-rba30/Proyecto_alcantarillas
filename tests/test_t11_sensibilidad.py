@@ -152,46 +152,50 @@ def test_los_juicios_del_anexo(medidas):
             "margen_zapata_bajo_socavacion_m",
             "phi_relleno_trasdos",
             "referencia_profundidad_socavacion", "revestimiento_cuneta",
-            "terreno_delante_del_cabezal"},
+            "terreno_delante_del_cabezal",
+            # --- CIERRE DE VE-7 --- MOVIDOS DE «LEÍDO, SIN EFECTO MEDIBLE» y
+            # nuevo de VE-7 (`factores_forma_profundidad_portante`), medido en
+            # `docs/validacion_sensibilidad.md`: (a) los once de cabezal /
+            # terraplen / longitud mueven ahora veredictos de estabilidad o
+            # armado de los ALEROS verificados como muro (T7C-04); (b)
+            # `espesor_pared_cajon` (0.30 m de juego -> 0.25 / 0.20 m) mueve
+            # los veredictos del portico del marco de C-01 (A1, A2, A3, A4 y A6
+            # de las losas superior e inferior con 0.25 m, y ademas E3-ASD del
+            # alero con 0.20 m; ficha VE7B-11);
+            # (c) `factores_forma_profundidad_portante` mueve E1-ASD de cabezal
+            # y alero. Ningun diametro, seccion, material ni HW se mueve.
+            "distribucion_incremento_sismico",
+            "espesor_pared_cajon",
+            "eta_ductilidad_cabezal",
+            "eta_importancia_operativa_conducto",
+            "eta_redundancia_cabezal",
+            "factores_forma_profundidad_portante",
+            "fc_cabezal_mpa",
+            "fraccion_delta_sobre_phi_trasdos",
+            "gamma_EQ",
+            "metodo_longitud_conducto",
+            "momento_talon_cabezal",
+            "peso_especifico_relleno_kn_m3",
+            "talud_terraplen"},
         "MUEVE EL HW": {"n_manning_cajon", "ke_entrada"},
         "LEÍDO, SIN EFECTO MEDIBLE": {
-            # --- CIERRE DE VE-3.15 --- MOVIDOS DE «MUEVE VEREDICTOS», medido
-            # (docs/validacion_sensibilidad.md regenerado): con los valores
-            # de archivo de las decisiones 9 a 14 (talon exacto, cuña sobre
-            # la pantalla, phi de muros, margen cero) el cabezal del juego
-            # tiene margen y estas diez perturbaciones dentro de su ventana
-            # ya no cambian ningun veredicto. La opcion 13 tampoco: desde
-            # VE-3.15 el brazo se deriva del regimen (`segun_regimen`).
-            "distribucion_incremento_sismico",
-            "eta_importancia_operativa_conducto", "gamma_EQ",
-            "fraccion_delta_sobre_phi_trasdos", "eta_ductilidad_cabezal",
-            "eta_redundancia_cabezal", "fc_cabezal_mpa",
-            "peso_especifico_relleno_kn_m3",
-            "punto_aplicacion_incremento_sismico", "talud_terraplen",
-            # VE-3.14, opciones 9 y 10: mueven el peralte y la pantalla
-            # del cabezal, no un diametro ni un veredicto del juego.
-            "momento_talon_cabezal", "carga_pantalla_cabezal",
+            # --- CIERRE DE VE-3.15 / VE-7 --- de las diez de VE-3.15 y las
+            # dos de VE-3.14, siguen aqui las dos que no mueven tampoco ningun
+            # veredicto de los aleros (`punto_aplicacion_incremento_sismico` y
+            # `carga_pantalla_cabezal`); las demas subieron a MUEVE VEREDICTOS
+            # en VE-7.
+            "punto_aplicacion_incremento_sismico",
+            "carga_pantalla_cabezal",
             "HW_D_max", "v_max_tmc", "v_max_hdpe", "fraccion_llena_mayor_parte",
-            # --- VE-3.11 (H4) --- V7 suma el peso propio del marco: una pared
-            # de 0.30 m ya no hace flotar el marco de C-01 (antes lo dejaba
-            # sin diseño), y engrosarla MEJORA la flotacion. Antes estaba en
-            # «MUEVE EL DISEÑO».
-            "espesor_pared_cajon",
             "instalacion_estandar_concreto", "carga_viva_bajo_relleno_alto",
             "duracion_caudal_pico_socavacion_min", "acceso_mantenimiento_v2b",
             "acero_refuerzo_cabezal", "borde_libre_canal_m",
             "condicion_pavimento",
-            # --- VE-3.9 --- MOVIDO DE «MUEVE VEREDICTOS»: con VE-3.5 la Clase
-            # 1 de 5.6.7 cambiaba la fisuracion (A6) de la zapata de A-01;
-            # desde VE-3.9 el peralte de la zapata CRECE hasta que su armado
-            # cumple, A6 incluida, de modo que la clase mueve el peralte y no
-            # un veredicto (el anexo clasifica por veredictos y por la seccion
-            # del conducto, no por las dimensiones del cabezal).
+            # --- VE-3.9 --- MOVIDO DE «MUEVE VEREDICTOS»: desde VE-3.9 el
+            # peralte de la zapata CRECE hasta que su armado cumple, A6
+            # incluida, de modo que la clase mueve el peralte y no un
+            # veredicto.
             "clase_exposicion_fisuracion_cabezal",
-            # --- VE-3.9 --- MOVIDO DE «MUEVE VEREDICTOS», por la misma
-            # razon: la longitud del conducto cambiaba un veredicto del armado
-            # de la zapata, y desde VE-3.9 el peralte crece hasta cumplirlo.
-            "metodo_longitud_conducto",
             # --- VE-3.5 --- con la zapata dimensionada la lectura de los
             # coeficientes de la hoya ya no cambia ningun veredicto del
             # cabezal de salida (con la de la regla cambiaba alguno).
@@ -225,19 +229,32 @@ def test_los_juicios_del_anexo(medidas):
             # Lo LEE la Fase 8 de cada tubo de concreto, y por construccion
             # no mueve nada: el contraste ACPA NO GOBIERNA, solo agrega un
             # paso F8.ACPA y un aviso cuando el relleno es poco.
-            "relleno_max_contraste_acpa_m"},
+            "relleno_max_contraste_acpa_m",
+            # --- VE-4 / VE-5 / VE-7 --- `demanda_sismica_licuefaccion` pasa de
+            # NO LO LEE a LEIDO desde que el juego declara `licuefaccion_ems`
+            # (VE-7 fix-suite); `clase_concreto_losa_entrega` (metrados VE-5) y
+            # `relacion_co_poza_enrocado_hec14` (VE-4g) se leen sin mover
+            # diseño, veredictos ni HW en el juego.
+            "demanda_sismica_licuefaccion",
+            "clase_concreto_losa_entrega",
+            "relacion_co_poza_enrocado_hec14"},
         "NO LO LEE LA CORRIDA": {
             # VE-3.14 (H-3): el juego no tiene agua en el plano de
             # empuje bajo sismo.
             "agua_del_relleno_bajo_sismo",
             "borde_libre_bajo_tw_ahogante", "seccion_receptor",
             "hw_entrada_fuera_de_rango", "coeficiente_uniformidad_temez",
-            "criterio_traccion_cabezal_ciclopeo", "demanda_sismica_licuefaccion",
+            "criterio_traccion_cabezal_ciclopeo",
             "distribucion_precipitacion_maxima", "duracion_minima_lluvia_min",
             "fabricacion_tmc", "homogeneidad_serie_fen", "inclinacion_muro_beta",
             "junta_arranque_cabezal_ciclopeo", "nivel_significancia_ks",
             "relacion_intensidad_duracion", "relleno_estructural_hdpe",
-            "tc_fuera_de_la_poblacion_del_metodo"},
+            "tc_fuera_de_la_poblacion_del_metodo",
+            # --- VE-4 / VE-5 --- tres criterios nuevos que el juego no dispara
+            # (su razon, en `S.NO_LEIDO_PORQUE`).
+            "carga_viva_tubo_concreto_somero",
+            "empuje_sismico_muro_que_no_cede",
+            "intervalos_de_clase_chi_cuadrado"},
     }
 
 
@@ -312,31 +329,36 @@ def test_el_cabezal_de_la_regla_frente_a_sus_dos_A(medidas):
     PRECISIONES_T-11: el cabezal de la regla que no pasa E3 estatico ni E1
     sismico se presenta CON LA SENSIBILIDAD.
 
-    REESCRITO EN EL CIERRE DE VE-3.15, declarandolo, con la medida del anexo
-    regenerado (§3.1). Hasta VE-3.14 las cuatro filas no pasaban en ningun
-    punto con los valores de archivo. Desde VE-3.15 (fila de phi de muros de
-    11.5.7 como valor de archivo, talon exacto, cuña sobre la pantalla) la
-    zapata de la regla pasa E1 sismica de ENTRADA y E3 estatica de SALIDA en
-    A-01 y C-01, y sigue sin pasar en A-02 y B-01. Medido: omitir los
-    factores de inclinacion (C10.6.3.1.2a lo permite) hace pasar E1 sismica
-    en los dos extremos de los cuatro puntos; volver a la fila de phi de
-    zapatas (el valor anterior) quita E3 estatica de salida a A-01 y C-01;
-    ninguno de los dos hace pasar E3 estatica a la entrada, y con la fila de
-    phi ninguno pasa E1 sismica de salida.
+    REESCRITO EN EL CIERRE DE VE-7, declarandolo, con la medida del anexo
+    regenerado (§3.1). En VE-3.15 la zapata de la regla pasaba E1 sismica de
+    ENTRADA y E3 estatica de SALIDA en A-01 y C-01 y fallaba E3 estatica de
+    entrada en los cuatro puntos. Desde VE-7 (el juego declara
+    `espesor_pared_cajon` = 0.30 m para cerrar el portico de C-01, ficha
+    VE7B-11), la coronacion de C-01 sube 0.10 m (H_c 2.35 -> 2.45 m) y la
+    zapata de la regla pasa de 1.645 a 1.715 m: E3 estatica de entrada pasa
+    ahora en C-01 con la fila de phi de muros (40.94 <= 41.46 kN/m) y vuelve
+    a fallar con la fila de zapatas (33.17 kN/m). En los tres tubos
+    circulares (A-01, A-02 y B-01) E3 estatica de entrada sigue sin pasar con
+    ninguno de los dos [A].
     """
     por_clave = {m.barrido.clave: S.estados_del_cabezal(m) for m in medidas
                  if m.barrido.clave in S.CLAVES_DEL_CABEZAL_DE_LA_REGLA}
     puntos = ("A-01", "A-02", "B-01", "C-01")
     pasan_con_el_archivo = {"A-01", "C-01"}
-    for estados in por_clave.values():
+    for clave, estados in por_clave.items():
         for p in puntos:
             # Con el valor de archivo (el primero de cada barrido).
             esperado = "cumple" if p in pasan_con_el_archivo else "no cumple"
             assert estados[(p, "E1-LRFD.sis.e")][0] == esperado, p
             assert estados[(p, "E3-LRFD.est.s")][0] == esperado, p
             assert estados[(p, "E1-LRFD.sis.s")][0] == "no cumple", p
-            # E3 estatica de entrada no pasa con ninguno.
-            assert set(estados[(p, "E3-LRFD.est.e")]) == {"no cumple"}, p
+            if p != "C-01":
+                # En los tubos circulares E3 estatica de entrada no pasa con ninguno.
+                assert set(estados[(p, "E3-LRFD.est.e")]) == {"no cumple"}, p
+        if clave == "fila_phi_estabilidad_cabezal":
+            assert estados[("C-01", "E3-LRFD.est.e")] == ("cumple", "no cumple")
+        else:
+            assert estados[("C-01", "E3-LRFD.est.e")] == ("cumple", "cumple")
     inclinacion = por_clave["factores_inclinacion_carga_portante"]
     for p in puntos:
         assert inclinacion[(p, "E1-LRFD.sis.e")][1] == "cumple"

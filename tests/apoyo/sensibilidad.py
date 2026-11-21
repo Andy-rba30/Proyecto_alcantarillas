@@ -493,6 +493,9 @@ NO_LEIDO_PORQUE: Dict[Tuple[str, str], str] = {
         "es el declarado"),
     ("nivel_significancia_ks", "juego"): (
         "hidrología: sólo lo lee el caudal calculado"),
+    ("intervalos_de_clase_chi_cuadrado", "juego"): (
+        "hidrología: sólo lo lee la prueba chi-cuadrado del caudal calculado, "
+        "y en el juego el caudal es el declarado"),
     ("relacion_intensidad_duracion", "juego"): (
         "hidrología: sólo la lee el caudal calculado"),
     ("duracion_minima_lluvia_min", "juego"): (
@@ -501,18 +504,22 @@ NO_LEIDO_PORQUE: Dict[Tuple[str, str], str] = {
         "hidrología: sólo la lee el caudal calculado"),
     ("coeficiente_uniformidad_temez", "juego"): (
         "hidrología: sólo la lee el caudal calculado con Témez"),
-    ("demanda_sismica_licuefaccion", "juego"): (
-        "sin consumidor (`SIN_CONSUMIDOR_Y_SIN_MEDIDA`): la licuefacción no "
-        "se evalúa"),
     ("fabricacion_tmc", "juego"): (
         "ningún punto adopta TMC: el concreto es el primer candidato"),
     ("relleno_estructural_hdpe", "juego"): (
         "ningún punto adopta HDPE: el concreto es el primer candidato"),
+    ("carga_viva_tubo_concreto_somero", "juego"): (
+        "sólo lo lee un tubo de concreto con cobertura menor a 2.0 ft "
+        "(0.6096 m); los tubos del juego tienen relleno mayor"),
     ("criterio_traccion_cabezal_ciclopeo", "juego"): (
         "ningún cabezal del juego es de gravedad: con D >= 0.90 m todos son "
         "voladizo armado (T-7a)"),
     ("junta_arranque_cabezal_ciclopeo", "juego"): (
         "ningún cabezal del juego es de gravedad"),
+    ("empuje_sismico_muro_que_no_cede", "juego"): (
+        "sólo lo lee la estabilidad del cabezal con `regimen_cabezal` = "
+        "'no_cedente'; en el juego los cabezales son cedentes (lo mide el "
+        "barrido de `regimen_cabezal`)"),
 }
 
 
@@ -846,11 +853,15 @@ def generar(medidas: Optional[Sequence[Medida]] = None) -> str:
             A("| " + " | ".join(_celda(x) for x in (
                 f"`{m.barrido.clave}`", _valor(valor), *celdas)) + " |")
     A("")
-    A("Ninguno de los dos hace pasar E3 estática a la ENTRADA: ahí el "
-      "deslizamiento lo resuelve la zapata más ancha —la que el "
-      "dimensionamiento de VE-3.5 adopta, o la declarada de la variante "
-      "`zapata_declarada_3m` de `docs/validacion_integral.md` §5—, no la "
-      "lectura de un [A].")
+    A("En los tubos circulares (A-01, A-02 y B-01) ninguno de los dos hace "
+      "pasar E3 estática a la ENTRADA: ahí el deslizamiento lo resuelve la "
+      "zapata más ancha —la que el dimensionamiento de VE-3.5 adopta, o la "
+      "declarada de la variante `zapata_declarada_3m` de "
+      "`docs/validacion_integral.md` §5—, no la lectura de un [A]. En C-01 "
+      "(marco con pared de 0.30 m desde VE-7, ficha VE7B-11, que eleva 0.10 m "
+      "la coronación y ensancha la zapata de la regla a 1.715 m), E3 estática "
+      "a la entrada sí pasa con la fila de φ de muros (40.94 ≤ 41.46 kN/m) y "
+      "vuelve a fallar al pasar a la fila de zapatas (33.17 kN/m).")
     A("")
     vmax = [m for m in medidas if m.barrido.clave == "v_max_concreto_eleccion"]
     if vmax:
