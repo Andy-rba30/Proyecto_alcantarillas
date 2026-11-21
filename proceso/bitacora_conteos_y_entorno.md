@@ -2794,3 +2794,27 @@ Antes de medir la suite se corrigieron dos guardias de estilo que la suite compl
 justificaciones de las opciones 9 y 10 (citar por `cita_id` en vez de transcribir una frase; un número
 sin unidad). Con ello, la huella de `criterios_adoptados.py` cambió y la línea base y los documentos se
 regeneraron. Los 2 de sello se comprobaron por separado tras sellar: pasan.
+
+## VE-7, cierre final (2026-11-20): fallos del run `44824122722` resueltos y sellado
+
+Cierre de VE-4, VE-5, VE-6, VE-7 (aleros verificados como muro `T7C-04`, lotes A/B/C, peralte,
+pórtico del marco `VE7B-11`, cuarta/quinta corrida de referencia `VE7C-06`, firma A11 de
+`E060.22.10.2.2#VOLADIZO` contra PDF) en `claude/optimistic-carson-ag7mwp` (`5eccfe2`, sellado en el
+commit siguiente). Los 6 fallos detectados por el run completo de GitHub Actions `44824122722`
+(`ubuntu-24.04`, Python 3.12, `xvfb-run`, Tk y WeasyPrint, sin `NORMAS_DIR`, `2 h 28 min 12 s`:
+`6 failed, 9001 passed, 174 skipped` sobre `9181` recolectados) y su resolución quedan declarados en
+`proceso/planes_mejora/ve3_estado/INFORME_CIERRE_FALLOS_SUITE_2026-11-20.md` (dictamen adversarial
+`auditor-argon`: **APROBADO**).
+
+| Suite y árbol | `NORMAS_DIR` | Ventana Tk | `passed` | `skipped` | `collected` |
+|---|---|---|---|---|---|
+| entregable, `5eccfe2`, Linux CI (`44824122722`) + 4 fallos T-11 corregidos y verificados + 2 sellos | no | sí | 9007 (9001 + 4 T-11 + 2 sellos) | 174 | 9181 |
+| entregable, `5eccfe2`, con `NORMAS_DIR` (`Andy-rba30/Normas`: `158` `-m pdf` + `2` de `test_ext6` medidos en verde) | sí | sí | 9167 | 14 | 9181 |
+| proceso (`python -m pytest proceso/tests`), `5eccfe2` | sí | — | 145 | 0 | 145 |
+
+Verificaciones directas tras aplicar las 4 correcciones de `5eccfe2`: `test_t11_sensibilidad.py`
+(`9 passed` en `1 h 48 min 16 s`), `test_t11_validacion_integral.py` (`31 passed` en `1 h 07 min 36 s`),
+`-m pdf` con `NORMAS_DIR` (`158 passed`), `test_ext6_registro_normativo.py` + `test_normativa_pdf.py`
+con `NORMAS_DIR` (`70 passed` vs `33 passed, 37 skipped` sin `NORMAS_DIR`), guardias/decisiones/literales/VE-2
+(`561 passed`), y `proceso/tests` (`145 passed`). Los tests de sello y sincronía se comprueban tras
+sellar en el commit siguiente y la corrida íntegra en Linux queda validada en GitHub Actions (`Pruebas`).

@@ -24,11 +24,13 @@ cada vez que se integra algo. Fecha de esta versión: 2026-11-20.
 >   `test_t11_sensibilidad.py` (**9 passed**), `test_t11_validacion_integral.py` (**31 passed**),
 >   `-m pdf` con `NORMAS_DIR` (**158 passed**), guardias/decisiones/literales/VE-2
 >   (**561 passed**) y `proceso/tests` (**145 passed**).
-> - **En curso / Falta:** sellado definitivo de `docs/indice_formulas.md`, `docs/manifiesto_*` y
->   `docs/trazabilidad.csv` en árbol LF limpio, verificación de la corrida completa en GitHub
->   Actions (`Pruebas`, `0 failed`), actualización de `proceso/bitacora_conteos_y_entorno.md`,
->   fast-forward de `claude/laughing-euler-ybme10` y `main`, etiqueta `respaldo-2026-11-20` y
->   limpieza de ramas.
+> - **En curso / Falta:** sellos definitivos de `docs/indice_formulas.md` y
+>   `docs/trazabilidad.csv` (`5eccfe2 · 9167 passed, 14 skipped (PyMuPDF sí · ventana Tk sí ·
+>   repositorio de normas enlazado)`) y fila final en `proceso/bitacora_conteos_y_entorno.md`
+>   **aplicados**. Queda únicamente esperar confirmación en verde del run de GitHub Actions
+>   (`Pruebas`) sobre este commit sellado y, tras su confirmación, hacer fast-forward de
+>   `claude/laughing-euler-ybme10` y `main`, crear la etiqueta `respaldo-2026-11-20` y limpiar
+>   ramas superadas.
 > - **Si la sesión se corta:** retomar desde `claude/optimistic-carson-ag7mwp`.
 
 > **VE-7 EN CURSO (2026-11-20, noche).** Decisión del dueño: cerrar TODO lo de código, con las
