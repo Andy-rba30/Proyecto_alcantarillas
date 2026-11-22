@@ -903,7 +903,8 @@ def test_ningun_criterio_de_perfil_sin_valor_salvo_los_que_esperan_una_entrada()
 
 
 def _modulos_de_calculo():
-    return sorted((SRC / "modulos").glob("*.py"))
+    return [r for r in sorted((SRC / "modulos").rglob("*.py"))
+            if "__pycache__" not in r.parts]
 
 
 def test_ningun_modulo_de_calculo_tiene_assert_ni_inalcanzables_desnudos():

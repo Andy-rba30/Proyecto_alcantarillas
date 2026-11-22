@@ -192,9 +192,11 @@ def test_los_dos_valores_de_E030_siguen_siendo_solo_referencia():
         # partida (`ds.valor("Z" + "_E030")`) lo deja verde. Se pregunta al
         # arbol: que nombres LEE el modulo y que claves de texto pasa como
         # argumento o como indice.
-        invocan = [ruta.name for ruta in (raiz / "src" / "modulos").glob("*.py")
-                   if clave in estructura.nombres_usados(ruta)
-                   or clave in estructura.textos_de_llamada_o_indice(ruta)]
+        invocan = [str(ruta.relative_to(raiz / "src" / "modulos"))
+                   for ruta in sorted((raiz / "src" / "modulos").rglob("*.py"))
+                   if "__pycache__" not in ruta.parts
+                   and (clave in estructura.nombres_usados(ruta)
+                        or clave in estructura.textos_de_llamada_o_indice(ruta))]
         assert not invocan, f"'{clave}' dejo de ser referencia: lo usa {invocan}"
 
     assert valor("Z_E030") != pytest.approx(CP7_CADENA_SISMICA["PGA"])

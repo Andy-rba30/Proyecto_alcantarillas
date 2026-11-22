@@ -132,7 +132,7 @@ def test_escribir_sin_el_par_de_la_suite_no_toca_el_documento(texto_en_disco):
 # ===========================================================================
 
 def _llamadas_a_paso_en_modulos():
-    for ruta in sorted(ind.MODULOS.glob("*.py")):
+    for modulo_top, ruta in ind._iterar_fuentes_de_modulos():
         arbol = ast.parse(ruta.read_text(encoding="utf-8"), filename=ruta.name)
         for nodo in ast.walk(arbol):
             if not isinstance(nodo, ast.Call):
@@ -142,7 +142,7 @@ def _llamadas_a_paso_en_modulos():
                       else funcion.attr if isinstance(funcion, ast.Attribute)
                       else None)
             if nombre == "paso":
-                yield ruta.stem, nodo
+                yield modulo_top, nodo
 
 
 def test_todo_paso_del_pipeline_pasa_su_fundamento_como_literal():

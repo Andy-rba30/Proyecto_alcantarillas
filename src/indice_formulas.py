@@ -428,6 +428,33 @@ def _llamadas_a_paso(arbol: ast.AST) -> Iterator[str]:
             yield primero.value
 
 
+def _modulo_top_de(ruta: Path, modulos_dir: Optional[Path] = None) -> str:
+    """Nombre del modulo o subpaquete de primer nivel dentro de `MODULOS` (D0)."""
+    base = MODULOS if modulos_dir is None else modulos_dir
+    if ruta == base or base in ruta.parents:
+        partes = ruta.relative_to(base).parts
+        if len(partes) > 1:
+            return partes[0]
+    return ruta.stem
+
+
+def _iterar_fuentes_de_modulos(modulos_dir: Optional[Path] = None) -> Iterator[Tuple[str, Path]]:
+    """
+    Itera `(nombre_modulo_top, ruta_py)` sobre `MODULOS`, recorriendo tanto
+    archivos planos `MX.py` como subpaquetes `MX/.../*.py` (D0). Excluye
+    `__pycache__` y `src/modulos/__init__.py`.
+    """
+    base = MODULOS if modulos_dir is None else modulos_dir
+    if not base.exists():
+        return
+    for ruta in sorted(base.rglob("*.py")):
+        if "__pycache__" in ruta.parts:
+            continue
+        if ruta == base / "__init__.py":
+            continue
+        yield _modulo_top_de(ruta, base), ruta
+
+
 def emisores_por_fundamento() -> Dict[str, Tuple[str, ...]]:
     """
     {fundamento_id: (modulos de src/modulos/ que llaman a paso() con ese
@@ -435,12 +462,12 @@ def emisores_por_fundamento() -> Dict[str, Tuple[str, ...]]:
     la emision de un paso a otro modulo, el indice lo sigue solo.
     """
     salida: Dict[str, List[str]] = {}
-    for ruta in sorted(MODULOS.glob("*.py")):
+    for modulo_top, ruta in _iterar_fuentes_de_modulos(MODULOS):
         arbol = ast.parse(ruta.read_text(encoding="utf-8"), filename=ruta.name)
         for fundamento_id in _llamadas_a_paso(arbol):
             modulos = salida.setdefault(fundamento_id, [])
-            if ruta.stem not in modulos:
-                modulos.append(ruta.stem)
+            if modulo_top not in modulos:
+                modulos.append(modulo_top)
     return {k: tuple(v) for k, v in salida.items()}
 
 
@@ -466,13 +493,14 @@ def menciones_del_fundamento() -> Dict[str, Tuple[str, ...]]:
     for ruta in sorted(SRC.rglob("*.py")):
         if "__pycache__" in ruta.parts or ruta.name == "fundamentos.py":
             continue
+        nombre_emisor = _modulo_top_de(ruta, MODULOS)
         arbol = ast.parse(ruta.read_text(encoding="utf-8"), filename=ruta.name)
         for nodo in ast.walk(arbol):
             if isinstance(nodo, ast.Constant) and isinstance(nodo.value, str) \
                     and re.fullmatch(PATRON_ID_DE_FUNDAMENTO, nodo.value):
                 modulos = salida.setdefault(nodo.value, [])
-                if ruta.stem not in modulos:
-                    modulos.append(ruta.stem)
+                if nombre_emisor not in modulos:
+                    modulos.append(nombre_emisor)
     return {k: tuple(v) for k, v in salida.items()}
 
 

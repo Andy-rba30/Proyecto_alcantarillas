@@ -100,7 +100,7 @@ import ast
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
 
 from src import constantes_normativas as _cn
 from src import criterios_adoptados as _ca
@@ -184,23 +184,38 @@ def _docstrings(arbol: ast.Module) -> Set[str]:
     return docs
 
 
-def _analizar(ruta: Path) -> _Analisis:
+def _modulo_de_import(partes: Sequence[str]) -> Optional[str]:
+    """
+    Extrae el modulo de calculo de primer nivel desde `modulos.<M...>` o
+    `src.modulos.<M...>.<submodulo>` (D0).
+    """
+    if "modulos" not in partes:
+        return None
+    idx = list(partes).index("modulos")
+    if idx + 1 < len(partes) and partes[idx + 1].startswith("M"):
+        return partes[idx + 1]
+    return None
+
+
+def _analizar(ruta: Path, *, modulo_propio: Optional[str] = None) -> _Analisis:
     """
     Un modulo partido en ambitos, con sus cadenas y sus llamadas resueltas.
 
     Resuelve TRES formas de llamada y ninguna mas, porque son las tres que
     este repositorio usa: `f(...)` a una funcion del propio modulo, `f(...)` a
-    una traida con `from modulos.MX import f`, y `M8.f(...)` sobre el alias de
-    un modulo importado. Lo que no encaja en esas tres se ignora a proposito:
-    un grafo incompleto deja consumidores sin ver --- defecto conocido y
-    acotado, que se paga en falsos negativos --- mientras que uno que adivine
-    los atribuiria mal, que es el defecto que esta funcion existe para evitar.
+    una traida con `from modulos.MX import f` (o `from modulos.MX.sub import f`),
+    y `M8.f(...)` sobre el alias de un modulo importado. Lo que no encaja en
+    esas tres se ignora a proposito: un grafo incompleto deja consumidores sin
+    ver --- defecto conocido y acotado, que se paga en falsos negativos ---
+    mientras que uno que adivine los atribuiria mal, que es el defecto que esta
+    funcion existe para evitar.
 
     Los metodos de una clase se agrupan bajo el nombre de la clase: una
     llamada a un metodo llega por una instancia y no se puede resolver por
     nombre, de modo que separarlos daria una precision que el grafo no puede
     sostener.
     """
+    nombre_propio = modulo_propio or ruta.stem
     arbol = ast.parse(ruta.read_text(encoding="utf-8"))
     docs = _docstrings(arbol)
 
@@ -213,14 +228,22 @@ def _analizar(ruta: Path) -> _Analisis:
                 for a in nodo.names:                    # from modulos import M8 as X
                     if a.name.startswith("M"):
                         alias_modulo[a.asname or a.name] = a.name
-            elif "modulos" in partes and partes[-1].startswith("M"):
-                for a in nodo.names:                    # from modulos.M8 import f
-                    importado[a.asname or a.name] = (partes[-1], a.name)
+            else:
+                mod_top = _modulo_de_import(partes)
+                if mod_top is not None:
+                    submod_dir = _MODULOS / mod_top
+                    for a in nodo.names:                # from modulos.M8[.sub] import f
+                        alias_local = a.asname or a.name
+                        if submod_dir.is_dir() and (submod_dir / f"{a.name}.py").is_file():
+                            alias_modulo[alias_local] = mod_top
+                        else:
+                            importado[alias_local] = (mod_top, a.name)
         elif isinstance(nodo, ast.Import):
             for a in nodo.names:                        # import modulos.M8 as M8
                 partes = a.name.split(".")
-                if "modulos" in partes and partes[-1].startswith("M"):
-                    alias_modulo[a.asname or partes[-1]] = partes[-1]
+                mod_top = _modulo_de_import(partes)
+                if mod_top is not None:
+                    alias_modulo[a.asname or partes[-1]] = mod_top
 
     cuerpos: Dict[str, List[ast.AST]] = {_AMBITO_MODULO: []}
     for nodo in arbol.body:
@@ -260,7 +283,7 @@ def _analizar(ruta: Path) -> _Analisis:
                     if n.id in constantes:
                         cadenas.add(constantes[n.id])
                     if n.id in propias:
-                        llamados.add((ruta.stem, n.id))
+                        llamados.add((nombre_propio, n.id))
                     elif n.id in importado:
                         llamados.add(importado[n.id])
         literales[ambito] = cadenas
@@ -270,10 +293,39 @@ def _analizar(ruta: Path) -> _Analisis:
                      constantes=constantes, importado=importado)
 
 
+def _combinar_analisis(subanalisis: Sequence[_Analisis]) -> _Analisis:
+    """Funde los analisis de todos los archivos de un subpaquete `M*/` (D0)."""
+    literales: Dict[str, Set[str]] = {}
+    llamadas: Dict[str, Set[Tuple[str, str]]] = {}
+    constantes: Dict[str, str] = {}
+    importado: Dict[str, Tuple[str, str]] = {}
+    for sub in subanalisis:
+        for ambito, cadenas in sub.literales.items():
+            literales.setdefault(ambito, set()).update(cadenas)
+        for ambito, llamados in sub.llamadas.items():
+            llamadas.setdefault(ambito, set()).update(llamados)
+        constantes.update(sub.constantes)
+        importado.update(sub.importado)
+    return _Analisis(literales=literales, llamadas=llamadas,
+                     constantes=constantes, importado=importado)
+
+
 @lru_cache(maxsize=1)
 def _analisis() -> Dict[str, _Analisis]:
-    return {ruta.stem: _analizar(ruta)
-            for ruta in sorted(_MODULOS.glob("M*.py"))}
+    salida: Dict[str, _Analisis] = {}
+    for ruta in sorted(_MODULOS.glob("M*.py")):
+        salida[ruta.stem] = _analizar(ruta, modulo_propio=ruta.stem)
+    for carpeta in sorted(_MODULOS.iterdir()):
+        if not carpeta.is_dir() or not carpeta.name.startswith("M"):
+            continue
+        if not (carpeta / "__init__.py").is_file():
+            continue
+        subarchivos = [r for r in sorted(carpeta.rglob("*.py"))
+                       if "__pycache__" not in r.parts]
+        salida[carpeta.name] = _combinar_analisis([
+            _analizar(sub, modulo_propio=carpeta.name) for sub in subarchivos
+        ])
+    return {k: salida[k] for k in sorted(salida)}
 
 
 @lru_cache(maxsize=1)

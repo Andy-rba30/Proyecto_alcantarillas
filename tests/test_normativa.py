@@ -716,8 +716,8 @@ def test_una_cita_sin_firma_por_sesion_no_sostiene_sola_nada(reg):
     from pathlib import Path
     from src.normativa.esquema import VERBO_COMPATIBLE_CON
     modulos = Path(__file__).resolve().parents[1] / "src" / "modulos"
-    textos = {r.name: r.read_text(encoding="utf-8")
-              for r in modulos.glob("*.py")}
+    textos = {str(r.relative_to(modulos)).replace("\\", "/"): r.read_text(encoding="utf-8")
+              for r in sorted(modulos.rglob("*.py")) if "__pycache__" not in r.parts}
     for id_ in SIN_FIRMA_POR_SESION_SIN_PDF:
         for f in reg.fundamentos:
             if id_ not in f.citas:

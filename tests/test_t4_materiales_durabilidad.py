@@ -1155,8 +1155,9 @@ def test_el_diametro_minimo_de_selva_alta_lo_lee_solo_M2():
     assert hasattr(CN, nombre)
     assert nombre not in CN.CONSTANTES_DE_REFERENCIA
     consumidores = []
-    for ruta in sorted((RAIZ / "src" / "modulos").glob("*.py")) + [
-            RAIZ / "src" / "servicio.py", RAIZ / "cli.py"]:
+    modulos_py = [r for r in sorted((RAIZ / "src" / "modulos").rglob("*.py"))
+                  if "__pycache__" not in r.parts]
+    for ruta in modulos_py + [RAIZ / "src" / "servicio.py", RAIZ / "cli.py"]:
         arbol = ast.parse(ruta.read_text(encoding="utf-8"))
         if any(isinstance(n, (ast.Name, ast.Attribute))
                and (getattr(n, "id", None) == nombre

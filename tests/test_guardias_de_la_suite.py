@@ -769,7 +769,12 @@ def test_todo_modulo_de_calculo_consume_su_caso_patron():
     conecta el caso, falla tambien --- pidiendo que se retire la exencion, que
     es la mitad que un .xlsx nunca avisa.
     """
-    modulos = sorted(p.stem for p in (RAIZ / "src" / "modulos").glob("M*.py"))
+    modulos_dir = RAIZ / "src" / "modulos"
+    modulos = sorted(
+        {p.stem for p in modulos_dir.glob("M*.py")}
+        | {p.name for p in modulos_dir.iterdir()
+           if p.is_dir() and p.name.startswith("M") and (p / "__init__.py").is_file()}
+    )
     sin_fixture, exentos_que_ya_lo_usan = [], []
     for modulo in modulos:
         prueba = RAIZ / "tests" / f"test_{modulo}.py"
@@ -1192,7 +1197,16 @@ def test_el_detector_textual_ve_las_evasiones_que_el_auditor_probo(cuerpo, esper
 # La unica sin consumidor de produccion (el peso del suelo sobre el talon) ya
 # estaba censada con su razon en `M9_cabezal.FUNCIONES_SIN_CONSUMIDOR`.
 
-MODULOS_DE_CALCULO = sorted((RAIZ / "src" / "modulos").glob("*.py"))
+MODULOS_DIR_CALCULO = RAIZ / "src" / "modulos"
+MODULOS_DE_CALCULO = [
+    r for r in sorted(MODULOS_DIR_CALCULO.rglob("*.py"))
+    if "__pycache__" not in r.parts
+]
+
+
+def _modulo_top_de_calculo(ruta: Path) -> str:
+    rel = ruta.relative_to(MODULOS_DIR_CALCULO)
+    return rel.parts[0] if len(rel.parts) > 1 else ruta.stem
 
 PUBLICAS_SIN_REFERENCIA_EN_TESTS = {
     # --- VE-3.14 --- las dos piezas de la etapa de la pantalla que solo
@@ -1270,7 +1284,7 @@ def _publicas_sin_referencia_en_tests() -> set:
             if isinstance(nodo, (ast.FunctionDef, ast.AsyncFunctionDef)) \
                     and not nodo.name.startswith("_") \
                     and nodo.name not in nombres:
-                sin_referencia.add(f"{ruta.stem}.{nodo.name}")
+                sin_referencia.add(f"{_modulo_top_de_calculo(ruta)}.{nodo.name}")
     return sin_referencia
 
 

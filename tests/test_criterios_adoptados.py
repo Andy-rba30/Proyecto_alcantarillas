@@ -373,9 +373,11 @@ def test_el_perfil_de_suelo_es_referencia_declarada_y_no_calculo():
     # POR QUE la referencia esta muerta es justo lo contrario de invocarla, y
     # la version de subcadena la contaba como invocacion.
     invocaciones = [
-        ruta.name for ruta in (raiz / "src" / "modulos").glob("*.py")
-        if "PERFIL_SUELO_PRESUNTO" in estructura.nombres_usados(ruta)
-        or "PERFIL_SUELO_PRESUNTO" in estructura.textos_de_llamada_o_indice(ruta)
+        str(ruta.relative_to(raiz / "src" / "modulos"))
+        for ruta in sorted((raiz / "src" / "modulos").rglob("*.py"))
+        if "__pycache__" not in ruta.parts
+        and ("PERFIL_SUELO_PRESUNTO" in estructura.nombres_usados(ruta)
+             or "PERFIL_SUELO_PRESUNTO" in estructura.textos_de_llamada_o_indice(ruta))
     ]
     assert not invocaciones, (
         f"'PERFIL_SUELO_PRESUNTO' dejo de ser referencia muerta ({invocaciones}): "
@@ -1303,7 +1305,8 @@ def test_lo_que_declara_sin_consumidor_de_verdad_no_tiene_consumidor():
     orquestacion, desde EXT-9), `cli.py` y `gui/app.py`.
     """
     raiz = Path(__file__).resolve().parents[1]
-    fuentes = list((raiz / "src" / "modulos").glob("*.py"))
+    fuentes = [r for r in sorted((raiz / "src" / "modulos").rglob("*.py"))
+               if "__pycache__" not in r.parts]
     fuentes += [raiz / "src" / "servicio.py", raiz / "cli.py",
                 raiz / "gui" / "app.py"]
     textos = {ruta: ruta.read_text(encoding="utf-8-sig") for ruta in fuentes}
