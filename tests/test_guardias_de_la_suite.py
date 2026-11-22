@@ -1327,3 +1327,89 @@ def test_cada_publica_del_censo_tiene_el_consumidor_que_dice(calificado):
         assert llamadora in llamadoras, (
             f"{calificado}: la razon dice que la llama `{llamadora}` y no la "
             f"llama; la llaman {sorted(llamadoras)}")
+
+
+# ---------------------------------------------------------------------------
+# A2 - Guardia del marcador `lento` a nivel de modulo (plan A1/A2)
+# ---------------------------------------------------------------------------
+# Umbral de duracion de la suite (vive aqui, nunca en `src/tolerancias.py`):
+# todo modulo cuya medicion base con `--durations=60` supero 120 s lleva
+# `pytestmark = pytest.mark.lento`. La guardia es bidireccional por AST para
+# que la lista no se desincronice del codigo.
+UMBRAL_MODULO_LENTO_S = 120.0  # float-exacto: umbral de suite medido en A1
+
+MODULOS_MARCADOS_LENTO = frozenset({
+    "test_ext11_mutacion.py",
+    "test_indice_formulas.py",
+    "test_t11_sensibilidad.py",
+    "test_t11_validacion_integral.py",
+    "test_t12_entregable.py",
+    "test_ui4_recorrido_ventana.py",
+    "test_ve5_dimensional_m6_m10.py",
+    "test_ve7_lote_c_cuarta_corrida.py",
+})
+
+
+def _es_attr_pytest_mark_lento(nodo: ast.AST) -> bool:
+    return (
+        isinstance(nodo, ast.Attribute)
+        and nodo.attr == "lento"
+        and isinstance(nodo.value, ast.Attribute)
+        and nodo.value.attr == "mark"
+        and isinstance(nodo.value.value, ast.Name)
+        and nodo.value.value.id == "pytest"
+    )
+
+
+def _tiene_pytestmark_lento_en_ast(arbol: ast.Module) -> bool:
+    for nodo in arbol.body:
+        if isinstance(nodo, ast.Assign):
+            es_pytestmark = any(
+                isinstance(t, ast.Name) and t.id == "pytestmark"
+                for t in nodo.targets
+            )
+            valor = nodo.value
+        elif isinstance(nodo, ast.AnnAssign) and nodo.value is not None:
+            es_pytestmark = (
+                isinstance(nodo.target, ast.Name)
+                and nodo.target.id == "pytestmark"
+            )
+            valor = nodo.value
+        else:
+            continue
+        if es_pytestmark and any(_es_attr_pytest_mark_lento(n) for n in ast.walk(valor)):
+            return True
+    return False
+
+
+def test_los_modulos_pesados_llevan_marcador_lento_y_ninguno_fuera_de_lista():
+    """
+    A2: comprueba por AST en las dos direcciones que exactamente los modulos
+    de `MODULOS_MARCADOS_LENTO` (medidos sobre > UMBRAL_MODULO_LENTO_S) declaran
+    `pytestmark = pytest.mark.lento`.
+    """
+    assert UMBRAL_MODULO_LENTO_S > 0
+    marcados = {
+        ruta.name
+        for ruta in sorted(TESTS.glob("test_*.py"))
+        if _tiene_pytestmark_lento_en_ast(
+            ast.parse(ruta.read_text(encoding="utf-8"), filename=ruta.name)
+        )
+    }
+    faltan = sorted(MODULOS_MARCADOS_LENTO - marcados)
+    sobran = sorted(marcados - MODULOS_MARCADOS_LENTO)
+    assert not faltan, (
+        f"modulos de MODULOS_MARCADOS_LENTO sin `pytestmark = pytest.mark.lento`: {faltan}"
+    )
+    assert not sobran, (
+        f"modulos con `pytestmark = pytest.mark.lento` fuera de MODULOS_MARCADOS_LENTO: {sobran}"
+    )
+
+
+def test_el_detector_de_pytestmark_lento_es_exacto():
+    con_lento = ast.parse("import pytest\npytestmark = pytest.mark.lento\n")
+    en_lista = ast.parse("import pytest\npytestmark = [pytest.mark.pdf, pytest.mark.lento]\n")
+    solo_pdf = ast.parse("import pytest\npytestmark = pytest.mark.pdf\n")
+    assert _tiene_pytestmark_lento_en_ast(con_lento)
+    assert _tiene_pytestmark_lento_en_ast(en_lista)
+    assert not _tiene_pytestmark_lento_en_ast(solo_pdf)
