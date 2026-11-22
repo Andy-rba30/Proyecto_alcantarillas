@@ -31,8 +31,9 @@ dependencies = [
 gui = ["ttkbootstrap==2.2.1"]
 # El PDF directo de la memoria; sin el, la memoria sale en HTML para Ctrl+P.
 pdf = ["weasyprint==69.0"]
-# La suite del entregable; PyMuPDF para los tests que abren un PDF de normas.
-test = ["pytest==9.1.1", "PyMuPDF>=1.24"]
+# La suite del entregable; PyMuPDF para los tests que abren un PDF de normas,
+# pytest-xdist para correr en paralelo (-n auto / -n 4, A3).
+test = ["pytest==9.1.1", "PyMuPDF>=1.24", "pytest-xdist>=3.6"]
 # Mantenimiento del tracker de auditorias (material de proceso).
 proceso = ["openpyxl>=3.1"]
 

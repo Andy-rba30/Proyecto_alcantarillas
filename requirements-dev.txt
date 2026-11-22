@@ -24,3 +24,7 @@ PyMuPDF>=1.24
 #   de mantenimiento del PROCESO, no dependencia del software calculado ni de
 #   la suite del entregable (la usa `python3 -m proceso.verificar_sesion`).
 openpyxl>=3.1
+
+# pytest-xdist -- ejecucion en paralelo de la suite (-n auto / -n 4, plan A3).
+#   Herramienta de ejecucion de tests; no entra al software calculado.
+pytest-xdist>=3.6
