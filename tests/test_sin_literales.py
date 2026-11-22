@@ -921,7 +921,9 @@ CENSO_DE_MARCAS = {
     # columnas de las dos tablas del detalle de la pestaña 3 (verificaciones
     # con su estado, bloqueos con su tipo). Geometria de presentacion; el
     # contenido lo da el `InformePunto`.
-    "gui/app.py": 58,
+    # 58 -> 65 en C4: ancho de la columna `donde` en `tree_criterios` (+1) y
+    # seis columnas del panel hermano `tree_datos_bloqueantes` en pestaña 4.
+    "gui/app.py": 65,
     # La ayuda de entrada de S22, mas la pestana de conceptos de G5. Ninguno
     # es una magnitud del expediente: la mascara del bit de Control de Tk
     # (0x4), los dos altos en lineas de las dos cajas copiables --- la cabecera

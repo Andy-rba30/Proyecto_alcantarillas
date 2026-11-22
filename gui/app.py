@@ -864,7 +864,10 @@ class ExpedienteApp:
 
     def _vaciar_tablas_del_informe(self, motivo):
         """Las pestañas 2, 3 y 4 y la barra dejan de mostrar la corrida anterior."""
-        for arbol in (self.tree_puntos, self.tree_criterios):
+        arboles = [self.tree_puntos, self.tree_criterios]
+        if hasattr(self, "tree_datos_bloqueantes"):
+            arboles.append(self.tree_datos_bloqueantes)
+        for arbol in arboles:
             for item in arbol.get_children():
                 arbol.delete(item)
         self._al_seleccionar_punto()
@@ -3067,7 +3070,7 @@ class ExpedienteApp:
         # y CON QUE se sostiene, derivados de la ficha por `src/responsable.py`
         # y traidos en `CriterioBloqueante`. La pestaña pinta; no escribe.
         cols = ("clave", "etiqueta", "concepto", "fuente", "fases", "puntos",
-                "responsable", "evidencia")
+                "responsable", "evidencia", "donde")
         self.tree_criterios = ttk.Treeview(f_crit, columns=cols, show="headings", height=8)
         encabezados = [
             ("clave", "Clave", 130, "w"),  # literal-ok: ancho de columna, px
@@ -3078,6 +3081,7 @@ class ExpedienteApp:
             ("puntos", "Puntos", 140, "w"),  # literal-ok: ancho de columna, px
             ("responsable", "Responsable (quien lo fija)", 220, "w"),  # literal-ok: ancho de columna, px
             ("evidencia", "Evidencia (que lo sostiene)", 220, "w"),  # literal-ok: ancho de columna, px
+            ("donde", "Donde se declara", 240, "w"),  # literal-ok: ancho de columna, px
         ]
         for col, txt, ancho, anchor in encabezados:
             self.tree_criterios.heading(col, text=txt)
@@ -3086,6 +3090,33 @@ class ExpedienteApp:
         scroll_c = ttk.Scrollbar(f_crit, orient="vertical", command=self.tree_criterios.yview)
         self.tree_criterios.configure(yscroll=scroll_c.set)
         scroll_c.pack(side="left", fill="y")
+
+        panel_datos = Panel(p, "Datos faltantes o invalidos que bloquearon una etapa")
+        panel_datos.pack(fill="x", pady=(0, 10))
+        ttk.Label(panel_datos.interior,
+                  text="Datos de entrada faltantes o invalidos cuyo bloqueo detuvo una etapa, "
+                       "indicando en que pestaña o archivo se declaran.",
+                  style="Ayuda.TLabel", wraplength=820, justify="left").pack(anchor="w", pady=(0, 8))
+
+        f_datos = ttk.Frame(panel_datos.interior)
+        f_datos.pack(fill="both", expand=False)
+        cols_datos = ("dato", "tipo", "fases", "puntos", "donde", "detalle")
+        self.tree_datos_bloqueantes = ttk.Treeview(f_datos, columns=cols_datos, show="headings", height=6)
+        enc_datos = [
+            ("dato", "Dato", 150, "w"),  # literal-ok: ancho de columna, px
+            ("tipo", "Tipo", 120, "w"),  # literal-ok: ancho de columna, px
+            ("fases", "Fases", 140, "w"),  # literal-ok: ancho de columna, px
+            ("puntos", "Puntos", 120, "w"),  # literal-ok: ancho de columna, px
+            ("donde", "Donde se declara", 240, "w"),  # literal-ok: ancho de columna, px
+            ("detalle", "Detalle del bloqueo", 280, "w"),  # literal-ok: ancho de columna, px
+        ]
+        for col, txt, ancho, anchor in enc_datos:
+            self.tree_datos_bloqueantes.heading(col, text=txt)
+            self.tree_datos_bloqueantes.column(col, width=ancho, anchor=anchor)
+        self.tree_datos_bloqueantes.pack(side="left", fill="both", expand=True)
+        scroll_d = ttk.Scrollbar(f_datos, orient="vertical", command=self.tree_datos_bloqueantes.yview)
+        self.tree_datos_bloqueantes.configure(yscroll=scroll_d.set)
+        scroll_d.pack(side="left", fill="y")
 
         # EL CABEZAL DEL PROYECTO (UI-2, hueco 3 de la cadena de interfaz):
         # la suma de los cabezales por punto, la cadena sismica, los
@@ -3597,7 +3628,17 @@ class ExpedienteApp:
                 " (diferido por alcance)" if c.diferido else "")
             self.tree_criterios.insert("", "end", values=(
                 c.clave, c.etiqueta, c.concepto, c.fuente, fases, puntos,
-                c.responsable, c.evidencia))
+                c.responsable, c.evidencia, c.donde_se_declara))
+        if hasattr(self, "tree_datos_bloqueantes"):
+            for item in self.tree_datos_bloqueantes.get_children():
+                self.tree_datos_bloqueantes.delete(item)
+            for d in cli.datos_bloqueantes(informe):
+                puntos_d = ", ".join(d.puntos) if d.puntos else "proyecto"
+                fases_d = ", ".join(d.fases) + (
+                    " (diferido por alcance)" if d.diferido else "")
+                self.tree_datos_bloqueantes.insert("", "end", values=(
+                    d.dato, d.tipo, fases_d, puntos_d, d.donde_se_declara,
+                    d.detalle))
         self._pintar_cabezal_del_proyecto()
 
     def _pintar_cabezal_del_proyecto(self, motivo=None):

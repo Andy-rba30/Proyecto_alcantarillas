@@ -156,7 +156,8 @@ from src.modulos import M2_material as _M2
 from src.modelos import (ALCANCE_DECLARADO, ALCANCE_EXPEDIENTE, ALCANCE_PERFIL,
                      AVISO_SIN_ACCESO_DE_MANTENIMIENTO, ContextoCorrida,
                      ControlGobernante, EstadoDeVerificacion, modo_de,
-                     MOTIVO_METODO_NO_EVALUABLE, TipoDeVeredicto)
+                     MOTIVO_METODO_NO_EVALUABLE, TipoDeBloqueo,
+                     TipoDeVeredicto)
 from src.modelos import ESTADO_RASANTE_COMPATIBLE      # --- VE-5 met ---
 from src.modelos import MURO_ALERO      # --- VE-7 ---
 
@@ -905,6 +906,9 @@ class CriterioBloqueante:
     # derivacion.
     responsable: str = ""
     evidencia: str = ""
+    # Donde se declara el criterio o dato de sitio pendiente en la interfaz o
+    # en la linea de comandos (C4), derivado de `src/responsable.py`.
+    donde_se_declara: str = ""
 
 
 def criterios_bloqueantes(informe: Any) -> Tuple[CriterioBloqueante, ...]:
@@ -932,6 +936,7 @@ def criterios_bloqueantes(informe: Any) -> Tuple[CriterioBloqueante, ...]:
         # misma CriterioPendienteError y no esta en CRITERIOS (SIS-A-05).
         declarado = ca.declaracion_de(clave)
         quien = _responsable.responsabilidad_de(declarado)
+        donde = _responsable.donde_se_declara_criterio(clave)
         salida.append(CriterioBloqueante(
             clave=clave, etiqueta=declarado.etiqueta,
             concepto=declarado.concepto, fuente=declarado.fuente,
@@ -940,7 +945,79 @@ def criterios_bloqueantes(informe: Any) -> Tuple[CriterioBloqueante, ...]:
             etapas=tuple(acumulado[clave]["etapas"]),
             puntos=tuple(acumulado[clave]["puntos"]),
             diferido=clave not in reales,
-            responsable=quien.responsable, evidencia=quien.evidencia))
+            responsable=quien.responsable, evidencia=quien.evidencia,
+            donde_se_declara=donde))
+    return tuple(salida)
+
+
+# ===========================================================================
+# Datos faltantes o invalidos que bloquearon una etapa (C4)
+# ===========================================================================
+
+@dataclass(frozen=True)
+class DatoBloqueante:
+    """
+    Un dato de entrada faltante o invalido que detuvo una etapa en esta
+    corrida, agregado para la pestaña 4 (C4).
+    """
+
+    dato: str
+    tipo: str
+    fases: Tuple[str, ...]
+    etapas: Tuple[str, ...]
+    puntos: Tuple[str, ...]
+    donde_se_declara: str
+    detalle: str
+    diferido: bool = False
+
+
+def datos_bloqueantes(informe: Any) -> Tuple[DatoBloqueante, ...]:
+    """
+    Agrupa los bloqueos de `informe.bloqueos()` debidos a datos faltantes o
+    invalidos (`criterio is None` con `DATO_FALTANTE`, `DATO_INVALIDO` o
+    `campo` informado), indicando donde se declara cada dato (C4).
+    """
+    acumulado: Dict[Tuple[str, str], Dict[str, Any]] = {}
+    reales: set = set()
+    for id_punto, bloqueo in informe.bloqueos():
+        if bloqueo.criterio is not None:
+            continue
+        es_dato = (
+            bloqueo.tipo in (TipoDeBloqueo.DATO_FALTANTE,
+                             TipoDeBloqueo.DATO_INVALIDO)
+            or bool(bloqueo.campo)
+        )
+        if not es_dato:
+            continue
+        clave_dato = str(bloqueo.campo or bloqueo.etapa or bloqueo.tipo.value)
+        tipo_texto = str(bloqueo.tipo.value)
+        llave = (clave_dato, tipo_texto)
+        if not bloqueo.diferido_por_alcance:
+            reales.add(llave)
+        entrada = acumulado.setdefault(
+            llave, {"fases": [], "etapas": [], "puntos": [], "detalle": ""}
+        )
+        for campo_lista, val in (("fases", bloqueo.fase),
+                                 ("etapas", bloqueo.etapa),
+                                 ("puntos", id_punto)):
+            if val is not None and val not in entrada[campo_lista]:
+                entrada[campo_lista].append(val)
+        if not entrada["detalle"] and bloqueo.mensaje:
+            entrada["detalle"] = bloqueo.mensaje
+
+    salida = []
+    for (clave_dato, tipo_texto) in sorted(acumulado):
+        info = acumulado[(clave_dato, tipo_texto)]
+        salida.append(DatoBloqueante(
+            dato=clave_dato,
+            tipo=tipo_texto,
+            fases=tuple(info["fases"]),
+            etapas=tuple(info["etapas"]),
+            puntos=tuple(info["puntos"]),
+            donde_se_declara=_responsable.donde_se_declara_dato(clave_dato),
+            detalle=info["detalle"],
+            diferido=(clave_dato, tipo_texto) not in reales,
+        ))
     return tuple(salida)
 
 

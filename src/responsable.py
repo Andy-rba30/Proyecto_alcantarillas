@@ -33,7 +33,7 @@ Vale para un `Criterio` y para un `DatoSitio`: los dos llevan `resolucion`,
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Optional
 
 from src.modelos import (DeCatalogo, DeEnsayo, Derivada, DeTabla, EnRango,
                          Libre)
@@ -91,3 +91,78 @@ def responsabilidad_de(declarado: Any) -> Responsabilidad:
     return Responsabilidad(
         responsable=responsable_de(getattr(declarado, "resolucion", None)),
         evidencia=evidencia_de(declarado))
+
+
+def donde_se_declara_criterio(clave: str) -> str:
+    """
+    En que lugar de la interfaz o de la entrada se declara un criterio o un
+    dato de sitio `[S]` pendiente (C4). Derivado dinamicamente desde
+    `datos_sitio.DATOS_SITIO` y `criterios_adoptados.CRITERIOS`, sin listas
+    manuales.
+    """
+    from src import criterios_adoptados as _ca
+    from src import datos_sitio as _ds
+
+    if clave in _ds.DATOS_SITIO:
+        return "Pestaña 1 -> Datos de sitio (archivo sitio.json) o CLI --datos-sitio"
+    if clave in _ca.CRITERIOS:
+        return ("Pestaña 2 -> Criterios ('Aplicar solo a esta corrida') "
+                "o CLI --declarar")
+    try:
+        declarado = _ca.declaracion_de(clave)
+    except KeyError:
+        return "Pestaña 2 -> Criterios o Pestaña 1 -> Datos de entrada"
+    if getattr(declarado, "etiqueta", "") == "S":
+        return "Pestaña 1 -> Datos de sitio (sitio.json) o --datos-externos"
+    return "Pestaña 2 -> Criterios o CLI --declarar"
+
+
+def donde_se_declara_dato(campo: Optional[str]) -> str:
+    """
+    En que lugar de la interfaz o de los archivos de entrada se declara un dato
+    cuya ausencia o invalidez detuvo una etapa (C4). Se deriva de
+    `M0_carga.COLUMNAS`, `datos_sitio.DATOS_SITIO`, `sesion.CLAVE_EXTERNA_DE_CAMPO`
+    y las colecciones de claves de `servicio`.
+    """
+    from src import datos_sitio as _ds
+    from src import servicio as _srv
+    from src import sesion as _sesion
+    from src.modulos import M0_carga as _m0
+    from src.modulos import MH_hidrologia as _mh
+
+    nombre = str(campo or "").strip()
+    if not nombre:
+        return "Pestaña 1 -> revisar entradas del punto (ver docs/manual_usuario.md)"
+    raiz = nombre.split(".", 1)[0]
+
+    es_columna = raiz in _m0.COLUMNAS
+    es_externo = (
+        raiz in _srv.CLAVES_EXTERNAS
+        or raiz in _srv.CLAVES_DE_CABEZAL
+        or raiz in _srv.CLAVES_DE_DURABILIDAD
+        or raiz in _srv.CLAVES_DE_LICUEFACCION
+    )
+    en_ventana = raiz in set(_sesion.CLAVE_EXTERNA_DE_CAMPO.values())
+    columnas_hidrologia = (
+        set(_mh.COLUMNAS_CUENCAS)
+        | set(_mh.COLUMNAS_CUENCAS_OPCIONALES)
+        | set(_mh.COLUMNAS_ESTACION)
+        | {"cuencas", "hidrologia"}
+    )
+
+    if es_columna and es_externo:
+        return (f"Pestaña 1 -> Columna '{raiz}' del CSV de puntos "
+                "o 'puntos' en datos_externos.json (--datos-externos)")
+    if es_columna:
+        return f"Pestaña 1 -> Columna '{raiz}' del CSV de puntos criticos"
+    if raiz in _ds.DATOS_SITIO:
+        return "Pestaña 1 -> Datos de sitio (archivo sitio.json) o CLI --datos-sitio"
+    if es_externo and en_ventana:
+        return (f"Pestaña 1 -> Campo '{raiz}' de datos externos "
+                "o archivo datos_externos.json (--datos-externos)")
+    if es_externo:
+        return ("Pestaña 1 -> Archivo datos_externos.json "
+                "('globales' o 'puntos') o CLI --datos-externos")
+    if raiz in columnas_hidrologia:
+        return "Pestaña 1 -> Archivos CSV de hidrologia (--cuencas / --estacion)"
+    return "Pestaña 1 -> Datos de entrada (ver docs/manual_usuario.md)"
