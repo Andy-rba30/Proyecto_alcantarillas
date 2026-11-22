@@ -11,17 +11,51 @@
 # Sin el repositorio de normas (`NORMAS_DIR`, privado por copyright) los tests
 # que abren un PDF se saltan con su motivo (`conftest.py`): la verificacion
 # contra las fuentes sigue siendo de la sesion que enlaza ese repositorio.
+#
+# Plan A4: dos velocidades con `pytest-xdist`:
+#   - `rapida`: corre en cada push y pull_request excluyendo `-m "not lento"`.
+#   - `completa`: corre la suite entera con `--dist loadfile` (A5) en `main`,
+#     etiquetas `respaldo-*` / `v*` y ejecucion manual (`workflow_dispatch`).
 name: Pruebas
 
 on:
   push:
   pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  suite:
+  rapida:
+    if: github.event_name == 'push' || github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Tk, servidor X virtual y librerias de weasyprint
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            python3-tk tk-dev xvfb xauth libpango-1.0-0 libpangoft2-1.0-0
+      - name: Dependencias
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt -r requirements-dev.txt
+      - name: La ventana se puede levantar
+        run: xvfb-run -a python -c "import tkinter, ttkbootstrap; r = tkinter.Tk(); r.destroy()"
+      - name: Suite rapida (-m "not lento" con xdist)
+        run: xvfb-run -a python -m pytest -m "not lento" -n auto -q -p no:cacheprovider --no-header
+
+  completa:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.ref == 'refs/heads/main' ||
+      startsWith(github.ref, 'refs/tags/respaldo-') ||
+      startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-24.04
     timeout-minutes: 180
     steps:
@@ -40,5 +74,5 @@ jobs:
           pip install -r requirements.txt -r requirements-dev.txt
       - name: La ventana se puede levantar
         run: xvfb-run -a python -c "import tkinter, ttkbootstrap; r = tkinter.Tk(); r.destroy()"
-      - name: Suite del entregable, con los tests de ventana
-        run: xvfb-run -a python -m pytest -q -p no:cacheprovider --no-header
+      - name: Suite completa con xdist (--dist loadfile)
+        run: xvfb-run -a python -m pytest -n auto --dist loadfile -q -p no:cacheprovider --no-header
