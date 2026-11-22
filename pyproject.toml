@@ -36,6 +36,8 @@ pdf = ["weasyprint==69.0"]
 test = ["pytest==9.1.1", "PyMuPDF>=1.24", "pytest-xdist>=3.6"]
 # Mantenimiento del tracker de auditorias (material de proceso).
 proceso = ["openpyxl>=3.1"]
+# Empaquetado Windows sin Python (C3).
+empaquetado = ["pyinstaller>=6.0"]
 
 [tool.pytest.ini_options]
 # La suite del ENTREGABLE es `tests/`. Los tests del material de proceso

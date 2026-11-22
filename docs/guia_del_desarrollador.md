@@ -118,3 +118,27 @@ Todas las pruebas se ejecutan desde la raíz del repositorio (`D:\Proyecto_alcan
 | **Suite completa** (cierre) | `$env:NORMAS_DIR="D:\Normas_repo"; py -3.13 -m pytest -n 4 --dist loadfile -q -p no:cacheprovider --no-header` | Cierre de bloque / release (`--dist loadfile` evita repetir fixtures `scope="module"`) |
 | **Suite de proceso** | `py -3.13 -m pytest proceso/tests -q -p no:cacheprovider` | Al tocar `proceso/` o el tracker |
 | **Regenerar validaciones** | `py -3.13 -m tests.apoyo.validacion_integral --escribir` (y análogos `validacion_externa`, `sensibilidad`, `validacion_cabezal`, `validacion_conducto`, `validacion_hidrologica`) | Si cambia el cuerpo de los anexos |
+
+---
+
+## 5. Empaquetado para Windows sin Python (C3)
+
+La receta [`empaquetado/proyecto_alcantarillas.spec`](../empaquetado/proyecto_alcantarillas.spec) empaqueta el software en una carpeta distribuible `--onedir` (`dist/proyecto_alcantarillas/`) usando `contents_directory="."` para conservar la jerarquía en disco que leen en tiempo de ejecución `M11_reporte.py` (`src/plantillas/*.html`, `docs/`), `criterios_adoptados.py` (anclas en `docs/` y SHA-1) y `variables_entrada.py` (AST de `src/modulos/`).
+
+### Requisitos y compilación
+1. Instalar dependencias de ejecución, GUI/PDF y empaquetado (`pyinstaller>=6.0` declarado en [`requirements-dev.txt`](../requirements-dev.txt) y en el extra `empaquetado` de [`pyproject.toml`](../pyproject.toml)):
+   ```powershell
+   py -3.13 -m pip install -r requirements.txt -r requirements-dev.txt ttkbootstrap==2.2.1 weasyprint==69.0
+   ```
+2. Compilar desde la raíz del repositorio:
+   ```powershell
+   py -3.13 -m PyInstaller --clean --noconfirm empaquetado/proyecto_alcantarillas.spec
+   ```
+   Se generan dos ejecutables compartiendo la misma carpeta `dist/proyecto_alcantarillas/`:
+   - `alcantarillas_cli.exe` (línea de comandos: `--prevuelo`, corrida completa, `--json`, `--html`, `--pdf`)
+   - `alcantarillas_gui.exe` (interfaz gráfica Tkinter / `ttkbootstrap`)
+
+### Exportación a PDF y fallback a HTML
+- Si en la máquina donde se compila está instalado GTK3/Pango (`C:\Program Files\GTK3-Runtime Win64\bin` o MSYS2), PyInstaller recoge las DLL nativas de WeasyPrint dentro del paquete y `alcantarillas_cli.exe --pdf` genera PDF `%PDF-1.7` sin depender del `PATH` del equipo destino.
+- Si se compila o ejecuta sin las librerías nativas de WeasyPrint operativas, `M11_reporte.exportar_pdf` recurre automáticamente a la vía HTML (`--html` / exportación desde navegador con `Ctrl+P → Guardar como PDF`), sin bloquear el cálculo.
+- Nota: dentro de la GUI, el subproceso de PDF (`gui/exportacion_pdf.py`) invoca `sys.executable` con `cli.py`, por lo que en el paquete congelado la vía directa recomendada para PDF en lote es `alcantarillas_cli.exe --pdf` (o HTML desde la ventana e impresión en navegador).

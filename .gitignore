@@ -11,3 +11,7 @@ __pycache__/
 # cualquier ejecucion sobre tests/ejemplo_puntos.csv la reescribe, no es un
 # fixture que algun test lea (SIS-C-10)
 tests/*.informe.json
+
+# artefactos de empaquetado PyInstaller (C3)
+build/
+dist/

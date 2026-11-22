@@ -28,3 +28,7 @@ openpyxl>=3.1
 # pytest-xdist -- ejecucion en paralelo de la suite (-n auto / -n 4, plan A3).
 #   Herramienta de ejecucion de tests; no entra al software calculado.
 pytest-xdist>=3.6
+
+# pyinstaller -- empaquetado de ejecutable Windows sin Python (plan C3).
+#   Herramienta de distribucion; no entra al software calculado.
+pyinstaller>=6.0
