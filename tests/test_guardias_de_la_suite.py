@@ -525,9 +525,11 @@ def test_los_simbolos_que_el_fixture_nombra_existen_de_verdad():
             ("src/modulos/M5_verificaciones.py", "v8_evento_extremo"),
             ("src/modulos/M2_material.py", "espesor_pared"),
             ("src/modulos/M8_estructural.py", "seleccionar_clase_calibre"),
-            ("src/modulos/M9_cabezal.py", "verificar_estabilidad_global"),
-            ("src/modulos/M9_cabezal.py", "verificar_talud"),
-            ("src/modulos/M9_cabezal.py",
+            ("src/modulos/M9_cabezal/estabilidad_base.py",
+             "verificar_estabilidad_global"),
+            ("src/modulos/M9_cabezal/estabilidad_base.py",
+             "verificar_talud"),
+            ("src/modulos/M9_cabezal/estabilidad_base.py",
              "capacidad_portante_zapata_en_talud")):
         arbol = ast.parse((RAIZ / archivo).read_text(encoding="utf-8-sig"))
         nodo = next((n for n in ast.walk(arbol)

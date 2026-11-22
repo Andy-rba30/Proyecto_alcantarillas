@@ -749,7 +749,7 @@ registro.
 - **Qué haría falta:** nada. Cerrado. La razón vive en el bloque «POR QUÉ ESTE
   MÓDULO VALIDA ARGUMENTOS INTERNOS CON `DatoInvalidoError`», encima de las
   cuatro funciones que nombra.
-- **Dónde vive:** `src/modulos/M9_cabezal.py::fs_requerido`
+- **Dónde vive:** `src/modulos/M9_cabezal/estabilidad_base.py::fs_requerido`
 
 ## SIS-E-04 · El único `raise` de la GUI valida un campo tecleado con `ValueError`
 
@@ -804,7 +804,7 @@ el sitio donde un revisor las buscaría es este.
   muestra al proyectista. No es una promesa incumplida: ese campo dice **qué
   símbolo lee la tabla**, no que una corrida pase por él, y esta función es en
   efecto la que lee la transcripción de esas etiquetas.
-- **Dónde vive:** `src/modulos/M9_cabezal.py::combinaciones`
+- **Dónde vive:** `src/modulos/M9_cabezal/estabilidad_base.py::combinaciones`
 
 > Su docstring afirmaba «es la que M11 usa para declarar QUÉ combinaciones
 > rigen», y `M11_reporte` no la referencia: sus únicos llamadores son cuatro
@@ -863,7 +863,7 @@ condición escrita.
 - **Qué haría falta:** que el proyectista declare el predimensionamiento del
   cabezal, y que `diseno_flexion_corte` deje de detenerse en
   `NotImplementedError`. Ninguna de las dos es trabajo documental.
-- **Dónde vive:** `src/modulos/M9_cabezal.py::FUNCIONES_SIN_CONSUMIDOR`
+- **Dónde vive:** `src/modulos/M9_cabezal/durabilidad.py::FUNCIONES_SIN_CONSUMIDOR`
 
 ## NOR-HDS-05 · Las tres condiciones de uso de h_o
 
@@ -2402,7 +2402,7 @@ escritas porque se apartan de lo que un lector esperaría.
   `predimensionamiento_cabezal`), y el diseño por corte de AASHTO LRFD Sec.
   5 que produzca Vu y con él la ρh requerida; entonces la ecuación se
   transcribe como fórmula con su cita y el criterio pasa a `Derivada`.
-- **Dónde vive:** `src/modulos/M9_cabezal.py::cuantia_de_diseno`
+- **Dónde vive:** `src/modulos/M9_cabezal/durabilidad.py::cuantia_de_diseno`
 
 ## EXT-7-02 · E6 (excentricidad sísmica) no entra en las `exigidas` por defecto
 
@@ -2431,7 +2431,7 @@ escritas porque se apartan de lo que un lector esperaría.
   única y pasa a depender de `CondicionAnalisis`) y cablear
   `presion_contacto_base` → `verificar_excentricidad_sismica` en el
   ensamble, que hoy no existe (`FUNCIONES_SIN_CONSUMIDOR`).
-- **Dónde vive:** `src/modulos/M9_cabezal.py::EXIGIDAS_SEC_9_3`
+- **Dónde vive:** `src/modulos/M9_cabezal/_criterios.py::EXIGIDAS_SEC_9_3`
 
 ## EXT-7-03 · El Ka de Coulomb se adopta entero, no la «guardia mínima»
 
@@ -2450,7 +2450,7 @@ escritas porque se apartan de lo que un lector esperaría.
   como la forma reducida que la hoja escribía.
 - **Qué haría falta:** nada para cerrarla; se registra para que nadie vuelva
   a proponer la guardia como si fuera equivalente.
-- **Dónde vive:** `src/modulos/M9_cabezal.py::empujes_trasdos`
+- **Dónde vive:** `src/modulos/M9_cabezal/empujes.py::empujes_trasdos`
 
 ## EXT-7-04 · La resultante de Coulomb se toma entera como horizontal: la descomposición queda diferida
 
@@ -6022,7 +6022,7 @@ sobre el árbol corregido, y cada una dice qué cambió.
   fija.
 - **Qué haría falta:** para (3), una embocadura «caja receptora» con su hidráulica (un
   drop inlet no está en las Tablas A.1 y C.2 del HDS-5) y su geometría.
-- **Dónde vive:** `src/modulos/M9_cabezal.py::verificar_coherencia_embocadura_cajon`
+- **Dónde vive:** `src/modulos/M9_cabezal/geometria.py::verificar_coherencia_embocadura_cajon`
 
 ## T7A-03 · Los aleros llevan el coseno de su ángulo con la bajada del talud: con esviaje, los dos aleros de un cabezal miden distinto
 
@@ -6056,7 +6056,7 @@ sobre el árbol corregido, y cada una dice qué cambió.
   VE6-T7A03); siguen el aleros-con-barril-esviado de la Carta 12 escala 3 y el (2).
 - **Qué haría falta:** la banda de la Carta 11 y el paso posterior a T-7c; corregir la
   frase del INFORME, que no es de este repositorio.
-- **Dónde vive:** `src/modulos/M9_cabezal.py::predimensionar_aleros`
+- **Dónde vive:** `src/modulos/M9_cabezal/geometria.py::predimensionar_aleros`
 
 ## T7A-04 · Las reglas del predimensionamiento son [A] en el extremo de más material, y eso NO es el lado seguro de la estabilidad
 
@@ -6114,7 +6114,7 @@ sobre el árbol corregido, y cada una dice qué cambió.
   5 es de la salida).
 - **Qué haría falta:** el EMS del lecho por punto (`material_lecho_salida`) o un estudio
   de socavación (`profundidad_socavacion_estimada_m`).
-- **Dónde vive:** `src/modulos/M9_cabezal.py::predimensionar_cabezal`
+- **Dónde vive:** `src/modulos/M9_cabezal/geometria.py::predimensionar_cabezal`
 
 ## T7A-06 · La longitud entre cabezales queda cerrada con el relleno retenido, da también la de metrado, y no sustituye a la del diseño
 
@@ -6137,7 +6137,7 @@ sobre el árbol corregido, y cada una dice qué cambió.
 - **Qué haría falta:** `L` por sección en MD, o declarar `longitud_m` por punto.
 - **VE-6 (ítem 22 del censo):** la mitad del control de salida queda cerrada con la pasada de
   refinamiento de la ficha VE6-22; la coronación de salida sigue sin iterarse.
-- **Dónde vive:** `src/modulos/M9_cabezal.py::longitud_entre_cabezales`
+- **Dónde vive:** `src/modulos/M9_cabezal/geometria.py::longitud_entre_cabezales`
 
 ## T7A-07 · La aceptación de T-7a se escribió después del código; el rojo se midió contra la base
 
@@ -6156,7 +6156,7 @@ sobre el árbol corregido, y cada una dice qué cambió.
   después a mano. Los 16 vivos son de frontera contra `TOL_UMBRAL_NORMATIVO`, de texto o
   equivalentes en el dominio.
 - **Qué haría falta:** nada que se pueda rehacer.
-- **Dónde vive:** `src/modulos/M9_cabezal.py::cabezal_del_punto`
+- **Dónde vive:** `src/modulos/M9_cabezal/geometria.py::cabezal_del_punto`
 
 ## T7A-08 · Los mínimos de E.050 y de E.060 15.7 son [N→] para un cabezal vial, y la hoja de ruta los rotula [N]
 
@@ -6291,7 +6291,7 @@ marca del régimen para T-7c.
   (`M9._aviso_desembalse_rapido`: en la entrada de A-01, con el agua de diseño a 1.84 m
   sobre la base, γ_w·h²/2 ≈ 16.6 kN/m frente a 15.6 kN/m de la componente horizontal
   del empuje con la cuña). Modelarlo exige decidir el nivel residual del relleno tras la avenida.
-- **Dónde vive:** `src/modulos/M9_cabezal.py::ensamble_estabilidad`
+- **Dónde vive:** `src/modulos/M9_cabezal/estabilidad.py::ensamble_estabilidad`
 
 ## T7B-04 · La capacidad portante es la de terreno horizontal, zapata corrida y sin factor de profundidad; las tablas de talud de AASHTO no se transcribieron
 
@@ -6316,7 +6316,7 @@ marca del régimen para T-7c.
   el PDF si aparece un cabezal en ladera; y el EMS, que con `q_n_kpa` o `q_adm_kpa`
   gana sobre todo esto.
 - **VE-5 (lote M9):** cerrados (1), (2) y la admisible suelta; ver la ficha VE5M9-03.
-- **Dónde vive:** `src/modulos/M9_cabezal.py::resistencia_portante_nominal`
+- **Dónde vive:** `src/modulos/M9_cabezal/estabilidad_cargas.py::resistencia_portante_nominal`
 
 ## T7B-05 · Sin drenaje declarado el relleno se calcula lleno de agua: es el valor de archivo, y deja la condición sísmica sin evaluar
 
@@ -6368,7 +6368,7 @@ marca del régimen para T-7c.
   no cambia. Sigue diferido el GLE.
 - **VE-5 (lote M9):** la cuña sobre el trasdós inclinado y fuera del dominio de M-O; ver
   la ficha VE5M9-02.
-- **Dónde vive:** `src/modulos/M9_cabezal.py::cargas_del_cabezal`
+- **Dónde vive:** `src/modulos/M9_cabezal/estabilidad_cargas.py::cargas_del_cabezal`
 
 ## T7B-07 · E4 y E5 (estabilidad global del muro y del talud) se imprimen diferidas al expediente
 
@@ -6382,7 +6382,7 @@ marca del régimen para T-7c.
   de seguridad. El punto 4 del encargo las deja «diferidas al expediente con el EMS».
 - **Qué haría falta:** el EMS y el análisis externo; el programa solo podría registrar
   su resultado como dato declarado.
-- **Dónde vive:** `src/modulos/M9_cabezal.py::PENDIENTES_E4_E5`
+- **Dónde vive:** `src/modulos/M9_cabezal/estabilidad.py::PENDIENTES_E4_E5`
 - **Cerrado en parte en VE-4a (decisión del dueño, 2026-11-20):** el resultado del
   análisis externo ya se registra como dato declarado. El punto declara, por cabezal, el FS
   estático y el sísmico de E4 y/o de E5 con el documento, la fecha y el método que los
@@ -6427,7 +6427,7 @@ marca del régimen para T-7c.
   `solicitaciones_por_elemento` ganó el parámetro `marco`.
 - **Cerrado en VE-6 (3):** el alero ya no lleva la solicitación de la pantalla: cada
   sección tiene la de su franja (ficha VE6M9-03).
-- **Dónde vive:** `src/modulos/M9_cabezal.py::solicitaciones_por_elemento`
+- **Dónde vive:** `src/modulos/M9_cabezal/estabilidad.py::solicitaciones_por_elemento`
 
 ## T7B-09 · Con la regla de predimensionamiento de T-7a el cabezal de A-01 no pasa el deslizamiento del marco que rige: medido, no corregido
 
@@ -6458,7 +6458,7 @@ marca del régimen para T-7c.
   FASE A (más γ_sat = 20), A-01 incumple E3 estático en los dos cabezales (38.05 > 29.39;
   58.07 > 47.10, que cumpliría con la fila de muros) y E1 sísmico a la entrada (80.26 >
   50.28, que cumpliría sin inclinación); la sísmica de salida no es evaluable (H1).
-- **Dónde vive:** `src/modulos/M9_cabezal.py::predimensionar_cabezal`
+- **Dónde vive:** `src/modulos/M9_cabezal/geometria.py::predimensionar_cabezal`
 
 - **Cerrado en VE-3.5 (decisión del dueño, 2026-11-17):** la iteración del ancho que faltaba
   existe (`M9.dimensionar_zapata_por_estabilidad`, ficha VE3-05); con los datos de prueba del
@@ -6489,7 +6489,7 @@ marca del régimen para T-7c.
 - **Qué haría falta:** casos de frontera exacta para las seis filas, que exigen un muro
   construido para caer en el umbral; y un tercer conjunto de objetivos para la segunda
   vuelta del arnés.
-- **Dónde vive:** `src/modulos/M9_cabezal.py::combinaciones_de_estabilidad`
+- **Dónde vive:** `src/modulos/M9_cabezal/estabilidad_cargas.py::combinaciones_de_estabilidad`
 
 ## T7B-11 · La orientación del muro frente al tráfico sigue siendo un dato de corredor: no se deriva del esviaje de cada punto
 
@@ -6507,7 +6507,7 @@ marca del régimen para T-7c.
   los dos datos por punto en `--datos-externos`.
 - **Cerrado en VE-6:** los dos datos por punto (ficha VE6M9-04); la regla del muro oblicuo
   no se escribe (la fuente no la da).
-- **Dónde vive:** `src/modulos/M9_cabezal.py::h_eq_sobrecarga_trasdos`
+- **Dónde vive:** `src/modulos/M9_cabezal/empujes.py::h_eq_sobrecarga_trasdos`
 
 ## T7B-12 · Declarados, V5 y V8 se evalúan también a nivel de perfil; y el pre-vuelo de expediente anuncia el freático
 
@@ -6565,7 +6565,7 @@ marca del régimen para T-7c.
   `xfail(strict=True)`: se escribieron con el código, y el rojo se mide contra la FASE A
   (`fc792d9`), donde los símbolos nuevos no existen y cada test falla por separado.
 - **Qué haría falta:** lo que cada ficha dice.
-- **Dónde vive:** `src/modulos/M9_cabezal.py::cuna_de_tanteo`
+- **Dónde vive:** `src/modulos/M9_cabezal/estabilidad_cargas.py::cuna_de_tanteo`
 
 ## T7B-14 · El cabezal se calcula como muro que CEDE; el que no cede está en la ventana y no implementado, y la interfaz de T-7c lo marca
 
@@ -6632,7 +6632,7 @@ fichas en su sitio y añadió T7C-11 a T7C-13.
   **no** lo aplicó: ficha T7C-11.
 - **Qué haría falta:** una especificación del Propietario que fije el juego de mínimos y
   el modificador de carga del cabezal.
-- **Dónde vive:** `src/modulos/M9_cabezal.py::diseno_flexion_corte`
+- **Dónde vive:** `src/modulos/M9_cabezal/armado_secciones.py::diseno_flexion_corte`
 
 ## T7C-02 · Los elementos se arman con el empuje en reposo, y lo que esa elección no resuelve
 
@@ -6694,7 +6694,7 @@ fichas en su sitio y añadió T7C-11 a T7C-13.
   tamaño máximo del agregado y el parámetro de espaciamiento de fisuras) o dimensionar
   estribos; y la decisión del proyectista sobre si la pantalla es o no una «losa» a
   efectos de 5.7.2.3.
-- **Dónde vive:** `src/modulos/M9_cabezal.py::simplificado_permitido`
+- **Dónde vive:** `src/modulos/M9_cabezal/armado_secciones.py::simplificado_permitido`
 
 ## T7C-04 · Los aleros se arman en su arranque; su zapata y sus secciones intermedias no
 
@@ -6720,7 +6720,7 @@ fichas en su sitio y añadió T7C-11 a T7C-13.
   los muros de concreto simple, cita `E060.22.6.6.5#ABERTURAS`; para el armado, por
   analogía); ni la **losa de entrega** ni el **dentellón**, que `GeometriaCabezal.losa`
   trae. El aviso de cada cabezal lo nombra; no se dimensiona.
-- **Dónde vive:** `src/modulos/M9_cabezal.py::armar_elemento`
+- **Dónde vive:** `src/modulos/M9_cabezal/armado.py::armar_elemento`
 
 ## T7C-05 · Sin el análisis químico ni la categoría del acero, el recubrimiento con que se arma es la cota más exigente, no los 70 mm del encargo
 
@@ -6749,7 +6749,7 @@ fichas en su sitio y añadió T7C-11 a T7C-13.
   espaciamiento, de modo que la cota es la comprobación más exigente; el aviso dice lo
   que la aritmética sostiene.
 - **Qué haría falta:** el análisis químico del EMS y la especificación del acero.
-- **Dónde vive:** `src/modulos/M9_cabezal.py::recubrimiento_para_armar`
+- **Dónde vive:** `src/modulos/M9_cabezal/durabilidad.py::recubrimiento_para_armar`
 
 ## T7C-06 · El desarrollo y los empalmes de las barras no se evalúan; la fisuración de 5.6.7 se evalúa con la clase de exposición que declare el Propietario
 
@@ -6773,7 +6773,7 @@ fichas en su sitio y añadió T7C-11 a T7C-13.
   metro no produce.
 - **Qué haría falta:** la clase de exposición declarada; y, para el desarrollo, el
   despiece de las barras.
-- **Dónde vive:** `src/modulos/M9_cabezal.py::fisuracion_aashto`
+- **Dónde vive:** `src/modulos/M9_cabezal/armado_secciones.py::fisuracion_aashto`
 
 ## T7C-07 · La zapata se arma con presión de contacto lineal y el talón con el peso entero: no son las solicitaciones de zapata de la interfaz de T-7b
 
@@ -6795,7 +6795,7 @@ fichas en su sitio y añadió T7C-11 a T7C-13.
   orden del doble de momento que el método exacto.
 - **Qué haría falta:** nada para el armado; si se quiere una sola cifra, que la interfaz
   de T-7b entregue las de la presión lineal.
-- **Dónde vive:** `src/modulos/M9_cabezal.py::solicitaciones_de_la_zapata`
+- **Dónde vive:** `src/modulos/M9_cabezal/armado_secciones.py::solicitaciones_de_la_zapata`
 
 ## T7C-08 · La aceptación de T-7c se escribió después del código; el rojo y la mutación se midieron
 
@@ -6861,7 +6861,7 @@ fichas en su sitio y añadió T7C-11 a T7C-13.
   ciclópeo, y la verificación de la zapata por 22.7.
 - **Cerrado en VE-6 (2) y (3):** el cuerpo bajo sismo (C8) y la zapata como voladizo (C7);
   ficha VE6M9-01.
-- **Dónde vive:** `src/modulos/M9_cabezal.py::verificar_cabezal_ciclopeo`
+- **Dónde vive:** `src/modulos/M9_cabezal/ciclopeo.py::verificar_cabezal_ciclopeo`
 
 ## T7C-10 · El rótulo por ámbito de E.060: lo que T-7c usa es [N→]; el 0.30 m de 22.7.4 pasa a criterio [N→] en el cierre, y las cuantías de 14.3.1 siguen como constante
 
@@ -6956,7 +6956,7 @@ fichas en su sitio y añadió T7C-11 a T7C-13.
   ciclópeo ya usaba; el docstring de T-7b decía «del lado seguro» y para el momento no lo
   era.
 - **Qué haría falta:** nada para la pantalla; el alero por secciones es T7C-04.
-- **Dónde vive:** `src/modulos/M9_cabezal.py::empujes_sobre_el_arranque`
+- **Dónde vive:** `src/modulos/M9_cabezal/estabilidad.py::empujes_sobre_el_arranque`
 
 ## T7C-13 · El cierre de T-7c aplicó las doce correcciones de la auditoría
 
@@ -6983,7 +6983,7 @@ fichas en su sitio y añadió T7C-11 a T7C-13.
   ambiente corrosivo (T7C-05).
 - **Por qué:** la auditoría adversarial (AJUSTADO) y las resoluciones del orquestador.
 - **Qué haría falta:** lo abierto de cada ficha que cita.
-- **Dónde vive:** `src/modulos/M9_cabezal.py::ensamblar_armado`
+- **Dónde vive:** `src/modulos/M9_cabezal/armado.py::ensamblar_armado`
 
 # Parte LII — Lo que la verificación de las fórmulas de los cierres de T-7b y T-7c dejó escrito
 
@@ -7055,7 +7055,7 @@ del fixture se mueve.
   una elección: la pantalla en voladizo tiene un solo camino de carga y clasificarla
   como no redundante (≥ 1.05) es del Propietario.
 - **Qué haría falta:** la decisión del Propietario sobre η_R y η_D del cabezal.
-- **Dónde vive:** `src/modulos/M9_cabezal.py::modificador_de_carga`
+- **Dónde vive:** `src/modulos/M9_cabezal/estabilidad_cargas.py::modificador_de_carga`
 
 ## T7V-03 · El piso de la zapata armada se construye con la lectura de A8: 300 mm al eje de la capa inferior, con el recubrimiento con que se arma y la mayor barra del catálogo
 
@@ -7079,7 +7079,7 @@ del fixture se mueve.
   los tests); el deslizamiento LRFD estático de A-01 sigue sin cumplir (ficha T7B-09).
 - **Qué haría falta:** que el EMS y el expediente declaren la exposición y la categoría
   del acero (el piso baja entonces a 0.3827 m), y la decisión sobre la lectura de 15.7.
-- **Dónde vive:** `src/modulos/M9_cabezal.py::peralte_minimo_zapata`
+- **Dónde vive:** `src/modulos/M9_cabezal/geometria.py::peralte_minimo_zapata`
 
 ## T7V-04 · La aceptación de la verificación se escribió con el código; el rojo se midió contra la base
 
@@ -8511,7 +8511,7 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   Línea base: la huella y la etiqueta de las dos filas (docs/linea_base.md §19).
 - **Qué haría falta:** nada para estos; por la CLI un dato de ensayo se sigue declarando sin
   nota, como antes de VE-2.
-- **Dónde vive:** `src/modulos/M9_cabezal.py::validar_suelo_fundacion`
+- **Dónde vive:** `src/modulos/M9_cabezal/estabilidad_cargas.py::validar_suelo_fundacion`
 
 ## VE3-03 · M9 contra ejemplos publicados (Caltrans BDP 11.2.2, CDOT Ex. 11)
 
@@ -8619,7 +8619,7 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   C-01 sin cumplir): CERRADO en VE-3.14 (ficha VE3-14); (3) el dentellón de corte de 11.6.3.5 no se ofrece.
 - **Qué haría falta:** el cortante general de 5.7.3.4.2 y extender el dimensionamiento a la
   pantalla y al alero.
-- **Dónde vive:** `src/modulos/M9_cabezal.py::dimensionar_peralte_por_armado`
+- **Dónde vive:** `src/modulos/M9_cabezal/dimensionamiento.py::dimensionar_peralte_por_armado`
 
 ## VE3-08 · Ensayos de diseño del conducto: H4, H2, H6 y H3 (VE-3.11)
 
@@ -8711,7 +8711,7 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   ec. 5.7.3.4.2-2 despejada) sube antes que el espesor: sin eso el espesor crecía para bajar εs.
   Es decisión de la sesión y se deja escrita aquí.
 - **Qué haría falta:** nada para el cortante; el acero longitudinal queda como decisión documentada de la sesión.
-- **Dónde vive:** `src/modulos/M9_cabezal.py::acero_para_cortante_general`
+- **Dónde vive:** `src/modulos/M9_cabezal/armado_secciones.py::acero_para_cortante_general`
 
 ## VE3-13 · El bucle de la zapata se detiene en el tope y prueba la punta (VE-3.14, bloque 2; H-5, H-6, H-12)
 
@@ -8725,7 +8725,7 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   VE3-17 para las opciones de criterio.
 - **VE-6 (ítem 34):** sigue abierto; la razón y lo que haría falta, en la ficha VE6-34.
 - **Qué haría falta:** la decisión 9 del dueño (ver VE3-17) para que el talón se calcule con el método exacto, y, si se quiere, iterar el peralte también en las filas NF.
-- **Dónde vive:** `src/modulos/M9_cabezal.py::dimensionar_zapata_por_estabilidad`
+- **Dónde vive:** `src/modulos/M9_cabezal/dimensionamiento.py::dimensionar_zapata_por_estabilidad`
 
 ## VE3-14 · La pantalla y el alero se dimensionan por su armado (VE-3.14, bloque 3; H-1)
 
@@ -8742,7 +8742,7 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   VE6M9-03): el alero se arma por sus secciones y su espesor crece por su armado; su
   estabilidad sigue abierta (T7C-04).
 - **Qué haría falta:** dimensionar el alero por separado y decidir su tratamiento con esviaje alto (H-13).
-- **Dónde vive:** `src/modulos/M9_cabezal.py::dimensionar_peralte_por_armado`
+- **Dónde vive:** `src/modulos/M9_cabezal/dimensionamiento.py::dimensionar_peralte_por_armado`
 
 ## VE3-15 · Con agua en el plano de empuje el sismo se evalúa (VE-3.14, bloque 4; H-3)
 
@@ -8754,7 +8754,7 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
 - **Abierto:** con `relleno_muy_abierto` la condición sísmica se detiene salvo que el punto
   declare el empuje con la hidrodinámica (VE7A-05): Westergaard no está en el repositorio de normas.
 - **Qué haría falta:** una fuente en el repositorio de normas para la fórmula de Westergaard.
-- **Dónde vive:** `src/modulos/M9_cabezal.py::cargas_del_cabezal`
+- **Dónde vive:** `src/modulos/M9_cabezal/estabilidad_cargas.py::cargas_del_cabezal`
 
 ## VE3-16 · Lo que la app dice de sí misma: alcance declarado y resumen de la CLI (VE-3.14, bloque 5; H-10, H-11)
 
@@ -8792,7 +8792,7 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
 - **Por qué:** cada opción cambia un diseño y la elección es del dueño, no de la sesión.
 - **Qué haría falta:** la decisión del dueño sobre 9, 10 y 13 (con las condiciones de la verificación),
   y sobre 14.
-- **Dónde vive:** `src/modulos/M9_cabezal.py::CRITERIO_MOMENTO_TALON` (con sus hermanas `CRITERIO_CARGA_PANTALLA` y `CRITERIO_DISTRIBUCION_INCREMENTO`)
+- **Dónde vive:** `src/modulos/M9_cabezal/estabilidad_cargas.py::CRITERIO_MOMENTO_TALON` (con sus hermanas `CRITERIO_CARGA_PANTALLA` y `CRITERIO_DISTRIBUCION_INCREMENTO`)
 
 ## VE3-18 · Decisiones 9 a 14 del dueño sobre el cabezal: valores de archivo y un solo régimen de k_h (VE-3.15)
 
@@ -8812,7 +8812,7 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
 - **Por qué:** son elecciones [A] y [C] dentro de sus ventanas, verificadas cita por cita
   (`proceso/planes_mejora/ve3_estado/verificaciones_del_dueno/`).
 - **Qué haría falta:** la salida del sismo del cabezal; acotar el ancho final al tope; el EMS.
-- **Dónde vive:** `src/modulos/M9_cabezal.py::factor_muro`
+- **Dónde vive:** `src/modulos/M9_cabezal/empujes.py::factor_muro`
 
 
 ## VE3-19 · Los máximos anuales repetidos se avisan, sin umbral (H1 de la validación hidrológica con casos reales)
@@ -8866,7 +8866,7 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   sitio, licuefacción, que 11.5.4.2 pone como condición previa); y, para cada obra, el detalle
   que permite el movimiento (junta en los aleros y en la unión con el conducto) con la
   aceptación escrita del Propietario.
-- **Dónde vive:** `src/modulos/M9_cabezal.py::factor_muro`
+- **Dónde vive:** `src/modulos/M9_cabezal/empujes.py::factor_muro`
 
 ## VE3-21 · El trasdós drenado es el valor de archivo (VE-3.16, decisión del dueño del 2026-11-18)
 
@@ -8890,7 +8890,7 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   Mientras no se corrija, quien lea sólo la hoja creerá que es así siempre.
 - **Qué haría falta:** el nivel medio como cota declarada por punto (dato del EMS entre el
   freático y la superficie), si una obra lo tuviera medido.
-- **Dónde vive:** `src/modulos/M9_cabezal.py::cargas_del_cabezal`
+- **Dónde vive:** `src/modulos/M9_cabezal/estabilidad_cargas.py::cargas_del_cabezal`
 
 ## VE4A-01 · E4 y E5 con el FS declarado del EMS: tres lecturas del proyecto y una fila sin valor (VE-4a, decisión del dueño del 2026-11-20)
 
@@ -8919,12 +8919,12 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   **Decisión pendiente de Fable**.
 - **Qué haría falta:** que el dueño confirme las tres lecturas o elija otra (por ejemplo,
   las cifras redondeadas del comentario); declarar `fila_phi_estabilidad_global` con el EMS
-  real; y corregir la hoja de ruta, cuya §9.3 y la nota de la Fase 9 siguen diciendo que E4
+  real; y corregir la hoja de ruta, cuya §9.3 y la nota de Fase 9 aún dicen que E4
   y E5 «se imprimen como diferidas al expediente con el EMS» sin el camino del FS declarado
-  (texto propuesto en el informe de VE-4a). `metodo_estabilidad_global` y las funciones
+  (texto en informe VE-4a). `metodo_estabilidad_global` y las funciones
   sueltas `verificar_estabilidad_global` / `verificar_talud` quedan como estaban: el método
   viaja ahora en la traza del dato declarado.
-- **Dónde vive:** `src/modulos/M9_cabezal.py::validar_estabilidad_global_declarada`
+- **Dónde vive:** `src/modulos/M9_cabezal/estabilidad_cargas.py::validar_estabilidad_global_declarada`
 
 ## VE5-M6-01 · La poza de enrocado de HEC-14 Sec. 10.1 entra donde el apron no llega (VE-4g, ítem 2 del censo)
 
@@ -9113,7 +9113,7 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   taludes; la puerta del P_AE declarado por punto se abrió en VE7A-05. La cuña sobre la CARA de la
   pantalla (`carga_pantalla_cabezal` = `cuna_sobre_la_pantalla`) sigue vertical: con
   talón el trasdós de la regla es vertical, y un β declarado con talón no la inclina.
-- **Dónde vive:** `src/modulos/M9_cabezal.py::cuna_de_tanteo`
+- **Dónde vive:** `src/modulos/M9_cabezal/estabilidad_cargas.py::cuna_de_tanteo`
 
 ## VE5M9-03 · Capacidad portante: la RC_BC de AASHTO sustituye a Meyerhof, forma y profundidad declarables, y la admisible de corredor con consumidor (VE-5, ficha T7B-04)
 
@@ -9135,7 +9135,7 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   2.8.1.3.1.2c (Meyerhof): **la hoja de ruta sigue mal** mientras no se corrija.
 - **Qué haría falta:** corregir la §9.3 de la hoja de ruta (la geometría del talud por punto
   se cerró en VE7A-06; `terreno_delante_del_cabezal` sigue de corredor).
-- **Dónde vive:** `src/modulos/M9_cabezal.py::coeficiente_rcbc`
+- **Dónde vive:** `src/modulos/M9_cabezal/estabilidad_base.py::coeficiente_rcbc`
 ## VE6M9-01 · El cabezal ciclópeo se verifica bajo sismo (C8) y su zapata como voladizo de concreto simple (C7) (VE-6, ítem 10; T7C-09 (2)(3))
 
 - **Cerrado:** `M9.verificar_cabezal_ciclopeo` suma dos filas. **C7** (punta y talón que
@@ -9160,7 +9160,7 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   cita principal de C7 (cerrado); (d) C7 no se evalúa bajo sismo (E.060 9.2.3 no
   combina CS con CE): la punta bajo Evento Extremo I queda cubierta sólo por E2.
 - **Qué haría falta:** nada para (c): cerrado en A11 con el PDF de E.060.
-- **Dónde vive:** `src/modulos/M9_cabezal.py::_verificar_cuerpo_bajo_sismo`
+- **Dónde vive:** `src/modulos/M9_cabezal/ciclopeo.py::_verificar_cuerpo_bajo_sismo`
 
 ## VE6M9-02 · Las cuantías mínimas de muro de E.060 14.3.1 pasan a criterio [N→] (VE-6, ítem 29; T7C-10)
 
@@ -9205,7 +9205,7 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
 - **Abierto:** la zapata del alero y su estabilidad (T7C-04): CERRADO en VE-7 (ficha
   VE7-01), en cinco franjas de su longitud.
 - **Qué haría falta:** lo que dice VE7-01.
-- **Dónde vive:** `src/modulos/M9_cabezal.py::entorno_de_la_seccion_del_alero`
+- **Dónde vive:** `src/modulos/M9_cabezal/armado.py::entorno_de_la_seccion_del_alero`
 
 ## VE6M9-04 · La orientación del muro y la distancia al borde de calzada, por punto (VE-6, ítem 28; T7B-11)
 
@@ -9225,7 +9225,7 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   la orientación perpendicular vigente (no se usa). El aviso vive en el ensamble y no en
   `fundir_sobrecarga_del_punto`: sólo allí se conoce la orientación vigente.
 - **Qué haría falta:** nada; un muro oblicuo con tabla propia necesitaría una fuente.
-- **Dónde vive:** `src/modulos/M9_cabezal.py::validar_sobrecarga_del_punto`
+- **Dónde vive:** `src/modulos/M9_cabezal/geometria.py::validar_sobrecarga_del_punto`
 
 ## VE7-01 · El alero se verifica como muro en sus franjas, con su zapata dimensionada y armada (VE-7; cierre de T7C-04)
 
@@ -9250,7 +9250,7 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
 - **Abierto:** nada, salvo la discretización: entre dos franjas no se verifica (la
   fracción es resolución de la verificación, `src/tolerancias.py`).
 - **Qué haría falta:** nada.
-- **Dónde vive:** `src/modulos/M9_cabezal.py::estabilidad_del_alero`
+- **Dónde vive:** `src/modulos/M9_cabezal/alero.py::estabilidad_del_alero`
 
 ## VE5-CAT-01 · La rama de selva alta del TMC: [S] `region_natural` y la recomendación como piso del catálogo (cierre de T4-06)
 
@@ -9590,7 +9590,7 @@ cambios están aplicados en estas fichas.
   h_eq por orientación, cerrada en VE7A-07. (4) Cerrado en VE7A-01.
 - **Qué haría falta:** el extremo oblicuo en M8; los aleros
   del paralelo.
-- **Dónde vive:** `src/modulos/M9_cabezal.py::_embocadura_paralela`
+- **Dónde vive:** `src/modulos/M9_cabezal/geometria.py::_embocadura_paralela`
 
 ## VE6-34 · La progresión del catálogo: G1 dentro del bucle, V10 la detiene y el delta con V4 bajo control de entrada
 
@@ -9660,7 +9660,7 @@ el test; lo que la sesión tuvo que decidir sin dictamen va rotulado «pendiente
   sección. Dos tests de `tests/test_ve5_m9_ciclopeo.py` que fijaban «informa» se reescribieron.
 - **Abierto:** nada de esta ficha.
 - **Qué haría falta:** nada.
-- **Dónde vive:** `src/modulos/M9_cabezal.py::_verificar_cuerpo_bajo_sismo`
+- **Dónde vive:** `src/modulos/M9_cabezal/ciclopeo.py::_verificar_cuerpo_bajo_sismo`
 
 ## VE7A-04 · C8 con k_v ≠ 0: el peso estabilizante va con (1 − k_v) (cierra VE6M9-01 (a))
 
@@ -9674,7 +9674,7 @@ el test; lo que la sesión tuvo que decidir sin dictamen va rotulado «pendiente
   retiró el aviso de C8. Citas `CITAS_K_V_EN_LOS_PESOS` (A11.3.1, 11.6.5.1, MP 2.8.1.1.14.1; dictamen Fable de la revisión residual: la cita anterior, MP 2.8.1.1.14.2.1#ROCA, era la de k_h0 en roca).
 - **Abierto:** nada de esta ficha (k_v = 0 es el de archivo, prescrito).
 - **Qué haría falta:** nada.
-- **Dónde vive:** `src/modulos/M9_cabezal.py::_verificar_cuerpo_bajo_sismo`
+- **Dónde vive:** `src/modulos/M9_cabezal/ciclopeo.py::_verificar_cuerpo_bajo_sismo`
 
 ## VE7A-05 · El empuje sísmico declarado por punto y cabezal donde el programa no lo calcula (VE5M9-02, VE3-15)
 
@@ -9692,7 +9692,7 @@ el test; lo que la sesión tuvo que decidir sin dictamen va rotulado «pendiente
   talón con el declarado de su k_h. Campo `EntornoDelCabezal.empuje_sismico` en `src/modelos.py`.
 - **Abierto:** el GLE en el programa.
 - **Qué haría falta:** nada más del dictamen.
-- **Dónde vive:** `src/modulos/M9_cabezal.py::validar_empuje_sismico_declarado`
+- **Dónde vive:** `src/modulos/M9_cabezal/estabilidad_cargas.py::validar_empuje_sismico_declarado`
 
 ## VE7A-06 · La geometría del talud de delante del cabezal, por punto (VE5M9-03)
 
@@ -9707,7 +9707,7 @@ el test; lo que la sesión tuvo que decidir sin dictamen va rotulado «pendiente
   punto». Dos puntos con taludes distintos dan RC_BC distintos.
 - **Abierto:** nada de esta ficha.
 - **Qué haría falta:** nada.
-- **Dónde vive:** `src/modulos/M9_cabezal.py::validar_talud_delante_del_punto`
+- **Dónde vive:** `src/modulos/M9_cabezal/estabilidad_base.py::validar_talud_delante_del_punto`
 
 ## VE7A-07 · La h_eq con el cabezal paralelo a la vía (VE6-T7A03 (3))
 
@@ -9724,7 +9724,7 @@ el test; lo que la sesión tuvo que decidir sin dictamen va rotulado «pendiente
   de un muro que el corredor declara perpendicular; con la del punto, su columna.
 - **Abierto:** nada más de esta ficha.
 - **Qué haría falta:** nada; declarar la orientación del punto quita la envolvente.
-- **Dónde vive:** `src/modulos/M9_cabezal.py::h_eq_del_cabezal`
+- **Dónde vive:** `src/modulos/M9_cabezal/empujes.py::h_eq_del_cabezal`
 
 ## VE7A-08 · El cabezal paralelo avisa el borde libre esviado de la losa del marco (VE6-T7A03 (2))
 
@@ -9736,7 +9736,7 @@ el test; lo que la sesión tuvo que decidir sin dictamen va rotulado «pendiente
   comentario no da un procedimiento con número que el programa pueda aplicar.
 - **Abierto:** el borde esviado sigue sin verificarse en M8.
 - **Qué haría falta:** un procedimiento de la fuente para la viga de borde del marco esviado.
-- **Dónde vive:** `src/modulos/M9_cabezal.py::_embocadura_paralela`
+- **Dónde vive:** `src/modulos/M9_cabezal/geometria.py::_embocadura_paralela`
 
 ## VE7A-09 · Lo que dejaría de cumplirse con la longitud entre cabezales bloquea el expediente (VE6-22)
 

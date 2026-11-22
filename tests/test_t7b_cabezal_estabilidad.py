@@ -1408,11 +1408,16 @@ def test_toda_parada_del_ensamble_desciende_de_ErrorProyecto():
     buscaba por texto, y el arnes de mutacion (que reescribe el modulo sin
     comentarios) lo mataba todo por esa razon y no por la que media.
     """
-    modulo = ast.parse(Path(M9.__file__).read_text(encoding="utf-8"))
-    inicio = next(n.lineno for n in modulo.body
-                  if isinstance(n, ast.Assign)
-                  and getattr(n.targets[0], "id", "") == "CRITERIO_MARCO")
-    cuerpo = [n for n in modulo.body if n.lineno >= inicio]
+    cuerpo = [
+        n for nombre in ("estabilidad_cargas.py", "estabilidad.py",
+                         "dimensionamiento.py", "alero.py", "ciclopeo.py",
+                         "armado_secciones.py", "armado.py")
+        for n in ast.parse(
+            (Path(M9.__file__).parent / nombre).read_text(
+                encoding="utf-8")).body]
+    assert any(isinstance(n, ast.Assign)
+               and getattr(n.targets[0], "id", "") == "CRITERIO_MARCO"
+               for n in cuerpo)
     assert {"ensamble_estabilidad", "cargas_del_cabezal"} <= {
         n.name for n in cuerpo if isinstance(n, ast.FunctionDef)}
     arbol = ast.Module(body=cuerpo, type_ignores=[])

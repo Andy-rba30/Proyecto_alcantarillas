@@ -1090,7 +1090,11 @@ CENSO_DE_MARCAS = {
     # triangulos de presion del suelo (seco y sumergido) sobre una seccion
     # del cuerpo se fueron con el diagrama a `diagrama_del_suelo_sobre`,
     # que lo nombra con `LADOS_DEL_TRIANGULO`, como lo nuevo de H1 y H3.
-    "src/modulos/M9_cabezal.py": 16,
+    "src/modulos/M9_cabezal/_criterios.py": 1,
+    "src/modulos/M9_cabezal/ciclopeo.py": 2,
+    "src/modulos/M9_cabezal/empujes.py": 3,
+    "src/modulos/M9_cabezal/estabilidad_base.py": 3,
+    "src/modulos/M9_cabezal/estabilidad_cargas.py": 7,
     # --- T-9 --- los exponentes de Manning (ecuacion (117)) y el 3/2 de las
     # ecuaciones (4.2) y (4.5) del num. 4.1.2.1 a).
     "src/modulos/M10_espaciamiento.py": 2,

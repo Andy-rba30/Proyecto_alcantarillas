@@ -295,8 +295,13 @@ def test_M05_el_docstring_ya_no_afirma_lo_contrario_de_la_norma():
     no cambia el minimo del Art. 14.3.1») no puede seguir escrita en el
     modulo, ni en el docstring ni como comentario.
     """
-    fuente = (RAIZ / "src" / "modulos" / "M9_cabezal.py").read_text(
-        encoding="utf-8")
+    fuente = "\n".join(
+        (RAIZ / "src" / "modulos" / "M9_cabezal" / f"{sub}.py").read_text(
+            encoding="utf-8")
+        for sub in ("_criterios", "alero", "armado", "armado_secciones",
+                    "ciclopeo", "dimensionamiento", "durabilidad", "empujes",
+                    "estabilidad", "estabilidad_base", "estabilidad_cargas",
+                    "geometria", "__init__"))
     assert "no cambia el minimo" not in fuente
     for termino in ("11.10.10.3", "11.10.2", "11.10.1"):
         assert termino in M9.cuantia_de_diseno.__doc__, (
@@ -324,8 +329,11 @@ def test_M05_la_ec_11_32_esta_implementada_en_una_sola_funcion():
     ahora es que la formula vive en UNA funcion, que `cuantia_de_diseno`
     sigue sin evaluarla por su cuenta, y que el registro lo dice.
     """
-    arbol = ast.parse((RAIZ / "src" / "modulos" / "M9_cabezal.py").read_text(
-        encoding="utf-8"))
+    arbol = ast.Module(
+        body=[n for r in sorted(
+            (RAIZ / "src" / "modulos" / "M9_cabezal").glob("*.py"))
+            for n in ast.parse(r.read_text(encoding="utf-8")).body],
+        type_ignores=[])
     funciones = {n.name: n for n in ast.walk(arbol)
                  if isinstance(n, ast.FunctionDef)}
     con_la_ecuacion = [nombre for nombre, f in funciones.items()
@@ -341,7 +349,7 @@ def test_M05_la_ec_11_32_esta_implementada_en_una_sola_funcion():
     registro = (RAIZ / "docs" / "decisiones_diferidas.md").read_text(
         encoding="utf-8")
     assert "11-32" in registro
-    assert "`src/modulos/M9_cabezal.py::cuantia_de_diseno`" in registro
+    assert "`src/modulos/M9_cabezal/durabilidad.py::cuantia_de_diseno`" in registro
     assert "cuantia_vertical_ec_11_32" in registro
 
 
@@ -706,7 +714,7 @@ def test_M07_E6_no_entra_en_las_exigidas_por_defecto_y_queda_dicho():
     assert "E6" not in M9.EXIGIDAS_SEC_9_3
     registro = (RAIZ / "docs" / "decisiones_diferidas.md").read_text(
         encoding="utf-8")
-    assert "`src/modulos/M9_cabezal.py::EXIGIDAS_SEC_9_3`" in registro
+    assert "`src/modulos/M9_cabezal/_criterios.py::EXIGIDAS_SEC_9_3`" in registro
 
 
 def test_M07_verificar_estabilidad_admite_exigir_E6(geometria):

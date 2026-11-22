@@ -965,8 +965,9 @@ def test_las_funciones_sin_consumidor_de_M9_no_tienen_llamador_de_produccion():
     el propio censo declara llamadas por dentro--, y (c) las funciones que
     T-7 SI consume (el ensamble, el armado, el ciclopeo) no estan en el.
     """
-    definidas = {n.name for n in ast.parse(
-        (SRC / "modulos" / "M9_cabezal.py").read_text(encoding="utf-8")).body
+    definidas = {n.name
+        for r in sorted((SRC / "modulos" / "M9_cabezal").glob("*.py"))
+        for n in ast.parse(r.read_text(encoding="utf-8")).body
         if isinstance(n, ast.FunctionDef)}
     censadas = _funciones_del_censo()
     llamadas = _llamadas_de_produccion(frozenset(censadas))

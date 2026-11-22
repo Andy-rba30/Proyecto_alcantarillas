@@ -707,9 +707,12 @@ def test_el_MCFT_en_ksi_y_pulgadas_queda_como_referencia_no_ejecutable():
     for vieja in ("Vc_kip", "Vs_kip", "dv_in", "espaciamiento_s_in",
                   "beta_con_refuerzo_transversal_minimo"):
         assert vieja not in proc, vieja
-    fuente = (RAIZ / "src" / "modulos" / "M9_cabezal.py").read_text(
-        encoding="utf-8")
-    arbol = ast.parse(fuente)
+    _rutas_m9 = sorted((RAIZ / "src" / "modulos" / "M9_cabezal").glob("*.py"))
+    fuente = "\n".join(r.read_text(encoding="utf-8") for r in _rutas_m9)
+    arbol = ast.Module(
+        body=[n for r in _rutas_m9
+              for n in ast.parse(r.read_text(encoding="utf-8")).body],
+        type_ignores=[])
     cadenas = {n.value for n in ast.walk(arbol)
                if isinstance(n, ast.Constant) and isinstance(n.value, str)}
     assert "referencia_no_ejecutable_5_7_3_4_2" not in cadenas
@@ -718,8 +721,11 @@ def test_el_MCFT_en_ksi_y_pulgadas_queda_como_referencia_no_ejecutable():
 
 def test_M9_ya_no_tiene_ningun_NotImplementedError():
     """El cierre que el prompt pide, por AST y no por texto."""
-    arbol = ast.parse((RAIZ / "src" / "modulos" / "M9_cabezal.py").read_text(
-        encoding="utf-8"))
+    arbol = ast.Module(
+        body=[n for r in sorted(
+            (RAIZ / "src" / "modulos" / "M9_cabezal").glob("*.py"))
+            for n in ast.parse(r.read_text(encoding="utf-8")).body],
+        type_ignores=[])
     lanzados = [n for n in ast.walk(arbol) if isinstance(n, ast.Raise)
                 and n.exc is not None
                 and "NotImplementedError" in ast.unparse(n.exc)]
