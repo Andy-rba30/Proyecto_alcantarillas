@@ -248,3 +248,118 @@ def test_el_registro_no_transcribe_la_razon_dos_veces():
     assert not largas, (
         f"fichas demasiado largas, probablemente transcritas: {largas}. La "
         "razon va en el docstring del simbolo; aqui va la cita")
+
+
+# ---------------------------------------------------------------------------
+# B4 - Indice de fichas al inicio del documento
+# ---------------------------------------------------------------------------
+
+MARCA_INICIO_INDICE = "# Índice de fichas"
+MARCA_FIN_INDICE = "# Parte I"
+
+
+def _fichas_ordenadas(texto: str) -> list:
+    """[(titulo, cuerpo), ...] de todas las fichas `## ...` en orden de aparicion."""
+    salida = []
+    titulo_actual, cuerpo = None, []
+    for linea in texto.split("\n"):
+        m = re.match(r"^##\s+(.+?)\s*$", linea)
+        if m and not linea.startswith("## Qué") and not linea.startswith("## Cómo"):
+            if titulo_actual is not None:
+                salida.append((titulo_actual, "\n".join(cuerpo)))
+            titulo_actual, cuerpo = m.group(1), []
+            continue
+        if re.match(r"^#\s", linea) and titulo_actual is not None:
+            salida.append((titulo_actual, "\n".join(cuerpo)))
+            titulo_actual, cuerpo = None, []
+            continue
+        if titulo_actual is not None:
+            cuerpo.append(linea)
+    if titulo_actual is not None:
+        salida.append((titulo_actual, "\n".join(cuerpo)))
+    return salida
+
+
+def _estado_de_ficha(titulo: str, cuerpo: str) -> str:
+    """
+    Estado derivado deterministicamente del titulo y los campos de la ficha:
+    - `cerrada`: el titulo marca IMPLEMENTADA/CERRADA o la ficha declara
+      `**Cerrado` sin `**Abierto`.
+    - `abierta / parcial`: la ficha declara `**Abierto`.
+    - `diferida / declarada`: decision tomada y registrada en el codigo.
+    """
+    mayus = titulo.upper()
+    if ("IMPLEMENTAD" in mayus or "CERRAD" in mayus
+            or ("**Cerrado" in cuerpo and "**Abierto" not in cuerpo)):
+        return "cerrada"
+    if "**Abierto" in cuerpo:
+        return "abierta / parcial"
+    return "diferida / declarada"
+
+
+def construir_bloque_indice(texto: str) -> str:
+    """Construye la seccion `# Índice de fichas` derivada de todas las fichas."""
+    fichas = _fichas_ordenadas(texto)
+    conteo = {"cerrada": 0, "abierta / parcial": 0, "diferida / declarada": 0}
+    filas = []
+    for titulo, cuerpo in fichas:
+        if " · " in titulo:
+            ficha, tema = titulo.split(" · ", 1)
+        else:
+            ficha, tema = "(sin ID)", titulo
+        estado = _estado_de_ficha(titulo, cuerpo)
+        conteo[estado] += 1
+        ficha_celda = ficha.replace("|", "\\|")
+        tema_celda = tema.replace("|", "\\|")
+        filas.append(f"| {ficha_celda} | {tema_celda} | {estado} |")
+
+    encabezado = [
+        MARCA_INICIO_INDICE,
+        "",
+        f"> Tabla derivada automáticamente de las **{len(fichas)}** fichas del documento "
+        f"(`{conteo['cerrada']}` cerradas, `{conteo['abierta / parcial']}` abiertas/parciales, "
+        f"`{conteo['diferida / declarada']}` diferidas/declaradas).",
+        "> Regla de estado (verificada por `tests/test_decisiones_diferidas.py`): "
+        "`cerrada` si el título marca IMPLEMENTADA/CERRADA o tiene `**Cerrado` sin `**Abierto`; "
+        "`abierta / parcial` si declara `**Abierto`; `diferida / declarada` en el resto.",
+        "",
+        "| Ficha | Tema | Estado |",
+        "|---|---|---|",
+    ]
+    return "\n".join(encabezado + filas) + "\n\n---\n\n"
+
+
+def _actualizar_indice_en_disco() -> None:
+    texto = REGISTRO.read_text(encoding="utf-8")
+    ini = texto.index(MARCA_INICIO_INDICE) if MARCA_INICIO_INDICE in texto else texto.index(MARCA_FIN_INDICE)
+    fin = texto.index(MARCA_FIN_INDICE)
+    nuevo = texto[:ini] + construir_bloque_indice(texto) + texto[fin:]
+    REGISTRO.write_text(nuevo, encoding="utf-8")
+
+
+def test_el_indice_de_fichas_esta_sincronizado():
+    """
+    B4: comprueba que `docs/decisiones_diferidas.md` inicia con el bloque
+    `# Índice de fichas` exactamente sincronizado con todas las fichas del
+    documento.
+    """
+    texto = REGISTRO.read_text(encoding="utf-8")
+    assert MARCA_INICIO_INDICE in texto, (
+        "falta `# Índice de fichas` en docs/decisiones_diferidas.md"
+    )
+    ini = texto.index(MARCA_INICIO_INDICE)
+    fin = texto.index(MARCA_FIN_INDICE)
+    assert ini < fin
+    actual = texto[ini:fin]
+    esperado = construir_bloque_indice(texto)
+    assert actual == esperado, (
+        "el `# Índice de fichas` de docs/decisiones_diferidas.md esta "
+        "desincronizado; regeneralo con `python -m tests.test_decisiones_diferidas --escribir`"
+    )
+
+
+if __name__ == "__main__":
+    import sys
+    if "--escribir" in sys.argv:
+        _actualizar_indice_en_disco()
+        print("Indice actualizado en", REGISTRO)

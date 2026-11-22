@@ -57,6 +57,412 @@ registro.
 
 ---
 
+# Índice de fichas
+
+> Tabla derivada automáticamente de las **396** fichas del documento (`72` cerradas, `150` abiertas/parciales, `174` diferidas/declaradas).
+> Regla de estado (verificada por `tests/test_decisiones_diferidas.py`): `cerrada` si el título marca IMPLEMENTADA/CERRADA o tiene `**Cerrado` sin `**Abierto`; `abierta / parcial` si declara `**Abierto`; `diferida / declarada` en el resto.
+
+| Ficha | Tema | Estado |
+|---|---|---|
+| SIS-A-04 | `cota_entrada_supuesta` rellena un vacío de dato dentro de M5 | diferida / declarada |
+| SIS-A-13 | V2b (sedimentación / colmatación) — IMPLEMENTADA en S20 | cerrada |
+| SIS-A-16 | Dos validaciones cruzadas de M0 que no son fila de la tabla de Sec. 1.5 | diferida / declarada |
+| SIS-A-17 | La GUI no exponía `--alcance` | diferida / declarada |
+| SIS-A-18 | La sesión JSON no guardaba los criterios declarados | diferida / declarada |
+| SIS-B-04 | «TW se calcula, no se mide» (Sec. 1.3) — IMPLEMENTADO en S20 | cerrada |
+| SIS-B-05 | Entregable 5 (análisis de sensibilidad): su única API la consumían los tests | diferida / declarada |
+| SIS-B-06 | `--plantilla memoria_perfil.html` sobre corrida de expediente | diferida / declarada |
+| SIS-B-07 | `CriterioPendienteError.mensaje_gui` no tiene consumidor de producción | diferida / declarada |
+| SIS-B-08 | `PeriodoRetorno.exigir_anios` no tiene llamador | diferida / declarada |
+| SIS-B-09 | Constantes `NUMERAL_*` de módulo declaradas y nunca leídas | diferida / declarada |
+| SIS-B-10 | `legacy/Tc.py`: sin importadores, sin tests, sin barrido y sin estatus | diferida / declarada |
+| SIS-C-06 | `barrido()` solo recorría `src/` | diferida / declarada |
+| SIS-C-11 | El barrido solo miraba `.py` | diferida / declarada |
+| SIS-C-12 | El ejemplo de uso de M1 daba luces sin la salvedad que sí lleva el test | diferida / declarada |
+| SIS-D-08 | `clase_sitio` es el único `[A]` con valor y sin sensibilidad | diferida / declarada |
+| SIS-D-09 | `datos_sitio.py` no tenía guardia al importar | diferida / declarada |
+| SIS-D-12 | `v_max_hdpe` y `v_max_tmc` sin ancla `vacio_verificado` | diferida / declarada |
+| SIS-E-02 | M9 usaba `DatoInvalidoError` para validar argumentos internos | diferida / declarada |
+| SIS-E-04 | El único `raise` de la GUI valida un campo tecleado con `ValueError` | diferida / declarada |
+| SIS-F-17 | Un test que no invocaba código de producción | diferida / declarada |
+| SIS-F-19 | El `ValueError` de `escribir_valor_en_archivo` y los criterios multilínea | diferida / declarada |
+| (sin ID) | `M9_cabezal.combinaciones()` prometía un consumidor que no existe | diferida / declarada |
+| (sin ID) | La premisa de SIS-A-08 se había sustituido por otra premisa falsa | diferida / declarada |
+| (sin ID) | Las referencias de prosa del manifiesto eran dos poblaciones, no una | diferida / declarada |
+| NOR-E060-02 | El acero en dos caras entre 200 y 250 mm | abierta / parcial |
+| NOR-HDS-05 | Las tres condiciones de uso de h_o | abierta / parcial |
+| NOR-PRO-04 | La norma a la que se difiere la verificación del TMC | abierta / parcial |
+| NOR-ANA-03 | La analogía de embocadura del HDPE | abierta / parcial |
+| SIS-F-01 | La GUI y sus tests de contrato | abierta / parcial |
+| SIS-F-13 | Los módulos de cálculo sin caso patrón | abierta / parcial |
+| (sin ID) | MAT-D1 estaba corregido y no lo defendía ningún test | diferida / declarada |
+| C1-01 | La mitad por tirante de `Seccion` no tiene consumidor | diferida / declarada |
+| C1-02 | `SeccionCircular.etiqueta()` no la invoca ningún módulo — **CERRADA en C8** | cerrada |
+| C1-03 | `Geometria.y_sobre_D` se quedó sin consumidor de producción | diferida / declarada |
+| C1-04 | `M3_hidraulica.tirante` se quedó huérfana | diferida / declarada |
+| C5-01 | La clave `"cajon"` de `factores_carga_aashto` no tiene consumidor | diferida / declarada |
+| C5-02 | `ke_entrada` sigue declarando un número y `ke_entrada_cajon` una fila | diferida / declarada |
+| C6-01 | `sucs_fundacion` se carga, se valida y no la lee ningún módulo | diferida / declarada |
+| C6-02 | `_Columna.criterio_destino` admite un solo destino | diferida / declarada |
+| C8-01 | Nueve de 38 `Parte.cita_id` anuncian una cita que nadie transcribió | diferida / declarada |
+| C8-02 | `Registro.discrepancias_abiertas` sigue sin consumidor de producción | diferida / declarada |
+| C8-03 | `Registro.discrepancias_de_cita` solo lo usa el propio registro | diferida / declarada |
+| C8-04 | `M2.diametro_exterior` — se RETIRÓ, y por qué no se difirió | diferida / declarada |
+| VC1-01 | La deuda de §13 se cierra por MITADES, y la otra mitad sigue diferida | abierta / parcial |
+| VC1-02 | V5 no se difiere en la Familia C: NO APLICA, y VC1 ocupa su hueco | diferida / declarada |
+| R2a-01 | `factores_carga_aashto`: el par único descartado, y la dirección que la ficha NOR-PUE-03 invierte | diferida / declarada |
+| R2a-02 | `HW_D_max`: V4b estuvo declarado y sin cablear a propósito | diferida / declarada |
+| R2a-03 | `espesor_pared_conducto`: la cifra del código (−33.1 %) no es la de la ficha MAT-D3 (−31.6 %) | diferida / declarada |
+| R2b-01 | `clase_sitio`: la dispensa inventada y el [A] que confesaba no ser una elección | diferida / declarada |
+| R2b-02 | `cortante_alto_muro_e060_art_11_10_10_2`: el umbral 0.5·φ·Vc era una atribución inventada | diferida / declarada |
+| R2b-03 | `k_v`: la sensibilidad numérica (0.0, 0.5) retirada, y las tres formas del rango | diferida / declarada |
+| S24-01 | Las claves externas sin techo, y el punto de decisión de `longitud_m` | diferida / declarada |
+| N1-01 | La vía 3 del canal de discrepancias (`Criterio.discrepancias`) se quedó sin usuario de producción | diferida / declarada |
+| N2-01 | La traducción no oficial de M 294-11 entra como Fuente propia, sin firma en sus citas, y el original sigue ausente | diferida / declarada |
+| T1-01 | La vigencia de las ediciones es una marca en la nota, no un campo del esquema | diferida / declarada |
+| I4-01 | El chequeo dimensional piloto (M3–M5) midió cuatro inconsistencias de presentación y ninguna de valor; PD las cerró sin mover un número, y la extensión del barrido a M6–M10 sigue diferida | abierta / parcial |
+| D9-01 | La vía 2 del canal de discrepancias (`PasoDeMemoria.discrepancias`) volvió a quedarse sin usuario de producción | diferida / declarada |
+| SIS-B-22 | `limpiar_valores_dinamicos` sí tiene caso de uso: abrir una sesión | diferida / declarada |
+| NOR-HID-02 | La cuneta está en la pág. 179 y la memoria sigue imprimiendo 178 | diferida / declarada |
+| EXT-V-01 | Un expediente por repositorio; multi-obra es requisito de producto | diferida / declarada |
+| EXT-G-03 | Las seis fichas de ayuda de claves externas: se llenan, pero sólo por derivación | diferida / declarada |
+| PC-32 | El umbral de `factor_esviaje` es una tolerancia numérica, no una cota de esviaje | diferida / declarada |
+| EXT-V-02 | La celda que la procedencia cita se infiere cuando la fila tiene una sola | diferida / declarada |
+| EXT-2-01 | V6 sigue rechazando N > 1 aunque el multicelda ya se resuelve bien | cerrada |
+| EXT-2-02 | El JSON de la CLI no lleva `Q_celda_m3s` ni `numero_celdas` todavía | cerrada |
+| EXT-3-01 | El 0.75 de V1 y el 0.25 m/s de V2 siguen rotulados [N] aunque la v8 ya dice que el umbral duro es [A] | diferida / declarada |
+| EXT-3-02 | V1 y V2 se evalúan con el escenario de TW gobernante, no con los dos | diferida / declarada |
+| EXT-3-03 | El bloqueo «método no evaluable» no aparece en el tablero de criterios de la GUI | diferida / declarada |
+| EXT-4-01 | La sesión sigue en formato v2: sin identidad, sin huella del CSV y sin corridas | diferida / declarada |
+| EXT-4-02 | El contexto vive en registros de módulo, no en `contextvars`: la GUI sigue corriendo en su hilo | diferida / declarada |
+| EXT-4-03 | Un `Informe` sin contexto no se exporta: no hay caída al estado vivo | diferida / declarada |
+| EXT-5-01 | Ocho formas, no siete: `serie_de_claves` y la unión de formas | diferida / declarada |
+| EXT-5-02 | La forma va última, y las guardias de los consumidores se quedan | diferida / declarada |
+| EXT-5-03 | Once criterios de texto cuyo conjunto cerrado vive en el consumidor, no en `sensibilidad` | cerrada |
+| EXT-6-01 | El RNGIV no vuelve a `normas/`: lo que se borró no era el decreto | diferida / declarada |
+| EXT-6-02 | El piso [N] del ancho del derecho de vía está en el registro y no tiene consumidor | diferida / declarada |
+| EXT-6-03 | PC-24 no se cierra en EXT-6: su resto es EXT-3-01 | diferida / declarada |
+| EXT-6-04 | La cláusula de alcance no crea un `Fundamento`: el rótulo del marco es texto del registro, no un paso | diferida / declarada |
+| EXT-7-01 | La ec. (11-32) del Art. 11.10.10.3 no se implementa: se declara evaluada fuera | diferida / declarada |
+| EXT-7-02 | E6 (excentricidad sísmica) no entra en las `exigidas` por defecto | diferida / declarada |
+| EXT-7-03 | El Ka de Coulomb se adopta entero, no la «guardia mínima» | diferida / declarada |
+| EXT-7-04 | La resultante de Coulomb se toma entera como horizontal: la descomposición queda diferida | diferida / declarada |
+| EXT-8-01 | El anexo se decide contra el «de arriba abajo» de la §4.4, y el objetivo de tamaño no se alcanzó | diferida / declarada |
+| EXT-8-02 | El hijo recalcula: la equivalencia se afirma sobre la sesión serializada, no sobre el objeto `Informe` | diferida / declarada |
+| EXT-8-03 | Las claves enteras de un criterio declarado no sobreviven al JSON de la sesión | diferida / declarada |
+| EXT-8-04 | El progreso del hijo se lee de un archivo, no de un pipe, y no hay hilo | diferida / declarada |
+| EXT-8-05 | Un paso renderizado suelto lleva enlaces sin destino | diferida / declarada |
+| EXT-9-01 | `cli` conserva reexportaciones del servicio hasta que la suite migre | diferida / declarada |
+| EXT-9-02 | La CLI se queda en la raíz: no hay `python -m src.cli` | diferida / declarada |
+| EXT-9-03 | El índice de fórmulas no se regeneró en EXT-9, y su sello sigue siendo el de EXT-8 | diferida / declarada |
+| EXT-10-01 | La ventana normativa sigue sin declarar datos de sitio | diferida / declarada |
+| EXT-10-02 | «Importar decisiones» importa criterios y no datos de sitio | diferida / declarada |
+| EXT-10-03 | La advertencia de corredor es por origen, no por texto; no bloquea y no va al JSON | diferida / declarada |
+| EXT-10-04 | La sesión embebe la corrida; el hijo del PDF sigue recalculando | diferida / declarada |
+| EXT-10-05 | El nivel de seis datos de sitio es un argumento, no una medida | diferida / declarada |
+| EXT-10-06 | El `id` de una sesión migrada sólo es estable desde que se guarda | diferida / declarada |
+| EXT-11-01 | Sin `hypothesis` ni `mutmut`: mallas y un arnés propio, hasta que se apruebe la dependencia | diferida / declarada |
+| EXT-11-03 | El cruce de los temarios lleva un censo manual porque el auditor y el informe numeran distinto | diferida / declarada |
+| EXT-11-04 | La Fase 8 se prueba llamándola sobre el resultado real de perfil, porque el expediente no dimensiona | diferida / declarada |
+| EXT-11-05 | El determinismo de la línea base se demuestra con los archivos comprometidos, no con una segunda corrida | diferida / declarada |
+| EXT-11-02 | Cuarenta y tres mutantes sobreviven a toda la suite, y cada uno tiene su razón escrita | diferida / declarada |
+| EA-01 | Los dorados del perfil son límites de la propia fórmula, no una corrida HY-8 | diferida / declarada |
+| EA-02 | El resalto no se sitúa por momentum: la S1 que no llega a la entrada se lee como control de entrada | cerrada |
+| EA-03 | En la banda 0.75 ≤ HW/D < 1.2 la aproximación es el método y la comprobación manda sólo si pide más carga; el paso 4.3c puede decir NO CUMPLE sin rechazar el punto | diferida / declarada |
+| EA-04 | La compuerta de h_o queda como guardia sin alcance en producción | diferida / declarada |
+| EA-05 | «Most of its length» es un [A] con ventana, y su lectura vive en el registro | diferida / declarada |
+| EA-06 | Veinticuatro mutantes del perfil sobreviven a toda la suite, y cada uno tiene su razón escrita | diferida / declarada |
+| EA-07 | La asíntota del perfil no es el tirante normal de M3, y la diferencia queda impresa | diferida / declarada |
+| EB-01 | El literal sigue existiendo: el editor lo compone y es la fuente al aplicar; un dict que la ficha no descompone no recibe campos inventados | diferida / declarada |
+| EB-02 | Una categoría no exige fila, y un número nunca nombra una fila | diferida / declarada |
+| EB-03 | El comparador compara volcados, no informes; «método» son tres campos | diferida / declarada |
+| EB-04 | Responsable y evidencia son una derivación de la ficha, no una matriz; van al JSON y no a la memoria | diferida / declarada |
+| EB-05 | El índice se deriva de la plantilla y de los puntos; el «histórico» no ganó una vista | diferida / declarada |
+| EB-06 | La ventana emergente conserva su campo único; las dos ventanas no se unifican | diferida / declarada |
+| PF-1-01 | La carga a la entrada fuera de rango es un vacío declarable, no un método no evaluable ni un descarte definitivo | diferida / declarada |
+| PF-2-01 | El pre-vuelo estima de más a propósito, y lo que exige una sola familia es un dato declarado del servicio, no una deducción | diferida / declarada |
+| PF-3-01 | El barrido vive en la CLI y en el servicio, y desde UI-3 también en el botón «Barrido…» de la pestaña 2 — cerrado (UI-3) | cerrada |
+| PF-4-01 | INDICADOR es un valor de `TipoDeVeredicto` y no una cuarta capa del estado de verificación; el segundo indicador del 5.3.3 sigue sin evaluarse | diferida / declarada |
+| PF-4-02 | El barrido leía el veredicto sólo de `cumple`, y desde PF-4 son dos campos | abierta / parcial |
+| PF-5-01 | La guía dice lo que el programa hace, no lo que el prompt suponía: diez [A] de perfil sin valor, un `si` a perfil, una celda del CSV y una sesión escrita a mano | diferida / declarada |
+| PF-5-02 | Lo que el test de la guía comprueba y lo que deja a la prosa | diferida / declarada |
+| PF-6-01 | El CBR no tiene techo que la fuente fije: `CBR_MAX_FISICO` se retira y queda sólo el piso | abierta / parcial |
+| PF-6-02 | El editor escalar suelta la fila cuando el texto deja de ser su clave, y sólo entonces | abierta / parcial |
+| PF-6-03 | Lo que el comparador omite se dice desde `CAMPOS_OMITIDOS`, y lo que la prosa del registro decía antes no se reescribe | abierta / parcial |
+| C10-01 | `ke_entrada` conserva la forma `float`; la fila viaja por la resolución y por la procedencia, y el consumidor no atribuye rótulos a un número que no es la celda | abierta / parcial |
+| C10-02 | El estado de verificación tiene una sola fuente, `EstadoDeVerificacion`; `cumple` y el veredicto del paso son vistas comprobadas, y «no aplica» existe con un productor real | abierta / parcial |
+| C10-03 | El esviaje máximo constructivo es un [A] opcional de perfil, y sin declararlo nada cambia | abierta / parcial |
+| C05-01 | El umbral duro de V1 y V2 es un [A] de perfil con el valor recomendado por defecto, y sólo se puede endurecer | abierta / parcial |
+| C05-02 | La hoja de ruta nombra a WSDOT y al valor; la fuente sigue fuera de `normas/` | abierta / parcial |
+| C11-01 | El umbral de 6.0 m compara la abertura de la estructura, y la discrepancia entre las cuatro fuentes queda declarada en el paso | abierta / parcial |
+| C14-01 | El registro normativo es una sola instancia | abierta / parcial |
+| C09-01 | Las tres caras restantes de la ventana normativa y su camino de declarar corren bajo Tk | abierta / parcial |
+| C09-02 | La serie de diámetros del concreto se transcribió por imagen de la única tabla legible de M 170M, y la ficha de la fuente dice cuáles no lo son | abierta / parcial |
+| REDISEÑO-3-01 | La navegación es lateral y el Notebook se conserva por debajo, con la tira de pestañas retirada por estilo | abierta / parcial |
+| T0-01 | Los PDF de normas se encuentran por `NORMAS_DIR`, con caída a `normas/`; las dos fuentes nuevas viven sólo en el repositorio de normas | diferida / declarada |
+| T0-02 | El código de paso del tirante crítico es `F4.YC`; `F4.YC_RECT` sigue resolviendo como alias, y el índice de fórmulas se regeneró con la corrida que hay | abierta / parcial |
+| T0-03 | La hoja de ruta declara desde T-0 cosas que el código todavía no hace: el conjunto de aceptación de la Familia B y cuatro enmiendas prospectivas | diferida / declarada |
+| T0-04 | Los `INF-` del tracker llevan el número del INFORME, no el de los prompts; cuatro no tienen prompt, y la severidad es una propuesta | diferida / declarada |
+| T2-01 | `S = 0` se admite y se dice con un objeto propio; la pendiente adversa y `S_cauce = 0` siguen fuera, y queda una discontinuidad con la convención de PC-06 | abierta / parcial |
+| T2-02 | `borde_libre_bajo_tw_ahogante` queda en `no_cumple` por decisión del dueño; `aviso` es una alternativa barrible, continua en el TW, que hace dimensionar A-02 en la corrida estrecha | abierta / parcial |
+| T2-03 | La sección medida del receptor entra por `--datos-externos` como un objeto, no como columnas del CSV; y el aviso de sección adoptada sale también en la vía 3 | diferida / declarada |
+| T2-04 | `regimen_v2b` y `hw_entrada_fuera_de_rango` reciben valor de archivo pero siguen siendo [A], no [C]; la «nota de Ks·S de la Tabla A.1» no existe, y la tabla no tiene filas de tubo con aleros | abierta / parcial |
+| T2-05 | El ejemplo publicado de HDS-5 (Design Guideline 1) se reproduce dentro de la tolerancia salvo cinco casillas censadas; las filas de metal corrugado se comparan por intervalo, y ninguna fila toca la transición | abierta / parcial |
+| T2-06 | HDS-5 §5.3.3 presenta dos indicadores de sedimentación y la aplicación evalúa uno: el segundo necesita el n del cauce natural, que no es un dato del proyecto | cerrada |
+| T2-07 | La aceptación de T-2 no se escribió en rojo antes del código: se midió después; 34 de sus 160 tests valen antes y después, y quedan 28 mutantes vivos, censados | diferida / declarada |
+| T4-01 | El espesor del TMC es profundidad de corrugación más plancha; el del HDPE sale del diámetro exterior máximo de AASHTO LRFD, y dos tamaños se quedan sin fila | diferida / declarada |
+| T4-02 | El tope de diámetro es el de la norma de producto —en concreto, el último diámetro con diseño estándar—; la disponibilidad de mercado es opcional y sólo puede bajarlo | diferida / declarada |
+| T4-03 | `v_max_tmc` es [A] con ventana y `v_max_hdpe` sigue [C]: los dos valen 4.572 m/s y no son la misma cosa | diferida / declarada |
+| T4-04 | La matriz de durabilidad filtra de verdad, con ensayos opcionales que entran por `--datos-externos` y no por `CLAVES_EXTERNAS` | diferida / declarada |
+| T4-05 | `sucs_fundacion` tiene consumidor: el aviso de marco, con el conjunto de suelos declarado y no inventado | diferida / declarada |
+| T4-06 | `DIAMETRO_MIN_TMC_SELVA_ALTA_RECOMENDADO` se conserva sin consumidor: la «rama inactiva» de la hoja de ruta no existe y no se le inventa una | cerrada |
+| T4-07 | El n de Manning del HDPE es [C] de HDS-5 (0.009 a 0.015): la cadena esperaba WSDOT Tabla 4-1 o un [A] de 0.009 a 0.013 | diferida / declarada |
+| T4-08 | Entrada obligada de T-5: la plancha adoptada del TMC no cumple el factor de flexibilidad hasta su tope, y `espesor_pared` de TMC y HDPE es una ENVOLVENTE geométrica | diferida / declarada |
+| T4-09 | El suelo agresivo para el acero se lee de AASHTO LRFD por analogía y por defecto avisa; EG-2013 507.10 se aplica entera; los ensayos no entraron al censo de variables | diferida / declarada |
+| T4-10 | Un dato que falta en un candidato anterior bloquea la aceptación de uno posterior: el «caso mixto» de PC-28 cambia | diferida / declarada |
+| T1-01 | De las ocho distribuciones del núm. 3.7.1 el programa ajusta tres, y la prueba χ² no se implementa | diferida / declarada |
+| T1-02 | El tratamiento FEN `dos_poblaciones` se puede declarar y no se evalúa | diferida / declarada |
+| T1-03 | V8 (evento extremo) todavía no pide su caudal a la hidrología | diferida / declarada |
+| T1-04 | La hidrología entraba sólo por la CLI; desde UI-1 la ventana y la sesión la conocen, y desde VE-4b el pre-vuelo anticipa lo que detendría la Fase 1-bis — Cerrado (UI-1 y VE-4b) | cerrada |
+| T1-05 | Lo que el prompt de T-1 suponía y el Manual no trae | diferida / declarada |
+| VE5-MH-01 | La ponderación de C por subáreas tiene fuente [C] y no se implementa: pide cambiar el contrato | cerrada |
+| T1-06 | `MetodoNoEvaluableError` admite un rótulo propio para la hidrología | diferida / declarada |
+| T1-07 | De las seis filas de la Tabla Nº 05 se implementan cuatro: Izzard y onda cinemática quedan diferidas — Cerrado (VE-5, lote mh) | cerrada |
+| T1-08 | El método racional modificado no estaba implementado: de él se tomaban la fórmula de Témez y el coeficiente K — Cerrado (VE-2) de 10 a 770 km² | cerrada |
+| T1-09 | CERRADA: declarar `serie_sin_fen` cuando da menos lluvia que la serie completa detiene el cálculo del punto | cerrada |
+| T6-01 | El diseño corre con la longitud aproximada al fondo; la longitud entre cabezales a la clave se imprime y no la sustituye | diferida / declarada |
+| T6-02 | M7 acota la pendiente del cauce a la banda de T-2 y V10 juzga la que quedó: V10 sólo se incumple con una pendiente declarada | diferida / declarada |
+| T6-03 | El desnivel de entrega (0.0 m) y el esviaje máximo (45°) son adopciones: ninguna fuente da el número del primero, y el del segundo es una analogía | diferida / declarada |
+| T6-04 | `bombeo` y `peralte` entran sólo por el JSON de datos externos, y sólo los lee el método por extremo | diferida / declarada |
+| T6-05 | La fuente sostiene la superposición aproximada del barril; medir al fondo es elección del proyecto, y no es el lado seguro por construcción | diferida / declarada |
+| T8-01 | El apron de HEC-14 es contraste y no regla; el espesor adoptado queda siempre bajo su piso, y la decisión queda preparada | abierta / parcial |
+| T8-02 | La Tabla N° 11 decide si se reviste la salida, y no revestir es lectura del proyecto | abierta / parcial |
+| T8-03 | La protección de entrada declara la clase de revestimiento y lo que se protege; ninguna fuente de `normas/` le da dimensiones | abierta / parcial |
+| T8-04 | La hoya de socavación es HEC-14 Cap. 5 y no el 3; la duración y la referencia de hs las declara el proyecto | abierta / parcial |
+| T8-05 | El filtro es un requisito declarado; EG-2013 no lo obliga, y su nota (5) vale para la fila | abierta / parcial |
+| T8-06 | La aceptación de T-8 se escribió después del código; el rojo se midió contra la base y la mutación de M6 se midió con el arnés | diferida / declarada |
+| T8-07 | Rige la envolvente de Laushey y de HEC-14, y alcanza al tamaño de la piedra; fuera de la Tabla 10.1 son cotas inferiores | cerrada |
+| T8-08 | El tirante de borde no está digitalizado: con la velocidad al crítico el contraste con la Tabla N° 11 no concluye | abierta / parcial |
+| T8-09 | La velocidad de salida salta en la banda en que n máximo da flujo subcrítico y n mínimo lo daría supercrítico: es de M4 y sólo se avisa | abierta / parcial |
+| T8-10 | La nota (5) b de la Tabla 511-06 se lee sólo para la columna «>50», y las filas «arcilla (no coloidal)» de la Tabla N° 11 se clasifican por su nombre: dos lecturas que esperan una fuente | abierta / parcial |
+| T8-11 | Lo que la segunda auditoría pidió y no se hizo: techos físicos para los datos de la Fase 6, y la cadena numérica en el JSON | diferida / declarada |
+| T8-12 | La pasada de correcciones: el rojo se escribió primero y se remidió, y las decisiones del dueño llegaron por el orquestador | diferida / declarada |
+| T5-01 | La Fase 8 que decide si el escalón existe corre a nivel de perfil, detrás de V9 y solo si todo lo anterior cumple | diferida / declarada |
+| T5-02 | De M 170M solo se lee la D-load de la Clase II, y un tubo que pida más BLOQUEA el punto | diferida / declarada |
+| T5-03 | El TMC sube de plancha dentro de su corrugación, la Tabla 507-01 del EG-2013 pone el piso, y la plancha elegida no se devuelve a la geometría | cerrada |
+| T5-04 | El TMC rige por LRFD y A796 es solo contraste: el expediente de referencia «VARIOS» se reproduce, y su H-20 no es el HL-93 | diferida / declarada |
+| T5-05 | El HDPE se calcula con tres lecturas declaradas, y sin el perfil del fabricante no tiene veredicto | diferida / declarada |
+| T5-06 | La carga viva HL-93 atraviesa el relleno por 3.6.1.2.6, y los pesos que cargan no son los que estabilizan | diferida / declarada |
+| T5-07 | Del marco se calcula la demanda, y el pórtico se difiere | abierta / parcial |
+| T5-08 | El caso de la auditoría de T-4 deja de dimensionarse con la fabricación de archivo: cambio declarado y aprobado por el dueño | diferida / declarada |
+| T5-09 | Los valores de archivo de los [A] de la Fase 8 NO son todos «lo más desfavorable», y cada uno dice qué es | diferida / declarada |
+| T5-10 | Sin el perfil del fabricante el HDPE queda «no verificado con un producto real», no se adopta, y el punto no sale «no factible» | diferida / declarada |
+| T5-11 | La carga viva bajo relleno alto se conserva: el permiso de 3.6.1.2.6a no se toma en silencio | diferida / declarada |
+| T5-12 | El tubo de concreto se verifica con el Tipo 3 y el Tipo 4 se imprime al lado: la correspondencia con el EG-2013 es lectura del proyecto, y tiene una condición | diferida / declarada |
+| T5-13 | El pandeo general del HDPE va con el módulo de la vida de diseño, y rige el mayor de dos términos | diferida / declarada |
+| T5-14 | Lo que las dos auditorías adversariales de T-5 encontraron, lo que se corrigió y lo que se refutó | diferida / declarada |
+| T3-01 | La progresión de secciones es la decisión del dueño; la de la cadena T no se activa | abierta / parcial |
+| T3-02 | La embocadura del marco es la de aletas de 30° a 75°, la de hoy; la de cabezal recto se midió y da otra carga | abierta / parcial |
+| T3-03 | VC2 avisa y no detiene, con la tolerancia de una placa de concreto del EG-2013 por analogía | abierta / parcial |
+| T3-04 | El remanso aguas arriba del canal es una cota inferior, no un perfil, y sin la sección medida no se evalúa | abierta / parcial |
+| T3-05 | V6 con N > 1 publica el reparto, el tabique y el ancho total, y sigue sin aceptar la multicelda | abierta / parcial |
+| T3-06 | La geometría del marco queda en `modelos.GeometriaMarco` para la Fase 8 y el cabezal; M8 no se toca | abierta / parcial |
+| T3-07 | Con la embocadura del cajón declarada, R4 ya no frena una fila de cajón para el ke del TUBO; la frena el consumidor | abierta / parcial |
+| T3-08 | V7 del marco no pesa el concreto (DC = 0): de eso cuelgan la progresión corta y el espesor | cerrada |
+| T3-09 | El n del marco es la fila del cajón de la Tabla B.1 del HDS-5 [C]; la errata de la Tabla N° 09 se sostiene en su página | abierta / parcial |
+| T3-10 | G1 del marco avisa cuando sólo falta la cobertura adoptada por analogía | abierta / parcial |
+| T3-11 | `espesor_pared_cajon` queda [A] aunque su piso sea de una norma peruana | diferida / declarada |
+| T3-12 | Las correcciones de la auditoría se escribieron antes del código, y su rojo se midió | abierta / parcial |
+| T9-01 | La sección de la cuneta: el mínimo de la región muy lluviosa de la Tabla Nº 34, con el talud exterior como elección declarada | diferida / declarada |
+| T9-02 | El aporte por metro: con el tramo conocido, Q / s; sin él, q · b con la longitud implícita avisada | diferida / declarada |
+| T9-03 | VB1 por tramo: el extremo es el inicio declarado o la obra anterior (B, o A por la decisión C); sin extremo, es un bloqueo | cerrada |
+| T9-04 | Cuatro ecuaciones del ejemplo del Manual no reproducen la geometría que nombran, y no se usan | diferida / declarada |
+| T9-05 | La pendiente de la cuneta es un dato del trazo: no se deriva del CSV, y fuera de la banda del Manual se avisa con el mínimo del DG-2018 al lado | diferida / declarada |
+| T9-06 | La aceptación de T-9 se escribió después del código; el rojo se midió contra la base | diferida / declarada |
+| T9-07 | VB2: la condición literal del Manual, el caudal de aporte contra la capacidad de la cuneta | diferida / declarada |
+| T9-08 | El periodo de retorno del aporte es el del punto, y la fila del alivio es una envolvente declarada | diferida / declarada |
+| T9-09 | Las lecturas del proyecto en la Fase 10 son `Interpretacion` del registro, y tres dudas del auditor quedan dichas | diferida / declarada |
+| T9-10 | Las correcciones de T-9 se escribieron después del código; el rojo se midió contra la FASE A | diferida / declarada |
+| T9-11 | La mutación de la integración: 262 de 288 en M10 y 78 de 78 en la Fase 10 de `servicio`; los vivos, censados | diferida / declarada |
+| T7A-01 | La Fase 9 por punto no se alcanza en una corrida de expediente: la detienen TRES capas, y abrir la puerta de `ancho_derecho_via_m` no quita ninguna | diferida / declarada |
+| T7A-02 | La embocadura es de perfil y gobierna la coherencia del marco; en el tubo la fuente no distingue y nada se mueve; la caja receptora no se modela y se avisa | abierta / parcial |
+| T7A-03 | Los aleros llevan el coseno de su ángulo con la bajada del talud: con esviaje, los dos aleros de un cabezal miden distinto | abierta / parcial |
+| T7A-04 | Las reglas del predimensionamiento son [A] en el extremo de más material, y eso NO es el lado seguro de la estabilidad | abierta / parcial |
+| T7A-05 | El desplante de salida y el dentellón bajan hasta la socavación con el margen de AASHTO 12.6.5, leído como aplicable al cabezal | abierta / parcial |
+| T7A-06 | La longitud entre cabezales queda cerrada con el relleno retenido, da también la de metrado, y no sustituye a la del diseño | cerrada |
+| T7A-07 | La aceptación de T-7a se escribió después del código; el rojo se midió contra la base | diferida / declarada |
+| T7A-08 | Los mínimos de E.050 y de E.060 15.7 son [N→] para un cabezal vial, y la hoja de ruta los rotula [N] | abierta / parcial |
+| T7B-01 | V5 mide el embalse con un plano horizontal: el perfil de remanso está nombrado y no implementado | cerrada |
+| T7B-02 | V8 juzga «no colapsa» por el desborde de la plataforma, que es la lectura más exigente; el desborde admitido no estaba implementado (lo está desde VE-4d) | cerrada |
+| T7B-03 | El cabezal se calcula como muro de semigravedad en voladizo, por metro y en la sección llena: es hipótesis del proyecto | diferida / declarada |
+| T7B-04 | La capacidad portante es la de terreno horizontal, zapata corrida y sin factor de profundidad; las tablas de talud de AASHTO no se transcribieron | diferida / declarada |
+| T7B-05 | Sin drenaje declarado el relleno se calcula lleno de agua: es el valor de archivo, y deja la condición sísmica sin evaluar | diferida / declarada |
+| T7B-06 | Mononobe-Okabe solo dentro de su dominio: con el k_h de archivo la condición sísmica no se evalúa | diferida / declarada |
+| T7B-07 | E4 y E5 (estabilidad global del muro y del talud) se imprimen diferidas al expediente | cerrada |
+| T7B-08 | Las solicitaciones por elemento para T-7c son las de la sección de arranque, con tres aproximaciones declaradas | cerrada |
+| T7B-09 | Con la regla de predimensionamiento de T-7a el cabezal de A-01 no pasa el deslizamiento del marco que rige: medido, no corregido | cerrada |
+| T7B-10 | La aceptación de T-7b se escribió después del código; el rojo y la mutación se midieron | diferida / declarada |
+| T7B-11 | La orientación del muro frente al tráfico sigue siendo un dato de corredor: no se deriva del esviaje de cada punto | cerrada |
+| T7B-12 | Declarados, V5 y V8 se evalúan también a nivel de perfil; y el pre-vuelo de expediente anuncia el freático | diferida / declarada |
+| T7B-13 | El cierre de T-7b aplicó las diez correcciones de la auditoría: el datum del freático, V5 por cota, V8 a presión, la cuña de tanteo, el agua y el régimen | diferida / declarada |
+| T7B-14 | El cabezal se calcula como muro que CEDE; el que no cede está en la ventana y no implementado, y la interfaz de T-7c lo marca | cerrada |
+| T7C-01 | Rige AASHTO LRFD Sección 5 y E.060 contrasta: dos marcos que no se cruzan, y en los mínimos, el más exigente | abierta / parcial |
+| T7C-02 | Los elementos se arman con el empuje en reposo, y lo que esa elección no resuelve | abierta / parcial |
+| T7C-03 | El cortante se verifica con el procedimiento simplificado donde la fuente lo permite; fuera de él no se evalúa, y la pantalla se trata como losa | diferida / declarada |
+| T7C-04 | Los aleros se arman en su arranque; su zapata y sus secciones intermedias no | cerrada |
+| T7C-05 | Sin el análisis químico ni la categoría del acero, el recubrimiento con que se arma es la cota más exigente, no los 70 mm del encargo | diferida / declarada |
+| T7C-06 | El desarrollo y los empalmes de las barras no se evalúan; la fisuración de 5.6.7 se evalúa con la clase de exposición que declare el Propietario | cerrada |
+| T7C-07 | La zapata se arma con presión de contacto lineal y el talón con el peso entero: no son las solicitaciones de zapata de la interfaz de T-7b | abierta / parcial |
+| T7C-08 | La aceptación de T-7c se escribió después del código; el rojo y la mutación se midieron | diferida / declarada |
+| T7C-09 | El cabezal de gravedad en ciclópeo se juzga por tracciones nulas, solo en la condición estática, y su zapata no se verifica | abierta / parcial |
+| T7C-10 | El rótulo por ámbito de E.060: lo que T-7c usa es [N→]; el 0.30 m de 22.7.4 pasa a criterio [N→] en el cierre, y las cuantías de 14.3.1 siguen como constante | abierta / parcial |
+| T7C-11 | El modificador de carga η no entra en el cabezal: la fuente lo sostiene, pero el cambio no es acotado | cerrada |
+| T7C-12 | La pantalla y el alero integran cada diagrama por encima del arranque; el incremento sísmico se reparte con el diagrama lineal de su resultante | cerrada |
+| T7C-13 | El cierre de T-7c aplicó las doce correcciones de la auditoría | cerrada |
+| T7V-01 | V8 con el caudal que no cabe en flujo uniforme compite con el perfil de la lámina; el escalón de la regla de E-A en 1.2 D sigue ahí y lo cubre la guardia | abierta / parcial |
+| T7V-02 | El η de AASHTO 1.3.2.1 es del cruce: el cabezal lee el mismo η_I que el conducto, y η_D y η_R son suyos | abierta / parcial |
+| T7V-03 | El piso de la zapata armada se construye con la lectura de A8: 300 mm al eje de la capa inferior, con el recubrimiento con que se arma y la mayor barra del catálogo | abierta / parcial |
+| T7V-04 | La aceptación de la verificación se escribió con el código; el rojo se midió contra la base | diferida / declarada |
+| T10-01 | El objetivo de EXT-8 (< 15 KB y < 10 páginas por punto) no se alcanza sin perder sustento: lo repetido se quitó y se midió | diferida / declarada |
+| T10-02 | El índice de fórmulas se genera con dos corridas de PRUEBA que sí dimensionan, y no imprime los valores que un módulo escribe en una procedencia | abierta / parcial |
+| T10-03 | V4b, V6 y V9 ganan paso, y el censo de lo que no puede tener fundamento queda vacío | abierta / parcial |
+| T10-04 | El censo JSON ↔ memoria se mide por clave, y tres claves de texto se imprimen de otra forma | abierta / parcial |
+| T10-05 | Lo que el dueño decidió no hacer se imprime como ALCANCE, en las tres vistas | cerrada |
+| T10-06 | El anexo de sensibilidad imprime la ventana y no recalcula: el barrido sigue siendo PF-3 | abierta / parcial |
+| T10-07 | La aceptación de T-10 se escribió después del código; el rojo se midió contra la base | cerrada |
+| T10-08 | Las correcciones de la auditoría adversarial de T-10 | cerrada |
+| T11-01 | El juego de prueba entra sólo por las puertas de la CLI y no rellena ningún vacío del archivo | abierta / parcial |
+| T11-02 | La lista exacta de lo que detiene una etapa se MIDE sobre dos bases, y el contrato de entradas la repite en su §7 | abierta / parcial |
+| T11-03 | El escalón que no cabe bajo la subrasante es «no factible por rasante», con el delta de 7.A sólo cuando es geometría pura | abierta / parcial |
+| T11-04 | Validación externa: HDS-5 y HEC-14 contra sus ejemplos resueltos; HY-8 sólo como procedimiento, con la tolerancia que el dueño aceptó | abierta / parcial |
+| T11-05 | La sensibilidad se mide con el barrido de PF-3 sobre el juego, una clave a la vez, y la lista se deriva del censo | abierta / parcial |
+| T11-06 | La hidrología calculada entra al índice de fórmulas con una tercera corrida de prueba | abierta / parcial |
+| T11-07 | El alcance declarado completa lo que el dueño dejó fuera | abierta / parcial |
+| T11-08 | La aceptación de T-11 no se escribió en rojo primero | diferida / declarada |
+| T11-09 | Tres correcciones de formato y transparencia que tocan el programa: `HW_salida_m`, la fila A7 y el tipo de cabezal del resumen | abierta / parcial |
+| T11-10 | El lado alto de la ventana de `n_manning_cajon` no se puede declarar | abierta / parcial |
+| T12-01 | Los PDF de normas viven sólo en el repositorio de normas; la historia de git los conserva | abierta / parcial |
+| T12-02 | El material de proceso vive en `proceso/`, fuera del entregable, y sus tests con él | abierta / parcial |
+| T12-03 | La advertencia de fixture la pone el generador de la línea base, no el programa | cerrada |
+| T12-04 | La memoria en dos vistas de la misma corrida; la ventana exporta las dos desde UI-2 | abierta / parcial |
+| T12-05 | Licencia «todos los derechos reservados», `pyproject.toml` sin empaquetado y el README de usuario | cerrada |
+| T12-06 | La aceptación de T-12 no se escribió en rojo primero | cerrada |
+| T12-07 | Las correcciones de la auditoría de T-12: el entregable se sostiene solo y la resumida no pierde lo que la completa dice a propósito | cerrada |
+| UI1-01 | Cómo entra la hidrología a la ventana: cinco decisiones de UI-1 y una premisa refutada | abierta / parcial |
+| UI1-02 | Tres conductores de ventana real se habían quedado atrás de T-3, y el editor de la pestaña 2 sólo nombra filas de la primera tabla | abierta / parcial |
+| UI2-01 | La memoria resumida en la ventana: cinco decisiones de UI-2 | abierta / parcial |
+| UI2-02 | El cabezal del proyecto en la pestaña 4, con el texto de la CLI | cerrada |
+| UI2-03 | Las correcciones de la revisión independiente de UI-2: el hijo del PDF y lo que la ventana promete de él | cerrada |
+| UI3-01 | Dónde corre el barrido de la ventana: en un proceso hijo, la CLI con la sesión de la ventana | abierta / parcial |
+| UI3-02 | Lo que la revisión independiente de UI-3 encontró: una sesión que no reponía claves enteras, y la regla del botón fuera de src/ | abierta / parcial |
+| UI3-03 | Una clave entera escrita como texto se rechaza en TODAS las puertas que declaran; sólo la frontera del JSON la lee como entero | abierta / parcial |
+| UI4-01 | El recorrido de extremo a extremo, y las tres cosas que encontró o heredó | abierta / parcial |
+| UI4-02 | Las capturas y el README salen del recorrido; lo que de `CLAUDE.md` queda para el dueño | cerrada |
+| UI4-03 | Lo que la revisión independiente de UI-4 encontró: el hijo que ya terminó al cerrar y un ciclo de sesión que no distinguía «repuesto» de «por defecto» | cerrada |
+| UI5-01 | Lo que las cuatro decisiones dejan abierto | abierta / parcial |
+| UI5-02 | Lo que la revisión independiente de UI-5 encontró: una implicación al revés, la pestaña 2 sin repintar y un temporal de nombre fijo | cerrada |
+| UI5-03 | Lo que la verificación de la revisión de UI-5 encontró: la hoja de ruta en la remisión, el borrador de la pestaña 2, su motivo y los permisos | cerrada |
+| VE1-01 | La validación externa confirmó tres defectos: la progresión declarada se recorre tal cual (D1), V7 no lee el nivel freático (D2) y la hoja de ruta sigue mal en dos textos (D3) | abierta / parcial |
+| VE1-02 | Las decisiones del dueño que la validación externa dejó a la vista, sin tomarlas | cerrada |
+| VE2-B | La velocidad de erosión resuelve su propio tirante con n mínimo | cerrada |
+| VE2-A | La columna del n del concreto es una elección [A] | abierta / parcial |
+| VE2-G | Los diámetros son los designados por la norma de producto | abierta / parcial |
+| VE2-C | V7: el nivel de agua de diseño es una elección [A] del Propietario | abierta / parcial |
+| VE2-E | Aviso de consistencia de la serie de lluvias, sin umbral — Cerrado (VE-2) | cerrada |
+| VE2-F | Método racional modificado de 10 a 770 km² — Cerrado (VE-2), con tres lecturas declaradas | cerrada |
+| VE2-D | Factor de intervalo fijo de la serie de 24 h como criterio [A], con 1.00 — Cerrado (VE-2) | cerrada |
+| VE2-01 | Lo que seguía mal en la hoja de ruta después de VE-2 (lo corrigió el dueño, 2026-11-18) | cerrada |
+| VE2-02 | Lo que VE-2 dejó diferido, reunido | diferida / declarada |
+| VE2-03 | Lo que la revisión independiente de VE-2 encontró y se corrigió (A1, M3, M4, B1, B3, B4) | cerrada |
+| VE2-04 | V3 no mira la velocidad de salida bajo control de salida (M1 de la revisión independiente de VE-2) | diferida / declarada |
+| VE2-05 | Lo que la verificación de las correcciones de VE-2 encontró (N1 a N7) | cerrada |
+| VE3-01 | Bajo control de salida V3 juzga la mayor de `V_erosion` y `V_salida` (cierre de VE2-04) | cerrada |
+| VE3-02 | Los parámetros del suelo de fundación son [S] pendientes de ensayo (cierre de lo que VE2-05 dejó al dueño) | cerrada |
+| VE3-03 | M9 contra ejemplos publicados (Caltrans BDP 11.2.2, CDOT Ex. 11) | abierta / parcial |
+| VE3-04 | M8 contra ejemplos publicados (ACPA, USACE, PPI) | abierta / parcial |
+| VE3-06 | VC3: las pérdidas de la obra contra el desnivel del perfil del canal (Familia C) | cerrada |
+| VE3-07 | El remanso del canal por paso directo (Familia C) | abierta / parcial |
+| VE3-05 | El cabezal se dimensiona: la zapata crece por el talón (estabilidad) y en peralte (armado) | abierta / parcial |
+| VE3-08 | Ensayos de diseño del conducto: H4, H2, H6 y H3 (VE-3.11) | abierta / parcial |
+| VE3-09 | El diámetro gobernado por el nivel del receptor se dice (decisión 8 del dueño, VE-3.13) | cerrada |
+| VE3-10 | Clases III a V del tubo de concreto desde una fuente secundaria, con tope de diámetro por clase | cerrada |
+| VE3-11 | El hueco 1.0 ≤ H < 2.0 ft del tubo de concreto no se implementa | cerrada |
+| VE3-12 | El cortante fuera de 5.7.3.4.1 se verifica con el procedimiento general de 5.7.3.4.2 (VE-3.14, bloque 1; H-2 de los ensayos) | abierta / parcial |
+| VE3-13 | El bucle de la zapata se detiene en el tope y prueba la punta (VE-3.14, bloque 2; H-5, H-6, H-12) | abierta / parcial |
+| VE3-14 | La pantalla y el alero se dimensionan por su armado (VE-3.14, bloque 3; H-1) | abierta / parcial |
+| VE3-15 | Con agua en el plano de empuje el sismo se evalúa (VE-3.14, bloque 4; H-3) | abierta / parcial |
+| VE3-16 | Lo que la app dice de sí misma: alcance declarado y resumen de la CLI (VE-3.14, bloque 5; H-10, H-11) | cerrada |
+| VE3-17 | Opciones 9, 10 y 13 del cabezal como alternativas de criterio; 11 y 14 con su alcance; 12 no se propone (VE-3.14, bloque 6) | diferida / declarada |
+| VE3-18 | Decisiones 9 a 14 del dueño sobre el cabezal: valores de archivo y un solo régimen de k_h (VE-3.15) | abierta / parcial |
+| VE3-19 | Los máximos anuales repetidos se avisan, sin umbral (H1 de la validación hidrológica con casos reales) | abierta / parcial |
+| VE3-20 | El sismo del cabezal con los valores de archivo no cierra: causa, decisión y defecto de la §9.2 de la hoja de ruta | cerrada |
+| VE3-21 | El trasdós drenado es el valor de archivo (VE-3.16, decisión del dueño del 2026-11-18) | abierta / parcial |
+| VE4A-01 | E4 y E5 con el FS declarado del EMS: tres lecturas del proyecto y una fila sin valor (VE-4a, decisión del dueño del 2026-11-20) | abierta / parcial |
+| VE5-M6-01 | La poza de enrocado de HEC-14 Sec. 10.1 entra donde el apron no llega (VE-4g, ítem 2 del censo) | abierta / parcial |
+| VE5-M6-02 | La Figura 10.3 de HEC-14 está digitalizada: el TW sobre 1.0·D y el paso 5 de la poza (VE-5, lote m6) | abierta / parcial |
+| VE5-M6-03 | La salida colgada se cierra con la caída recta de HEC-14 Cap. 11 (decisión del dueño: dentro del alcance) | abierta / parcial |
+| VE5-M6-04 | Zampeado, uña y dentellón (ítem 30) y filtro granular (ítem 31) siguen pendientes [C] | diferida / declarada |
+| VE5-MET-01 | Metrados referidos al EG-2013 y cuadro de compatibilidad rasante-alcantarilla (Fase 11, entregables 8 y 9; ítem 8 del censo) | abierta / parcial |
+| VE4F-01 | La carga viva con relleno somero: la franja de 4.6.2.10.2, la cobertura mínima y un [A] sin valor (VE-4f) | abierta / parcial |
+| VE5M9-01 | El muro que no cede se calcula: reposo en la estática, 1.0·k_h0 y h/2 bajo sismo (VE-5, ficha T7B-14) | abierta / parcial |
+| VE5M9-02 | La cuña de tanteo sísmica donde M-O no es aceptable y sobre el trasdós inclinado (VE-5, ficha T7B-06) | cerrada |
+| VE5M9-03 | Capacidad portante: la RC_BC de AASHTO sustituye a Meyerhof, forma y profundidad declarables, y la admisible de corredor con consumidor (VE-5, ficha T7B-04) | cerrada |
+| VE6M9-01 | El cabezal ciclópeo se verifica bajo sismo (C8) y su zapata como voladizo de concreto simple (C7) (VE-6, ítem 10; T7C-09 (2)(3)) | abierta / parcial |
+| VE6M9-02 | Las cuantías mínimas de muro de E.060 14.3.1 pasan a criterio [N→] (VE-6, ítem 29; T7C-10) | cerrada |
+| VE6M9-03 | El alero se arma por sus propias secciones y su espesor se dimensiona por su armado (VE-6, ítem 9; VE3-14 H-13, T7B-08 (3), T7C-04) | abierta / parcial |
+| VE6M9-04 | La orientación del muro y la distancia al borde de calzada, por punto (VE-6, ítem 28; T7B-11) | cerrada |
+| VE7-01 | El alero se verifica como muro en sus franjas, con su zapata dimensionada y armada (VE-7; cierre de T7C-04) | abierta / parcial |
+| VE5-CAT-01 | La rama de selva alta del TMC: [S] `region_natural` y la recomendación como piso del catálogo (cierre de T4-06) | cerrada |
+| VE5-CAT-02 | La cuneta trapezoidal de la Tabla Nº 34 (región > 3000 mm/año): el fondo como campo de `seccion_cuneta` (cierre de lo que T9-01 dejó diferido) | cerrada |
+| VE5-CAT-03 | Fase 0-bis: la licuefacción como resultado declarado del EMS, con bloqueo de expediente donde AASHTO 10.5.4.2 la exige | cerrada |
+| VE5GUI-38 | La pestaña 2 se desplaza y las filas de exportación se parten solas | abierta / parcial |
+| VE5GUI-40 | `S_conducto`, `bombeo` y `peralte` con campo y bandera | abierta / parcial |
+| VE5GUI-39 | Temporales únicos al exportar y el fallo de escritura sin traza | abierta / parcial |
+| VE5GUI-46 | Ids `FH.*` en el índice, la fila de rugosidad y los decimales de `D` | abierta / parcial |
+| VE5GUI-43 | Los ensayos de durabilidad, quinta población del censo | abierta / parcial |
+| VE5GUI-44 | Techos de transcripción de la Fase 6, como aviso (decisión pendiente de Fable) | cerrada |
+| VE5GUI-49 | El hijo del PDF formatea la corrida embebida; las entradas de la pestaña 1 invalidan | abierta / parcial |
+| VE5GUI-45 | Estado del expediente: discrepancias abiertas y corridas para comparar | abierta / parcial |
+| VE5GUI-47 | El chequeo dimensional llega a M6–M10; los fundamentos sin ejercitar siguen | abierta / parcial |
+| VE5GUI-48 | La integración continua corre los tests de ventana | abierta / parcial |
+| VE6-01 | El nivel freático en M12 es de expediente y detiene el rubro, no el punto | cerrada |
+| VE6-02 | La licuefacción se registra al lado de las demás faltas, no delante | cerrada |
+| VE6-22 | El control de salida se rehace con la longitud entre cabezales: pasada de refinamiento con aviso | abierta / parcial |
+| VE6-T7A03 | El cabezal paralelo a la vía en un marco: lo pide una fila de la Carta 11 del HDS-5 | abierta / parcial |
+| VE6-34 | La progresión del catálogo: G1 dentro del bucle, V10 la detiene y el delta con V4 bajo control de entrada | abierta / parcial |
+| VE7A-01 | La Carta 10 con cabezal normal empareja el ke por el borde de su fila (cierra VE6-T7A03 (4)) | abierta / parcial |
+| VE7A-02 | La embocadura del marco se declara por punto (cierra VE6-T7A03 (1)) | abierta / parcial |
+| VE7A-03 | C8 a media altura decide con cualquier criterio de tracción (cierra VE6M9-01 (b)) | abierta / parcial |
+| VE7A-04 | C8 con k_v ≠ 0: el peso estabilizante va con (1 − k_v) (cierra VE6M9-01 (a)) | abierta / parcial |
+| VE7A-05 | El empuje sísmico declarado por punto y cabezal donde el programa no lo calcula (VE5M9-02, VE3-15) | abierta / parcial |
+| VE7A-06 | La geometría del talud de delante del cabezal, por punto (VE5M9-03) | abierta / parcial |
+| VE7A-07 | La h_eq con el cabezal paralelo a la vía (VE6-T7A03 (3)) | abierta / parcial |
+| VE7A-08 | El cabezal paralelo avisa el borde libre esviado de la losa del marco (VE6-T7A03 (2)) | abierta / parcial |
+| VE7A-09 | Lo que dejaría de cumplirse con la longitud entre cabezales bloquea el expediente (VE6-22) | abierta / parcial |
+| VE7A-10 | La `D` de M9 con los decimales del rótulo (VE5GUI-46) | abierta / parcial |
+| VE7C-01 | `E060.22.10.2.2#VOLADIZO` con cita propia, firmada en A11 (C1; VE6M9-01 (c)) | abierta / parcial |
+| VE7C-02 | `F9.LONGITUD`: la cercanía a la longitud aproximada es recomendación y la juzga el refinamiento (C2) | abierta / parcial |
+| VE7C-03 | `COND-SELVA-ALTA` se resuelve con el [S] `region_natural` (C3; VE5-CAT-01) | abierta / parcial |
+| VE7C-04 | La Fase 0-bis con sección propia en la memoria y clave `licuefaccion` en el JSON (C4; VE5-CAT-03) | abierta / parcial |
+| VE7C-05 | `cli.py --estado-expediente`: las discrepancias abiertas y las corridas para comparar (C5; VE5GUI-45) | abierta / parcial |
+| VE7C-06 | Corridas de referencia cuarta y quinta: de 39 fundamentos sin paso a 2 sin ninguna puerta (C6; VE5GUI-47; dictamen Fable (i-a), (i-c), C6) | abierta / parcial |
+| VE7C-07 | test_c7: la sesión v3 difiere por clases con causa, no sólo por la huella (dictamen Fable (v)) | abierta / parcial |
+| VE7C-08 | Comparador cerrado, línea de la Fase 0-bis en la CLI y la ventana sobre las cuatro (dictamen Fable (ii), (iii), (iv)) | cerrada |
+| VE7B-01 | El arranque de la progresión lo valida M2 sobre el criterio (cierre de T11-03 (6)) | abierta / parcial |
+| VE7B-02 | La pared del diámetro inglés convertido es la de su designado (cierre de VE2-G (2)) | abierta / parcial |
+| VE7B-03 | La regla del escalón más bajo vale también en la rama «no cabe» (cierre de T11-03 (5)) | abierta / parcial |
+| VE7B-04 | El delta del resguardo bajo control de salida, con el HW de entrada (cierre del abierto de VE6-34) | abierta / parcial |
+| VE7B-05 | El largo del área cargada sobre el tubo de concreto somero: el del neumático, valor de archivo (VE4F-01) | abierta / parcial |
+| VE7B-06 | El coeficiente de escorrentía ponderado por subáreas (cierre de VE5-MH-01) | abierta / parcial |
+| VE7B-07 | La región pluvial de la Tabla Nº 34 como [S] opcional (cierre de VE5-CAT-02) | abierta / parcial |
+| VE7B-08 | Lo que la Fase 11 no metra sale como renglón «no medido» (VE5-MET-01) | abierta / parcial |
+| VE7B-09 | Las caras del pórtico que no se traccionan llevan el mínimo de 5.10.6 (T5-07 (3)) | abierta / parcial |
+| VE7B-10 | El agua exterior del pórtico con el freático sobre la losa inferior (T5-07 (5)) | abierta / parcial |
+| VE7B-11 | El pórtico que no cumple dice qué canto declarar, y no se lo auto-adopta (T5-07 (1)) | abierta / parcial |
+| VE7B-12 | El acero del pórtico del marco se metra con sus armados (VE5-MET-01) | abierta / parcial |
+
+---
+
 # Parte I — Los 22 «deliberado sin documentar»
 
 ## SIS-A-04 · `cota_entrada_supuesta` rellena un vacío de dato dentro de M5
