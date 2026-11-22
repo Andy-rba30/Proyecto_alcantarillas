@@ -1,0 +1,22 @@
+{
+  "formato_version": 4,
+  "app_version": "1.0",
+  "id": "d996b1b45375405c99184b033f26693f",
+  "proyecto": "",
+  "csv": "",
+  "datos_externos": "",
+  "datos_sitio": "",
+  "cuencas": "",
+  "estacion": "",
+  "externos": {},
+  "alcance": "expediente",
+  "criterios": {
+    "valores": {},
+    "procedencias": {}
+  },
+  "sitio": {
+    "valores": {}
+  },
+  "csv_sha1": "",
+  "corridas": []
+}

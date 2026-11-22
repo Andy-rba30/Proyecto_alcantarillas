@@ -1,0 +1,57 @@
+{
+  "corredor_del_proyecto": {
+    "valor": "PLANTILLA — Tramo km 0+000 al km 5+000 (reemplazar)",
+    "trazabilidad": "Nombre del corredor vial y progresivas del proyecto segun expediente de trazo.",
+    "fecha": "2026-11-22"
+  },
+  "PGA_roca_B": {
+    "valor": 0.3,
+    "trazabilidad": "PLANTILLA — Reemplazar con lectura del mapa de isoaceleraciones / E.030 sobre las coordenadas del corredor (g).",
+    "fecha": "2026-11-22"
+  },
+  "ZONA_SISMICA_LA_UNION": {
+    "valor": 3,
+    "trazabilidad": "PLANTILLA — Reemplazar con zona sismica (1 a 4) del Anexo 1 de la Norma E.030 segun distrito del proyecto. Z_E030 se deriva automaticamente de este entero.",
+    "fecha": "2026-11-22"
+  },
+  "orientacion_muro_respecto_al_trafico": {
+    "valor": "perpendicular_al_trafico",
+    "trazabilidad": "PLANTILLA — Reemplazar segun orientacion predominante del cabezal respecto al trafico ('perpendicular_al_trafico' o 'paralelo_al_trafico').",
+    "fecha": "2026-11-22"
+  },
+  "distancia_borde_calzada_al_trasdos_m": {
+    "valor": 1.2,
+    "trazabilidad": "PLANTILLA — Reemplazar con medicion en seccion transversal tipo desde el paramento interior del cabezal al borde de la calzada (m).",
+    "fecha": "2026-11-22"
+  },
+  "carriles_por_sentido": {
+    "valor": 1,
+    "trazabilidad": "PLANTILLA — Reemplazar con numero entero de carriles por sentido de la calzada segun seccion tipo.",
+    "fecha": "2026-11-22"
+  },
+  "clase_de_via": {
+    "valor": "carretera_segunda_clase",
+    "trazabilidad": "PLANTILLA — Reemplazar con clasificacion DG-2018 del estudio de demanda (IMDA).",
+    "fecha": "2026-11-22"
+  },
+  "region_natural": {
+    "valor": "costa",
+    "trazabilidad": "PLANTILLA — Reemplazar segun ubicacion del corredor: 'costa', 'sierra', 'selva_alta' o 'selva_baja'.",
+    "fecha": "2026-11-22"
+  },
+  "zona_sismica_aashto": {
+    "valor": 3,
+    "trazabilidad": "PLANTILLA — Reemplazar con Zona Sismica AASHTO LRFD 3.10.6 (1 a 4) obtenida de S_D1 = F_v * S_1 en el EMS.",
+    "fecha": "2026-11-22"
+  },
+  "precipitacion_anual_corredor_mm": {
+    "valor": 850.0,
+    "trazabilidad": "PLANTILLA — Reemplazar con precipitacion total anual del corredor (mm/año) del estudio hidrologico para Tabla N 34.",
+    "fecha": "2026-11-22"
+  },
+  "existe_informacion_secundaria_tramo": {
+    "valor": "no",
+    "trazabilidad": "PLANTILLA — Reemplazar ('si' o 'no') segun inventario de estudios geotecnicos previos del tramo.",
+    "fecha": "2026-11-22"
+  }
+}
