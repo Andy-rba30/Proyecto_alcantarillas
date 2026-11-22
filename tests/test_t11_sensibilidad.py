@@ -31,6 +31,8 @@ from tests.apoyo import sensibilidad as S
 pytestmark = pytest.mark.lento
 
 
+# A5: con `pytest-xdist` la corrida completa usa `--dist loadfile` para
+# agrupar el modulo en un unico worker y ejecutar `medidas` una sola vez.
 @pytest.fixture(scope="module")
 def medidas():
     estado = ca.valores_dinamicos()

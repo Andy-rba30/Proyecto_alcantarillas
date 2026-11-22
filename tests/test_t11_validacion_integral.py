@@ -66,7 +66,7 @@ REL_MANNING_A_MANO = 0.01
 
 
 # ===========================================================================
-# Las corridas, una vez por modulo
+# Las corridas, una vez por modulo (A5: con xdist usar `--dist loadfile`)
 # ===========================================================================
 
 @pytest.fixture(scope="module")

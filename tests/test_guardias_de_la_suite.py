@@ -1413,3 +1413,40 @@ def test_el_detector_de_pytestmark_lento_es_exacto():
     assert _tiene_pytestmark_lento_en_ast(con_lento)
     assert _tiene_pytestmark_lento_en_ast(en_lista)
     assert not _tiene_pytestmark_lento_en_ast(solo_pdf)
+
+
+def _fixture_tiene_scope_module(ruta: Path, nombre_fn: str) -> bool:
+    arbol = ast.parse(ruta.read_text(encoding="utf-8"), filename=ruta.name)
+    for nodo in arbol.body:
+        if isinstance(nodo, ast.FunctionDef) and nodo.name == nombre_fn:
+            for dec in nodo.decorator_list:
+                if (
+                    isinstance(dec, ast.Call)
+                    and isinstance(dec.func, ast.Attribute)
+                    and dec.func.attr == "fixture"
+                    and any(
+                        kw.arg == "scope"
+                        and isinstance(kw.value, ast.Constant)
+                        and kw.value.value == "module"
+                        for kw in dec.keywords
+                    )
+                ):
+                    return True
+    return False
+
+
+def test_a5_fixtures_pesados_en_scope_module_y_ci_completo_con_loadfile():
+    """
+    A5: la corrida completa en CI agrupa por archivo (`--dist loadfile`) y los
+    fixtures mas pesados de T-11 conservan `scope="module"` para evaluarse
+    una sola vez por proceso worker.
+    """
+    flujo = (RAIZ / ".github" / "workflows" / "pruebas.yml").read_text(encoding="utf-8")
+    assert "--dist loadfile" in flujo, "falta `--dist loadfile` en .github/workflows/pruebas.yml"
+    for archivo, fn in (
+        ("test_t11_sensibilidad.py", "medidas"),
+        ("test_t11_validacion_integral.py", "base"),
+    ):
+        assert _fixture_tiene_scope_module(TESTS / archivo, fn), (
+            f"{archivo}::{fn} debe conservar @pytest.fixture(scope='module')"
+        )
