@@ -59,6 +59,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 
 RAIZ = Path(__file__).resolve().parents[1]
 SRC = RAIZ / "src"
@@ -604,6 +606,7 @@ def test_e03_anticipo_ayuda_e_indice_apuntan_al_servicio_y_no_a_cli():
         assert usa_servicio, f"{nombre} no importa el servicio"
 
 
+@pytest.mark.lento
 def test_las_dos_entradas_del_paquete_comparten_convencion():
     """
     `python -m src.indice_formulas` y `python -m src.normativa.manifiesto`

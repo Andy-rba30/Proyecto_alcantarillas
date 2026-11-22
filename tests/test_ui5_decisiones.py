@@ -392,6 +392,7 @@ def _apagados_con(exportadores, motivo):
                     for e in exportadores.values()))
 
 
+@pytest.mark.lento
 def test_1_la_ventana_real_invalida_al_cambiar_el_csv(app, ventana_real):
     _salida, r = ventana_real
     motivo = app.MOTIVO_CSV_CAMBIADO
@@ -412,6 +413,7 @@ def test_1_la_ventana_real_invalida_al_cambiar_el_csv(app, ventana_real):
     assert all(e["encendido"] for e in r["tras_volver_a_correr"].values())
 
 
+@pytest.mark.lento
 def test_1_la_ventana_real_repinta_la_pestana_2_al_retirar_el_informe(app, ventana_real):
     """
     H2 en la ventana de verdad: con «Solo los que bloquearon esta corrida»
@@ -434,6 +436,7 @@ MOTIVO_DE_CADA_GESTO = {"tras_csv": "MOTIVO_CSV_CAMBIADO",
                         "tras_corrida_fallida": "MOTIVO_CORRIDA_FALLIDA"}
 
 
+@pytest.mark.lento
 def test_1_la_ventana_real_dice_en_la_pestana_2_por_que_no_hay_corrida(app, ventana_real):
     """
     Verificacion de UI-5 (N3): tras retirar el informe la linea del ambito
@@ -448,6 +451,7 @@ def test_1_la_ventana_real_dice_en_la_pestana_2_por_que_no_hay_corrida(app, vent
         assert f[gesto]["ambito"] == f[gesto]["barra"], gesto
 
 
+@pytest.mark.lento
 def test_1_la_ventana_real_conserva_el_borrador_de_la_pestana_2(ventana_real):
     """
     Verificacion de UI-5 (N2): repintar la pestaña 2 al retirar el informe
@@ -462,6 +466,7 @@ def test_1_la_ventana_real_conserva_el_borrador_de_la_pestana_2(ventana_real):
         assert b[gesto]["borrador"] == "1.3", gesto
 
 
+@pytest.mark.lento
 def test_1_la_ventana_real_no_lleva_el_borrador_a_otra_obra(ventana_real):
     """
     Verificacion de UI-5 (N5): con la firma de N2, abrir OTRA obra («Cargar
@@ -509,6 +514,7 @@ def test_1_abrir_otra_obra_no_hereda_el_borrador(app, monkeypatch, tmp_path, ges
     assert v.valor_declarado_var.get() == archivo
 
 
+@pytest.mark.lento
 def test_1_la_ventana_real_conserva_la_frontera_de_la_decision(app, ventana_real):
     """
     La decision de UI-5 era sobre el CSV, y el JSON de datos externos seguia
@@ -687,6 +693,7 @@ def test_2_ventana_la_resumida_html_y_la_completa_del_mismo_informe(informe_perf
     assert _encabezado(texto_c) == _encabezado(texto_r)
 
 
+@pytest.mark.lento
 def test_2_ventana_real_las_dos_memorias_html_de_sus_botones(ventana_real):
     """El contexto (b) por los botones de la pestaña 4 de la ventana de verdad."""
     salida, r = ventana_real

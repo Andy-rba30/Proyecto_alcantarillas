@@ -1171,6 +1171,7 @@ def _interprete_con_ventana():
     return _INTERPRETE, _ENVOLTORIO
 
 
+@pytest.mark.lento
 def test_e_la_ventana_real_barre_la_guia_sin_tocar_el_estado_ni_el_informe(tmp_path):
     interprete, envoltorio = _interprete_con_ventana()
     if interprete is None:

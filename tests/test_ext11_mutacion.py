@@ -81,6 +81,8 @@ from pathlib import Path
 
 import pytest
 
+pytestmark = pytest.mark.lento
+
 from tests.apoyo import mutacion
 
 RAIZ = Path(__file__).resolve().parents[1]

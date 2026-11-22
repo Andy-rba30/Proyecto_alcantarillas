@@ -2566,6 +2566,7 @@ def test_el_anticipo_se_refresca_al_cargar_csv_y_al_cambiar_alcance():
 # EXT-8: el PDF fuera del hilo de Tk y la accesibilidad minima, en ventana real
 # ---------------------------------------------------------------------------
 
+@pytest.mark.lento
 @pytest.mark.skipif(_INTERPRETE is None,
                     reason="ningun interprete disponible puede levantar una "
                            "ventana (falta tkinter, ttkbootstrap o el "

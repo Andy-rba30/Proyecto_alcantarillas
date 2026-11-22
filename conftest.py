@@ -67,15 +67,14 @@ def pytest_configure(config):
         "markers",
         "pdf: abre un PDF de normas; exige PyMuPDF (requirements-dev.txt) y "
         "el repositorio de normas enlazado por NORMAS_DIR")
-    # `lento`: un test que por si solo pesa mas de diez segundos porque lanza
-    # un subproceso pesado (weasyprint, un PDF). NO se salta: se marca para
-    # que una corrida de trabajo pueda dejarlo fuera (`-m "not lento"`) y
-    # para que el reparto del tiempo de la suite se lea del codigo (PC-22:
-    # cuatro tests sumaban 27 de 80 s). El conteo de la suite no cambia.
+    # `lento`: corridas pesadas medidas (>120 s por modulo o subproceso
+    # pesado). NO se salta: se marca para que la corrida rapida de trabajo
+    # pueda dejarlo fuera (`-m "not lento"`, plan A1). El conteo total de la
+    # suite no cambia.
     config.addinivalue_line(
         "markers",
-        "lento: mas de diez segundos por un subproceso pesado; "
-        "excluible con -m \"not lento\", nunca saltado por defecto")
+        "lento: corridas pesadas (medidas); excluible con -m 'not lento', "
+        "nunca saltado por defecto")
 
 # --- T-12 --- SIN `NORMAS_DIR`, TODO TEST `pdf` SE SALTA, Y LO DICE. Hasta
 # T-12 dieciseis de las dieciocho fuentes estaban en `normas/` de este

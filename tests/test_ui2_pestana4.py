@@ -913,6 +913,7 @@ def _cli_de_la_referencia(referencia, tmp_path):
     return hecho.stdout
 
 
+@pytest.mark.lento
 def test_d_la_ventana_real_nace_apagada_y_enciende_los_siete_al_correr(ventana_real):
     _salida, r = ventana_real
     antes = r["antes"]
@@ -943,6 +944,7 @@ def test_d_la_ventana_real_nace_apagada_y_enciende_los_siete_al_correr(ventana_r
     assert f["panel"]["texto"] == "" and r["motivo_corrida_fallida"] in f["panel"]["motivo"]
 
 
+@pytest.mark.lento
 def test_d_el_panel_de_la_ventana_es_el_bloque_que_la_cli_imprime(ventana_real, tmp_path,
                                                                   informe_cabezal):
     """
@@ -959,6 +961,7 @@ def test_d_el_panel_de_la_ventana_es_el_bloque_que_la_cli_imprime(ventana_real, 
     assert any(l.startswith("Cadena sismica") for l in panel)
 
 
+@pytest.mark.lento
 def test_d_a_perfil_el_panel_de_la_ventana_dice_lo_de_la_cli(ventana_real, informe_perfil):
     _salida, r = ventana_real
     p = r["perfil"]
@@ -974,6 +977,7 @@ def _filas_de_trazabilidad(html):
             for th, td in re.findall(r"<th>(.*?)</th>\s*<td[^>]*>(.*?)</td>", bloque, re.S)}
 
 
+@pytest.mark.lento
 def test_d_el_html_resumido_de_la_ventana_lleva_el_encabezado_de_la_completa(ventana_real):
     salida, _r = ventana_real
     completa = (salida / "completa.html").read_text(encoding="utf-8")
@@ -993,6 +997,7 @@ def test_d_el_html_resumido_de_la_ventana_lleva_el_encabezado_de_la_completa(ven
     assert volcado["expediente"]["csv_sha1"] in filas_r["SHA-1 del CSV de entrada"]
 
 
+@pytest.mark.lento
 def test_d_el_pdf_resumido_de_la_ventana_sale_por_el_hijo(ventana_real):
     salida, r = ventana_real
     pdf = r["pdf_resumida"]
@@ -1026,6 +1031,7 @@ def test_d_el_pdf_resumido_de_la_ventana_sale_por_el_hijo(ventana_real):
     assert expdf.AVISO_EL_HIJO_NO_RECALCULA in r["tras_correr"]["ayuda_pdf_resumida"]
 
 
+@pytest.mark.lento
 def test_d_la_resumida_en_pdf_de_la_ventana_lleva_la_hidrologia(ventana_real):
     """
     Revision de UI-2, de punta a punta: la corrida de referencia CON

@@ -62,6 +62,8 @@ from types import SimpleNamespace
 
 import pytest
 
+pytestmark = pytest.mark.lento
+
 import cli
 from src import criterios_adoptados as ca
 from src import datos_sitio as ds

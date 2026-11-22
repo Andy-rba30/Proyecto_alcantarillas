@@ -9,9 +9,11 @@ imprime --- que clave mueve el diseño, cual solo veredictos, cual la corrida
 no lee y por que ---, para que un cambio del programa que los mueva no pase
 en silencio.
 
-LA MARCA `lento` SE RETIRO en las correcciones de T-11 (H13): la convencion
-del `conftest` la reserva a un SUBPROCESO pesado, y aqui no hay ninguno (la
-fixture `medidas` corre unas doscientas corridas en proceso: ~60 s).
+LA MARCA `lento` SE RETIRO en las correcciones de T-11 (H13) cuando la convencion
+del `conftest` la reservaba a subprocesos; desde el plan A1 se reactiva a
+nivel de modulo por duracion medida (fixture `medidas`: 6402.97 s en la
+medicion base con `--durations=60`) para acelerar la corrida rapida
+(`-m "not lento"`).
 
 NO SE ESCRIBIO EN ROJO PRIMERO, y se dice: T-11 mide lo que el programa ya
 hace; el rojo es de recoleccion contra la base `14f6138` (el modulo de apoyo
@@ -25,6 +27,8 @@ import pytest
 
 from src import criterios_adoptados as ca
 from tests.apoyo import sensibilidad as S
+
+pytestmark = pytest.mark.lento
 
 
 @pytest.fixture(scope="module")

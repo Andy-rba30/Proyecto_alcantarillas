@@ -29,6 +29,8 @@ from typing import Dict
 
 import pytest
 
+pytestmark = pytest.mark.lento
+
 from src import indice_formulas as ind
 from tests.test_dimensional_piloto import ADIM, L, M, T, UNIDADES, Dim
 

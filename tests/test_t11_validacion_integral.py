@@ -43,6 +43,8 @@ from pathlib import Path
 
 import pytest
 
+pytestmark = pytest.mark.lento
+
 from src import criterios_adoptados as ca
 from src import datos_sitio as ds
 from src.modelos import TipoDeBloqueo

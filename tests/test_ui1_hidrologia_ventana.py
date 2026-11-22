@@ -899,6 +899,7 @@ def test_e_el_json_del_hijo_es_el_de_la_ventana_con_hidrologia(tmp_path, con_fen
     assert _sin_marca(propio) == _sin_marca(ajeno)
 
 
+@pytest.mark.lento
 def test_e_el_proceso_del_pdf_reproduce_la_corrida_con_hidrologia(tmp_path, con_fen):
     if not M11.weasyprint_disponible():
         pytest.skip("weasyprint no esta operativo en este interprete")

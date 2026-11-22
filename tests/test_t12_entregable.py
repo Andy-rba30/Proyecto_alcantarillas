@@ -37,6 +37,8 @@ from pathlib import Path
 
 import pytest
 
+pytestmark = pytest.mark.lento
+
 import cli
 from src import indice_formulas as ind
 from src.modelos import ALCANCE_PERFIL
