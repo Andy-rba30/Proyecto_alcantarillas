@@ -185,6 +185,91 @@ def _SIMBOLOS_DEL_PROYECTO() -> set:
     return _CACHE_SIMBOLOS[0]
 
 
+# LAS MUDANZAS DE ARCHIVO: {archivo de origen: directorio de destino}. Desde
+# D2 las fichas de `src/criterios_adoptados.py` viven en `src/criterios/`, y
+# una fila que cita una ficha por `[CA:n](src/criterios_adoptados.py:n)` ya no
+# tiene bloque al que anclar en el origen: resincronizar solo los numeros la
+# dejaba en el mecanismo, en una linea que no habla de la ficha. Una referencia
+# se MUDA cuando su archivo esta en esta tabla, ninguno de los simbolos que la
+# fila cita abre bloque en el origen y exactamente UN archivo del destino lo
+# abre (`_archivo_tras_la_mudanza`). Fuera de eso no se mueve nada: la tabla
+# es explicita a proposito, para que el regenerador no reparta referencias por
+# el arbol buscando homonimos. La etiqueta (`CA`) se conserva, como D1 la
+# conservo para `M9` al partir `M9_cabezal.py`.
+MUDANZAS: Dict[str, str] = {
+    "src/criterios_adoptados.py": "src/criterios",
+}
+
+
+def _archivo_tras_la_mudanza(rel: str, simbolos: List[str]) -> str:
+    """
+    El archivo donde vive HOY lo que la fila cita, si se mudo (ver MUDANZAS).
+
+    Decide el SUJETO de la fila: los simbolos se recorren en el orden en que
+    la fila los cita, y el primero que abre bloque en alguna parte decide. Si
+    lo abre en el origen, la referencia se queda; si lo abre en UN solo
+    archivo del destino, se muda alli; si en varios, se queda y las guardias
+    del test la juzgan donde esta.
+
+    Si NINGUN simbolo citado abre bloque --- la fila nombra un criterio
+    RETIRADO para decirlo, como `FS_flotacion` ---, la referencia es de
+    prosa, y lo unico que se puede derivar es el renglon que lo nombra: se
+    muda al archivo del destino que menciona el nombre en UN solo renglon, si
+    lo hay, y el origen no lo menciona. Es la linea a la que esas filas
+    apuntaban antes de la mudanza (el comentario que explica la retirada).
+    """
+    destino = MUDANZAS.get(rel)
+    if destino is None:
+        return rel
+    archivos = [str(r.relative_to(RAIZ).as_posix())
+                for r in sorted((RAIZ / destino).glob("*.py"))]
+    origen = _bloques(rel)
+    for s in simbolos:
+        if s in origen:
+            return rel
+        con_bloque = [a for a in archivos if s in _bloques(a)]
+        if len(con_bloque) == 1:
+            return con_bloque[0]
+        if con_bloque:
+            return rel
+
+    def _menciones(archivo: str, s: str) -> int:
+        patron = re.compile(r"\b" + re.escape(s) + r"\b")
+        return sum(1 for linea in _lineas(archivo) if patron.search(linea))
+
+    for s in simbolos:
+        if _menciones(rel, s):
+            return rel
+        con_mencion = [(a, _menciones(a, s)) for a in archivos]
+        con_mencion = [(a, n) for a, n in con_mencion if n]
+        if len(con_mencion) == 1 and con_mencion[0][1] == 1:
+            return con_mencion[0][0]
+    return rel
+
+
+def _linea_tras_la_mudanza(rel: str, simbolos: List[str]) -> int:
+    """
+    El renglon de llegada de una referencia recien mudada a `rel`.
+
+    El numero que la fila traia es del ORIGEN y no dice nada en el destino:
+    elegir «el bloque mas cercano» a el seria elegir al azar entre los
+    simbolos de la fila. Se ancla al bloque del sujeto (el primer simbolo
+    citado que abre bloque en `rel`) o, si ninguno lo abre, al unico renglon
+    que lo nombra (`_archivo_tras_la_mudanza` ya comprobo que es uno).
+    """
+    bloques = _bloques(rel)
+    for s in simbolos:
+        if s in bloques:
+            inicio, fin = bloques[s][0]
+            return _primer_renglon_con_texto(rel, inicio, fin)
+    for s in simbolos:
+        patron = re.compile(r"\b" + re.escape(s) + r"\b")
+        for n, linea in enumerate(_lineas(rel), 1):
+            if patron.search(linea):
+                return n
+    raise AssertionError(f"mudanza a {rel} sin renglon para {simbolos}")
+
+
 def _linea_del_simbolo(rel: str, simbolos: List[str],
                        linea_actual: int) -> Optional[int]:
     """
@@ -325,6 +410,12 @@ def resincronizar(texto: str) -> Tuple[str, List[str], int]:
             if not (RAIZ / rel).exists():
                 return _sin_rango_imposible(m.group(0), linea, sufijo,
                                             etiqueta, rel, cambios, n_md)
+            mudado = _archivo_tras_la_mudanza(rel, simbolos)
+            if mudado != rel:
+                destino = _linea_tras_la_mudanza(mudado, simbolos)
+                cambios.append(f"md:{n_md}  {rel}:{linea} -> {mudado}:"
+                               f"{destino} (mudanza)")
+                return f"[{etiqueta}:{destino}]({mudado}:{destino})"
             destino = _linea_del_simbolo(rel, simbolos, linea)
             if destino is None:
                 prosa += 1
