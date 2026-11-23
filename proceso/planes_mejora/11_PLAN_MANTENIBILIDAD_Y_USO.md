@@ -258,7 +258,7 @@ estado de `ve3_estado/LEEME.md` dicen desde dónde seguir.
 | D0 AST de subpaquetes | hecho; corregido `base / "__init__.py"`, que la guardia de aritmética del índice (test `lento`) rechazaba | `030d208`, `571accc` |
 | D1 `M9_cabezal/` | hecho; corregidas tres guardias que seguían leyendo `M9_cabezal.py` | `ab63aba`, `198aa65` |
 | D2 `src/criterios/` | **en curso** (cableado de la huella, escritura permanente, guardias y anclas) | `0b8c4a7` (WIP) |
-| D3 `modelos.py` | **en curso** | — |
+| D3 `modelos.py` | hecho: 13 submódulos (máx. 1 617 líneas), AST de los 299 nodos idéntico, `__module__` normalizado a `src.modelos` (el JSON de sesión escribe `__module__:__qualname__`), DAG sin ciclos; CLI y JSON idénticos byte a byte; `import src.modelos` +5 ms | `80462f7` (fusión con conflicto resuelto en `test_t8_correcciones`) |
 | D3 `M11_reporte.py` | hecho: 18 archivos de < 700 líneas, memoria HTML/CSV/JSON idéntica byte a byte (salvo fecha) en las 5 corridas de referencia; guardias por AST sobre todo el subpaquete (`tests/apoyo/fuente_m11.py`) | `ac43c6e` (fusión `5b765f4`) |
 | D3 `constantes_normativas.py` | **en curso** | — |
 
@@ -284,7 +284,7 @@ todavía se están cerrando):
 
 1. Integrar las ramas de los agentes (`claude/serene-keller-2p7pcs-d2`,
    `-d3-modelos`, `-d3-constantes`) en `claude/serene-keller-2p7pcs`
-   (`-d3-m11` ya integrada en `5b765f4`). Al integrar D2, reaplicar la huella
+   (`-d3-m11` integrada en `5b765f4`; `-d3-modelos` integrada después). Al integrar D2, reaplicar la huella
    en `src/modulos/M11_reporte/_base.py` (`ARCHIVO_CRITERIOS`) y
    `trazabilidad.py` (`criterios_fecha`).
 2. Normalizar los saltos de línea: 22 archivos de `v2` se subieron con CRLF
