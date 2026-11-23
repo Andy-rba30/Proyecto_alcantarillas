@@ -384,7 +384,7 @@ def test_los_modulos_medidos_son_M3_M5_MD_y_el_par_de_n():
     modulos = set(mutacion.MODULOS_DE_EXT11)
     assert {"src/modulos/M3_hidraulica.py", "src/modulos/M4_control.py",
             "src/modulos/M5_verificaciones.py", "src/modulos/MD.py"} <= modulos
-    assert set(mutacion.MODULOS_DE_EXT11["src/modelos.py"]) == {
+    assert set(mutacion.MODULOS_DE_EXT11["src/modelos/conducto.py"]) == {
         "n_para_capacidad", "n_para_velocidad_maxima", "n_para_velocidad_minima"}
     assert "_par_de_manning" in mutacion.MODULOS_DE_EXT11["src/modulos/M2_material.py"]
     assert "tests/test_ext11_propiedades.py" in mutacion.OBJETIVOS

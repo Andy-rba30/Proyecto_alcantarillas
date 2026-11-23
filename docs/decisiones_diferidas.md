@@ -600,7 +600,7 @@ registro.
   `cargar_puntos`» era describir mal el archivo.)
 - **Qué haría falta:** un consumidor que necesitara la frase corta y no el
   tablero. Hoy no existe y no se ve de dónde saldría.
-- **Dónde vive:** `src/modelos.py::mensaje_gui`
+- **Dónde vive:** `src/modelos/errores.py::mensaje_gui`
 
 > **Defecto contra `CLAUDE.md`, corregido en S19.** La cláusula
 > `CriterioPendienteError` de la taxonomía decía «La GUI la muestra como
@@ -629,14 +629,14 @@ registro.
   del camino. **La decisión sobre `exigir_anios` está cerrada; este límite
   queda declarado y sin cerrar**, y no se puede cerrar sin tocar el modelo, que
   no es trabajo de esta fase.
-- **Dónde vive:** `src/modelos.py::exigir_anios`
+- **Dónde vive:** `src/modelos/proyecto.py::exigir_anios`
 
 ## SIS-B-09 · Constantes `NUMERAL_*` de módulo declaradas y nunca leídas
 
 - **Qué se difirió:** nada, ya. Son ocho, no siete.
 - **Por qué:** se cerró en S12 con un censo declarado y su razón.
 - **Qué haría falta:** nada. Cerrado.
-- **Dónde vive:** `src/modelos.py::NUMERALES_DE_SECCION_SIN_LECTOR`
+- **Dónde vive:** `src/modelos/base.py::NUMERALES_DE_SECCION_SIN_LECTOR`
 
 ## SIS-B-10 · `legacy/Tc.py`: sin importadores, sin tests, sin barrido y sin estatus
 
@@ -1083,8 +1083,8 @@ que es literalmente el defecto que este registro existe para impedir.
   vinculante **#12** de `docs/ruta_familia_c.md` §6 documenta con su
   medición — en la circular esta vía está mal condicionada y en los extremos
   de `bracket_llenado()` devuelve `0.0` exacto para P y para T.
-- **Dónde vive:** `src/modelos.py::Seccion` (el docstring lleva la medición) y
-  `src/modelos.py::SeccionCircular.theta_desde_tirante`
+- **Dónde vive:** `src/modelos/conducto.py::Seccion` (el docstring lleva la medición) y
+  `src/modelos/conducto.py::SeccionCircular.theta_desde_tirante`
 
 ## C1-02 · `SeccionCircular.etiqueta()` no la invoca ningún módulo — **CERRADA en C8**
 
@@ -1104,7 +1104,7 @@ que es literalmente el defecto que este registro existe para impedir.
   como cerrada, porque la razón que la abrió es lo que explica por qué el
   método existió tres sesiones sin llamador; borrarla dejaría el método sin
   historia.
-- **Dónde vive:** `src/modelos.py::etiqueta`
+- **Dónde vive:** `src/modelos/conducto.py::etiqueta`
 
 ## C1-03 · `Geometria.y_sobre_D` se quedó sin consumidor de producción
 
@@ -1119,7 +1119,7 @@ que es literalmente el defecto que este registro existe para impedir.
   una. No es de C1 (mover el número era exactamente lo prohibido) ni de C4;
   quien las toque tiene que saber que son tres y que hoy no hay nada que
   avise si divergen.
-- **Dónde vive:** `src/modelos.py::y_sobre_D` — el de `Geometria`. Las otras
+- **Dónde vive:** `src/modelos/conducto.py::y_sobre_D` — el de `Geometria`. Las otras
   dos expresiones del mismo número están en `ResultadoPunto.y_sobre_D` (mismo
   archivo) y en `src/modulos/M5_verificaciones.py::v1_borde_libre`
 
@@ -1975,7 +1975,7 @@ argumento para que nadie las lea como olvido.
 - **Qué haría falta:** en EXT-3, sumar `Q_celda_m3s` y `numero_celdas` a
   `_diseno_json` junto a las banderas de SIS-B-18, y regenerar la línea base
   declarando que las tres corridas de la CLI ganan dos claves por punto.
-- **Dónde vive:** `src/modelos.py::ResultadoHidraulico`
+- **Dónde vive:** `src/modelos/hidraulica.py::ResultadoHidraulico`
 - **Cerrado en EXT-3 (2026-09-20):** `cli._diseno_json` publica `Q_celda_m3s`
   y `numero_celdas` junto al bloque h_o entero y al régimen del barril (trece
   claves nuevas por punto dimensionado); la línea base lo declara archivo por
@@ -2154,7 +2154,7 @@ quedaron sin hacer a propósito, con su argumento y su sesión.
   hueco. Si algún consumidor futuro necesita exportar un `Informe`
   construido fuera de `cli.correr`, tiene que construirlo CON su
   `ContextoCorrida`, no pedir que la capa de reporte lo adivine.
-- **Dónde vive:** `src/modelos.py::ContextoCorrida`
+- **Dónde vive:** `src/modelos/memoria.py::ContextoCorrida`
 
 ---
 
@@ -2481,7 +2481,7 @@ escritas porque se apartan de lo que un lector esperaría.
   ensamble de la normal en la base que lo sume antes de E1 y E3; entonces
   `E_activo` pasa a ser la componente horizontal y el dorado del bloque C
   gana `C_E_h_esperado` y `C_E_v_esperado`.
-- **Dónde vive:** `src/modelos.py::EmpujesTrasdos`
+- **Dónde vive:** `src/modelos/cabezal.py::EmpujesTrasdos`
 
 # Parte XXIV — Lo que EXT-8 dejó escrito al cerrar el rendimiento y la GUI no bloqueante
 
@@ -3035,7 +3035,7 @@ cada una lleva su argumento y su símbolo.
 - **Qué haría falta:** que la v8 §4.3 decida que el remanso gobierna siempre
   que exista; con ella `HW_efectivo_m` devuelve siempre el remanso y el paso
   4.3 se vuelve informativo.
-- **Dónde vive:** `src/modelos.py::PerfilLamina`
+- **Dónde vive:** `src/modelos/hidraulica.py::PerfilLamina`
 
 ## EA-04 · La compuerta de h_o queda como guardia sin alcance en producción
 
@@ -3405,7 +3405,7 @@ símbolo.
   trazabilidad, y la segunda comparación en `M5.v2b_sedimentacion` bajo el
   mismo `regimen_v2b`.
 - **(1) cerrada en C10:** `EstadoDeVerificacion`, ver C10-02. (2) sigue.
-- **Dónde vive:** `src/modelos.py::TipoDeVeredicto`
+- **Dónde vive:** `src/modelos/memoria.py::TipoDeVeredicto`
 
 ## PF-4-02 · El barrido leía el veredicto sólo de `cumple`, y desde PF-4 son dos campos
 
@@ -3609,7 +3609,7 @@ símbolo.
   aviso de la verificación y sin estado propio.
 - **Qué haría falta:** un productor de esos dos valores, si alguna vez lo
   hay, extendería `EstadoDeVerificacion.de_veredicto`.
-- **Dónde vive:** `src/modelos.py::EstadoDeVerificacion`
+- **Dónde vive:** `src/modelos/memoria.py::EstadoDeVerificacion`
 
 ## C10-03 · El esviaje máximo constructivo es un [A] opcional de perfil, y sin declararlo nada cambia
 
@@ -3949,7 +3949,7 @@ alternativa sin aplicar porque decidirla es del proyectista.
   Mientras tanto, una pendiente de proyecto menor que el uno por mil no se declara
   como cero para ganar un diámetro. Para (1), un caso de obra y la regla práctica del
   numeral (D/2). Para (2), que alguien lo necesite: V2b no tendría con qué comparar.
-- **Dónde vive:** `src/modelos.py::SinTiranteNormal`
+- **Dónde vive:** `src/modelos/hidraulica.py::SinTiranteNormal`
 
 ## T2-02 · `borde_libre_bajo_tw_ahogante` queda en `no_cumple` por decisión del dueño; `aviso` es una alternativa barrible, continua en el TW, que hace dimensionar A-02 en la corrida estrecha
 
@@ -4561,7 +4561,7 @@ tres más (`T1-07` a `T1-09`) las dejó la auditoría adversarial de la misma se
   con el suyo. El defecto no cambia y los tests de EXT-3 siguen valiendo.
 - **Qué haría falta:** nada ya: la sección «Excepciones» de `CLAUDE.md` lo dice desde
   la integración de T-1 (2026-11-12).
-- **Dónde vive:** `src/modelos.py::MOTIVO_METODO_NO_EVALUABLE_HIDROLOGIA`
+- **Dónde vive:** `src/modelos/errores.py::MOTIVO_METODO_NO_EVALUABLE_HIDROLOGIA`
 
 ## T1-07 · De las seis filas de la Tabla Nº 05 se implementan cuatro: Izzard y onda cinemática quedan diferidas — Cerrado (VE-5, lote mh)
 
@@ -5618,7 +5618,7 @@ Doce fichas; las cinco últimas son de la auditoría.
   el pórtico se calcula (`M8.disenar_portico`, ficha T5-07) con su propia
   `GeometriaPortico`, que separa los cantos de losa, pared y tabique; la de aquí sigue con
   uno solo y el pórtico lo toma de `espesor_pared`, de modo que los números coinciden.
-- **Dónde vive:** `src/modelos.py::GeometriaMarco`
+- **Dónde vive:** `src/modelos/remanso.py::GeometriaMarco`
 
 ## T3-07 · Con la embocadura del cajón declarada, R4 ya no frena una fila de cajón para el ke del TUBO; la frena el consumidor
 
@@ -7221,7 +7221,7 @@ T-7b/T-7c— y lo fija `tests/test_t10_memoria.py`, por clave del JSON.
 - **Por qué:** sin esta lista, la memoria callaba lo que no hace y un lector lo leía como
   omisión.
 - **Qué haría falta:** retirar cada entrada cuando su ficha se cierre.
-- **Dónde vive:** `src/modelos.py::ALCANCE_DECLARADO`
+- **Dónde vive:** `src/modelos/hidraulica.py::ALCANCE_DECLARADO`
 
 ## T10-06 · El anexo de sensibilidad imprime la ventana y no recalcula: el barrido sigue siendo PF-3
 
@@ -7429,7 +7429,7 @@ y un test regenera cada uno.
   escalón de la regla de E-A en HW/D = 1.2 (T7V-01). Las otras cinco ya estaban (T-10).
 - **Abierto:** cada entrada sale cuando su ficha se cierre.
 - **Qué haría falta:** el prompt posterior a la cadena que digitalice las Figuras 3.3–3.4.
-- **Dónde vive:** `src/modelos.py::ALCANCE_DECLARADO`
+- **Dónde vive:** `src/modelos/hidraulica.py::ALCANCE_DECLARADO`
 
 ## T11-08 · La aceptación de T-11 no se escribió en rojo primero
 
@@ -8765,7 +8765,7 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   ya no se llama «criterio sin valor»).
 - **Qué haría falta:** nada.
 - **Por qué:** es presentación y registro de lo que el código ya hace; la línea base no cambia.
-- **Dónde vive:** `src/modelos.py::ALCANCE_DECLARADO`, `cli.py`
+- **Dónde vive:** `src/modelos/hidraulica.py::ALCANCE_DECLARADO`, `cli.py`
 
 ## VE3-17 · Opciones 9, 10 y 13 del cabezal como alternativas de criterio; 11 y 14 con su alcance; 12 no se propone (VE-3.14, bloque 6)
 
@@ -9391,7 +9391,7 @@ generados (`indice_formulas.md`, línea base) no se regeneran aquí: los regener
   de HEC-14) usan `cifras_de_dimension`; `tests/test_ve7_lote_b_cifras.py` lo fija por AST y con el
   paso de V9 en 1.0668 m.
 - **Qué haría falta:** regenerar el índice.
-- **Dónde vive:** `src/modelos.py::cifras_de_dimension`
+- **Dónde vive:** `src/modelos/memoria.py::cifras_de_dimension`
 
 ## VE5GUI-43 · Los ensayos de durabilidad, quinta población del censo
 
@@ -9689,7 +9689,7 @@ el test; lo que la sesión tuvo que decidir sin dictamen va rotulado «pendiente
   `empuje_sismico_muro_que_no_cede`. z del incremento sin techo y con los pisos h/3 y h/2: el
   momento no baja del declarado. K_AE equivalente sólo se imprime. Citas 11.6.5.3#VALIDEZ,
   3.11.5.8.1#CUNA (A11.3.3) y #DISTRIBUCION. El armado (abierto (ii)) usa el plano virtual del
-  talón con el declarado de su k_h. Campo `EntornoDelCabezal.empuje_sismico` en `src/modelos.py`.
+  talón con el declarado de su k_h. Campo `EntornoDelCabezal.empuje_sismico` en `src/modelos/cabezal.py`.
 - **Abierto:** el GLE en el programa.
 - **Qué haría falta:** nada más del dictamen.
 - **Dónde vive:** `src/modulos/M9_cabezal/estabilidad_cargas.py::validar_empuje_sismico_declarado`
@@ -9711,7 +9711,7 @@ el test; lo que la sesión tuvo que decidir sin dictamen va rotulado «pendiente
 
 ## VE7A-07 · La h_eq con el cabezal paralelo a la vía (VE6-T7A03 (3))
 
-- **Cerrado:** `EntornoDelCabezal.paralelo_a_la_via` (campo nuevo en `src/modelos.py`, de
+- **Cerrado:** `EntornoDelCabezal.paralelo_a_la_via` (campo nuevo en `src/modelos/cabezal.py`, de
   `CabezalDelPunto.embocadura`). Con el muro paralelo a la vía el muro es paralelo al tráfico:
   si la orientación vigente es la perpendicular del corredor y el punto no declara
   `orientacion_muro_del_punto`, `M9.h_eq_del_cabezal` toma la MAYOR de las Tablas 3.11.6.4-1 y
@@ -9762,7 +9762,7 @@ el test; lo que la sesión tuvo que decidir sin dictamen va rotulado «pendiente
   `D` de M9; M5 y M6 son de otros lotes.
 - **Abierto:** las `D` de M5 y M6 (VE5GUI-46).
 - **Qué haría falta:** el mismo cambio en M5 y M6.
-- **Dónde vive:** `src/modelos.py::cifras_de_dimension`
+- **Dónde vive:** `src/modelos/memoria.py::cifras_de_dimension`
 
 # Parte LXIV-C — Lo que VE-7 (lote C) dejó escrito: registro, memoria, CLI y dos corridas nuevas
 

@@ -77,8 +77,8 @@ MODULOS_DE_EXT11 = {
     "src/modulos/M2_material.py": ("_par_de_manning", "numero_de_celdas",
                                    "catalogo", "n_manning_hdpe",
                                    "_fila_manning_de_cajon"),
-    "src/modelos.py": ("n_para_capacidad", "n_para_velocidad_maxima",
-                       "n_para_velocidad_minima"),
+    "src/modelos/conducto.py": ("n_para_capacidad", "n_para_velocidad_maxima",
+                                "n_para_velocidad_minima"),
 }
 
 # Los tests OBJETIVO: los unitarios del motor, los de aceptacion de EXT-2 y
