@@ -30,12 +30,12 @@ src/servicio.py::correr(...)
 Informe + ContextoCorrida (foto inmutable de usos, efectivos y huellas SHA-1)
    │
    ▼
-src/modulos/M11_reporte.py (solo formatea: JSON, HTML completa/resumida, PDF, CSV resumen)
+src/modulos/M11_reporte/ (solo formatea: JSON, HTML completa/resumida, PDF, CSV resumen)
 ```
 
 ### Reglas clave del flujo
-- **Estado inmutable de corrida:** `servicio.correr` limpia registros al inicio (`reiniciar_usos()`) y captura `ContextoCorrida` al terminar. Los exportadores (`cli.informe_json`, `M11_reporte.py`) leen exclusivamente desde `Informe.contexto`.
-- **La memoria la emite el cálculo:** cada función matemática devuelve su resultado y sus objetos `PasoDeMemoria` (construidos con `modelos.paso(fundamento_id, ...)`). `M11_reporte.py` no ejecuta aritmética sobre magnitudes ni duplica textos normativos.
+- **Estado inmutable de corrida:** `servicio.correr` limpia registros al inicio (`reiniciar_usos()`) y captura `ContextoCorrida` al terminar. Los exportadores (`cli.informe_json`, `M11_reporte`) leen exclusivamente desde `Informe.contexto`.
+- **La memoria la emite el cálculo:** cada función matemática devuelve su resultado y sus objetos `PasoDeMemoria` (construidos con `modelos.paso(fundamento_id, ...)`). `M11_reporte` no ejecuta aritmética sobre magnitudes ni duplica textos normativos.
 - **Taxonomía de errores:** toda falla de datos o dominio hereda de `modelos.ErrorProyecto` (`DatoFaltanteError`, `DatoInvalidoError`, `CriterioPendienteError`, `DisenoNoFactibleError`, `LimiteNumericoError`, `MetodoNoEvaluableError`).
 
 ---
@@ -47,7 +47,7 @@ Ningún literal numérico de proyecto puede vivir suelto en los módulos de cál
 | Casa | Archivo | Qué contiene | Etiqueta(s) |
 |---|---|---|---|
 | **Norma peruana fija** | `src/constantes_normativas.py` | Exigencias con numeral verificado, idénticas en todo el país | `[N]` |
-| **Criterios del proyecto** | `src/criterios_adoptados.py` | Analogías, fuentes extranjeras, adopciones y vacíos declarables | `[N→]`, `[C]`, `[A]`, `[S]` pendientes |
+| **Criterios del proyecto** | `src/criterios/*.py` (fichas por dominio) y `src/criterios_adoptados.py` (mecanismo) | Analogías, fuentes extranjeras, adopciones y vacíos declarables | `[N→]`, `[C]`, `[A]`, `[S]` pendientes |
 | **Datos de sitio del corredor** | `src/datos_sitio.py` | Hechos geográficos/sísmicos leídos sobre este corredor (sobreescribibles por `--datos-sitio`) | `[S]` |
 
 *(Las tolerancias numéricas en `src/tolerancias.py`, límites físicos de lectura en `src/dominios.py` y constantes físicas universales en `src/constantes_fisicas.py` quedan exentos por no ser parámetros de diseño.)*
@@ -55,17 +55,17 @@ Ningún literal numérico de proyecto puede vivir suelto en los módulos de cál
 ### Ejemplos reales de cada etiqueta
 
 1. **`[N]`** — `Y_SOBRE_D_MAX = 0.75` en `src/constantes_normativas.py` (Manual MTC Sec. 4.1.1.3.7 b).
-2. **`[N→]`** — `"resguardo_HW_subrasante"` (`valor="segun_CBR"`) en `src/criterios_adoptados.py` (aplicado por analogía del Manual de Suelos y Pavimentos).
+2. **`[N→]`** — `"resguardo_HW_subrasante"` (`valor="segun_CBR"`) en `src/criterios/hidraulica.py` (aplicado por analogía del Manual de Suelos y Pavimentos).
 3. **`[S]`** — `"PGA_roca_B"` en `src/datos_sitio.py` (lectura del mapa sísmico E.030 para el corredor; requiere `trazabilidad`, sin `sensibilidad`).
-4. **`[C]`** — `"hds5_embocadura_hdpe"` en `src/criterios_adoptados.py` (coeficientes tomados de FHWA HDS-5).
-5. **`[A]`** — `"gamma_EQ"` (`valor=0.5`, `sensibilidad=(0.0, 1.0)`) en `src/criterios_adoptados.py` (adopción del proyectista con rango de barrido obligatorio).
+4. **`[C]`** — `"hds5_embocadura_hdpe"` en `src/criterios/hidraulica.py` (coeficientes tomados de FHWA HDS-5).
+5. **`[A]`** — `"gamma_EQ"` (`valor=0.5`, `sensibilidad=(0.0, 1.0)`) en `src/criterios/sismo.py` (adopción del proyectista con rango de barrido obligatorio).
 
 ---
 
 ## 3. Recetas paso a paso
 
 ### 3.1 Cómo añadir un criterio `[A]`
-1. **Registra la ficha** en `src/criterios_adoptados.py` dentro de `CRITERIOS` (indentación de 4 espacios para la clave) especificando:
+1. **Registra la ficha** en el archivo de su dominio en `src/criterios/` (`hidraulica.py`, `cabezal_calculo.py`, …), dentro de su `CRITERIOS` (indentación de 4 espacios para la clave); el catálogo `criterios_adoptados.CRITERIOS` la toma de ahí. Un archivo de fichas nuevo se registra en `MODULOS_DE_FICHAS` (`src/criterios/__init__.py`), o la guardia `tests/test_d2_catalogo_de_fichas.py` lo rechaza. Especifica:
    - `valor` (o `None` si queda pendiente de declarar),
    - `nivel` (`NIVEL_PERFIL` o `NIVEL_EXPEDIENTE`),
    - `etiqueta="A"`,
@@ -123,7 +123,7 @@ Todas las pruebas se ejecutan desde la raíz del repositorio (`D:\Proyecto_alcan
 
 ## 5. Empaquetado para Windows sin Python (C3)
 
-La receta [`empaquetado/proyecto_alcantarillas.spec`](../empaquetado/proyecto_alcantarillas.spec) empaqueta el software en una carpeta distribuible `--onedir` (`dist/proyecto_alcantarillas/`) usando `contents_directory="."` para conservar la jerarquía en disco que leen en tiempo de ejecución `M11_reporte.py` (`src/plantillas/*.html`, `docs/`), `criterios_adoptados.py` (anclas en `docs/` y SHA-1) y `variables_entrada.py` (AST de `src/modulos/`).
+La receta [`empaquetado/proyecto_alcantarillas.spec`](../empaquetado/proyecto_alcantarillas.spec) empaqueta el software en una carpeta distribuible `--onedir` (`dist/proyecto_alcantarillas/`) usando `contents_directory="."` para conservar la jerarquía en disco que leen en tiempo de ejecución `M11_reporte` (`src/plantillas/*.html`, `docs/`), el catálogo de criterios (anclas en `docs/` y SHA-1 de `criterios_adoptados.py` y `src/criterios/`) y `variables_entrada.py` (AST de `src/modulos/`).
 
 ### Requisitos y compilación
 1. Instalar dependencias de ejecución, GUI/PDF y empaquetado (`pyinstaller>=6.0` declarado en [`requirements-dev.txt`](../requirements-dev.txt) y en el extra `empaquetado` de [`pyproject.toml`](../pyproject.toml)):
