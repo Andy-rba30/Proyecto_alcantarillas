@@ -128,7 +128,6 @@ def donde_se_declara_dato(campo: Optional[str]) -> str:
     from src import servicio as _srv
     from src import sesion as _sesion
     from src.modulos import M0_carga as _m0
-    from src.modulos import MH_hidrologia as _mh
 
     nombre = str(campo or "").strip()
     if not nombre:
@@ -143,10 +142,12 @@ def donde_se_declara_dato(campo: Optional[str]) -> str:
         or raiz in _srv.CLAVES_DE_LICUEFACCION
     )
     en_ventana = raiz in set(_sesion.CLAVE_EXTERNA_DE_CAMPO.values())
+    # Las columnas de los dos CSV de la hidrologia se preguntan a `servicio`,
+    # el unico modulo que importa `MH_hidrologia` (T-1, fijado por AST en
+    # tests/test_t1_hidrologia.py): la misma puerta que usa la ayuda de entrada.
     columnas_hidrologia = (
-        set(_mh.COLUMNAS_CUENCAS)
-        | set(_mh.COLUMNAS_CUENCAS_OPCIONALES)
-        | set(_mh.COLUMNAS_ESTACION)
+        {c for obligatorias, opcionales in _srv.columnas_de_la_hidrologia().values()
+         for c in (*obligatorias, *opcionales)}
         | {"cuencas", "hidrologia"}
     )
 
