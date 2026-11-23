@@ -11,7 +11,10 @@ cada vez que se integra algo. Fecha de esta versión: 2026-11-23.
 >
 > **Decisiones del dueño en esta sesión:**
 > 1. H2: el test de `import cli` mide **tiempo de CPU** (`process_time`) con el mismo presupuesto
->    de 0.30 s y el mínimo de siete corridas (`017b102`, ficha EXT-8-06).
+>    de 0.30 s y el mínimo de siete corridas (`017b102`). Como la CI volvió a fallar una vez
+>    (0.342 s), el test se marcó **`aislado`**: con xdist se deselecciona y corre en su propio
+>    paso sin `-n` (`edcb81f`, ficha EXT-8-06). El par de la suite completa suma la corrida en
+>    paralelo y el paso aislado.
 > 2. **Fast-forward de `main` AUTORIZADO** en cuanto la suite completa termine y el sello quede
 >    puesto.
 > 3. Después del fast-forward, **auditoría independiente con Fable** (`model: "fable"`) sobre el
@@ -20,15 +23,17 @@ cada vez que se integra algo. Fecha de esta versión: 2026-11-23.
 > 4. Después de la auditoría, las normas N1, N2 y N3 de `proceso/planes_mejora/12_PLAN_NORMAS_2.md`
 >    (Manual de Puentes 2018, marco legal y HEC-11).
 >
-> **En curso:** primera suite completa en el worktree limpio (`6ecf170`, Linux, Python 3.12,
-> `xvfb-run`, `NORMAS_DIR` = clon de `Andy-rba30/normas`, `-n 4 --dist loadfile`). Se esperan
-> sólo los dos fallos de sello PROVISIONAL.
+> **En curso:** la suite completa DEFINITIVA, en el worktree limpio sobre `edcb81f` (Linux,
+> Python 3.12, `xvfb-run`, `NORMAS_DIR` = clon de `Andy-rba30/normas`, `-n 4 --dist loadfile`, y
+> después `-m aislado` sin `-n`). Arrancó a las 17:32 UTC. La primera corrida, sobre `6ecf170`,
+> se detuvo al 99 % porque el árbol cambió; hasta ahí sólo fallaban los dos sellos PROVISIONAL.
+> En la corrida definitiva se esperan sólo esos dos fallos.
 >
 > **Lo que falta, en orden:**
-> 1. Sellar con el par medido: `python -m src.indice_formulas --escribir --suite "<par>"` y
->    `python -m src.normativa.manifiesto --escribir --suite "<par>"`.
-> 2. Una segunda corrida completa sobre el árbol final, que confirme el par. El cambio de
->    `017b102` llegó después de lanzar la primera.
+> 1. Sellar con el par medido de la corrida definitiva (paralelo + aislado + los 2 de sello,
+>    comprobados aparte tras sellar): `python -m src.indice_formulas --escribir --suite "<par>"`
+>    y `python -m src.normativa.manifiesto --escribir --suite "<par>"`.
+> 2. Comprobar en verde los tests de sello y sincronía tras sellar.
 > 3. Fila en `proceso/bitacora_conteos_y_entorno.md` y cierre de H1.
 > 4. Fast-forward de `main`.
 > 5. Auditoría de Fable.
