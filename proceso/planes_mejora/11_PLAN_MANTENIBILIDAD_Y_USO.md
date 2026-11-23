@@ -235,9 +235,74 @@ hechas, con su commit.
 
 ## 8. Estado
 
+Actualizado el 2026-11-23 por la sesión `claude/serene-keller-2p7pcs`, que
+retoma la de `v2/mantenibilidad-y-uso` (expiró con D2 a medias). Se va
+actualizando en cada hito; si la sesión se corta, esta tabla y el bloque de
+estado de `ve3_estado/LEEME.md` dicen desde dónde seguir.
+
 | Tarea | Estado | Commit |
 |---|---|---|
-| A1–A5 | pendiente | — |
-| B1–B4 | pendiente | — |
-| C1–C4 | pendiente | — |
-| D0–D3 | pendiente | — |
+| A1 marcador `lento` | hecho | `138adde` |
+| A2 guardia del marcador | hecho | `b4bd418` |
+| A3 `pytest-xdist` | hecho | `74f7b94` |
+| A4 CI en dos trabajos | hecho | `ab0d9ff` |
+| A5 corridas pesadas por proceso | hecho | `2da284d` |
+| B1 `CLAUDE.md` corto | hecho (falta reflejar D2/D3 al cerrar D) | `6aa1cec` |
+| B2 guía del desarrollador | hecho (falta reflejar D2/D3 al cerrar D) | `78df332` |
+| B3 manual de usuario | hecho | `eb0a721` |
+| B4 índice de fichas | hecho | `89e82e4` |
+| C1 piloto real | **bloqueado: falta el expediente real del dueño** | — |
+| C2 plantillas | hecho | `91d561c` |
+| C3 receta PyInstaller | hecho; sin verificar el ejecutable en Windows ni WeasyPrint empaquetado | `acb961d` |
+| C4 mensajes de la pestaña 4 | hecho; corregido el import de `MH_hidrologia` que rompía la regla de T-1 | `c93e7bd`, `fe60c5c` |
+| D0 AST de subpaquetes | hecho | `030d208` |
+| D1 `M9_cabezal/` | hecho; corregidas tres guardias que seguían leyendo `M9_cabezal.py` | `ab63aba`, `198aa65` |
+| D2 `src/criterios/` | **en curso** (cableado de la huella, escritura permanente, guardias y anclas) | `0b8c4a7` (WIP) |
+| D3 `modelos.py` | **en curso** | — |
+| D3 `M11_reporte.py` | **en curso** | — |
+| D3 `constantes_normativas.py` | **en curso** | — |
+
+**La CI rápida sobre la punta de `v2` (`0b8c4a7`, run `45196377613`)**: 59
+failed, 8 659 passed, 173 skipped (sin los `lento` y sin `NORMAS_DIR`). 52
+fallos son de D2 a medias; 6 de D1 y 1 de C4, ya corregidos en `198aa65` y
+`fe60c5c`.
+
+**Hallazgos de la auditoría del cierre de VE-7**
+(`ve3_estado/AUDITORIA_CIERRE_VE7_2026-11-21.md`):
+
+| Hallazgo | Estado | Commit |
+|---|---|---|
+| H1 sello deducido | **pendiente: lo cierra la suite completa del dueño** (paso 6 de abajo) | — |
+| H2 test de `import cli` intermitente | hecho: mínimo de siete corridas, mismo límite de 0.30 s (decisión del dueño) | `728a791` |
+| H3 cifras a mano en el anexo de sensibilidad | hecho: se leen de la corrida; medido, el anexo no cambia | `1961b4a` |
+| H4 LEEME y `PROMPT_RETOMAR` desactualizados | hecho | `741043c` |
+| H5 | informativo, sin acción aparte de H1 | — |
+
+**Lo que falta, en orden** (la suite completa la corre el dueño en su
+máquina y sólo en el paso 6, sobre el commit final; antes daría fallos que
+todavía se están cerrando):
+
+1. Integrar las ramas de los agentes (`claude/serene-keller-2p7pcs-d2`,
+   `-d3-modelos`, `-d3-m11`, `-d3-constantes`) en `claude/serene-keller-2p7pcs`.
+2. Normalizar los saltos de línea: 22 archivos de `v2` se subieron con CRLF
+   desde Windows (`conftest.py`, `pyproject.toml`, `requirements-dev.txt`,
+   `.gitignore`, `docs/decisiones_diferidas.md`, `src/responsable.py`,
+   `src/modulos/M9_cabezal/*.py`, …). Pasan a LF y `.gitattributes` lo fija
+   (`* text=auto eol=lf`), salvo los dos CSV de `tests/linea_base_familia_c/`
+   que ya eran CRLF en `main` (los escribe el módulo `csv`).
+3. Regenerar los documentos generados (`manifiesto_citas.md`,
+   `manifiesto_registro_normativo.md`, `trazabilidad.csv`, `indice_formulas.md`)
+   con sello PROVISIONAL y la línea base (`tests/linea_base_familia_c/regenerar.sh`):
+   la única diferencia admitida es `criterios_sha1`, porque desde D2 la huella
+   cubre el mecanismo y las fichas de `src/criterios/`.
+4. Fichas en `docs/decisiones_diferidas.md`: D2 (con la declaración del
+   cambio de la huella), D3 por archivo y EXT-8-06 (H2); regenerar su índice.
+5. `CLAUDE.md` y `docs/guia_del_desarrollador.md` con la estructura nueva
+   (`src/criterios/`, `src/modelos/`, `src/modulos/M11_reporte/`,
+   `src/constantes_normativas/`); esta tabla al día; push.
+6. **El dueño**: suite completa con `NORMAS_DIR` en su máquina sobre el
+   commit final, con el prompt que deja esta sesión; corregir lo que falle;
+   sellar con el par MEDIDO (`python -m src.indice_formulas --escribir --suite
+   "<par>"` y `python -m src.normativa.manifiesto --escribir --suite "<par>"`)
+   y fila en `proceso/bitacora_conteos_y_entorno.md` (cierra H1).
+7. Integración en `main` por fast-forward, sólo con la autorización del dueño.

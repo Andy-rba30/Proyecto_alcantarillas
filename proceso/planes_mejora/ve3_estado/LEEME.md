@@ -14,6 +14,8 @@ cada vez que se integra algo. Fecha de esta versión: 2026-11-23.
 > de la auditoría se cierran aquí (H2 por decisión del dueño: mínimo de siete corridas, mismo
 > límite). **Si la sesión se corta:** retomar desde `claude/serene-keller-2p7pcs` y las ramas
 > `claude/serene-keller-2p7pcs-*` de los agentes que no estén fusionadas en ella.
+> **Avance y lo que falta, paso a paso:** sección «8. Estado» del plan (se actualiza en cada
+> hito). La suite completa la corre el dueño en su máquina en el paso 6, sobre el commit final.
 
 > **CIERRE DE VE-7 — TERMINADO (ver el bloque de arriba); lo que sigue es su registro (2026-11-20, ~20:00 UTC, sesión `claude/optimistic-carson-ag7mwp`, rama ya borrada y conservada en `respaldo/claude/optimistic-carson-ag7mwp`).**
 > Rama de trabajo: `claude/optimistic-carson-ag7mwp` = `claude/ve7-fix-suite` (todo VE-7: alero,
