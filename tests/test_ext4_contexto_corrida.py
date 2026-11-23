@@ -245,7 +245,10 @@ def test_i_el_contexto_es_una_foto_congelada_de_la_corrida(tmp_path):
     contexto = informe.contexto
     assert isinstance(contexto, ContextoCorrida)
     assert contexto.csv_sha1 == M11.sha1_archivo(csv)
-    assert contexto.criterios_sha1 == M11.sha1_archivo(M11.ARCHIVO_CRITERIOS)
+    # D2: la huella es la del CONJUNTO del catalogo (mecanismo y fichas de
+    # `src/criterios/`), no la de `criterios_adoptados.py` solo.
+    assert contexto.criterios_sha1 == ca.sha1_criterios()
+    assert contexto.criterios_sha1 != M11.sha1_archivo(M11.ARCHIVO_CRITERIOS)
     assert contexto.criterios_usados, "la corrida de perfil invoca criterios"
     assert set(contexto.criterios_usados) <= set(ca.CRITERIOS)
     assert set(contexto.valores_efectivos) == set(ca.CRITERIOS)
@@ -552,6 +555,10 @@ LECTURAS_ESTATICAS = {
     # sus argumentos (M11 le pasa el corredor y el origen de la foto); y el
     # rotulo del archivo del repositorio es una constante.
     "ds.advertencia_de_corredor", "ds.ORIGEN_ARCHIVO",
+    # D2: el catalogo son varios archivos, y la fecha del encabezado es la
+    # del modificado por ultima vez. Es una lectura del DISCO, como la que
+    # ya hacia `fecha_archivo(ARCHIVO_CRITERIOS)`, no del estado del proceso.
+    "ca.archivo_de_criterios_mas_reciente",
 }
 
 

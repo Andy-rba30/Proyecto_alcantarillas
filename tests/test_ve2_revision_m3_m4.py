@@ -281,8 +281,9 @@ def test_m4_un_negativo_no_entra_por_la_cli():
 
 
 def test_m4_un_negativo_no_se_escribe_en_el_archivo(tmp_path):
+    # D2: se copia el archivo de la FICHA, que es donde se escribe.
     copia = tmp_path / "criterios_adoptados.py"
-    original = Path(ca.__file__).read_text(encoding="utf-8")
+    original = ca.archivo_de_criterio(CLAVE_MARGEN).read_text(encoding="utf-8")
     copia.write_text(original, encoding="utf-8")
     with pytest.raises(ValueError, match="negativ"):
         ca.escribir_valor_en_archivo(CLAVE_MARGEN, -0.10, ruta=str(copia))
@@ -386,8 +387,9 @@ def test_n2_cero_no_entra_por_la_cli():
 
 
 def test_n2_cero_no_se_escribe_en_el_archivo(tmp_path):
+    # D2: se copia el archivo de la FICHA, que es donde se escribe.
     copia = tmp_path / "criterios_adoptados.py"
-    original = Path(ca.__file__).read_text(encoding="utf-8")
+    original = ca.archivo_de_criterio(CLAVE_SATURADO).read_text(encoding="utf-8")
     copia.write_text(original, encoding="utf-8")
     with pytest.raises(ValueError, match="positivo"):
         ca.escribir_valor_en_archivo(CLAVE_SATURADO, 0.0, ruta=str(copia))

@@ -1169,8 +1169,9 @@ def test_4_la_guardia_rechaza_la_clave_de_texto_por_los_tres_caminos(tmp_path):
     with pytest.raises(ValueError, match="ENTERAS"):
         ca._verificar_criterio(ESPESOR, replace(ca.criterio(ESPESOR), valor=de_texto))
     # Escritura permanente: la guardia corre ANTES de tocar el disco.
+    # D2: se copia el archivo de la FICHA, que es donde se escribe.
     copia = tmp_path / "criterios_adoptados.py"
-    shutil.copyfile(Path(ca.__file__), copia)
+    shutil.copyfile(ca.archivo_de_criterio(ESPESOR), copia)
     original = copia.read_bytes()
     with pytest.raises(ValueError, match="ENTERAS"):
         ca.escribir_valor_en_archivo(ESPESOR, de_texto, ruta=str(copia))

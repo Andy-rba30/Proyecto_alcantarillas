@@ -501,7 +501,10 @@ def test_la_guardia_rechaza_un_valor_fuera_del_rango_y_dice_la_salida():
         ca._verificar_criterio("criterio_de_prueba", malo)
     mensaje = str(exc.value)
     assert "fuera del rango" in mensaje
-    assert "corrigelo en criterios_adoptados.py" in mensaje
+    # D2: el rango vive en la ficha, en `src/criterios/<dominio>.py`, y la
+    # salida lo dice; nombrar `criterios_adoptados.py` mandaria a buscarlo a
+    # un archivo que ya no lo tiene.
+    assert "corrigelo en su ficha de src/criterios/" in mensaje
     assert "se defienden juntos en la memoria" in mensaje
 
 
@@ -626,8 +629,10 @@ def test_un_criterio_derivado_no_se_declara_por_ningun_camino(_limpia_overrides,
         with pytest.raises(ValueError, match="se deriva de"):
             ca.establecer_valor_dinamico(clave, original)
         assert clave not in ca.valores_dinamicos()
+        # D2: la copia es la del archivo de la FICHA (`src/criterios/`),
+        # que es donde escribe la escritura permanente.
         copia = tmp_path / "criterios_copia.py"
-        copia.write_text(Path(ca.__file__).read_text(encoding="utf-8"),
+        copia.write_text(ca.archivo_de_criterio(clave).read_text(encoding="utf-8"),
                          encoding="utf-8")
         with pytest.raises(ValueError, match="se deriva de"):
             ca.escribir_valor_en_archivo(clave, original, ruta=str(copia))
@@ -682,7 +687,9 @@ def test_la_escritura_permanente_reescribe_el_valor_en_el_archivo(
     # nivel EXPEDIENTE, de modo que no lo va a cerrar una sesion de perfil.
     clave = "Mw_licuefaccion"
     copia = tmp_path / "criterios_copia.py"
-    original = Path(ca.__file__).read_text(encoding="utf-8")
+    # D2: la ficha vive en `src/criterios/<dominio>.py`, y es ESE archivo el
+    # que la escritura permanente reescribe; se copia ese.
+    original = ca.archivo_de_criterio(clave).read_text(encoding="utf-8")
     copia.write_text(original, encoding="utf-8")
     assert ca.CRITERIOS[clave].valor is None, (
         f"'{clave}' dejo de estar vacio: este test necesita un criterio pendiente")
@@ -735,7 +742,7 @@ def test_la_escritura_permanente_se_niega_ante_un_valor_multilinea(
     rango y el test estaria probando otra cosa.
     """
     copia = tmp_path / "criterios_copia.py"
-    original = Path(ca.__file__).read_text(encoding="utf-8")
+    original = ca.archivo_de_criterio(clave).read_text(encoding="utf-8")
     copia.write_text(original, encoding="utf-8")
     suyo = ca.CRITERIOS[clave].valor
 
@@ -783,7 +790,7 @@ def test_la_escritura_permanente_se_niega_ante_un_valor_de_UNA_LINEA_con_comas(
     La guardia es `ast.parse` sobre el texto resultante, ANTES de escribir.
     """
     copia = tmp_path / "criterios_copia.py"
-    original = Path(ca.__file__).read_text(encoding="utf-8")
+    original = ca.archivo_de_criterio(clave).read_text(encoding="utf-8")
     copia.write_text(original, encoding="utf-8")
 
     with pytest.raises(ValueError, match="sin poder importarse"):
@@ -802,7 +809,7 @@ def test_la_escritura_permanente_si_alcanza_a_un_valor_escalar(tmp_path,
     el archivo sigue importando.
     """
     copia = tmp_path / "criterios_copia.py"
-    copia.write_text(Path(ca.__file__).read_text(encoding="utf-8"),
+    copia.write_text(ca.archivo_de_criterio("ke_entrada").read_text(encoding="utf-8"),
                      encoding="utf-8")
 
     ca.escribir_valor_en_archivo("ke_entrada", 0.7, ruta=str(copia))
@@ -813,8 +820,13 @@ def test_la_escritura_permanente_si_alcanza_a_un_valor_escalar(tmp_path,
 
 
 def test_la_escritura_permanente_no_inventa_una_clave(tmp_path):
+    # D2: una clave que no existe no tiene archivo de ficha
+    # (`archivo_de_criterio` la rechaza tambien); se copia uno cualquiera de
+    # `src/criterios/` para que lo unico que se mida sea la clave.
+    with pytest.raises(KeyError):
+        ca.archivo_de_criterio("criterio_que_no_existe")
     copia = tmp_path / "criterios_copia.py"
-    copia.write_text(Path(ca.__file__).read_text(encoding="utf-8"),
+    copia.write_text(ca.archivo_de_criterio("ke_entrada").read_text(encoding="utf-8"),
                      encoding="utf-8")
     with pytest.raises(KeyError):
         ca.escribir_valor_en_archivo("criterio_que_no_existe", 1.0,
@@ -827,7 +839,8 @@ def test_la_escritura_permanente_valida_antes_de_tocar_el_disco(tmp_path):
     nunca queda en un estado que su propio import rechazaria.
     """
     copia = tmp_path / "criterios_copia.py"
-    original = Path(ca.__file__).read_text(encoding="utf-8")
+    original = ca.archivo_de_criterio("v_max_concreto_eleccion").read_text(
+        encoding="utf-8")
     copia.write_text(original, encoding="utf-8")
 
     with pytest.raises(ValueError, match="fuera del rango"):

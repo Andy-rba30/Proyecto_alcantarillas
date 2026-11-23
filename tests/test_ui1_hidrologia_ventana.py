@@ -796,8 +796,10 @@ def test_d_la_cli_abre_la_sesion_v3_y_corre_sin_hidrologia(tmp_path):
     # perdio nada de lo que su corrida uso. Si el archivo de criterios cambia,
     # DIFIERE es la respuesta correcta, y entonces se pide solo que compare.
     v3 = json.loads(SESION_V3.read_text(encoding="utf-8"))
-    from src.modulos.M11_reporte import ARCHIVO_CRITERIOS
-    if v3["corridas"][0]["criterios_sha1"] == _sha1(ARCHIVO_CRITERIOS):
+    # D2: la huella de los criterios es la del conjunto del catalogo
+    # (mecanismo y fichas de `src/criterios/`), no la de un solo archivo.
+    from src import criterios_adoptados as ca
+    if v3["corridas"][0]["criterios_sha1"] == ca.sha1_criterios():
         assert "Esta corrida REPRODUCE la guardada en la sesion" in hecho.stdout
     else:
         assert "Esta corrida DIFIERE de la guardada" in hecho.stdout

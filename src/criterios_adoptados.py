@@ -29,7 +29,21 @@ sensibilidad numerico, el valor tiene que caer dentro: el rango y el valor se
 defienden juntos en la memoria y no pueden contradecirse.
 
 Al cambiar un criterio (por ejemplo, cuando llegue el SPT), se modifica UNA
-linea de este archivo y todos los modulos se recalculan sin contradicciones.
+linea de su ficha y todos los modulos se recalculan sin contradicciones.
+
+Donde vive cada ficha (D2)
+--------------------------
+Desde D2 este archivo es el MECANISMO (la puerta, las guardias, el registro
+de usos, la declaracion en caliente y los reportes) y las 169 fichas viven en
+el paquete `src/criterios/`, una por dominio (`sismo.py`, `hidrologia.py`,
+`hidraulica.py`, `verificaciones.py`, `geotecnia.py`, `conducto.py`,
+`proteccion.py`, `cabezal_base.py`, `cabezal_calculo.py`, `metrados.py`),
+con `Criterio` y las tablas auxiliares en `src/criterios/_base.py`. Se
+registran aqui, en el MISMO diccionario `CRITERIOS` y en el mismo orden, de
+modo que nadie de fuera importa otra cosa que este modulo.
+`archivo_de_criterio(clave)` dice en que archivo esta una ficha;
+`archivos_de_criterios()` es el conjunto entero, y `sha1_criterios()` su
+huella.
 
 Etiquetas
 ---------
@@ -131,21 +145,58 @@ _RAIZ_PROYECTO = Path(__file__).resolve().parents[1]
 
 
 def archivos_de_criterios() -> Tuple[Path, ...]:
-    """Todos los archivos Fuente de los criterios (`criterios_adoptados.py` + `src/criterios/*.py`)."""
+    """
+    Todos los archivos fuente del catalogo de criterios: este mecanismo
+    (`criterios_adoptados.py`) y el paquete de fichas (`src/criterios/*.py`,
+    su `__init__.py` y `_base.py` incluidos).
+
+    Desde D2 el catalogo son VARIOS archivos: las fichas viven en
+    `src/criterios/<dominio>.py` y aqui queda el mecanismo. Quien necesite
+    «el archivo de criterios» --- la huella del `ContextoCorrida`, la fecha
+    del encabezado de la memoria, el empaquetado --- lee este conjunto, no
+    `criterios_adoptados.py` solo, que ya no cambia al cambiar una ficha.
+    """
     return (Path(__file__).resolve(), *ARCHIVOS_DE_FICHAS)
 
 
 def archivo_de_criterio(clave: str) -> Path:
-    """Archivo exacto de `src/criterios/` donde esta definida la ficha `clave`."""
+    """
+    Archivo exacto de `src/criterios/` donde esta definida la ficha `clave`.
+
+    Es donde escribe `escribir_valor_en_archivo` y donde hay que ir a editar
+    a mano los campos que esa funcion no toca (D2).
+    """
     if clave not in ORIGEN_POR_CLAVE:
         raise KeyError(f"'{clave}' no esta declarado en criterios_adoptados.py.")
     return ORIGEN_POR_CLAVE[clave]
 
 
+def archivo_de_criterios_mas_reciente() -> Path:
+    """
+    El archivo del catalogo (`archivos_de_criterios()`) modificado por ultima
+    vez. Su fecha es la «Fecha de criterios_adoptados.py» del encabezado de la
+    memoria (`M11.trazabilidad`): desde D2 el rotulo nombra al catalogo, y
+    tocar una ficha tiene que mover esa fecha igual que movia la del archivo
+    unico.
+    """
+    return max(archivos_de_criterios(), key=lambda ruta: ruta.stat().st_mtime)
+
+
 def sha1_criterios() -> str:
     """
-    Huella SHA-1 determinista del conjunto de criterios: mecanismo (`criterios_adoptados.py`)
-    y todas las fichas y definiciones base (`src/criterios/*.py`), ordenadas por ruta POSIX.
+    Huella SHA-1 determinista del conjunto de criterios: mecanismo
+    (`criterios_adoptados.py`) y todas las fichas y definiciones base
+    (`src/criterios/*.py`), ordenadas por ruta POSIX relativa a la raiz del
+    proyecto; cada archivo entra con su ruta y sus bytes.
+
+    Es la `criterios_sha1` del `ContextoCorrida` (`servicio.capturar_contexto`).
+    DECLARADO (D2): hasta D2 esa huella era el SHA-1 de `criterios_adoptados.py`
+    solo; desde D2 es esta, y su VALOR cambio aunque no cambio ningun criterio.
+    Dos corridas, una de antes y otra de despues de D2, con los mismos
+    criterios, salen con huellas distintas y el comparador las marca como
+    distintas; no es un cambio de criterio. Y al reves, que era el defecto que
+    esto corrige: con la huella de un solo archivo, editar una ficha de
+    `src/criterios/` no movia la huella.
     """
     import hashlib
 
@@ -170,10 +221,10 @@ _USADOS: Set[str] = set()
 # Declaracion en caliente (solo para la corrida actual)
 # ---------------------------------------------------------------------------
 # La GUI (pestana "Criterios") permite declarar un valor para un criterio con
-# valor=None SIN tocar este archivo. El override vive solo en memoria de
-# proceso: se pierde al cerrar la GUI y nunca se confunde con un valor [N]/[C]
-# transcrito de una norma. Reescribir este archivo es una accion aparte,
-# explicita, ver `escribir_valor_en_archivo`.
+# valor=None SIN tocar su ficha (`src/criterios/`, D2). El override vive solo
+# en memoria de proceso: se pierde al cerrar la GUI y nunca se confunde con un
+# valor [N]/[C] transcrito de una norma. Reescribir la ficha es una accion
+# aparte, explicita, ver `escribir_valor_en_archivo`.
 _OVERRIDES: Dict[str, Any] = {}
 
 
@@ -230,7 +281,7 @@ def establecer_valor_dinamico(clave: str, valor_nuevo: Any) -> None:
     sensibilidad encaja en esa frase. La respuesta es que lo que se rechaza
     aqui NO es un dato del expediente: es una DECLARACION que el proyectista
     acaba de teclear, y el rango contra el que se compara lo declara el
-    propio criterio, en este archivo. `_verificar_criterio` es la misma
+    propio criterio, en su ficha. `_verificar_criterio` es la misma
     guardia que corre AL IMPORTAR, donde un fallo significa que el archivo
     fuente esta mal escrito y ninguna corrida deberia empezar -- ahi
     `ValueError` es exactamente lo que corresponde --, y hacerla lanzar dos
@@ -413,6 +464,11 @@ def escribir_valor_en_archivo(clave: str, valor_nuevo: Any,
     `establecer_valor_dinamico`: se usa solo cuando el usuario confirma de
     forma explicita que quiere dejar de tratar el criterio como pendiente
     (la GUI pide confirmacion aparte antes de llamarla).
+
+    EL ARCHIVO FUENTE ES EL DE LA FICHA (D2): `archivo_de_criterio(clave)`,
+    uno de `src/criterios/<dominio>.py`, y no `criterios_adoptados.py`, que
+    desde D2 solo lleva el mecanismo. `ruta` permite apuntar a una copia (la
+    suite escribe sobre una copia de ese archivo, nunca sobre el real).
 
     REESCRIBE CUALQUIER VALOR, NO SOLO `None` (SIS-A-14). El docstring decia
     «el ``valor=None``» y el patron es `valor=)([^,\\n]*)(,)`, que casa con lo
@@ -726,7 +782,7 @@ ETIQUETAS_VALIDAS = ("N", "N->", "S", "C", "A")
 # esta mal": es que el numero y el rango se contradicen, y quien declaro el
 # rango puede haber sido el equivocado.
 _SALIDA_RANGO = (
-    "si el rango ya no es el correcto, corrigelo en criterios_adoptados.py; "
+    "si el rango ya no es el correcto, corrigelo en su ficha de src/criterios/; "
     "el rango y el valor se defienden juntos en la memoria"
 )
 
