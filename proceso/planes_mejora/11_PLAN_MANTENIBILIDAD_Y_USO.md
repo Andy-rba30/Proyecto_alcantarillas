@@ -235,8 +235,9 @@ hechas, con su commit.
 
 ## 8. Estado
 
-Actualizado el 2026-11-23 por la sesión `claude/serene-keller-2p7pcs`, que
-retoma la de `v2/mantenibilidad-y-uso` (expiró con D2 a medias). Se va
+Actualizado el 2026-11-23 por la sesión `claude/nifty-brahmagupta-rfj9o6`
+(PR #47), que integra la de `claude/serene-keller-2p7pcs` y sus ramas de
+agentes; ésta retomaba la de `v2/mantenibilidad-y-uso` (expiró con D2 a medias). Se va
 actualizando en cada hito; si la sesión se corta, esta tabla y el bloque de
 estado de `ve3_estado/LEEME.md` dicen desde dónde seguir.
 
@@ -247,8 +248,8 @@ estado de `ve3_estado/LEEME.md` dicen desde dónde seguir.
 | A3 `pytest-xdist` | hecho | `74f7b94` |
 | A4 CI en dos trabajos | hecho | `ab0d9ff` |
 | A5 corridas pesadas por proceso | hecho | `2da284d` |
-| B1 `CLAUDE.md` corto | hecho (falta reflejar D2/D3 al cerrar D) | `6aa1cec` |
-| B2 guía del desarrollador | hecho (falta reflejar D2/D3 al cerrar D) | `78df332` |
+| B1 `CLAUDE.md` corto | hecho; D2/D3 reflejados | `6aa1cec`, `c74e9a8` |
+| B2 guía del desarrollador | hecho; D2/D3 reflejados | `78df332`, `c74e9a8` |
 | B3 manual de usuario | hecho | `eb0a721` |
 | B4 índice de fichas | hecho | `89e82e4` |
 | C1 piloto real | **bloqueado: falta el expediente real del dueño** | — |
@@ -257,10 +258,10 @@ estado de `ve3_estado/LEEME.md` dicen desde dónde seguir.
 | C4 mensajes de la pestaña 4 | hecho; corregido el import de `MH_hidrologia` que rompía la regla de T-1 | `c93e7bd`, `fe60c5c` |
 | D0 AST de subpaquetes | hecho; corregido `base / "__init__.py"`, que la guardia de aritmética del índice (test `lento`) rechazaba | `030d208`, `571accc` |
 | D1 `M9_cabezal/` | hecho; corregidas tres guardias que seguían leyendo `M9_cabezal.py` | `ab63aba`, `198aa65` |
-| D2 `src/criterios/` | **en curso** (cableado de la huella, escritura permanente, guardias y anclas) | `0b8c4a7` (WIP) |
+| D2 `src/criterios/` | hecho: mecanismo en `criterios_adoptados.py` y fichas por dominio; `criterios_sha1` cubre el catálogo (ficha D2-01: cambia el valor de la huella sin cambiar criterio); línea base con sólo esa diferencia | `0b8c4a7`, `bf99cda`…`6d402c6` (fusión `d027a7e`), `07b3b98` |
 | D3 `modelos.py` | hecho: 13 submódulos (máx. 1 617 líneas), AST de los 299 nodos idéntico, `__module__` normalizado a `src.modelos` (el JSON de sesión escribe `__module__:__qualname__`), DAG sin ciclos; CLI y JSON idénticos byte a byte; `import src.modelos` +5 ms | `80462f7` (fusión con conflicto resuelto en `test_t8_correcciones`) |
-| D3 `M11_reporte.py` | hecho: 18 archivos de < 700 líneas, memoria HTML/CSV/JSON idéntica byte a byte (salvo fecha) en las 5 corridas de referencia; guardias por AST sobre todo el subpaquete (`tests/apoyo/fuente_m11.py`) | `ac43c6e` (fusión `5b765f4`) |
-| D3 `constantes_normativas.py` | **en curso** | — |
+| D3 `M11_reporte.py` | hecho: 18 archivos más `__init__.py` (19 `.py`), todos de < 700 líneas, memoria HTML/CSV/JSON idéntica byte a byte (salvo fecha) en las 5 corridas de la línea base; el ancla del manifiesto que quedaba en `M11_reporte.py` pasa a `tablas_diseno.py`; guardias por AST sobre todo el subpaquete (`tests/apoyo/fuente_m11.py`) | `ac43c6e` (fusión `5b765f4`), `c9e1c04` |
+| D3 `constantes_normativas.py` | diferida (ficha D3-03, dictamen Fable APROBADO CON CAMBIOS): la sesión que la empezó no dejó commit; partirla enmienda la regla de las tres casas sin cambiar ningún resultado | `0e4aa4d`, `5b6f310` |
 
 **La CI rápida sobre la punta de `v2` (`0b8c4a7`, run `45196377613`)**: 59
 failed, 8 659 passed, 173 skipped (sin los `lento` y sin `NORMAS_DIR`). 52
@@ -272,15 +273,24 @@ fallos son de D2 a medias; 6 de D1 y 1 de C4, ya corregidos en `198aa65` y
 
 | Hallazgo | Estado | Commit |
 |---|---|---|
-| H1 sello deducido | **pendiente: lo cierra la suite completa del dueño** (paso 6 de abajo) | — |
+| H1 sello deducido | **en curso: lo cierra la suite completa de esta sesión** (paso 6) | — |
 | H2 test de `import cli` intermitente | hecho: mínimo de siete corridas, mismo límite de 0.30 s (decisión del dueño) | `728a791` |
 | H3 cifras a mano en el anexo de sensibilidad | hecho: se leen de la corrida; medido, el anexo no cambia | `1961b4a` |
 | H4 LEEME y `PROMPT_RETOMAR` desactualizados | hecho | `741043c` |
 | H5 | informativo, sin acción aparte de H1 | — |
 
-**Lo que falta, en orden** (la suite completa la corre el dueño en su
-máquina y sólo en el paso 6, sobre el commit final; antes daría fallos que
-todavía se están cerrando):
+**Pasos 1 a 5: hechos en `claude/nifty-brahmagupta-rfj9o6`** (fusión de D2
+`d027a7e`; LF `6a504c0`; fichas `0e4aa4d`, `5b6f310`; documentación `c74e9a8`;
+manifiesto `c9e1c04`; línea base `07b3b98`; índice `f3ae153` con sello
+PROVISIONAL). `-d3-constantes` nunca se subió: D3-03 la difiere. La suite
+rápida sobre la integración dio 17 fallos, todos cerrados: 12 del manifiesto
+(ancla de M11 y mudanzas de D2), 3 de la línea base (huella) y 1 de Tk
+(entorno sin Tk). El paso 6 lo corre esta sesión en la nube (Linux, Python
+3.12, Tk con `xvfb-run`, `NORMAS_DIR` = clon de `Andy-rba30/normas`): una
+corrida completa mide el par, se sella con él y una segunda corrida completa
+lo confirma.
+
+**El plan, en orden** (registro de lo que se pidió):
 
 1. Integrar las ramas de los agentes (`claude/serene-keller-2p7pcs-d2`,
    `-d3-modelos`, `-d3-constantes`) en `claude/serene-keller-2p7pcs`
@@ -301,8 +311,7 @@ todavía se están cerrando):
 4. Fichas en `docs/decisiones_diferidas.md`: D2 (con la declaración del
    cambio de la huella), D3 por archivo y EXT-8-06 (H2); regenerar su índice.
 5. `CLAUDE.md` y `docs/guia_del_desarrollador.md` con la estructura nueva
-   (`src/criterios/`, `src/modelos/`, `src/modulos/M11_reporte/`,
-   `src/constantes_normativas/`); esta tabla al día; push.
+   (`src/criterios/`, `src/modelos/`, `src/modulos/M11_reporte/`); esta tabla al día; push.
 6. **El dueño**: suite completa con `NORMAS_DIR` en su máquina sobre el
    commit final, con el prompt que deja esta sesión; corregir lo que falle;
    sellar con el par MEDIDO (`python -m src.indice_formulas --escribir --suite

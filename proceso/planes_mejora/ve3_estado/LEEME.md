@@ -3,7 +3,16 @@
 Material de proceso, no del entregable. Lo mantiene la sesión orquestadora y se actualiza
 cada vez que se integra algo. Fecha de esta versión: 2026-11-23.
 
-> **ESTADO (2026-11-23, sesión `claude/serene-keller-2p7pcs`): plan de mantenibilidad y uso.**
+> **ESTADO (2026-11-23, tarde, sesión `claude/nifty-brahmagupta-rfj9o6`, PR #47): integración
+> del plan de mantenibilidad.** Contiene a `claude/serene-keller-2p7pcs` y a sus ramas de agentes
+> (`-d2` fusionada en `d027a7e`; `-d3-m11` y `-d3-modelos` ya lo estaban); `-d3-constantes` nunca
+> se subió y la ficha D3-03 la difiere (dictamen Fable). Pasos 1 a 5 de la sección 8 del plan:
+> hechos. Paso 6 (cierra H1): suite completa en esta nube con `NORMAS_DIR`, Tk (`xvfb-run`) y
+> Python 3.12, en worktree limpio; sello con el par medido y una segunda corrida que lo confirma.
+> Paso 7: fast-forward de `main`, sólo con la autorización del dueño. **Si la sesión se corta:**
+> retomar desde `claude/nifty-brahmagupta-rfj9o6`.
+
+> **ESTADO ANTERIOR (2026-11-23, sesión `claude/serene-keller-2p7pcs`): plan de mantenibilidad y uso.**
 > El cierre de VE-7 de abajo está TERMINADO (lo confirma la auditoría
 > `AUDITORIA_CIERRE_VE7_2026-11-21.md`): CI `44859160957` verde, `main` en `362beb4`, etiqueta
 > `respaldo-2026-11-20` y las ramas superadas bajo `respaldo/*`. Lo que sigue al cierre es el
