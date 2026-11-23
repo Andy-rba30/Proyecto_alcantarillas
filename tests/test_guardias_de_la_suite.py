@@ -1466,3 +1466,78 @@ def test_a5_fixtures_pesados_en_scope_module_y_ci_completo_con_loadfile():
         assert _fixture_tiene_scope_module(TESTS / archivo, fn), (
             f"{archivo}::{fn} debe conservar @pytest.fixture(scope='module')"
         )
+
+
+# ---------------------------------------------------------------------------
+# EXT-8-06 - Los tests `aislado` (miden tiempo) corren en su propio paso
+# ---------------------------------------------------------------------------
+# Decision del dueño en la integracion del plan de mantenibilidad: el
+# presupuesto de `import cli` se mide sin otros tests en paralelo. Con xdist
+# `conftest.py` los deselecciona en cada worker; la CI los corre en un paso
+# aparte, sin `-n`, en los dos trabajos. Esta guardia fija las dos mitades:
+# que tests llevan la marca (por AST) y que el flujo tiene el paso.
+TESTS_AISLADOS = {
+    ("test_ext8_rendimiento_gui.py",
+     "test_pc10_import_cli_cabe_en_el_presupuesto_sin_weasyprint"),
+}
+
+
+def _decorado_aislado(funcion: ast.FunctionDef) -> bool:
+    for dec in funcion.decorator_list:
+        nodo = dec.func if isinstance(dec, ast.Call) else dec
+        if isinstance(nodo, ast.Attribute) and nodo.attr == "aislado":
+            return True
+    return False
+
+
+def test_los_tests_aislados_son_exactamente_los_declarados():
+    marcados = set()
+    for ruta in sorted(TESTS.glob("test_*.py")):
+        arbol = ast.parse(ruta.read_text(encoding="utf-8"), filename=ruta.name)
+        for nodo in ast.walk(arbol):
+            if isinstance(nodo, ast.FunctionDef) and _decorado_aislado(nodo):
+                marcados.add((ruta.name, nodo.name))
+    assert marcados == TESTS_AISLADOS, (
+        f"sobran {sorted(marcados - TESTS_AISLADOS)}, "
+        f"faltan {sorted(TESTS_AISLADOS - marcados)}")
+
+
+def test_la_ci_corre_los_tests_aislados_en_un_paso_sin_xdist():
+    flujo = (RAIZ / ".github" / "workflows" / "pruebas.yml").read_text(encoding="utf-8")
+    pasos = [linea.strip() for linea in flujo.splitlines()
+             if "python -m pytest" in linea and "-m aislado" in linea]
+    assert len(pasos) == 2, f"un paso `-m aislado` por trabajo (rapida y completa): {pasos}"
+    for paso in pasos:
+        assert " -n " not in f" {paso} ", f"el paso aislado no puede usar xdist: {paso}"
+
+
+def test_con_xdist_los_aislados_se_deseleccionan_y_sin_xdist_corren(monkeypatch):
+    import conftest
+
+    class _Item:
+        def __init__(self, aislado):
+            self._aislado = aislado
+
+        def get_closest_marker(self, nombre):
+            return object() if (nombre == "aislado" and self._aislado) else None
+
+    class _Hook:
+        def __init__(self):
+            self.deseleccionados = []
+
+        def pytest_deselected(self, items):
+            self.deseleccionados.extend(items)
+
+    class _Config:
+        def __init__(self):
+            self.hook = _Hook()
+
+    uno, otro = _Item(True), _Item(False)
+    monkeypatch.delenv("PYTEST_XDIST_WORKER", raising=False)
+    items, config = [uno, otro], _Config()
+    conftest.pytest_collection_modifyitems(config, items)
+    assert items == [uno, otro] and config.hook.deseleccionados == []
+    monkeypatch.setenv("PYTEST_XDIST_WORKER", "gw0")
+    items, config = [uno, otro], _Config()
+    conftest.pytest_collection_modifyitems(config, items)
+    assert items == [otro] and config.hook.deseleccionados == [uno]

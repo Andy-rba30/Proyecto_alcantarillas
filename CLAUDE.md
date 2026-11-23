@@ -58,7 +58,8 @@ Toda excepción de dominio hereda de `modelos.ErrorProyecto` (prohibido usar `Ex
 
 ## Tests
 - Suite del entregable en `tests/` (`testpaths = ["tests"]`); mínimo un test por módulo y contraste con `tests/fixtures/casos_patron.py`.
-- **Suite rápida de trabajo:** `pytest -m "not lento" -n auto`. **Suite completa:** `pytest -n auto --dist loadfile` con `NORMAS_DIR`.
+- **Suite rápida de trabajo:** `pytest -m "not lento" -n auto`. **Suite completa:** `pytest -n auto --dist loadfile` con `NORMAS_DIR`, y después `pytest -m aislado` sin `-n`.
+- **Tests `aislado`:** miden tiempo y sólo valen sin otros tests en paralelo. Con xdist, `conftest.py` los deselecciona y lo avisa; corren en su propio paso, también en la CI. El par de la suite completa (el del sello) es la suma de las dos invocaciones, declarada así en la bitácora (ficha EXT-8-06).
 - Documentos generados (no editar a mano; vigilados por tests de sincronía):
   - `docs/manifiesto_citas.md`, `docs/manifiesto_registro_normativo.md` y `docs/trazabilidad.csv`: `python -m src.normativa.manifiesto --escribir --suite "<N passed, M skipped (entorno)>"`.
   - `docs/indice_formulas.md`: `python -m src.indice_formulas --escribir --suite "<N passed, M skipped (entorno)>"`.

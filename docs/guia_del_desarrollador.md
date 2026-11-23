@@ -116,6 +116,7 @@ Todas las pruebas se ejecutan desde la raíz del repositorio (`D:\Proyecto_alcan
 | **Suite rápida** (sin `lento`) | `py -3.13 -m pytest -m "not lento" -n 4 -q -p no:cacheprovider --no-header` | Iteración diaria (~13 min) |
 | **Solo tests de PDF** | `$env:NORMAS_DIR="D:\Normas_repo"; py -3.13 -m pytest -m pdf -n 4 -q -p no:cacheprovider` | Al tocar citas, fuentes o tablas |
 | **Suite completa** (cierre) | `$env:NORMAS_DIR="D:\Normas_repo"; py -3.13 -m pytest -n 4 --dist loadfile -q -p no:cacheprovider --no-header` | Cierre de bloque / release (`--dist loadfile` evita repetir fixtures `scope="module"`) |
+| **Tests aislados** (miden tiempo) | `py -3.13 -m pytest -m aislado -q -p no:cacheprovider --no-header` (sin `-n`) | Siempre después de una corrida con `-n`: xdist los deselecciona. El par del sello suma las dos invocaciones |
 | **Suite de proceso** | `py -3.13 -m pytest proceso/tests -q -p no:cacheprovider` | Al tocar `proceso/` o el tracker |
 | **Regenerar validaciones** | `py -3.13 -m tests.apoyo.validacion_integral --escribir` (y análogos `validacion_externa`, `sensibilidad`, `validacion_cabezal`, `validacion_conducto`, `validacion_hidrologica`) | Si cambia el cuerpo de los anexos |
 

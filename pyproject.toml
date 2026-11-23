@@ -46,4 +46,5 @@ testpaths = ["tests"]
 markers = [
     "pdf: abre un PDF de normas; exige PyMuPDF (requirements-dev.txt) y el repositorio de normas enlazado por NORMAS_DIR",
     "lento: corridas pesadas (medidas); excluible con -m 'not lento', nunca saltado por defecto",
+    "aislado: mide tiempo; con xdist se deselecciona y se corre aparte con `pytest -m aislado` (sin -n)",
 ]

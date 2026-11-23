@@ -75,6 +75,42 @@ def pytest_configure(config):
         "markers",
         "lento: corridas pesadas (medidas); excluible con -m 'not lento', "
         "nunca saltado por defecto")
+    # `aislado`: mide un tiempo y la medida solo vale sin otros tests en
+    # paralelo (ficha EXT-8-06). Con xdist cada worker lo DESELECCIONA (no
+    # lo salta) y la corrida lo dice al final; se corre en su propio paso:
+    # `pytest -m aislado`, sin `-n`. Decision del dueño (integracion del plan
+    # de mantenibilidad, 2026-11-23).
+    config.addinivalue_line(
+        "markers",
+        "aislado: mide tiempo; con xdist se deselecciona y se corre aparte "
+        "con `pytest -m aislado` (sin -n)")
+
+
+MOTIVO_AISLADO = (
+    "tests `aislado` deseleccionados por correr con xdist: miden tiempo y "
+    "solo valen sin otros tests en paralelo. Correlos aparte con "
+    "`python -m pytest -m aislado` (sin -n); ficha EXT-8-06")
+
+
+def _en_worker_de_xdist() -> bool:
+    import os
+    return bool(os.environ.get("PYTEST_XDIST_WORKER"))
+
+
+def pytest_collection_modifyitems(config, items):
+    """Con xdist, deselecciona los tests `aislado` (ver MOTIVO_AISLADO)."""
+    if not _en_worker_de_xdist():
+        return
+    fuera = [it for it in items if it.get_closest_marker("aislado") is not None]
+    if fuera:
+        config.hook.pytest_deselected(items=fuera)
+        items[:] = [it for it in items if it.get_closest_marker("aislado") is None]
+
+
+def pytest_terminal_summary(terminalreporter, exitstatus, config):
+    """Recuerda el paso aparte cuando la corrida uso xdist."""
+    if getattr(config.option, "numprocesses", None):
+        terminalreporter.write_line(MOTIVO_AISLADO)
 
 # --- T-12 --- SIN `NORMAS_DIR`, TODO TEST `pdf` SE SALTA, Y LO DICE. Hasta
 # T-12 dieciseis de las dieciocho fuentes estaban en `normas/` de este

@@ -14,6 +14,8 @@
 #
 # Plan A4: dos velocidades con `pytest-xdist`:
 #   - `rapida`: corre en cada push y pull_request excluyendo `-m "not lento"`.
+#   - en los dos trabajos, los tests `aislado` (miden tiempo) corren en un paso
+#     propio sin xdist: con `-n` cada worker los deselecciona (conftest.py).
 #   - `completa`: corre la suite entera con `--dist loadfile` (A5) en `main`,
 #     etiquetas `respaldo-*` / `v*` y ejecucion manual (`workflow_dispatch`).
 name: Pruebas
@@ -49,6 +51,8 @@ jobs:
         run: xvfb-run -a python -c "import tkinter, ttkbootstrap; r = tkinter.Tk(); r.destroy()"
       - name: Suite rapida (-m "not lento" con xdist)
         run: xvfb-run -a python -m pytest -m "not lento" -n auto -q -p no:cacheprovider --no-header
+      - name: Tests aislados (miden tiempo; sin xdist, ficha EXT-8-06)
+        run: xvfb-run -a python -m pytest -m aislado -q -p no:cacheprovider --no-header
 
   completa:
     if: >-
@@ -76,3 +80,5 @@ jobs:
         run: xvfb-run -a python -c "import tkinter, ttkbootstrap; r = tkinter.Tk(); r.destroy()"
       - name: Suite completa con xdist (--dist loadfile)
         run: xvfb-run -a python -m pytest -n auto --dist loadfile -q -p no:cacheprovider --no-header
+      - name: Tests aislados (miden tiempo; sin xdist, ficha EXT-8-06)
+        run: xvfb-run -a python -m pytest -m aislado -q -p no:cacheprovider --no-header

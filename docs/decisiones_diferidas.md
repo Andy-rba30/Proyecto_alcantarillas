@@ -10277,4 +10277,13 @@ impreso que no es de cálculo: la huella de los criterios.
   `thread_time` se probó y da lo mismo; se eligió el del proceso, que es lo que el dueño pidió.
   El margen sigue siendo estrecho (en reposo, unos 0.27 s de CPU): bajarlo es abaratar el
   import (el tiempo propio de `src.modelos` es de unos 100 ms), no relajar el test.
+- **Tercera decisión del dueño (misma sesión): el test corre aislado.** Con tiempo de CPU la CI
+  falló una vez más (0.342 s, runner cargado): en una máquina virtual compartida también la CPU
+  medida sube con la carga, y abaratar el import exige reestructurar el núcleo (de unos 0.43 s
+  perfilados, 0.26 s son la creación de las 227 clases `@dataclass` de `src.modelos`, el esquema
+  del registro y la ventana normativa, que `constantes_normativas` necesita al importarse). El
+  test lleva la marca `aislado`: con xdist `conftest.py` lo deselecciona (no lo salta) y avisa;
+  la CI lo corre en un paso propio sin `-n` en los dos trabajos; la guardia
+  `tests/test_guardias_de_la_suite.py::TESTS_AISLADOS` fija qué tests la llevan y que la CI
+  tenga su paso. El par de la suite completa suma la corrida en paralelo y el paso aislado.
 - **Dónde vive:** `tests/test_ext8_rendimiento_gui.py::CORRIDAS_IMPORT_CLI`

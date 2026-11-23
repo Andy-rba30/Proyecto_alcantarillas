@@ -89,6 +89,10 @@ PLANTILLAS = (RAIZ / "src" / "plantillas" / "memoria_alcantarillas.html",
 # cueste mas (0.351 s en una ejecucion de la CI y en verde en otra del MISMO
 # commit; en reposo, main y la rama miden lo mismo). Decision del dueño, la
 # opcion 1 de las tres que se le propusieron: el presupuesto no cambia.
+# Con tiempo de CPU la CI volvio a fallar una vez (0.342 s, runner cargado):
+# en una maquina virtual compartida tambien la CPU medida sube con la carga.
+# Segunda decision del dueño: el test lleva la marca `aislado` y corre en su
+# propio paso, sin otros tests en paralelo (conftest.py, MOTIVO_AISLADO).
 PRESUPUESTO_IMPORT_CLI_S = 0.3
 CORRIDAS_IMPORT_CLI = 7
 
@@ -326,6 +330,7 @@ def _cpu_de_import_cli() -> float:
     return mejor
 
 
+@pytest.mark.aislado
 def test_pc10_import_cli_cabe_en_el_presupuesto_sin_weasyprint():
     """Tiempo de CPU del import, minimo de siete corridas, en subproceso."""
     medido = _cpu_de_import_cli()
