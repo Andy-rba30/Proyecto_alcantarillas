@@ -449,10 +449,17 @@ def test_cada_alcance_declarado_nombra_una_ficha_que_existe():
     for a in ALCANCE_DECLARADO:
         assert f"## {a.ficha} · " in texto, a.ficha
         modulo, simbolo = a.simbolo.split(".")
-        arbol = ast.parse((RAIZ / "src" / "modulos" / f"{modulo}.py")
-                          .read_text(encoding="utf-8"))
-        assert simbolo in {n.name for n in arbol.body
-                           if isinstance(n, ast.FunctionDef)}, a.simbolo
+        # D1: un modulo puede ser un subpaquete (M9_cabezal/); se buscan las
+        # funciones de primer nivel de todos sus archivos (iterador de D0).
+        from src.indice_formulas import _iterar_fuentes_de_modulos
+        funciones = set()
+        for top, ruta in _iterar_fuentes_de_modulos():
+            if top != modulo:
+                continue
+            arbol = ast.parse(ruta.read_text(encoding="utf-8"))
+            funciones |= {n.name for n in arbol.body
+                          if isinstance(n, ast.FunctionDef)}
+        assert simbolo in funciones, a.simbolo
 
 
 # ===========================================================================

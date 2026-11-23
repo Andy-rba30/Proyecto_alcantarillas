@@ -372,19 +372,24 @@ def _lectores_del_nf() -> set:
     `punto.exigir(...)` recibe. Fuera M0 (que la carga) y M11 (que la
     imprime): ninguno de los dos calcula con ella.
     """
+    # D1 partio M9_cabezal en un subpaquete: se recorren los archivos de cada
+    # modulo o subpaquete con el mismo iterador que el indice de formulas
+    # (D0), y el lector es el modulo de PRIMER nivel (`M9_cabezal`).
+    from src.indice_formulas import _iterar_fuentes_de_modulos
+
     lectores = set()
-    for ruta in sorted(MODULOS.glob("*.py")):
-        if ruta.stem in ("M0_carga", "M11_reporte"):
+    for modulo, ruta in _iterar_fuentes_de_modulos(MODULOS):
+        if modulo in ("M0_carga", "M11_reporte"):
             continue
         arbol = ast.parse(ruta.read_text(encoding="utf-8"), filename=ruta.name)
         for nodo in ast.walk(arbol):
             if (isinstance(nodo, ast.Attribute)
                     and nodo.attr == "NF_profundidad_m"):
-                lectores.add(ruta.stem)
+                lectores.add(modulo)
             if (isinstance(nodo, ast.Call) and nodo.args
                     and isinstance(nodo.args[0], ast.Constant)
                     and nodo.args[0].value == "NF_profundidad_m"):
-                lectores.add(ruta.stem)
+                lectores.add(modulo)
     return lectores
 
 

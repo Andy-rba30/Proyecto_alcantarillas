@@ -1105,4 +1105,13 @@ def _modulos_con_prefijo(prefijo: str):
                 importlib.import_module(f"src.modulos.{fichero.stem}"))
         except ImportError:
             pass
+    # D1: `M9_cabezal` es un subpaquete; su `__init__` reexporta los mismos
+    # nombres publicos que el archivo tenia, y contra el se resuelve.
+    for carpeta in sorted(raiz.glob(f"{prefijo}_*")):
+        if carpeta.is_dir() and (carpeta / "__init__.py").exists():
+            try:
+                encontrados.append(
+                    importlib.import_module(f"src.modulos.{carpeta.name}"))
+            except ImportError:
+                pass
     return tuple(encontrados)
