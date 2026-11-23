@@ -59,7 +59,7 @@ registro.
 
 # Índice de fichas
 
-> Tabla derivada automáticamente de las **396** fichas del documento (`72` cerradas, `150` abiertas/parciales, `174` diferidas/declaradas).
+> Tabla derivada automáticamente de las **401** fichas del documento (`75` cerradas, `150` abiertas/parciales, `176` diferidas/declaradas).
 > Regla de estado (verificada por `tests/test_decisiones_diferidas.py`): `cerrada` si el título marca IMPLEMENTADA/CERRADA o tiene `**Cerrado` sin `**Abierto`; `abierta / parcial` si declara `**Abierto`; `diferida / declarada` en el resto.
 
 | Ficha | Tema | Estado |
@@ -460,6 +460,11 @@ registro.
 | VE7B-10 | El agua exterior del pórtico con el freático sobre la losa inferior (T5-07 (5)) | abierta / parcial |
 | VE7B-11 | El pórtico que no cumple dice qué canto declarar, y no se lo auto-adopta (T5-07 (1)) | abierta / parcial |
 | VE7B-12 | El acero del pórtico del marco se metra con sus armados (VE5-MET-01) | abierta / parcial |
+| D2-01 | Las fichas de criterios viven en `src/criterios/`, y la huella de criterios cubre el catálogo entero | cerrada |
+| D3-01 | `modelos.py` partido en el paquete `src/modelos/` | cerrada |
+| D3-02 | `M11_reporte.py` partido en el subpaquete `src/modulos/M11_reporte/` | cerrada |
+| D3-03 | `constantes_normativas.py` no se partió | diferida / declarada |
+| EXT-8-06 | El presupuesto de `import cli` se mide con el mínimo de siete corridas | diferida / declarada |
 
 ---
 
@@ -10161,3 +10166,99 @@ Fable (triaje VE-7, 2026-11-20): Fable decidió QUÉ hacer; estas fichas dicen c
   contra el PDF). Los cantos separados no proceden (dictamen, (ii-a)).
 - **Qué haría falta:** transcribir 9.7.3.2 y 5.12.2.1 y diseñar la distribución.
 - **Dónde vive:** `src/modulos/M12_metrados.py::renglones_acero_portico`
+
+---
+
+# Parte LXV — Lo que el plan de mantenibilidad y uso dejó escrito: archivos partidos, huella del catálogo y medida del `import cli`
+
+Las tareas del plan (`proceso/planes_mejora/11_PLAN_MANTENIBILIDAD_Y_USO.md`)
+no cambian ninguna fórmula ni ningún resultado (su sección 0). Lo que sí
+cambia, y por eso se declara aquí, es dónde vive cada cosa y un valor
+impreso que no es de cálculo: la huella de los criterios.
+
+## D2-01 · Las fichas de criterios viven en `src/criterios/`, y la huella de criterios cubre el catálogo entero
+
+- **Cerrado (plan de mantenibilidad, D2):** `criterios_adoptados.py` conserva
+  sólo el MECANISMO (`Criterio`, `valor`, las guardias `_verificar_*`, el
+  registro de usos, la declaración en caliente y la escritura permanente);
+  las fichas pasan a `src/criterios/*.py` por dominio y se registran en el
+  mismo `CRITERIOS`, en el mismo orden (`tests/test_d2_catalogo_de_fichas.py`).
+  La escritura permanente y los mensajes de rango nombran el archivo real de
+  la ficha (`ca.archivo_de_criterio`).
+- **Por qué cambia la huella:** `ContextoCorrida.criterios_sha1` se calculaba
+  sobre `criterios_adoptados.py`; con las fichas fuera, esa huella ya no se
+  movía al cambiar un criterio, que es justo lo que tiene que delatar. Desde
+  D2 es `ca.sha1_criterios()`: rutas relativas y bytes del mecanismo y de
+  todos los `.py` de primer nivel de `src/criterios/`. **DECLARADO: su valor
+  cambia respecto de toda corrida anterior a D2 aunque no haya cambiado
+  ningún criterio**, de modo que comparar dos `informe_json` de uno y otro
+  lado de D2 da la huella distinta sin que eso signifique otra decisión. La
+  fecha de los criterios del encabezado de la memoria es la del archivo del
+  catálogo modificado por última vez (`ca.archivo_de_criterios_mas_reciente`).
+- **Qué haría falta:** nada para el cálculo. Quien compare una corrida previa
+  a D2 con una posterior tiene que leer la diferencia de `criterios_sha1`
+  como cambio de definición de la huella, no de criterio.
+- **Dónde vive:** `src/criterios_adoptados.py::sha1_criterios`
+
+## D3-01 · `modelos.py` partido en el paquete `src/modelos/`
+
+- **Cerrado (plan de mantenibilidad, D3):** trece submódulos por familia de
+  tipos, reexportados por `src/modelos/__init__.py` con los mismos nombres;
+  el AST de los nodos es idéntico al del archivo único y la CLI y el JSON
+  salen iguales byte a byte. `__module__` de cada clase se normaliza a
+  `src.modelos`, porque la serialización del informe escribe
+  `__module__:__qualname__` y una sesión guardada antes de la partición
+  tiene que seguir abriéndose.
+- **Por qué así y no importando cada submódulo:** ningún importador de fuera
+  del paquete cambia (criterio de aceptación del bloque D), y el JSON de
+  sesión no puede depender de en qué archivo quedó una clase.
+- **Qué haría falta:** nada. Una clase nueva se declara en su submódulo y se
+  añade a la reexportación; el bucle de normalización la cubre.
+- **Dónde vive:** `src/modelos/__init__.py::_SUBMODULOS`
+
+## D3-02 · `M11_reporte.py` partido en el subpaquete `src/modulos/M11_reporte/`
+
+- **Cerrado (plan de mantenibilidad, D3):** dieciocho archivos de menos de
+  700 líneas; la memoria HTML, el CSV y el JSON salen idénticos byte a byte
+  (salvo la fecha) en las cinco corridas de referencia. Las guardias que
+  barren el AST de M11 (no aritmética sobre magnitudes, lecturas estáticas
+  de los catálogos) recorren el subpaquete entero
+  (`tests/apoyo/fuente_m11.py`). Al integrar D2, la fecha de los criterios
+  de la trazabilidad pasó a `ca.archivo_de_criterios_mas_reciente()` también
+  aquí, y `ARCHIVO_CRITERIOS` quedó rotulado como el mecanismo.
+- **Por qué:** era el archivo más largo de `src/` fuera del registro
+  normativo, y el reporte es la capa que más se toca al pedir un cambio de
+  presentación.
+- **Qué haría falta:** nada.
+- **Dónde vive:** `src/modulos/M11_reporte/trazabilidad.py::trazabilidad`
+
+## D3-03 · `constantes_normativas.py` no se partió
+
+- **Qué se difirió:** la tercera partición opcional del bloque D. La sesión
+  que la empezó no dejó commit, y la integración la cierra sin ella.
+- **Por qué:** es la casa única de los `[N]` y la constitución, la guardia de
+  literales (`tests/test_sin_literales.py`), el manifiesto de citas (que
+  ancla cada fila por archivo y renglón) y unos cuarenta archivos de `src/` y
+  `tests/` la nombran por su ruta. Partirla toca la regla de las tres casas,
+  no sólo la organización del código, y no cambia ningún resultado: el
+  beneficio de mantenibilidad no compensa el riesgo antes de la sustentación.
+- **Qué haría falta:** decidir si la casa de los `[N]` pasa a ser un paquete
+  (`src/constantes_normativas/` por norma, reexportado), enmendar la
+  constitución y `test_sin_literales`, mudar las anclas del manifiesto como
+  D2 mudó las de `criterios_adoptados.py`, y regenerar los documentos con
+  diferencia nula salvo rutas.
+- **Dónde vive:** `src/constantes_normativas.py::Y_SOBRE_D_MAX`
+
+## EXT-8-06 · El presupuesto de `import cli` se mide con el mínimo de siete corridas
+
+- **Qué se difirió:** subir el presupuesto de 0.30 s. El hallazgo H2 de la
+  auditoría del cierre de VE-7 midió el test intermitente: en reposo el
+  import cuesta 0.22–0.26 s, y con la suite en paralelo un mínimo de tres
+  corridas no filtraba la carga (0.390 s en una corrida completa).
+- **Por qué:** decisión del dueño: medir mejor y no relajar el límite. Lo que
+  el test acota es el coste del import, no el ruido de la máquina; el mínimo
+  de siete corridas en subproceso limpio es la medida de ese coste.
+- **Qué haría falta:** si con siete vuelve a fallar en una máquina cargada,
+  medir de nuevo en reposo antes de tocar el presupuesto: un import que de
+  verdad pasa de 0.30 s es una regresión de PC-10, no ruido.
+- **Dónde vive:** `tests/test_ext8_rendimiento_gui.py::CORRIDAS_IMPORTTIME`
