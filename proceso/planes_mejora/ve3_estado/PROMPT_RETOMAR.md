@@ -7,7 +7,7 @@ Retoma el cierre del proyecto Proyecto_alcantarillas donde se cortó la sesión 
 
 1. ESTADO PRIMERO
    - `git fetch origin --tags` y `git ls-remote --heads origin`.
-   - Lee `proceso/planes_mejora/ve3_estado/LEEME.md` de la rama más avanzada (hoy `claude/optimistic-carson-ag7mwp`; si hay otra más nueva, compara con `git log A..B` y usa la que contenga a las demás). El bloque más reciente («CIERRE ... EN CURSO» / «ESTADO») dice qué está hecho, qué falta y desde dónde seguir.
+   - Lee `proceso/planes_mejora/ve3_estado/LEEME.md` de la rama más avanzada (`git ls-remote --heads origin`: desde el 2026-11-23 es la de la sesión que retoma el plan de mantenibilidad, `claude/serene-keller-2p7pcs`, o la que la contenga; compara con `git log A..B` y usa la que contenga a las demás). El bloque más reciente («CIERRE ... EN CURSO» / «ESTADO») dice qué está hecho, qué falta y desde dónde seguir.
    - Revisa TODAS las ramas: para cada una, `git rev-list --count <rama_más_avanzada>..<rama>`; lo que no esté contenido, lee sus commits y fichas en `docs/decisiones_diferidas.md` y decide si falta integrarlo o está superado (dilo).
    - Dime en pocas líneas qué falta antes de seguir, y sigue.
 
@@ -33,7 +33,7 @@ Retoma el cierre del proyecto Proyecto_alcantarillas donde se cortó la sesión 
    c) Suite completa en worktree limpio con NORMAS_DIR; corregir todo fallo (dudas → Fable).
    d) Sellar con el par medido: `python -m src.indice_formulas --escribir --suite "N passed, M skipped (PyMuPDF si, Tk si)"` y `python -m src.normativa.manifiesto --escribir --suite "<mismo par>"`; comprobar aparte los tests de sello.
    e) Fila en `proceso/bitacora_conteos_y_entorno.md`; actualizar el LEEME.
-   f) Fast-forward de `claude/laughing-euler-ybme10` y de `main` a la rama final (main está enlazado para avanzar por fast-forward); etiqueta `respaldo-AAAA-MM-DD`.
+   f) Fast-forward de `main` (y de `v2/mantenibilidad-y-uso` si sigue viva) a la rama final, sólo con la autorización del dueño en esa sesión (main está enlazado para avanzar por fast-forward); etiqueta `respaldo-AAAA-MM-DD`.
    g) Limpieza: antes de borrar una rama superada, etiqueta `respaldo/<rama>` en su punta; si el borrado se deniega, déjalas y repórtalo.
 
 5. ENTREGA: resumen conciso — tareas cerradas, estado final de las ramas, decisiones de Fable con su justificación, y lo que queda como bloqueo declarado (dato o documento externo).

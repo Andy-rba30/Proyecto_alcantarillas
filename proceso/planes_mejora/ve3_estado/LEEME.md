@@ -1,9 +1,21 @@
 # Estado de VE-3 (para retomar si la sesión se corta)
 
 Material de proceso, no del entregable. Lo mantiene la sesión orquestadora y se actualiza
-cada vez que se integra algo. Fecha de esta versión: 2026-11-20.
+cada vez que se integra algo. Fecha de esta versión: 2026-11-23.
 
-> **CIERRE DE VE-7 EN CURSO (2026-11-20, ~20:00 UTC, sesión `claude/optimistic-carson-ag7mwp`).**
+> **ESTADO (2026-11-23, sesión `claude/serene-keller-2p7pcs`): plan de mantenibilidad y uso.**
+> El cierre de VE-7 de abajo está TERMINADO (lo confirma la auditoría
+> `AUDITORIA_CIERRE_VE7_2026-11-21.md`): CI `44859160957` verde, `main` en `362beb4`, etiqueta
+> `respaldo-2026-11-20` y las ramas superadas bajo `respaldo/*`. Lo que sigue al cierre es el
+> plan `proceso/planes_mejora/11_PLAN_MANTENIBILIDAD_Y_USO.md`, que una sesión desde la máquina
+> del dueño llevó en `v2/mantenibilidad-y-uso` hasta D2 a medias (`0b8c4a7`, WIP) y expiró.
+> Esta sesión retoma desde esa punta en `claude/serene-keller-2p7pcs` (contiene a `v2` y a
+> `main`). La tabla «8. Estado» del plan dice qué está hecho, con su commit; los hallazgos H1–H5
+> de la auditoría se cierran aquí (H2 por decisión del dueño: mínimo de siete corridas, mismo
+> límite). **Si la sesión se corta:** retomar desde `claude/serene-keller-2p7pcs` y las ramas
+> `claude/serene-keller-2p7pcs-*` de los agentes que no estén fusionadas en ella.
+
+> **CIERRE DE VE-7 — TERMINADO (ver el bloque de arriba); lo que sigue es su registro (2026-11-20, ~20:00 UTC, sesión `claude/optimistic-carson-ag7mwp`, rama ya borrada y conservada en `respaldo/claude/optimistic-carson-ag7mwp`).**
 > Rama de trabajo: `claude/optimistic-carson-ag7mwp` = `claude/ve7-fix-suite` (todo VE-7: alero,
 > lotes A/B/C, peralte y arreglos de suite; 80 commits sobre `claude/laughing-euler-ybme10`, 0
 > por detrás) + A11. Revisadas todas las ramas: lo no contenido está declarado superado.
