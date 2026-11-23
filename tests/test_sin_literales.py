@@ -17,6 +17,11 @@ M11 -- es un defecto, salvo en los seis archivos exentos:
                                nombres: G, RHO_AGUA, N_POR_KN, GAMMA_AGUA,
                                GAMMA_AGUA_KN_M3), no valores de proyecto
 
+y, desde D2, en el paquete de fichas `src/criterios/*.py` (SOLO su primer
+nivel): son las fichas que vivian dentro de `criterios_adoptados.py`, movidas
+sin reescribir, con la misma exencion y por la misma razon. El mecanismo
+quedo en `criterios_adoptados.py` y sigue en la lista.
+
 Los tres ultimos estan exentos porque sus numeros NO son valores de proyecto.
 `datos_sitio.py` esta exento por la razon contraria: los suyos si lo son -- el
 PGA gobierna la cadena sismica entera -- y estan aparte porque no son
@@ -221,6 +226,19 @@ EXENTOS = {"constantes_normativas.py", "criterios_adoptados.py",
 # abajo. La marca de literal permitido sigue valiendo, para los pocos numeros
 # que no son transcripcion (una escala de renderizado, un tamaño de muestra).
 PAQUETE_REGISTRO = "normativa"
+
+# EL PAQUETE DE FICHAS DE CRITERIOS (D2). Las 169 fichas que vivian dentro de
+# `criterios_adoptados.py` --- exento entero --- se movieron sin reescribir a
+# `src/criterios/<dominio>.py`, con `Criterio` y las tablas auxiliares en
+# `src/criterios/_base.py`. La exencion las SIGUE, y no se ensancha: cubre
+# los `.py` del PRIMER NIVEL de `src/criterios/` y nada mas --- ni un
+# subdirectorio suyo ni un `criterios/` anidado en otra parte, que es el
+# defecto de SIS-C-05 que los dos branches de arriba ya tuvieron ---. Cada
+# literal de esos archivos estaba exento antes por la misma razon: era un
+# valor declarado de una ficha o de una tabla de fichas del catalogo de
+# criterios. Que los archivos del paquete sean los que el catalogo registra
+# lo comprueba `test_el_paquete_de_fichas_es_el_que_el_catalogo_registra`.
+PAQUETE_DE_FICHAS = "criterios"
 
 # Los constructores del registro: un numero dentro de la llamada a uno de
 # estos ES una transcripcion, y por eso se admite. Se listan por NOMBRE y no
@@ -820,6 +838,8 @@ def barrido(raiz: Path) -> dict:
         relativa = ruta.relative_to(raiz)
         if relativa.as_posix() in EXENTOS:
             continue                       # por RUTA, no por nombre (SIS-C-05)
+        if len(relativa.parts) == 2 and relativa.parts[0] == PAQUETE_DE_FICHAS:
+            continue                       # D2: `criterios/*.py`, solo el primer nivel
         if relativa.parts[:1] == (PAQUETE_REGISTRO,):
             # Exento del barrido general y sujeto al suyo, mas estrecho.
             #
@@ -1179,7 +1199,7 @@ def test_ningun_modulo_declara_literales_numericos():
     assert not faltas, (
         "Literales numericos fuera de los archivos exentos:\n" + _detalle(faltas) +
         "\n\nUn valor de proyecto va a constantes_normativas.py (si es [N] con "
-        "numeral) o a criterios_adoptados.py (si es [N->], [C] o [A]). Una "
+        "numeral) o a su ficha en src/criterios/ (si es [N->], [C] o [A]). Una "
         "tolerancia va a tolerancias.py. Si es parte de una formula, marca la "
         f"linea con '{MARCA}: <razon>'."
     )
@@ -1404,6 +1424,54 @@ def test_los_archivos_exentos_existen_y_de_verdad_llevan_literales():
         )
 
 
+def test_el_paquete_de_fichas_es_el_que_el_catalogo_registra():
+    """
+    D2. La exencion de `src/criterios/*.py` vale porque esos archivos SON el
+    catalogo de criterios: los que `src/criterios/__init__.py` registra en
+    `ARCHIVOS_DE_FICHAS` y nada mas. Un archivo que entrara en el directorio
+    sin registrarse quedaria exento sin ser una ficha --- el escondite que
+    `PAQUETE_REGISTRO` tambien vigila ---, y un subdirectorio quedaria fuera
+    de la exencion y de su razon a la vez. Y, como los exentos de arriba, el
+    paquete tiene que existir y llevar de verdad los valores.
+    """
+    from src.criterios import ARCHIVOS_DE_FICHAS
+
+    paquete = SRC / PAQUETE_DE_FICHAS
+    assert paquete.is_dir(), "src/criterios/ no existe: la exencion caduco"
+    en_disco = {r.resolve() for r in paquete.rglob("*.py")
+                if "__pycache__" not in r.parts}
+    assert {r.resolve() for r in paquete.glob("*.py")} == en_disco, (
+        "src/criterios/ tiene subdirectorios con .py: la exencion es solo del "
+        "primer nivel y esos archivos quedarian sin razon escrita")
+    assert en_disco == {Path(r).resolve() for r in ARCHIVOS_DE_FICHAS}, (
+        "los .py de src/criterios/ y los que el catalogo registra no coinciden: "
+        f"{sorted(r.name for r in en_disco ^ {Path(x).resolve() for x in ARCHIVOS_DE_FICHAS})}")
+    assert any(literales_numericos(r.read_text(encoding="utf-8-sig"), r.name)
+               for r in en_disco), (
+        "src/criterios/ no contiene ningun literal: revisa si sigue siendo el "
+        "paquete que declara las fichas")
+
+
+def test_el_barrido_exime_solo_el_primer_nivel_del_paquete_de_fichas(tmp_path):
+    """
+    La exencion de D2 no repite SIS-C-05: `criterios/x.py` queda fuera del
+    barrido; `criterios/sub/x.py` y `modulos/criterios/x.py`, no.
+    """
+    (tmp_path / PAQUETE_DE_FICHAS / "sub").mkdir(parents=True)
+    (tmp_path / "modulos" / PAQUETE_DE_FICHAS).mkdir(parents=True)
+    (tmp_path / PAQUETE_DE_FICHAS / "hidraulica.py").write_text(
+        "CRITERIOS = {'ke_entrada': 0.5}\n", encoding="utf-8")
+    (tmp_path / PAQUETE_DE_FICHAS / "sub" / "escondite.py").write_text(
+        "N_INVENTADO = 0.013\n", encoding="utf-8")
+    (tmp_path / "modulos" / PAQUETE_DE_FICHAS / "escondite.py").write_text(
+        "V_INVENTADA = 4.5\n", encoding="utf-8")
+
+    faltas = barrido(tmp_path)
+
+    assert sorted(faltas) == ["criterios/sub/escondite.py",
+                              "modulos/criterios/escondite.py"]
+
+
 def test_toda_marca_declara_su_razon():
     """
     La marca sin razon es el literal silencioso que la marca existe para
@@ -1456,6 +1524,28 @@ def test_los_limites_de_dominio_salieron_de_M0():
         assert nombre in usados_en_m0, f"M0 dejo de usar '{nombre}'"
 
 
+def _constructor_en_el_catalogo(clave: str):
+    """
+    Con que constructor se declara `clave` en el catalogo de criterios, o None.
+
+    Desde D2 el dict `CRITERIOS` literal no esta en `criterios_adoptados.py`
+    (que lo arma con `dict(CRITERIOS_DE_FICHAS)`) sino repartido en los
+    archivos de `src/criterios/`, cada uno con el suyo. Se pregunta a TODOS
+    --- el mecanismo incluido --- y no a uno: un «is None» sobre un solo
+    archivo seria verde aunque la clave estuviera declarada en otro, que es
+    justo lo que esos asserts existen para impedir. Y una clave en dos
+    archivos es un defecto por si misma.
+    """
+    archivos = [SRC / "criterios_adoptados.py",
+                *sorted((SRC / PAQUETE_DE_FICHAS).glob("*.py"))]
+    hallados = {ruta.name: c for ruta in archivos
+                if (c := estructura.constructor_de_clave(
+                    ruta, "CRITERIOS", clave)) is not None}
+    assert len(hallados) <= 1, (
+        f"'{clave}' se declara en mas de un archivo del catalogo: {hallados}")
+    return next(iter(hallados.values()), None)
+
+
 def test_los_datos_de_sitio_salieron_de_constantes_y_criterios():
     """
     Los tres valores que se reclasificaron como [S] no pueden volver a estar
@@ -1466,7 +1556,6 @@ def test_los_datos_de_sitio_salieron_de_constantes_y_criterios():
     evadia con comillas simples y la satisfacia un comentario.
     """
     constantes = SRC / "constantes_normativas.py"
-    criterios = SRC / "criterios_adoptados.py"
     sitio = SRC / "datos_sitio.py"
     declarados = estructura.nombres_asignados(constantes)
 
@@ -1480,13 +1569,11 @@ def test_los_datos_de_sitio_salieron_de_constantes_y_criterios():
             f"'{nombre}' no se declara en datos_sitio.py")
 
     assert "PERFIL_SUELO_PRESUNTO" not in declarados
-    assert estructura.constructor_de_clave(
-        criterios, "CRITERIOS", "PERFIL_SUELO_PRESUNTO") == "Criterio"
+    assert _constructor_en_el_catalogo("PERFIL_SUELO_PRESUNTO") == "Criterio"
 
     assert estructura.constructor_de_clave(
         sitio, "DATOS_SITIO", "PGA_roca_B") == "DatoSitio"
-    assert estructura.constructor_de_clave(
-        criterios, "CRITERIOS", "PGA_roca_B") is None, (
+    assert _constructor_en_el_catalogo("PGA_roca_B") is None, (
         "el PGA no puede estar declarado a la vez como criterio y como dato "
         "de sitio")
 
@@ -1506,7 +1593,6 @@ def test_la_reduccion_del_factor_de_muro_es_normativa_y_la_eleccion_no():
     pasando sobre un simbolo inexistente -- el caso exacto de SIS-C-02.
     """
     constantes = SRC / "constantes_normativas.py"
-    criterios = SRC / "criterios_adoptados.py"
     declarados = estructura.nombres_asignados(constantes)
 
     assert "REDUCCION_KH_POR_DESPLAZAMIENTO" in declarados, (
@@ -1517,22 +1603,18 @@ def test_la_reduccion_del_factor_de_muro_es_normativa_y_la_eleccion_no():
     assert "FACTOR_MURO_TABLA" not in declarados, (
         "'FACTOR_MURO_TABLA' volvio: el numeral no presenta tabla alguna "
         "(NOR-PUE-07)")
-    assert estructura.constructor_de_clave(
-        criterios, "CRITERIOS", "factor_muro_eleccion") == "Criterio"
-    assert estructura.constructor_de_clave(
-        criterios, "CRITERIOS", "factor_muro") is None, (
+    assert _constructor_en_el_catalogo("factor_muro_eleccion") == "Criterio"
+    assert _constructor_en_el_catalogo("factor_muro") is None, (
         "'factor_muro' volvio a mezclar el valor normativo con la eleccion")
 
 
 def test_la_tabla_de_F_pga_es_normativa_y_la_eleccion_no():
     """El reparto tabla [N] / eleccion [A] del que sale el de arriba."""
     constantes = SRC / "constantes_normativas.py"
-    criterios = SRC / "criterios_adoptados.py"
     assert "F_PGA_TABLA" in estructura.nombres_asignados(constantes)
     assert isinstance(estructura.valor_asignado(constantes, "F_PGA_TABLA"),
                       ast.Dict), "F_PGA_TABLA dejo de ser una tabla"
-    assert estructura.constructor_de_clave(
-        criterios, "CRITERIOS", "F_pga") == "Criterio"
+    assert _constructor_en_el_catalogo("F_pga") == "Criterio"
 
 
 def test_el_directorio_de_modulos_esta_bajo_vigilancia():

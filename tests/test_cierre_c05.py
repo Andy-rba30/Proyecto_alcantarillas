@@ -95,8 +95,12 @@ def _nombre_del_valor_del_criterio(clave: str):
     """
     El nodo `valor=` de la entrada `clave` del dict CRITERIOS, por AST (PC-21:
     una afirmacion sobre codigo no se hace sobre texto).
+
+    Desde D2 el dict es el de la ficha, en `src/criterios/<dominio>.py`
+    (`ca.archivo_de_criterio`), y no el de `criterios_adoptados.py`, que ya
+    solo lleva el mecanismo.
     """
-    ruta = RAIZ / "src" / "criterios_adoptados.py"
+    ruta = ca.archivo_de_criterio(clave)
     arbol = ast.parse(ruta.read_text(encoding="utf-8"), filename=ruta.name)
     for nodo in ast.walk(arbol):
         if isinstance(nodo, ast.Dict):

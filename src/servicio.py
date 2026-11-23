@@ -217,11 +217,11 @@ from src.constantes_normativas import (ANCHO_MIN_DERECHO_VIA_M,
 from src.modulos.M10_espaciamiento import espaciamiento_alivio
 # --- T-9 --- la longitud por capacidad de la cuneta y VB1, por tramo.
 from src.modulos import M10_espaciamiento as M10
-# De M11 solo las dos huellas y la ruta del archivo de criterios, para
-# `capturar_contexto`: la agregacion de bloqueantes y la memoria son de la
-# Fase 11 y las consumen los adaptadores, no el servicio.
-from src.modulos.M11_reporte import (ARCHIVO_CRITERIOS, sha1_archivo,
-                                     sha1_de_bytes)
+# De M11 solo la huella de bytes, para `capturar_contexto`: la agregacion de
+# bloqueantes y la memoria son de la Fase 11 y las consumen los adaptadores,
+# no el servicio. La huella de los criterios ya no sale de aqui sino de
+# `ca.sha1_criterios()` (D2): el catalogo son varios archivos.
+from src.modulos.M11_reporte import sha1_de_bytes
 from src.modulos import M5_verificaciones as M5
 from src.modulos.MD import disenar_punto
 
@@ -5431,6 +5431,11 @@ def capturar_contexto(*, csv_sha1: str, cuencas_sha1: Optional[str] = None,
     `cuencas_sha1` y `estacion_sha1` (UI-1) son las huellas de las dos
     entradas de la hidrologia que `cargar_hidrologia` saco de los bytes que
     se parsearon; None sin hidrologia.
+
+    `criterios_sha1` es, desde D2, `ca.sha1_criterios()`: la huella del
+    conjunto de archivos del catalogo (el mecanismo y las fichas de
+    `src/criterios/`). Su VALOR cambio con D2 aunque no cambio ningun
+    criterio: antes era el SHA-1 de un solo archivo.
     """
     return ContextoCorrida(
         criterios_usados=tuple(ca.criterios_usados()),
@@ -5446,7 +5451,10 @@ def capturar_contexto(*, csv_sha1: str, cuencas_sha1: Optional[str] = None,
         criterios_con_verificacion_pendiente=tuple(
             ca.criterios_con_verificacion_pendiente()),
         csv_sha1=csv_sha1,
-        criterios_sha1=sha1_archivo(ARCHIVO_CRITERIOS),
+        # D2: la huella del CONJUNTO --- el mecanismo `criterios_adoptados.py`
+        # y las fichas de `src/criterios/` ---, no la del primer archivo solo,
+        # que desde D2 no cambiaba al cambiar una ficha.
+        criterios_sha1=ca.sha1_criterios(),
         # Los datos de sitio con que gobierno la corrida y de que archivo
         # salio cada uno (EXT-10): valor copiado en profundidad, como los
         # criterios; el resto de la ficha es lectura estatica de `ds.dato`.

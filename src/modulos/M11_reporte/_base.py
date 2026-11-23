@@ -56,6 +56,9 @@ NOMBRE_PLANTILLA = "memoria_alcantarillas.html"
 # mismo contrato de marcadores, pero sin el volcado de Tableros 1-2-3 y
 # con el bloque de alcance en su lugar. Ver `cargar_plantilla`.
 NOMBRE_PLANTILLA_PERFIL = "memoria_perfil.html"
+# Desde D2 es solo el MECANISMO del catalogo: las fichas viven en
+# `src/criterios/`. La huella y la fecha de los criterios no se calculan con
+# esta ruta sino con `ca.sha1_criterios()` y `ca.archivo_de_criterios_mas_reciente()`.
 ARCHIVO_CRITERIOS = SRC / "criterios_adoptados.py"
 
 DIR_DOCS = RAIZ / "docs"

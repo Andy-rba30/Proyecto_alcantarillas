@@ -649,8 +649,9 @@ def test_h2_la_guardia_rechaza_por_los_tres_caminos(caso, tmp_path):
     assert ca.valores_dinamicos() == antes
     with pytest.raises(ValueError, match=clave):
         ca._verificar_criterio(clave, replace(ca.criterio(clave), valor=valor))
+    # D2: se copia el archivo de la FICHA, que es donde se escribe.
     copia = tmp_path / "criterios_adoptados.py"
-    shutil.copyfile(Path(ca.__file__), copia)
+    shutil.copyfile(ca.archivo_de_criterio(clave), copia)
     original = copia.read_bytes()
     with pytest.raises(ValueError, match=clave):
         ca.escribir_valor_en_archivo(clave, valor, ruta=str(copia))

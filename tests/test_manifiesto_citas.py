@@ -407,6 +407,32 @@ def test_T8_el_manifiesto_esta_sincronizado_con_el_codigo():
         + "\n  ".join(cambios[:15]))
 
 
+def test_D2_la_mudanza_lleva_la_fila_de_una_ficha_a_su_archivo():
+    """
+    D2: las fichas salieron de `criterios_adoptados.py` a `src/criterios/`. Una
+    referencia `[CA:n](src/criterios_adoptados.py:n)` cuya fila cita una
+    FICHA se muda al archivo de la ficha, al renglon de su bloque, y conserva
+    la etiqueta; la que cita el MECANISMO se queda. Y lo mudado es un punto
+    fijo: regenerar otra vez no lo mueve.
+    """
+    from src import criterios_adoptados as ca
+    from src.normativa.manifiesto import resincronizar
+
+    ficha = ("| `ke_entrada = 0.5` — ficha | — | — | "
+             "[CA:99999](src/criterios_adoptados.py:99999) | [C] |")
+    mecanismo = ("| `valor_si_declarado` — mecanismo | — | — | "
+                 "[CA:1](src/criterios_adoptados.py:1) | — |")
+    texto, cambios, _ = resincronizar(ficha + "\n" + mecanismo)
+    fila_ficha, fila_mecanismo = texto.split("\n")
+    (etiqueta, rel, n), = re.findall(r"\[(CA):\d+\]\((src/[^)]+?):(\d+)\)",
+                                     fila_ficha)
+    assert rel == ca.archivo_de_criterio("ke_entrada").relative_to(
+        RAIZ).as_posix(), fila_ficha
+    assert '"ke_entrada": Criterio(' in _codigo(rel)[int(n) - 1]
+    assert "(src/criterios_adoptados.py:" in fila_mecanismo
+    assert resincronizar(texto)[0] == texto, "la mudanza no es un punto fijo"
+
+
 def test_T8_el_indice_del_registro_esta_sincronizado():
     """
     El OTRO manifiesto, el que se genera entero desde los objetos. Ahi no hay

@@ -311,8 +311,9 @@ def _verificar_dato(d: "DatoSitio") -> None:
         raise ValueError(
             f"'{nombre}' esta en datos_sitio.py con la etiqueta "
             f"{d.etiqueta!r}. Este archivo es el de los [S] y solo el: un "
-            "valor que el proyectista ELIGE es un criterio y va en "
-            "criterios_adoptados.py, con su sensibilidad"
+            "valor que el proyectista ELIGE es un criterio y va en su "
+            "ficha de src/criterios/ (el catalogo de criterios_adoptados), "
+            "con su sensibilidad"
         )
     for campo in _OBLIGATORIOS:
         if not str(getattr(d, campo) or "").strip():

@@ -20,7 +20,6 @@ from typing import (
 from src import criterios_adoptados as ca
 
 from src.modulos.M11_reporte._base import (
-    ARCHIVO_CRITERIOS,
     DIR_DOCS,
     PATRON_HOJA_RUTA,
     _esc,
@@ -186,7 +185,7 @@ def trazabilidad(csv: Path, contexto: Any, *,
         csv=csv,
         csv_sha1=contexto.csv_sha1,
         criterios_version=version_criterios(contexto),
-        criterios_fecha=fecha_archivo(ARCHIVO_CRITERIOS),
+        criterios_fecha=fecha_archivo(ca.archivo_de_criterios_mas_reciente()),
         criterios_sha1=contexto.criterios_sha1,
         generado_utc=generado_utc,
         generado_local=datetime.now().strftime("%d/%m/%Y %H:%M"),

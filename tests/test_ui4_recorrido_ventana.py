@@ -672,9 +672,10 @@ def test_c7_la_sesion_v3_se_abre_reproduce_y_se_reescribe(r):
     # correcta es DIFIERE, y SOLO por esa huella --- ningun punto, ningun
     # numero, nada sin comparar ---. Es la misma regla que UI-1 escribio para
     # la CLI (`test_d_la_cli_abre_la_sesion_v3_y_corre_sin_hidrologia`).
-    import hashlib
+    # D2: la huella es la del conjunto del catalogo (`ca.sha1_criterios()`),
+    # no la de `criterios_adoptados.py` solo.
     fixture = json.loads((RAIZ / recorrido.SESION_V3).read_text(encoding="utf-8"))
-    huella = hashlib.sha1(M11.ARCHIVO_CRITERIOS.read_bytes()).hexdigest()
+    huella = ca.sha1_criterios()
     if fixture["corridas"][-1]["criterios_sha1"] == huella:
         assert v3["reproduce"], v3["comparacion"]
     else:
