@@ -240,8 +240,8 @@ def disponibilidad_de(condicion: CondicionAplicacion) -> Disponibilidad:
                 por_que=(f"la condicion se resuelve con el criterio "
                          f"'{r.clave}', que no esta declarado en "
                          "criterios_adoptados.py"),
-                que_lo_cerraria=("declarar el criterio en "
-                                 "criterios_adoptados.py con su etiqueta, su "
+                que_lo_cerraria=("declarar el criterio en su ficha de "
+                                 "src/criterios/ con su etiqueta, su "
                                  "justificacion y su fuente"))
         if _valor_efectivo_de_criterio(r.clave) is not None:
             return Elegible(resuelta_por=f"criterio '{r.clave}'")

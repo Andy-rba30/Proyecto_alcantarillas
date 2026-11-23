@@ -421,6 +421,9 @@ class FichaDeEtiqueta:
 # su fila aqui, o si aqui sobra una fila que la taxonomia ya no tiene.
 # El `archivo` de cada fila es el de la regla de arquitectura de CLAUDE.md
 # (que literal vive donde), y un test comprueba que cada uno exista en src/.
+# Desde D2 las fichas [N->], [C] y [A] viven en el paquete `src/criterios/`
+# (una por dominio) y `criterios_adoptados.py` solo lleva el mecanismo: la
+# fila nombra el paquete, que es donde el lector las encuentra.
 _EXPLICACIONES_DE_ETIQUETAS: Dict[str, Tuple[str, str, str]] = {
     "N": ("Exigencia normativa",
           "Lo exige una norma peruana vigente, con numeral verificado: el "
@@ -430,7 +433,7 @@ _EXPLICACIONES_DE_ETIQUETAS: Dict[str, Tuple[str, str, str]] = {
             "El numero es de una norma, pero aplicado a un caso que esa norma "
             "no cubre. La analogia se declara expresamente: sin declaracion, "
             "pareceria una exigencia directa y no lo es.",
-            "criterios_adoptados.py"),
+            "criterios/"),
     "S": ("Dato de sitio",
           "Un hecho de ESTE lugar, leido con un procedimiento real (mapa, "
           "ensayo, medicion). Cambia al mover la obra de sitio, no al cambiar "
@@ -442,12 +445,12 @@ _EXPLICACIONES_DE_ETIQUETAS: Dict[str, Tuple[str, str, str]] = {
     "C": ("Vacio cubierto con fuente tecnica",
           "La norma peruana calla y el valor sale de una fuente tecnica "
           "reconocida (FHWA, AASHTO), citada.",
-          "criterios_adoptados.py"),
+          "criterios/"),
     "A": ("Adopcion del proyectista",
           "Sin norma ni fuente unica: alguien ELIGIO este valor y lo declara, "
           "con su rango de sensibilidad. Es la unica etiqueta que se defiende "
           "mostrando cuanto cambiaria el resultado con otro valor.",
-          "criterios_adoptados.py"),
+          "criterios/"),
 }
 
 
@@ -522,7 +525,7 @@ _EXPLICACIONES_DE_ESTADOS: Dict[str, str] = {
         "es lo mismo que declarar sobre un vacio: el expediente sigue "
         "diciendo otra cosa, y por eso la tabla lo marca distinto."),
     "resuelto": (
-        "El valor esta transcrito en criterios_adoptados.py, con su "
+        "El valor esta transcrito en su ficha de src/criterios/, con su "
         "etiqueta, su fuente y su justificacion. Es el unico estado que "
         "sobrevive a cerrar el programa."),
 }

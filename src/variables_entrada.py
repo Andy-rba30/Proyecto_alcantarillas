@@ -41,7 +41,8 @@ vivir, y de los datos externos del JSON (`_EXTERNOS`, desde EXT-5), y aporta
 lo que ninguna poblacion tenia: unidad, fase que la consume, dominio fisico y
 criterio que recibe la eleccion.
 
-    resolucion (criterios)   ->  criterios_adoptados.py
+    resolucion (criterios)   ->  src/criterios/ (fichas; el mecanismo, en
+                                  criterios_adoptados.py, desde D2)
     resolucion (sitio)       ->  datos_sitio.py
     resolucion (CSV)         ->  aqui
     resolucion (externos)    ->  aqui

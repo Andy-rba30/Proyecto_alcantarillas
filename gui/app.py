@@ -83,7 +83,8 @@ Pestanas -- son CUATRO, y esta lista decia tres (SIS-A-10)
                             (por estado, por AMBITO, por FASE y por texto) y RECUENTO de
                             pendientes; la ventana normativa de cada variable
                             (Sec. 4.2/4.3 del plan); y el unico sitio de la
-                            interfaz que REESCRIBE `criterios_adoptados.py`
+                            interfaz que REESCRIBE una ficha de criterio
+                            (`src/criterios/<dominio>.py` desde D2)
                             --- accion permanente, aparte y con confirmacion
                             propia, que es justo la pestana que esta lista
                             omitia. Desde UI-3, el boton «Barrido…» del
@@ -514,6 +515,29 @@ MOTIVO_SIN_CORRIDA_FILTRO = (
 # piensa el expediente. La unica opcion escrita aqui es el rotulo de "sin
 # filtro"; las fases mismas las da el censo (`_fases_del_censo`).
 FILTRO_FASE_TODAS = "Todas"
+
+
+def _ruta_de_la_ficha(clave: str) -> str:
+    """
+    D2: el archivo donde vive la ficha `clave` --- uno de
+    `src/criterios/<dominio>.py`, `ca.archivo_de_criterio` ---, relativo a la
+    raiz para leerlo en la confirmacion de la escritura permanente. Desde D2
+    esa escritura ya no toca `criterios_adoptados.py`, que solo lleva el
+    mecanismo, y el texto que lee el usuario tiene que decir que archivo
+    cambia.
+
+    Una clave que el catalogo no declara no tiene ficha: se nombra el
+    catalogo, como antes de D2, y `escribir_valor_en_archivo` la rechaza con
+    su `KeyError` despues de la confirmacion, por el mismo camino de siempre.
+    """
+    try:
+        ruta = ca.archivo_de_criterio(clave)
+    except KeyError:
+        return "criterios_adoptados.py"
+    try:
+        return ruta.relative_to(RAIZ).as_posix()
+    except ValueError:
+        return str(ruta)
 
 
 def _fases_del_censo():
@@ -1733,8 +1757,8 @@ class ExpedienteApp:
                 "PENDIENTE  = valor=None: bloquea el calculo que lo invoque.\n"
                 "Declarado en esta corrida = valor puesto desde la ventana o\n"
                 "  desde aqui; criterios_adoptados.py NO se modifico.\n"
-                "Resuelto en el archivo = el valor viene de "
-                "criterios_adoptados.py.")
+                "Resuelto en el archivo = el valor viene de su ficha en "
+                "src/criterios/.")
 
         ttk.Label(f_filtro, text="Ambito:").grid(row=1, column=0, sticky="w",
                                                  pady=(6, 0))
@@ -2000,7 +2024,8 @@ class ExpedienteApp:
                   # docstring de `escribir_valor_en_archivo`, o la correccion
                   # solo llega a quien lee el codigo.
                   "Reescribe el 'valor=' del criterio -- este declarado o no --\n"
-                  "DIRECTAMENTE en criterios_adoptados.py. Pide confirmacion.\n"
+                  "DIRECTAMENTE en su ficha (src/criterios/<dominio>.py).\n"
+                  "Pide confirmacion.\n"
                   "Etiqueta, justificacion y fuente no se tocan: revisalas a\n"
                   "mano si la razon del valor cambio.\n"
                   "No alcanza a los valores que son tabla, dict o tupla: esos\n"
@@ -2693,10 +2718,11 @@ class ExpedienteApp:
         except ValueError as exc:
             self.lbl_estado_criterio.config(text=f"Error: {exc}", foreground=COLOR_ERROR)
             return
+        ficha = _ruta_de_la_ficha(clave)
 
         confirmado = messagebox.askyesno(
             "Confirmar escritura permanente",
-            f"Esto reescribe 'valor=' de '{clave}' en criterios_adoptados.py "
+            f"Esto reescribe 'valor=' de '{clave}' en {ficha} "
             f"con el valor {valor_nuevo!r}.\n\n"
             "Es un cambio PERMANENTE al archivo fuente del proyecto, no solo "
             "a esta corrida. Etiqueta, justificacion y fuente del criterio "
@@ -2713,7 +2739,7 @@ class ExpedienteApp:
             return
         self._invalidar_informe(MOTIVO_INFORME_DESACTUALIZADO)
         self.lbl_estado_criterio.config(
-            text=f"'{clave}' = {valor_nuevo!r} escrito en criterios_adoptados.py.",
+            text=f"'{clave}' = {valor_nuevo!r} escrito en {ficha}.",
             foreground=COLOR_OK)
         self._llenar_tabla_criterios()
 
