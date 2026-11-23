@@ -10248,6 +10248,11 @@ impreso que no es de cálculo: la huella de los criterios.
   constitución y `test_sin_literales`, mudar las anclas del manifiesto como
   D2 mudó las de `criterios_adoptados.py`, y regenerar los documentos con
   diferencia nula salvo rutas.
+- **Revisado por Fable (dictamen del consultor, 2026-11-23): APROBADO CON CAMBIOS.**
+  Diferir es correcto: la exención por nombre de `test_sin_literales.py`, las 105
+  anclas del manifiesto y la regla de las tres casas hacen de la partición una
+  enmienda de la constitución, sin efecto en ningún resultado. Los cambios de
+  texto (cifras de D3-02 y D3-03, estado del plan) están aplicados.
 - **Dónde vive:** `src/constantes_normativas.py::Y_SOBRE_D_MAX`
 
 ## EXT-8-06 · El presupuesto de `import cli` se mide con el mínimo de siete corridas
