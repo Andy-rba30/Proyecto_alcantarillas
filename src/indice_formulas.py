@@ -450,7 +450,9 @@ def _iterar_fuentes_de_modulos(modulos_dir: Optional[Path] = None) -> Iterator[T
     for ruta in sorted(base.rglob("*.py")):
         if "__pycache__" in ruta.parts:
             continue
-        if ruta == base / "__init__.py":
+        # Sin `/`: la guardia de aritmetica del indice solo admite rutas
+        # que nacen de RAIZ, SRC o MODULOS (test_indice_formulas).
+        if ruta.parent == base and ruta.name == "__init__.py":
             continue
         yield _modulo_top_de(ruta, base), ruta
 
