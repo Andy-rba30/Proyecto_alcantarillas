@@ -76,11 +76,15 @@ PLANTILLAS = (RAIZ / "src" / "plantillas" / "memoria_alcantarillas.html",
 # liberado al corregir.
 
 # El presupuesto del prompt: `import cli` < 0.3 s sin weasyprint. Se mide con
-# `-X importtime` en un subproceso limpio y se toma el MINIMO de tres
+# `-X importtime` en un subproceso limpio y se toma el MINIMO de siete
 # corridas, porque lo que se acota es el coste del import y no el ruido de
-# la maquina.
+# la maquina. Eran tres hasta el H2 de la auditoria del cierre de VE-7: con
+# la medida en reposo en 0.22-0.26 s, un minimo de tres no filtraba la carga
+# de la suite en paralelo (0.390 s en la corrida completa, 1 de 3 en
+# solitario). El dueño eligio medir mejor y NO subir el presupuesto (ficha
+# EXT-8-06).
 PRESUPUESTO_IMPORT_CLI_S = 0.3
-CORRIDAS_IMPORTTIME = 3
+CORRIDAS_IMPORTTIME = 7
 
 # Tamano de la memoria por punto, MEDIDO despues de corregir (ficha EXT-8-01
 # de decisiones_diferidas.md): coste marginal por punto de la corrida a
@@ -313,7 +317,7 @@ def _importtime_de_cli() -> float:
 
 
 def test_pc10_import_cli_cabe_en_el_presupuesto_sin_weasyprint():
-    """Medido con -X importtime, minimo de tres corridas, en subproceso."""
+    """Medido con -X importtime, minimo de siete corridas, en subproceso."""
     medido = _importtime_de_cli()
     assert medido < PRESUPUESTO_IMPORT_CLI_S, (
         f"`import cli` cuesta {medido:.3f} s (minimo de "
