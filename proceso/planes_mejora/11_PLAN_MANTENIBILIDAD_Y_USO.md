@@ -255,11 +255,11 @@ estado de `ve3_estado/LEEME.md` dicen desde dónde seguir.
 | C2 plantillas | hecho | `91d561c` |
 | C3 receta PyInstaller | hecho; sin verificar el ejecutable en Windows ni WeasyPrint empaquetado | `acb961d` |
 | C4 mensajes de la pestaña 4 | hecho; corregido el import de `MH_hidrologia` que rompía la regla de T-1 | `c93e7bd`, `fe60c5c` |
-| D0 AST de subpaquetes | hecho | `030d208` |
+| D0 AST de subpaquetes | hecho; corregido `base / "__init__.py"`, que la guardia de aritmética del índice (test `lento`) rechazaba | `030d208`, `571accc` |
 | D1 `M9_cabezal/` | hecho; corregidas tres guardias que seguían leyendo `M9_cabezal.py` | `ab63aba`, `198aa65` |
 | D2 `src/criterios/` | **en curso** (cableado de la huella, escritura permanente, guardias y anclas) | `0b8c4a7` (WIP) |
 | D3 `modelos.py` | **en curso** | — |
-| D3 `M11_reporte.py` | **en curso** | — |
+| D3 `M11_reporte.py` | hecho: 18 archivos de < 700 líneas, memoria HTML/CSV/JSON idéntica byte a byte (salvo fecha) en las 5 corridas de referencia; guardias por AST sobre todo el subpaquete (`tests/apoyo/fuente_m11.py`) | `ac43c6e` (fusión `5b765f4`) |
 | D3 `constantes_normativas.py` | **en curso** | — |
 
 **La CI rápida sobre la punta de `v2` (`0b8c4a7`, run `45196377613`)**: 59
@@ -283,7 +283,10 @@ máquina y sólo en el paso 6, sobre el commit final; antes daría fallos que
 todavía se están cerrando):
 
 1. Integrar las ramas de los agentes (`claude/serene-keller-2p7pcs-d2`,
-   `-d3-modelos`, `-d3-m11`, `-d3-constantes`) en `claude/serene-keller-2p7pcs`.
+   `-d3-modelos`, `-d3-constantes`) en `claude/serene-keller-2p7pcs`
+   (`-d3-m11` ya integrada en `5b765f4`). Al integrar D2, reaplicar la huella
+   en `src/modulos/M11_reporte/_base.py` (`ARCHIVO_CRITERIOS`) y
+   `trazabilidad.py` (`criterios_fecha`).
 2. Normalizar los saltos de línea: 22 archivos de `v2` se subieron con CRLF
    desde Windows (`conftest.py`, `pyproject.toml`, `requirements-dev.txt`,
    `.gitignore`, `docs/decisiones_diferidas.md`, `src/responsable.py`,
