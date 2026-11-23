@@ -464,7 +464,7 @@ registro.
 | D3-01 | `modelos.py` partido en el paquete `src/modelos/` | cerrada |
 | D3-02 | `M11_reporte.py` partido en el subpaquete `src/modulos/M11_reporte/` | cerrada |
 | D3-03 | `constantes_normativas.py` no se partió | diferida / declarada |
-| EXT-8-06 | El presupuesto de `import cli` se mide con el mínimo de siete corridas | diferida / declarada |
+| EXT-8-06 | El presupuesto de `import cli` se mide con el mínimo de siete corridas, en tiempo de CPU | diferida / declarada |
 
 ---
 
@@ -10255,7 +10255,7 @@ impreso que no es de cálculo: la huella de los criterios.
   texto (cifras de D3-02 y D3-03, estado del plan) están aplicados.
 - **Dónde vive:** `src/constantes_normativas.py::Y_SOBRE_D_MAX`
 
-## EXT-8-06 · El presupuesto de `import cli` se mide con el mínimo de siete corridas
+## EXT-8-06 · El presupuesto de `import cli` se mide con el mínimo de siete corridas, en tiempo de CPU
 
 - **Qué se difirió:** subir el presupuesto de 0.30 s. El hallazgo H2 de la
   auditoría del cierre de VE-7 midió el test intermitente: en reposo el
@@ -10267,4 +10267,14 @@ impreso que no es de cálculo: la huella de los criterios.
 - **Qué haría falta:** si con siete vuelve a fallar en una máquina cargada,
   medir de nuevo en reposo antes de tocar el presupuesto: un import que de
   verdad pasa de 0.30 s es una regresión de PC-10, no ruido.
-- **Dónde vive:** `tests/test_ext8_rendimiento_gui.py::CORRIDAS_IMPORTTIME`
+- **Segunda decisión del dueño (integración del plan, 2026-11-23): medir tiempo de CPU.**
+  Con el mínimo de siete, la CI volvió a fallar en una de las dos ejecuciones del mismo commit
+  (0.351 s), y en reposo `main` y la rama medían lo mismo (mínimo 0.256 frente a 0.268 s): el
+  reloj subía por la CPU que ocupan los otros workers de xdist, no por el import. Desde aquí
+  el test mide `time.process_time()` alrededor de `import cli` en el subproceso; el
+  presupuesto (0.30 s) y el mínimo de siete no cambian. Medido con cuatro procesos quemando
+  CPU: el reloj da un mínimo de 0.69 a 0.88 s; el tiempo de CPU, 0.280 a 0.293 s.
+  `thread_time` se probó y da lo mismo; se eligió el del proceso, que es lo que el dueño pidió.
+  El margen sigue siendo estrecho (en reposo, unos 0.27 s de CPU): bajarlo es abaratar el
+  import (el tiempo propio de `src.modelos` es de unos 100 ms), no relajar el test.
+- **Dónde vive:** `tests/test_ext8_rendimiento_gui.py::CORRIDAS_IMPORT_CLI`

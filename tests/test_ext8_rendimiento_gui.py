@@ -14,7 +14,8 @@ corregir. Cuatro bloques, uno por punto ciego:
          `scipy.optimize` en el import de M3/M4 (232 ms) y
          `variables_entrada` parseaba el AST de trece modulos al importar
          (~140 ms). Presupuesto: `import cli` < 0.3 s sin weasyprint, medido
-         con `-X importtime`, y ninguno de los tres cargado tras el import.
+         como tiempo de CPU del import (con `-X importtime` hasta la
+         ficha EXT-8-06), y ninguno de los tres cargado tras el import.
   PC-11  el PDF corria en el HILO DE TK (11 s / 287 MB para 4 puntos; 360 s y
          5.7 GB para 200). Sale a un SUBPROCESO (`cli.py --sesion ... --pdf`),
          con progreso por lineas de stdout, cancelacion terminando el
@@ -75,16 +76,21 @@ PLANTILLAS = (RAIZ / "src" / "plantillas" / "memoria_alcantarillas.html",
 # y `gui/exportacion_pdf` todavia inexistentes, importados con guardia), y
 # liberado al corregir.
 
-# El presupuesto del prompt: `import cli` < 0.3 s sin weasyprint. Se mide con
-# `-X importtime` en un subproceso limpio y se toma el MINIMO de siete
-# corridas, porque lo que se acota es el coste del import y no el ruido de
-# la maquina. Eran tres hasta el H2 de la auditoria del cierre de VE-7: con
-# la medida en reposo en 0.22-0.26 s, un minimo de tres no filtraba la carga
-# de la suite en paralelo (0.390 s en la corrida completa, 1 de 3 en
-# solitario). El dueño eligio medir mejor y NO subir el presupuesto (ficha
-# EXT-8-06).
+# El presupuesto del prompt: `import cli` < 0.3 s sin weasyprint. Se mide en
+# un subproceso limpio y se toma el MINIMO de siete corridas, porque lo que
+# se acota es el coste del import y no el ruido de la maquina. Eran tres
+# hasta el H2 de la auditoria del cierre de VE-7, que el dueño resolvio
+# midiendo mejor y sin subir el presupuesto (ficha EXT-8-06).
+#
+# Desde la integracion del plan de mantenibilidad se mide TIEMPO DE CPU del
+# proceso (`time.process_time()` alrededor de `import cli`), no tiempo de
+# reloj (`-X importtime`): con la suite en paralelo los otros workers de
+# xdist ocupan la CPU del runner y el reloj medido sube sin que el import
+# cueste mas (0.351 s en una ejecucion de la CI y en verde en otra del MISMO
+# commit; en reposo, main y la rama miden lo mismo). Decision del dueño, la
+# opcion 1 de las tres que se le propusieron: el presupuesto no cambia.
 PRESUPUESTO_IMPORT_CLI_S = 0.3
-CORRIDAS_IMPORTTIME = 7
+CORRIDAS_IMPORT_CLI = 7
 
 # Tamano de la memoria por punto, MEDIDO despues de corregir (ficha EXT-8-01
 # de decisiones_diferidas.md): coste marginal por punto de la corrida a
@@ -298,30 +304,34 @@ def memoria_expediente(informe_expediente):
 # PC-10 - imports perezosos y presupuesto de `import cli`
 # ===========================================================================
 
-def _importtime_de_cli() -> float:
-    """El coste acumulado de `import cli`, en segundos, sin weasyprint."""
-    programa = ("import sys; sys.modules['weasyprint'] = None; import cli")
+def _cpu_de_import_cli() -> float:
+    """
+    El tiempo de CPU de `import cli`, en segundos, sin weasyprint: el minimo
+    de `CORRIDAS_IMPORT_CLI` subprocesos limpios. `process_time` cuenta lo
+    que el proceso ejecuta (usuario + sistema) y no lo que espera a que otro
+    proceso le deje la CPU, que es lo que inflaba la medida en la CI.
+    """
+    programa = ("import sys, time; sys.modules['weasyprint'] = None\n"
+                "t0 = time.process_time(); import cli\n"
+                "print(repr(time.process_time() - t0))")
     mejor = None
-    for _ in range(CORRIDAS_IMPORTTIME):
+    for _ in range(CORRIDAS_IMPORT_CLI):
         hecho = subprocess.run(
-            [sys.executable, "-X", "importtime", "-c", programa],
+            [sys.executable, "-c", programa],
             cwd=RAIZ, capture_output=True, text=True, timeout=120)
         assert hecho.returncode == 0, hecho.stderr[-2000:]
-        for linea in hecho.stderr.splitlines():
-            partes = [p.strip() for p in linea.split("|")]
-            if len(partes) == 3 and partes[2] == "cli":
-                acumulado = int(partes[1]) / 1e6
-                mejor = acumulado if mejor is None else min(mejor, acumulado)
-    assert mejor is not None, "no aparecio la linea de `cli` en -X importtime"
+        medido = float(hecho.stdout.strip().splitlines()[-1])
+        mejor = medido if mejor is None else min(mejor, medido)
+    assert mejor is not None, "ninguna corrida devolvio su tiempo de CPU"
     return mejor
 
 
 def test_pc10_import_cli_cabe_en_el_presupuesto_sin_weasyprint():
-    """Medido con -X importtime, minimo de siete corridas, en subproceso."""
-    medido = _importtime_de_cli()
+    """Tiempo de CPU del import, minimo de siete corridas, en subproceso."""
+    medido = _cpu_de_import_cli()
     assert medido < PRESUPUESTO_IMPORT_CLI_S, (
-        f"`import cli` cuesta {medido:.3f} s (minimo de "
-        f"{CORRIDAS_IMPORTTIME}); el presupuesto es "
+        f"`import cli` cuesta {medido:.3f} s de CPU (minimo de "
+        f"{CORRIDAS_IMPORT_CLI}); el presupuesto es "
         f"{PRESUPUESTO_IMPORT_CLI_S} s")
 
 
