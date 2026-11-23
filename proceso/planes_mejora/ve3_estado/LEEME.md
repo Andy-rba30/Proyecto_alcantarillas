@@ -3,14 +3,40 @@
 Material de proceso, no del entregable. Lo mantiene la sesión orquestadora y se actualiza
 cada vez que se integra algo. Fecha de esta versión: 2026-11-23.
 
-> **ESTADO (2026-11-23, tarde, sesión `claude/nifty-brahmagupta-rfj9o6`, PR #47): integración
-> del plan de mantenibilidad.** Contiene a `claude/serene-keller-2p7pcs` y a sus ramas de agentes
-> (`-d2` fusionada en `d027a7e`; `-d3-m11` y `-d3-modelos` ya lo estaban); `-d3-constantes` nunca
-> se subió y la ficha D3-03 la difiere (dictamen Fable). Pasos 1 a 5 de la sección 8 del plan:
-> hechos. Paso 6 (cierra H1): suite completa en esta nube con `NORMAS_DIR`, Tk (`xvfb-run`) y
-> Python 3.12, en worktree limpio; sello con el par medido y una segunda corrida que lo confirma.
-> Paso 7: fast-forward de `main`, sólo con la autorización del dueño. **Si la sesión se corta:**
-> retomar desde `claude/nifty-brahmagupta-rfj9o6`.
+> **ESTADO (2026-11-23, ~17:05 UTC, sesión `claude/nifty-brahmagupta-rfj9o6`, PR #47).**
+> Rama de trabajo: `claude/nifty-brahmagupta-rfj9o6`, que contiene TODAS las ramas del repositorio
+> (`claude/serene-keller-2p7pcs` y sus `-d2`, `-d3-m11` y `-d3-modelos`, `v2/mantenibilidad-y-uso`,
+> `claude/youthful-babbage-9njfr2`). `-d3-constantes` nunca se subió: la ficha D3-03 la difiere
+> (dictamen Fable). Pasos 1 a 5 de la sección 8 del plan: hechos.
+>
+> **Decisiones del dueño en esta sesión:**
+> 1. H2: el test de `import cli` mide **tiempo de CPU** (`process_time`) con el mismo presupuesto
+>    de 0.30 s y el mínimo de siete corridas (`017b102`, ficha EXT-8-06).
+> 2. **Fast-forward de `main` AUTORIZADO** en cuanto la suite completa termine y el sello quede
+>    puesto.
+> 3. Después del fast-forward, **auditoría independiente con Fable** (`model: "fable"`) sobre el
+>    `main` final: nota global sobre 10 y nota del eje «mantenibilidad y uso», comparables con el
+>    8.5 y el 6.5 de la auditoría anterior.
+> 4. Después de la auditoría, las normas N1, N2 y N3 de `proceso/planes_mejora/12_PLAN_NORMAS_2.md`
+>    (Manual de Puentes 2018, marco legal y HEC-11).
+>
+> **En curso:** primera suite completa en el worktree limpio (`6ecf170`, Linux, Python 3.12,
+> `xvfb-run`, `NORMAS_DIR` = clon de `Andy-rba30/normas`, `-n 4 --dist loadfile`). Se esperan
+> sólo los dos fallos de sello PROVISIONAL.
+>
+> **Lo que falta, en orden:**
+> 1. Sellar con el par medido: `python -m src.indice_formulas --escribir --suite "<par>"` y
+>    `python -m src.normativa.manifiesto --escribir --suite "<par>"`.
+> 2. Una segunda corrida completa sobre el árbol final, que confirme el par. El cambio de
+>    `017b102` llegó después de lanzar la primera.
+> 3. Fila en `proceso/bitacora_conteos_y_entorno.md` y cierre de H1.
+> 4. Fast-forward de `main`.
+> 5. Auditoría de Fable.
+> 6. N1, N2 y N3.
+>
+> **Si la sesión se corta:** retomar desde `claude/nifty-brahmagupta-rfj9o6` con
+> `PROMPT_RETOMAR.md` (paso 2, «Entorno», para el clon de normas, Tk y Python 3.12) y seguir esta
+> lista; el fast-forward ya está autorizado por el dueño.
 
 > **ESTADO ANTERIOR (2026-11-23, sesión `claude/serene-keller-2p7pcs`): plan de mantenibilidad y uso.**
 > El cierre de VE-7 de abajo está TERMINADO (lo confirma la auditoría

@@ -7,7 +7,7 @@ Retoma el cierre del proyecto Proyecto_alcantarillas donde se cortó la sesión 
 
 1. ESTADO PRIMERO
    - `git fetch origin --tags` y `git ls-remote --heads origin`.
-   - Lee `proceso/planes_mejora/ve3_estado/LEEME.md` de la rama más avanzada (`git ls-remote --heads origin`: desde el 2026-11-23 es la de la sesión que retoma el plan de mantenibilidad, `claude/serene-keller-2p7pcs`, o la que la contenga; compara con `git log A..B` y usa la que contenga a las demás). El bloque más reciente («CIERRE ... EN CURSO» / «ESTADO») dice qué está hecho, qué falta y desde dónde seguir.
+   - Lee `proceso/planes_mejora/ve3_estado/LEEME.md` de la rama más avanzada (`git ls-remote --heads origin`: desde el 2026-11-23 por la tarde es `claude/nifty-brahmagupta-rfj9o6`, que contiene a `claude/serene-keller-2p7pcs` y a sus ramas, o la que la contenga; compara con `git log A..B` y usa la que contenga a las demás). El bloque más reciente («CIERRE ... EN CURSO» / «ESTADO») dice qué está hecho, qué falta y desde dónde seguir.
    - Revisa TODAS las ramas: para cada una, `git rev-list --count <rama_más_avanzada>..<rama>`; lo que no esté contenido, lee sus commits y fichas en `docs/decisiones_diferidas.md` y decide si falta integrarlo o está superado (dilo).
    - Dime en pocas líneas qué falta antes de seguir, y sigue.
 
