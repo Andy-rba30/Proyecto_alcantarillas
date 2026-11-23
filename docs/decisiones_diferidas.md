@@ -474,7 +474,7 @@ registro.
   es la única alternativa que no inventa una medición.
 - **Qué haría falta:** la cota de fondo levantada en campo, por punto, como
   columna del CSV.
-- **Dónde vive:** `src/criterios_adoptados.py::origen_cota_fondo_entrada`
+- **Dónde vive:** `src/criterios/verificaciones.py::origen_cota_fondo_entrada`
 
 ## SIS-A-13 · V2b (sedimentación / colmatación) — IMPLEMENTADA en S20
 
@@ -723,7 +723,7 @@ registro.
   **no se ha ejecutado ninguna lectura**.
 - **Qué haría falta:** el ensayo. La trazabilidad ya dice cómo se reproducirá
   la lectura cuando exista.
-- **Dónde vive:** `src/criterios_adoptados.py::clase_sitio`
+- **Dónde vive:** `src/criterios/sismo.py::clase_sitio`
 
 ## SIS-D-09 · `datos_sitio.py` no tenía guardia al importar
 
@@ -738,7 +738,7 @@ registro.
 - **Qué se difirió:** nada, ya.
 - **Por qué:** se cerró en S14 consolidando las afirmaciones negativas.
 - **Qué haría falta:** nada. Cerrado.
-- **Dónde vive:** `src/criterios_adoptados.py::v_max_tmc`
+- **Dónde vive:** `src/criterios/hidraulica.py::v_max_tmc`
 
 ## SIS-E-02 · M9 usaba `DatoInvalidoError` para validar argumentos internos
 
@@ -931,7 +931,7 @@ condición escrita.
   num. 6 a 11 de A796 sobre las tablas ya transcritas (dicho en el plan
   ANTES, con caso patrón y en commit propio); para el concreto, transcribir
   las Tablas 1 a 5 de M 170M por imagen.
-- **Dónde vive:** `src/criterios_adoptados.py::clases_producto_por_relleno`
+- **Dónde vive:** `src/criterios/conducto.py::clases_producto_por_relleno`
 
 ## NOR-ANA-03 · La analogía de embocadura del HDPE
 
@@ -956,7 +956,7 @@ condición escrita.
   por su resultado sería sustituir una analogía por otra.
 - **Qué haría falta:** el detalle constructivo de la embocadura. Es contenido
   de planos.
-- **Dónde vive:** `src/criterios_adoptados.py::hds5_embocadura_hdpe`
+- **Dónde vive:** `src/criterios/hidraulica.py::hds5_embocadura_hdpe`
 
 ## SIS-F-01 · La GUI y sus tests de contrato
 
@@ -1164,7 +1164,7 @@ M8 y de M11 que su propio alcance excluye.
   consume la función.
 - **Qué haría falta:** que `M8.factores_carga_flotacion` elija la clave por
   **forma** y no por material, como ya hace `M4.criterio_ke_de`. Es C7.
-- **Dónde vive:** `src/criterios_adoptados.py::factores_carga_aashto`
+- **Dónde vive:** `src/criterios/cabezal_base.py::factores_carga_aashto`
 
 ## C5-02 · `ke_entrada` sigue declarando un número y `ke_entrada_cajon` una fila
 
@@ -1429,7 +1429,7 @@ necesita y que no queda escrita en ningún otro registro.
   1.35 / 0.90.
 - **Qué haría falta:** nada — cerrado; la lectura vinculante quedó en la
   justificación del criterio, en presente y sin narración.
-- **Dónde vive:** `src/criterios_adoptados.py::factores_carga_aashto`
+- **Dónde vive:** `src/criterios/cabezal_base.py::factores_carga_aashto`
 
 ## R2a-02 · `HW_D_max`: V4b estuvo declarado y sin cablear a propósito
 
@@ -1444,7 +1444,7 @@ necesita y que no queda escrita en ningún otro registro.
   HDS-5 describe práctica de agencias y no prescribe HW/D; etiqueta [A]— y el
   cableado a `M5.v4b_relacion_hw_d` vino después, en S14.
 - **Qué haría falta:** nada — cerrado.
-- **Dónde vive:** `src/criterios_adoptados.py::HW_D_max`
+- **Dónde vive:** `src/criterios/hidraulica.py::HW_D_max`
 
 ## R2a-03 · `espesor_pared_conducto`: la cifra del código (−33.1 %) no es la de la ficha MAT-D3 (−31.6 %)
 
@@ -1458,7 +1458,7 @@ necesita y que no queda escrita en ningún otro registro.
   criterio ya solo lleva esa.
 - **Qué haría falta:** nada para esta ficha; el día que la Fase 8 especifique
   el producto, la cifra se recalcula con su espesor real.
-- **Dónde vive:** `src/criterios_adoptados.py::espesor_pared_conducto`
+- **Dónde vive:** `src/criterios/geotecnia.py::espesor_pared_conducto`
 
 ---
 
@@ -1491,7 +1491,7 @@ y que no queda escrita en ningún otro registro.
   sin esta ficha, la lección «una cita falsa se cree» quedaba solo en git.
 - **Qué haría falta:** nada — cerrado; el pendiente vivo del criterio es la
   medición (Vs30/N/su), declarada en su `resolucion`.
-- **Dónde vive:** `src/criterios_adoptados.py::clase_sitio`
+- **Dónde vive:** `src/criterios/sismo.py::clase_sitio`
 
 ## R2b-02 · `cortante_alto_muro_e060_art_11_10_10_2`: el umbral 0.5·φ·Vc era una atribución inventada
 
@@ -1508,7 +1508,7 @@ y que no queda escrita en ningún otro registro.
   viven aquí y en el tracker.
 - **Qué haría falta:** nada — cerrado; el pendiente vivo del criterio es la
   demanda Vu, que espera a `procedimiento_flexion_corte_aashto_sec5`.
-- **Dónde vive:** `src/criterios_adoptados.py::cortante_alto_muro_e060_art_11_10_10_2`
+- **Dónde vive:** `src/criterios/cabezal_base.py::cortante_alto_muro_e060_art_11_10_10_2`
 
 ## R2b-03 · `k_v`: la sensibilidad numérica (0.0, 0.5) retirada, y las tres formas del rango
 
@@ -1526,7 +1526,7 @@ y que no queda escrita en ningún otro registro.
 - **Qué haría falta:** nada — cerrado; si algún caso reservado del numeral
   se diera en esta obra, el número sería del proyectista y entraría como
   valor del criterio, no como sensibilidad.
-- **Dónde vive:** `src/criterios_adoptados.py::k_v`
+- **Dónde vive:** `src/criterios/sismo.py::k_v`
 # Parte XII — Lo que S24 anotó sin abrir
 
 ## S24-01 · Las claves externas sin techo, y el punto de decisión de `longitud_m`
@@ -2187,7 +2187,7 @@ Tres decisiones se apartaron de la letra del prompt o merecen quedar escritas.
 - **Qué haría falta:** nada; queda escrito para que la familia no crezca sin
   argumento. Si una novena forma aparece, entra con su clave, su consumidor y
   su rama en `_cumple_la_forma`, no como excepción en un test.
-- **Dónde vive:** `src/criterios_adoptados.py::FORMA_SERIE_DE_CLAVES`
+- **Dónde vive:** `src/criterios/_base.py::FORMA_SERIE_DE_CLAVES`
 
 ## EXT-5-02 · La forma va última, y las guardias de los consumidores se quedan
 
@@ -2255,7 +2255,7 @@ Tres decisiones se apartaron de la letra del prompt o merecen quedar escritas.
   ventana de esas claves pase a `DeTabla` con la fila como clave, como ya
   hacen `embocadura_cajon` y `ke_entrada_cajon`); entonces pasan a
   `categoria` una a una.
-- **Dónde vive:** `src/criterios_adoptados.py::FORMA_CATEGORIA`
+- **Dónde vive:** `src/criterios/_base.py::FORMA_CATEGORIA`
 
 ---
 
@@ -3072,7 +3072,7 @@ cada una lleva su argumento y su símbolo.
   la condición la fija la pág. 3.12 (EA-03).
 - **Qué haría falta:** que la fuente cuantifique «most»; entonces el número
   pasa a [N] y la `Interpretacion` se retira.
-- **Dónde vive:** `src/criterios_adoptados.py::fraccion_llena_mayor_parte`
+- **Dónde vive:** `src/criterios/hidraulica.py::fraccion_llena_mayor_parte`
 
 ## EA-06 · Veinticuatro mutantes del perfil sobreviven a toda la suite, y cada uno tiene su razón escrita
 
@@ -4222,7 +4222,7 @@ lo que la cadena suponía y la fuente no sostiene.
 - **Qué haría falta:** para volver a [C], una fuente que fije una velocidad máxima
   para la tubería metálica corrugada; ninguna de las seis consultadas lo hace (la
   ficha las lista con página).
-- **Dónde vive:** `src/criterios_adoptados.py::v_max_tmc`
+- **Dónde vive:** `src/criterios/hidraulica.py::v_max_tmc`
 
 ## T4-04 · La matriz de durabilidad filtra de verdad, con ensayos opcionales que entran por `--datos-externos` y no por `CLAVES_EXTERNAS`
 
@@ -4279,7 +4279,7 @@ lo que la cadena suponía y la fuente no sostiene.
 - **Qué haría falta:** un estudio de suelos que diga, para la obra, qué grupos tratar
   como deficientes (se declara en el criterio); y la Sec. 9.3 ensamblada para el
   otro consumidor.
-- **Dónde vive:** `src/criterios_adoptados.py::sucs_fundacion_deficiente`
+- **Dónde vive:** `src/criterios/geotecnia.py::sucs_fundacion_deficiente`
 
 ## T4-06 · `DIAMETRO_MIN_TMC_SELVA_ALTA_RECOMENDADO` se conserva sin consumidor: la «rama inactiva» de la hoja de ruta no existe y no se le inventa una
 
@@ -4319,7 +4319,7 @@ lo que la cadena suponía y la fuente no sostiene.
   techo de V3. M 294 no trae n.
 - **Qué haría falta:** nada para el perfil. Un fabricante con ensayo propio puede
   estrechar el rango declarándolo dentro de la ventana.
-- **Dónde vive:** `src/criterios_adoptados.py::n_manning_hdpe`
+- **Dónde vive:** `src/criterios/hidraulica.py::n_manning_hdpe`
 
 ## T4-08 · Entrada obligada de T-5: la plancha adoptada del TMC no cumple el factor de flexibilidad hasta su tope, y `espesor_pared` de TMC y HDPE es una ENVOLVENTE geométrica
 
@@ -4378,7 +4378,7 @@ lo que la cadena suponía y la fuente no sostiene.
 - **Qué haría falta:** una población de datos opcionales en `variables_entrada`, con
   ficha en la ayuda del JSON y panel en la pestaña 1, que el pre-vuelo no cuente
   como falta; y un criterio de agresividad escrito para tubería de acero corrugado.
-- **Dónde vive:** `src/criterios_adoptados.py::suelo_agresivo_lrfd_sobre_tmc`
+- **Dónde vive:** `src/criterios/geotecnia.py::suelo_agresivo_lrfd_sobre_tmc`
 
 ## T4-10 · Un dato que falta en un candidato anterior bloquea la aceptación de uno posterior: el «caso mixto» de PC-28 cambia
 
@@ -5360,7 +5360,7 @@ se corrigieron donde las auditorías las desmintieron (cada una lo dice).
   corrida que excluye el concreto (y el TMC) por catálogo.
 - **Qué haría falta:** las especificaciones técnicas del expediente (cama,
   relleno, producto) y la declaración del propietario sobre la vía.
-- **Dónde vive:** `src/criterios_adoptados.py::instalacion_estandar_concreto`
+- **Dónde vive:** `src/criterios/conducto.py::instalacion_estandar_concreto`
 
 ## T5-10 · Sin el perfil del fabricante el HDPE queda «no verificado con un producto real», no se adopta, y el punto no sale «no factible»
 
@@ -5525,7 +5525,7 @@ Doce fichas; las cinco últimas son de la auditoría.
   la Junta de Usuarios) para ampliar la progresión —alturas de 0.60 y 0.75 m, más
   anchos— siguiendo al canal; y la ficha T3-08 si se quiere medir la de la cadena con el
   peso propio del marco.
-- **Dónde vive:** `src/criterios_adoptados.py::secciones_cajon_normalizadas`
+- **Dónde vive:** `src/criterios/geotecnia.py::secciones_cajon_normalizadas`
 
 ## T3-02 · La embocadura del marco es la de aletas de 30° a 75°, la de hoy; la de cabezal recto se midió y da otra carga
 
@@ -5540,7 +5540,7 @@ Doce fichas; las cinco últimas son de la auditoría.
   corte longitudinal y no muestra el ángulo de las aletas.
 - **Qué haría falta:** T-7a, que dimensiona el cabezal y los aleros por punto, cierra la
   coherencia entre la geometría de los aleros, la carta y el ke.
-- **Dónde vive:** `src/criterios_adoptados.py::embocadura_cajon`
+- **Dónde vive:** `src/criterios/geotecnia.py::embocadura_cajon`
 
 ## T3-03 · VC2 avisa y no detiene, con la tolerancia de una placa de concreto del EG-2013 por analogía
 
@@ -5666,7 +5666,7 @@ Doce fichas; las cinco últimas son de la auditoría.
   no la sección ni el HW de entrada (README de la línea base). Con dos tablas la
   resolución no fija `fila_id`; la alternativa se declara por la CLI o se barre con nota.
 - **Qué haría falta:** la ficha técnica del encofrado del marco, que diría el n real.
-- **Dónde vive:** `src/criterios_adoptados.py::n_manning_cajon`
+- **Dónde vive:** `src/criterios/geotecnia.py::n_manning_cajon`
 
 ## T3-10 · G1 del marco avisa cuando sólo falta la cobertura adoptada por analogía
 
@@ -5693,7 +5693,7 @@ Doce fichas; las cinco últimas son de la auditoría.
   presentaría como lectura de la norma.
 - **Qué haría falta:** el cálculo estructural del pórtico, que haría del espesor un
   resultado.
-- **Dónde vive:** `src/criterios_adoptados.py::espesor_pared_cajon`
+- **Dónde vive:** `src/criterios/geotecnia.py::espesor_pared_cajon`
 
 ## T3-12 · Las correcciones de la auditoría se escribieron antes del código, y su rojo se midió
 
@@ -5744,7 +5744,7 @@ Doce fichas; las cinco últimas son de la auditoría.
   que la Fase 10 no implementa—; (ii) el talud de corte del EMS por tramo; (iii) la velocidad
   de diseño y el IMDA de la vía, para cerrar el aviso de la Tabla 304.12; (iv) si la sección
   cambia entre tramos, el criterio pasa a dato externo por punto.
-- **Dónde vive:** `src/criterios_adoptados.py::seccion_cuneta`
+- **Dónde vive:** `src/criterios/hidraulica.py::seccion_cuneta`
 
 ## T9-02 · El aporte por metro: con el tramo conocido, Q / s; sin él, q · b con la longitud implícita avisada
 
@@ -6083,7 +6083,7 @@ sobre el árbol corregido, y cada una dice qué cambió.
   alcanzaría a E.060, y el dueño la remitió a T-7c (2026-11-13).
 - **Qué haría falta:** el plano tipo de cabezal, el EMS (φ) para que T-7b diga si el
   material de más ayuda, o el PDF de VARIOS en `normas/`.
-- **Dónde vive:** `src/criterios_adoptados.py::predimensionamiento_cabezal`
+- **Dónde vive:** `src/criterios/cabezal_base.py::predimensionamiento_cabezal`
 
 ## T7A-05 · El desplante de salida y el dentellón bajan hasta la socavación con el margen de AASHTO 12.6.5, leído como aplicable al cabezal
 
@@ -6183,7 +6183,7 @@ sobre el árbol corregido, y cada una dice qué cambió.
   sin leer el código pensará que E.050 rige el cabezal vial como norma propia.
 - **Qué haría falta:** que T-7b corrija la §9.3 al ensamblar la estabilidad (el dictamen
   del verificador ya lo pide).
-- **Dónde vive:** `src/criterios_adoptados.py::profundidad_cimentacion_min_cabezal_m`
+- **Dónde vive:** `src/criterios/cabezal_base.py::profundidad_cimentacion_min_cabezal_m`
 
 # Parte L — Lo que T-7b de la cadena T dejó escrito: la estabilidad del cabezal en dos marcos, y V5 y V8 con método declarable
 
@@ -6342,7 +6342,7 @@ marca del régimen para T-7c.
   contra el trasdós (coronación menos bordillo, z_rel), **nunca por encima del muro**;
   la FASE A la subía hasta el terreno sobre el extremo del talón (en la entrada de A-01,
   43.78 msnm contra 43.55 de la coronación). `HIPOTESIS_EMPUJE_BAJO_NF` dice lo mismo.
-- **Dónde vive:** `src/criterios_adoptados.py::drenaje_trasdos`
+- **Dónde vive:** `src/criterios/cabezal_calculo.py::drenaje_trasdos`
 
 ## T7B-06 · Mononobe-Okabe solo dentro de su dominio: con el k_h de archivo la condición sísmica no se evalúa
 
@@ -6595,7 +6595,7 @@ marca del régimen para T-7c.
   ficha T7C-02.
 - **Cerrado en VE-5 (lote M9, 2026-11-20):** `no_cedente` se calcula; ver la ficha
   VE5M9-01 al final de este registro.
-- **Dónde vive:** `src/criterios_adoptados.py::regimen_cabezal`
+- **Dónde vive:** `src/criterios/cabezal_calculo.py::regimen_cabezal`
 
 # Parte LI — Lo que T-7c de la cadena T dejó escrito: el armado del cabezal y su alternativa ciclópea
 
@@ -6663,7 +6663,7 @@ fichas en su sitio y añadió T7C-11 a T7C-13.
 - **Qué haría falta:** un análisis de la interacción del cabezal con el relleno, el barril
   y los aleros que diga cuánto se desplaza la pantalla; y, bajo sismo, las presiones de
   muro rígido (Wood, 1973) o un análisis numérico aprobado por el Propietario.
-- **Dónde vive:** `src/criterios_adoptados.py::regimen_resistencia_elementos_cabezal`
+- **Dónde vive:** `src/criterios/cabezal_calculo.py::regimen_resistencia_elementos_cabezal`
 
 ## T7C-03 · El cortante se verifica con el procedimiento simplificado donde la fuente lo permite; fuera de él no se evalúa, y la pantalla se trata como losa
 
@@ -6887,7 +6887,7 @@ fichas en su sitio y añadió T7C-11 a T7C-13.
 - **Qué haría falta:** una sesión que pase `CUANTIA_MIN_MURO` a un criterio [N→] y
   resincronice el manifiesto y los consumidores.
 - **Cerrado en VE-6:** es el criterio [N→] `cuantia_minima_muro_e060`; ficha VE6M9-02.
-- **Dónde vive:** `src/criterios_adoptados.py::cuantia_minima_muro_e060`
+- **Dónde vive:** `src/criterios/cabezal_calculo.py::cuantia_minima_muro_e060`
 
 ## T7C-11 · El modificador de carga η no entra en el cabezal: la fuente lo sostiene, pero el cambio no es acotado
 
@@ -6922,7 +6922,7 @@ fichas en su sitio y añadió T7C-11 a T7C-13.
   sobre η_R del cabezal (1.3.4: una pantalla en voladizo es un elemento de un solo
   camino de carga, y «nonredundant members» pide ≥ 1.05; el valor de T-5, 1.00, viene
   de 12.5.4, que es de estructuras ENTERRADAS y no alcanza al cabezal).
-- **Dónde vive:** `src/criterios_adoptados.py::eta_importancia_operativa_conducto`
+- **Dónde vive:** `src/criterios/conducto.py::eta_importancia_operativa_conducto`
 
 ## T7C-12 · La pantalla y el alero integran cada diagrama por encima del arranque; el incremento sísmico se reparte con el diagrama lineal de su resultante
 
@@ -9091,7 +9091,7 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   ventana. El agente no pudo consultar a Fable y tomó la conservadora.
 - **Qué haría falta:** la solución de muro rígido de Wood (1973) o un análisis numérico
   aprobado por el Propietario (11.6.5.4), que no están en el repositorio de normas.
-- **Dónde vive:** `src/criterios_adoptados.py::empuje_sismico_muro_que_no_cede`
+- **Dónde vive:** `src/criterios/cabezal_calculo.py::empuje_sismico_muro_que_no_cede`
 
 ## VE5M9-02 · La cuña de tanteo sísmica donde M-O no es aceptable y sobre el trasdós inclinado (VE-5, ficha T7B-06)
 
@@ -9180,7 +9180,7 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   retiro del contraste de E.060 si el proyecto adopta sólo AASHTO 5.10.6, o el ejercicio
   declarado de 14.8.2».
 - **Qué haría falta:** nada.
-- **Dónde vive:** `src/criterios_adoptados.py::cuantia_minima_muro_e060`
+- **Dónde vive:** `src/criterios/cabezal_calculo.py::cuantia_minima_muro_e060`
 
 ## VE6M9-03 · El alero se arma por sus propias secciones y su espesor se dimensiona por su armado (VE-6, ítem 9; VE3-14 H-13, T7B-08 (3), T7C-04)
 
