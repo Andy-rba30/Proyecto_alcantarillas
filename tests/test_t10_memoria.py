@@ -494,9 +494,8 @@ def test_todo_A_usado_sale_en_el_anexo_con_su_ventana(corrida):
 
 def test_el_anexo_no_recalcula():
     """El anexo lee la ventana de la ficha; el barrido es PF-3, aparte."""
-    fuente = (RAIZ / "src" / "modulos" / "M11_reporte.py").read_text(
-        encoding="utf-8")
-    arbol = ast.parse(fuente)
+    from tests.apoyo.fuente_m11 import arbol_m11
+    arbol = arbol_m11()
     for nombre in ("anexo_sensibilidad", "criterios_A_por_punto"):
         nodo = next(n for n in ast.walk(arbol)
                     if isinstance(n, ast.FunctionDef) and n.name == nombre)
@@ -821,8 +820,8 @@ def test_h6_el_aviso_de_la_V8_acotada_sale_una_vez_en_el_HTML(expediente):
 
 def test_h7_la_excentricidad_se_publica_desde_el_dato():
     fuente_cli = (RAIZ / "cli.py").read_text(encoding="utf-8")
-    fuente_m11 = (RAIZ / "src" / "modulos" / "M11_reporte.py").read_text(
-        encoding="utf-8")
+    from tests.apoyo.fuente_m11 import fuente_m11 as _fuente_m11
+    fuente_m11 = _fuente_m11()
     for fuente in (fuente_cli, fuente_m11):
         arbol = ast.parse(fuente)
         usos = [n for n in ast.walk(arbol) if isinstance(n, ast.Attribute)

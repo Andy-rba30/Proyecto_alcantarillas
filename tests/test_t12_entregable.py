@@ -404,7 +404,8 @@ def test_la_advertencia_la_pone_el_generador_y_no_el_programa():
     """
     script = (LINEA_BASE / "regenerar.sh").read_text(encoding="utf-8")
     assert "python3 -m tests.apoyo.rotulo_fixture" in script
-    for fuente in (RAIZ / "src" / "modulos" / "M11_reporte.py", RAIZ / "cli.py",
+    from tests.apoyo.fuente_m11 import rutas_m11
+    for fuente in (*rutas_m11(), RAIZ / "cli.py",
                    *sorted((RAIZ / "src" / "plantillas").glob("*.html"))):
         assert ROTULO_FIXTURE not in fuente.read_text(encoding="utf-8"), fuente.name
 

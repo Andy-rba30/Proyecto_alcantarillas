@@ -62,7 +62,7 @@ CSV_EJEMPLO = RAIZ / "tests" / "ejemplo_puntos.csv"
 EXTERNOS_AMPLIADOS = RAIZ / "tests" / "linea_base_familia_c" / "entradas_ampliadas.json"
 ARCHIVO_SITIO = RAIZ / "src" / "datos_sitio.py"
 GUI = RAIZ / "gui" / "app.py"
-M11_ARCHIVO = RAIZ / "src" / "modulos" / "M11_reporte.py"
+M11_ARCHIVO = RAIZ / "src" / "modulos" / "M11_reporte"   # subpaquete (D3)
 
 # Nacio con `xfail(strict=True)` en cada test que describia el estado nuevo:
 # medido en rojo ANTES de tocar codigo, 63 xfailed y 0 XPASS, y liberado al
@@ -837,7 +837,8 @@ def test_g_la_advertencia_llega_a_la_consola_y_a_la_memoria_pero_no_al_json(tmp_
 
 
 def test_g_M11_formatea_la_advertencia_y_no_la_calcula():
-    fuente = M11_ARCHIVO.read_text(encoding="utf-8-sig")
+    from tests.apoyo.fuente_m11 import fuente_m11
+    fuente = fuente_m11()
     arbol = ast.parse(fuente)
     nombres = {ast.unparse(n.func) for n in ast.walk(arbol) if isinstance(n, ast.Call)}
     assert not any(n.endswith(".casefold") for n in nombres)

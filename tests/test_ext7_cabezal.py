@@ -755,8 +755,10 @@ def test_EXT7_nada_se_cablea_a_la_cli():
         assert nombre in censo
     assert "ensamble_estabilidad" not in censo
     assert "armar_elemento" not in censo
-    for archivo in ("cli.py", "src/servicio.py", "src/modulos/M11_reporte.py"):
-        arbol = ast.parse((RAIZ / archivo).read_text(encoding="utf-8"))
+    from tests.apoyo.fuente_m11 import arbol_m11
+    for archivo in ("cli.py", "src/servicio.py", "src/modulos/M11_reporte"):
+        arbol = (arbol_m11() if archivo.endswith("M11_reporte")
+                 else ast.parse((RAIZ / archivo).read_text(encoding="utf-8")))
         llamadas = {n.func.attr for n in ast.walk(arbol)
                     if isinstance(n, ast.Call)
                     and isinstance(n.func, ast.Attribute)}

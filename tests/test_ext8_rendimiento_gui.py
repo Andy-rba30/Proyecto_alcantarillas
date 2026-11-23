@@ -388,7 +388,8 @@ def test_pc10_weasyprint_es_perezoso_y_la_sonda_conserva_el_diagnostico(monkeypa
     `FALLO_WEASYPRINT` conserva el texto ---. `WeasyHTML` sigue siendo el
     simbolo que decide la via.
     """
-    arbol = _arbol(RAIZ / "src" / "modulos" / "M11_reporte.py")
+    from tests.apoyo.fuente_m11 import arbol_m11
+    arbol = arbol_m11()
     # El unico import de weasyprint del modulo vive DENTRO de
     # `_importar_weasyprint`: ni al nivel del modulo ni dentro de un `try`
     # de nivel de modulo (que es como estaba, y que un filtro sobre
@@ -396,8 +397,15 @@ def test_pc10_weasyprint_es_perezoso_y_la_sonda_conserva_el_diagnostico(monkeypa
     dentro_de_funciones = {id(x) for f in ast.walk(arbol)
                            if isinstance(f, (ast.FunctionDef, ast.AsyncFunctionDef))
                            for x in ast.walk(f)}
+    # D3: se mira el MODULO importado, no el texto del import: el `__init__`
+    # del subpaquete reexporta `weasyprint_disponible` desde `exportadores`.
+    def _modulos_de(n):
+        if isinstance(n, ast.ImportFrom):
+            return [(n.module or "").split(".")[0]]
+        return [a.name.split(".")[0] for a in n.names]
+
     fuera = [n for n in ast.walk(arbol) if isinstance(n, (ast.ImportFrom, ast.Import))
-             and "weasyprint" in ast.unparse(n) and id(n) not in dentro_de_funciones]
+             and "weasyprint" in _modulos_de(n) and id(n) not in dentro_de_funciones]
     assert not fuera, "weasyprint sigue importandose al cargar M11"
     sonda = _funcion(arbol, "weasyprint_disponible")
     intentos = [n for n in ast.walk(sonda) if isinstance(n, ast.Try)
@@ -962,7 +970,8 @@ def test_pc12_la_memoria_se_construye_por_partes_y_el_html_se_escribe_en_streami
     partes = list(M11.memoria_html_por_partes(informe_expediente, proyecto="EXT-8"))
     assert len(partes) > len(informe_expediente.puntos)
     assert "".join(partes) == M11.memoria_html(informe_expediente, proyecto="EXT-8")
-    arbol = _arbol(RAIZ / "src" / "modulos" / "M11_reporte.py")
+    from tests.apoyo.fuente_m11 import arbol_m11
+    arbol = arbol_m11()
     exportar = ast.unparse(_funcion(arbol, "exportar_html"))
     assert "memoria_html_por_partes" in exportar
     assert "memoria_html(" not in exportar.replace("memoria_html_por_partes", "")

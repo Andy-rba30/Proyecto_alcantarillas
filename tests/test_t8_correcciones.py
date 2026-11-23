@@ -754,7 +754,9 @@ def test_h6_los_documentos_no_dicen_que_el_manual_no_pide_proteger():
     for ruta in ("docs/contrato_entradas.md",
                  "docs/hoja_de_ruta_alcantarillas_v8.md",
                  "src/modulos/M6_proteccion.py", "src/modelos.py", "cli.py",
-                 "src/modulos/M11_reporte.py"):
+                 *[f"src/modulos/M11_reporte/{r.name}"
+                   for r in sorted((RAIZ / "src" / "modulos"
+                                    / "M11_reporte").glob("*.py"))]):
         texto = (RAIZ / ruta).read_text(encoding="utf-8")
         assert "el Manual no pide proteger" not in texto, ruta
         assert "la Tabla Nº 11 no pide proteger" not in texto, ruta
