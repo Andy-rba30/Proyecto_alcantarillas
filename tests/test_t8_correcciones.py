@@ -753,9 +753,13 @@ def test_h6_el_aviso_de_la_hoya_sin_revestir_no_atribuye_a_la_tabla(
 def test_h6_los_documentos_no_dicen_que_el_manual_no_pide_proteger():
     for ruta in ("docs/contrato_entradas.md",
                  "docs/hoja_de_ruta_alcantarillas_v8.md",
-                 "src/modulos/M6_proteccion.py", "src/modelos.py", "cli.py",
+                 "src/modulos/M6_proteccion.py", "src/modelos/", "cli.py",
                  "src/modulos/M11_reporte.py"):
-        texto = (RAIZ / ruta).read_text(encoding="utf-8")
+        # `src/modelos/` es el paquete (D3): se lee entero, archivo por archivo.
+        texto = "\n".join(
+            r.read_text(encoding="utf-8")
+            for r in ([RAIZ / ruta] if not ruta.endswith("/")
+                      else sorted((RAIZ / ruta).glob("*.py"))))
         assert "el Manual no pide proteger" not in texto, ruta
         assert "la Tabla Nº 11 no pide proteger" not in texto, ruta
         assert "la Tabla Nº 11 no pide revestir" not in texto, ruta
@@ -919,7 +923,8 @@ def test_h10d_y_e_los_comentarios_ya_no_dicen_lo_contrario_que_el_codigo():
     constantes = (RAIZ / "src" / "constantes_normativas.py").read_text(
         encoding="utf-8")
     assert "es en\n# esa columna donde el proyecto la aplica" not in constantes
-    modelos = (RAIZ / "src" / "modelos.py").read_text(encoding="utf-8")
+    modelos = "\n".join(r.read_text(encoding="utf-8") for r in sorted(
+        (RAIZ / "src" / "modelos").glob("*.py")))
     assert "que se calculo el d50: siempre" not in modelos
 
 

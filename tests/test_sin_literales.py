@@ -1020,7 +1020,12 @@ CENSO_DE_MARCAS = {
     # censo lo demuestra sumando igual: M8 baja de 1 a 0 en el mismo
     # commit. Es el patron que las cuatro marcas de `gui/componentes.py`
     # ya dejaron escrito mas arriba.
-    "src/modelos.py": 7,
+    # --- D3 --- `src/modelos.py` pasó a ser el paquete `src/modelos/`; las 7
+    # marcas son las MISMAS (5 + 2), repartidas por donde vive su tipo:
+    # las cinco de la geometría de `SeccionRectangular`/`SeccionCircular` en
+    # `conducto.py` y las dos de `CIFRAS_*` en `memoria.py`.
+    "src/modelos/conducto.py": 5,
+    "src/modelos/memoria.py": 2,
     # 3 -> 5 en S20, con la Sec. 1.3 ("TW se calcula, no se mide"): el 2 de
     # `perimetro_trapecial` (los DOS taludes de un trapecio), la semilla y la
     # duplicacion del corchete de Brent sobre el tirante del receptor, y el

@@ -566,7 +566,7 @@ def test_M06_el_punto_de_uso_declara_coulomb_y_la_memoria_lo_recibe():
     assert "cos(delta + beta)" in M9.empujes_trasdos.__doc__
     registro = (RAIZ / "docs" / "decisiones_diferidas.md").read_text(
         encoding="utf-8")
-    assert "`src/modelos.py::EmpujesTrasdos`" in registro
+    assert "`src/modelos/cabezal.py::EmpujesTrasdos`" in registro
 
 
 def test_M06_el_objeto_lleva_el_numeral_del_Ka(monkeypatch, geometria):

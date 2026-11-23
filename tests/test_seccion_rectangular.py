@@ -887,8 +887,8 @@ VIA_POR_TIRANTE = {"area", "perimetro", "ancho_superficial"}
 # tirante y las dos vias coinciden bit a bit. Cualquier otra llamada desde
 # produccion --y sobre todo desde M3, M4 o un solver-- es el defecto.
 CENSO_VIA_POR_TIRANTE = {
-    ("src/modelos.py", "SeccionRectangular.geometria_en", "area"),
-    ("src/modelos.py", "SeccionRectangular.geometria_en", "perimetro"),
+    ("src/modelos/conducto.py", "SeccionRectangular.geometria_en", "area"),
+    ("src/modelos/conducto.py", "SeccionRectangular.geometria_en", "perimetro"),
     # EXT-3: la velocidad de salida de HDS-5 3.1.6 bajo control de salida con
     # y_c <= TW < D se mide con el area al TW, y el TW es un tirante SIN
     # `Geometria` --dato del receptor, no salida de un solver--, que es
