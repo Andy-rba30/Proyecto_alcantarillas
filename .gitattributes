@@ -3,3 +3,11 @@
 # historia, para quien quiera auditar como se hizo.
 proceso export-ignore
 proceso/** export-ignore
+
+# Saltos de linea: LF en todo el repositorio (plan de mantenibilidad, paso 2
+# del estado: 22 archivos de `v2` se habian subido con CRLF desde Windows).
+* text=auto eol=lf
+# Salvo los dos resumenes CSV de la linea base de la Familia C, que ya eran
+# CRLF en `main`: los escribe el modulo `csv` (terminador \r\n por defecto) y
+# la linea base los compara byte a byte.
+tests/linea_base_familia_c/*.csv -text
