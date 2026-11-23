@@ -10218,9 +10218,10 @@ impreso que no es de cálculo: la huella de los criterios.
 
 ## D3-02 · `M11_reporte.py` partido en el subpaquete `src/modulos/M11_reporte/`
 
-- **Cerrado (plan de mantenibilidad, D3):** dieciocho archivos de menos de
-  700 líneas; la memoria HTML, el CSV y el JSON salen idénticos byte a byte
-  (salvo la fecha) en las cinco corridas de referencia. Las guardias que
+- **Cerrado (plan de mantenibilidad, D3):** dieciocho archivos más el
+  `__init__.py` de reexportación (19 `.py`), todos de menos de 700 líneas; la
+  memoria HTML, el CSV y el JSON salen idénticos byte a byte (salvo la fecha)
+  en las cinco corridas de la línea base. Las guardias que
   barren el AST de M11 (no aritmética sobre magnitudes, lecturas estáticas
   de los catálogos) recorren el subpaquete entero
   (`tests/apoyo/fuente_m11.py`). Al integrar D2, la fecha de los criterios
@@ -10237,9 +10238,9 @@ impreso que no es de cálculo: la huella de los criterios.
 - **Qué se difirió:** la tercera partición opcional del bloque D. La sesión
   que la empezó no dejó commit, y la integración la cierra sin ella.
 - **Por qué:** es la casa única de los `[N]` y la constitución, la guardia de
-  literales (`tests/test_sin_literales.py`), el manifiesto de citas (que
-  ancla cada fila por archivo y renglón) y unos cuarenta archivos de `src/` y
-  `tests/` la nombran por su ruta. Partirla toca la regla de las tres casas,
+  literales (`tests/test_sin_literales.py`), el manifiesto de citas (105
+  anclas a sus renglones) y 34 archivos `.py` de `src/` y `tests/` la nombran
+  por su ruta (156 la importan o la nombran). Partirla toca la regla de las tres casas,
   no sólo la organización del código, y no cambia ningún resultado: el
   beneficio de mantenibilidad no compensa el riesgo antes de la sustentación.
 - **Qué haría falta:** decidir si la casa de los `[N]` pasa a ser un paquete
