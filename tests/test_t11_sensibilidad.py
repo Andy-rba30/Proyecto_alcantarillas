@@ -346,6 +346,12 @@ def test_el_cabezal_de_la_regla_frente_a_sus_dos_A(medidas):
     a fallar con la fila de zapatas (33.17 kN/m). En los tres tubos
     circulares (A-01, A-02 y B-01) E3 estatica de entrada sigue sin pasar con
     ninguno de los dos [A].
+
+    Desde el H3 de la auditoria del cierre de VE-7 esas cifras ya no son un
+    literal del generador: la prosa de §3.1 las lee de la corrida
+    (`S.cifras_de_la_prosa_del_cabezal`), de modo que si el calculo cambia,
+    el anexo regenerado cambia y `test_el_anexo_de_sensibilidad_esta_sincronizado`
+    lo ve.
     """
     por_clave = {m.barrido.clave: S.estados_del_cabezal(m) for m in medidas
                  if m.barrido.clave in S.CLAVES_DEL_CABEZAL_DE_LA_REGLA}

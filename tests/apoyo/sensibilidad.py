@@ -718,6 +718,51 @@ def estados_del_cabezal(m: Medida) -> Dict[Tuple[str, str], Tuple[str, ...]]:
     return {k: tuple(v) for k, v in salida.items()}
 
 
+# H3 de la auditoria del cierre de VE-7: las cifras de C-01 que la prosa de
+# §3.1 cita (el ancho de la zapata de la regla y E3 estatica de ENTRADA con
+# las dos filas de phi) se LEEN del volcado de la corrida, no se escriben a
+# mano. Escritas como literal, `test_el_anexo_de_sensibilidad_esta_sincronizado`
+# regeneraba desde el mismo literal y no veia que el calculo hubiera cambiado.
+PUNTO_DE_LA_PROSA_DEL_CABEZAL = "C-01"
+FILA_DE_LA_PROSA_DEL_CABEZAL = "E3-LRFD.est.e"
+
+
+def cifras_de_la_prosa_del_cabezal(m: Medida) -> Dict[str, float]:
+    """
+    Del barrido de `fila_phi_estabilidad_cabezal` (base
+    `juego_cabezal_de_la_regla`): el ancho B de la zapata de ENTRADA de C-01
+    con el primer valor, y E3 estatica de entrada --la demanda y la
+    resistencia con el primer valor (fila de muros), la resistencia con el
+    segundo (fila de zapatas)--. Una cifra que falte detiene la generacion:
+    la prosa no se imprime sin el numero que la sostiene.
+    """
+    corridas = m.resultado.corridas
+    if len(corridas) < 2:
+        raise ValueError("la prosa del cabezal pide dos corridas del barrido "
+                         f"de {m.barrido.clave!r}; hay {len(corridas)}")
+
+    def _punto(c):
+        return next(x for x in c.informe_json["puntos"]
+                    if x["id"] == PUNTO_DE_LA_PROSA_DEL_CABEZAL)
+
+    def _fila(c):
+        return next(v for v in _punto(c).get("verificaciones") or []
+                    if v["codigo"] == FILA_DE_LA_PROSA_DEL_CABEZAL)
+
+    entrada = next(g for g in _punto(corridas[0])["cabezal"]["cabezales"]
+                   if g["extremo"] == "entrada")
+    primera, segunda = _fila(corridas[0]), _fila(corridas[1])
+    cifras = {"B_m": entrada["B_m"],
+              "demanda_kn_m": primera["valor_obtenido"],
+              "resistencia_primera_kn_m": primera["valor_admisible"],
+              "resistencia_segunda_kn_m": segunda["valor_admisible"]}
+    faltan = [k for k, v in cifras.items() if v is None]
+    if faltan:
+        raise ValueError(f"faltan cifras de {PUNTO_DE_LA_PROSA_DEL_CABEZAL} "
+                         f"para la prosa de §3.1: {faltan}")
+    return cifras
+
+
 # ---------------------------------------------------------------------------
 # El documento
 # ---------------------------------------------------------------------------
@@ -853,15 +898,20 @@ def generar(medidas: Optional[Sequence[Medida]] = None) -> str:
             A("| " + " | ".join(_celda(x) for x in (
                 f"`{m.barrido.clave}`", _valor(valor), *celdas)) + " |")
     A("")
+    cif = cifras_de_la_prosa_del_cabezal(
+        next(m for m in medidas
+             if m.barrido.clave == "fila_phi_estabilidad_cabezal"))
     A("En los tubos circulares (A-01, A-02 y B-01) ninguno de los dos hace "
       "pasar E3 estática a la ENTRADA: ahí el deslizamiento lo resuelve la "
       "zapata más ancha —la que el dimensionamiento de VE-3.5 adopta, o la "
       "declarada de la variante `zapata_declarada_3m` de "
       "`docs/validacion_integral.md` §5—, no la lectura de un [A]. En C-01 "
       "(marco con pared de 0.30 m desde VE-7, ficha VE7B-11, que eleva 0.10 m "
-      "la coronación y ensancha la zapata de la regla a 1.715 m), E3 estática "
-      "a la entrada sí pasa con la fila de φ de muros (40.94 ≤ 41.46 kN/m) y "
-      "vuelve a fallar al pasar a la fila de zapatas (33.17 kN/m).")
+      f"la coronación y ensancha la zapata de la regla a {cif['B_m']:.3f} m), "
+      "E3 estática a la entrada sí pasa con la fila de φ de muros "
+      f"({cif['demanda_kn_m']:.2f} ≤ {cif['resistencia_primera_kn_m']:.2f} "
+      "kN/m) y vuelve a fallar al pasar a la fila de zapatas "
+      f"({cif['resistencia_segunda_kn_m']:.2f} kN/m).")
     A("")
     vmax = [m for m in medidas if m.barrido.clave == "v_max_concreto_eleccion"]
     if vmax:
