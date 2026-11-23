@@ -58,7 +58,7 @@ RAIZ = Path(__file__).resolve().parents[1]
 CSV_EJEMPLO = RAIZ / "tests" / "ejemplo_puntos.csv"
 CSV_PERFIL = RAIZ / "tests" / "ejemplo_puntos_perfil.csv"
 GUI = RAIZ / "gui" / "app.py"
-M11_FUENTE = RAIZ / "src" / "modulos" / "M11_reporte.py"
+M11_FUENTE = RAIZ / "src" / "modulos" / "M11_reporte"   # subpaquete (D3)
 
 # Los datos externos del corredor de perfil: los mismos de
 # `tests/test_cierre_perfil.py`, para que las corridas de aqui y las de alli
@@ -514,8 +514,8 @@ def test_f2_la_gui_y_la_memoria_leen_el_resumen_del_informe_y_no_cuentan():
     llenar = _funcion(ARBOL_GUI, "_llenar_resumen")
     assert _llama_a(llenar, "informe.resumen")
     assert not _llama_a(llenar, "informe.bloqueos")
-    arbol_m11 = ast.parse(M11_FUENTE.read_text(encoding="utf-8"),
-                          filename="M11_reporte.py")
+    from tests.apoyo.fuente_m11 import arbol_m11 as _arbol_m11
+    arbol_m11 = _arbol_m11()
     resumen_m11 = _funcion(arbol_m11, "_resumen_expediente")
     assert _llama_a(resumen_m11, "informe.resumen")
     assert not _llama_a(resumen_m11, "informe.bloqueos")
@@ -604,8 +604,8 @@ def _alias_de_los_modulos_con_estado(arbol):
 
 
 def test_g_M11_no_lee_estado_global_salvo_lecturas_estaticas():
-    arbol = ast.parse(M11_FUENTE.read_text(encoding="utf-8"),
-                      filename="M11_reporte.py")
+    from tests.apoyo.fuente_m11 import arbol_m11
+    arbol = arbol_m11()
     alias = _alias_de_los_modulos_con_estado(arbol)
     assert "declaracion" not in alias.values(), (
         "M11 no importa `declaracion`: las procedencias llegan en el contexto")

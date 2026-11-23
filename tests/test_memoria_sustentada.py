@@ -852,8 +852,8 @@ def test_M11_no_calcula_y_sobre_D(informe):
     import ast
 
     RUTAS = {"RAIZ", "SRC", "DIR_PLANTILLAS", "DIR_DOCS"}
-    fuente = (RAIZ / "src" / "modulos" / "M11_reporte.py").read_text(
-        encoding="utf-8")
+    from tests.apoyo.fuente_m11 import fuente_m11
+    fuente = fuente_m11()
 
     def _es_ruta(nodo) -> bool:
         """Una division de rutas de `pathlib`, no de magnitudes."""

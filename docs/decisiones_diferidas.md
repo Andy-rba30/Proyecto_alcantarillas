@@ -566,7 +566,7 @@ registro.
 - **Por qué:** se cerró en S18 cableándola: la sensibilidad de cada criterio
   `[A]` llega hoy al documento.
 - **Qué haría falta:** nada. Cerrado.
-- **Dónde vive:** `src/modulos/M11_reporte.py::_sensibilidad_declarada`
+- **Dónde vive:** `src/modulos/M11_reporte/sitio_criterios.py::_sensibilidad_declarada`
 
 ## SIS-B-06 · `--plantilla memoria_perfil.html` sobre corrida de expediente
 
@@ -579,7 +579,7 @@ registro.
   quejaba de nada**, porque `substitute` ignora los valores sobrantes. Ésa era
   la que perdía los 13 647 caracteres, y no tenía guardia.
 - **Qué haría falta:** nada. Cerrado.
-- **Dónde vive:** `src/modulos/M11_reporte.py::_exigir_que_la_plantilla_no_pierda_contenido`
+- **Dónde vive:** `src/modulos/M11_reporte/memoria.py::_exigir_que_la_plantilla_no_pierda_contenido`
 
 ## SIS-B-07 · `CriterioPendienteError.mensaje_gui` no tiene consumidor de producción
 
@@ -2068,7 +2068,7 @@ decía que EXT-3 la haría: se dejan aquí con su argumento y su sesión.
 - **Qué haría falta:** la sesión que recoja PC-03: un tablero de bloqueos sin
   criterio (o una columna «qué hace falta» que admita «otro método» además de
   «declarar»), con la GUI leyendo el mismo agregador que la memoria.
-- **Dónde vive:** `src/modulos/M11_reporte.py::criterios_bloqueantes`
+- **Dónde vive:** `src/modulos/M11_reporte/tableros.py::criterios_bloqueantes`
 
 ---
 
@@ -2526,7 +2526,7 @@ esperaría o porque dejan algo abierto.
   punto (por ejemplo, la sustitución sin la procedencia larga, con la
   procedencia en el anexo también), tomada contra la §4.4 y no por debajo
   de ella; y medir el PDF de 40 y 200 puntos después.
-- **Dónde vive:** `src/modulos/M11_reporte.py::anexo_referencias`
+- **Dónde vive:** `src/modulos/M11_reporte/umbrales_anexos.py::anexo_referencias`
 
 ## EXT-8-02 · El hijo recalcula: la equivalencia se afirma sobre la sesión serializada, no sobre el objeto `Informe`
 
@@ -2603,7 +2603,7 @@ esperaría o porque dejan algo abierto.
   memoria_tiene_destino`). Lo encontró el auditor adversarial de EXT-8.
 - **Qué haría falta:** si algún día un fragmento se entrega solo, una
   función `fragmento_con_anexo(pasos)` que lo cierre con su propio anexo.
-- **Dónde vive:** `src/modulos/M11_reporte.py::bloque_paso`
+- **Dónde vive:** `src/modulos/M11_reporte/pasos.py::bloque_paso`
 
 
 # Parte XXV — Lo que EXT-9 dejó escrito al convertir `src/` en paquete y separar el servicio de cálculo
@@ -3254,7 +3254,7 @@ símbolo.
 - **Qué haría falta:** una pestaña o un volcado que liste las corridas de la
   sesión y compare dos cualesquiera por el comparador; es presentación
   sobre objetos que ya existen.
-- **Dónde vive:** `src/modulos/M11_reporte.py::indice_de_la_memoria`
+- **Dónde vive:** `src/modulos/M11_reporte/anclas.py::indice_de_la_memoria`
 
 ## EB-06 · La ventana emergente conserva su campo único; las dos ventanas no se unifican
 
@@ -7132,7 +7132,7 @@ T-7b/T-7c— y lo fija `tests/test_t10_memoria.py`, por clave del JSON.
 - **Qué haría falta:** una memoria por punto y un anexo común por obra (el formato de las
   págs. 110–122 del PDF guía, que imprime UNA tabla de cargas por cabezal sin el desarrollo
   paso a paso), si el dueño acepta que el desarrollo completo viva en un anexo digital.
-- **Dónde vive:** `src/modulos/M11_reporte.py::_YaImpreso`
+- **Dónde vive:** `src/modulos/M11_reporte/pasos.py::_YaImpreso`
 
 ## T10-02 · El índice de fórmulas se genera con dos corridas de PRUEBA que sí dimensionan, y no imprime los valores que un módulo escribe en una procedencia
 
@@ -7206,7 +7206,7 @@ T-7b/T-7c— y lo fija `tests/test_t10_memoria.py`, por clave del JSON.
   ventana de cada clave en su fila. Los cinco mutantes de la auditoría (M-A, M-E, M-L, M-M y
   el del hueco, M-N) mueren.
 - **Qué haría falta:** nada; un texto nuevo del JSON que la memoria no lleve rompe el test.
-- **Dónde vive:** `src/modulos/M11_reporte.py::bloque_cabezal_proyecto`
+- **Dónde vive:** `src/modulos/M11_reporte/proyecto.py::bloque_cabezal_proyecto`
 
 ## T10-05 · Lo que el dueño decidió no hacer se imprime como ALCANCE, en las tres vistas
 
@@ -7235,7 +7235,7 @@ T-7b/T-7c— y lo fija `tests/test_t10_memoria.py`, por clave del JSON.
   es.
 - **Qué haría falta:** si se quiere el efecto en la memoria, un anexo que lea los volcados de
   un barrido ya corrido, nunca uno que corra dentro del exportador.
-- **Dónde vive:** `src/modulos/M11_reporte.py::anexo_sensibilidad`
+- **Dónde vive:** `src/modulos/M11_reporte/umbrales_anexos.py::anexo_sensibilidad`
 
 ## T10-07 · La aceptación de T-10 se escribió después del código; el rojo se midió contra la base
 
@@ -7245,7 +7245,7 @@ T-7b/T-7c— y lo fija `tests/test_t10_memoria.py`, por clave del JSON.
   de la FASE A).
 - **Por qué:** el censo es el entregable; los tests lo fijan.
 - **Qué haría falta:** nada.
-- **Dónde vive:** `src/modulos/M11_reporte.py::anexo_sensibilidad`
+- **Dónde vive:** `src/modulos/M11_reporte/umbrales_anexos.py::anexo_sensibilidad`
 
 ## T10-08 · Las correcciones de la auditoría adversarial de T-10
 
@@ -7263,7 +7263,7 @@ T-7b/T-7c— y lo fija `tests/test_t10_memoria.py`, por clave del JSON.
   0.8·f_r y el piso de 25.4 mm salen de sus constantes).
 - **Por qué:** la auditoría adversarial (AJUSTADO) y las resoluciones del orquestador.
 - **Qué haría falta:** nada.
-- **Dónde vive:** `src/modulos/M11_reporte.py::ROTULO_DE_LA_FRASE_POR_CARACTER`
+- **Dónde vive:** `src/modulos/M11_reporte/umbrales_anexos.py::ROTULO_DE_LA_FRASE_POR_CARACTER`
 
 # Parte LIV — Lo que T-11 de la cadena T dejó escrito: la validación integral de las tres familias
 
@@ -7607,7 +7607,7 @@ T11-09 a la memoria.
 - **Abierto:** nada: la remisión de la resumida a su completa se cerró en UI-5 (ficha
   UI2-01).
 - **Qué haría falta:** nada.
-- **Dónde vive:** `src/modulos/M11_reporte.py::memoria_resumida_html`
+- **Dónde vive:** `src/modulos/M11_reporte/resumida.py::memoria_resumida_html`
 
 ## T12-05 · Licencia «todos los derechos reservados», `pyproject.toml` sin empaquetado y el README de usuario
 
@@ -9844,7 +9844,7 @@ Fable (triaje VE-7, 2026-11-20): Fable decidió QUÉ hacer; estas fichas dicen c
 - **Abierto:** la línea base y los documentos generados cambian al regenerarse (clave nueva y
   línea de la CLI). La línea de la CLI y el comparador: ficha VE7C-08.
 - **Qué haría falta:** regenerar la línea base en la integración.
-- **Dónde vive:** `src/modulos/M11_reporte.py::_bloque_licuefaccion`
+- **Dónde vive:** `src/modulos/M11_reporte/bloques_punto.py::_bloque_licuefaccion`
 
 ## VE7C-05 · `cli.py --estado-expediente`: las discrepancias abiertas y las corridas para comparar (C5; VE5GUI-45)
 

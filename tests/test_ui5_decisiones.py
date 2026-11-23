@@ -1038,7 +1038,8 @@ def test_3_d_un_enlace_sigue_siendo_enlace_y_el_modo_se_conserva(via, informe_pe
 
 
 def test_3_la_memoria_y_la_entrega_del_hijo_usan_la_misma_escritura_atomica():
-    for ruta, funcion in ((RAIZ / "src" / "modulos" / "M11_reporte.py", "_escribir_pdf"),
+    for ruta, funcion in ((RAIZ / "src" / "modulos" / "M11_reporte" / "exportadores.py",
+                           "_escribir_pdf"),
                           (RAIZ / "gui" / "exportacion_pdf.py", "_entregar")):
         arbol = ast.parse(ruta.read_text(encoding="utf-8-sig"), filename=str(ruta))
         nodo = _funcion(arbol, funcion)

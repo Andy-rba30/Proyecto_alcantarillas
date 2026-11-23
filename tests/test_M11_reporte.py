@@ -800,7 +800,8 @@ class TestBloquePendientes:
         La prueba de que no hay segunda fuente de verdad: el contenido de los
         tableros no aparece en el codigo de M11.
         """
-        codigo = Path(M11.__file__).read_text(encoding="utf-8")
+        from tests.apoyo.fuente_m11 import fuente_m11
+        codigo = fuente_m11()
         tableros = M11.tableros_pendientes()
         for tablero in tableros:
             for fila in tablero.filas:
