@@ -728,7 +728,7 @@ def test_c_el_hijo_barre_la_guia_y_pinta_las_lineas_de_la_cli(pbarr, taller, tmp
     hecho = subprocess.run(
         [sys.executable, str(RAIZ / "cli.py"), "--sesion", "guia/sesion.json",
          "--barrido", "n_celdas_cajon=1,2", "--json", str(tmp_path / "cli.json")],
-        cwd=taller.raiz, capture_output=True, text=True, timeout=TOPE_DEL_HIJO_S)
+        cwd=taller.raiz, capture_output=True, text=True, encoding="utf-8", timeout=TOPE_DEL_HIJO_S)
     assert hecho.returncode == 0, hecho.stderr[-3000:]
     assert _normalizadas(proceso.lineas) == _normalizadas(_tabla_de_la_salida(hecho.stdout))
     # Con las dos columnas que la ventana tiene que conservar.
@@ -952,7 +952,7 @@ def test_h2_el_hijo_del_pdf_reproduce_la_corrida_con_claves_enteras(tmp_path, li
     hecho = subprocess.run(
         [sys.executable, str(RAIZ / "cli.py"), "--sesion", str(ruta),
          "--json", str(tmp_path / "hijo.json")],
-        cwd=RAIZ, capture_output=True, text=True, timeout=TOPE_DEL_HIJO_S)
+        cwd=RAIZ, capture_output=True, text=True, encoding="utf-8", timeout=TOPE_DEL_HIJO_S)
     assert hecho.returncode in (0, 1), hecho.stderr[-3000:]
     del_hijo = json.loads((tmp_path / "hijo.json").read_text(encoding="utf-8"))
     propio = json.loads(json.dumps(cli.informe_json(informe), ensure_ascii=False))
@@ -1122,10 +1122,10 @@ def test_n1_la_cli_rechaza_igual_la_corrida_y_el_barrido_con_esa_declaracion(tmp
     base = [sys.executable, str(RAIZ / "cli.py"), str(RAIZ / "tests" / "ejemplo_puntos.csv"),
             "--alcance", "perfil", "--luz", "2.75", "--declarar", f"{ESPESOR}={de_texto!r}"]
     normal = subprocess.run(base + ["--json", str(tmp_path / "a.json")], cwd=RAIZ,
-                            capture_output=True, text=True, timeout=TOPE_DEL_HIJO_S)
+                            capture_output=True, text=True, encoding="utf-8", timeout=TOPE_DEL_HIJO_S)
     barre = subprocess.run(base + ["--barrido", f"{CLAVE_CON_RANGO}=1.5",
                                    "--json", str(tmp_path / "b.json")],
-                           cwd=RAIZ, capture_output=True, text=True, timeout=TOPE_DEL_HIJO_S)
+                           cwd=RAIZ, capture_output=True, text=True, encoding="utf-8", timeout=TOPE_DEL_HIJO_S)
     assert normal.returncode == barre.returncode == 2
     assert normal.stderr.strip() == barre.stderr.strip()
     assert "sin comillas" in normal.stderr
@@ -1221,7 +1221,7 @@ def test_e_la_ventana_real_barre_la_guia_sin_tocar_el_estado_ni_el_informe(tmp_p
     import gui.app as gapp
     hecho = subprocess.run(
         envoltorio + [interprete, "-m", "tests.apoyo.gui_ui3_barrido_real", str(tmp_path)],
-        cwd=RAIZ, capture_output=True, text=True, timeout=1500)
+        cwd=RAIZ, capture_output=True, text=True, encoding="utf-8", timeout=1500)
     assert hecho.returncode == 0, (
         f"la corrida de la GUI fallo:\n{hecho.stdout[-4000:]}\n{hecho.stderr[-4000:]}")
     r = json.loads((tmp_path / "resumen_ui3.json").read_text(encoding="utf-8"))

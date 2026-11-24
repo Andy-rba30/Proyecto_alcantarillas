@@ -143,7 +143,7 @@ print(json.dumps(por_archivo, sort_keys=True))
 def _claves_por_archivo_de_src() -> dict:
     hecho = subprocess.run(
         [sys.executable, "-c", PROGRAMA_IDENTIDAD, str(SRC)],
-        cwd=RAIZ, capture_output=True, text=True, timeout=300)
+        cwd=RAIZ, capture_output=True, text=True, encoding="utf-8", timeout=300)
     assert hecho.returncode == 0, hecho.stderr[-3000:]
     return json.loads(hecho.stdout.strip().splitlines()[-1])
 
@@ -421,7 +421,7 @@ def test_e02_importar_y_ejecutar_el_servicio_no_inicia_cli_ni_gui():
     hecho = subprocess.run(
         [sys.executable, "-c", PROGRAMA_SERVICIO_SOLO,
          str(CSV_EJEMPLO), str(EXTERNOS_EJEMPLO)],
-        cwd=RAIZ, capture_output=True, text=True, timeout=300)
+        cwd=RAIZ, capture_output=True, text=True, encoding="utf-8", timeout=300)
     assert hecho.returncode == 0, hecho.stderr[-3000:]
     medido = json.loads(hecho.stdout.strip().splitlines()[-1])
     assert medido["puntos"] > 0 and medido["contexto"] is True, medido
@@ -617,7 +617,7 @@ def test_las_dos_entradas_del_paquete_comparten_convencion():
     for modulo, senal in (("src.indice_formulas", "sincronizado"),
                           ("src.normativa.manifiesto", "manifiesto_citas.md")):
         hecho = subprocess.run([sys.executable, "-m", modulo],
-                               cwd=RAIZ, capture_output=True, text=True,
+                               cwd=RAIZ, capture_output=True, text=True, encoding="utf-8",
                                timeout=600)
         assert hecho.returncode == 0, (modulo, hecho.stdout[-1500:],
                                        hecho.stderr[-2000:])

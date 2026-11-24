@@ -880,7 +880,7 @@ def ventana_real(tmp_path_factory):
     salida = tmp_path_factory.mktemp("ui2_ventana")
     hecho = subprocess.run(
         envoltorio + [interprete, "-m", "tests.apoyo.gui_ui2_pestana4_real", str(salida)],
-        cwd=RAIZ, capture_output=True, text=True, timeout=1500)
+        cwd=RAIZ, capture_output=True, text=True, encoding="utf-8", timeout=1500)
     assert hecho.returncode == 0, (
         f"la corrida de la GUI fallo:\n{hecho.stdout[-4000:]}\n{hecho.stderr[-4000:]}")
     r = json.loads((salida / "resumen_ui2.json").read_text(encoding="utf-8"))
@@ -908,7 +908,7 @@ def _cli_de_la_referencia(referencia, tmp_path):
         args += ["--datos-sitio", str(referencia.sitio)]
     for clave, valor in referencia.declaraciones.items():
         args += ["--declarar", f"{clave}={valor!r}"]
-    hecho = subprocess.run(args, cwd=RAIZ, capture_output=True, text=True, timeout=900)
+    hecho = subprocess.run(args, cwd=RAIZ, capture_output=True, text=True, encoding="utf-8", timeout=900)
     assert hecho.returncode in (0, 1), hecho.stderr[-3000:]
     return hecho.stdout
 

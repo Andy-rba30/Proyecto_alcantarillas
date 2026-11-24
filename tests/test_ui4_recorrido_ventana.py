@@ -394,7 +394,7 @@ def r(tmp_path_factory):
         argumentos += ["--capturas", str(salida / "capturas")]
     hecho = subprocess.run(
         envoltorio + [interprete, "-m", "tests.apoyo.gui_ui4_recorrido_real", *argumentos],
-        cwd=RAIZ, capture_output=True, text=True, timeout=TOPE_S * 2)
+        cwd=RAIZ, capture_output=True, text=True, encoding="utf-8", timeout=TOPE_S * 2)
     assert hecho.returncode == 0, (
         f"el recorrido fallo:\n{hecho.stdout[-6000:]}\n{hecho.stderr[-4000:]}")
     datos = json.loads((salida / "recorrido_ui4.json").read_text(encoding="utf-8"))
@@ -415,7 +415,7 @@ def json_de_la_cli(tmp_path_factory):
         hecho = subprocess.run(
             [sys.executable, str(RAIZ / "cli.py"), *recorrido.argumentos_de_la_cli(referencia),
              "--json", str(destino)],
-            cwd=RAIZ, capture_output=True, text=True, timeout=TOPE_S)
+            cwd=RAIZ, capture_output=True, text=True, encoding="utf-8", timeout=TOPE_S)
         assert hecho.returncode in (0, 1), hecho.stderr[-3000:]
         hechos[referencia.nombre] = json.loads(destino.read_text(encoding="utf-8"))
     return hechos
@@ -713,7 +713,7 @@ def test_c8_el_barrido_de_la_ventana_es_el_de_la_cli(r, tmp_path):
     hecho = subprocess.run(
         [sys.executable, str(RAIZ / "cli.py"), *args, "--barrido",
          f"{recorrido.CLAVE_DEL_BARRIDO}={texto}", "--json", str(tmp_path / "b.json")],
-        cwd=RAIZ, capture_output=True, text=True, timeout=TOPE_S)
+        cwd=RAIZ, capture_output=True, text=True, encoding="utf-8", timeout=TOPE_S)
     assert hecho.returncode == 0, hecho.stderr[-3000:]
     lineas = hecho.stdout.splitlines()
     inicio = next(i for i, l in enumerate(lineas) if l.startswith("Barrido de '"))

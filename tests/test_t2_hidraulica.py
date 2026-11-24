@@ -1024,7 +1024,7 @@ def test_el_barrido_de_la_lectura_sobre_la_corrida_estrecha(tmp_path):
          "--alcance", "perfil", "--barrido",
          "borde_libre_bajo_tw_ahogante=no_cumple,aviso",
          "--json", str(destino)],
-        cwd=RAIZ, capture_output=True, text=True)
+        cwd=RAIZ, capture_output=True, text=True, encoding="utf-8")
     assert destino.exists(), hecho.stderr
     (uno,) = json.loads(destino.read_text(encoding="utf-8"))["barridos"]
     por_valor = {}

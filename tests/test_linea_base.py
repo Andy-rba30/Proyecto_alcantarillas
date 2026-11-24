@@ -124,7 +124,7 @@ def recien_generada(tmp_path_factory):
         pytest.skip(MOTIVO_SIN_SH)
     destino = tmp_path_factory.mktemp("linea_base")
     r = subprocess.run([SH, str(SCRIPT), str(destino)], cwd=RAIZ,
-                       capture_output=True, text=True)
+                       capture_output=True, text=True, encoding="utf-8")
     assert r.returncode == 0, (
         f"`regenerar.sh` fallo con codigo {r.returncode}.\n"
         f"stdout: {r.stdout}\nstderr: {r.stderr}")
@@ -206,7 +206,7 @@ def test_la_corrida_es_determinista(recien_generada, tmp_path):
         return
     segunda = tmp_path / "segunda"
     r = subprocess.run([SH, str(SCRIPT), str(segunda)], cwd=RAIZ,
-                       capture_output=True, text=True)
+                       capture_output=True, text=True, encoding="utf-8")
     assert r.returncode == 0, r.stderr
     distintos = [f.name for f in sorted(recien_generada.iterdir())
                  if f.is_file()

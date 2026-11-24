@@ -197,7 +197,7 @@ def main(salida: Path) -> int:
         hecho = subprocess.run(
             [sys.executable, str(RAIZ / "cli.py"), "--sesion", str(ruta_hijo),
              "--json", str(json_hijo)],
-            cwd=RAIZ, capture_output=True, text=True, timeout=900)
+            cwd=RAIZ, capture_output=True, text=True, encoding="utf-8", timeout=900)
         r["hijo"] = {"codigo": hecho.returncode,
                      "stderr": hecho.stderr[-2000:],
                      "sesion_cuencas": sesion_hijo.get("cuencas"),

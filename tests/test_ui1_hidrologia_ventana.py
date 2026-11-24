@@ -136,7 +136,7 @@ def _externos():
 
 def _cli(*args: str, timeout: float = 900.0) -> subprocess.CompletedProcess:
     return subprocess.run([sys.executable, str(RAIZ / "cli.py"), *args],
-                          cwd=RAIZ, capture_output=True, text=True, timeout=timeout)
+                          cwd=RAIZ, capture_output=True, text=True, encoding="utf-8", timeout=timeout)
 
 
 def _escribir(ruta: Path, datos) -> Path:
@@ -1155,7 +1155,7 @@ def test_g_la_ventana_real_calcula_el_caudal_guarda_la_sesion_4_y_abre_la_3(tmp_
     hecho = subprocess.run(
         envoltorio + [interprete, "-m", "tests.apoyo.gui_ui1_hidrologia_real",
                       str(tmp_path)],
-        cwd=RAIZ, capture_output=True, text=True, timeout=1500)
+        cwd=RAIZ, capture_output=True, text=True, encoding="utf-8", timeout=1500)
     assert hecho.returncode == 0, (
         f"la corrida de la GUI fallo:\n{hecho.stdout[-4000:]}\n{hecho.stderr[-4000:]}")
     r = json.loads((tmp_path / "resumen_ui1.json").read_text(encoding="utf-8"))

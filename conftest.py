@@ -42,7 +42,18 @@ el directorio de este `conftest.py`: `from src import criterios_adoptados`,
 # `limpiar_valores_dinamicos()` -- que borra TODAS las declaraciones de la
 # corrida, incluida esta -- y sin reponerla el resto de la suite caeria por un
 # efecto de orden de ejecucion.
+import os  # noqa: E402
+
 import pytest  # noqa: E402
+
+# LOS PYTHON HIJOS DE LA SUITE ESCRIBEN EN UTF-8 (ronda 3 de Windows): en un
+# Windows con la pagina de codigos ANSI (cp1252), un hijo con la salida en una
+# tuberia escribe en cp1252, y los tests la leen como UTF-8 (`encoding="utf-8"`
+# en cada `subprocess.run(..., text=True)`, que no puede depender de la
+# configuracion de la maquina). La CLI ya lo hace sola (`cli.salida_en_utf8`);
+# esto cubre los demas hijos (los apoyos de ventana real, el pytest anidado de
+# la exportacion). Un test que quiera otra codificacion la pone en su `env`.
+os.environ.setdefault("PYTHONIOENCODING", "utf-8")
 
 
 def pytest_configure(config):

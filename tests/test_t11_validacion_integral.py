@@ -293,7 +293,7 @@ def test_la_cli_real_dice_lo_mismo_que_el_servicio(base, tmp_path):
         [sys.executable, str(RAIZ / "cli.py"), *V.argumentos_cli(e),
          "--json", str(destino), "--html", str(tmp_path / "memoria.html"),
          "--csv-resumen", str(tmp_path / "resumen.csv")],
-        cwd=RAIZ, capture_output=True, text=True, timeout=600)
+        cwd=RAIZ, capture_output=True, text=True, encoding="utf-8", timeout=600)
     assert proc.returncode in (0, 1), proc.stderr[-2000:]
     assert "Traceback" not in proc.stderr
     volcado = json.loads(destino.read_text(encoding="utf-8"))

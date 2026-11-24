@@ -2936,7 +2936,7 @@ def test_la_autoverificacion_del_fixture_la_corre_pytest():
     entorno["PYTHONPATH"] = os.pathsep.join(
         [str(raiz), str(raiz / "src"), entorno.get("PYTHONPATH", "")])
     r = subprocess.run([sys.executable, str(fixture)], cwd=raiz,
-                       capture_output=True, text=True, env=entorno, timeout=120)
+                       capture_output=True, text=True, encoding="utf-8", env=entorno, timeout=120)
     assert r.returncode == 0, (
         "la autoverificacion de los casos patron fallo. Un dorado dejo de "
         f"salir de su formula:\n{r.stdout[-2000:]}\n{r.stderr[-2000:]}")

@@ -1187,7 +1187,7 @@ def test_lo_que_no_se_verifica_se_imprime_por_material(del_expediente, tmp_path)
         [sys.executable, "cli.py", str(CSV), "--luz", "2.75", "--alcance",
          "perfil", "--datos-externos", str(EXTERNOS), "--json", str(salida),
          "--html", str(memoria)],
-        cwd=RAIZ, capture_output=True, text=True)   # sale con 1: no cierra
+        cwd=RAIZ, capture_output=True, text=True, encoding="utf-8")   # sale con 1: no cierra
     datos = json.loads(salida.read_text(encoding="utf-8"))
     a01 = next(p for p in datos["puntos"] if p["id"] == "A-01")
     diferida = a01["estructural"]["verificacion_diferida"]
@@ -1207,7 +1207,7 @@ def test_la_cli_de_texto_imprime_el_contraste_del_tipo_4(del_expediente):
     hecho = subprocess.run(
         [sys.executable, "cli.py", str(CSV), "--luz", "2.75", "--alcance",
          "perfil", "--datos-externos", str(EXTERNOS)],
-        cwd=RAIZ, capture_output=True, text=True)
+        cwd=RAIZ, capture_output=True, text=True, encoding="utf-8")
     lineas = [l for l in hecho.stdout.splitlines() if "Fase 8  Clase II" in l]
     assert len(lineas) == 2
     for linea in lineas:

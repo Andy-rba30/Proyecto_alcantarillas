@@ -60,7 +60,7 @@ def ventana_eb(tmp_path_factory):
     salida = tmp_path_factory.mktemp("pf6_ventana")
     hecho = subprocess.run(
         _ENVOLTORIO + [_INTERPRETE, "-m", "tests.apoyo.gui_eb_real", str(salida)],
-        cwd=RAIZ, capture_output=True, text=True, timeout=900)
+        cwd=RAIZ, capture_output=True, text=True, encoding="utf-8", timeout=900)
     assert hecho.returncode == 0, f"la ventana fallo:\n{hecho.stdout}\n{hecho.stderr}"
     return json.loads((salida / "resumen_eb.json").read_text(encoding="utf-8"))
 

@@ -28,7 +28,7 @@ def ventana_real(tmp_path_factory):
     salida = tmp_path_factory.mktemp("ve5_ventana")
     hecho = subprocess.run(
         _ENVOLTORIO + [_INTERPRETE, "-m", "tests.apoyo.gui_ve5_real", str(salida)],
-        cwd=RAIZ, capture_output=True, text=True, timeout=TOPE_S)
+        cwd=RAIZ, capture_output=True, text=True, encoding="utf-8", timeout=TOPE_S)
     assert hecho.returncode == 0, (
         f"la ventana fallo:\n{hecho.stdout[-4000:]}\n{hecho.stderr[-4000:]}")
     return json.loads((salida / "resumen_ve5.json").read_text(encoding="utf-8"))

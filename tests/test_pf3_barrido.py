@@ -190,7 +190,7 @@ def test_pf3_la_cli_barre_y_escribe_el_json_sin_memoria(tmp_path):
          "--barrido", f"{CLAVE}=0.3,0.5,0.7", "--barrido-nota", NOTA,
          "--barrido", "TR_evento_extremo=35,50",
          "--json", str(salida), "--html", str(tmp_path / "no.html")],
-        capture_output=True, text=True, cwd=RAIZ)
+        capture_output=True, text=True, encoding="utf-8", cwd=RAIZ)
     assert hecho.returncode == 0, hecho.stdout + hecho.stderr
     for v in ("0.3", "0.5", "0.7"):
         assert v in hecho.stdout
@@ -209,7 +209,7 @@ def test_pf3_la_cli_barre_y_escribe_el_json_sin_memoria(tmp_path):
         [sys.executable, str(RAIZ / "cli.py"), str(ruta), "--alcance", "perfil",
          "--luz", str(LUZ), "--tw", str(TW), "--barrido", f"{CLAVE}=0.3,{FUERA}",
          "--barrido-nota", NOTA],
-        capture_output=True, text=True, cwd=RAIZ)
+        capture_output=True, text=True, encoding="utf-8", cwd=RAIZ)
     assert hecho.returncode == 2 and "sensibilidad" in hecho.stderr
 
 
@@ -345,21 +345,21 @@ def test_pf3_la_cli_cierra_la_puerta_de_todos_los_barridos_antes_de_correr_y_avi
     # El segundo barrido no pasa la puerta: el primero NO corre y no hay JSON.
     hecho = subprocess.run(base + ["--barrido", f"{CLAVE}=0.3,0.5",
                                    "--barrido", f"{CLAVE}=0.3,{FUERA}", "--json", str(salida)],
-                           capture_output=True, text=True, cwd=RAIZ)
+                           capture_output=True, text=True, encoding="utf-8", cwd=RAIZ)
     assert hecho.returncode == 2 and "sensibilidad" in hecho.stderr
     assert "Barrido de" not in hecho.stdout and not salida.exists()
     # Las banderas que el barrido no aplica se dicen, y el pre-vuelo no se combina.
     hecho = subprocess.run(base + ["--barrido", f"{CLAVE}=0.3", "--html", str(tmp_path / "n.html"),
                                    "--csv-resumen", str(tmp_path / "n.csv"), "--json", str(salida)],
-                           capture_output=True, text=True, cwd=RAIZ)
+                           capture_output=True, text=True, encoding="utf-8", cwd=RAIZ)
     assert hecho.returncode == 0, hecho.stderr
     assert "--html" in hecho.stderr and "--csv-resumen" in hecho.stderr
     assert not (tmp_path / "n.html").exists() and not (tmp_path / "n.csv").exists()
     hecho = subprocess.run(base + ["--barrido", f"{CLAVE}=0.3", "--prevuelo"],
-                           capture_output=True, text=True, cwd=RAIZ)
+                           capture_output=True, text=True, encoding="utf-8", cwd=RAIZ)
     assert hecho.returncode == 2 and "--prevuelo" in hecho.stderr
     # Una clave inexistente y un valor vacio por errata se dicen con esas palabras.
-    hecho = subprocess.run(base + ["--barrido", "no_existe=1"], capture_output=True, text=True, cwd=RAIZ)
+    hecho = subprocess.run(base + ["--barrido", "no_existe=1"], capture_output=True, text=True, encoding="utf-8", cwd=RAIZ)
     assert hecho.returncode == 2 and "no existe" in hecho.stderr
-    hecho = subprocess.run(base + ["--barrido", f"{CLAVE}=0.3,,0.5"], capture_output=True, text=True, cwd=RAIZ)
+    hecho = subprocess.run(base + ["--barrido", f"{CLAVE}=0.3,,0.5"], capture_output=True, text=True, encoding="utf-8", cwd=RAIZ)
     assert hecho.returncode == 2 and "vacio" in hecho.stderr

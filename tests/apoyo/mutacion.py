@@ -290,7 +290,7 @@ def _archivos_del_arbol() -> List[str]:
     """Rastreados mas no rastreados no ignorados: el arbol de trabajo real."""
     salida = subprocess.run(
         ["git", "ls-files", "--cached", "--others", "--exclude-standard"],
-        cwd=RAIZ, capture_output=True, text=True, check=True).stdout
+        cwd=RAIZ, capture_output=True, text=True, encoding="utf-8", check=True).stdout
     return [linea for linea in salida.splitlines()
             if linea and not linea.startswith("normas/")]
 
@@ -313,7 +313,7 @@ def correr_pytest(arbol: Path, objetivos: Sequence[str],
         r = subprocess.run(
             [sys.executable, "-m", "pytest", "-q", "-x", "-p", "no:cacheprovider",
              "--no-header", *objetivos],
-            cwd=arbol, capture_output=True, text=True, timeout=tiempo_limite,
+            cwd=arbol, capture_output=True, text=True, encoding="utf-8", timeout=tiempo_limite,
             env={**os.environ, "PYTHONDONTWRITEBYTECODE": "1"})
         codigo = r.returncode
     except subprocess.TimeoutExpired:

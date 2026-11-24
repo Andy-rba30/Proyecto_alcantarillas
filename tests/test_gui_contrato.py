@@ -1518,7 +1518,7 @@ def test_la_seleccion_de_la_tabla_sobrevive_al_filtro(tmp_path):
     hecho = subprocess.run(
         _ENVOLTORIO + [_INTERPRETE, "-m", "tests.apoyo.gui_seleccion_real",
                        str(destino)],
-        cwd=RAIZ, capture_output=True, text=True, timeout=600)
+        cwd=RAIZ, capture_output=True, text=True, encoding="utf-8", timeout=600)
     assert hecho.returncode == 0, (
         f"la corrida de la GUI fallo:\n{hecho.stdout}\n{hecho.stderr}")
     obs = json.loads(destino.read_text(encoding="utf-8"))
@@ -1575,7 +1575,7 @@ def test_la_GUI_corre_el_alcance_de_perfil_de_punta_a_punta(tmp_path):
     hecho = subprocess.run(
         _ENVOLTORIO + [_INTERPRETE, "-m", "tests.apoyo.gui_corrida_perfil",
                        str(tmp_path)],
-        cwd=RAIZ, capture_output=True, text=True, timeout=600)
+        cwd=RAIZ, capture_output=True, text=True, encoding="utf-8", timeout=600)
     assert hecho.returncode == 0, (
         f"la corrida de la GUI fallo:\n{hecho.stdout}\n{hecho.stderr}")
 
@@ -1665,7 +1665,7 @@ def test_el_informe_de_la_ventana_es_de_su_corrida_y_cuenta_como_la_cli(tmp_path
     hecho = subprocess.run(
         _ENVOLTORIO + [_INTERPRETE, "-m", "tests.apoyo.gui_contexto_real",
                        str(tmp_path)],
-        cwd=RAIZ, capture_output=True, text=True, timeout=600)
+        cwd=RAIZ, capture_output=True, text=True, encoding="utf-8", timeout=600)
     assert hecho.returncode == 0, (
         f"la corrida de la GUI fallo:\n{hecho.stdout}\n{hecho.stderr}")
     r = json.loads((tmp_path / "resumen_contexto.json")
@@ -2145,7 +2145,7 @@ def test_la_ayuda_de_entrada_se_abre_de_verdad(tmp_path):
     hecho = subprocess.run(
         _ENVOLTORIO + [_INTERPRETE, "-m", "tests.apoyo.gui_ayuda_real",
                        str(destino)],
-        cwd=RAIZ, capture_output=True, text=True, timeout=600)
+        cwd=RAIZ, capture_output=True, text=True, encoding="utf-8", timeout=600)
     assert hecho.returncode == 0, (
         f"la ayuda de entrada no se pudo abrir:\n{hecho.stdout}\n{hecho.stderr}")
     obs = json.loads(destino.read_text(encoding="utf-8"))
@@ -2238,7 +2238,7 @@ def test_la_ventana_normativa_se_construye_y_se_cierra_de_verdad(tmp_path):
     hecho = subprocess.run(
         _ENVOLTORIO + [_INTERPRETE, "-m", "tests.apoyo.gui_smoke_normativa",
                        str(destino)],
-        cwd=RAIZ, capture_output=True, text=True, timeout=600)
+        cwd=RAIZ, capture_output=True, text=True, encoding="utf-8", timeout=600)
     assert hecho.returncode == 0, (
         f"el smoke de la GUI fallo:\n{hecho.stdout}\n{hecho.stderr}")
     obs = json.loads(destino.read_text(encoding="utf-8"))
@@ -2293,7 +2293,7 @@ def test_las_tres_caras_restantes_se_construyen_y_declaran_de_verdad(tmp_path):
     hecho = subprocess.run(
         _ENVOLTORIO + [_INTERPRETE, "-m", "tests.apoyo.gui_caras_normativa",
                        str(destino)],
-        cwd=RAIZ, capture_output=True, text=True, timeout=600)
+        cwd=RAIZ, capture_output=True, text=True, encoding="utf-8", timeout=600)
     assert hecho.returncode == 0, (
         f"el apoyo de las tres caras fallo:\n{hecho.stdout}\n{hecho.stderr}")
     obs = json.loads(destino.read_text(encoding="utf-8"))
@@ -2679,7 +2679,7 @@ def test_ext8_la_ventana_real_exporta_sin_bloquear_y_responde_al_teclado(tmp_pat
     hecho = subprocess.run(
         _ENVOLTORIO + [_INTERPRETE, "-m", "tests.apoyo.gui_ext8_real",
                        str(destino)],
-        cwd=RAIZ, capture_output=True, text=True, timeout=900)
+        cwd=RAIZ, capture_output=True, text=True, encoding="utf-8", timeout=900)
     assert hecho.returncode == 0, (
         f"la corrida de la GUI fallo:\n{hecho.stdout}\n{hecho.stderr}")
     obs = json.loads((destino / "observado.json").read_text(encoding="utf-8"))
@@ -2737,7 +2737,7 @@ def test_ext10_la_ventana_real_calcula_dos_obras_una_vacia_y_abre_B_tras_A(tmp_p
     hecho = subprocess.run(
         _ENVOLTORIO + [_INTERPRETE, "-m", "tests.apoyo.gui_ext10_real",
                        str(tmp_path)],
-        cwd=RAIZ, capture_output=True, text=True, timeout=900)
+        cwd=RAIZ, capture_output=True, text=True, encoding="utf-8", timeout=900)
     assert hecho.returncode == 0, (
         f"la corrida de la GUI fallo:\n{hecho.stdout}\n{hecho.stderr}")
     r = json.loads((tmp_path / "resumen_ext10.json").read_text(encoding="utf-8"))

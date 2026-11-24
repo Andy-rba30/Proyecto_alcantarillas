@@ -131,7 +131,7 @@ def _correr_cli(tmp_path, *declaraciones, cajon=False, csv=CSV_EJEMPLO):
          "--alcance", "perfil", "--datos-externos", str(EXTERNOS_AMPLIADOS),
          "--json", str(json_), "--html", str(html)]
         + _declaraciones_cli(*declaraciones, cajon=cajon),
-        cwd=RAIZ, capture_output=True, text=True)
+        cwd=RAIZ, capture_output=True, text=True, encoding="utf-8")
     assert json_.exists(), r.stderr
     return r.stdout, json.loads(json_.read_text(encoding="utf-8")), \
         html.read_text(encoding="utf-8")

@@ -274,7 +274,7 @@ def main(salida: Path) -> int:
         hecho = subprocess.run(
             [sys.executable, str(RAIZ / "cli.py"), "--sesion", str(sesion_del_hijo),
              "--barrido", "n_celdas_cajon=1,2", "--json", str(salida / "barrido_cli.json")],
-            cwd=Path.cwd(), capture_output=True, text=True, timeout=TOPE_S)
+            cwd=Path.cwd(), capture_output=True, text=True, encoding="utf-8", timeout=TOPE_S)
         g["cli_codigo"] = hecho.returncode
         g["lineas_cli"] = _tabla_de_la_salida(hecho.stdout) if hecho.returncode == 0 else [
             hecho.stderr[-2000:]]

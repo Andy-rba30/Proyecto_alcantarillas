@@ -382,14 +382,14 @@ def test_la_cli_imprime_las_faltas_de_la_fase_1bis_y_sale_con_1(tmp_path):
             "--alcance", "perfil", "--luz", str(LUZ_DEL_CASO),
             "--tw", str(TW_DEL_CASO), "--cuencas", str(CUENCAS),
             "--estacion", str(ESTACION)]
-    hecho = subprocess.run(base, capture_output=True, text=True, cwd=RAIZ)
+    hecho = subprocess.run(base, capture_output=True, text=True, encoding="utf-8", cwd=RAIZ)
     assert hecho.returncode == 1, hecho.stdout + hecho.stderr
     linea = next(l for l in hecho.stdout.splitlines()
                  if "A-02" in l and FEN in l and "DETIENE" in l)
     assert servicio.ETAPA_CAUDAL_CALCULADO in linea
     assert antc.AVISO_HIDROLOGIA_NO_CALCULADA in hecho.stdout
     hecho = subprocess.run(base + ["--declarar", f"{FEN}=serie_completa"],
-                           capture_output=True, text=True, cwd=RAIZ)
+                           capture_output=True, text=True, encoding="utf-8", cwd=RAIZ)
     assert hecho.returncode == 0, hecho.stdout + hecho.stderr
 
 

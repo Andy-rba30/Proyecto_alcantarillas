@@ -218,7 +218,7 @@ def test_la_cli_escribe_las_dos_vistas_de_una_corrida(tmp_path):
          "--alcance", "expediente", "--datos-externos", str(EXTERNOS_AMPLIADOS),
          "--json", str(tmp_path / "informe.json"), "--html", str(completa),
          "--html-resumida", str(resumida)],
-        cwd=RAIZ, capture_output=True, text=True)
+        cwd=RAIZ, capture_output=True, text=True, encoding="utf-8")
     assert hecho.returncode in (0, 1), hecho.stderr
     assert "Memoria resumida (HTML)" in hecho.stdout
     texto_c = completa.read_text(encoding="utf-8")
@@ -534,7 +534,7 @@ def test_git_archive_deja_fuera_el_material_de_proceso():
                            ("proceso/tests/conftest.py", "set"),
                            ("src/servicio.py", "unspecified")):
         salida = subprocess.run([git, "check-attr", "export-ignore", ruta], cwd=RAIZ,
-                                capture_output=True, text=True, check=True).stdout
+                                capture_output=True, text=True, encoding="utf-8", check=True).stdout
         assert salida.strip().endswith(esperado), salida
 
 
@@ -747,12 +747,12 @@ def test_la_suite_del_entregable_pasa_sobre_una_exportacion(tmp_path):
     assert (arbol / "tests" / "test_t12_entregable.py").is_file()
     recogida = subprocess.run(
         [sys.executable, "-m", "pytest", "--collect-only", "-q", "-p",
-         "no:cacheprovider"], cwd=arbol, capture_output=True, text=True)
+         "no:cacheprovider"], cwd=arbol, capture_output=True, text=True, encoding="utf-8")
     assert recogida.returncode == 0, recogida.stdout[-2000:]
     corrida = subprocess.run(
         [sys.executable, "-m", "pytest", "-q", "-p", "no:cacheprovider",
          "--no-header", "-rs", *EN_LA_EXPORTACION],
-        cwd=arbol, capture_output=True, text=True)
+        cwd=arbol, capture_output=True, text=True, encoding="utf-8")
     assert corrida.returncode == 0, corrida.stdout[-3000:]
     assert "failed" not in corrida.stdout.splitlines()[-1]
     for motivo in ("sin .git (una exportacion del entregable)",
@@ -886,7 +886,7 @@ def test_la_resumida_nombra_la_completa_que_de_verdad_se_escribio(tmp_path):
         [sys.executable, "cli.py", str(CSV_EJEMPLO), "--luz", "2.75",
          "--alcance", "perfil", "--json", str(tmp_path / "i.json"),
          "--html", str(tmp_path / "c.html"), "--html-resumida",
-         str(tmp_path / "r.html")], cwd=RAIZ, capture_output=True, text=True)
+         str(tmp_path / "r.html")], cwd=RAIZ, capture_output=True, text=True, encoding="utf-8")
     assert hecho.returncode in (0, 1), hecho.stderr
     assert "<code>c.html</code>" in (tmp_path / "r.html").read_text(encoding="utf-8")
 

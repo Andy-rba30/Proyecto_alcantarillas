@@ -309,7 +309,7 @@ def test_pf2_la_cli_sale_con_1_si_la_cabecera_detiene_la_carga(tmp_path):
     hecho = subprocess.run(
         [sys.executable, str(RAIZ / "cli.py"), str(ruta), "--prevuelo",
          "--luz", str(LUZ_DEL_CASO), "--tw", str(TW_DEL_CASO)],
-        capture_output=True, text=True, cwd=RAIZ)
+        capture_output=True, text=True, encoding="utf-8", cwd=RAIZ)
     assert hecho.returncode == 1 and "cbr_subrasante" in hecho.stdout
 
 
@@ -330,7 +330,7 @@ def test_pf2_la_cli_imprime_el_prevuelo_y_sale_sin_correr(tmp_path):
     hecho = subprocess.run(
         [sys.executable, str(RAIZ / "cli.py"), str(CSV_EJEMPLO), "--prevuelo",
          "--alcance", "perfil", "--json", str(tmp_path / "no.json")],
-        capture_output=True, text=True, cwd=RAIZ)
+        capture_output=True, text=True, encoding="utf-8", cwd=RAIZ)
     assert hecho.returncode == 1, hecho.stderr
     assert "luz_m" in hecho.stdout and "cota_coronacion_canal" in hecho.stdout
     assert antc.AVISO_DEL_ANTICIPO.split(".")[0] in hecho.stdout
@@ -354,12 +354,12 @@ def test_pf2_la_cli_imprime_el_prevuelo_y_sale_sin_correr(tmp_path):
         [sys.executable, str(RAIZ / "cli.py"), str(ruta), "--prevuelo",
          "--alcance", "perfil",
          "--luz", str(LUZ_DEL_CASO), "--tw", str(TW_DEL_CASO)],
-        capture_output=True, text=True, cwd=RAIZ)
+        capture_output=True, text=True, encoding="utf-8", cwd=RAIZ)
     assert hecho.returncode == 0, hecho.stdout + hecho.stderr
     hecho = subprocess.run(
         [sys.executable, str(RAIZ / "cli.py"), str(ruta), "--prevuelo",
          "--luz", str(LUZ_DEL_CASO), "--tw", str(TW_DEL_CASO)],
-        capture_output=True, text=True, cwd=RAIZ)
+        capture_output=True, text=True, encoding="utf-8", cwd=RAIZ)
     assert hecho.returncode == 1, hecho.stdout + hecho.stderr
     linea = next(l for l in hecho.stdout.splitlines()
                  if "NF_profundidad_m" in l and "DETIENE" in l)

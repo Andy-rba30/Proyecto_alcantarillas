@@ -323,7 +323,7 @@ def _cpu_de_import_cli() -> float:
     for _ in range(CORRIDAS_IMPORT_CLI):
         hecho = subprocess.run(
             [sys.executable, "-c", programa],
-            cwd=RAIZ, capture_output=True, text=True, timeout=120)
+            cwd=RAIZ, capture_output=True, text=True, encoding="utf-8", timeout=120)
         assert hecho.returncode == 0, hecho.stderr[-2000:]
         medido = float(hecho.stdout.strip().splitlines()[-1])
         mejor = medido if mejor is None else min(mejor, medido)
@@ -355,7 +355,7 @@ def test_pc10_import_cli_no_carga_weasyprint_ni_scipy_ni_el_censo():
         "ve.VARIABLES; print(json.dumps({'censo_despues': 'VARIABLES' in vars(ve),\n"
         "  'n': len(ve.VARIABLES)}))")
     hecho = subprocess.run([sys.executable, "-c", programa], cwd=RAIZ,
-                           capture_output=True, text=True, timeout=120)
+                           capture_output=True, text=True, encoding="utf-8", timeout=120)
     assert hecho.returncode == 0, hecho.stderr[-2000:]
     antes, despues = (json.loads(l) for l in hecho.stdout.strip().splitlines())
     assert antes == {"weasyprint": False, "scipy": False, "censo": False}, antes

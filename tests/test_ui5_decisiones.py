@@ -380,7 +380,7 @@ def ventana_real(tmp_path_factory):
     salida = tmp_path_factory.mktemp("ui5_ventana")
     hecho = subprocess.run(
         envoltorio + [interprete, "-m", "tests.apoyo.gui_ui5_real", str(salida)],
-        cwd=RAIZ, capture_output=True, text=True, timeout=TOPE_S)
+        cwd=RAIZ, capture_output=True, text=True, encoding="utf-8", timeout=TOPE_S)
     assert hecho.returncode == 0, (
         f"la corrida de la GUI fallo:\n{hecho.stdout[-4000:]}\n{hecho.stderr[-4000:]}")
     return salida, json.loads((salida / "resumen_ui5.json").read_text(encoding="utf-8"))
@@ -876,7 +876,7 @@ def test_3_la_cli_directa_bajo_ulimit_no_destruye_el_pdf_anterior(tmp_path):
         sys.executable, str(RAIZ / "cli.py"), str(CSV_EJEMPLO), "--luz", "2.75",
         "--alcance", "perfil", "--json", str(tmp_path / "i.json"), "--pdf", str(destino)))
     hecho = subprocess.run(["bash", "-c", f"ulimit -f 300; exec {linea}"], cwd=RAIZ,
-                           capture_output=True, text=True, timeout=TOPE_S)
+                           capture_output=True, text=True, encoding="utf-8", timeout=TOPE_S)
     assert (tmp_path / "i.json").is_file(), "el JSON no cupo: el test perderia su objeto"
     assert "File too large" in hecho.stderr or "Errno 27" in hecho.stderr, hecho.stderr[-2000:]
     assert hecho.returncode not in (0,)

@@ -810,16 +810,16 @@ def test_e14_la_cli_compara_dos_json_sin_correr_el_pipeline(tmp_path):
     datos["puntos"][1]["diseno"]["HW_gobernante_m"] += 0.02
     b.write_text(json.dumps(datos), encoding="utf-8")
     hecho = subprocess.run([sys.executable, str(RAIZ / "cli.py"), "--comparar", str(a), str(a)],
-                           cwd=RAIZ, capture_output=True, text=True, timeout=300)
+                           cwd=RAIZ, capture_output=True, text=True, encoding="utf-8", timeout=300)
     assert hecho.returncode == 0, hecho.stderr
     assert "IGUALES" in hecho.stdout and "JSON del expediente" not in hecho.stdout
     hecho = subprocess.run([sys.executable, str(RAIZ / "cli.py"), "--comparar", str(a), str(b)],
-                           cwd=RAIZ, capture_output=True, text=True, timeout=300)
+                           cwd=RAIZ, capture_output=True, text=True, encoding="utf-8", timeout=300)
     assert hecho.returncode == 1, hecho.stderr
     assert "HW_gobernante_m" in hecho.stdout
     hecho = subprocess.run([sys.executable, str(RAIZ / "cli.py"), "--comparar", str(a),
                             str(tmp_path / "no_existe.json")],
-                           cwd=RAIZ, capture_output=True, text=True, timeout=300)
+                           cwd=RAIZ, capture_output=True, text=True, encoding="utf-8", timeout=300)
     assert hecho.returncode == 2
 
 
@@ -992,7 +992,7 @@ def _interprete_con_ventana():
             continue
         try:
             hecho = subprocess.run(envoltorio + [candidato, "-c", sonda],
-                                   capture_output=True, text=True, timeout=120)
+                                   capture_output=True, text=True, encoding="utf-8", timeout=120)
         except (OSError, subprocess.TimeoutExpired):
             continue
         if hecho.returncode == 0:
@@ -1009,7 +1009,7 @@ _INTERPRETE, _ENVOLTORIO = _interprete_con_ventana()
 def test_eb_los_editores_tipados_en_la_ventana_de_verdad(tmp_path):
     hecho = subprocess.run(
         _ENVOLTORIO + [_INTERPRETE, "-m", "tests.apoyo.gui_eb_real", str(tmp_path)],
-        cwd=RAIZ, capture_output=True, text=True, timeout=900)
+        cwd=RAIZ, capture_output=True, text=True, encoding="utf-8", timeout=900)
     assert hecho.returncode == 0, f"la ventana fallo:\n{hecho.stdout}\n{hecho.stderr}"
     r = json.loads((tmp_path / "resumen_eb.json").read_text(encoding="utf-8"))
     # 1. La serie de pares, fila a fila por el editor, y lo que quedo declarado.

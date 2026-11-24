@@ -141,7 +141,7 @@ class Taller:
 
     def correr(self, id_bloque: str) -> subprocess.CompletedProcess:
         hecho = subprocess.run(_comando(POR_ID[id_bloque]), cwd=self.raiz,
-                               capture_output=True, text=True, timeout=600)
+                               capture_output=True, text=True, encoding="utf-8", timeout=600)
         self.resultados[id_bloque] = hecho
         return hecho
 

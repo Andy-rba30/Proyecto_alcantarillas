@@ -202,7 +202,7 @@ def test_la_app_no_versiona_ningun_PDF_de_normas():
         pytest.skip("sin git o fuera de un checkout: no se puede leer lo versionado")
     versionados = subprocess.run(
         [git, "ls-files", "--", "*.pdf", "*.PDF"], cwd=RAIZ,
-        capture_output=True, text=True, check=True).stdout.split()
+        capture_output=True, text=True, encoding="utf-8", check=True).stdout.split()
     assert not versionados, (
         f"PDF versionados en el repositorio de la app: {versionados}. Los "
         "PDF de normas no se versionan aqui (copyright; INF-5.2.3)")

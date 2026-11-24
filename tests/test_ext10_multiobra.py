@@ -131,7 +131,7 @@ def _externos_expediente():
 
 def _cli(*args: str, timeout: float = 600.0) -> subprocess.CompletedProcess:
     return subprocess.run([sys.executable, str(RAIZ / "cli.py"), *args],
-                          cwd=RAIZ, capture_output=True, text=True, timeout=timeout)
+                          cwd=RAIZ, capture_output=True, text=True, encoding="utf-8", timeout=timeout)
 
 
 def _cli_expediente(tmp_path: Path, rotulo: str, *extra: str) -> tuple:

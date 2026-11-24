@@ -443,7 +443,7 @@ def test_sin_M5_la_ausencia_sale_como_ImportError_y_no_como_ErrorProyecto(tmp_pa
     ausente.unlink()
 
     r = subprocess.run([sys.executable, "-c", GUION_SIN_M5], cwd=arbol,
-                       capture_output=True, text=True, timeout=120)
+                       capture_output=True, text=True, encoding="utf-8", timeout=120)
     assert r.returncode == 0, r.stderr
     assert "IMPORTERROR_ESPERADO" in r.stdout, r.stdout
 

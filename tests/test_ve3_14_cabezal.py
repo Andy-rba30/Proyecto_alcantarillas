@@ -194,7 +194,7 @@ def correr_e5(tmp_path):
     for clave, valor in json.loads(
             (E5 / "declaraciones.json").read_text(encoding="utf-8")).items():
         args += ["--declarar", f"{clave}={valor!r}"]
-    subprocess.run(args + ARGS_PREVIOS_VE3_15, cwd=RAIZ, capture_output=True, text=True,
+    subprocess.run(args + ARGS_PREVIOS_VE3_15, cwd=RAIZ, capture_output=True, text=True, encoding="utf-8",
                    check=False)
     return json.loads(salida.read_text(encoding="utf-8"))
 
@@ -370,7 +370,7 @@ def correr_escenario(carpeta, tmp_path, *extra):
             ).items():
         args += ["--declarar", f"{clave}={valor!r}"]
     subprocess.run(args + ARGS_PREVIOS_VE3_15 + list(extra), cwd=RAIZ, capture_output=True,
-                   text=True, check=False)
+                   text=True, encoding="utf-8", check=False)
     return json.loads(salida.read_text(encoding="utf-8"))
 
 
@@ -559,7 +559,7 @@ def test_el_resumen_atribuye_el_metodo_no_evaluable_a_su_causa(tmp_path):
     args += ["--declarar",
              "agua_del_relleno_bajo_sismo='relleno_muy_abierto'",
              "--json", str(tmp_path / "e3.json")]
-    r = subprocess.run(args + ARGS_PREVIOS_VE3_15, cwd=RAIZ, capture_output=True, text=True,
+    r = subprocess.run(args + ARGS_PREVIOS_VE3_15, cwd=RAIZ, capture_output=True, text=True, encoding="utf-8",
                        check=False)
     resumen = r.stdout[r.stdout.rindex("RESUMEN"):]
     assert "metodo no evaluable" in resumen
