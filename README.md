@@ -37,6 +37,20 @@ programa (§7). `pyproject.toml` declara las mismas dependencias, separadas en o
 y opcionales (`gui`, `pdf`, `test`); el programa se usa desde el clon y **no se instala
 como paquete** (la memoria lee la hoja de ruta de `docs/` por su posición en el árbol).
 
+Para comprobar el programa o desarrollarlo, además: `pip install -r requirements-dev.txt`
+(PyMuPDF para leer los PDF de normas, `pytest-xdist` para correr la suite en paralelo,
+`openpyxl` del material de proceso y PyInstaller del empaquetado).
+
+**Los tres documentos para empezar:** el
+**[manual de usuario](docs/manual_usuario.md)** (cómo preparar las entradas, correr a
+perfil o expediente, resolver bloqueos y exportar), las
+**[plantillas comentadas](plantillas/README.md)** de `plantillas/` (un CSV por familia, el
+JSON de datos externos, el de sitio y una sesión vacía) y, para quien toca el código, la
+**[guía del desarrollador](docs/guia_del_desarrollador.md)** (arquitectura, dónde vive cada
+cosa, cómo correr las dos suites y cómo regenerar los documentos). La receta de
+`empaquetado/` construye un ejecutable para Windows sin Python, pero **no se ha verificado
+todavía en Windows** (guía del desarrollador, §5): el programa se usa desde el clon.
+
 ### WeasyPrint en Windows
 
 En Linux y macOS normalmente no hay nada que hacer. En **Windows**, `pip install
@@ -88,7 +102,9 @@ Qué recibe el programa, de qué estudio sale cada dato y quién lo aporta está
 En la ventana, cada una de estas entradas es un campo de la pestaña 1, y los criterios se
 declaran en la pestaña 2 (§4, «La ventana»). De un CSV nuevo a las tres familias
 dimensionadas a nivel de perfil, paso a paso y con comandos que la suite ejecuta:
-**[`docs/guia_perfil.md`](docs/guia_perfil.md)**.
+**[`docs/guia_perfil.md`](docs/guia_perfil.md)**. Para empezar una obra propia, las
+plantillas comentadas de **[`plantillas/`](plantillas/README.md)** traen un CSV por familia,
+el JSON de datos externos, el de sitio y una sesión vacía para la ventana.
 
 **Otra obra sobre el mismo despliegue.** Los datos de sitio `[S]` del corredor de la obra
 del repositorio viven en `src/datos_sitio.py` con su trazabilidad y **no se editan** para
@@ -280,10 +296,34 @@ topografía, trazo— no las sustituye nada.
 ## 7. Comprobar el programa
 
 ```
-pip install -r requirements-dev.txt          # PyMuPDF (y openpyxl, del proceso)
+pip install -r requirements-dev.txt          # PyMuPDF, pytest-xdist (y openpyxl, del proceso)
 export NORMAS_DIR=/ruta/a/Normas
-python -m pytest -q
+python -m pytest -m "not lento" -n auto      # suite rápida: la de trabajo (minutos)
+python -m pytest -n auto --dist loadfile     # suite completa (con -n 4, 1 h 40 min)
+python -m pytest -m aislado                  # y su paso aislado, SIN -n
 ```
+
+**Dos velocidades.** Los tests marcados `lento` (ventana real, validación integral,
+sensibilidad) son los que llevan la suite completa a casi dos horas; la rápida los deja
+fuera. Los tests `aislado` miden tiempo y sólo valen sin otros en paralelo: con `-n` se
+deseleccionan solos (lo avisa la corrida) y corren en su propio paso. El par de la suite
+completa es la **suma** de las dos invocaciones.
+
+Medido al cerrar el plan de mantenibilidad y las rondas de Windows (2026-11-24, Linux,
+Python 3.12 con PyMuPDF, ventana Tk con `xvfb-run` y `NORMAS_DIR`; es el par con que están
+sellados `docs/indice_formulas.md` y `docs/trazabilidad.csv`):
+
+| Árbol | `NORMAS_DIR` | `passed` | `skipped` | `collected` |
+|---|---|---|---|---|
+| checkout de git (`-n 4 --dist loadfile` + `-m aislado`) | sí | 9213 | 13 | 9226 |
+
+En Windows (Python 3.13) la suite completa sobre la versión anterior dio 16 fallos de
+plataforma, corregidos en dos rondas (fichas WIN-01 a WIN-03 de
+`docs/decisiones_diferidas.md`); los tests que necesitan enlaces simbólicos o modos POSIX
+se saltan allí diciéndolo. **La confirmación en Windows de la suite corregida está
+pendiente**; la CI tiene un trabajo `windows` manual con la suite rápida.
+
+Lo que sigue es la explicación del par y las mediciones de la versión de sustentación.
 
 `python -m pytest` desde la raíz corre la **suite del entregable** (`tests/`). El conteo
 es un **par** —`passed` y `skipped`— que depende del entorno: sin PyMuPDF, sin ventana Tk,
