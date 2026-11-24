@@ -1132,7 +1132,7 @@ def test_pc17_toda_emergente_con_escape_toma_el_foco_al_abrirse():
             f"{nodo.name} ata Escape y no toma el foco: en Windows no le llega")
 
 
-def test_tomar_foco_al_abrir_lo_pide_ya_y_al_mapearse_la_emergente():
+def test_tomar_foco_al_abrir_lo_pide_ya_y_en_el_primer_mapeo_de_la_emergente():
     from tests.apoyo.doble_tkinter import gui_componentes
     comp = gui_componentes()
 
@@ -1154,6 +1154,10 @@ def test_tomar_foco_al_abrir_lo_pide_ya_y_al_mapearse_la_emergente():
     assert (evento, add) == ("<Map>", "+")
     al_mapearse(SimpleNamespace(widget=object()))   # se mapea un hijo
     assert v.focos == 1
+    al_mapearse(SimpleNamespace(widget=v))
+    assert v.focos == 2
+    # Solo el PRIMER mapeo (dictamen Fable de la ronda 2): restaurarla no le
+    # quita el cursor al campo donde se escribia.
     al_mapearse(SimpleNamespace(widget=v))
     assert v.focos == 2
 

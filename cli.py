@@ -1468,6 +1468,11 @@ def _informe_json_base(informe: Informe, bloqueantes: Any,
         "expediente": {
             # Con `/` en todo sistema (`as_posix`): el JSON se compara con
             # la linea base, escrita en Linux; en Windows `str` daba `\`.
+            # Las dos rutas de `expediente.hidrologia` (abajo) quedan A
+            # PROPOSITO con el separador del sistema: son la fotografia de
+            # `MH_hidrologia` (`origen_cuencas`) y de la sesion de la corrida
+            # que relee el hijo del PDF (ficha WIN-01). El comparador omite
+            # las tres (`comparador.CAMPOS_OMITIDOS`).
             "csv": Path(informe.csv).as_posix(), "generado_utc": informe.generado,
             # Las dos huellas de la corrida, las MISMAS que imprime la
             # memoria: la del CSV es de los bytes que M0 leyo (PC-09).

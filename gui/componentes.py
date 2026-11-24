@@ -189,17 +189,30 @@ def declarar_conciencia_de_dpi():
 # `tests/test_ui3_barrido_ventana.py` vigila en la geometria por defecto). Las
 # geometrias de las ventanas se escribieron a `PPP_DE_DISENO` --- el 100 % de
 # Windows --- y en Windows se escalan por ppp / `PPP_DE_DISENO`, nunca por
-# debajo de 1, ajustadas al area de trabajo del monitor principal (sin la
-# barra de tareas) y centradas en ella. Fuera de Windows no se toca nada: no
-# se declaro nada alli, y el ppp que X11 informa (100 en Xvfb) no es una
-# escala elegida por el usuario.
+# debajo de 1, ajustadas al area de trabajo (sin la barra de tareas) del
+# monitor de la ventana de referencia --- el de la principal para una
+# emergente --- y centradas en ella. Fuera de Windows no se toca nada: no se
+# declaro nada alli, y el ppp que X11 informa (100 en Xvfb) no es una escala
+# elegida por el usuario.
+#
+# EL LIMITE DE ESTA SOLUCION (dictamen Fable de la ronda 2): el escalado
+# arregla el 125 % medido, no cualquier escala. En 1920x1080 al 150 % el alto
+# se recorta al area de trabajo (unos 974 px, unos 650 px de diseño, menos
+# que los 800) y «Barrido…» vuelve a quedar bajo la pestaña. El remedio de
+# fondo es de LAYOUT (que la pestaña 2 desplace o fije su fila de botones).
+# Y el marco que se resta es el de una ventana redimensionable SIN barra de
+# menus, que es la de la GUI; si se añade una, falta `SM_CYMENU`. Las
+# metricas del marco son las del ppp del sistema (`GetSystemMetrics`), aun
+# con un monitor secundario a otra escala.
 PPP_DE_DISENO = 96   # literal-ok: ppp del 100 % de Windows, a los que se escribieron las geometrias
 # Indices de `SystemParametersInfoW` y `GetSystemMetrics` de la API de
-# Windows: el area de trabajo, y el marco y la barra de titulo de una ventana
-# con borde redimensionable. Identificadores del sistema operativo, no
-# magnitudes.
+# Windows: el area de trabajo del monitor principal (la caida si no se puede
+# preguntar por el de la ventana), y el marco y la barra de titulo de una
+# ventana con borde redimensionable. Identificadores del sistema operativo,
+# no magnitudes. `MonitorFromWindow` con MONITOR_DEFAULTTONEAREST (2).
 SPI_GETWORKAREA = 0x30   # literal-ok: indice de SystemParametersInfoW (API de Windows)
 SM_CXFRAME, SM_CYFRAME, SM_CYCAPTION, SM_CXPADDEDBORDER = 32, 33, 4, 92   # literal-ok: indices de GetSystemMetrics (API de Windows)
+MONITOR_DEFAULTTONEAREST = 2
 
 
 def factor_de_escala(ventana) -> float:
@@ -217,29 +230,65 @@ def factor_de_escala(ventana) -> float:
     return max(1.0, ppp / PPP_DE_DISENO)
 
 
-def area_de_trabajo():
+def _rect_de_trabajo_del_monitor(user32, wintypes, ctypes, referencia):
+    """
+    El `rcWork` del monitor donde esta `referencia` (su ventana de nivel
+    superior), o `None` si no se puede preguntar: sin referencia, o si
+    `wm frame`, `MonitorFromWindow` o `GetMonitorInfoW` no responden.
+    """
+    if referencia is None:
+        return None
+
+    class _InfoDeMonitor(ctypes.Structure):
+        _fields_ = [("cbSize", wintypes.DWORD), ("rcMonitor", wintypes.RECT),
+                    ("rcWork", wintypes.RECT), ("dwFlags", wintypes.DWORD)]
+
+    try:
+        # `wm frame` da el HWND en hexadecimal con su prefijo («0x1a2b»):
+        # la base 0 lo lee del prefijo.
+        hwnd = int(referencia.winfo_toplevel().wm_frame(), 0)
+    except (tk.TclError, TypeError, ValueError, AttributeError):
+        return None
+    user32.MonitorFromWindow.restype = ctypes.c_void_p
+    user32.MonitorFromWindow.argtypes = [ctypes.c_void_p, wintypes.DWORD]
+    user32.GetMonitorInfoW.argtypes = [ctypes.c_void_p,
+                                       ctypes.POINTER(_InfoDeMonitor)]
+    monitor = user32.MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST)
+    if not monitor:
+        return None
+    info = _InfoDeMonitor()
+    info.cbSize = ctypes.sizeof(_InfoDeMonitor)
+    if not user32.GetMonitorInfoW(monitor, ctypes.byref(info)):
+        return None
+    return info.rcWork
+
+
+def area_de_trabajo(referencia=None):
     """
     En Windows, `(x, y, ancho, alto, marco_ancho, marco_alto)`: el area de
-    trabajo del monitor principal (la pantalla sin la barra de tareas) y lo
-    que el marco y la barra de titulo de una ventana redimensionable suman a
-    su area de cliente, que es lo que `geometry` mide; todo en pixeles
-    fisicos. Fuera de Windows, o si la API no responde, `None`. Nunca lanza.
+    trabajo (la pantalla sin la barra de tareas) del monitor de `referencia`
+    --- o del principal, si no se da o no se puede preguntar --- y lo que el
+    marco y la barra de titulo de una ventana redimensionable suman a su area
+    de cliente, que es lo que `geometry` mide; todo en pixeles fisicos. Fuera
+    de Windows, o si la API no responde, `None`. Nunca lanza.
     """
     if sys.platform != "win32":
         return None
-    import ctypes
-    from ctypes import wintypes
     try:
+        import ctypes
+        from ctypes import wintypes
         user32 = ctypes.windll.user32
-        rect = wintypes.RECT()
-        if not user32.SystemParametersInfoW(SPI_GETWORKAREA, 0,
-                                            ctypes.byref(rect), 0):
-            return None
+        rect = _rect_de_trabajo_del_monitor(user32, wintypes, ctypes, referencia)
+        if rect is None:
+            rect = wintypes.RECT()
+            if not user32.SystemParametersInfoW(SPI_GETWORKAREA, 0,
+                                                ctypes.byref(rect), 0):
+                return None
         borde = user32.GetSystemMetrics(SM_CXPADDEDBORDER)
         marco_ancho = 2 * (user32.GetSystemMetrics(SM_CXFRAME) + borde)
         marco_alto = (user32.GetSystemMetrics(SM_CYCAPTION)
                       + 2 * (user32.GetSystemMetrics(SM_CYFRAME) + borde))
-    except (AttributeError, OSError):
+    except (ImportError, AttributeError, OSError):
         return None
     return (rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top,
             marco_ancho, marco_alto)
@@ -250,14 +299,15 @@ def geometria_inicial(ventana, ancho, alto, minimo=None):
     El tamaño inicial de una ventana (y su minimo), escritos en pixeles a
     `PPP_DE_DISENO`. Fuera de Windows es `ventana.geometry(f"{ancho}x{alto}")`
     y `ventana.minsize(*minimo)`, tal cual. En Windows se escalan por
-    `factor_de_escala` y, si se conoce el area de trabajo, se ajustan a ella
-    con su marco y la ventana se centra alli: abierta, se ve entera. Devuelve
-    la cadena de geometria aplicada.
+    `factor_de_escala` y, si se conoce el area de trabajo del monitor de su
+    ventana maestra (la principal, para una emergente), se ajustan a ella con
+    su marco y la ventana se centra alli: abierta, se ve entera. Devuelve la
+    cadena de geometria aplicada.
     """
     factor = factor_de_escala(ventana)
     w, h = round(ancho * factor), round(alto * factor)
     posicion = ""
-    area = area_de_trabajo()
+    area = area_de_trabajo(getattr(ventana, "master", None))
     if area is not None:
         x0, y0, ancho_area, alto_area, marco_ancho, marco_alto = area
         w = max(1, min(w, ancho_area - marco_ancho))
@@ -279,11 +329,18 @@ def tomar_foco_al_abrir(ventana):
     a la que se nombra: en X11 el foco lo da el gestor de ventanas al mapear
     la nueva, y en Windows no --- medido en la ronda 2 de Windows, el foco
     seguia en la principal (".") y Escape no cerraba ni la ventana normativa
-    ni la ayuda; con `focus_set` si. Se pide al construir y otra vez al
-    MAPEARSE la emergente (no sus hijos), que es cuando Tk puede darlo.
+    ni la ayuda; con `focus_set` si. Se pide al construir y otra vez en el
+    PRIMER mapeo de la emergente (no de sus hijos), que es cuando Tk puede
+    darlo; despues no (dictamen Fable de la ronda 2): restaurar la ventana
+    minimizada no le quita el cursor al campo donde se estaba escribiendo.
+    Una bandera y no `unbind`: en Python 3.12 `unbind(secuencia, id)` borra
+    todas las ataduras de la secuencia, no solo esta.
     """
+    pendiente = [True]
+
     def _al_mapearse(evento):
-        if evento.widget is ventana:
+        if evento.widget is ventana and pendiente[0]:
+            pendiente[0] = False
             ventana.focus_set()
 
     ventana.bind("<Map>", _al_mapearse, add="+")

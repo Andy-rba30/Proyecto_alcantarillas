@@ -658,7 +658,7 @@ def test_la_geometria_inicial_solo_se_escala_en_windows(monkeypatch):
     assert comp.area_de_trabajo() is None
 
     monkeypatch.setattr(sys, "platform", "win32")
-    monkeypatch.setattr(comp, "area_de_trabajo", lambda: None)
+    monkeypatch.setattr(comp, "area_de_trabajo", lambda _referencia=None: None)
     v = _VentanaDeGeometria(ppp=120.0)
     assert comp.geometria_inicial(v, 1100, 800, minimo=(900, 620)) == "1375x1000"
     assert v.minimos == [(1125, 775)]
@@ -670,13 +670,21 @@ def test_la_geometria_inicial_solo_se_escala_en_windows(monkeypatch):
     # Con el area de trabajo de la maquina medida (1920x1020 sin la barra de
     # tareas; marco 16 x 46 px): el alto se recorta para que la ventana
     # entera quepa, se centra, y el minimo no pasa del tamaño.
-    monkeypatch.setattr(comp, "area_de_trabajo", lambda: (0, 0, 1920, 1020, 16, 46))
+    referencias = []
+    monkeypatch.setattr(comp, "area_de_trabajo",
+                        lambda referencia=None: referencias.append(referencia)
+                        or (0, 0, 1920, 1020, 16, 46))
     v = _VentanaDeGeometria(ppp=120.0)
     assert comp.geometria_inicial(v, 1100, 800, minimo=(900, 620)) == "1375x974+264+0"
     assert v.minimos == [(1125, 775)]
     v = _VentanaDeGeometria(ppp=144.0)
     assert comp.geometria_inicial(v, 1100, 800, minimo=(900, 620)) == "1650x974+127+0"
     assert v.minimos == [(1350, 930)]
+    # El area es la del monitor de la ventana MAESTRA (dictamen Fable de la
+    # ronda 2): la principal, para una emergente; ninguna, para la principal.
+    v.master = principal = object()
+    comp.geometria_inicial(v, 900, 500)
+    assert referencias == [None, None, principal]
 
 
 def test_ningun_tamano_de_ventana_se_escribe_fuera_de_geometria_inicial():
