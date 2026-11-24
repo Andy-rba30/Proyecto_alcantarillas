@@ -59,7 +59,7 @@ registro.
 
 # Índice de fichas
 
-> Tabla derivada automáticamente de las **417** fichas del documento (`82` cerradas, `158` abiertas/parciales, `177` diferidas/declaradas).
+> Tabla derivada automáticamente de las **419** fichas del documento (`84` cerradas, `158` abiertas/parciales, `177` diferidas/declaradas).
 > Regla de estado (verificada por `tests/test_decisiones_diferidas.py`): `cerrada` si el título marca IMPLEMENTADA/CERRADA o tiene `**Cerrado` sin `**Abierto`; `abierta / parcial` si declara `**Abierto`; `diferida / declarada` en el resto.
 
 | Ficha | Tema | Estado |
@@ -481,6 +481,8 @@ registro.
 | N1MP-04 | La PGA de roca de La Unión, leída en el mapa de 2018: entre las isolíneas 0.50 y 0.52 g, no sobre la de 0.50 | abierta / parcial |
 | N1MP-05 | Dictamen de Fable sobre N1 (1/2): la edición 2018 es parte de cinco discrepancias y la memoria dice de qué edición es cada errata | cerrada |
 | N1MP-06 | Dictamen de Fable sobre N1 (2/2): la PGA del corredor es una discrepancia ABIERTA contra la hoja de ruta | abierta / parcial |
+| EXT-8-07 | Importación perezosa de M11_reporte, M12_metrados y MH_hidrologia para mantener import cli bajo 0.30 s | cerrada |
+| WIN-04 | Ronda 4 de Windows: geometría escalada en tests UI-4/VE-5, ruta nativa en c5, tope de ext5 y PDFs binarios en Normas | cerrada |
 
 ---
 
@@ -10766,3 +10768,45 @@ impreso que no es de cálculo: la huella de los criterios.
   y corregir la v8 en las seis líneas; entonces la discrepancia pasa a
   `RESUELTA`.
 - **Dónde vive:** `src/normativa/discrepancias.py::DIS_HR_PGA_LECTURA`
+
+## EXT-8-07 · Importación perezosa de M11_reporte, M12_metrados y MH_hidrologia para mantener import cli bajo 0.30 s
+
+- **Cerrado (`7707bed`):** `cli.py` reemplaza el import ansioso de los 16
+  nombres de `src.modulos.M11_reporte` por `__getattr__` y los resuelve vía
+  `sys.modules[__name__]` dentro de sus funciones de salida y plantilla.
+  `src/servicio.py` difiere `MH_hidrologia` y `M12_metrados` con
+  `_ModuloPerezoso` (manteniendo `from src.modulos import MH_hidrologia`
+  dentro de `_cargar_mh` para la guardia AST de `test_t1_hidrologia.py`) e
+  importa `sha1_de_bytes` localmente en `cargar_hidrologia` y `correr`.
+- **Por qué:** el presupuesto de `0.30 s` (`PRESUPUESTO_IMPORT_CLI_S`)
+  fallaba en reposo tanto en Linux (`0.313 s` en `7252e82`) como en
+  Windows (`0.328 s` en `07a784e`) porque `import cli` arrastraba los 19
+  submódulos de `M11_reporte`, `M12_metrados` y `MH_hidrologia` (~100 ms) sin
+  usarlos al arrancar. Con la carga perezosa, `_cpu_de_import_cli()` baja a
+  `0.2656 s` en Windows manteniendo el presupuesto de `0.30 s` sin tocar
+  cálculos, reexportaciones ni `monkeypatch`.
+- **Qué haría falta:** nada; `test_pc10_import_cli_difiere_reporte_metrados_e_hidrologia`
+  vigila en subproceso limpio que los tres módulos no carguen en `import cli`
+  y que se conserve la identidad de objetos.
+- **Dónde vive:** `cli.py::__getattr__`
+
+## WIN-04 · Ronda 4 de Windows: geometría escalada en tests UI-4/VE-5, ruta nativa en c5, tope de ext5 y PDFs binarios en Normas
+
+- **Cerrado (`940333a`, `4dea7ed` en Normas):** cuatro ajustes de
+  compatibilidad medidos sobre `07a784e` en Windows 11 (16 núcleos, escala
+  125 % / 120 ppp): (1) `test_c0` (`UI-4`) y `test_38` (`VE-5`) comparan en
+  `win32` contra la geometría escalada por `comp.factor_de_escala` / `minsize`
+  (`±2` px; en Linux conservan `"1100x800"` y `[900, 620]` literales);
+  (2) `test_c5` (`UI-4`) compara `sesion["cuencas"]` y `["estacion"]` contra
+  `str(Path(recorrido.relativa(...)))` respetando `WIN-01` (`cd45995`);
+  (3) `tests/test_ext5_forma_gui.py::resumen_real` sube su tope a
+  `timeout=1500` s (como `test_ui1` y `test_ui3`) frente a `TimeoutExpired`
+  bajo `-n 16`; (4) `Normas/.gitattributes` declara `*.pdf binary` delante
+  de la regla LFS para que `core.autocrlf=true` no altere SHA-1 (`LEY_29338`).
+- **Por qué:** al escalar ventanas por DPI (`WIN-03`) y conservar rutas
+  nativas en la sesión (`WIN-01`), los cuatro tests esperaban valores de 96
+  ppp / POSIX, y el checkout en Windows alteraba bytes `\n` de PDFs sin
+  `.gitattributes`.
+- **Qué haría falta:** nada en código ni tests; en futuros clones de
+  `Normas`, respetar `.gitattributes` con `*.pdf binary`.
+- **Dónde vive:** `tests/test_ui4_recorrido_ventana.py::test_c0_las_filas_de_exportacion_caben_en_la_geometria_por_defecto`
