@@ -657,6 +657,8 @@ CAMPOS_SECCION_RECEPTOR: Tuple[str, ...] = ("b_m", "z_HV", "S", "n",
 #       EMS: `tipo` ("no_cohesivo" con `D84_m` y `D16_m`, o "cohesivo" con
 #       `IP` y `Sv_Pa`) para la hoya de socavacion de HEC-14 Cap. 5, y
 #       `pasa_200_pct` para el geotextil de filtro (EG-2013, Tabla 511-06).
+#       Desde N3, `D85_m` y `D15_m` (juntos) para el filtro granular de
+#       HEC-11 Sec. 4.4.1.
 #   duracion_caudal_pico_min  duracion del caudal pico, en minutos (estudio
 #       hidrologico): el tiempo t de la hoya de socavacion.
 #   profundidad_socavacion_estimada_m   la socavacion a la salida que da un
@@ -678,7 +680,13 @@ CLAVES_DE_CATALOGO: Dict[str, Tuple[str, ...]] = {
     CLAVE_REGIMEN_FLUJO: tuple(REGIMENES_DE_FLUJO_T11),
 }
 CAMPOS_MATERIAL_LECHO: Tuple[str, ...] = ("tipo", "D84_m", "D16_m", "IP",
-                                          "Sv_Pa", "pasa_200_pct")
+                                          "Sv_Pa", "pasa_200_pct",
+                                          "D85_m", "D15_m")
+# --- N3 --- Los campos del FILTRO (no de la hoya): entran con o sin `tipo`.
+# El pasante elige la columna del geotextil (EG-2013); D85 y D15, que van
+# juntos, la ventana del filtro granular (HEC-11 Ec. 14).
+CAMPOS_DEL_LECHO_PARA_EL_FILTRO: Tuple[str, ...] = ("pasa_200_pct", "D85_m",
+                                                    "D15_m")
 CAMPOS_DEL_LECHO_POR_TIPO: Dict[str, Tuple[str, ...]] = {
     TIPO_LECHO_NO_COHESIVO: ("D84_m", "D16_m"),
     TIPO_LECHO_COHESIVO: ("IP", "Sv_Pa"),
@@ -1235,7 +1243,11 @@ def _material_lecho_externo(bruto: Any, origen: str) -> DatoDeclarado:
         {"pasa_200_pct": 35}                                    solo el filtro
         {"tipo": "no_cohesivo", "D84_m": ..., "D16_m": ...}     Ec. (5.1)
         {"tipo": "cohesivo", "IP": ..., "Sv_Pa": ...}           Ec. (5.2)-(5.4)
-    (las dos ultimas admiten ademas `pasa_200_pct`). Un `tipo` sin sus dos
+    (las dos ultimas admiten ademas `pasa_200_pct`). --- N3 --- Las tres
+    admiten ademas `D85_m` y `D15_m`, JUNTOS, para el filtro granular de
+    HEC-11 (Ec. 14): son del filtro y no de la hoya, de modo que no piden
+    `tipo`; y si vienen con `D84_m` y `D16_m`, los cuatro son percentiles de
+    la misma curva y tienen que ir en orden. Un `tipo` sin sus dos
     campos, o un campo del otro tipo, detienen la carga: medio ensayo no es
     un ensayo, y un campo que no entra en la ecuacion del tipo declarado es
     un dato que el proyectista cree estar usando. El dominio es el fisico; el
@@ -1271,7 +1283,8 @@ def _material_lecho_externo(bruto: Any, origen: str) -> DatoDeclarado:
                 motivo=f"no es un numero finito (SI); origen: {origen}")
         valores[campo] = float(crudo)
     tipo = valores.get("tipo")
-    de_ecuacion = [c for c in valores if c not in ("tipo", "pasa_200_pct")]
+    de_ecuacion = [c for c in valores
+                   if c not in ("tipo",) + CAMPOS_DEL_LECHO_PARA_EL_FILTRO]
     if tipo is None and de_ecuacion:
         raise DatoInvalidoError(
             clave, valor=sorted(bruto),
@@ -1292,7 +1305,7 @@ def _material_lecho_externo(bruto: Any, origen: str) -> DatoDeclarado:
                        + (f"sobran {ajenos}, que son del otro tipo"
                           if ajenos else "")
                        + f"; origen: {origen}")
-    for campo in ("D84_m", "D16_m", "Sv_Pa"):
+    for campo in ("D84_m", "D16_m", "Sv_Pa", "D85_m", "D15_m"):
         if campo in valores and not valores[campo] > 0:
             raise DatoInvalidoError(
                 f"{clave}.{campo}", valor=valores[campo],
@@ -1306,6 +1319,24 @@ def _material_lecho_externo(bruto: Any, origen: str) -> DatoDeclarado:
             clave, valor=(valores["D84_m"], valores["D16_m"]),
             motivo="D84 no puede ser menor que D16: son percentiles de la "
                    f"misma curva granulometrica; origen: {origen}")
+    # --- N3 --- D85 y D15 del filtro granular: juntos (la Ec. 14 de HEC-11
+    # usa los dos), en orden, y en orden tambien con D84 y D16 si vienen.
+    de_filtro = [c for c in ("D85_m", "D15_m") if c in valores]
+    if len(de_filtro) == 1:
+        raise DatoInvalidoError(
+            clave, valor=sorted(bruto),
+            motivo=f"`D85_m` y `D15_m` van juntos (la Ec. 14 de HEC-11 usa "
+                   f"los dos) y vino solo `{de_filtro[0]}`; origen: {origen}")
+    percentiles = [(c, valores[c]) for c in ("D15_m", "D16_m", "D84_m",
+                                             "D85_m") if c in valores]
+    for (c_bajo, v_bajo), (c_alto, v_alto) in zip(percentiles,
+                                                  percentiles[1:]):
+        if not v_alto >= v_bajo:
+            raise DatoInvalidoError(
+                clave, valor=dict(percentiles),
+                motivo=f"{c_alto} no puede ser menor que {c_bajo}: son "
+                       "percentiles de la misma curva granulometrica; "
+                       f"origen: {origen}")
     if "pasa_200_pct" in valores and \
             not 0 <= valores["pasa_200_pct"] <= PORCENTAJE_POR_UNIDAD:
         raise DatoInvalidoError(
@@ -4216,7 +4247,10 @@ def _fase_6(informe: InformePunto,
             indice_plasticidad_lecho=(
                 lecho.IP if lecho is not None
                 and lecho.tipo == TIPO_LECHO_COHESIVO else None),
-            tipo_lecho=None if lecho is None else lecho.tipo))
+            tipo_lecho=None if lecho is None else lecho.tipo,
+            # --- N3 --- la granulometria del lecho para el filtro granular.
+            D85_lecho=None if lecho is None else lecho.D85_m,
+            D15_lecho=None if lecho is None else lecho.D15_m))
     # --- T-7a --- LA EMBOCADURA DEL PUNTO, ya no la adoptada para todo el
     # proyecto (ficha T8-03): la resolvio `_fase_embocadura` antes del bucle
     # de MD, y un punto dimensionado la tiene siempre.

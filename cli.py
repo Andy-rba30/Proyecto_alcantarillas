@@ -63,7 +63,8 @@ diferencia importa porque se corrigen en sitios distintos:
       la Tabla N 11 del Manual: el material del cauce a la salida y a la
       entrada), `regimen_flujo_descarga` (su columna: intermitente o
       permanente), `material_lecho_salida` (objeto del EMS con el suelo del
-      lecho: tipo, D84_m y D16_m o IP y Sv_Pa, y pasa_200_pct),
+      lecho: tipo, D84_m y D16_m o IP y Sv_Pa, pasa_200_pct, y desde N3
+      D85_m y D15_m, juntos, para el filtro granular de HEC-11),
       `duracion_caudal_pico_min` (minutos, del estudio hidrologico) y
       `profundidad_socavacion_estimada_m` (de un estudio del cauce; gana
       sobre la hoya que estima el programa).
@@ -759,8 +760,35 @@ def _proteccion_json(p: ProteccionSalida) -> Dict[str, Any]:
         "pasa_200_pct": _num(f.pasa_200_pct), "columna_tabla_511_06": f.columna,
         "permitividad_min_s1": _num(f.permitividad_min_s1),
         "abertura_aparente_max_mm": _num(f.abertura_aparente_max_mm),
+        "cama_de_grava_bajo_geotextil": f.cama_de_grava_bajo_geotextil,
+        "granular": _filtro_granular_json(f.granular),
         "citas": list(f.citas)}
     return salida
+
+
+def _filtro_granular_json(g) -> Optional[Dict[str, Any]]:
+    """--- N3 --- El filtro granular de HEC-11 Sec. 4.4.1, o null."""
+    if g is None:
+        return None
+    d = g.directo_sobre_el_suelo
+    return {
+        "requisito": g.texto,
+        "D85_suelo_m": _num(g.D85_suelo), "D15_suelo_m": _num(g.D15_suelo),
+        "d50_enrocado_m": _num(g.d50_enrocado),
+        "D15_enrocado_min_m": _num(g.D15_enrocado_min),
+        "D15_enrocado_max_m": _num(g.D15_enrocado_max),
+        "directo_sobre_el_suelo": None if d is None else {
+            "tubificacion": _num(d.tubificacion),
+            "permeabilidad": _num(d.permeabilidad),
+            "uniformidad": _num(d.uniformidad), "cumple": d.cumple},
+        "D15_filtro_mayor_que_m": _num(g.D15_filtro_mayor_que),
+        "D15_filtro_hasta_m": _num(g.D15_filtro_hasta),
+        "D85_filtro_desde_m": _num(g.D85_filtro_desde),
+        "una_capa_basta": g.una_capa_basta,
+        "pasa_200_max_pct": _num(g.pasa_200_max_pct),
+        "espesor_una_capa_m": [_num(x) for x in g.espesor_una_capa_m],
+        "espesor_varias_capas_m": [_num(x) for x in g.espesor_varias_capas_m],
+        "citas": list(g.citas)}
 
 
 def _admisible_json(v) -> Optional[Dict[str, Any]]:

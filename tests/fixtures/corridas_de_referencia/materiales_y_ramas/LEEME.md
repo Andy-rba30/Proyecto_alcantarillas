@@ -10,7 +10,7 @@ los JSON no admiten esta cabecera; vale para los siete archivos.
 |---|---|
 | `declaraciones.json` · `D_max_catalogo` = 0.75 m para el concreto | el concreto queda fuera del catálogo: los puntos de Familia A se dimensionan en TMC o HDPE y llegan a la Fase 8 de esos materiales (`F8.TMC_*`, `F8.HDPE_*`) |
 | `declaraciones.json` · `perfil_hdpe_fabricante` | el perfil del HDPE con los mínimos de AASHTO M 294 (traducción no oficial), como en `tests/test_t5_correcciones_auditoria.py` |
-| A-01 (TMC Ø 1.20 m) · `material_lecho_salida`, `duracion_caudal_pico_min` | la hoya de socavación de HEC-14 Cap. 5 y el filtro bajo el enrocado (`F6.SOCAVACION`, `F6.FILTRO`) |
+| A-01 (TMC Ø 1.20 m) · `material_lecho_salida`, `duracion_caudal_pico_min` | la hoya de socavación de HEC-14 Cap. 5 y el filtro bajo el enrocado (`F6.SOCAVACION`, `F6.FILTRO`); desde N3 (plan 12), `D85_m` = 0.032 y `D15_m` = 0.001 m, el suelo del Ejemplo 1 de HEC-11 (PDF 61), dan el filtro granular (`F6.FILTRO_GRANULAR`) |
 | A-01 · `estabilidad_global_declarada` | E4 y E5 con el FS declarado del EMS (`F9.GLOBAL_DECLARADA`) |
 | A-01 · cabezal en voladizo de la regla | la pantalla crece por su armado (`F9.DIMENSIONADO_PANTALLA`) |
 | A-02 · `pH` = 4.0 | el TMC sale de los candidatos por durabilidad y el punto se dimensiona en HDPE |
