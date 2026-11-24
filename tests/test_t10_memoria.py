@@ -15,7 +15,7 @@ Lo que fija:
   1. EL CENSO, por clave: todo NUMERO que el JSON publica de un punto
      dimensionado aparece en su bloque de la memoria (o en el paso, la
      eleccion o la nota identicos a los que ese bloque enlaza); los TEXTOS
-     tambien, salvo los tres censados con su razon en
+     tambien, salvo los cuatro censados con su razon en
      `TEXTOS_CON_OTRA_VISTA`.
   2. Los avisos de `InformePunto.avisos()`, en las tres vistas.
   3. La Fase 9 del proyecto (la cadena sismica) y el armado en tabla.
@@ -160,7 +160,7 @@ def _formatos(x: float) -> set:
 #    bloque de la memoria, por clave
 # ===========================================================================
 
-# Las TRES claves de texto del JSON que la memoria imprime de otra forma, con
+# Las CUATRO claves de texto del JSON que la memoria imprime de otra forma, con
 # la razon. Nada mas: un texto nuevo del JSON que la memoria no lleve rompe
 # el test por su clave.
 TEXTOS_CON_OTRA_VISTA = {
@@ -174,7 +174,15 @@ TEXTOS_CON_OTRA_VISTA = {
     "proteccion_salida.filtro.citas[]": (
         "ids del registro: la memoria imprime de cada una el numeral, el "
         "titulo y la pagina (`Cita.como_texto`), y el test lo comprueba"),
+    "proteccion_salida.filtro.granular.citas[]": (
+        "--- N3 --- las del filtro granular, que el requisito suma a "
+        "`filtro.citas` (`M6._con_el_filtro_granular`): la memoria las "
+        "imprime ahi, como las del geotextil, y el test lo comprueba"),
 }
+
+# Las claves de citas cuyo `como_texto` el test busca en el bloque.
+CLAVES_DE_CITAS = ("proteccion_salida.filtro.citas[]",
+                   "proteccion_salida.filtro.granular.citas[]")
 
 
 def test_todo_numero_del_json_de_un_punto_dimensionado_esta_en_su_bloque(corrida):
@@ -203,7 +211,7 @@ def test_todo_texto_del_json_de_un_punto_dimensionado_esta_en_su_bloque(corrida)
         for ruta, v in _hojas(p):
             if not isinstance(v, str) or not v.strip():
                 continue
-            if ruta == "proteccion_salida.filtro.citas[]":
+            if ruta in CLAVES_DE_CITAS:
                 assert _plano(reg.cita(v).como_texto()) in texto, (p["id"], v)
                 continue
             if ruta in TEXTOS_CON_OTRA_VISTA:
@@ -214,7 +222,7 @@ def test_todo_texto_del_json_de_un_punto_dimensionado_esta_en_su_bloque(corrida)
 
 
 def test_el_censo_de_textos_con_otra_vista_dice_su_razon():
-    assert len(TEXTOS_CON_OTRA_VISTA) == 3
+    assert len(TEXTOS_CON_OTRA_VISTA) == 4
     for clave, razon in TEXTOS_CON_OTRA_VISTA.items():
         assert razon.strip(), clave
 

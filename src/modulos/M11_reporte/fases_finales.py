@@ -93,6 +93,19 @@ def _fase_6_ampliada(informe: Any) -> str:
                       f"{_esc(filtro.texto)}"
                       + (f" Sostienen el requisito: {citas}." if citas else "")
                       + "</p></div>")
+        granular = getattr(filtro, "granular", None)
+        if granular is not None:
+            # --- N3 --- los dos intervalos de espesor de HEC-11 Sec. 4.4.1
+            # que el JSON publica siempre (`filtro.granular`); el texto del
+            # requisito solo nombra el de varias capas cuando una no basta.
+            una_min, una_max = granular.espesor_una_capa_m
+            varias_min, varias_max = granular.espesor_varias_capas_m
+            partes.append(
+                '<div class="nota"><p><b>Espesor del filtro granular</b> '
+                f"(HEC-11 Sec. 4.4.1): de {_num(una_min, FMT_2)} a "
+                f"{_num(una_max, FMT_2)} m si es de una capa; de "
+                f"{_num(varias_min, FMT_2)} a {_num(varias_max, FMT_2)} m "
+                "cada capa si son varias.</p></div>")
     e = getattr(informe, "proteccion_entrada", None)
     if e is not None:
         velocidad = ("sin velocidad publicada por la hidraulica"

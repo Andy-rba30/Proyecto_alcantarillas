@@ -30,6 +30,7 @@ from src.modelos import (
     TipoDeVeredicto)
 from src.modulos import M6_proteccion as M6
 from src.normativa import registro as _registro
+from tests.apoyo.aproximacion import REL_TRANSPORTE
 
 # Tolerancias de este archivo, nombradas (CLAUDE.md).
 REL_EJEMPLO_IMPRESO = 0.12   # la fuente imprime UNA cifra: 5.625 sale «6»
@@ -148,6 +149,22 @@ def test_sin_la_granulometria_el_granular_se_declara_sin_numeros():
     assert "Si es GRANULAR" in f.texto
     assert g.pasa_200_max_pct == HEC11_FILTRO_PASA_200_MAX_PCT
     assert set(M6.CITAS_DEL_FILTRO_GRANULAR) <= set(f.citas)
+
+
+def test_el_filtro_granular_suelto_es_la_alternativa_del_requisito():
+    """
+    `filtro_granular_hec11` es la pieza que `requisito_de_filtro` suma al
+    geotextil: llamada sola da el mismo granular, con y sin la granulometria,
+    y publica siempre los dos intervalos de espesor de HEC-11 Sec. 4.4.1.
+    """
+    for datos in ({}, dict(D85_suelo=D85_SUELO, D15_suelo=D15_SUELO,
+                           d50_enrocado=0.29)):
+        solo = M6.filtro_granular_hec11(**datos)
+        assert solo == M6.requisito_de_filtro(**datos).granular
+        assert solo.espesor_una_capa_m == pytest.approx(
+            HEC11_FILTRO_ESPESOR_UNA_CAPA_M, rel=REL_TRANSPORTE)
+        assert solo.espesor_varias_capas_m == pytest.approx(
+            HEC11_FILTRO_ESPESOR_VARIAS_CAPAS_M, rel=REL_TRANSPORTE)
 
 
 def test_con_la_granulometria_el_requisito_emite_los_dos_pasos():
@@ -280,10 +297,13 @@ def test_cuatro_percentiles_fuera_de_orden_detienen_la_carga(malo):
 
 def test_lo_transcrito_de_hec11():
     """Tabla 2 (PDF 47), Sec. 4.4.1 (PDF 49-50): leidos por texto e imagen."""
-    filas = {pct: (bajo, alto) for pct, bajo, alto in HEC11_TABLA_2}
-    assert filas[15.0] == (0.4, 0.6) and filas[100.0] == (1.5, 1.7)
-    assert HEC11_FILTRO_ESPESOR_UNA_CAPA_M == (0.150, 0.380)
-    assert HEC11_FILTRO_ESPESOR_VARIAS_CAPAS_M == (0.100, 0.200)
+    filas = {round(pct): (bajo, alto) for pct, bajo, alto in HEC11_TABLA_2}
+    assert filas[15] == pytest.approx((0.4, 0.6), rel=REL_TRANSPORTE)
+    assert filas[100] == pytest.approx((1.5, 1.7), rel=REL_TRANSPORTE)
+    assert HEC11_FILTRO_ESPESOR_UNA_CAPA_M == pytest.approx(
+        (0.150, 0.380), rel=REL_TRANSPORTE)
+    assert HEC11_FILTRO_ESPESOR_VARIAS_CAPAS_M == pytest.approx(
+        (0.100, 0.200), rel=REL_TRANSPORTE)
     reg = _registro.construir()
     assert "5 or less" in reg.cita("HEC11.4.4.1#RELACION_5").texto_literal.texto
     assert "150 mm" in reg.cita("HEC11.4.4.1#ESPESOR").texto_literal.texto
