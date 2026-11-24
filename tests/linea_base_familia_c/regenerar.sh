@@ -99,6 +99,10 @@
 # que es el defecto que este repositorio persigue en todas partes --. Con el,
 # hay UNA definicion y el test la ejecuta.
 set -e
+# Los Python de este script escriben en UTF-8 aunque la salida sea un archivo:
+# en Windows, sin esto, `punto_cajon.py` usa cp1252 y muere en el primer «⁰»
+# (ronda 3 de Windows; la CLI ya lo hace sola, `cli.salida_en_utf8`).
+export PYTHONIOENCODING=utf-8
 DIR="${1:-tests/linea_base_familia_c}"
 mkdir -p "$DIR"
 EXT="tests/linea_base_familia_c/entradas_ampliadas.json"

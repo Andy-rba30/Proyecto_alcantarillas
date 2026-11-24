@@ -70,3 +70,21 @@ def test_C5_una_sesion_ilegible_sale_con_dos(tmp_path):
     r = _cli("--estado-expediente", "--sesion", str(ruta))
     assert r.returncode == 2
     assert "No se pudo leer la sesion" in r.stderr
+
+
+def test_la_cli_escribe_utf8_aunque_la_salida_del_sistema_no_lo_sea():
+    """
+    Ronda 3 de Windows (trabajo `windows` de la CI): con la salida redirigida,
+    Python en Windows usa la pagina de codigos ANSI (cp1252), y la CLI moria
+    en el primer caracter que no esta en ella o escribia bytes que la ventana,
+    que lee la salida del hijo como UTF-8, no podia leer. `PYTHONIOENCODING=
+    cp1252` reproduce esa salida en cualquier sistema: la CLI escribe UTF-8
+    igual (`cli.salida_en_utf8`).
+    """
+    import os
+    entorno = dict(os.environ, PYTHONIOENCODING="cp1252")
+    r = subprocess.run([sys.executable, str(RAIZ / "cli.py"), "--estado-expediente"],
+                       cwd=RAIZ, capture_output=True, env=entorno, timeout=120)
+    assert r.returncode == 0, r.stderr.decode("utf-8", errors="replace")
+    texto = r.stdout.decode("utf-8")
+    assert "—" in texto and "Discrepancias abiertas contra la hoja de ruta" in texto

@@ -3488,5 +3488,28 @@ def _exigir_plantilla_valida(plantilla: Path) -> None:
             f"{sorted(marcadores_de_la_memoria())}")
 
 
+def salida_en_utf8() -> None:
+    """
+    La CLI escribe SIEMPRE en UTF-8 por la salida y el error estandar.
+
+    En Windows, con la salida redirigida a un archivo o a una tuberia, Python
+    usa la pagina de codigos ANSI (cp1252 en un sistema en español), y la
+    memoria lleva caracteres que no estan en ella («⁰», «≤», «φ»): la CLI
+    moria con `UnicodeEncodeError` antes de escribir su JSON, y lo que si
+    salia («—» es 0x97 en cp1252) no lo podia leer quien lo espera en UTF-8
+    --- la ventana lee la salida del hijo del PDF y del barrido como UTF-8
+    (medido en el trabajo `windows` de la CI, ronda 3 de Windows). En Linux,
+    y en la consola de Windows, la salida ya es UTF-8 y esto no toca nada.
+    Se llama solo al arrancar el proceso: `main` sigue sin tocar los flujos
+    de quien la llama en el mismo proceso (los tests, `capsys`).
+    """
+    for flujo in (sys.stdout, sys.stderr):
+        codificacion = (getattr(flujo, "encoding", None) or "").lower()
+        if codificacion.replace("-", "").replace("_", "") != "utf8" and \
+                hasattr(flujo, "reconfigure"):
+            flujo.reconfigure(encoding="utf-8")
+
+
 if __name__ == "__main__":
+    salida_en_utf8()
     sys.exit(main())
