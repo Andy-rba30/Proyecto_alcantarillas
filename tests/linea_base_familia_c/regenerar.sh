@@ -108,6 +108,25 @@ mkdir -p "$DIR"
 EXT="tests/linea_base_familia_c/entradas_ampliadas.json"
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
+# EN WINDOWS (Git Bash, ronda 3; trabajo `windows` de la CI) la CLI no ve
+# `$TMP` como `/tmp/tmp.X`: Git Bash le pasa `C:/Users/.../Temp/tmp.X`, y la
+# CLI lo escribe con `/` (`as_posix`, en el JSON) o con `\` (`Path`, en el
+# texto). `TMP_WIN` es esa ruta con cualquiera de las dos barras, y despues de
+# `<SALIDA>` la barra se vuelve `/`. En Linux no hay `cygpath`: `TMP_WIN` es
+# `$TMP`, que ya se reemplazo, y las dos expresiones no encuentran nada.
+TMP_WIN="$TMP"
+if command -v cygpath >/dev/null 2>&1; then
+  TMP_WIN="$(cygpath -m "$TMP" | sed 's#/#[/\\]\\{1,2\\}#g')"
+fi
+# Y el `sed` de Git for Windows lee en modo texto y se come el `\r`. En la
+# salida de la CLI es lo que conviene (Python escribe `\r\n` en una salida
+# redirigida en Windows y la linea base es LF), pero los dos resumenes CSV
+# son CRLF de verdad (el modulo `csv`, ver `.gitattributes`): para ellos,
+# `-b` (binario) donde exista. En Linux `-b` no cambia nada.
+SED_BINARIO=""
+if sed -b '' </dev/null >/dev/null 2>&1; then
+  SED_BINARIO="-b"
+fi
 
 # --- 1 · la corrida ESTRECHA de C0, sin tocar -------------------------------
 python3 cli.py tests/ejemplo_puntos.csv --luz 2.75 --alcance perfil \
@@ -175,10 +194,14 @@ python3 -m tests.linea_base_familia_c.punto_cajon > "$TMP/cajon.html"
 # Los patrones son especificos a proposito: un barrido de fechas generico
 # pisaria texto normativo. Medido en C0: en el HTML hay TRES fechas y las tres
 # son volatiles; ninguna otra cadena coincide.
+# El segundo argumento, opcional, son las opciones de `sed` (`$SED_BINARIO`).
 norm () {
-  sed -e 's#[0-9]\{4\}-[0-9]\{2\}-[0-9]\{2\}T[0-9]\{2\}:[0-9]\{2\}:[0-9]\{2\}+00:00#<UTC>#g' \
+  sed ${2:-} \
+      -e 's#[0-9]\{4\}-[0-9]\{2\}-[0-9]\{2\}T[0-9]\{2\}:[0-9]\{2\}:[0-9]\{2\}+00:00#<UTC>#g' \
       -e 's#[0-9]\{2\}/[0-9]\{2\}/[0-9]\{4\} [0-9]\{2\}:[0-9]\{2\}#<FECHA>#g' \
-      -e "s#$TMP#<SALIDA>#g" "$1"
+      -e "s#$TMP#<SALIDA>#g" \
+      -e "s#$TMP_WIN#<SALIDA>#g" \
+      -e 's#<SALIDA>[\]\{1,2\}#<SALIDA>/#g' "$1"
 }
 # LAS MEMORIAS HTML LLEVAN LA ADVERTENCIA DE FIXTURE (T-12, INF-5.2.4): la
 # pone este generador, despues de normalizar y FUERA del programa, con un
@@ -194,7 +217,7 @@ rotular "$TMP/memoria.html"   > "$DIR/memoria_perfil.html"
 norm "$TMP/cli_ancho.txt"     > "$DIR/cli_perfil_ancho.txt"
 rotular "$TMP/memoria_ancha.html" > "$DIR/memoria_perfil_ancha.html"
 norm "$TMP/informe_ancho.json" > "$DIR/informe_perfil_ancho.json"
-norm "$TMP/resumen_ancho.csv"  > "$DIR/resumen_perfil_ancho.csv"
+norm "$TMP/resumen_ancho.csv" "$SED_BINARIO" > "$DIR/resumen_perfil_ancho.csv"
 
 norm "$TMP/cli_err.txt"       > "$DIR/cli_rama_error.txt"
 norm "$TMP/informe_err.json"  > "$DIR/informe_rama_error.json"
@@ -203,7 +226,7 @@ norm "$TMP/cli_exp.txt"       > "$DIR/cli_expediente.txt"
 rotular "$TMP/memoria_exp.html" > "$DIR/memoria_expediente.html"
 rotular "$TMP/memoria_resumida_exp.html" > "$DIR/memoria_resumida_expediente.html"
 norm "$TMP/informe_exp.json"  > "$DIR/informe_expediente.json"
-norm "$TMP/resumen_exp.csv"   > "$DIR/resumen_expediente.csv"
+norm "$TMP/resumen_exp.csv" "$SED_BINARIO" > "$DIR/resumen_expediente.csv"
 
 rotular "$TMP/cajon.html"     > "$DIR/memoria_punto_cajon.html"
 
