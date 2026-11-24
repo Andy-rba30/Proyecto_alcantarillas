@@ -645,6 +645,14 @@ CITAS_SIN_FIRMA_A_PROPOSITO = (
     # --- T-5 --- la quinta, misma razon: el num. 7.7 (ensayo de compresion)
     # con que M8 obtiene el area efectiva del perfil del HDPE.
     "AASHTO_M294_TRAD.7.7",
+    # --- N2 del plan 12 --- la misma razon y ninguna otra: la Ley 29338 de
+    # normas/ es una compilacion del SPIJ sin folio en ninguna de sus 49
+    # hojas (`fuentes.LEY_29338`, SinDeterminar). Se leyeron por texto y por
+    # imagen, y T2/T3 las comprueban en cada corrida. Su Reglamento SI
+    # imprime folio y sus citas van firmadas.
+    "LEY_29338.6",
+    "LEY_29338.7",
+    "LEY_29338.74",
     # --- VE-7, lote C (C1) y A11 --- la SEGUNDA razon (la fuente SI tiene
     # paginacion medida, pero la sesion que dio de alta la cita no tenia
     # `NORMAS_DIR`) tuvo un solo caso, `E060.22.10.2.2#VOLADIZO`, y CADUCO:

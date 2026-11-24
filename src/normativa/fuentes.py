@@ -19,6 +19,12 @@ que entro en `normas/` es una TRADUCCION NO OFICIAL de AASHTO M 294-11
 Una fuente derivada no sustituye a la primaria: convive con ella
 (`convive_con` cruzado, el mismo recurso de las dos HDS-5) y la ausencia del
 original queda redefinida como «que desbloquearia verificar contra el».
+N2 DEL PLAN 12 (2026-11-24, «marco legal»; no es el N2 de arriba) sumo
+TRES presentes y resto DOS ausentes: la Ley 29338 (`LEY_29338`, que hasta
+entonces era una ausente que decia «y su reglamento»), su Reglamento como
+Fuente PROPIA (`REG_LEY_29338`, DS 001-2010-AG: otro documento y otro acto)
+y el RNGIV (`RNGIV`, DS 034-2008-MTC). Con eso las presentes son veintitres
+y las ausentes diez; los conteos de arriba son los de cada sesion.
 
 TODOS LOS SHA-1 Y TODAS LAS PAGINACIONES DE ESTE ARCHIVO ESTAN MEDIDOS, no
 supuestos. El procedimiento, para que se pueda repetir:
@@ -53,6 +59,14 @@ paginas confirman cada desfase, no dos o tres a ojo:
                                   las 14 que no son la portada, el aviso
                                   legal y los doce folios romanos del indice
                                   (i a xii, PDF 3 a 14)
+    Ley 29338 (SPIJ) ........ SIN FOLIO: ninguna de sus 49 hojas imprime
+                                  numero de pagina (N2 del plan 12, por texto
+                                  en las 49 y por imagen en la 1, la 5, la 25
+                                  y la 35)
+    DS 001-2010-AG .......... 0   confirmado en 83 de 83 (pie «Reglamento de
+                                  la Ley Nº 29338 ... n»; N2 del plan 12)
+    DS 034-2008-MTC (SPIJ) .. 0   confirmado en 17 de 17 (pie «Página n» del
+                                  SPIJ; N2 del plan 12)
 
 Las paginas que no confirman son las que no imprimen numero -- portadas,
 separadores y las laminas fotograficas del Manual de Puentes --, no
@@ -155,6 +169,9 @@ VIGENCIA_VERIFICADA_EL_EXT6 = "2026-09-20"
 VIGENCIA_VERIFICADA_EL_T0 = "2026-11-11"
 # --- VE-3.6 --- La del USBR «Design of Small Canal Structures» (Familia C).
 VIGENCIA_VERIFICADA_EL_VE3 = "2026-11-17"
+# --- N2 del plan 12 --- La del marco legal: Ley 29338, su Reglamento y el
+# RNGIV.
+VIGENCIA_VERIFICADA_EL_MARCO_LEGAL = "2026-11-24"
 VIGENCIA_COMO = (
     "busqueda web (WebSearch) sobre resultados de las paginas del emisor y "
     "de repositorios oficiales; ninguna pagina fue legible directamente desde "
@@ -173,6 +190,25 @@ VIGENCIA_COMO_T0 = (
     "(los dos hosts estan fuera de la red permitida de la sesion), de modo "
     "que la confirmacion es por lo que los resultados transcriben de ellas y "
     "no por su lectura")
+
+# --- N2 del plan 12 --- LO QUE «CONFIRMADA» QUIERE DECIR EN UNA NORMA
+# LEGAL COMPILADA, que no es lo mismo que en una tecnica. Los tres ejemplares
+# son COMPILACIONES (SPIJ, o la de la DGAAE del MINEM) con las modificatorias
+# hasta una fecha, y el acto que aprueba la norma sigue vigente: lo que se
+# confirma es que NO fue derogada y que los articulos CITADOS no aparecen
+# modificados despues de la fecha de la compilacion. Lo que la compilacion
+# no recoge de otros articulos va en `pendiente_gabinete` y en la nota, no
+# en `edicion_posterior`: una norma modificada no abre una ELECCION de
+# edicion para el proyectista (rige el texto vigente), que es lo que
+# POSTERIOR dispararia en `fuentes_con_eleccion_de_edicion_pendiente`. Es
+# una lectura del esquema que se declara (ficha N2L-01).
+VIGENCIA_COMO_MARCO_LEGAL = (
+    "lectura del propio ejemplar (las notas de modificacion y las "
+    "concordancias que la compilacion imprime) y busqueda web (WebSearch) "
+    "desde la sesion de N2 del plan 12 sobre resultados de El Peruano, "
+    "gob.pe y de resoluciones de la ANA que aplican los articulos citados; "
+    "ninguna pagina oficial fue leida entera, de modo que la confirmacion es "
+    "por lo que los resultados transcriben y no por su lectura")
 
 # Los tres estados, con el nombre corto que el resto de la casa ya usaba.
 # Son el ENUM, no cadenas: `estado_de_vigencia` devuelve uno de estos.
@@ -951,7 +987,10 @@ DG2018 = Fuente(
         "ultimo commit de codigo y este archivo la tenia como AUSENTE. Lo que "
         "el proyecto le pide, y solo eso: (1) la definicion juridica del "
         "derecho de via (304.07.01), que remite al Reglamento Nacional de "
-        "Gestion de Infraestructura Vial, DS 034-2008-MTC (RNGIV, ausente); "
+        "Gestion de Infraestructura Vial, DS 034-2008-MTC (RNGIV, presente "
+        "desde N2 del plan 12: su art. 35 repite la frase del dominio "
+        "publico, y su art. 2 remite a su vez las definiciones a un glosario "
+        "del MTC que no esta en normas/); "
         "(2) el piso [N] del ancho del derecho de via --- la Tabla 304.09 por "
         "clase de carretera y el incremento de 5.00 m «del borde mas alejado "
         "de las obras de drenaje» (304.07.02, impresas 198-199) ---, que es "
@@ -1243,12 +1282,240 @@ USACE_EM_1110_2_2902 = Fuente(
         "clases_iii_v_astm_c76.md."),
 )
 
+# ===========================================================================
+# N2 del plan 12 (2026-11-24) - EL MARCO LEGAL: Ley 29338, su Reglamento y
+# el RNGIV
+# ===========================================================================
+# LOS TRES ESTUVIERON EN EL CENSO DE AUSENTES (LEY_29338 desde §15 del plan,
+# RNGIV desde EXT-6). El dueño los subio al repositorio de normas en
+# `normas_2/` (commit ce4c90e) y N2 del plan 12 los paso a `normas/` y los
+# da de alta aqui con sha1, paginas y paginacion MEDIDOS. Tres cosas que
+# conviene leer antes de citarlos:
+#
+#   1. SON COMPILACIONES, NO EL DIARIO OFICIAL. La Ley y el RNGIV son textos
+#      del SPIJ (Ministerio de Justicia) con las modificatorias insertas y
+#      notas «(*)»; el Reglamento de la Ley es la compilacion que publica la
+#      Direccion General de Asuntos Ambientales Energeticos del MINEM. Lo que
+#      se cita es lo que ESTE archivo imprime (el sha1 lo ancla); la fecha
+#      hasta la que cada compilacion llega va en `edicion`, y lo que la
+#      compilacion no recoge, en `vigencia.pendiente_gabinete`.
+#   2. EL REGLAMENTO DE LA LEY ES FUENTE PROPIA y no «la mitad» de
+#      `LEY_29338`, que es lo que la ausente decia («Ley 29338 ... y su
+#      reglamento»): es otro documento, otro acto (un decreto supremo y no
+#      una ley), otro emisor y otra paginacion -- el Reglamento imprime
+#      folio y la Ley no --. Juntarlos habria obligado a una paginacion que
+#      no es de ninguno de los dos.
+#   3. NINGUNO FIJA UN NUMERO QUE EL PROGRAMA USE. Lo que el proyecto les
+#      pide es JURIDICO: que la faja marginal es un bien de dominio publico
+#      hidraulico cuyo ancho fija la Autoridad Administrativa del Agua cuerpo
+#      de agua por cuerpo de agua (Ley art. 74, Reglamento arts. 113 y 114),
+#      que intervenir un cauce exige autorizacion previa (Ley art. 7,
+#      Reglamento art. 277 b), y que el ancho del derecho de via lo aprueba
+#      por resolucion la autoridad competente de la red vial (RNGIV arts. 4,
+#      32 y 35). El ancho de la faja marginal de ESTE cauce y el del derecho
+#      de via de ESTE tramo son datos de sitio [S]; ninguno es [N].
+LEY_29338 = Fuente(
+    id="LEY_29338",
+    titulo="Ley 29338, Ley de Recursos Hidricos",
+    emisor="Congreso de la Republica del Peru",
+    # LO QUE EL EJEMPLAR IMPRIME: «Ley de Recursos Hídricos / LEY Nº 29338»
+    # (PDF 1), con notas «(*) NOTA SPIJ» y concordancias insertas; la mas
+    # reciente que nombra es la Ley 32513 «publicada el 04 diciembre 2025»
+    # (PDF 1). La ley se dio el 30-03-2009 («Dado en la Casa de Gobierno, en
+    # Lima, a los treinta días del mes de marzo del año dos mil nueve», PDF
+    # 42); la fecha de su publicacion en El Peruano el ejemplar NO la imprime
+    # y no se escribe de memoria.
+    edicion=("Ley 29338, compilacion con notas del SPIJ y concordancias "
+             "hasta la Ley 32513 (04-12-2025)"),
+    anio=2009,
+    resolucion="Ley 29338",
+    archivo_pdf="normas/Ley 29338 Ley de Recursos Hidricos (SPIJ).pdf",
+    sha1="ac47b59be519288b6aaa3d0eb32bc2b96dd80416",
+    paginas_pdf=49,
+    # NO HAY FOLIO QUE MEDIR: es el caso de AASHTO_M294_TRAD y de
+    # HDS5_SI_1985, y se resuelve igual. El texto de las 49 hojas no contiene
+    # ningun numero de pagina (los unicos renglones numericos sueltos, en las
+    # PDF 27 a 29, son el «29» de «29 diciembre 2016» partido por la capa de
+    # texto) y las hojas 1, 5, 25 y 35 renderizadas no imprimen cabecera ni
+    # pie numerado. Una ley se cita por ARTICULO, y sus citas se localizan
+    # por pagina PDF con «s/n» como pagina impresa y sin firma (T6), censadas
+    # en `CITAS_SIN_FIRMA_A_PROPOSITO`; T2 y T3 comprueban su texto en cada
+    # corrida con PyMuPDF, porque la capa de texto es limpia.
+    paginacion=SinDeterminar(
+        por_que=("el ejemplar no imprime numero de pagina en ninguna de sus "
+                 "49 hojas: ni cabecera ni pie numerado (medido en N2 del "
+                 "plan 12 sobre el texto de las 49 y sobre las hojas 1, 5, "
+                 "25 y 35 renderizadas). Sus citas se localizan por pagina "
+                 "PDF, llevan «s/n» como pagina impresa y no se firman (T6), "
+                 "con el precedente de AASHTO_M294_TRAD")),
+    texto_extraible=True,
+    vigencia=Vigencia(
+        estado=VIGENCIA_CONFIRMADA, fecha=VIGENCIA_VERIFICADA_EL_MARCO_LEGAL,
+        como=VIGENCIA_COMO_MARCO_LEGAL,
+        acto_aprobatorio="Ley 29338",
+        pendiente_gabinete=(
+            "leer en el SPIJ o en El Peruano el texto vigente de los arts. "
+            "6, 7 y 74 y la fecha de publicacion de la ley, que el ejemplar "
+            "no imprime")),
+    nota=(
+        "ENTRO A normas/ EN N2 DEL PLAN 12 (2026-11-24); hasta entonces era "
+        "AUSENTE con «faja marginal y autorizacion de obras en cauce» y «el "
+        "tramite, no el calculo». Las dos cosas se confirmaron leyendo el "
+        "ejemplar. FAJA MARGINAL: el art. 74 (PDF 25) manda mantener una "
+        "faja marginal en los terrenos aledaños a los cauces y remite su "
+        "extension al Reglamento («El Reglamento determina su extensión»); "
+        "el art. 6, num. 1, la cuenta entre los bienes naturales asociados "
+        "al agua junto con los cauces (PDF 5). Ningun articulo fija un "
+        "ancho: «faja(s) marginal(es)» aparece 7 veces en las 49 hojas (PDF "
+        "5, 25 dos, 26, 44 y 46 dos), las de las PDF 26, 44 y 46 en "
+        "concordancias que nombran los reglamentos de delimitacion de la "
+        "ANA (R.J. 300-2011-ANA y R.J. 332-2016-ANA), que NO estan en "
+        "normas/. AUTORIZACION: el art. 7 (PDF 5) exige autorizacion previa "
+        "de la Autoridad Administrativa del Agua para toda intervencion «de "
+        "los particulares» que altere un bien de dominio publico hidraulico, "
+        "y el art. 104 (PDF 35) atribuye a la Autoridad Nacional la "
+        "aprobacion de las obras de infraestructura publica o privada que se "
+        "proyecten en los cauces. Que una alcantarilla vial de una entidad "
+        "publica sea «intervencion de los particulares» o «obra de "
+        "infraestructura» en ese sentido es lectura juridica que el "
+        "registro no hace (ficha N2L-01). "
+        "VIGENCIA (N2 del plan 12): la compilacion trae notas hasta "
+        "diciembre de 2025 y los arts. 6, 7 y 74 no llevan nota de "
+        "modificacion; la ley sigue siendo la base de las resoluciones de la "
+        "ANA de 2025 que aparecen en los resultados."),
+)
+
+REG_LEY_29338 = Fuente(
+    id="REG_LEY_29338",
+    titulo=("Reglamento de la Ley 29338, Ley de Recursos Hidricos, aprobado "
+            "por DS 001-2010-AG"),
+    emisor=("Poder Ejecutivo (refrendo del Presidente del Consejo de "
+            "Ministros y del Ministro de Agricultura); compilacion de la "
+            "Direccion General de Asuntos Ambientales Energeticos del MINEM"),
+    # LO QUE EL EJEMPLAR IMPRIME: «DECRETO SUPREMO Nº 001-2010-AG», «Dado en
+    # la Casa de Gobierno, en Lima, a los veintitrés días del mes de marzo
+    # del año dos mil diez» (PDF 1), y en cada pie «Reglamento de la Ley Nº
+    # 29338, Ley de Recursos Hídricos / Decreto Supremo Nº 001-2010-AG». La
+    # modificacion mas reciente que la compilacion inserta es la del DS
+    # 016-2017-MINAGRI, «publicado el 16 noviembre 2017» (PDF 35 y 36).
+    edicion=("DS 001-2010-AG, compilacion con las modificatorias hasta el "
+             "DS 016-2017-MINAGRI (16-11-2017)"),
+    anio=2010,
+    resolucion="DS 001-2010-AG",
+    archivo_pdf="normas/DS 001-2010-AG Reglamento de la Ley 29338.pdf",
+    sha1="68fa38ad900a01e2d51384899374ea84fe0272c1",
+    paginas_pdf=83,
+    # MEDIDO en N2 del plan 12 barriendo las 83 paginas: el pie de cada una
+    # imprime el folio n = PDF (la capa de texto lo entrega como segundo
+    # renglon, debajo del rotulo «Reglamento de la Ley Nº 29338...»). 83 de
+    # 83 confirman; no hay portada sin folio.
+    paginacion=Corrida(desfase=0),
+    vigencia=Vigencia(
+        estado=VIGENCIA_CONFIRMADA, fecha=VIGENCIA_VERIFICADA_EL_MARCO_LEGAL,
+        como=VIGENCIA_COMO_MARCO_LEGAL,
+        acto_aprobatorio="DS 001-2010-AG",
+        pendiente_gabinete=(
+            "confirmar en el SPIJ o en El Peruano que los arts. 113, 114 y "
+            "277 no se modificaron despues del 16-11-2017, la ultima "
+            "modificatoria que esta compilacion inserta")),
+    nota=(
+        "ENTRO A normas/ EN N2 DEL PLAN 12 (2026-11-24) como Fuente propia: "
+        "la ausente LEY_29338 lo englobaba («y su reglamento»). Lo que el "
+        "proyecto le pide, y solo eso: (1) que las fajas marginales son "
+        "bienes de dominio publico hidraulico y que sus DIMENSIONES las fija "
+        "la Autoridad Administrativa del Agua para cada cuerpo de agua "
+        "(art. 113, pag. 37); (2) que la delimitacion sigue CRITERIOS sin "
+        "cifra -- la magnitud de las estructuras hidraulicas, el espacio de "
+        "las defensas, los usos publicos y la maxima crecida sin eventos "
+        "excepcionales -- (art. 114, pag. 37); y (3) que construir o "
+        "modificar sin autorizacion obras de cualquier tipo en las fuentes "
+        "naturales de agua o en sus bienes asociados es infraccion (art. 277 "
+        "b, pag. 75). NINGUN ARTICULO FIJA UN ANCHO de faja marginal: "
+        "«faja(s) marginal(es)» aparece 21 veces en las 83 paginas (PDF 36, "
+        "37, 38 y 75) y en ninguna con una magnitud en metros (afirmacion "
+        "negativa SIN_ANCHO_DE_FAJA_MARGINAL en citas.py). El art. 113.2 "
+        "remite a «los criterios establecidos en el Reglamento» y la "
+        "concordancia que la pagina 37 imprime es la R.J. 300-2011-ANA "
+        "(Reglamento para la Delimitacion y Mantenimiento de Fajas "
+        "Marginales), que no esta en normas/: si ese reglamento de la ANA "
+        "fija anchos minimos no se verifico. "
+        "VIGENCIA (N2 del plan 12): no se encontro modificacion de los "
+        "arts. 113 ni 114 en los resultados, y una resolucion del Tribunal "
+        "Nacional de Resolucion de Controversias Hidricas de 2025 aplica el "
+        "literal b) del art. 277 con el texto de esta compilacion."),
+)
+
+RNGIV = Fuente(
+    id="RNGIV",
+    titulo=("Reglamento Nacional de Gestion de Infraestructura Vial, aprobado "
+            "por DS 034-2008-MTC, y sus modificatorias"),
+    emisor="MTC (Poder Ejecutivo)",
+    # LO QUE EL EJEMPLAR IMPRIME: cabecera «Sistema Peruano de Información
+    # Jurídica / Ministerio de Justicia», «DECRETO SUPREMO Nº 034-2008-MTC»,
+    # «Dado en la Casa de Gobierno, en Lima, a los veinticuatro días del mes
+    # de octubre del año dos mil ocho» (PDF 1), «cuarenta y cinco (45)
+    # artículos y cinco (05) disposiciones complementarias finales», y en
+    # cada pie «Actualizado al: 28/05/13». ES EL DECRETO QUE EL DG-2018
+    # NOMBRA: su art. 4 es el de las autoridades competentes, que es el que
+    # el §304.07.02 del DG-2018 cita, y su Titulo III el del derecho de via.
+    edicion=("DS 034-2008-MTC, texto del SPIJ «Actualizado al: 28/05/13», "
+             "con las modificatorias de los DS 003-2009-MTC, 011-2009-MTC y "
+             "012-2011-MTC insertas"),
+    anio=2008,
+    resolucion="DS 034-2008-MTC",
+    archivo_pdf=("normas/DS 034-2008-MTC Reglamento Nacional de Gestion de "
+                 "Infraestructura Vial (SPIJ).pdf"),
+    sha1="4e41d4a1a9143ab0611ef8010c9b9598dc6f2a10",
+    paginas_pdf=17,
+    # MEDIDO en N2 del plan 12 barriendo las 17 paginas: el pie del SPIJ
+    # imprime «Página n» con n = PDF en las 17.
+    paginacion=Corrida(desfase=0),
+    vigencia=Vigencia(
+        estado=VIGENCIA_CONFIRMADA, fecha=VIGENCIA_VERIFICADA_EL_MARCO_LEGAL,
+        como=VIGENCIA_COMO_MARCO_LEGAL,
+        acto_aprobatorio="DS 034-2008-MTC",
+        pendiente_gabinete=(
+            "leer en El Peruano el DS 021-2016-MTC (que segun los resultados "
+            "modifica los arts. 10 y 12 a 16) y el DS 015-2024-MTC (que "
+            "modifica el literal c del num. 4.2 del art. 4 y el literal c "
+            "del num. 11.2 del art. 11), posteriores a esta compilacion, y "
+            "confirmar que los arts. 2, 32 y 35 no cambiaron")),
+    nota=(
+        "ENTRO A normas/ EN N2 DEL PLAN 12 (2026-11-24); era AUSENTE desde "
+        "EXT-6. EL ARCHIVO QUE ESTUVO EN normas/ HASTA 5196dd2 NO ERA ESTE: "
+        "era la publicacion de El Peruano del 10-02-2006 (12 paginas, sha1 "
+        "6f6b473c9048212975914f8db46650218a371c50), anterior en dos años al "
+        "decreto y con otra numeracion; no se restauro, y este ejemplar es "
+        "otro archivo (ficha EXT-6-01). Lo que el proyecto le pide es lo que "
+        "el DG-2018 le remite (304.07.01 y 304.07.02), y leerlo cambio una "
+        "cosa: EL RNGIV NO DEFINE EL TERMINO «DERECHO DE VIA». Su art. 2 "
+        "(PDF 4) remite las definiciones al «Glosario de términos de uso "
+        "frecuente en proyectos de infraestructura vial» (RM "
+        "660-2008-MTC/02), que no esta en normas/. Lo que si dice: la faja "
+        "del derecho de via es bien de dominio publico, inalienable e "
+        "imprescriptible (art. 35, PDF 13: la misma frase del DG-2018 "
+        "304.07.01); cada autoridad competente del art. 4 establece y "
+        "aprueba por resolucion del titular el ancho de la faja de su red "
+        "(art. 32, PDF 12); y esas autoridades son el MTC, los gobiernos "
+        "regionales y los gobiernos locales, por red vial (art. 4.2, PDF 4). "
+        "El ancho del derecho de via de un tramo es por eso un dato de la "
+        "resolucion de su autoridad, y no un valor que el programa pueda "
+        "poner. El art. 18 (PDF 11) dice que los manuales son «documentos de "
+        "carácter normativo y de cumplimiento obligatorio», que es lo que la "
+        "nota del Manual de Suelos cita por el catalogo de SENCICO. "
+        "VIGENCIA (N2 del plan 12): el decreto sigue vigente -- el DS "
+        "015-2024-MTC lo modifica en 2024 --, y la compilacion de 2013 no "
+        "recoge el DS 021-2016-MTC ni el DS 015-2024-MTC; el segundo toca el "
+        "literal c) del num. 4.2, que la cita RNGIV.4 por eso no transcribe."),
+)
+
 FUENTES: Dict[str, Fuente] = {
     f.id: f for f in (
         MC_HHD, MP, MS, EG2013, E030, E050, E060,
         HDS5_3ED, HDS5_SI_1985, AASHTO_LRFD_9,
         AASHTO_M170M, AASHTO_M36, ASTM_A760, ASTM_A796, AASHTO_M294_TRAD,
         DG2018, HEC14, WSDOT_HM, USBR_DSCS, USACE_EM_1110_2_2902,
+        LEY_29338, REG_LEY_29338, RNGIV,
     )
 }
 
@@ -1481,45 +1748,18 @@ ASTM_A807 = _ausente(
 # documento: sigue siendo un dato de sitio que fija el IMDA del estudio de
 # demanda, y el Manual solo aporta la clasificacion contra la que leerlo.
 
-# RNGIV: EL REGLAMENTO AL QUE EL DG-2018 REMITE, y la decision sobre el
-# archivo borrado. El §304.07.01 del DG-2018 remite las definiciones y
-# condiciones de uso del derecho de via al Reglamento Nacional de Gestion de
-# Infraestructura Vial aprobado por DS 034-2008-MTC, y su §304.07.02 a las
-# autoridades competentes del articulo 4 de ese Reglamento. En normas/ hubo
-# un archivo «Reglamento Nacional de Gestion de Infraestructura Vial.pdf»
-# hasta que el dueño lo borro en el commit 5196dd2 (2026-09-18). Se recupero
-# del historial para decidir si volvia, y NO ERA ESE DECRETO: son 12 paginas
-# de El Peruano fechadas «Lima, viernes 10 de febrero de 2006» (sha1
-# 6f6b473c9048212975914f8db46650218a371c50), anteriores en dos años al DS
-# 034-2008-MTC y con otra numeracion (su articulo 4 son las definiciones; el
-# DG-2018 cita el articulo 4 como el de las autoridades competentes). No se
-# restaura: restaurarlo habria puesto en normas/ un texto que no es el que
-# la remision nombra, y registrarlo habria firmado citas contra un
-# documento equivocado. Lo que falta se censa como falta.
-RNGIV = _ausente(
-    "RNGIV",
-    ("Reglamento Nacional de Gestion de Infraestructura Vial, aprobado por "
-     "DS 034-2008-MTC, y sus modificatorias"),
-    "MTC (Poder Ejecutivo)", "DS 034-2008-MTC", 2008,
-    Ausencia(
-        por_que_se_cita=("el DG-2018 §304.07.01 remite a el las definiciones "
-                         "y condiciones de uso del derecho de via --- bien "
-                         "de dominio publico, ancho y aprobacion, libre "
-                         "disponibilidad, propiedad restringida --- y el "
-                         "§304.07.02 a sus autoridades competentes (art. 4); "
-                         "y la Presentacion del DG-2018 (PDF 9) lo nombra "
-                         "como el Reglamento que establece los manuales de "
-                         "carreteras, sin numerar el articulo"),
-        que_desbloquearia=("la cita textual de la definicion juridica del "
-                           "derecho de via y de quien lo aprueba, que hoy "
-                           "V5 solo tiene por remision del DG-2018; no "
-                           "mueve ningun numero: los anchos estan en la "
-                           "Tabla 304.09 del DG-2018, que si esta"),
-        esfuerzo=Esfuerzo.DESCARGA_PUBLICA,
-        sustituto_vigente="la remision del DG-2018 §304.07.01 (cita DG2018.304.07.01)"),
-    nota=("El archivo que estuvo en normas/ hasta 5196dd2 era la publicacion "
-          "de El Peruano del 10-02-2006 (12 paginas), no el DS 034-2008-MTC: "
-          "no se restaura ni se registra como este Reglamento."))
+# RNGIV SALIO DE ESTE CENSO EN N2 DEL PLAN 12 (2026-11-24): esta arriba,
+# entre las presentes, con sha1, 17 paginas y desfase 0 medidos. Su ficha de
+# ausente contaba la decision sobre el archivo borrado, y sigue en pie: lo
+# que hubo en normas/ hasta 5196dd2 era la publicacion de El Peruano del
+# 10-02-2006 (sha1 6f6b473c...), no el DS 034-2008-MTC, y no se restauro; lo
+# que entro es OTRO archivo, el texto del SPIJ del decreto. Decia que
+# desbloquearia «la cita textual de la definicion juridica del derecho de via
+# y de quien lo aprueba ... no mueve ningun numero». Conseguido y leido, lo
+# segundo se cumplio (arts. 4 y 32) y lo primero NO: el RNGIV no define el
+# termino, remite sus definiciones a un glosario aparte (art. 2, RM
+# 660-2008-MTC/02, ausente). Lo que si cita textual es la naturaleza
+# juridica de la faja (art. 35). Y no mueve ningun numero, como decia.
 
 # LAS DOS NORMAS DE PRODUCTO DEL CAJON PREFABRICADO, que el proyecto NO usa y
 # censa para poder decir por que el marco no lleva norma de producto
@@ -1569,14 +1809,16 @@ AASHTO_M273 = _ausente(
 # alcance hoy»: sigue fuera de alcance mientras T-8 no lo implemente, pero
 # ya no por falta de la fuente.
 
-LEY_29338 = _ausente(
-    "LEY_29338", "Ley 29338, Ley de Recursos Hidricos, y su reglamento",
-    "Congreso de la Republica del Peru", "Ley 29338", 2009,
-    Ausencia(
-        por_que_se_cita="faja marginal y autorizacion de obras en cauce",
-        que_desbloquearia="el tramite, no el calculo",
-        esfuerzo=Esfuerzo.DESCARGA_PUBLICA,
-        sustituto_vigente=None))
+# LEY_29338 SALIO DE ESTE CENSO EN N2 DEL PLAN 12 (2026-11-24): esta arriba,
+# entre las presentes, y PARTIDA EN DOS -- la Ley (`LEY_29338`, sin folio) y
+# su Reglamento (`REG_LEY_29338`, DS 001-2010-AG, desfase 0) --, porque la
+# ausente las englobaba («Ley 29338 ... y su reglamento») y son dos actos y
+# dos documentos. Decia que desbloquearia «el tramite, no el calculo», y
+# leidas lo confirman: ninguna fija el ancho de una faja marginal (lo fija la
+# Autoridad Administrativa del Agua para cada cuerpo de agua, Reglamento art.
+# 113.2), y la autorizacion de obras en cauces es un tramite (Ley art. 7,
+# Reglamento art. 277 b). V5 sigue sin evaluar la faja marginal, ahora por la
+# razon verdadera: falta el dato de sitio, no la ley (ficha N2L-01).
 
 SERIES_SENAMHI_ANA = _ausente(
     "SERIES_SENAMHI_ANA", "Series hidrometeorologicas SENAMHI / ANA para la "

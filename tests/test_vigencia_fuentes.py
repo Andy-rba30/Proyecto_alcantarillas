@@ -80,11 +80,14 @@ def test_toda_fuente_presente_declara_su_vigencia():
         assert fu.estado_de_vigencia(f) is f.vigencia.estado
         # Tres fechas, una por sesion que verifico contra el emisor: T1,
         # EXT-6 (DG-2018) y T-0 de la cadena T (HEC-14 y WSDOT).
-        # Y una cuarta desde VE-3.6 (el USBR de la Familia C).
+        # Y una cuarta desde VE-3.6 (el USBR de la Familia C), y una quinta
+        # desde N2 del plan 12 (el marco legal: Ley 29338, su Reglamento y
+        # el RNGIV).
         assert f.vigencia.fecha in (fu.VIGENCIA_VERIFICADA_EL,
                                     fu.VIGENCIA_VERIFICADA_EL_EXT6,
                                     fu.VIGENCIA_VERIFICADA_EL_T0,
-                                    fu.VIGENCIA_VERIFICADA_EL_VE3), f.id
+                                    fu.VIGENCIA_VERIFICADA_EL_VE3,
+                                    fu.VIGENCIA_VERIFICADA_EL_MARCO_LEGAL), f.id
         assert f.vigencia.como.strip(), f.id
 
 
@@ -119,7 +122,7 @@ def test_una_derogacion_solo_cabe_en_una_edicion_superada():
 def test_una_fuente_sin_vigencia_devuelve_None_y_no_inventa_un_estado():
     assert fu.estado_de_vigencia(dataclasses.replace(
         fu.MC_HHD, ausente=True, archivo_pdf=None, sha1=None, vigencia=None,
-        ausencia=fu.RNGIV.ausencia)) is None
+        ausencia=fu.ASTM_C76.ausencia)) is None
 
 
 # ---------------------------------------------------------------------------

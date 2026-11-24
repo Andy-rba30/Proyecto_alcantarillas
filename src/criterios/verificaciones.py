@@ -225,8 +225,13 @@ CRITERIOS: Dict[str, Criterio] = {
                       "de via, como en el embalse a nivel",
         fuente="Fase 5, V5 de la hoja de ruta. El requisito juridico: "
                "DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 "
-               "(pags. impresas 198-199, registro DG2018.304.07.02), y la "
-               "Ley 29338 (ausente de normas/) para la faja marginal. La "
+               "(pags. impresas 198-199, registro DG2018.304.07.02), con el "
+               "RNGIV al que remiten (DS 034-2008-MTC, arts. 32 y 35, "
+               "registro RNGIV.32); y para la faja marginal la Ley 29338 "
+               "art. 74 y su Reglamento art. 113.2 (registro "
+               "REG_LEY_29338.113.2), que dejan su ancho a la Autoridad "
+               "Administrativa del Agua para cada cuerpo de agua: V5 no la "
+               "evalua, porque ese ancho no es dato de entrada. La "
                "carga como profundidad del embalse: HDS-5 num. 2.2.5, pag. "
                "impresa 2.9 (PDF 71). El metodo es del proyecto",
         reemplazado_por="Perfil de remanso calculado aguas arriba del punto "

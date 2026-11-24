@@ -4704,10 +4704,21 @@ def _diferir_fase_8(informe: InformePunto) -> None:
 #   una decision.
 #
 #   `bloque_umbrales` tampoco: `M11.fundamento_del_umbral` es incondicional y
-#   un `Fundamento` exige al menos una cita del registro. VC1 no tiene
-#   ninguna -- se apoyaria en la Ley 29338 y la DG-2018, fuentes ausentes --,
-#   de modo que una entrada de VC1 en `UMBRALES_DE_VERIFICACION` romperia la
-#   construccion del bloque.
+#   un `Fundamento` exige al menos una cita del registro. VC1 no tenia
+#   ninguna -- se apoyaria en la Ley 29338 y la DG-2018, entonces fuentes
+#   ausentes --, de modo que una entrada de VC1 en `UMBRALES_DE_VERIFICACION`
+#   romperia la construccion del bloque. (N2 del plan 12: las dos estan hoy
+#   en el registro -- la DG-2018 desde EXT-6, la Ley 29338 y su Reglamento
+#   desde N2 --, y ni la ley ni su reglamento escriben la condicion
+#   hidraulica de no alterar la rasante ni el borde libre de un canal:
+#   «rasante» y «borde libre» no aparecen en ninguno de los dos (barrido por
+#   texto en N2; el DG-2018 no se barrio con esa pregunta). Lo que la ley y
+#   su reglamento piden es AUTORIZACION para las obras en cauces y bienes
+#   asociados (citas LEY_29338.7 y REG_LEY_29338.277.b), que es un tramite y
+#   no un umbral, y lo mas cercano a la condicion es la prohibicion general
+#   de «alterar, modificar, perturbar o impedir el uso legítimo del agua»
+#   (Ley art. 46, PDF 17, sin cita en el registro). El requisito sigue
+#   siendo de la Sec. 2.3 de la hoja de ruta, como dice F5.VC1.)
 #
 # LO QUE SI LA LLEVA es `bloque_alcance`, que imprime SIEMPRE -- tambien con
 # el expediente abierto -- y que no depende de que ningun criterio tenga

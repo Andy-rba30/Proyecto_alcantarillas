@@ -142,6 +142,10 @@ _SHA = {
     "USBR_DSCS": "75510d711ce1f6643333937a1ea38f3b469cc1f7",
     # --- VE-3.12 --- Las D-load de las Clases III a V (fuente [C] secundaria).
     "USACE_EM_1110_2_2902": "cfdc3bfd1c9291d30c98de11f27b1f1fbf7a95d8",
+    # --- N2 del plan 12 --- El marco legal que tiene folio. La Ley 29338 no
+    # esta aqui a proposito: sin folio, sus citas no se firman (T6).
+    "REG_LEY_29338": "68fa38ad900a01e2d51384899374ea84fe0272c1",
+    "RNGIV": "4e41d4a1a9143ab0611ef8010c9b9598dc6f2a10",
 }
 
 _TODAS = []
@@ -5421,7 +5425,8 @@ AFIRMACIONES_NEGATIVAS = (SIN_HDPE_T09, SIN_TMC_NI_HDPE_T10,
 #
 # LO QUE EL PROYECTO LE PIDE AL DG-2018, y solo eso: el requisito JURIDICO
 # de V5 --- que el remanso quede dentro del derecho de via --- tiene aqui su
-# definicion (304.07.01, por remision al RNGIV) y su PISO de ancho (Tabla
+# definicion (304.07.01, por remision al RNGIV, presente desde N2 del plan
+# 12 con sus citas al final de este archivo) y su PISO de ancho (Tabla
 # 304.09 por clase de carretera, mas 5.00 m «del borde mas alejado de las
 # obras de drenaje», 304.07.02). Lo que NO tiene: ninguna condicion
 # hidraulica. El 304.07 no dice cuanto puede remansar una alcantarilla ni
@@ -5452,14 +5457,24 @@ DG2018_304_07_01 = _cita(
     caracter=Caracter.DEFINICION,
     metodo=AMBOS,
     sesion=EXT6,
+    # --- N2 del plan 12 --- Donde la remision llega: la frase del dominio
+    # publico es el art. 35 del RNGIV, y las definiciones el RNGIV las manda
+    # a su vez a un glosario del MTC (art. 2).
+    corresponde_en=("RNGIV.35", "RNGIV.2"),
     nota=("LA REMISION AL RNGIV (DS 034-2008-MTC) ES LO QUE ESTA CITA "
-          "ACREDITA, y el Reglamento NO esta en normas/: el archivo que "
-          "hubo hasta 5196dd2 era la publicacion de El Peruano de 2006, no "
-          "el decreto de 2008 (ver `fuentes.RNGIV`). La pagina imprime a "
-          "continuacion seis conceptos (ancho y aprobacion, libre "
+          "ACREDITA, y desde N2 del plan 12 el Reglamento esta en normas/ "
+          "(`fuentes.RNGIV`, texto del SPIJ; NO es el archivo de El Peruano "
+          "de 2006 que hubo hasta 5196dd2, que no se restauro). Seguida la "
+          "remision: la frase del dominio publico «inalienable e "
+          "imprescriptible» es el art. 35 del RNGIV (cita RNGIV.35), y las "
+          "«definiciones» NO estan en el RNGIV: su art. 2 las remite al "
+          "glosario de la RM 660-2008-MTC/02, que no esta en normas/ (cita "
+          "RNGIV.2). Por eso `corresponde_en` nombra a las dos. La pagina "
+          "imprime a continuacion seis conceptos (ancho y aprobacion, libre "
           "disponibilidad, registro, propiedad, propiedad restringida, "
           "condiciones de uso) que remiten al Reglamento y no se "
-          "transcriben: ninguno trae numero."),
+          "transcriben: ninguno trae numero. Son, uno por uno, los arts. 32 "
+          "a 37 del Titulo III del RNGIV."),
 )
 
 # --- T-7b --- LA LECTURA CON QUE V5 USA EL ANCHO. La fuente da un ANCHO de
@@ -5501,10 +5516,15 @@ DG2018_304_07_02 = _cita(
     caracter=Caracter.EXIGENCIA,
     metodo=AMBOS,
     sesion=EXT6,
+    # --- N2 del plan 12 --- El primer parrafo del numeral repite el art. 32
+    # del RNGIV, y la autoridad que nombra es la de su art. 4.
+    corresponde_en=("RNGIV.32", "RNGIV.4"),
     nota=("EXIGENCIA SOBRE EL ANCHO, no sobre el agua: «anchos mínimos que "
           "debe tener». El mismo numeral dice antes que cada autoridad "
           "competente del articulo 4 del RNGIV «establece y aprueba mediante "
-          "resolución del titular» el derecho de via de sus carreteras, y "
+          "resolución del titular» el derecho de via de sus carreteras -- que "
+          "es el art. 32 del RNGIV, presente desde N2 del plan 12 (citas "
+          "RNGIV.32 y RNGIV.4, en `corresponde_en`) --, y "
           "que para determinarlo «deberá tenerse en consideración la "
           "instalación de los dispositivos auxiliares y obras básicas "
           "requeridas para el funcionamiento de la vía». Es el requisito "
@@ -17531,6 +17551,388 @@ EG2013_603_10 = _cita(
           "riberas (603.01). El enrocado de salida de una alcantarilla no es "
           "una defensa ribereña: el EG-2013 no le da partida propia, y el "
           "metrado lo entrega en m3 para una partida especial del proyecto."),
+)
+
+
+# ===========================================================================
+# N2 del plan 12 (2026-11-24) -- EL MARCO LEGAL: Ley 29338 (sin folio), su
+# Reglamento DS 001-2010-AG (desfase 0) y el RNGIV DS 034-2008-MTC (desfase 0)
+#
+# LO QUE EL PROYECTO LES PIDE, y solo eso: el lado JURIDICO de V5. La fila V5
+# de la hoja de ruta pide que el embalse quede dentro del derecho de via «sin
+# afectación a terceros ni a faja marginal», y hasta aqui las dos fajas
+# llegaban por remision: la del derecho de via por el DG-2018 §304.07.01 y
+# .02, que remiten al RNGIV, y la marginal por el nombre de una ley ausente.
+# Leidas, ninguna de las tres normas da un numero: el ancho del derecho de via
+# lo aprueba por resolucion la autoridad competente de la red (RNGIV arts. 4
+# y 32) y el de la faja marginal lo fija la Autoridad Administrativa del Agua
+# para cada cuerpo de agua (Reglamento art. 113.2), con criterios sin cifra
+# (art. 114). Los dos anchos son datos de sitio [S] de ESTE cruce. El primero
+# ya entra (`ancho_derecho_via_m`); el segundo no es entrada del programa, y
+# V5 no evalua la faja marginal por eso, no por falta de la ley (ficha
+# N2L-01). Lo leyo la propia sesion, por texto y por imagen, como T-0.
+# ===========================================================================
+FECHA_N2L = "2026-11-24"
+POR_N2L = "normas2/N2 · lectura directa de la pagina por la sesion"
+N2L = (FECHA_N2L, POR_N2L)
+
+# --- La Ley 29338: SIN FIRMA A PROPOSITO, las cuatro. La fuente no imprime
+# folio (`fuentes.LEY_29338`), y el invariante T6 impide firmar una pagina PDF
+# de una fuente sin paginacion medida; quedan censadas en
+# `tests/test_normativa.py::CITAS_SIN_FIRMA_A_PROPOSITO`, y T2 y T3 comprueban
+# su texto en cada corrida con PyMuPDF.
+_NOTA_SIN_FIRMA_LEY = (
+    "SIN FIRMA A PROPOSITO, no sin verificar: la Ley 29338 de normas/ es una "
+    "compilacion del SPIJ que no imprime folio (`pagina_impresa` dice «s/n» "
+    "por eso), y el invariante T6 impide firmar una pagina PDF de una fuente "
+    "sin paginacion medida. Contenido comprobado en N2 del plan 12 por texto "
+    "y por imagen de la hoja. ")
+
+LEY_29338_6 = _cita(
+    id="LEY_29338.6",
+    fuente_id="LEY_29338",
+    numeral="Art. 6, num. 1, literales b. e i.",
+    titulo_numeral="Bienes asociados al agua",
+    pagina_impresa="s/n",
+    pagina_pdf=5,
+    pagina_pdf_titulo=4,
+    jerarquia_numeral=("DISPOSICIONES GENERALES",),
+    texto_literal=Verbatim(
+        texto=("b. los cauces o álveos, lechos y riberas de los cuerpos de "
+               "agua, incluyendo las playas, barriales, restingas y bajiales, "
+               "en el caso de la amazonía, así como la vegetación de "
+               "protección;"),
+        pagina_pdf=5),
+    # DEFINICION: enumera que bienes son «asociados al agua»; el regimen (de
+    # dominio publico, con autorizacion previa) lo da el art. 7.
+    caracter=Caracter.DEFINICION,
+    verificada=False,
+    nota=(_NOTA_SIN_FIRMA_LEY
+          + "El titulo del articulo se imprime al pie de la PDF 4 y la lista "
+          "en la PDF 5, bajo «1. Bienes naturales:». El literal i. de la "
+          "misma lista, cinco renglones mas abajo, es «i. las fajas "
+          "marginales a que se refiere esta Ley; y»: el cauce y su faja "
+          "marginal son, los dos, bienes naturales asociados al agua, y por "
+          "el art. 7 de dominio publico hidraulico."),
+)
+
+LEY_29338_7 = _cita(
+    id="LEY_29338.7",
+    fuente_id="LEY_29338",
+    numeral="Art. 7",
+    titulo_numeral="Bienes de dominio público hidráulico",
+    pagina_impresa="s/n",
+    pagina_pdf=5,
+    jerarquia_numeral=("DISPOSICIONES GENERALES",),
+    texto_literal=Verbatim(
+        texto=("Toda intervención de los particulares que afecte o altere las "
+               "características de estos bienes debe ser previamente "
+               "autorizada por la Autoridad Administrativa del Agua, con "
+               "excepción del uso primario del agua y las referentes a la "
+               "navegación."),
+        pagina_pdf=5),
+    caracter=Caracter.EXIGENCIA,
+    verificada=False,
+    nota=(_NOTA_SIN_FIRMA_LEY
+          + "La frase anterior del mismo articulo dice cuales son «estos "
+          "bienes»: el agua del art. 5 y «los bienes naturales asociados a "
+          "esta señalados en el numeral 1 del artículo 6» (cita LEY_29338.6: "
+          "los cauces y las fajas marginales). ES UN TRAMITE, NO UNA "
+          "CONDICION DE CALCULO: el programa no lo verifica ni lo puede "
+          "verificar. Y el sujeto es «los particulares»: si una alcantarilla "
+          "de la autoridad vial cae en el, o en la aprobacion de obras en "
+          "cauces del art. 104 (PDF 35), es lectura juridica que el registro "
+          "no hace; el Reglamento tipifica como infraccion las obras de "
+          "cualquier tipo sin autorizacion, sin distinguir quien las hace "
+          "(REG_LEY_29338.277.b)."),
+)
+
+LEY_29338_74 = _cita(
+    id="LEY_29338.74",
+    fuente_id="LEY_29338",
+    numeral="Art. 74",
+    titulo_numeral="Faja marginal",
+    pagina_impresa="s/n",
+    pagina_pdf=25,
+    jerarquia_numeral=("PROTECCIÓN DEL AGUA",),
+    texto_literal=Verbatim(
+        texto=("En los terrenos aledaños a los cauces naturales o "
+               "artificiales, se mantiene una faja marginal de terreno "
+               "necesaria para la protección, el uso primario del agua, el "
+               "libre tránsito, la pesca, caminos de vigilancia u otros "
+               "servicios. El Reglamento determina su extensión."),
+        pagina_pdf=25),
+    # EXIGENCIA: «se mantiene». Lo que NO hace es fijar la extension: la
+    # remite al Reglamento, y el Reglamento a la autoridad (113.2).
+    caracter=Caracter.EXIGENCIA,
+    verificada=False,
+    nota=(_NOTA_SIN_FIRMA_LEY
+          + "Es el articulo que la fila V5 de la hoja de ruta nombra como "
+          "«la faja marginal, Ley 29338». Exige que la faja se mantenga y NO "
+          "fija su ancho: «El Reglamento determina su extensión», y el "
+          "Reglamento la deja a la Autoridad Administrativa del Agua para "
+          "cada cuerpo de agua (REG_LEY_29338.113.2). La concordancia que la "
+          "pagina imprime debajo es la R.J. 300-2011-ANA (Reglamento para la "
+          "Delimitacion y Mantenimiento de Fajas Marginales), que no esta en "
+          "normas/."),
+)
+
+REG_LEY_29338_113_1 = _cita(
+    id="REG_LEY_29338.113.1",
+    fuente_id="REG_LEY_29338",
+    numeral="Art. 113.1",
+    titulo_numeral="Fajas Marginales",
+    pagina_impresa="37",
+    pagina_pdf=37,
+    jerarquia_numeral=("CAUCES, RIBERAS Y FAJAS MARGINALES",),
+    texto_literal=Verbatim(
+        texto=("Las fajas marginales son bienes de dominio público "
+               "hidráulico. Están conformadas por las áreas inmediatas "
+               "superiores a las riberas de las fuentes de agua, naturales o "
+               "artificiales."),
+        pagina_pdf=37),
+    caracter=Caracter.DEFINICION,
+    metodo=AMBOS,
+    sesion=N2L,
+    nota=("La ribera es, por el art. 111 de la misma pagina, el area «entre "
+          "el nivel mínimo de sus aguas y el que éste alcance en sus mayores "
+          "avenidas o crecientes ordinarias»: la faja marginal empieza donde "
+          "la ribera termina, y su borde interior es un nivel de crecida, no "
+          "una distancia al eje."),
+)
+
+REG_LEY_29338_113_2 = _cita(
+    id="REG_LEY_29338.113.2",
+    fuente_id="REG_LEY_29338",
+    numeral="Art. 113.2",
+    titulo_numeral="Fajas Marginales",
+    pagina_impresa="37",
+    pagina_pdf=37,
+    jerarquia_numeral=("CAUCES, RIBERAS Y FAJAS MARGINALES",),
+    texto_literal=Verbatim(
+        texto=("Las dimensiones en una o ambas márgenes de un cuerpo de agua "
+               "son fijadas por la Autoridad Administrativa del Agua, de "
+               "acuerdo con los criterios establecidos en el Reglamento, "
+               "respetando los usos y costumbres establecidos."),
+        pagina_pdf=37),
+    # DEFINICION: atribuye la competencia y no exige nada al proyectista. Es
+    # la frase que convierte el ancho de la faja marginal en un dato de sitio
+    # [S] (lo fija una autoridad, cuerpo de agua por cuerpo de agua) y no en
+    # un [N] (el mismo numero en cualquier obra del pais).
+    caracter=Caracter.DEFINICION,
+    metodo=AMBOS,
+    sesion=N2L,
+    nota=("POR QUE V5 NO EVALUA LA FAJA MARGINAL, dicho con la fuente: el "
+          "ancho no lo da la ley ni el reglamento, lo fija la Autoridad "
+          "Administrativa del Agua para cada cuerpo de agua, «en una o ambas "
+          "márgenes». Los «criterios establecidos en el Reglamento» son los "
+          "del art. 114 (cita REG_LEY_29338.114), y no tienen cifra. El ancho "
+          "de la faja de ESTE cauce es por eso un dato de sitio que sale de "
+          "la resolucion de delimitacion de la autoridad, y no es entrada del "
+          "programa (ficha N2L-01). La concordancia que la pagina imprime es "
+          "la R.J. 300-2011-ANA, que no esta en normas/."),
+)
+
+REG_LEY_29338_114 = _cita(
+    id="REG_LEY_29338.114",
+    fuente_id="REG_LEY_29338",
+    numeral="Art. 114",
+    titulo_numeral="Criterios para la delimitación de la faja marginal",
+    pagina_impresa="37",
+    pagina_pdf=37,
+    jerarquia_numeral=("CAUCES, RIBERAS Y FAJAS MARGINALES",),
+    texto_literal=Verbatim(
+        texto=("La delimitación de la faja marginal se realiza de acuerdo con "
+               "los siguientes criterios:"),
+        pagina_pdf=37),
+    caracter=Caracter.DEFINICION,
+    metodo=AMBOS,
+    sesion=N2L,
+    nota=("LOS CUATRO CRITERIOS NO TIENEN CIFRA, y por eso esta cita es la "
+          "que sostiene la afirmacion negativa SIN_ANCHO_DE_FAJA_MARGINAL: "
+          "a. la magnitud e importancia de las estructuras hidraulicas "
+          "(presas, reservorios, embalses, canales de derivacion); b. el "
+          "espacio necesario para construir, conservar y proteger las "
+          "defensas riberenas y los cauces; c. el espacio para los usos "
+          "publicos; y d. «La máxima crecida o avenida de los ríos, lagos, "
+          "lagunas y otras fuentes naturales de agua. No se considerarán las "
+          "máximas crecidas registradas por causas de eventos "
+          "excepcionales.» Son criterios para la AUTORIDAD que delimita, no "
+          "un procedimiento que el proyectista pueda ejecutar en su lugar."),
+)
+
+REG_LEY_29338_277_B = _cita(
+    id="REG_LEY_29338.277.b",
+    fuente_id="REG_LEY_29338",
+    numeral="Art. 277, literal b.",
+    titulo_numeral="Tipificación de infracciones",
+    pagina_impresa="75",
+    pagina_pdf=75,
+    texto_literal=Verbatim(
+        texto=("b. Construir o modificar, sin autorización de la Autoridad "
+               "Nacional del Agua, obras de cualquier tipo, permanentes o "
+               "transitorias, en las fuentes naturales de agua, los bienes "
+               "naturales asociados a ésta o en la infraestructura hidráulica "
+               "mayor pública."),
+        pagina_pdf=75),
+    # EXIGENCIA, en su forma de prohibicion tipificada: lo que hace infraccion
+    # es construir SIN autorizacion.
+    caracter=Caracter.EXIGENCIA,
+    metodo=AMBOS,
+    sesion=N2L,
+    nota=("El encabezado del articulo es «Son infracciones en materia de "
+          "recursos hídricos las siguientes:». Es la forma mas directa en que "
+          "las dos normas del agua dicen que una obra en un cauce necesita "
+          "autorizacion: «obras de cualquier tipo, permanentes o "
+          "transitorias», sin distinguir quien las hace (el art. 7 de la Ley "
+          "habla de «los particulares»). El literal f. de la misma pagina "
+          "tipifica ademas «Ocupar, utilizar o desviar sin autorización los "
+          "cauces, riberas, fajas marginales». ES UN TRAMITE DEL EXPEDIENTE, "
+          "no una verificacion del calculo. Una resolucion del Tribunal "
+          "Nacional de Resolucion de Controversias Hidricas de 2025 aplica "
+          "este literal con este texto (vigencia en `fuentes.REG_LEY_29338`)."),
+)
+
+# LO QUE LAS DOS NORMAS DEL AGUA NO DICEN, barrido entero: la afirmacion que
+# sostiene que el ancho de la faja marginal es un dato de sitio y no un [N].
+SIN_ANCHO_DE_FAJA_MARGINAL = AfirmacionNegativa(
+    que_no_dice=("ni la Ley 29338 ni su Reglamento (DS 001-2010-AG) fijan el "
+                 "ancho de una faja marginal: la Ley remite su extension al "
+                 "Reglamento (art. 74), el Reglamento deja sus dimensiones a "
+                 "la Autoridad Administrativa del Agua para cada cuerpo de "
+                 "agua (art. 113.2) y sus criterios de delimitacion no tienen "
+                 "cifra (art. 114)"),
+    ambito_barrido=(
+        "las 49 hojas de la Ley y las 83 paginas del Reglamento, por texto: "
+        "«faja(s) marginal(es)» aparece 7 veces en la Ley (PDF 5, 25 dos, 26, "
+        "44 y 46 dos; las de las PDF 26, 44 y 46 son concordancias que "
+        "nombran los reglamentos de delimitacion de la ANA, R.J. "
+        "300-2011-ANA y R.J. 332-2016-ANA, ausentes) y 21 en el Reglamento "
+        "(PDF 36, 37 diez, 38 nueve y 75), y ninguna lleva una magnitud en "
+        "metros a menos de 200 caracteres. Barrido de la sesion de N2 del "
+        "plan 12 sin distinguir mayusculas ni tildes. NO se barrio el "
+        "reglamento de delimitacion de la ANA, que es donde la autoridad "
+        "pone su metodo y que no esta en normas/"),
+    cita_id="REG_LEY_29338.114")
+# El censo se definio mas arriba (tras N2 de M 294); esta se le suma aqui,
+# tras el bloque de su fuente, como las de N1 y N2 se sumaron tras los suyos.
+AFIRMACIONES_NEGATIVAS = AFIRMACIONES_NEGATIVAS + (SIN_ANCHO_DE_FAJA_MARGINAL,)
+
+# --- El RNGIV (DS 034-2008-MTC, texto del SPIJ actualizado al 28-05-2013).
+# Las cuatro citas son las que el DG-2018 §304.07.01 y .02 le remiten: la
+# remision de las definiciones (art. 2), las autoridades competentes (art.
+# 4), el ancho y su aprobacion (art. 32) y la naturaleza juridica de la faja
+# (art. 35).
+RNGIV_2 = _cita(
+    id="RNGIV.2",
+    fuente_id="RNGIV",
+    numeral="Art. 2",
+    titulo_numeral="De las definiciones",
+    pagina_impresa="4",
+    pagina_pdf=4,
+    texto_literal=Verbatim(
+        texto=("Las definiciones de los términos utilizados en el presente "
+               "Reglamento se encuentran contenidas en el “Glosario de "
+               "términos de uso frecuente en proyectos de infraestructura "
+               "vial” aprobado por el Ministerio de Transportes y "
+               "Comunicaciones, con Resolución Ministerial Nº "
+               "660-2008-MTC/02."),
+        pagina_pdf=4),
+    caracter=Caracter.DEFINICION,
+    metodo=AMBOS,
+    sesion=N2L,
+    nota=("LA REMISION DEL DG-2018 SIGUE UN ESLABON MAS. El 304.07.01 del "
+          "DG-2018 dice que las «definiciones y condiciones de uso» del "
+          "derecho de via estan en el RNGIV; el RNGIV no define el termino y "
+          "manda las definiciones a este glosario (RM 660-2008-MTC/02), que "
+          "no esta en normas/. Las condiciones de uso SI estan en el RNGIV "
+          "(Titulo III, arts. 32 a 37). Es lo que la cita DG2018.304.07.01 "
+          "declara en `corresponde_en`."),
+)
+
+RNGIV_4 = _cita(
+    id="RNGIV.4",
+    fuente_id="RNGIV",
+    numeral="Art. 4, num. 4.2",
+    titulo_numeral="De las autoridades competentes",
+    pagina_impresa="4",
+    pagina_pdf=4,
+    jerarquia_numeral=("AUTORIDADES COMPETENTES",),
+    texto_literal=Verbatim(
+        texto=("4.2 Las autoridades competentes para la aplicación del "
+               "presente Reglamento, de conformidad con los niveles de "
+               "gobierno que corresponde a la organización del Estado, son "
+               "las siguientes:"),
+        pagina_pdf=4),
+    caracter=Caracter.DEFINICION,
+    metodo=AMBOS,
+    sesion=N2L,
+    nota=("Es el articulo 4 que el DG-2018 §304.07.02 nombra. La pagina "
+          "imprime debajo los tres literales: a) el Gobierno Nacional, por el "
+          "MTC, para la Red Vial Nacional; b) los Gobiernos Regionales para "
+          "la Red Vial Departamental o Regional; y c) los Gobiernos Locales "
+          "para la Red Vial Vecinal o Rural, «RECTIFICADO POR FE DE "
+          "ERRATAS». NO SE TRANSCRIBE EL LITERAL c): segun los resultados de "
+          "busqueda, el DS 015-2024-MTC lo modifico despues de esta "
+          "compilacion (2013), y su texto vigente no se leyo. Que autoridad "
+          "aprueba el derecho de via de ESTE tramo depende de la red a la que "
+          "pertenece, que es un dato del proyecto."),
+)
+
+RNGIV_32 = _cita(
+    id="RNGIV.32",
+    fuente_id="RNGIV",
+    numeral="Art. 32",
+    titulo_numeral="Del ancho y aprobación del derecho de vía",
+    pagina_impresa="12",
+    pagina_pdf=12,
+    jerarquia_numeral=("EL DERECHO DE VÍA Y SUS CONDICIONES DE USO",),
+    texto_literal=Verbatim(
+        texto=("Cada autoridad competente establecida en el artículo 4 del "
+               "presente Reglamento, establece y aprueba mediante resolución "
+               "del titular, el ancho de la faja de derecho de vía de la red "
+               "vial del Sistema Nacional de Carreteras de su competencia, en "
+               "concordancia a las normas aprobadas por el Ministerio de "
+               "Transportes y Comunicaciones."),
+        pagina_pdf=12),
+    # DEFINICION: atribuye la competencia. Las «normas aprobadas por el MTC»
+    # con que el ancho tiene que concordar son, para el piso, la Tabla 304.09
+    # del DG-2018.
+    caracter=Caracter.DEFINICION,
+    metodo=AMBOS,
+    sesion=N2L,
+    corresponde_en=("DG2018.304.07.02",),
+    nota=("ES LA FRASE QUE HACE DEL ANCHO DEL DERECHO DE VIA UN DATO DEL "
+          "TRAMO y no un valor que el programa pueda poner: lo aprueba la "
+          "autoridad competente por resolucion, red por red. Por eso "
+          "`ancho_derecho_via_m` entra por --datos-externos, por punto, sin "
+          "valor por defecto, y el piso de la Tabla 304.09 del DG-2018 se "
+          "usa solo como contraste. El DG-2018 §304.07.02 repite la "
+          "atribucion en su primer parrafo («establece y aprueba mediante "
+          "resolución del titular»)."),
+)
+
+RNGIV_35 = _cita(
+    id="RNGIV.35",
+    fuente_id="RNGIV",
+    numeral="Art. 35",
+    titulo_numeral="De la propiedad del derecho de vía",
+    pagina_impresa="13",
+    pagina_pdf=13,
+    pagina_pdf_titulo=13,
+    jerarquia_numeral=("EL DERECHO DE VÍA Y SUS CONDICIONES DE USO",),
+    texto_literal=Verbatim(
+        texto=("La faja de terreno que conforma el derecho de vía es un bien "
+               "de dominio público, inalienable e imprescriptible."),
+        pagina_pdf=13),
+    caracter=Caracter.DEFINICION,
+    metodo=AMBOS,
+    sesion=N2L,
+    corresponde_en=("DG2018.304.07.01",),
+    nota=("La misma afirmacion que el DG-2018 §304.07.01 hace al remitir al "
+          "RNGIV («bien de dominio público inalienable e imprescriptible»), "
+          "aqui en su sede. No define que es el derecho de via (ver RNGIV.2): "
+          "dice de quien es la faja."),
 )
 
 CITAS: Dict[str, Cita] = {c.id: c for c in _TODAS}

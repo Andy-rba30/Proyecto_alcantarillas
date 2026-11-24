@@ -3,7 +3,7 @@
     "csv": "<SALIDA>/puntos_c.csv",
     "generado_utc": "<UTC>",
     "csv_sha1": "b715b1694f4a17566bcbb365c439af196c47e185",
-    "criterios_sha1": "30cff47a63abe98e2b1582e8e1fdb13e05615cfb",
+    "criterios_sha1": "d98b45e3a3781210e86cd45af2945883dc7141a7",
     "corredor_del_proyecto": {
       "valor": "terraplen de ~5 km de la Fase 0-bis de la hoja de ruta, num. 150",
       "origen": "src/datos_sitio.py"
@@ -37,11 +37,11 @@
         "criterio": "remanso_derecho_via",
         "etiqueta": "A",
         "concepto": "Metodo con que V5 mide la extension del embalse aguas arriba de la alcantarilla, para compararla con el derecho de via del punto (embalse dentro del derecho de via, sin afectar a terceros ni a la faja marginal)",
-        "fuente": "Fase 5, V5 de la hoja de ruta. El requisito juridico: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02), y la Ley 29338 (ausente de normas/) para la faja marginal. La carga como profundidad del embalse: HDS-5 num. 2.2.5, pag. impresa 2.9 (PDF 71). El metodo es del proyecto",
+        "fuente": "Fase 5, V5 de la hoja de ruta. El requisito juridico: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02), con el RNGIV al que remiten (DS 034-2008-MTC, arts. 32 y 35, registro RNGIV.32); y para la faja marginal la Ley 29338 art. 74 y su Reglamento art. 113.2 (registro REG_LEY_29338.113.2), que dejan su ancho a la Autoridad Administrativa del Agua para cada cuerpo de agua: V5 no la evalua, porque ese ancho no es dato de entrada. La carga como profundidad del embalse: HDS-5 num. 2.2.5, pag. impresa 2.9 (PDF 71). El metodo es del proyecto",
         "campo": null,
         "delta_rasante_m": null,
         "diferido_por_alcance": true,
-        "mensaje": "'remanso_derecho_via' es un VACIO sin valor asignado (Metodo con que V5 mide la extension del embalse aguas arriba de la alcantarilla, para compararla con el derecho de via del punto (embalse dentro del derecho de via, sin afectar a terceros ni a la faja marginal)). Debe resolverse antes de continuar: Fase 5, V5 de la hoja de ruta. El requisito juridico: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02), y la Ley 29338 (ausente de normas/) para la faja marginal. La carga como profundidad del embalse: HDS-5 num. 2.2.5, pag. impresa 2.9 (PDF 71). El metodo es del proyecto"
+        "mensaje": "'remanso_derecho_via' es un VACIO sin valor asignado (Metodo con que V5 mide la extension del embalse aguas arriba de la alcantarilla, para compararla con el derecho de via del punto (embalse dentro del derecho de via, sin afectar a terceros ni a la faja marginal)). Debe resolverse antes de continuar: Fase 5, V5 de la hoja de ruta. El requisito juridico: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02), con el RNGIV al que remiten (DS 034-2008-MTC, arts. 32 y 35, registro RNGIV.32); y para la faja marginal la Ley 29338 art. 74 y su Reglamento art. 113.2 (registro REG_LEY_29338.113.2), que dejan su ancho a la Autoridad Administrativa del Agua para cada cuerpo de agua: V5 no la evalua, porque ese ancho no es dato de entrada. La carga como profundidad del embalse: HDS-5 num. 2.2.5, pag. impresa 2.9 (PDF 71). El metodo es del proyecto"
       },
       {
         "punto": "A-01",
@@ -93,11 +93,11 @@
         "criterio": "remanso_derecho_via",
         "etiqueta": "A",
         "concepto": "Metodo con que V5 mide la extension del embalse aguas arriba de la alcantarilla, para compararla con el derecho de via del punto (embalse dentro del derecho de via, sin afectar a terceros ni a la faja marginal)",
-        "fuente": "Fase 5, V5 de la hoja de ruta. El requisito juridico: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02), y la Ley 29338 (ausente de normas/) para la faja marginal. La carga como profundidad del embalse: HDS-5 num. 2.2.5, pag. impresa 2.9 (PDF 71). El metodo es del proyecto",
+        "fuente": "Fase 5, V5 de la hoja de ruta. El requisito juridico: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02), con el RNGIV al que remiten (DS 034-2008-MTC, arts. 32 y 35, registro RNGIV.32); y para la faja marginal la Ley 29338 art. 74 y su Reglamento art. 113.2 (registro REG_LEY_29338.113.2), que dejan su ancho a la Autoridad Administrativa del Agua para cada cuerpo de agua: V5 no la evalua, porque ese ancho no es dato de entrada. La carga como profundidad del embalse: HDS-5 num. 2.2.5, pag. impresa 2.9 (PDF 71). El metodo es del proyecto",
         "campo": null,
         "delta_rasante_m": null,
         "diferido_por_alcance": true,
-        "mensaje": "'remanso_derecho_via' es un VACIO sin valor asignado (Metodo con que V5 mide la extension del embalse aguas arriba de la alcantarilla, para compararla con el derecho de via del punto (embalse dentro del derecho de via, sin afectar a terceros ni a la faja marginal)). Debe resolverse antes de continuar: Fase 5, V5 de la hoja de ruta. El requisito juridico: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02), y la Ley 29338 (ausente de normas/) para la faja marginal. La carga como profundidad del embalse: HDS-5 num. 2.2.5, pag. impresa 2.9 (PDF 71). El metodo es del proyecto"
+        "mensaje": "'remanso_derecho_via' es un VACIO sin valor asignado (Metodo con que V5 mide la extension del embalse aguas arriba de la alcantarilla, para compararla con el derecho de via del punto (embalse dentro del derecho de via, sin afectar a terceros ni a la faja marginal)). Debe resolverse antes de continuar: Fase 5, V5 de la hoja de ruta. El requisito juridico: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02), con el RNGIV al que remiten (DS 034-2008-MTC, arts. 32 y 35, registro RNGIV.32); y para la faja marginal la Ley 29338 art. 74 y su Reglamento art. 113.2 (registro REG_LEY_29338.113.2), que dejan su ancho a la Autoridad Administrativa del Agua para cada cuerpo de agua: V5 no la evalua, porque ese ancho no es dato de entrada. La carga como profundidad del embalse: HDS-5 num. 2.2.5, pag. impresa 2.9 (PDF 71). El metodo es del proyecto"
       },
       {
         "punto": "A-02",
@@ -149,11 +149,11 @@
         "criterio": "remanso_derecho_via",
         "etiqueta": "A",
         "concepto": "Metodo con que V5 mide la extension del embalse aguas arriba de la alcantarilla, para compararla con el derecho de via del punto (embalse dentro del derecho de via, sin afectar a terceros ni a la faja marginal)",
-        "fuente": "Fase 5, V5 de la hoja de ruta. El requisito juridico: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02), y la Ley 29338 (ausente de normas/) para la faja marginal. La carga como profundidad del embalse: HDS-5 num. 2.2.5, pag. impresa 2.9 (PDF 71). El metodo es del proyecto",
+        "fuente": "Fase 5, V5 de la hoja de ruta. El requisito juridico: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02), con el RNGIV al que remiten (DS 034-2008-MTC, arts. 32 y 35, registro RNGIV.32); y para la faja marginal la Ley 29338 art. 74 y su Reglamento art. 113.2 (registro REG_LEY_29338.113.2), que dejan su ancho a la Autoridad Administrativa del Agua para cada cuerpo de agua: V5 no la evalua, porque ese ancho no es dato de entrada. La carga como profundidad del embalse: HDS-5 num. 2.2.5, pag. impresa 2.9 (PDF 71). El metodo es del proyecto",
         "campo": null,
         "delta_rasante_m": null,
         "diferido_por_alcance": true,
-        "mensaje": "'remanso_derecho_via' es un VACIO sin valor asignado (Metodo con que V5 mide la extension del embalse aguas arriba de la alcantarilla, para compararla con el derecho de via del punto (embalse dentro del derecho de via, sin afectar a terceros ni a la faja marginal)). Debe resolverse antes de continuar: Fase 5, V5 de la hoja de ruta. El requisito juridico: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02), y la Ley 29338 (ausente de normas/) para la faja marginal. La carga como profundidad del embalse: HDS-5 num. 2.2.5, pag. impresa 2.9 (PDF 71). El metodo es del proyecto"
+        "mensaje": "'remanso_derecho_via' es un VACIO sin valor asignado (Metodo con que V5 mide la extension del embalse aguas arriba de la alcantarilla, para compararla con el derecho de via del punto (embalse dentro del derecho de via, sin afectar a terceros ni a la faja marginal)). Debe resolverse antes de continuar: Fase 5, V5 de la hoja de ruta. El requisito juridico: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02), con el RNGIV al que remiten (DS 034-2008-MTC, arts. 32 y 35, registro RNGIV.32); y para la faja marginal la Ley 29338 art. 74 y su Reglamento art. 113.2 (registro REG_LEY_29338.113.2), que dejan su ancho a la Autoridad Administrativa del Agua para cada cuerpo de agua: V5 no la evalua, porque ese ancho no es dato de entrada. La carga como profundidad del embalse: HDS-5 num. 2.2.5, pag. impresa 2.9 (PDF 71). El metodo es del proyecto"
       },
       {
         "punto": "B-01",
@@ -850,11 +850,11 @@
           "criterio": "remanso_derecho_via",
           "etiqueta": "A",
           "concepto": "Metodo con que V5 mide la extension del embalse aguas arriba de la alcantarilla, para compararla con el derecho de via del punto (embalse dentro del derecho de via, sin afectar a terceros ni a la faja marginal)",
-          "fuente": "Fase 5, V5 de la hoja de ruta. El requisito juridico: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02), y la Ley 29338 (ausente de normas/) para la faja marginal. La carga como profundidad del embalse: HDS-5 num. 2.2.5, pag. impresa 2.9 (PDF 71). El metodo es del proyecto",
+          "fuente": "Fase 5, V5 de la hoja de ruta. El requisito juridico: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02), con el RNGIV al que remiten (DS 034-2008-MTC, arts. 32 y 35, registro RNGIV.32); y para la faja marginal la Ley 29338 art. 74 y su Reglamento art. 113.2 (registro REG_LEY_29338.113.2), que dejan su ancho a la Autoridad Administrativa del Agua para cada cuerpo de agua: V5 no la evalua, porque ese ancho no es dato de entrada. La carga como profundidad del embalse: HDS-5 num. 2.2.5, pag. impresa 2.9 (PDF 71). El metodo es del proyecto",
           "campo": null,
           "delta_rasante_m": null,
           "diferido_por_alcance": true,
-          "mensaje": "'remanso_derecho_via' es un VACIO sin valor asignado (Metodo con que V5 mide la extension del embalse aguas arriba de la alcantarilla, para compararla con el derecho de via del punto (embalse dentro del derecho de via, sin afectar a terceros ni a la faja marginal)). Debe resolverse antes de continuar: Fase 5, V5 de la hoja de ruta. El requisito juridico: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02), y la Ley 29338 (ausente de normas/) para la faja marginal. La carga como profundidad del embalse: HDS-5 num. 2.2.5, pag. impresa 2.9 (PDF 71). El metodo es del proyecto"
+          "mensaje": "'remanso_derecho_via' es un VACIO sin valor asignado (Metodo con que V5 mide la extension del embalse aguas arriba de la alcantarilla, para compararla con el derecho de via del punto (embalse dentro del derecho de via, sin afectar a terceros ni a la faja marginal)). Debe resolverse antes de continuar: Fase 5, V5 de la hoja de ruta. El requisito juridico: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02), con el RNGIV al que remiten (DS 034-2008-MTC, arts. 32 y 35, registro RNGIV.32); y para la faja marginal la Ley 29338 art. 74 y su Reglamento art. 113.2 (registro REG_LEY_29338.113.2), que dejan su ancho a la Autoridad Administrativa del Agua para cada cuerpo de agua: V5 no la evalua, porque ese ancho no es dato de entrada. La carga como profundidad del embalse: HDS-5 num. 2.2.5, pag. impresa 2.9 (PDF 71). El metodo es del proyecto"
         },
         {
           "fase": "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)",
@@ -1471,11 +1471,11 @@
           "criterio": "remanso_derecho_via",
           "etiqueta": "A",
           "concepto": "Metodo con que V5 mide la extension del embalse aguas arriba de la alcantarilla, para compararla con el derecho de via del punto (embalse dentro del derecho de via, sin afectar a terceros ni a la faja marginal)",
-          "fuente": "Fase 5, V5 de la hoja de ruta. El requisito juridico: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02), y la Ley 29338 (ausente de normas/) para la faja marginal. La carga como profundidad del embalse: HDS-5 num. 2.2.5, pag. impresa 2.9 (PDF 71). El metodo es del proyecto",
+          "fuente": "Fase 5, V5 de la hoja de ruta. El requisito juridico: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02), con el RNGIV al que remiten (DS 034-2008-MTC, arts. 32 y 35, registro RNGIV.32); y para la faja marginal la Ley 29338 art. 74 y su Reglamento art. 113.2 (registro REG_LEY_29338.113.2), que dejan su ancho a la Autoridad Administrativa del Agua para cada cuerpo de agua: V5 no la evalua, porque ese ancho no es dato de entrada. La carga como profundidad del embalse: HDS-5 num. 2.2.5, pag. impresa 2.9 (PDF 71). El metodo es del proyecto",
           "campo": null,
           "delta_rasante_m": null,
           "diferido_por_alcance": true,
-          "mensaje": "'remanso_derecho_via' es un VACIO sin valor asignado (Metodo con que V5 mide la extension del embalse aguas arriba de la alcantarilla, para compararla con el derecho de via del punto (embalse dentro del derecho de via, sin afectar a terceros ni a la faja marginal)). Debe resolverse antes de continuar: Fase 5, V5 de la hoja de ruta. El requisito juridico: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02), y la Ley 29338 (ausente de normas/) para la faja marginal. La carga como profundidad del embalse: HDS-5 num. 2.2.5, pag. impresa 2.9 (PDF 71). El metodo es del proyecto"
+          "mensaje": "'remanso_derecho_via' es un VACIO sin valor asignado (Metodo con que V5 mide la extension del embalse aguas arriba de la alcantarilla, para compararla con el derecho de via del punto (embalse dentro del derecho de via, sin afectar a terceros ni a la faja marginal)). Debe resolverse antes de continuar: Fase 5, V5 de la hoja de ruta. El requisito juridico: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02), con el RNGIV al que remiten (DS 034-2008-MTC, arts. 32 y 35, registro RNGIV.32); y para la faja marginal la Ley 29338 art. 74 y su Reglamento art. 113.2 (registro REG_LEY_29338.113.2), que dejan su ancho a la Autoridad Administrativa del Agua para cada cuerpo de agua: V5 no la evalua, porque ese ancho no es dato de entrada. La carga como profundidad del embalse: HDS-5 num. 2.2.5, pag. impresa 2.9 (PDF 71). El metodo es del proyecto"
         },
         {
           "fase": "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)",
@@ -1905,11 +1905,11 @@
           "criterio": "remanso_derecho_via",
           "etiqueta": "A",
           "concepto": "Metodo con que V5 mide la extension del embalse aguas arriba de la alcantarilla, para compararla con el derecho de via del punto (embalse dentro del derecho de via, sin afectar a terceros ni a la faja marginal)",
-          "fuente": "Fase 5, V5 de la hoja de ruta. El requisito juridico: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02), y la Ley 29338 (ausente de normas/) para la faja marginal. La carga como profundidad del embalse: HDS-5 num. 2.2.5, pag. impresa 2.9 (PDF 71). El metodo es del proyecto",
+          "fuente": "Fase 5, V5 de la hoja de ruta. El requisito juridico: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02), con el RNGIV al que remiten (DS 034-2008-MTC, arts. 32 y 35, registro RNGIV.32); y para la faja marginal la Ley 29338 art. 74 y su Reglamento art. 113.2 (registro REG_LEY_29338.113.2), que dejan su ancho a la Autoridad Administrativa del Agua para cada cuerpo de agua: V5 no la evalua, porque ese ancho no es dato de entrada. La carga como profundidad del embalse: HDS-5 num. 2.2.5, pag. impresa 2.9 (PDF 71). El metodo es del proyecto",
           "campo": null,
           "delta_rasante_m": null,
           "diferido_por_alcance": true,
-          "mensaje": "'remanso_derecho_via' es un VACIO sin valor asignado (Metodo con que V5 mide la extension del embalse aguas arriba de la alcantarilla, para compararla con el derecho de via del punto (embalse dentro del derecho de via, sin afectar a terceros ni a la faja marginal)). Debe resolverse antes de continuar: Fase 5, V5 de la hoja de ruta. El requisito juridico: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02), y la Ley 29338 (ausente de normas/) para la faja marginal. La carga como profundidad del embalse: HDS-5 num. 2.2.5, pag. impresa 2.9 (PDF 71). El metodo es del proyecto"
+          "mensaje": "'remanso_derecho_via' es un VACIO sin valor asignado (Metodo con que V5 mide la extension del embalse aguas arriba de la alcantarilla, para compararla con el derecho de via del punto (embalse dentro del derecho de via, sin afectar a terceros ni a la faja marginal)). Debe resolverse antes de continuar: Fase 5, V5 de la hoja de ruta. El requisito juridico: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02), con el RNGIV al que remiten (DS 034-2008-MTC, arts. 32 y 35, registro RNGIV.32); y para la faja marginal la Ley 29338 art. 74 y su Reglamento art. 113.2 (registro REG_LEY_29338.113.2), que dejan su ancho a la Autoridad Administrativa del Agua para cada cuerpo de agua: V5 no la evalua, porque ese ancho no es dato de entrada. La carga como profundidad del embalse: HDS-5 num. 2.2.5, pag. impresa 2.9 (PDF 71). El metodo es del proyecto"
         },
         {
           "fase": "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)",
@@ -3289,7 +3289,7 @@
         "clave": "remanso_derecho_via",
         "etiqueta": "A",
         "concepto": "Metodo con que V5 mide la extension del embalse aguas arriba de la alcantarilla, para compararla con el derecho de via del punto (embalse dentro del derecho de via, sin afectar a terceros ni a la faja marginal)",
-        "fuente": "Fase 5, V5 de la hoja de ruta. El requisito juridico: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02), y la Ley 29338 (ausente de normas/) para la faja marginal. La carga como profundidad del embalse: HDS-5 num. 2.2.5, pag. impresa 2.9 (PDF 71). El metodo es del proyecto",
+        "fuente": "Fase 5, V5 de la hoja de ruta. El requisito juridico: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02), con el RNGIV al que remiten (DS 034-2008-MTC, arts. 32 y 35, registro RNGIV.32); y para la faja marginal la Ley 29338 art. 74 y su Reglamento art. 113.2 (registro REG_LEY_29338.113.2), que dejan su ancho a la Autoridad Administrativa del Agua para cada cuerpo de agua: V5 no la evalua, porque ese ancho no es dato de entrada. La carga como profundidad del embalse: HDS-5 num. 2.2.5, pag. impresa 2.9 (PDF 71). El metodo es del proyecto",
         "reemplazado_por": "Perfil de remanso calculado aguas arriba del punto (paso a paso o HEC-RAS) sobre la topografia del cauce",
         "fases": [
           "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)"

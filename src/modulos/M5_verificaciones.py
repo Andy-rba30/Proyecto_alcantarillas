@@ -2835,8 +2835,10 @@ def v5_remanso(*, punto: PuntoCritico,
                    if piso is not None else
                    "Piso del DG-2018 para el ancho: no contrastado ("
                    f"{derecho_de_via.origen_piso}).")
-                + " La faja marginal (Ley 29338) no se evalua: la ley no "
-                "esta en normas/.")),
+                + " La faja marginal no se evalua: su ancho no lo fija la "
+                "Ley 29338 (art. 74) ni su Reglamento (art. 113.2), sino la "
+                "Autoridad Administrativa del Agua para cada cuerpo de agua, "
+                "y el de este cauce no es dato de entrada del programa.")),
     )
 
 
@@ -3194,8 +3196,11 @@ def _v5_perfil_de_remanso(*, punto: PuntoCritico,
                 "extiende a lo ancho fuera del trapecio (por eso la lamina no "
                 "puede pasar la altura levantada). A diferencia del embalse "
                 "a nivel, NO cuenta el tramo en que el cauce ya lleva agua "
-                "sin la obra: mide lo que la obra añade. La faja marginal "
-                "(Ley 29338) no se evalua: la ley no esta en normas/.")),
+                "sin la obra: mide lo que la obra añade. La faja marginal no "
+                "se evalua: su ancho no lo fija la Ley 29338 (art. 74) ni su "
+                "Reglamento (art. 113.2), sino la Autoridad Administrativa "
+                "del Agua para cada cuerpo de agua, y el de este cauce no es "
+                "dato de entrada del programa.")),
     )
 
 

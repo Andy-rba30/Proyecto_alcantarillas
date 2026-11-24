@@ -18,7 +18,9 @@ Lo que cada bloque acredita, y contra que:
      presente o esta censado en `PRESENTES_SIN_REGISTRAR` con motivo y sha1.
      T17 solo vigilaba el sentido inverso.
   3. El RNGIV que el DG-2018 §304.07.01 remite, y las dos normas de cajon
-     prefabricado que AASHTO LRFD nombra, entran al censo de AUSENTES.
+     prefabricado que AASHTO LRFD nombra, entran al censo de AUSENTES. (El
+     RNGIV salio de el en N2 del plan 12: es presente, y el test de este
+     bloque lo dice con lo que el ejemplar imprime.)
   4. Las citas de alcance de las tres normas de producto (M 170M, M 36, A760)
      y las de E.060 11.10 que EXT-7 necesita.
   5. La norma de producto va por (material, forma): un marco vaciado in situ
@@ -260,19 +262,104 @@ def test_el_censo_de_presentes_sin_registrar_tiene_motivo_y_sha1_medido():
 # 3. Los ausentes nuevos: RNGIV, M 259, M 273
 # ===========================================================================
 
-def test_el_rngiv_entra_como_ausente_y_no_vuelve_el_binario_borrado():
+def test_el_rngiv_es_presente_y_no_es_el_binario_borrado(reg):
     """
     El DG-2018 §304.07.01 remite al Reglamento Nacional de Gestion de
     Infraestructura Vial (DS 034-2008-MTC). El archivo que el dueño borro en
     5196dd2 NO era ese decreto: era la publicacion de El Peruano del
     10-02-2006 (12 paginas, sha1 6f6b473c...), anterior al DS de 2008 y con
-    otra numeracion de articulos. No se restaura: se censa lo que falta.
+    otra numeracion de articulos. No se restauro, y EXT-6 censo lo que
+    faltaba.
+
+    --- N2 del plan 12 --- EL DECRETO LLEGO, Y ES OTRO ARCHIVO: el texto del
+    SPIJ «Actualizado al: 28/05/13» (17 paginas, sha1 4e41d4a1...), con
+    paginacion medida (desfase 0 en 17 de 17). La historia del binario
+    borrado sigue en la nota, y las remisiones del DG-2018 llegan a sus
+    articulos por `corresponde_en`.
     """
-    r = fu.FUENTES_AUSENTES["RNGIV"]
-    assert "034-2008-MTC" in r.titulo or "034-2008-MTC" in r.edicion
+    assert "RNGIV" not in fu.FUENTES_AUSENTES
+    r = fu.FUENTES["RNGIV"]
+    assert "034-2008-MTC" in r.titulo and r.resolucion == "DS 034-2008-MTC"
+    assert r.sha1 == "4e41d4a1a9143ab0611ef8010c9b9598dc6f2a10"
+    assert r.sha1 != "6f6b473c9048212975914f8db46650218a371c50"
+    assert r.paginas_pdf == 17 and r.paginacion == Corrida(desfase=0)
     assert "5196dd2" in r.nota and "2006" in r.nota
-    assert "304.07.01" in r.ausencia.por_que_se_cita
+    assert "28/05/13" in r.edicion
     assert not (NORMAS / "Reglamento Nacional de Gestion de Infraestructura Vial.pdf").exists()
+    # Las dos remisiones del DG-2018, seguidas hasta su articulo.
+    assert reg.cita("DG2018.304.07.01").corresponde_en == ("RNGIV.35", "RNGIV.2")
+    assert reg.cita("DG2018.304.07.02").corresponde_en == ("RNGIV.32", "RNGIV.4")
+    # El RNGIV NO define el termino: remite a un glosario que no esta.
+    assert "660-2008-MTC/02" in reg.cita("RNGIV.2").texto_literal.texto
+    assert "inalienable e imprescriptible" in reg.cita("RNGIV.35").texto_literal.texto
+    assert "resolución del titular" in reg.cita("RNGIV.32").texto_literal.texto
+    for cita_id in ("RNGIV.2", "RNGIV.4", "RNGIV.32", "RNGIV.35"):
+        c = reg.cita(cita_id)
+        assert c.verificado is not None and c.verificado.sha1_pdf == r.sha1, cita_id
+        assert c.pagina_pdf == int(c.pagina_impresa), cita_id
+
+
+def test_la_ley_29338_y_su_reglamento_son_dos_fuentes_presentes(reg):
+    """
+    --- N2 del plan 12 --- La ausente `LEY_29338` decia «Ley 29338 ... y su
+    reglamento»: son dos actos y dos documentos, y entran como DOS fuentes.
+    La Ley no imprime folio (SinDeterminar, citas sin firma censadas); el
+    Reglamento si (desfase 0 en 83 de 83).
+    """
+    from src.normativa.esquema import SinDeterminar
+    assert "LEY_29338" not in fu.FUENTES_AUSENTES
+    ley = fu.FUENTES["LEY_29338"]
+    assert ley.sha1 == "ac47b59be519288b6aaa3d0eb32bc2b96dd80416"
+    assert ley.paginas_pdf == 49 and isinstance(ley.paginacion, SinDeterminar)
+    assert "reglamento" not in ley.titulo.lower()
+    rlrh = fu.FUENTES["REG_LEY_29338"]
+    assert rlrh.sha1 == "68fa38ad900a01e2d51384899374ea84fe0272c1"
+    assert rlrh.paginas_pdf == 83 and rlrh.paginacion == Corrida(desfase=0)
+    assert rlrh.resolucion == "DS 001-2010-AG"
+    for cita_id in ("LEY_29338.6", "LEY_29338.7", "LEY_29338.74"):
+        c = reg.cita(cita_id)
+        assert c.verificado is None and c.pagina_impresa == "s/n", cita_id
+        assert "SIN FIRMA A PROPOSITO" in c.nota, cita_id
+    assert "El Reglamento determina su extensión" in \
+        reg.cita("LEY_29338.74").texto_literal.texto
+    dimensiones = reg.cita("REG_LEY_29338.113.2")
+    assert "Autoridad Administrativa del Agua" in dimensiones.texto_literal.texto
+    assert dimensiones.pagina_pdf == 37 and dimensiones.verificado is not None
+    obras = reg.cita("REG_LEY_29338.277.b")
+    assert "obras de cualquier tipo" in obras.texto_literal.texto
+    assert obras.caracter is Caracter.EXIGENCIA
+
+
+def test_la_faja_marginal_no_se_evalua_por_falta_del_dato_y_no_de_la_ley(reg):
+    """
+    --- N2 del plan 12 --- V5 decia «La faja marginal (Ley 29338) no se
+    evalua: la ley no esta en normas/», y la ficha de 'remanso_derecho_via'
+    «Ley 29338 (ausente de normas/)». Con la ley presente, la razon es otra:
+    ni la ley ni su reglamento fijan un ancho (lo fija la autoridad del agua
+    para cada cuerpo de agua), y el de este cauce no es entrada del
+    programa. El fundamento de los dos pasos de V5 lo dice con las citas.
+    """
+    import ast
+    from src.modulos import M5_verificaciones as M5
+    # Por el AST: el parser une las cadenas adyacentes en una constante, de
+    # modo que la frase partida en varias lineas se ve entera.
+    cadenas = [n.value for n in ast.walk(ast.parse(
+                   Path(M5.__file__).read_text(encoding="utf-8")))
+               if isinstance(n, ast.Constant) and isinstance(n.value, str)]
+    assert not any("la ley no esta en normas/" in c for c in cadenas)
+    sobre_la_faja = [c for c in cadenas if "La faja marginal no se evalua" in c]
+    assert len(sobre_la_faja) == 2, sobre_la_faja
+    for c in sobre_la_faja:
+        assert "Autoridad Administrativa del Agua" in c and "113.2" in c
+    remanso = ca.CRITERIOS["remanso_derecho_via"]
+    assert "ausente de normas/" not in remanso.fuente
+    assert "REG_LEY_29338.113.2" in remanso.fuente
+    for fid in ("F5.V5", "F5.V5_PERFIL"):
+        f = F.FUNDAMENTOS[fid]
+        assert "faja marginal no se evalua" in f.por_que, fid
+        for cita_id in ("LEY_29338.74", "REG_LEY_29338.113.2",
+                        "REG_LEY_29338.114", "RNGIV.32", "RNGIV.35"):
+            assert cita_id in f.citas, (fid, cita_id)
 
 
 def test_las_normas_de_cajon_prefabricado_estan_censadas_como_ausentes():
@@ -429,7 +516,11 @@ def test_toda_fuente_presente_lleva_vigencia_como_campo_y_no_como_marca():
                  "WSDOT_HM": fu.VIGENCIA_VERIFICADA_EL_T0,
                  "USBR_DSCS": fu.VIGENCIA_VERIFICADA_EL_VE3,
                  # VE-3.12: la fuente secundaria de las Clases III a V.
-                 "USACE_EM_1110_2_2902": fu.VIGENCIA_VERIFICADA_EL_VE3}.get(
+                 "USACE_EM_1110_2_2902": fu.VIGENCIA_VERIFICADA_EL_VE3,
+                 # N2 del plan 12: el marco legal.
+                 "LEY_29338": fu.VIGENCIA_VERIFICADA_EL_MARCO_LEGAL,
+                 "REG_LEY_29338": fu.VIGENCIA_VERIFICADA_EL_MARCO_LEGAL,
+                 "RNGIV": fu.VIGENCIA_VERIFICADA_EL_MARCO_LEGAL}.get(
                      f.id, fu.VIGENCIA_VERIFICADA_EL)
         assert f.vigencia.fecha == fecha, f.id
         assert "VIGENCIA CONFIRMADA" not in f.nota and "EDICION POSTERIOR DETECTADA" not in f.nota, f.id
