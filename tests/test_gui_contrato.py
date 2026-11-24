@@ -620,6 +620,88 @@ def test_la_ventana_declara_la_conciencia_de_dpi_antes_de_crear_el_tk():
             comp.DPI_DEL_SISTEMA, comp.DPI_NO_DECLARADA}
 
 
+class _VentanaDeGeometria:
+    """Lo que `geometria_inicial` le pide a una ventana, y nada mas."""
+
+    def __init__(self, ppp):
+        self.ppp = ppp
+        self.geometrias = []
+        self.minimos = []
+
+    def winfo_fpixels(self, _distancia):
+        return self.ppp
+
+    def geometry(self, texto):
+        self.geometrias.append(texto)
+
+    def minsize(self, ancho, alto):
+        self.minimos.append((ancho, alto))
+
+
+def test_la_geometria_inicial_solo_se_escala_en_windows(monkeypatch):
+    """
+    Ronda 2 de Windows (la otra mitad del bloque 1b): declarado consciente
+    de DPI, Tk escala las fuentes y no los pixeles de `geometry`; al 125 %
+    la ventana principal abria a 1100x800 px fisicos con un contenido que
+    pedia 2177x1156. En Windows la geometria se escala con los ppp (nunca
+    por debajo de 1) y se ajusta al area de trabajo, centrada; fuera de
+    Windows se aplica tal cual, como antes.
+    """
+    import sys
+    from tests.apoyo.doble_tkinter import gui_componentes
+    comp = gui_componentes()
+
+    monkeypatch.setattr(sys, "platform", "linux")
+    v = _VentanaDeGeometria(ppp=120.0)
+    assert comp.geometria_inicial(v, 1100, 800, minimo=(900, 620)) == "1100x800"
+    assert (v.geometrias, v.minimos) == (["1100x800"], [(900, 620)])
+    assert comp.area_de_trabajo() is None
+
+    monkeypatch.setattr(sys, "platform", "win32")
+    monkeypatch.setattr(comp, "area_de_trabajo", lambda: None)
+    v = _VentanaDeGeometria(ppp=120.0)
+    assert comp.geometria_inicial(v, 1100, 800, minimo=(900, 620)) == "1375x1000"
+    assert v.minimos == [(1125, 775)]
+    # Nunca por debajo del tamaño escrito.
+    v = _VentanaDeGeometria(ppp=72.0)
+    assert comp.geometria_inicial(v, 1100, 800) == "1100x800"
+    assert v.minimos == []
+
+    # Con el area de trabajo de la maquina medida (1920x1020 sin la barra de
+    # tareas; marco 16 x 46 px): el alto se recorta para que la ventana
+    # entera quepa, se centra, y el minimo no pasa del tamaño.
+    monkeypatch.setattr(comp, "area_de_trabajo", lambda: (0, 0, 1920, 1020, 16, 46))
+    v = _VentanaDeGeometria(ppp=120.0)
+    assert comp.geometria_inicial(v, 1100, 800, minimo=(900, 620)) == "1375x974+264+0"
+    assert v.minimos == [(1125, 775)]
+    v = _VentanaDeGeometria(ppp=144.0)
+    assert comp.geometria_inicial(v, 1100, 800, minimo=(900, 620)) == "1650x974+127+0"
+    assert v.minimos == [(1350, 930)]
+
+
+def test_ningun_tamano_de_ventana_se_escribe_fuera_de_geometria_inicial():
+    """
+    Toda ventana de la GUI recibe su tamaño por `comp.geometria_inicial`:
+    un `geometry("WxH")` o un `minsize` sueltos volverian a abrir en Windows
+    al 125 % una ventana mas chica que su contenido (ronda 2 de Windows).
+    """
+    gui = RAIZ / "gui"
+    sueltos = []
+    for ruta in sorted(gui.glob("*.py")):
+        if ruta.name == "componentes.py":
+            continue
+        arbol = ast.parse(ruta.read_text(encoding="utf-8-sig"), filename=str(ruta))
+        for nodo in ast.walk(arbol):
+            if (isinstance(nodo, ast.Call) and isinstance(nodo.func, ast.Attribute)
+                    and nodo.func.attr in ("geometry", "minsize", "wm_geometry")
+                    and nodo.args):
+                sueltos.append(f"{ruta.name}:{nodo.lineno}")
+    assert sueltos == [], sueltos
+    llamadas = sum(ast.unparse(ast.parse(r.read_text(encoding="utf-8-sig"))).count(
+        "comp.geometria_inicial(") for r in gui.glob("*.py"))
+    assert llamadas == 6, llamadas
+
+
 def test_la_navegacion_lateral_conmuta_el_notebook_y_no_lleva_paso_propio():
     """
     Bloque 3 del rediseño visual, la enmienda a «Notebook por pestañas» de

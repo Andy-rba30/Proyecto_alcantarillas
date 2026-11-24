@@ -108,12 +108,13 @@ class VentanaNormativa(tk.Toplevel):
         self._tree = None
 
         self.title(f"{clave} - {TITULO_POR_CARA[self.ventana.cara]}")
-        self.geometry("1080x760")
-        self.minsize(820, 560)
+        comp.geometria_inicial(self, 1080, 760, minimo=(820, 560))
         self.transient(master)
         # Escape cierra la emergente (EXT-8, PC-17): es lo que todo dialogo
-        # hace y lo que un usuario de teclado espera.
+        # hace y lo que un usuario de teclado espera. Y para que le llegue,
+        # la emergente toma el foco al abrirse (ronda 2 de Windows).
         self.bind("<Escape>", lambda _evt: self.destroy())
+        comp.tomar_foco_al_abrir(self)
 
         try:
             self.color_neutro = ttk.Style().lookup("TFrame", "background") \

@@ -346,6 +346,10 @@ CONSTRUCTORES_DE_PRESENTACION = {
     "columnconfigure", "rowconfigure",
     "grid_columnconfigure", "grid_rowconfigure",
     "minsize", "maxsize", "geometry", "wm_geometry", "resizable",
+    # ronda 2 de Windows: `geometry` y `minsize` de una ventana pasan por
+    # `comp.geometria_inicial`, que los escala con los ppp en Windows; sus
+    # enteros son los mismos px de antes.
+    "geometria_inicial",
     "column", "heading", "tag_configure", "create_window", "itemconfigure",
     "yview_scroll", "xview_scroll", "yview_moveto", "xview_moveto",
     "after", "bbox",
@@ -969,7 +973,13 @@ CENSO_DE_MARCAS = {
     # 10 -> 12 en VE-5 (fichas UI3-01 y UI4-01): el margen interior de
     # `MarcoScroll` pasa a parametro (`relleno`, 14 px por defecto) y el
     # hueco entre botones de `FilaFluida` (8 px). Geometria de widget.
-    "gui/componentes.py": 12,
+    # 12 -> 18 en la ronda 2 de Windows: `PPP_DE_DISENO` (los 96 ppp del
+    # 100 % de Windows a los que se escribieron las geometrias), el indice
+    # de `SystemParametersInfoW` y los cuatro de `GetSystemMetrics` de la
+    # API de Windows con que `geometria_inicial` ajusta la ventana al area
+    # de trabajo. Identificadores del sistema y escala de pantalla, no
+    # magnitudes.
+    "gui/componentes.py": 18,
     # EXT-8 (PC-11): el umbral de puntos a partir del que se ofrece la via
     # del navegador --- una MEDIDA del dictamen, no un valor de proyecto ---
     # y las lineas de la cola del diagnostico del hijo.

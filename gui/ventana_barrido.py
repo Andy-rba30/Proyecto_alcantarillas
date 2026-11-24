@@ -119,9 +119,10 @@ class VentanaBarrido:
         self._cerrada = False
         self.top = tk.Toplevel(master, background=comp.SUPERFICIE)
         self.top.title(f"Barrido de sensibilidad: {clave}")
-        self.top.geometry("1040x780")
+        comp.geometria_inicial(self.top, 1040, 780)
         self.top.transient(master)
         self.top.bind("<Escape>", lambda _evt: self.cerrar())
+        comp.tomar_foco_al_abrir(self.top)
         self.top.protocol("WM_DELETE_WINDOW", self.cerrar)
         self.top.bind("<Destroy>", self._al_destruirse, add="+")
         self._construir()

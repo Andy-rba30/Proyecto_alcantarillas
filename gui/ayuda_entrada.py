@@ -125,11 +125,12 @@ class VentanaAyudaEntrada(tk.Toplevel):
         super().__init__(master)
         self.configure(background=comp.FONDO)
         self.title(TITULO)
-        self.geometry("1040x780")
-        self.minsize(760, 520)
+        comp.geometria_inicial(self, 1040, 780, minimo=(760, 520))
         self.transient(master)
-        # Escape cierra la ayuda (EXT-8, PC-17), como el boton «Cerrar».
+        # Escape cierra la ayuda (EXT-8, PC-17), como el boton «Cerrar»; la
+        # ayuda toma el foco al abrirse para que le llegue (ronda 2 de Windows).
         self.bind("<Escape>", lambda _evt: self.destroy())
+        comp.tomar_foco_al_abrir(self)
 
         self.nb = ttk.Notebook(self)
         self.nb.pack(fill="both", expand=True, padx=10, pady=10)

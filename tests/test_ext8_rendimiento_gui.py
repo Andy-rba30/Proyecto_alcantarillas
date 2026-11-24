@@ -48,6 +48,7 @@ import subprocess
 import sys
 import time
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -1104,6 +1105,57 @@ def test_pc17_escape_cierra_las_emergentes_y_control_return_ejecuta():
     assert traza and all("destroy" in m for m in traza)
     ejecutar = _bind_de(_funcion(arbol, "_crear_interfaz"), "<Control-Return>")
     assert ejecutar and all("ejecutar_pipeline" in m for m in ejecutar)
+
+
+def _llama_a(nodo, nombre: str) -> bool:
+    return any(isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute)
+               and n.func.attr == nombre for n in ast.walk(nodo))
+
+
+def test_pc17_toda_emergente_con_escape_toma_el_foco_al_abrirse():
+    """
+    Ronda 2 de Windows: una tecla generada va a la ventana CON FOCO. En X11
+    el gestor de ventanas da el foco a la emergente al mapearla; en Windows
+    se quedaba en la principal (".") y Escape no cerraba ni la ventana
+    normativa ni la ayuda (diagnostico de la maquina del dueño: con
+    `focus_set`, si). Toda construccion que ata Escape pide tambien el foco
+    por `comp.tomar_foco_al_abrir`.
+    """
+    emergentes = [_clase(_arbol(VENTANA), "VentanaNormativa"),
+                  _clase(_arbol(AYUDA), "VentanaAyudaEntrada"),
+                  _funcion(_arbol(GUI), "_pintar_traza"),
+                  _funcion(_arbol(GUI), "_mostrar_comparacion"),
+                  _clase(_arbol(RAIZ / "gui" / "ventana_barrido.py"), "VentanaBarrido")]
+    for nodo in emergentes:
+        assert _bind_de(nodo, "<Escape>"), f"{nodo.name} ya no ata Escape"
+        assert _llama_a(nodo, "tomar_foco_al_abrir"), (
+            f"{nodo.name} ata Escape y no toma el foco: en Windows no le llega")
+
+
+def test_tomar_foco_al_abrir_lo_pide_ya_y_al_mapearse_la_emergente():
+    from tests.apoyo.doble_tkinter import gui_componentes
+    comp = gui_componentes()
+
+    class _Emergente:
+        def __init__(self):
+            self.focos = 0
+            self.atados = []
+
+        def focus_set(self):
+            self.focos += 1
+
+        def bind(self, evento, funcion, add=None):
+            self.atados.append((evento, funcion, add))
+
+    v = _Emergente()
+    comp.tomar_foco_al_abrir(v)
+    assert v.focos == 1
+    [(evento, al_mapearse, add)] = v.atados
+    assert (evento, add) == ("<Map>", "+")
+    al_mapearse(SimpleNamespace(widget=object()))   # se mapea un hijo
+    assert v.focos == 1
+    al_mapearse(SimpleNamespace(widget=v))
+    assert v.focos == 2
 
 
 # ===========================================================================

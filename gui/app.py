@@ -671,8 +671,9 @@ class ExpedienteApp:
         # Sin «M0 a M10» en el titulo (G1): es lenguaje de modulos internos,
         # no de proyectista. El dato no se pierde: vive en la barra de estado.
         self.root.title("Expediente de Alcantarillas")
-        self.root.geometry("1100x800")
-        self.root.minsize(900, 620)
+        # Escritos a 96 ppp; en Windows se escalan con los ppp y se ajustan
+        # al area de trabajo (ronda 2 de Windows, `comp.geometria_inicial`).
+        comp.geometria_inicial(self.root, 1100, 800, minimo=(900, 620))
 
         self.proyecto_var = tk.StringVar()
         self.csv_var = tk.StringVar()
@@ -2983,7 +2984,8 @@ class ExpedienteApp:
         ventana = tk.Toplevel(self.root, background=comp.SUPERFICIE)
         ventana.title(f"Traza de procedencia - {traza.id_punto}")
         ventana.bind("<Escape>", lambda _evt: ventana.destroy())   # PC-17
-        ventana.geometry("980x680")  # literal-ok: tamano inicial de la ventana, px
+        comp.tomar_foco_al_abrir(ventana)
+        comp.geometria_inicial(ventana, 980, 680)
         ventana.columnconfigure(0, weight=1)
         ventana.rowconfigure(0, weight=1)
 
@@ -4034,9 +4036,10 @@ class ExpedienteApp:
     def _mostrar_comparacion(self, resultado, ruta):
         ventana = tk.Toplevel(self.root, background=comp.SUPERFICIE)
         ventana.title("Comparacion de dos informe_json")
-        ventana.geometry("900x500")
+        comp.geometria_inicial(ventana, 900, 500)
         ventana.transient(self.root)
         ventana.bind("<Escape>", lambda _evt: ventana.destroy())
+        comp.tomar_foco_al_abrir(ventana)
         ttk.Label(ventana, text=f"Esta corrida (A) frente a {ruta} (B)",
                   style="Header.TLabel", wraplength=860, justify="left").pack(
                       anchor="w", padx=10, pady=(10, 4))

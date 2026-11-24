@@ -177,6 +177,119 @@ def declarar_conciencia_de_dpi():
         return DPI_NO_DECLARADA
 
 
+# ---------------------------------------------------------------------------
+# La otra mitad de la conciencia de DPI: el TAMAÑO de las ventanas en Windows
+# ---------------------------------------------------------------------------
+# Declarado consciente de DPI, el proceso deja de ser estirado por Windows y
+# Tk escala lo que se mide en PUNTOS (las fuentes: `tk scaling` = ppp/72),
+# pero no lo que se escribe en PIXELES: `geometry("1100x800")`. Medido en
+# Windows 11 al 125 % (ronda 2 de Windows, Tk a 120 ppp): la ventana principal
+# abria con 1100x800 px fisicos y su contenido pedia 2177x1156, de modo que la
+# pestaña 2 dejaba «Barrido…» 52 px por debajo de su borde (lo que
+# `tests/test_ui3_barrido_ventana.py` vigila en la geometria por defecto). Las
+# geometrias de las ventanas se escribieron a `PPP_DE_DISENO` --- el 100 % de
+# Windows --- y en Windows se escalan por ppp / `PPP_DE_DISENO`, nunca por
+# debajo de 1, ajustadas al area de trabajo del monitor principal (sin la
+# barra de tareas) y centradas en ella. Fuera de Windows no se toca nada: no
+# se declaro nada alli, y el ppp que X11 informa (100 en Xvfb) no es una
+# escala elegida por el usuario.
+PPP_DE_DISENO = 96   # literal-ok: ppp del 100 % de Windows, a los que se escribieron las geometrias
+# Indices de `SystemParametersInfoW` y `GetSystemMetrics` de la API de
+# Windows: el area de trabajo, y el marco y la barra de titulo de una ventana
+# con borde redimensionable. Identificadores del sistema operativo, no
+# magnitudes.
+SPI_GETWORKAREA = 0x30   # literal-ok: indice de SystemParametersInfoW (API de Windows)
+SM_CXFRAME, SM_CYFRAME, SM_CYCAPTION, SM_CXPADDEDBORDER = 32, 33, 4, 92   # literal-ok: indices de GetSystemMetrics (API de Windows)
+
+
+def factor_de_escala(ventana) -> float:
+    """
+    Cuanto hay que escalar una geometria escrita a `PPP_DE_DISENO`: en
+    Windows, los ppp que Tk ve sobre `PPP_DE_DISENO`, nunca menos de 1; fuera
+    de Windows, 1. Nunca lanza.
+    """
+    if sys.platform != "win32":
+        return 1.0
+    try:
+        ppp = float(ventana.winfo_fpixels("1i"))
+    except (tk.TclError, TypeError, ValueError):
+        return 1.0
+    return max(1.0, ppp / PPP_DE_DISENO)
+
+
+def area_de_trabajo():
+    """
+    En Windows, `(x, y, ancho, alto, marco_ancho, marco_alto)`: el area de
+    trabajo del monitor principal (la pantalla sin la barra de tareas) y lo
+    que el marco y la barra de titulo de una ventana redimensionable suman a
+    su area de cliente, que es lo que `geometry` mide; todo en pixeles
+    fisicos. Fuera de Windows, o si la API no responde, `None`. Nunca lanza.
+    """
+    if sys.platform != "win32":
+        return None
+    import ctypes
+    from ctypes import wintypes
+    try:
+        user32 = ctypes.windll.user32
+        rect = wintypes.RECT()
+        if not user32.SystemParametersInfoW(SPI_GETWORKAREA, 0,
+                                            ctypes.byref(rect), 0):
+            return None
+        borde = user32.GetSystemMetrics(SM_CXPADDEDBORDER)
+        marco_ancho = 2 * (user32.GetSystemMetrics(SM_CXFRAME) + borde)
+        marco_alto = (user32.GetSystemMetrics(SM_CYCAPTION)
+                      + 2 * (user32.GetSystemMetrics(SM_CYFRAME) + borde))
+    except (AttributeError, OSError):
+        return None
+    return (rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top,
+            marco_ancho, marco_alto)
+
+
+def geometria_inicial(ventana, ancho, alto, minimo=None):
+    """
+    El tamaño inicial de una ventana (y su minimo), escritos en pixeles a
+    `PPP_DE_DISENO`. Fuera de Windows es `ventana.geometry(f"{ancho}x{alto}")`
+    y `ventana.minsize(*minimo)`, tal cual. En Windows se escalan por
+    `factor_de_escala` y, si se conoce el area de trabajo, se ajustan a ella
+    con su marco y la ventana se centra alli: abierta, se ve entera. Devuelve
+    la cadena de geometria aplicada.
+    """
+    factor = factor_de_escala(ventana)
+    w, h = round(ancho * factor), round(alto * factor)
+    posicion = ""
+    area = area_de_trabajo()
+    if area is not None:
+        x0, y0, ancho_area, alto_area, marco_ancho, marco_alto = area
+        w = max(1, min(w, ancho_area - marco_ancho))
+        h = max(1, min(h, alto_area - marco_alto))
+        posicion = (f"+{x0 + (ancho_area - w - marco_ancho) // 2}"
+                    f"+{y0 + (alto_area - h - marco_alto) // 2}")
+    geometria = f"{w}x{h}{posicion}"
+    ventana.geometry(geometria)
+    if minimo is not None:
+        ventana.minsize(min(w, round(minimo[0] * factor)),
+                        min(h, round(minimo[1] * factor)))
+    return geometria
+
+
+def tomar_foco_al_abrir(ventana):
+    """
+    Una emergente toma el foco del teclado al abrirse, para que su Escape
+    (EXT-8, PC-17) le llegue. Una tecla generada va a la ventana CON FOCO, no
+    a la que se nombra: en X11 el foco lo da el gestor de ventanas al mapear
+    la nueva, y en Windows no --- medido en la ronda 2 de Windows, el foco
+    seguia en la principal (".") y Escape no cerraba ni la ventana normativa
+    ni la ayuda; con `focus_set` si. Se pide al construir y otra vez al
+    MAPEARSE la emergente (no sus hijos), que es cuando Tk puede darlo.
+    """
+    def _al_mapearse(evento):
+        if evento.widget is ventana:
+            ventana.focus_set()
+
+    ventana.bind("<Map>", _al_mapearse, add="+")
+    ventana.focus_set()
+
+
 class Tipografia:
     """
     Las dos familias resueltas y los constructores de tuplas de fuente.
