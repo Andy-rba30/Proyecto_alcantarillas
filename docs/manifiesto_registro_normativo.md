@@ -185,6 +185,7 @@ línea que se pueda romper.
 | `AASHTO_LRFD_9.12.7.2.4` | 12.7.2.4 | «12.7.2.4—Resistance to Buckling» | pág. impresa **12-26** · PDF 1664 | exigencia | 2026-11-12 · texto |
 | `AASHTO_LRFD_9.12.7.2.5` | 12.7.2.5 | «12.7.2.5—Seam Resistance» | pág. impresa **12-27** · PDF 1665 | exigencia | 2026-11-12 · texto |
 | `AASHTO_LRFD_9.3.10.2#CLASE_F` | 3.10.2 | «Seismic Hazard» | pág. impresa **3-71** · PDF 125 | exigencia | 2026-08-29 · texto |
+| `AASHTO_LRFD_9.3.10.2.1#INTERPOLACION` | 3.10.2.1 | «General Procedure» | pág. impresa **3-71** · PDF 125 | exigencia | 2026-11-24 · texto |
 | `AASHTO_LRFD_9.3.10.2.2` | 3.10.2.2 | «Site-Specific Procedure» | pág. impresa **3-100** · PDF 154 | exigencia | 2026-08-28 · texto |
 | `AASHTO_LRFD_9.3.10.3.1` | 3.10.3.1 | «Site Class Definitions» | pág. impresa **3-101** · PDF 155 | exigencia | 2026-08-29 · texto |
 | `AASHTO_LRFD_9.3.10.3.1#EXCEPCIONES` | 3.10.3.1, nota «Exceptions» al pie de la Tabla 3.10.3.1-1 | «Site Class Definitions» | pág. impresa **3-102** · PDF 156 | exigencia | 2026-08-29 · texto |
@@ -439,6 +440,8 @@ línea que se pueda romper.
 > **`AASHTO_LRFD_9.12.7.2.5`** — Solo para costura LONGITUDINAL: la tuberia helicoidal con costura engargolada o soldada no la tiene (ASTM A796 num. 8.1.3.1). La resistencia nominal de la costura remachada de 68 x 13 mm esta en la Tabla 5 de A796 (tabla ASTM_A796.T5) y en la Tabla A12-7 de AASHTO; la EMPERNADA de esa corrugacion no esta en ninguna de las dos.
 
 > **`AASHTO_LRFD_9.3.10.2#CLASE_F`** — AQUI ESTA EL `SHALL`, Y EL REPOSITORIO CITABA EL TEXTO MAS DEBIL DE LOS TRES. La segunda condicion de la lista es «The site is classified as Site Class F (Article 3.10.3.1),», y el verbo de la frase que la introduce es `shall`. La Nota 2 de las tablas de factores -- que es lo que Sec. 0.5 y el criterio venian citando -- dice `should`, y el Art. 3.10.2.2 (pag. impresa 3-100) repite el `shall`. La afirmacion del expediente («AASHTO exige de forma incondicional un estudio de respuesta de sitio para la Clase F») es CIERTA; lo que estaba mal era el anclaje, que se apoyaba en una recomendacion para sostener una exigencia. No es una discrepancia -- las fuentes no se contradicen --, es una cita corta.
+
+> **`AASHTO_LRFD_9.3.10.2.1#INTERPOLACION`** — Es la regla de lectura de los mapas de PGA, S_S y S_1 de AASHTO (Figs. 3.10.2.1-1 a -21 «or ... state ground motion maps approved by the Owner»). Los del Apendice A3 del Manual de Puentes son los mapas aprobados para el Peru y siguen ese procedimiento, pero el Manual no escribe como leerlos entre isolineas: el vacio se cubre con esta fuente tecnica, [C]. Aplicada al corredor: entre 0.50 y 0.52 g, 0.511 a 0.515 g (ficha N1MP-04).
 
 > **`AASHTO_LRFD_9.3.10.2.2`** — «6 miles» esta literal; cualquier conversion a km (9.66) es del proyecto. Y `shall be CONSIDERED`: obliga a considerar el estudio, no a hacerlo. La remision al USGS Active Fault Map tambien es literal, y es el punto: ese mapa no cubre el Peru.
 
@@ -3677,6 +3680,14 @@ declararlo en el punto de uso, a reportar el defecto contra la hoja de
 ruta **y a dejar dicho que la hoja de ruta sigue mal mientras no se
 corrija**. La tercera obligación vive aquí.
 
+### abierta_contra_hoja_de_ruta
+
+- **`DIS-HR-PGA-LECTURA` — la PGA en roca del corredor (La Union, Piura) leida en el mapa del Apendice A3 del Manual de Puentes, y su etiqueta.** Gana **MP2018**: el mapa, leido con la regla de lectura de la fuente tecnica cuyo procedimiento el Manual adapta, da entre 0.511 y 0.515 g: 0.50 g es la isolinea INFERIOR que acota el sitio, una cota inferior y no la lectura. Y el valor es [S], no [N]: cambia al mover la obra de sitio y no al cambiar de proyectista, como la propia hoja de ruta admite en su linea 1227. EL CODIGO NO CAMBIO: datos_sitio['PGA_roca_B'] sigue en 0.50 g, con esta lectura declarada en su trazabilidad, hasta que el dueño decida (recomendacion de Fable en la ficha N1MP-06: 0.52 g mientras no haya coordenada del corredor, 0.51 g interpolado cuando la haya). LA HOJA DE RUTA SIGUE MAL en las seis lineas nombradas mientras no se corrija
+  - Si se sigue la otra: con 0.50 g, A_s = F_pga·PGA, k_h0 y el incremento sismico del cabezal quedan entre un 2 y un 4 % por debajo de lo que el mapa da (0.51-0.52 g), del lado inseguro; F_pga no cambia en las clases C, D ni E. Y la PGA cae justo sobre el rotulo «PGA > 0.50» de la Tabla 2.4.3.11.2.1.2-1, ambiguedad (NOR-PUE-11) que con 0.51 g desaparece
+  - *hoja_de_ruta*: su Sec. 0.4 (linea 90) escribe «Lectura para La Unión (Piura): PGA = 0.50 g `[N]`», sin coordenada ni isolinea, y la arrastra a las lineas 108-109 (A_s de las clases C y D), 138 (a_max de la licuefaccion), 1227 y 1229 (Anexo A) y 1433 (tablero: «[N] Cerrado»). Y se contradice en la etiqueta: la linea 1227 la declara [S] («era [N]») mientras las lineas 90 y 1433 siguen diciendo [N]
+  - *MP2018*: el mapa de PGA de su Apendice A3 (PDF 568, pag. impresa 564, sin capa de texto; el MISMO raster que el de la edicion 2016, PDF 553) pone La Union ENTRE las isolineas de 0.50 y 0.52 g, no sobre la de 0.50: interpolado, 0.511 g en la localidad (-5.402, -80.742) y 0.515 g en la capital distrital (5°19'20"S 80°51'49"W), +-0.003 g por la georreferencia. Coordenadas publicas: la del corredor sigue sin registrar (pendiente 1.4)
+  - *AASHTO_LRFD_9*: «Linear interpolation shall be used for sites located between contour lines or between a contour line and a local maximum or minimum» (3.10.2.1, pag. impresa 3-71). El Manual adapta ese Procedimiento General (2.4.3.11.2.0) y remite al A3 sin transcribir la clausula: se aplica como [C]
+
 ### abierta
 
 - **`DIS-AASHTO-GAMMA-EV-12.6.1` — que extremo del factor de carga de EV -- empuje vertical de tierra -- aplica a una ESTRUCTURA ENTERRADA.** Gana **AASHTO_LRFD_9 (Art. 3.4.1, = Manual de Puentes 2.4.5.3.1)**: PARA LA VERIFICACION DE FLOTACION, y solo para ella. El argumento no es de jerarquia -- las dos son `shall` y la 12.6.1 es ademas la especial para estructuras enterradas -- sino de QUE MAGNITUD SE ESTA VERIFICANDO. La 12.6.1 fija el extremo con que se diseña la estructura POR el empuje de tierra, donde EV es la SOLICITACION y el maximo es el extremo desfavorable. En V7, EV es lo que SUJETA al conducto contra la subpresion: es resistencia, no solicitacion, y ahi el extremo desfavorable es el minimo. Aplicar el maximo haria la comprobacion MAS FACIL, que es la direccion insegura, y por eso leerla literalmente aqui contradice el proposito del propio Art. 3.4.1. Y ES UNA LECTURA, no una cita: el texto de 12.6.1 NO trae esa salvedad. Se declara asi, en vez de resolverse en silencio, porque el proyecto no tiene numeral que la sostenga.
@@ -3687,6 +3698,7 @@ corrija**. La tercera obligación vive aquí.
   - Si se sigue la otra: con la luz libre POR VANO de la Fig. 1.10-a un cruce de 8 m salvado con tres celdas de 2.5 m seria obra de arte menor y se disenaria con el Manual de Hidrologia, mientras el NBIS lo cuenta como puente; y con los 6.096 m de AASHTO una luz entre 6.0 y 6.096 m dejaria de ser puente. Lo que el hallazgo leyo en el codigo --comparar el ANCHO DEL CAUCE-- confundiria el dato hidraulico con el estructural
   - *MC_HHD*: «la estructura cuya luz sea menor a 6.0 m» y «cuya luz sea mayor o igual a 6.0 m, siguiendo lo establecido en las especificaciones AASHTO LRFD»: escribe «luz» sin definirla y la cifra 6.0 m
   - *MP*: obras de arte menores son las de «luz libre menor que 6.00 m (20 ft)», y su Fig. 1.10-a dibuja la luz libre POR VANO, entre pilares: bajo esta lectura un marco de tres celdas de 2.5 m tiene luz libre 2.5 m y es obra de arte menor
+  - *MP2018*: su Glosario reescribe la entrada: obras de arte menores son las «Estructuras cuya luz libre entre ejes de apoyo es menor que 6.00 m.», y añade PUENTE para la «luz libre ... mayor o igual a 6.00 m (20 ft)». «Entre ejes de apoyo» es como su Fig. 1.10-a mide la LUZ DE TRAMO (L1, L2), no la luz libre (C, entre caras), de modo que la definicion mezcla las dos. En un marco la luz entre ejes es la luz libre mas un espesor de pared: la denominacion solo cambia en la franja justo por debajo de 6.0 m
   - *AASHTO_LRFD_9*: «Any structure having an opening not less than 20.0 ft»: la ABERTURA de la estructura, y 20.0 ft son 6.096 m, no 6.0
   - *HDS5_3ED*: los cruces que superan 20 ft (6.1 m) de luz «either as a single barrel or the total width of a multiple barrel crossing» son puentes para el NBIS; y para el metodo hidraulico la guia razonable es modelar como puente «a single culvert with a span of 20 ft (6.1 m) or more»
 
@@ -3801,18 +3813,22 @@ corrija**. La tercera obligación vive aquí.
   - Si se sigue la otra: e <= B/6 en vez de B/3: rechazaria diseños que la norma acepta. Es conservador, y por eso no cambia ningun resultado ya emitido, pero deja la cita sin sostener
   - *MP*: traduce el «middle two-thirds» de AASHTO como «tercio central», que no es lo mismo: dos tercios centrales es e <= B/3 y el tercio central es e <= B/6
   - *AASHTO_LRFD_9*: «within the middle two-thirds of the base for gamma_EQ = 0.0»
+  - *MP2018*: la edicion 2018 CONSERVA la errata: «estará dentro del tercio central de la base para ɤEQ = 0.0», pag. impresa 247 (PDF 251), y suma otra, «cimientan». La discrepancia vale en las dos ediciones
 - **`DIS-MP-KAE-SIGNO` — el signo del denominador de K_AE (Mononobe-Okabe).** Gana **AASHTO_LRFD_9**: no por preferencia de fuente: con el signo menos K_AE DIVERGE cuando el radicando tiende a 1, y el caso limite k_h = k_v = 0 deja de devolver el Ka de Coulomb. La formula se rompe donde el propio Manual la manda coincidir, y el Manual declara transcribirla de AASHTO
   - Si se sigue la otra: K_AE diverge; quien «corrija» M9 contra la letra impresa del Manual rompe la formula
   - *MP*: imprime «[1 - raiz(...)]», signo MENOS, verificado renderizando la pag. impresa 586 a 6x: el trazo es horizontal unico, sin trazo vertical
   - *AASHTO_LRFD_9*: imprime «[1 + raiz(...)]»
+  - *MP2018*: la edicion 2018 (RD 19-2018-MTC/14) lo imprime como AASHTO, «[1 + raiz(...)]», en su ec. A.11.3.1-2, pag. impresa 597 (PDF 601), leido renderizando la pagina a 3x: la errata es de la edicion 2016
 - **`DIS-MP-KH0-ROCA` — el lado del 1.2 en la clausula de roca de k_h0.** Gana **AASHTO_LRFD_9**: gana la PROSA del Manual, que coincide con AASHTO; el parentesis esta mal compuesto
   - Si se sigue la otra: una REDUCCION del 17 % de k_h0, justo lo contrario de lo que la prosa de la misma frase acaba de decir
   - *MP*: el parentesis imprime «1.2 kh0=FpgaPGA», con el 1.2 del lado izquierdo; leido al pie de la letra daria k_h0 = F_pga*PGA/1.2. La PROSA de la misma frase dice lo contrario
   - *AASHTO_LRFD_9*: «k_h0 shall be based on 1.2 times the site-adjusted peak ground acceleration coefficient (i.e., k_h0 = 1.2 F_pga PGA)»
+  - *MP2018*: la edicion 2018 (RD 19-2018-MTC/14) lo imprime como AASHTO: «(es decir, k_h0 = 1.2 F_pga PGA)», con el 1.2 a la derecha, pag. impresa 249 (PDF 253), leido por imagen: la errata es de la edicion 2016
 - **`DIS-MP-NUMERAL-2.3.1.1.12.3` — el numeral impreso de «Limites de Excentricidad».** Gana **MP**: se cita COMO LO IMPRIME, con la advertencia, para que quien lo busque lo encuentre. Corregir el numeral en la cita mandaria al revisor a un renglon que el documento no tiene
   - Si se sigue la otra: citar «2.8.1.1.12.3» manda a un numeral que el Manual no imprime
   - *MP*: lo imprime «2.3.1.1.12.3», con un 3 donde toca un 8, rompiendo la serie 2.8.1.1.12.2 -> 2.8.1.1.12.5; el indice repite la errata
   - *AASHTO_LRFD_9*: la remision cruzada del propio Manual (11.6.3.3) si es correcta
+  - *MP2018*: la edicion 2018 (RD 19-2018-MTC/14) lo imprime bien, en la serie y con la remision a AASHTO 11.6.3.3: «2.8.1.1.12.3», pag. impresa 244 (PDF 248), y su indice tambien (pag. impresa 15). La errata es de la edicion 2016
 
 ## 8. Lo que falta por transcribir
 
@@ -3822,7 +3838,7 @@ vigila. Una cita con cualquier campo pendiente NO puede llevar firma de
 verificación.
 
 
-Citas sin firma de verificación: **6** de 659.
+Citas sin firma de verificación: **6** de 660.
 - `AASHTO_M294_TRAD.1.1.1`
 - `AASHTO_M294_TRAD.1.4`
 - `AASHTO_M294_TRAD.7.2.1`
