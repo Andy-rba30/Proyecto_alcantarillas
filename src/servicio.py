@@ -121,8 +121,50 @@ from src.modulos.M0_carga import (COLUMNA_CAUDAL,
 # `MH_hidrologia`: el caudal calculado entra al pipeline como `Q_m3s` del
 # punto de calculo, igual que el declarado, y ningun modulo de M1 a M11 sabe
 # de cual de los dos se trata salvo por `InformePunto.caudal`.
-from src.modulos import MH_hidrologia as MH
-from src.modulos import M12_metrados as M12             # --- VE-5 met ---
+# --- EXT-8-07 --- `MH_hidrologia` y `M12_metrados` se cargan bajo demanda
+# al primer acceso de atributo (`_ModuloPerezoso`), reduciendo el tiempo de
+# `import cli` sin cambiar el contrato ni las guardias AST.
+class _ModuloPerezoso:
+    """Carga el modulo de calculo en el primer acceso a un atributo."""
+
+    __slots__ = ("_cargador", "_modulo")
+
+    def __init__(self, cargador: Callable[[], Any]) -> None:
+        object.__setattr__(self, "_cargador", cargador)
+        object.__setattr__(self, "_modulo", None)
+
+    def _obtener(self) -> Any:
+        mod = object.__getattribute__(self, "_modulo")
+        if mod is None:
+            mod = object.__getattribute__(self, "_cargador")()
+            object.__setattr__(self, "_modulo", mod)
+        return mod
+
+    def __getattr__(self, nombre: str) -> Any:
+        return getattr(self._obtener(), nombre)
+
+    def __setattr__(self, nombre: str, valor: Any) -> None:
+        setattr(self._obtener(), nombre, valor)
+
+    def __delattr__(self, nombre: str) -> None:
+        delattr(self._obtener(), nombre)
+
+    def __dir__(self) -> List[str]:
+        return dir(self._obtener())
+
+
+def _cargar_mh() -> Any:
+    from src.modulos import MH_hidrologia
+    return MH_hidrologia
+
+
+def _cargar_m12() -> Any:
+    from src.modulos import M12_metrados
+    return M12_metrados
+
+
+MH: Any = _ModuloPerezoso(_cargar_mh)
+M12: Any = _ModuloPerezoso(_cargar_m12)             # --- VE-5 met ---
 # --- VE-5 (lote catlic) --- la Fase 0-bis: licuefaccion declarada del EMS.
 from src.modulos import ML_licuefaccion as ML
 from src.modulos.M1_clasificacion import clasificar, exigir_alcance
@@ -217,11 +259,10 @@ from src.constantes_normativas import (ANCHO_MIN_DERECHO_VIA_M,
 from src.modulos.M10_espaciamiento import espaciamiento_alivio
 # --- T-9 --- la longitud por capacidad de la cuneta y VB1, por tramo.
 from src.modulos import M10_espaciamiento as M10
-# De M11 solo la huella de bytes, para `capturar_contexto`: la agregacion de
-# bloqueantes y la memoria son de la Fase 11 y las consumen los adaptadores,
-# no el servicio. La huella de los criterios ya no sale de aqui sino de
-# `ca.sha1_criterios()` (D2): el catalogo son varios archivos.
-from src.modulos.M11_reporte import sha1_de_bytes
+# De M11 solo se usa `sha1_de_bytes` en `cargar_hidrologia` y `correr`,
+# importado localmente alli (EXT-8-07) para que `import cli` no arrastre
+# los 19 submodulos de M11 al arranque. La agregacion de bloqueantes y la
+# memoria son de la Fase 11 y las consumen los adaptadores, no el servicio.
 from src.modulos import M5_verificaciones as M5
 from src.modulos.MD import disenar_punto
 
@@ -3235,6 +3276,7 @@ def cargar_hidrologia(ruta_cuencas: Optional[Path],
     datos_estacion = leer_bytes(ruta_estacion)
     estaciones = MH.cargar_estacion(ruta_estacion, datos=datos_estacion)
     entrada = MH.cruzar_entradas(cuencas, estaciones, ruta_cuencas, ruta_estacion)
+    from src.modulos.M11_reporte import sha1_de_bytes
     return replace(entrada, cuencas_sha1=sha1_de_bytes(datos_cuencas),
                    estacion_sha1=sha1_de_bytes(datos_estacion))
 
@@ -5435,6 +5477,7 @@ def correr(ruta_csv: Path, externos: DatosExternos,
     informe.totales_metrado = M12.totales_por_partida(
         [p.metrado for p in informe.puntos if p.metrado is not None])
 
+    from src.modulos.M11_reporte import sha1_de_bytes
     _avisar_ids_desconocidos(informe, externos)
     _avisar_cuencas_sin_punto(informe)
     informe.contexto = capturar_contexto(

@@ -375,6 +375,32 @@ def test_pc10_import_cli_no_carga_weasyprint_ni_scipy_ni_el_censo():
         + len(__import__("src.modulos.M0_carga", fromlist=["COLUMNAS"]).COLUMNAS)
 
 
+def test_pc10_import_cli_difiere_reporte_metrados_e_hidrologia():
+    """
+    EXT-8-07: `import cli` difiere los modulos de reporte, metrados e
+    hidrologia hasta el primer uso real, conservando reexportaciones e
+    identidad de objetos.
+    """
+    programa = (
+        "import sys, json; import cli\n"
+        "antes = {m: (m in sys.modules) for m in (\n"
+        "  'src.modulos.M11_reporte', 'src.modulos.M12_metrados',\n"
+        "  'src.modulos.MH_hidrologia')}\n"
+        "mh = cli.memoria_html\n"
+        "from src.modulos import M11_reporte as M11\n"
+        "print(json.dumps({'antes': antes, 'mismo': mh is M11.memoria_html}))")
+    hecho = subprocess.run([sys.executable, "-c", programa], cwd=RAIZ,
+                           capture_output=True, text=True, encoding="utf-8", timeout=120)
+    assert hecho.returncode == 0, hecho.stderr[-2000:]
+    datos = json.loads(hecho.stdout.strip().splitlines()[-1])
+    assert datos["antes"] == {
+        "src.modulos.M11_reporte": False,
+        "src.modulos.M12_metrados": False,
+        "src.modulos.MH_hidrologia": False,
+    }, datos["antes"]
+    assert datos["mismo"] is True
+
+
 def test_pc10_el_censo_perezoso_sigue_pasando_su_guardia_al_construirse():
     """
     La coherencia del censo (`_coherencia_del_censo`) corria al importar;

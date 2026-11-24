@@ -299,20 +299,25 @@ from src.modulos import M5_verificaciones as M5
 from src.modulos.M8_estructural import (CODIGO_PASO_HMAX_TIPO4,
                                         verificacion_diferida_estructural)
 # La agregacion de criterios bloqueantes y el armado de la memoria son de la
-# Fase 11: viven en M11 y aqui solo se usan. `CriterioBloqueante` se
-# reexporta porque el JSON y el volcado de texto de esta CLI lo siguen
-# publicando con el mismo nombre.
-from src.modulos.M11_reporte import (CriterioBloqueante,  # noqa: F401
-                                     DIR_PLANTILLAS, NOMBRE_PLANTILLA,
-                                     NOMBRE_PLANTILLA_PERFIL,
-                                     DatoBloqueante,
-                                     cargar_plantilla, criterios_bloqueantes,
-                                     datos_bloqueantes,
-                                     exportar_csv, exportar_html, exportar_pdf,
-                                     exportar_html_resumida,
-                                     exportar_pdf_resumida,
-                                     marcadores_de_la_memoria, memoria_html,
-                                     memoria_resumida_html)
+# Fase 11: viven en M11 y aqui solo se usan. `CriterioBloqueante` y sus
+# companeros se reexportan bajo demanda (`__getattr__`, ficha EXT-8-07) para
+# que `import cli` no arrastre los 19 submodulos de M11 al arranque y siga
+# cumpliendo el presupuesto de 0.30 s tambien en Windows.
+_NOMBRES_M11 = frozenset({
+    "CriterioBloqueante", "DIR_PLANTILLAS", "NOMBRE_PLANTILLA",
+    "NOMBRE_PLANTILLA_PERFIL", "DatoBloqueante", "cargar_plantilla",
+    "criterios_bloqueantes", "datos_bloqueantes", "exportar_csv",
+    "exportar_html", "exportar_pdf", "exportar_html_resumida",
+    "exportar_pdf_resumida", "marcadores_de_la_memoria", "memoria_html",
+    "memoria_resumida_html",
+})
+
+
+def __getattr__(nombre: str) -> Any:
+    if nombre in _NOMBRES_M11:
+        from src.modulos import M11_reporte as _m11
+        return getattr(_m11, nombre)
+    raise AttributeError(f"module {__name__!r} has no attribute {nombre!r}")
 
 # ===========================================================================
 # El servicio de calculo (EXT-9, E01): la orquestacion vive en src/servicio.py
@@ -1470,7 +1475,7 @@ def informe_json(informe: Informe) -> Dict[str, Any]:
     sale de `informe.contexto` (EXT-4): el JSON describe la corrida que hizo
     el informe, no el proceso en el momento de exportar.
     """
-    bloqueantes = criterios_bloqueantes(informe)
+    bloqueantes = sys.modules[__name__].criterios_bloqueantes(informe)
     contexto = ContextoCorrida.de(informe)
     salida = _informe_json_base(informe, bloqueantes, contexto)
     if informe.hidrologia is not None:
@@ -2326,7 +2331,7 @@ def _lineas_cabezal(informe: InformeCabezal) -> List[str]:
 
 
 def _lineas_criterios_bloqueantes(informe: Informe) -> List[str]:
-    bloqueantes = criterios_bloqueantes(informe)
+    bloqueantes = sys.modules[__name__].criterios_bloqueantes(informe)
     out = _titulo("CRITERIOS PENDIENTES QUE BLOQUEARON UNA ETAPA")
     if not bloqueantes:
         out.append("Ninguno: ningun criterio sin valor se invoco en esta corrida.")
@@ -2501,9 +2506,10 @@ def plantilla_por_alcance(alcance: str,
     """
     if forzada is not None:
         return Path(forzada)
-    nombre = (NOMBRE_PLANTILLA_PERFIL if alcance == ALCANCE_PERFIL
-              else NOMBRE_PLANTILLA)
-    return DIR_PLANTILLAS / nombre
+    _cli = sys.modules[__name__]
+    nombre = (_cli.NOMBRE_PLANTILLA_PERFIL if alcance == ALCANCE_PERFIL
+              else _cli.NOMBRE_PLANTILLA)
+    return _cli.DIR_PLANTILLAS / nombre
 
 
 # ---------------------------------------------------------------------------
@@ -2887,10 +2893,11 @@ def _parser() -> argparse.ArgumentParser:
                         "3) en esa ruta, como CSV")
     p.add_argument("--proyecto", default="",
                    help="nombre del proyecto que encabeza la memoria")
+    _cli = sys.modules[__name__]
     p.add_argument("--plantilla", type=Path, dest="plantilla",
                    help="fuerza la plantilla HTML de la memoria (M11). Por "
-                        f"defecto, '{NOMBRE_PLANTILLA_PERFIL}' con --alcance "
-                        f"perfil y '{NOMBRE_PLANTILLA}' con --alcance "
+                        f"defecto, '{_cli.NOMBRE_PLANTILLA_PERFIL}' con --alcance "
+                        f"perfil y '{_cli.NOMBRE_PLANTILLA}' con --alcance "
                         "expediente. Las dos aceptan cualquier corrida")
     p.add_argument("--alcance", choices=(ALCANCE_PERFIL, ALCANCE_EXPEDIENTE),
                    default=ALCANCE_EXPEDIENTE,
@@ -3409,13 +3416,14 @@ def _salidas_o_codigo(args: argparse.Namespace, informe: Any,
     # contrato de marcadores, SIS-B-06), o si algun bloque de la memoria se
     # detiene en un `ErrorProyecto`, se sale aqui sin dejar ninguna salida
     # a medias. Lo que se escribe despues es lo que ya esta en memoria.
+    _cli = sys.modules[__name__]
     try:
         if args.html_salida is not None or args.pdf_salida is not None:
-            memoria_html(informe, proyecto=args.proyecto,
-                         ruta_plantilla=plantilla)
+            _cli.memoria_html(informe, proyecto=args.proyecto,
+                              ruta_plantilla=plantilla)
         if (args.html_resumida_salida is not None
                 or args.pdf_resumida_salida is not None):
-            memoria_resumida_html(informe, proyecto=args.proyecto)
+            _cli.memoria_resumida_html(informe, proyecto=args.proyecto)
     except (FileNotFoundError, ValueError, ErrorProyecto) as exc:
         print(f"No se pudo armar la memoria con la plantilla "
               f"«{plantilla.name}»: {exc}", file=sys.stderr)
@@ -3449,40 +3457,41 @@ def _escribir_las_salidas(args: argparse.Namespace, informe: Any,
     # escribio DE VERDAD (por su nombre): el HTML de --html, o lo que
     # --pdf dejo en disco, que por la via del navegador es el `.html` y no
     # el `.pdf` pedido (H8 de la auditoria de T-12).
+    _cli = sys.modules[__name__]
     escritas: List[Path] = []
     if args.html_salida is not None:
-        ruta = exportar_html(informe, args.html_salida,
-                             proyecto=args.proyecto,
-                             ruta_plantilla=plantilla, progreso=progreso)
+        ruta = _cli.exportar_html(informe, args.html_salida,
+                                  proyecto=args.proyecto,
+                                  ruta_plantilla=plantilla, progreso=progreso)
         escritas.append(Path(ruta))
         print(f"Memoria de calculo (HTML): {ruta}")
         print(f"Plantilla usada          : {plantilla.name}")
 
     if args.pdf_salida is not None:
-        salida = exportar_pdf(informe, args.pdf_salida,
-                              proyecto=args.proyecto,
-                              ruta_plantilla=plantilla, progreso=progreso)
+        salida = _cli.exportar_pdf(informe, args.pdf_salida,
+                                   proyecto=args.proyecto,
+                                   ruta_plantilla=plantilla, progreso=progreso)
         escritas.append(Path(salida.ruta))
         print(salida.mensaje)
 
     nombre_completa = escritas[0].name if escritas else None
     if args.html_resumida_salida is not None:
-        ruta = exportar_html_resumida(informe, args.html_resumida_salida,
-                                      proyecto=args.proyecto,
-                                      nombre_completa=nombre_completa)
+        ruta = _cli.exportar_html_resumida(informe, args.html_resumida_salida,
+                                           proyecto=args.proyecto,
+                                           nombre_completa=nombre_completa)
         print(f"Memoria resumida (HTML)  : {ruta}")
 
     if args.pdf_resumida_salida is not None:
         # --- UI-2 --- con `--progreso`, la etapa del PDF tambien: es lo que
         # la ventana lee del hijo que escribe la resumida (EXT-8).
-        salida = exportar_pdf_resumida(informe, args.pdf_resumida_salida,
-                                       proyecto=args.proyecto,
-                                       nombre_completa=nombre_completa,
-                                       progreso=progreso)
+        salida = _cli.exportar_pdf_resumida(informe, args.pdf_resumida_salida,
+                                            proyecto=args.proyecto,
+                                            nombre_completa=nombre_completa,
+                                            progreso=progreso)
         print(salida.mensaje)
 
     if args.csv_resumen_salida is not None:
-        ruta = exportar_csv(informe, args.csv_resumen_salida)
+        ruta = _cli.exportar_csv(informe, args.csv_resumen_salida)
         print(f"Cuadro resumen (CSV): {ruta}")
 
 
@@ -3499,21 +3508,23 @@ def _exigir_plantilla_valida(plantilla: Path) -> None:
     la hoja no imprime) solo se puede comprobar con la corrida hecha, y la
     comprueba `memoria_html` antes de que `main` escriba nada.
     """
-    hoja = cargar_plantilla(plantilla)
+    _cli = sys.modules[__name__]
+    hoja = _cli.cargar_plantilla(plantilla)
     pedidos = {m.group("named") or m.group("braced")
                for m in hoja.pattern.finditer(hoja.template)}
     pedidos.discard(None)
+    marcadores = set(_cli.marcadores_de_la_memoria())
     if not pedidos:
         raise ValueError(
             f"la plantilla «{plantilla.name}» no tiene ningun marcador "
             f"{hoja.delimiter}nombre: no puede imprimir la memoria. Los "
-            f"marcadores del contrato son {sorted(marcadores_de_la_memoria())}")
-    desconocidos = sorted(pedidos - set(marcadores_de_la_memoria()))
+            f"marcadores del contrato son {sorted(marcadores)}")
+    desconocidos = sorted(pedidos - marcadores)
     if desconocidos:
         raise ValueError(
             f"la plantilla «{plantilla.name}» pide marcadores que M11 no "
             f"entrega: {desconocidos}. Los del contrato son "
-            f"{sorted(marcadores_de_la_memoria())}")
+            f"{sorted(marcadores)}")
 
 
 def salida_en_utf8() -> None:
