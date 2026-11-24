@@ -53,6 +53,7 @@ from src.modelos import (
 )
 from src.tolerancias import (
     TOL_ANGULO_CUNA,
+    TOL_REL_SESGO_CONTRASTE,
     TOL_UMBRAL_NORMATIVO,
     TRAMOS_CUNA_DE_TANTEO,
 )
@@ -1385,8 +1386,17 @@ def angulos_del_empuje(entorno: EntornoDelCabezal, relleno: dict) -> dict:
 
 
 def _sesgo(K_formula: float, K: float) -> str:
-    """Cuanto se aparta la formula cerrada del coeficiente que rige, dicho."""
+    """
+    Cuanto se aparta la formula cerrada del coeficiente que rige, dicho.
+
+    Una diferencia relativa dentro de `TOL_REL_SESGO_CONTRASTE` es ruido de
+    punto flotante (la superficie del relleno es plana y las dos dan el
+    mismo numero) y se dice «coincide»: su SIGNO no significa nada y
+    cambiaba de una libm a otra (ronda 2 de Windows).
+    """
     diferencia = (K_formula - K) / K
+    if abs(diferencia) <= TOL_REL_SESGO_CONTRASTE:
+        return "la formula coincide con la cuña"
     return (f"la formula da un {abs(diferencia):.1%} "
             + ("MENOS" if diferencia < 0 else "MAS") + " que la cuña")
 

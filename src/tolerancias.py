@@ -292,6 +292,29 @@ TOL_ANGULO_CUNA = 1e-10
 
 
 # ---------------------------------------------------------------------------
+# --- Ronda 2 de Windows --- Cuando el contraste de la formula cerrada
+# «coincide» con la cuña
+# ---------------------------------------------------------------------------
+# `M9._sesgo` dice cuanto se aparta K_A (o K_AE) de la formula cerrada de
+# Coulomb del que da la cuña de tanteo: «la formula da un x % MAS / MENOS que
+# la cuña». Con la superficie del relleno plana sobre el plano de empuje (la
+# franja del alero en su punta, por ejemplo) las dos son el MISMO numero y su
+# diferencia relativa es ruido del ultimo bit: medida en las cuatro corridas
+# de expediente del indice de formulas, 2.8e-16 a 5.5e-16 en 7 de 1273
+# contrastes, todas NEGATIVAS en Linux. En Windows (otra libm) el mismo ulp
+# cae del otro lado o en cero, y la memoria decia «0.0 % MENOS» en una
+# plataforma y «0.0 % MAS» en la otra: el indice de formulas regenerado en
+# Windows quedaba desincronizado por una palabra que no significaba nada.
+# Por debajo de esta diferencia relativa el contraste se dice «coincide».
+# Una diferencia REAL se imprime con un decimal de porcentaje (5e-4 como
+# minimo para no leerse «0.0 %»), cinco ordenes por encima; la busqueda de
+# la cuña reproduce el empuje a 1e-9 kN/m (`TRAMOS_CUNA_DE_TANTEO`). No es
+# un valor de proyecto: cambiarla no mueve ninguna magnitud, solo la
+# palabra del contraste.
+TOL_REL_SESGO_CONTRASTE = 1e-9
+
+
+# ---------------------------------------------------------------------------
 # --- T8-08 --- La lectura por imagen de las Figuras 3.3 y 3.4 de HEC-14
 # ---------------------------------------------------------------------------
 # Cuanto puede diferir una celda de las tablas `HEC14.F3_3` y `HEC14.F3_4`

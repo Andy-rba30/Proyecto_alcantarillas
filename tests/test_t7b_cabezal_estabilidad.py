@@ -2611,6 +2611,26 @@ def test_H4_el_ensamble_usa_la_cuna_y_la_formula_queda_de_contraste(tanteo):
             or "% MENOS que la cuña" in procedencias)
 
 
+def test_el_sesgo_de_ruido_se_dice_coincide_y_no_tiene_signo():
+    """
+    Ronda 2 de Windows: con la superficie del relleno plana, la cuña y la
+    formula cerrada dan el MISMO numero y su diferencia es del ultimo bit
+    (medido: -2.8e-16 a -5.5e-16 en Linux; del otro signo o cero en
+    Windows). Se dice «coincide», sin MAS ni MENOS; una diferencia real
+    conserva su signo y su porcentaje.
+    """
+    from src.tolerancias import TOL_REL_SESGO_CONTRASTE
+    K = 0.40166624367729026
+    for K_formula in (K, 0.4016662436772901, math.nextafter(K, 1.0),
+                      K * (1 + TOL_REL_SESGO_CONTRASTE / 2)):
+        assert M9._sesgo(K_formula, K) == "la formula coincide con la cuña"
+    assert M9._sesgo(K * 1.07, K) == "la formula da un 7.0% MAS que la cuña"
+    assert M9._sesgo(K * 0.9, K) == "la formula da un 10.0% MENOS que la cuña"
+    # La frontera esta cinco ordenes por debajo de lo que el porcentaje
+    # imprime: lo mas pequeño que se lee distinto de «0.0 %».
+    assert TOL_REL_SESGO_CONTRASTE < 5e-4 / 1e4
+
+
 def test_H4_con_la_regla_2H_rige_la_formula_y_su_sesgo_se_dice():
     c = ca.CRITERIOS["regla_pendiente_relleno_trasdos"]
     assert c.valor == "cuna_de_tanteo"
