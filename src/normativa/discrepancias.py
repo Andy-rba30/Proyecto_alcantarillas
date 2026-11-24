@@ -82,6 +82,21 @@ DIS_LUZ_DENOMINACION = _d(
                         "un marco de tres celdas de 2.5 m tiene luz libre "
                         "2.5 m y es obra de arte menor"),
               cita_id="MP.1.10#FIG_1_10A_LUZ_LIBRE"),
+        # --- N1 del plan de normas 2 (dictamen de Fable, 2b) --- La edicion
+        # vigente cambia la redaccion del Glosario. La discrepancia sigue
+        # ABIERTA y el codigo, que compara la luz libre con 6.0 m, no cambia.
+        Parte(quien="MP2018",
+              que_dice=("su Glosario reescribe la entrada: obras de arte "
+                        "menores son las «Estructuras cuya luz libre entre "
+                        "ejes de apoyo es menor que 6.00 m.», y añade PUENTE "
+                        "para la «luz libre ... mayor o igual a 6.00 m (20 "
+                        "ft)». «Entre ejes de apoyo» es como su Fig. 1.10-a "
+                        "mide la LUZ DE TRAMO (L1, L2), no la luz libre (C, "
+                        "entre caras), de modo que la definicion mezcla las "
+                        "dos. En un marco la luz entre ejes es la luz libre "
+                        "mas un espesor de pared: la denominacion solo "
+                        "cambia en la franja justo por debajo de 6.0 m"),
+              cita_id="MP2018.GLOSARIO#OBRAS_DE_ARTE_MENORES"),
         Parte(quien="AASHTO_LRFD_9",
               que_dice=("«Any structure having an opening not less than "
                         "20.0 ft»: la ABERTURA de la estructura, y 20.0 ft "
@@ -137,6 +152,13 @@ DIS_KAE_SIGNO = _d(
         Parte(quien="AASHTO_LRFD_9",
               que_dice="imprime «[1 + raiz(...)]»",
               cita_id="AASHTO_LRFD_9.A11.3.1#KAE"),
+        # --- N1 del plan de normas 2 (dictamen de Fable, 2a) ---
+        Parte(quien="MP2018",
+              que_dice=("la edicion 2018 (RD 19-2018-MTC/14) lo imprime como "
+                        "AASHTO, «[1 + raiz(...)]», en su ec. A.11.3.1-2, "
+                        "pag. impresa 597 (PDF 601), leido renderizando la "
+                        "pagina a 3x: la errata es de la edicion 2016"),
+              cita_id="MP2018.A.11.3.1#KAE"),
     ),
     gana="AASHTO_LRFD_9",
     por_que=("no por preferencia de fuente: con el signo menos K_AE DIVERGE "
@@ -164,6 +186,13 @@ DIS_KH0_ROCA = _d(
                         "peak ground acceleration coefficient (i.e., k_h0 = "
                         "1.2 F_pga PGA)»"),
               cita_id="AASHTO_LRFD_9.11.6.5.2.1#ROCA"),
+        # --- N1 del plan de normas 2 (dictamen de Fable, 2a) ---
+        Parte(quien="MP2018",
+              que_dice=("la edicion 2018 (RD 19-2018-MTC/14) lo imprime como "
+                        "AASHTO: «(es decir, k_h0 = 1.2 F_pga PGA)», con el "
+                        "1.2 a la derecha, pag. impresa 249 (PDF 253), leido "
+                        "por imagen: la errata es de la edicion 2016"),
+              cita_id="MP2018.2.8.1.1.14.2.1#ROCA"),
     ),
     gana="AASHTO_LRFD_9",
     por_que=("gana la PROSA del Manual, que coincide con AASHTO; el "
@@ -187,6 +216,13 @@ DIS_EXCENTRICIDAD_TERCIO = _d(
               que_dice=("«within the middle two-thirds of the base for "
                         "gamma_EQ = 0.0»"),
               cita_id="AASHTO_LRFD_9.11.6.5.1#EXC"),
+        # --- N1 del plan de normas 2 (dictamen de Fable, 2a) ---
+        Parte(quien="MP2018",
+              que_dice=("la edicion 2018 CONSERVA la errata: «estará dentro "
+                        "del tercio central de la base para ɤEQ = 0.0», pag. "
+                        "impresa 247 (PDF 251), y suma otra, «cimientan». La "
+                        "discrepancia vale en las dos ediciones"),
+              cita_id="MP2018.2.8.1.1.14.1#EXC"),
     ),
     gana="AASHTO_LRFD_9",
     por_que=("es descuido de traduccion y no decision del MTC, y lo prueba el "
@@ -216,6 +252,14 @@ DIS_NUMERAL_EXC_ESTATICA = _d(
         Parte(quien="AASHTO_LRFD_9",
               que_dice="la remision cruzada del propio Manual (11.6.3.3) si es correcta",
               cita_id="AASHTO_LRFD_9.11.6.3.3#EXC"),
+        # --- N1 del plan de normas 2 (dictamen de Fable, 2a) ---
+        Parte(quien="MP2018",
+              que_dice=("la edicion 2018 (RD 19-2018-MTC/14) lo imprime bien, "
+                        "en la serie y con la remision a AASHTO 11.6.3.3: "
+                        "«2.8.1.1.12.3», pag. impresa 244 (PDF 248), y su "
+                        "indice tambien (pag. impresa 15). La errata es de "
+                        "la edicion 2016"),
+              cita_id="MP2018.2.8.1.1.12.3#EXC_ESTATICA"),
     ),
     gana="MP",
     por_que=("se cita COMO LO IMPRIME, con la advertencia, para que quien lo "
@@ -232,9 +276,9 @@ DIS_NUMERAL_EXC_ESTATICA = _d(
 # notas «Corregido (...)» de la propia v8 y en el manifiesto §7); N1 resolvio
 # la novena (DIS-HR-A807) cuando ASTM A796/A796M-13 entro en normas/ y la
 # atribucion pudo verificarse por imagen; y D9 resolvio la decima, la de I3
-# (DIS-HR-FORMAS-HDS5), al escribir en la v8 la Forma 2 del HDS-5. Hoy no
-# queda ninguna ABIERTA_CONTRA_HOJA_DE_RUTA: la unica viva es la ABIERTA de
-# gamma_EV, que no es contra la hoja de ruta sino entre dos `shall` de AASHTO.
+# (DIS-HR-FORMAS-HDS5), al escribir en la v8 la Forma 2 del HDS-5. Hasta N1
+# del plan de normas 2 no quedaba ninguna ABIERTA_CONTRA_HOJA_DE_RUTA; desde
+# su dictamen hay una, DIS-HR-PGA-LECTURA, al final de este archivo.
 # ---------------------------------------------------------------------------
 DIS_D_MAX = _d(
     id="DIS-HR-D-MAX",
@@ -1357,6 +1401,71 @@ DIS_M170M_T6_RECOMPOSICION = _d(
                                 "los escalones 1.3716 y 2.4384 m de la serie "
                                 "de 6 in, que la norma admite"),
     estado=EstadoDiscrepancia.ERRATA_DE_IMPRENTA,
+)
+
+
+# ---------------------------------------------------------------------------
+# N1 del plan de normas 2 (dictamen de Fable, 2c) - LA PGA DEL CORREDOR. Es
+# la undecima contra la hoja de ruta v8 y la unica ABIERTA hoy: la v8 sigue
+# mal en las seis lineas que la parte nombra mientras no se corrija, que es
+# la tercera obligacion de CLAUDE.md. EL CODIGO NO CAMBIO: el valor de
+# datos_sitio['PGA_roca_B'] es decision del dueño (ficha N1MP-06).
+# ---------------------------------------------------------------------------
+DIS_HR_PGA_LECTURA = _d(
+    id="DIS-HR-PGA-LECTURA",
+    objeto=("la PGA en roca del corredor (La Union, Piura) leida en el mapa "
+            "del Apendice A3 del Manual de Puentes, y su etiqueta"),
+    partes=(
+        Parte(quien="hoja_de_ruta",
+              que_dice=("su Sec. 0.4 (linea 90) escribe «Lectura para La "
+                        "Unión (Piura): PGA = 0.50 g `[N]`», sin coordenada "
+                        "ni isolinea, y la arrastra a las lineas 108-109 "
+                        "(A_s de las clases C y D), 138 (a_max de la "
+                        "licuefaccion), 1227 y 1229 (Anexo A) y 1433 "
+                        "(tablero: «[N] Cerrado»). Y se contradice en la "
+                        "etiqueta: la linea 1227 la declara [S] («era [N]») "
+                        "mientras las lineas 90 y 1433 siguen diciendo [N]")),
+        Parte(quien="MP2018",
+              que_dice=("el mapa de PGA de su Apendice A3 (PDF 568, pag. "
+                        "impresa 564, sin capa de texto; el MISMO raster que "
+                        "el de la edicion 2016, PDF 553) pone La Union ENTRE "
+                        "las isolineas de 0.50 y 0.52 g, no sobre la de 0.50: "
+                        "interpolado, 0.511 g en la localidad (-5.402, "
+                        "-80.742) y 0.515 g en la capital distrital "
+                        "(5°19'20\"S 80°51'49\"W), +-0.003 g por la "
+                        "georreferencia. Coordenadas publicas: la del "
+                        "corredor sigue sin registrar (pendiente 1.4)")),
+        Parte(quien="AASHTO_LRFD_9",
+              que_dice=("«Linear interpolation shall be used for sites "
+                        "located between contour lines or between a contour "
+                        "line and a local maximum or minimum» (3.10.2.1, pag. "
+                        "impresa 3-71). El Manual adapta ese Procedimiento "
+                        "General (2.4.3.11.2.0) y remite al A3 sin "
+                        "transcribir la clausula: se aplica como [C]"),
+              cita_id="AASHTO_LRFD_9.3.10.2.1#INTERPOLACION"),
+    ),
+    gana="MP2018",
+    por_que=("el mapa, leido con la regla de lectura de la fuente tecnica "
+             "cuyo procedimiento el Manual adapta, da entre 0.511 y 0.515 g: "
+             "0.50 g es la isolinea INFERIOR que acota el sitio, una cota "
+             "inferior y no la lectura. Y el valor es [S], no [N]: cambia al "
+             "mover la obra de sitio y no al cambiar de proyectista, como la "
+             "propia hoja de ruta admite en su linea 1227. EL CODIGO NO "
+             "CAMBIO: datos_sitio['PGA_roca_B'] sigue en 0.50 g, con esta "
+             "lectura declarada en su trazabilidad, hasta que el dueño "
+             "decida (recomendacion de Fable en la ficha N1MP-06: 0.52 g "
+             "mientras no haya coordenada del corredor, 0.51 g interpolado "
+             "cuando la haya). LA HOJA DE RUTA SIGUE MAL en las seis lineas "
+             "nombradas mientras no se corrija"),
+    efecto_si_se_sigue_la_otra=("con 0.50 g, A_s = F_pga·PGA, k_h0 y el "
+                                "incremento sismico del cabezal quedan entre "
+                                "un 2 y un 4 % por debajo de lo que el mapa "
+                                "da (0.51-0.52 g), del lado inseguro; F_pga "
+                                "no cambia en las clases C, D ni E. Y la PGA "
+                                "cae justo sobre el rotulo «PGA > 0.50» de "
+                                "la Tabla 2.4.3.11.2.1.2-1, ambiguedad "
+                                "(NOR-PUE-11) que con 0.51 g desaparece"),
+    estado=EstadoDiscrepancia.ABIERTA_CONTRA_HOJA_DE_RUTA,
 )
 
 

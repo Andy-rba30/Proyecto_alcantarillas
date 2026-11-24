@@ -136,6 +136,61 @@ def test_el_raster_del_mapa_de_pga_se_declara_igual_en_las_dos_ediciones():
 
 
 # ---------------------------------------------------------------------------
+# El dictamen de Fable (fichas N1MP-05 y N1MP-06)
+# ---------------------------------------------------------------------------
+
+# Cada discrepancia de la edicion 2016 con la parte que la edicion 2018 le
+# suma, y lo que NO cambio: quien gana y el estado.
+PARTES_MP2018 = {
+    "DIS-MP-KAE-SIGNO": ("MP2018.A.11.3.1#KAE", "AASHTO_LRFD_9",
+                         "errata_de_imprenta"),
+    "DIS-MP-KH0-ROCA": ("MP2018.2.8.1.1.14.2.1#ROCA", "AASHTO_LRFD_9",
+                        "errata_de_imprenta"),
+    "DIS-MP-NUMERAL-2.3.1.1.12.3": ("MP2018.2.8.1.1.12.3#EXC_ESTATICA", "MP",
+                                    "errata_de_imprenta"),
+    "DIS-MP-EXCENTRICIDAD": ("MP2018.2.8.1.1.14.1#EXC", "AASHTO_LRFD_9",
+                             "errata_de_imprenta"),
+    "DIS-LUZ-DENOMINACION": ("MP2018.GLOSARIO#OBRAS_DE_ARTE_MENORES",
+                             "HDS5_3ED", "abierta"),
+}
+
+
+@pytest.mark.parametrize("dis_id", sorted(PARTES_MP2018))
+def test_la_edicion_2018_es_parte_de_las_discrepancias_que_toca(reg, dis_id):
+    cita, gana, estado = PARTES_MP2018[dis_id]
+    d = reg.discrepancia(dis_id)
+    partes = {p.quien: p for p in d.partes}
+    assert partes["MP2018"].cita_id == cita
+    assert d.gana == gana and d.estado.value == estado
+
+
+def test_los_textos_de_errata_dicen_de_que_edicion_son():
+    for texto in (CN.K_AE_ERRATA_MANUAL, CN.K_H0_ROCA_ERRATA,
+                  CN.NUMERAL_EXCENTRICIDAD_ESTATICA):
+        assert "edicion 2016" in normalizar(texto) and "041-2016" in texto
+        assert "edicion 2018" in normalizar(texto) and "19-2018" in texto
+    assert "pag. impresa 597" in CN.K_AE_ERRATA_MANUAL
+    assert "pag. impresa 249" in CN.K_H0_ROCA_ERRATA
+    assert "pag. impresa 244" in CN.NUMERAL_EXCENTRICIDAD_ESTATICA
+    assert "EN LAS DOS EDICIONES" in CN.EXCENTRICIDAD_ERRATA_MANUAL
+
+
+def test_la_pga_del_corredor_es_una_discrepancia_contra_la_hoja_de_ruta_y_el_valor_no_cambio(reg):
+    from src import datos_sitio as ds
+    d = reg.discrepancia("DIS-HR-PGA-LECTURA")
+    assert d.estado.value == "abierta_contra_hoja_de_ruta"
+    assert {p.quien for p in d.partes} == {"hoja_de_ruta", "MP2018",
+                                           "AASHTO_LRFD_9"}
+    assert "AASHTO_LRFD_9.3.10.2.1#INTERPOLACION" in d.citas
+    assert "SIGUE MAL" in d.por_que
+    # El valor es del dueño: la lectura se declara en el punto de uso.
+    pga = ds.dato("PGA_roca_B")
+    assert pga.valor == pytest.approx(0.50)
+    assert "cota INFERIOR" in pga.trazabilidad
+    assert "DIS-HR-PGA-LECTURA" in pga.trazabilidad
+
+
+# ---------------------------------------------------------------------------
 # Con el PDF
 # ---------------------------------------------------------------------------
 

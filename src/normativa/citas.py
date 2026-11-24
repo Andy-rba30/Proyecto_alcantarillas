@@ -18182,4 +18182,35 @@ MP2018_SUELO_SUMERGIDO = _cita(
 )
 
 
+# --- N1 del plan de normas 2, dictamen de Fable (2c) --- COMO SE LEE UN MAPA
+# ENTRE ISOLINEAS. El Manual de Puentes (2.4.3.11.2.0, MP2018 pag. impresa
+# 111) adapta el Procedimiento General de AASHTO y remite a los mapas del
+# Apendice A3, pero NO transcribe esta clausula; las notas «interpolacion
+# lineal para valores intermedios» de sus Tablas 2.4.3.11.2.1.2-1 a -3 son
+# para leer F_pga, F_a y F_v entre COLUMNAS de PGA, no para leer el mapa. La
+# cita sostiene la parte AASHTO de DIS-HR-PGA-LECTURA y se aplica a la
+# lectura de 'PGA_roca_B' como [C] (ficha N1MP-06).
+AASHTO_PGA_INTERPOLACION = _cita(
+    id="AASHTO_LRFD_9.3.10.2.1#INTERPOLACION",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="3.10.2.1",
+    titulo_numeral="General Procedure",
+    pagina_impresa="3-71",
+    pagina_pdf=125,
+    texto_literal=Verbatim(
+        texto=("Linear interpolation shall be used for sites located between "
+               "contour lines or between a contour line and a local maximum "
+               "or minimum."),
+        pagina_pdf=125),
+    caracter=Caracter.EXIGENCIA,
+    sesion=N1MP,
+    nota=("Es la regla de lectura de los mapas de PGA, S_S y S_1 de AASHTO "
+          "(Figs. 3.10.2.1-1 a -21 «or ... state ground motion maps approved "
+          "by the Owner»). Los del Apendice A3 del Manual de Puentes son los "
+          "mapas aprobados para el Peru y siguen ese procedimiento, pero el "
+          "Manual no escribe como leerlos entre isolineas: el vacio se cubre "
+          "con esta fuente tecnica, [C]. Aplicada al corredor: entre 0.50 y "
+          "0.52 g, 0.511 a 0.515 g (ficha N1MP-04)."),
+)
+
 CITAS: Dict[str, Cita] = {c.id: c for c in _TODAS}
