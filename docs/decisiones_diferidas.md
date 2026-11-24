@@ -59,7 +59,7 @@ registro.
 
 # Índice de fichas
 
-> Tabla derivada automáticamente de las **408** fichas del documento (`79` cerradas, `153` abiertas/parciales, `176` diferidas/declaradas).
+> Tabla derivada automáticamente de las **410** fichas del documento (`80` cerradas, `154` abiertas/parciales, `176` diferidas/declaradas).
 > Regla de estado (verificada por `tests/test_decisiones_diferidas.py`): `cerrada` si el título marca IMPLEMENTADA/CERRADA o tiene `**Cerrado` sin `**Abierto`; `abierta / parcial` si declara `**Abierto`; `diferida / declarada` en el resto.
 
 | Ficha | Tema | Estado |
@@ -472,6 +472,8 @@ registro.
 | N1MP-02 | Contraste de las citas `MP` con la edición 2018 (1/2): de la Introducción al 2.4.3.11.2 | cerrada |
 | N1MP-03 | Contraste de las citas `MP` con la edición 2018 (2/2): del 2.4.3.11.2.1 al Apéndice A11 | abierta / parcial |
 | N1MP-04 | La PGA de roca de La Unión, leída en el mapa de 2018: entre las isolíneas 0.50 y 0.52 g, no sobre la de 0.50 | abierta / parcial |
+| N1MP-05 | Dictamen de Fable sobre N1 (1/2): la edición 2018 es parte de cinco discrepancias y la memoria dice de qué edición es cada errata | cerrada |
+| N1MP-06 | Dictamen de Fable sobre N1 (2/2): la PGA del corredor es una discrepancia ABIERTA contra la hoja de ruta | abierta / parcial |
 
 ---
 
@@ -10420,8 +10422,11 @@ impreso que no es de cálculo: la huella de los criterios.
 - **Qué haría falta:** que el dueño declare el criterio con la fecha de
   inicio del expediente. Si declara la vigente, las citas que el cálculo
   consume pasan de `MP.*` a su par `MP2018.*` (fichas N1MP-02 y N1MP-03:
-  ninguna cifra cambia) y la memoria deja de describir como erratas del
-  Manual las tres que la edición 2018 ya corrigió.
+  ninguna cifra cambia).
+- **Recomendación de Fable (dictamen de N1, 2026-11-24), NO aplicada:** la
+  edición VIGENTE (2018): sin disposición transitoria rige la aplicación
+  inmediata, y ninguna cifra cambia. Al declararla, migrar las citas que el
+  cálculo consume de `MP.*` a `MP2018.*`. La decisión es del dueño.
 - **Dónde vive:** `src/normativa/fuentes.py::MP2018`
 
 ## N1MP-02 · Contraste de las citas `MP` con la edición 2018 (1/2): de la Introducción al 2.4.3.11.2
@@ -10474,11 +10479,11 @@ impreso que no es de cálculo: la huella de los criterios.
   corrigen erratas (DIS-MP-KH0-ROCA, DIS-MP-KAE-SIGNO) en el sentido que el
   código ya sigue, y la renumeración a 2.8.1.1.12.3 corrige una tercera
   (DIS-MP-NUMERAL-2.3.1.1.12.3).
-- **Abierto:** las discrepancias y los textos de errata que la memoria
-  imprime siguen describiendo la edición 2016 (comentario en cada constante
-  de `constantes_normativas`); DIS-MP-EXCENTRICIDAD vale en las dos.
-- **Qué haría falta:** decidida la edición (N1MP-01), sumar `MP2018` como
-  parte de las tres discrepancias y reescribir esos textos con Fable.
+- **Abierto:** sólo la migración de las citas, que depende de N1MP-01. Lo
+  que esta ficha dejaba abierto —las partes `MP2018` de las discrepancias y
+  los textos de errata que la memoria imprime— lo aplicó el dictamen de
+  Fable (N1MP-05); DIS-MP-EXCENTRICIDAD vale en las dos ediciones.
+- **Qué haría falta:** la decisión de N1MP-01.
 - **Dónde vive:** `src/normativa/citas.py::MP2018_A_11_3_1_KAE`
 
 ## N1MP-04 · La PGA de roca de La Unión, leída en el mapa de 2018: entre las isolíneas 0.50 y 0.52 g, no sobre la de 0.50
@@ -10499,6 +10504,60 @@ impreso que no es de cálculo: la huella de los criterios.
   Efecto con 0.51: A_s = F_pga·PGA sube 2 % (F_pga no cambia en C, D ni E),
   y con él k_h0 y el empuje sísmico del cabezal; y la PGA deja de caer sobre
   el rótulo «PGA > 0.50» de NOR-PUE-11.
-- **Qué haría falta:** la coordenada del corredor (pendiente 1.4), revisión
-  de Fable y decisión del dueño.
+- **Qué haría falta:** la coordenada del corredor (pendiente 1.4) y la
+  decisión del dueño. Fable revisó: la lectura ya está declarada en el punto
+  de uso y el defecto de la hoja de ruta, en DIS-HR-PGA-LECTURA (N1MP-06).
 - **Dónde vive:** `src/datos_sitio.py::PGA_roca_B`
+
+## N1MP-05 · Dictamen de Fable sobre N1 (1/2): la edición 2018 es parte de cinco discrepancias y la memoria dice de qué edición es cada errata
+
+- **Cerrado (2026-11-24, APROBADO CON CAMBIOS):** `MP2018` es una `Parte` más
+  de DIS-MP-KAE-SIGNO, DIS-MP-KH0-ROCA y DIS-MP-NUMERAL-2.3.1.1.12.3 (la
+  edición 2018 lo imprime como AASHTO, págs. impresas 597, 249 y 244), de
+  DIS-MP-EXCENTRICIDAD (la errata persiste, pág. 247) y de
+  DIS-LUZ-DENOMINACION (el Glosario 2018); `gana` y `estado` no cambian.
+  `K_AE_ERRATA_MANUAL`, `K_H0_ROCA_ERRATA` y `NUMERAL_EXCENTRICIDAD_ESTATICA`
+  dicen que la errata es de la edición 2016 (RD 041-2016-MTC/14) y que la
+  2018 la corrige; `EXCENTRICIDAD_ERRATA_MANUAL`, que está en las dos.
+  Ningún valor cambia.
+- **Por qué** importa DIS-LUZ: la definición 2018 mide la luz de las obras
+  de arte menores «entre ejes de apoyo». En un marco la luz entre ejes es la
+  luz libre más un espesor de pared, y sólo cambia la denominación en la
+  franja justo por debajo de 6.0 m (luz libre 5.75 m con muros de 0.30 m:
+  6.05 m entre ejes). El código compara la luz libre y no cambia; la
+  discrepancia sigue abierta.
+- **Diff que movió:** la línea base cambia en cinco archivos —las tres
+  notas de errata del cabezal (`cli_expediente.txt`,
+  `informe_expediente.json`, `memoria_expediente.html`), la trazabilidad de
+  `PGA_roca_B` (N1MP-06; el JSON y la memoria de expediente) y el bloque de
+  DIS-LUZ-DENOMINACION con su parte nueva (las tres memorias que lo
+  imprimen)—. `docs/indice_formulas.md`: el cuerpo no cambia, sólo el sello.
+  Las siete validaciones: sin cambios (su sincronía pasa).
+- **Qué haría falta:** nada para las erratas; DIS-LUZ, decisión del dueño.
+- **Dónde vive:** `src/normativa/discrepancias.py::DIS_KAE_SIGNO`
+
+## N1MP-06 · Dictamen de Fable sobre N1 (2/2): la PGA del corredor es una discrepancia ABIERTA contra la hoja de ruta
+
+- **Cerrado:** DIS-HR-PGA-LECTURA, `ABIERTA_CONTRA_HOJA_DE_RUTA`: la v8 dice
+  «PGA = 0.50 g `[N]`» en su línea 90 y la arrastra a las 108–109, 138,
+  1227, 1229 y 1433; y se contradice en la etiqueta: la 1227 la declara
+  `[S]` y las 90 y 1433 siguen en `[N]`. **La hoja de ruta sigue mal
+  mientras no se corrija; no se editó.** La lectura de N1MP-04 está en el
+  punto de uso (`trazabilidad` de `PGA_roca_B`): 0.50 g es la cota INFERIOR
+  del sitio. La regla de lectura es AASHTO LRFD 9.ª 3.10.2.1, pág. impresa
+  3-71 (PDF 125, verificada): «Linear interpolation shall be used for sites
+  located between contour lines…» (`AASHTO_LRFD_9.3.10.2.1#INTERPOLACION`).
+- **Por qué [C] y no [N→]:** `[N→]` aplica un valor normativo PERUANO por
+  analogía; aquí la norma peruana no tiene la regla. El Manual (2018,
+  2.4.3.11.2.0, pág. 111) adapta el procedimiento de AASHTO y remite al A3
+  sin transcribir la cláusula, y sus notas de «interpolación lineal» de las
+  Tablas 2.4.3.11.2.1.2-1 a -3 son entre columnas de PGA, no entre
+  isolíneas. Es un vacío normativo cubierto con fuente técnica reconocida.
+- **Abierto:** el valor de `PGA_roca_B` (sigue en 0.50 g).
+- **Recomendación de Fable al dueño, NO aplicada:** 0.52 g mientras no haya
+  coordenada del corredor; 0.51 g por interpolación cuando la haya; 0.50 g
+  no es defendible.
+- **Qué haría falta:** la decisión del dueño, la coordenada (pendiente 1.4)
+  y corregir la v8 en las seis líneas; entonces la discrepancia pasa a
+  `RESUELTA`.
+- **Dónde vive:** `src/normativa/discrepancias.py::DIS_HR_PGA_LECTURA`
