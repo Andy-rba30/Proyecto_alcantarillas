@@ -2486,6 +2486,13 @@ K_H0_TEXTO = ("kh0=FpgaPGA = As donde kh0 es el coeficiente de aceleracion "
 # Clausula de roca del mismo numeral. El 1.2 es [N] y sale de la PROSA; el
 # parentesis que la acompana esta mal impreso y se transcribe entero para que
 # nadie lo aplique (ver K_H0_ROCA_ERRATA).
+# --- N1 del plan de normas 2 (ficha N1MP-03) --- LA EDICION VIGENTE (2018)
+# YA NO TIENE ESTA ERRATA: su 2.8.1.1.14.2.1, pag. impresa 249 (PDF 253,
+# cita MP2018.2.8.1.1.14.2.1#ROCA), imprime «k_h0 = 1.2 F_pga PGA», leido
+# por imagen. El valor (1.2) no cambia; lo que cambia es que la letra de la
+# edicion vigente coincide con el codigo. El texto de K_H0_ROCA_ERRATA,
+# que la memoria imprime, sigue hablando de la edicion 2016 (la citada):
+# reescribirlo es decision del dueño, despues de la revision de Fable.
 K_H0_FACTOR_ROCA_A_B = 1.2
 K_H0_ROCA_TEXTO = ("Para muros cimentados sobre Sitio con suelos Clase A o B "
                    "(roca dura o blanda), k h0 estara basado en 1.2 veces el "
@@ -2662,6 +2669,11 @@ EXCENTRICIDAD_SISMICA_TEXTO_AASHTO = (
     "be obtained by linear interpolation of the values given in this Article.")
 NUMERAL_EXCENTRICIDAD_SISMICA_AASHTO = _reg.cita(
     "AASHTO_LRFD_9.11.6.5.1#EXC").como_texto()
+# --- N1 del plan de normas 2 (ficha N1MP-03) --- ESTA ES LA UNICA DE LAS
+# TRES QUE LA EDICION 2018 CONSERVA: su 2.8.1.1.14.1, pag. impresa 247 (PDF
+# 251, cita MP2018.2.8.1.1.14.1#EXC), sigue imprimiendo «tercio central», y
+# ademas «cimientan». El limite que el codigo usa (B/3 con gamma_EQ = 0.0,
+# AASHTO) no cambia con la edicion.
 EXCENTRICIDAD_ERRATA_MANUAL = (
     "TERCERA ERRATA DE IMPRENTA DEL MANUAL en esta misma cadena sismica, y la "
     "unica que mueve un numero. El num. 2.8.1.1.14.1 traduce el 'middle "
@@ -2718,6 +2730,11 @@ PRESION_CONTACTO_TEXTO = (
 # y el indice del Manual repite la errata. La remision a AASHTO (11.6.3.3) si
 # es correcta. Se cita como lo imprime, con la advertencia, para que quien lo
 # busque lo encuentre.
+# --- N1 del plan de normas 2 (ficha N1MP-02) --- La edicion 2018 lo imprime
+# BIEN, «2.8.1.1.12.3», pag. impresa 244 (PDF 248), y su indice tambien
+# (cita MP2018.2.8.1.1.12.3#EXC_ESTATICA); el texto y las fracciones de B
+# son los mismos. Este rotulo, que la memoria imprime, sigue siendo el de la
+# edicion 2016 (la citada) mientras el dueño no decida la edicion.
 NUMERAL_EXCENTRICIDAD_ESTATICA = (
     "Manual de Puentes (MTC) num. 2.3.1.1.12.3 'Limites de Excentricidad' "
     "(11.6.3.3 AASHTO) -- el numeral se imprime asi, con 2.3 en vez de 2.8, "
@@ -2748,6 +2765,12 @@ NUMERAL_K_AE_MANUAL = ("Manual de Puentes (MTC), Apendice A11 'Diseno "
                        "'Metodo de Mononobe -Okabe', ec. A.11.3.1-2, pag. "
                        "impresa 586 (PDF 587)")
 NUMERAL_K_AE_AASHTO = _reg.cita("AASHTO_LRFD_9.A11.3.1#KAE").como_texto()
+# --- N1 del plan de normas 2 (ficha N1MP-03) --- LA EDICION VIGENTE (2018)
+# YA NO TIENE ESTA ERRATA: su ec. A.11.3.1-2, pag. impresa 597 (PDF 601,
+# cita MP2018.A.11.3.1#KAE), imprime «[1 + raiz(...)]», leido renderizando
+# la pagina a 3x. El codigo, que sigue a AASHTO, coincide con la letra de la
+# edicion vigente; el texto de abajo, que la memoria imprime, describe la
+# edicion 2016 (la citada) y reescribirlo es decision del dueño.
 K_AE_ERRATA_MANUAL = (
     "ERRATA DE IMPRENTA DEL MANUAL. El Apendice A11 imprime el denominador "
     "de K_AE con '[1 - raiz(...)]', signo MENOS, verificado renderizando la "
@@ -5056,6 +5079,10 @@ _M_POR_PULG = PULGADA_EN_MM / MILIMETROS_POR_METRO
 # escribe kip y ft y pone entre parentesis una equivalencia REDONDEADA
 # (14.55 t, 4.27 m, 1.20 m, 1.80 m); se convierte el valor primario con el
 # factor exacto: 32.0 kip = 142.34 kN (las «14.55 t» darian 142.69 kN).
+# --- N1 del plan de normas 2 (ficha N1MP-02) --- La edicion 2018 (pag.
+# impresa 91-92, PDF 95-96) conserva las cifras primarias y RETIRA las
+# equivalencias redondeadas: con ella este bloque no cambia, porque nunca
+# las uso.
 # Para alcantarillas solo cuentan los EJES (AASHTO 3.6.1.2.6a, cita
 # AASHTO_LRFD_9.3.6.1.2.6a#EJES): no hay carga de carril.
 EJE_CAMION_HL93_KIP = 32.0
