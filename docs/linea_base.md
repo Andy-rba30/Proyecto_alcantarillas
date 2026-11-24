@@ -1111,3 +1111,7 @@ mueve:
   `filtro.granular` y `filtro.cama_de_grava_bajo_geotextil`.
 
 **Diámetros, secciones, materiales, HW, d50, espesores y longitudes movidos: ninguno.**
+
+Regenerada otra vez sobre `1b9aeb2`, con los cambios del dictamen del consultor: sólo las dos
+huellas (criterios y hoja de ruta) y, en la memoria completa, la ficha de
+`techos_de_transcripcion_fase_6`, que suma `'D85_m' (m)`. Ningún número se mueve.
