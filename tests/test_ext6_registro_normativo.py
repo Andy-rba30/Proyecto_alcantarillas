@@ -429,7 +429,9 @@ def test_toda_fuente_presente_lleva_vigencia_como_campo_y_no_como_marca():
                  "WSDOT_HM": fu.VIGENCIA_VERIFICADA_EL_T0,
                  "USBR_DSCS": fu.VIGENCIA_VERIFICADA_EL_VE3,
                  # VE-3.12: la fuente secundaria de las Clases III a V.
-                 "USACE_EM_1110_2_2902": fu.VIGENCIA_VERIFICADA_EL_VE3}.get(
+                 "USACE_EM_1110_2_2902": fu.VIGENCIA_VERIFICADA_EL_VE3,
+                 # N3 (plan 12): HEC-11 (SI), archivada por la FHWA.
+                 "HEC11": fu.VIGENCIA_VERIFICADA_EL_N3}.get(
                      f.id, fu.VIGENCIA_VERIFICADA_EL)
         assert f.vigencia.fecha == fecha, f.id
         assert "VIGENCIA CONFIRMADA" not in f.nota and "EDICION POSTERIOR DETECTADA" not in f.nota, f.id
@@ -450,15 +452,17 @@ def test_el_manual_de_puentes_lleva_su_acto_aprobatorio_y_el_que_lo_derogo():
     assert v.edicion_posterior
     # Las tecnicas de EE.UU. no se derogan por acto: nadie las «deja sin efecto».
     for id_ in ("AASHTO_LRFD_9", "AASHTO_M170M", "AASHTO_M36", "ASTM_A760",
-                "ASTM_A796", "AASHTO_M294_TRAD"):
+                "ASTM_A796", "AASHTO_M294_TRAD", "HEC11"):
         assert fu.FUENTES[id_].vigencia.derogado_por == "", id_
 
 
 def test_la_eleccion_pendiente_se_parte_en_legal_y_tecnica():
     assert fu.fuentes_con_eleccion_de_edicion_pendiente_legal() == ("MP",)
+    # --- N3 (plan 12) --- HEC-11 suma la septima tecnica: la FHWA la
+    # archiva y la da por sustituida por HEC-23 (`fuentes.HEC11.vigencia`).
     assert set(fu.fuentes_con_eleccion_de_edicion_pendiente_tecnica()) == {
         "AASHTO_LRFD_9", "AASHTO_M170M", "AASHTO_M36", "ASTM_A760",
-        "ASTM_A796", "AASHTO_M294_TRAD"}
+        "ASTM_A796", "AASHTO_M294_TRAD", "HEC11"}
     assert set(fu.fuentes_con_eleccion_de_edicion_pendiente()) == (
         set(fu.fuentes_con_eleccion_de_edicion_pendiente_legal())
         | set(fu.fuentes_con_eleccion_de_edicion_pendiente_tecnica()))
@@ -508,8 +512,13 @@ def test_el_criterio_tecnico_ya_no_dice_que_la_edicion_no_la_manda_nadie():
     assert "no la manda nadie" not in c.justificacion
     assert "2014" in c.justificacion and "AASHTO LRFD" in c.justificacion
     assert "Manual de Puentes" not in c.concepto
-    assert "seis" in c.justificacion
-    assert "para las siete" not in c.justificacion and "para las siete" not in c.reemplazado_por
+    # Hasta N3 eran SEIS (siete con el Manual de Puentes, que EXT-6 saco a su
+    # propio criterio legal). N3 (plan 12) sumo HEC-11, archivada por la FHWA
+    # y sustituida por HEC-23: vuelven a ser siete, y el Manual de Puentes
+    # sigue fuera (lo comprueba «Manual de Puentes» fuera del concepto, arriba,
+    # y `test_vigencia_fuentes`).
+    assert "siete" in c.justificacion and "HEC-11" in c.justificacion
+    assert "para las seis" not in c.justificacion and "para las seis" not in c.reemplazado_por
 
 
 def test_la_introduccion_del_manual_de_puentes_ancla_la_lrfd_de_2014(reg):

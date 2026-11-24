@@ -1318,6 +1318,35 @@ FILTRO_ENROCADO = _fundamento(
         "comun de perder una proteccion bien dimensionada."),
 )
 
+# --- N3 (plan 12) --- La alternativa GRANULAR del filtro: HEC-11 Sec. 4.4.1,
+# a la que HEC-14 remite la manta de filtro bajo el apron.
+FILTRO_GRANULAR = _fundamento(
+    id="F6.FILTRO_GRANULAR",
+    fase=F6,
+    que_paso=("Filtro granular entre el enrocado y el suelo: si la piedra "
+              "puede apoyarse directo sobre el lecho, y la ventana de tamaños "
+              "de una manta de grava de una capa"),
+    por_que=(
+        "Entre dos capas de granos el agua arrastra los finos de la de abajo "
+        "por los huecos de la de arriba si los huecos son demasiado grandes, "
+        "y si son demasiado chicos el agua no sale y empuja la capa. La guia "
+        "de revestimientos de enrocado de la FHWA, a la que la de "
+        "disipadores remite el filtro del apron, lo resuelve comparando "
+        "tamaños característicos de las dos curvas: el quince por ciento "
+        "del grano grueso contra el ochenta y cinco y el quince por ciento "
+        "del fino. La misma comparacion dice si la piedra puede ir directo "
+        "sobre el suelo y, si no, que tamaños tiene que tener la grava que "
+        "va en medio para servir a las dos interfaces a la vez."),
+    verbo=Verbo.RECOMIENDA,
+    citas=("HEC14.10.2#FILTRO", "HEC11.4.4#FUNCION", "HEC11.4.4.1#RELACION_5",
+           "HEC11.4.4.1#D15_D15", "HEC11.4.4.1#EC_14",
+           "HEC11.4.4.1#INTERFACES", "HEC11.4.2#T2"),
+    que_pasa_si_no_se_hace=(
+        "La grava del filtro se elegiria sin saber si retiene el suelo o si "
+        "la piedra la retiene a ella: los finos se irian por los huecos y el "
+        "enrocado se asentaria igual que sin filtro."),
+)
+
 PROTECCION_ENTRADA = _fundamento(
     id="F6.ENTRADA",
     fase=F6,

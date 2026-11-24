@@ -19,6 +19,9 @@ que entro en `normas/` es una TRADUCCION NO OFICIAL de AASHTO M 294-11
 Una fuente derivada no sustituye a la primaria: convive con ella
 (`convive_con` cruzado, el mismo recurso de las dos HDS-5) y la ausencia del
 original queda redefinida como «que desbloquearia verificar contra el».
+N3 del plan 12 (2026-11-24) sumo HEC-11 en su version metrica (`HEC11`),
+que no estaba censada como ausente: HEC-14 la nombraba y el registro solo
+lo decia en la nota de `HEC14.10.2#FILTRO`.
 
 TODOS LOS SHA-1 Y TODAS LAS PAGINACIONES DE ESTE ARCHIVO ESTAN MEDIDOS, no
 supuestos. El procedimiento, para que se pueda repetir:
@@ -53,6 +56,9 @@ paginas confirman cada desfase, no dos o tres a ojo:
                                   las 14 que no son la portada, el aviso
                                   legal y los doce folios romanos del indice
                                   (i a xii, PDF 3 a 14)
+    HEC-11 (SI) ............. SIN FOLIO: captura web de la FHWA, ninguna de
+                                  sus 193 hojas imprime numero (N3, por texto
+                                  en las 193 y por imagen en cuatro)
 
 Las paginas que no confirman son las que no imprimen numero -- portadas,
 separadores y las laminas fotograficas del Manual de Puentes --, no
@@ -1243,12 +1249,120 @@ USACE_EM_1110_2_2902 = Fuente(
         "clases_iii_v_astm_c76.md."),
 )
 
+# --- N3 (plan 12, 2026-11-24) --- HEC-11, «Design of Riprap Revetment», en
+# su version metrica. HEC-14 remite a ella el filtro bajo el apron («A filter
+# blanket should also be provided as described in HEC 11 (Brown and Clyde,
+# 1989)», Sec. 10.2, pag. impresa 10-18) y el tamaño de la piedra con el
+# receptor alto (Sec. 10.1.3, pag. impresa 10-4). Estuvo en `normas_2/` del
+# repositorio de normas desde su commit `ce4c90e` y N3 la paso a `normas/`.
+# Tres propiedades del ejemplar, medidas en N3, que gobiernan sus citas:
+#
+#   1. NO IMPRIME FOLIO. Es la captura a PDF (Acrobat Web Capture 4.0, 10 de
+#      agosto de 2000, segun sus metadatos) de las paginas web de la FHWA: 193
+#      hojas sin cabecera ni pie numerado (barrido el texto de las 193; las
+#      lineas que son solo un numero son celdas de tabla, y las PDF 47, 49,
+#      66 y 82 renderizadas no imprimen folio). Es el caso de HDS5_SI_1985 y
+#      de AASHTO_M294_TRAD: `SinDeterminar`, «s/n» como pagina impresa, la
+#      cita localizada por numeral y pagina PDF, y SIN FIRMA (invariante T6).
+#   2. EL TEXTO ES EXTRAIBLE Y LIMPIO; LAS ECUACIONES Y LAS RELACIONES DE LOS
+#      EJEMPLOS SON IMAGENES. La Ec. (14) y las razones del paso 13 de los dos
+#      ejemplos se leyeron renderizando la pagina (`extraccion png`, 2x y 4x).
+#   3. LLEVA LA MARCA «Archived» EN TODAS SUS PAGINAS, y la biblioteca de la
+#      FHWA la lista entre las publicaciones archivadas con su sucesora (ver
+#      `vigencia`).
+VIGENCIA_VERIFICADA_EL_N3 = "2026-11-24"
+
+HEC11 = Fuente(
+    id="HEC11",
+    titulo=("HEC-11 «Design of Riprap Revetment» (Hydraulic Engineering "
+            "Circular No. 11, FHWA-IP-89-016), version metrica"),
+    emisor="FHWA — Federal Highway Administration",
+    # LO QUE EL EJEMPLAR IMPRIME: la PDF 1, «Design of Riprap Revetment / HEC
+    # 11 / Metric Version» y el aviso de que el manual se convirtio al sistema
+    # metrico al pasarlo a formato electronico («keeping the document as close
+    # to the original as possible»); la PDF 152, la hoja de documentacion
+    # tecnica del original: «FHWA-IP-89-016», «March 1989», «Scott A. Brown,
+    # Eric S. Clyde». El numero de la version metrica (FHWA-IF-00-022-1, 2000)
+    # NO lo imprime el ejemplar: es el que da la biblioteca de la FHWA.
+    edicion=("version metrica (SI) de la de marzo de 1989, conversion "
+             "electronica de la FHWA; la biblioteca de la FHWA la lista como "
+             "FHWA-IF-00-022-1 (2000)"),
+    anio=2000,
+    archivo_pdf="normas/hec11si.pdf",
+    sha1="583b1c305c57030a93f3885d5e160fb45a023651",
+    paginas_pdf=193,
+    paginacion=SinDeterminar(
+        por_que=("el ejemplar es la captura web de la FHWA y no imprime "
+                 "numero de pagina en ninguna de sus 193 hojas (medido en N3 "
+                 "sobre el texto de las 193 y sobre las PDF 47, 49, 66 y 82 "
+                 "renderizadas). Sus citas se localizan por numeral y pagina "
+                 "PDF, llevan «s/n» como pagina impresa y no se firman (T6), "
+                 "con el precedente de HDS5_SI_1985 y AASHTO_M294_TRAD")),
+    texto_extraible=True,
+    vigencia=Vigencia(
+        estado=VIGENCIA_POSTERIOR, fecha=VIGENCIA_VERIFICADA_EL_N3,
+        como=("lectura directa (WebFetch) desde la sesion de N3 del listado "
+              "de publicaciones archivadas de la biblioteca de hidraulica de "
+              "la FHWA (fhwa.dot.gov/engineering/hydraulics/library_listing."
+              "cfm?archived=1), que da dos filas: «HEC 11 · Design of Riprap "
+              "Revetment · 1989 · FHWA-IP-89-016 · No · HEC-23» y «HEC 11 · "
+              "Design of Riprap Revetment SI · 2000 · FHWA-IF-00-022-1 · Yes "
+              "· HEC-23» (codigo, titulo, año, numero, en linea, sustituida "
+              "por); la tercera edicion de HEC-23 (FHWA-NHI-09-111 y -112, "
+              "septiembre de 2009) por busqueda web (WebSearch) sobre la "
+              "pagina de la FHWA y el registro de TRB"),
+        edicion_posterior=(
+            "ninguna edicion de HEC-11: la FHWA la archiva y la da por "
+            "sustituida por HEC-23 «Bridge Scour and Stream Instability "
+            "Countermeasures» (3a ed., FHWA-NHI-09-111 y -112, septiembre de "
+            "2009), que es otro documento"),
+        pendiente_gabinete=(
+            "leer HEC-23 3a ed. (su guia de diseño de filtros, Vol. 2) y "
+            "contrastar sus criterios granulometricos con la Ec. (14); "
+            "confirmar si hay una edicion de HEC-23 posterior a 2009 (un "
+            "registro de TRB, View/1875786, no fue legible)")),
+    nota=(
+        "ENTRA EN N3 (plan 12) para el FILTRO GRANULAR bajo el enrocado de "
+        "salida, que hasta aqui era solo un requisito declarado (fichas T8-05 "
+        "y VE5-M6-04): HEC-14, vigente, remite expresamente a HEC 11 «(Brown "
+        "and Clyde, 1989)» el filtro bajo el apron (cita HEC14.10.2#FILTRO) "
+        "y el tamaño de la piedra con el receptor alto (HEC14.10.1.3#"
+        "FIGURA_10_3). Lo que el proyecto le pide, y solo eso: los criterios "
+        "granulometricos del filtro de la Sec. 4.4.1 (Ec. 14, pasante del "
+        "tamiz N.º 200, espesor de la manta), los limites granulometricos "
+        "del enrocado de la Tabla 2 (Sec. 4.2), el espesor de la capa de "
+        "enrocado de la Sec. 4.3 y la cama de grava bajo el geotextil de la "
+        "Sec. 4.4.2. Es [C]: fuente tecnica de EE.UU., no norma peruana, y "
+        "la propia PDF 151 lo dice: «This report does not constitute a "
+        "standard, specification, or regulation». Su ambito es el "
+        "revestimiento de taludes y cauces («bank protection»), no la salida "
+        "de una alcantarilla: lo que se toma de ella para el apron se toma "
+        "por la remision de HEC-14, y cada paso lo dice. "
+        "ERRATAS PROPIAS DE ESTA VERSION, medidas en N3 y no corregidas en "
+        "ningun valor del proyecto: (1) la fila del 50 % de la Tabla 2 dice "
+        "«1.0 D50 to 1.4 D50» y su columna de pesos «1.0 W50 to 1.5 W50», que "
+        "con W proporcional a D^3 da 1.0 a 1.145 D50 --el proyecto no usa "
+        "esa fila--; (2) el paso 13 del Ejemplo 2 (PDF 81-82) rotula «D15"
+        "[filter]» la razon 0.15/0.00014, que es contra el suelo, y acepta "
+        "«0.15/0.03 = 5 ≥ 5» frente a la Ec. (14), que imprime «< 5» (el "
+        "texto dice «5 or less»). Y una diferencia que no es errata: el paso "
+        "10 de los dos ejemplos toma T = 2·D50 para el espesor del enrocado, "
+        "por encima del minimo de 1.5·D50 de la Sec. 4.3, sin decir por que. "
+        "Los tests del filtro se contrastan contra el Ejemplo 1, que no tiene "
+        "ninguna de las dos erratas. "
+        "VIGENCIA (N3): archivada por la FHWA y sustituida por HEC-23, que "
+        "es OTRO documento y no una edicion de esta. Que edicion rige el "
+        "expediente lo declara el proyectista en "
+        "'edicion_que_rige_el_expediente', como en las demas fuentes "
+        "tecnicas con sucesora publicada."),
+)
+
 FUENTES: Dict[str, Fuente] = {
     f.id: f for f in (
         MC_HHD, MP, MS, EG2013, E030, E050, E060,
         HDS5_3ED, HDS5_SI_1985, AASHTO_LRFD_9,
         AASHTO_M170M, AASHTO_M36, ASTM_A760, ASTM_A796, AASHTO_M294_TRAD,
-        DG2018, HEC14, WSDOT_HM, USBR_DSCS, USACE_EM_1110_2_2902,
+        DG2018, HEC14, WSDOT_HM, USBR_DSCS, USACE_EM_1110_2_2902, HEC11,
     )
 }
 
