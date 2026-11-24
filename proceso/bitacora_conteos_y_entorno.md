@@ -2858,3 +2858,60 @@ La suite completa sobre `7efb15d` dio `18 failed, 9173 passed, 25 skipped` (para
 re-corridos (`6 failed, 413 passed, 10 skipped`) más los 2 de ventana real; la ronda 2 corrige
 los 8 que no son de sello (fichas WIN-01 a WIN-03). Su confirmación en Windows sobre esta rama
 queda a cargo del dueño y se anota aquí cuando llegue.
+
+## Plan de normas 2 (N1, N2 y N3) y ronda 3 de Windows (2026-11-24): suite MEDIDA, cierre SIN SELLAR
+
+Árbol: `claude/confident-cannon-0vgath` en `07a784e` = `1f56d99` (el `main` sellado del cierre
+anterior) + la auditoría `aeb55c3` y sus cambios (`eb1a934`, `09a4c3f`, `d5a21de` con el trabajo
+`windows` de la CI, `ce334e6`, `60f330a`) + la ronda 3 de Windows (`237dea5`, `98676c2`,
+`9613621`, `35d2536`, `d3de71c`) + N3 (`16a398d`, `a94c0ba`), N2 (`132ae3b`), N1 (`a23e43b`) y
+`07a784e` (dos expectativas que N1 y N2 dejaron atrás, con dictamen de Fable). Entorno: el del
+cierre anterior (Linux en la nube, 4 CPU, Python 3.12.3, Tk 8.6 con `xvfb-run -a`, PyMuPDF 2.1,
+WeasyPrint 69.0, worktree limpio fuera del repositorio, `python3` -> 3.12 al frente del PATH),
+con `NORMAS_DIR` = rama `claude/normas2-integracion` de `Andy-rba30/normas` (`1991bef`: los PDF
+de N1, N2 y N3 en `normas/`). Sello de los documentos generados: PROVISIONAL.
+
+| Suite y árbol | `NORMAS_DIR` | Ventana Tk | `passed` | `skipped` | `failed` |
+|---|---|---|---|---|---|
+| entregable, `a23e43b`, `-n 4 --dist loadfile` (1 h 46 min 45 s) | sí | sí | 9288 | 13 | 4: los 2 de sello y 2 que N1 y N2 dejaron atrás (`test_cierre_varios` R48-001, `test_ui4` c7), corregidos en `07a784e` |
+| entregable, `a23e43b`, paso `-m aislado` | sí | sí | 1 | 0 | 0 |
+| entregable, `07a784e`, `-n 4 --dist loadfile` (13:46 a 15:37 UTC, 1 h 50 min 53 s) | sí | sí | 9290 | 13 | 2: los 2 de sello (fallan por diseño con el sello PROVISIONAL) |
+| entregable, `07a784e`, paso `-m aislado` (15:37 UTC, justo después) | sí | sí | 0 | 0 | **1**: `test_pc10_import_cli_cabe_en_el_presupuesto_sin_weasyprint`, 0.313 s de CPU (mínimo de 7) contra 0.3 s |
+| entregable, `07a784e`, paso `-m aislado` repetido (15:40 UTC) | sí | sí | 0 | 0 | **1**: el mismo test (no se guardó el valor medido) |
+| entregable, `1f56d99` (`main`), paso `-m aislado` (15:41 UTC), como contraste | sí | sí | 1 | 0 | 0 |
+| proceso (`python -m pytest proceso/tests`), `07a784e` | sí | — | 145 | 0 | 0 |
+
+**No hay par del sello.** El paso aislado falló dos veces sobre `07a784e`, y el dictamen de
+Fable (2026-11-24) RECHAZA repetirlo hasta que pase: con dos fallas medidas, una tercera
+corrida sería parada opcional, y el test hace su trabajo, que es avisar de que el import creció
+hasta agotar el presupuesto. El precedente de VE-2 no vale: allí la falla vino con carga
+concurrente declarada y un margen de al menos el 10 %; hoy la máquina está en reposo. El cierre
+queda sin sellar hasta que el dueño decida (`main` sigue en `1f56d99`).
+
+Lo medido para esa decisión, todo en esta máquina y en reposo, con el programa del test
+(`time.process_time()` alrededor de `import cli`, weasyprint anulado, subproceso nuevo):
+
+- 50 muestras sueltas por árbol, intercaladas y en orden aleatorio: `1f56d99` (`main`) mínimo
+  0.2870 s, p10 0.2906 s y mediana 0.3226 s; `07a784e` mínimo 0.2879 s, p10 0.2965 s y mediana
+  0.3292 s; `4d31f68` (VE-2, cuando esta bitácora anotó 0.26-0.27 s) mínimo 0.2416 s y mediana
+  0.2722 s. Este cierre suma entre 1 y 6 ms (≈2 %) sobre `main`. Desde VE-2 el import creció
+  ≈19 %, y el margen que queda es del 3 al 5 % en los dos árboles.
+- Tasa de aprobado del estadístico del test (mínimo de 7), 10 ensayos: hacia las 15:45 UTC,
+  `07a784e` 2/10 (de 0.298 a 0.312 s); hacia las 15:50 UTC, `main` 9/10 (de 0.278 a 0.300 s) y
+  `07a784e` 10/10 (de 0.283 a 0.298 s). La máquina deriva en escala de minutos: con este margen,
+  el verde o el rojo lo decide el momento y no el árbol. `main` comparte el margen.
+- Dónde se va el tiempo (cProfile del import): ≈60 % es crear las 229 dataclasses del proyecto
+  (`dataclasses._process_class`); `-X importtime` pone arriba `src.normativa.esquema`,
+  `src.modelos.cabezal`, `src.modelos.hidraulica` y `src.modelos.proyecto`.
+- La CI de `07a784e` (run 45406842567) no corrió el paso aislado: lo salta cuando la rápida
+  falla, y la rápida falla por el sello PROVISIONAL (`1 failed, 8821 passed, 175 skipped`).
+
+Vías para el dueño (cualquiera menos la cuarta exige una suite completa nueva y su par medido,
+H1): subir el presupuesto; reducir el coste del import con importaciones perezosas (toca el
+contrato de reexportación de `cli.py`); medir con más corridas (Fable lo desaconseja: el mínimo
+ya converge a ≈0.288 s y sólo taparía el síntoma); o, sólo con autorización expresa suya, sellar
+este árbol con la falla declarada como hallazgo abierto con ficha.
+
+**Windows.** La CI (`windows-latest`, Python 3.13, sin `NORMAS_DIR`) corrió la suite rápida sobre
+`d3de71c` (run 45361886119): `1 failed` (el sello), `8782 passed, 185 skipped`. La suite completa
+de la ronda 3 en la máquina del dueño sigue pendiente.
