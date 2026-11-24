@@ -316,10 +316,16 @@ def test_la_ley_29338_y_su_reglamento_son_dos_fuentes_presentes(reg):
     assert rlrh.sha1 == "68fa38ad900a01e2d51384899374ea84fe0272c1"
     assert rlrh.paginas_pdf == 83 and rlrh.paginacion == Corrida(desfase=0)
     assert rlrh.resolucion == "DS 001-2010-AG"
-    for cita_id in ("LEY_29338.6", "LEY_29338.7", "LEY_29338.74"):
+    for cita_id in ("LEY_29338.6", "LEY_29338.7", "LEY_29338.74",
+                    "LEY_29338.104"):
         c = reg.cita(cita_id)
         assert c.verificado is None and c.pagina_impresa == "s/n", cita_id
         assert "SIN FIRMA A PROPOSITO" in c.nota, cita_id
+    # Dictamen de Fable: la exigencia de autorizar la obra se apoya en el
+    # art. 104 («pública o privada») y en el 277 b, no solo en el art. 7.
+    obra = reg.cita("LEY_29338.104")
+    assert "pública o privada" in obra.texto_literal.texto
+    assert obra.caracter is Caracter.EXIGENCIA and obra.pagina_pdf == 35
     assert "El Reglamento determina su extensión" in \
         reg.cita("LEY_29338.74").texto_literal.texto
     dimensiones = reg.cita("REG_LEY_29338.113.2")
@@ -357,9 +363,15 @@ def test_la_faja_marginal_no_se_evalua_por_falta_del_dato_y_no_de_la_ley(reg):
     for fid in ("F5.V5", "F5.V5_PERFIL"):
         f = F.FUNDAMENTOS[fid]
         assert "faja marginal no se evalua" in f.por_que, fid
-        for cita_id in ("LEY_29338.74", "REG_LEY_29338.113.2",
+        for cita_id in ("LEY_29338.74", "LEY_29338.104", "REG_LEY_29338.113.2",
                         "REG_LEY_29338.114", "RNGIV.32", "RNGIV.35"):
             assert cita_id in f.citas, (fid, cita_id)
+        assert "R.J. 332-2016-ANA" in f.por_que, fid
+    # Las dos remisiones que terminan fuera de normas/, censadas como falta.
+    for id_ in ("RJ_332_2016_ANA", "RM_660_2008_MTC"):
+        assert id_ in fu.FUENTES_AUSENTES, id_
+    assert "300-2011-ANA" in fu.FUENTES_AUSENTES["RJ_332_2016_ANA"].nota
+    assert "RNGIV.2" in fu.FUENTES_AUSENTES["RM_660_2008_MTC"].ausencia.por_que_se_cita
 
 
 def test_las_normas_de_cajon_prefabricado_estan_censadas_como_ausentes():

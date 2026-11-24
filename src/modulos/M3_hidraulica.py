@@ -497,6 +497,13 @@ def resolver_manning(seccion: Seccion, Q: float, S: float, material: Material
 # LOS TRES PASOS DE LA HOJA DE RUTA, tal como los escribe (Sec. 1.3):
 #
 #   1. Obtener Q de diseño del receptor (ANA / Junta de Usuarios)     [N]
+#      -> DISCREPANCIA CON LA FUENTE PRIMARIA (N2 del plan 12, ficha
+#      N2L-03): la fila de la Sec. 1.2 rotula este dato «[N] Ley 29338», y
+#      la Ley 29338 no fija caudales (en sus 49 hojas «caudal» aparece cuatro
+#      veces: los caudales ecologicos del art. 53, el del art. 59 y dos
+#      concordancias; ninguna cifra). Es un dato de SITIO [S] que fija la ANA
+#      o la Junta de Usuarios para ESTE receptor. La hoja de ruta sigue con
+#      la etiqueta «[N]» mientras no se corrija.
 #   2. Manning en la seccion del receptor con ese Q y su pendiente ->
 #      tirante normal -> cota de agua                                 [N]
 #   3. Sin caudal documentado: dos escenarios acotados (salida libre /

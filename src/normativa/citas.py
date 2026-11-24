@@ -17639,12 +17639,14 @@ LEY_29338_7 = _cita(
           "esta señalados en el numeral 1 del artículo 6» (cita LEY_29338.6: "
           "los cauces y las fajas marginales). ES UN TRAMITE, NO UNA "
           "CONDICION DE CALCULO: el programa no lo verifica ni lo puede "
-          "verificar. Y el sujeto es «los particulares»: si una alcantarilla "
-          "de la autoridad vial cae en el, o en la aprobacion de obras en "
-          "cauces del art. 104 (PDF 35), es lectura juridica que el registro "
-          "no hace; el Reglamento tipifica como infraccion las obras de "
-          "cualquier tipo sin autorizacion, sin distinguir quien las hace "
-          "(REG_LEY_29338.277.b)."),
+          "verificar. LA FRASE DE «LOS PARTICULARES» NO ES EL UNICO APOYO "
+          "(dictamen de Fable sobre N2): el art. 104 (PDF 35, cita "
+          "LEY_29338.104) hace aprobar las obras de infraestructura «pública "
+          "o privada» que se proyecten en los cauces, y el Reglamento "
+          "tipifica como infraccion las obras de cualquier tipo sin "
+          "autorizacion, sin distinguir quien las hace (REG_LEY_29338.277.b). "
+          "El registro apoya la exigencia de autorizacion en esas dos; este "
+          "art. 7 queda como lo que define el dominio publico hidraulico."),
 )
 
 LEY_29338_74 = _cita(
@@ -17674,7 +17676,43 @@ LEY_29338_74 = _cita(
           "cada cuerpo de agua (REG_LEY_29338.113.2). La concordancia que la "
           "pagina imprime debajo es la R.J. 300-2011-ANA (Reglamento para la "
           "Delimitacion y Mantenimiento de Fajas Marginales), que no esta en "
-          "normas/."),
+          "normas/ y esta derogada por la R.J. 332-2016-ANA segun los "
+          "resultados de busqueda; la Ley nombra esta ultima en la PDF 46; "
+          "fuente ausente RJ_332_2016_ANA."),
+)
+
+LEY_29338_104 = _cita(
+    id="LEY_29338.104",
+    fuente_id="LEY_29338",
+    numeral="Art. 104",
+    titulo_numeral="Aprobación de obras de infraestructura hidráulica",
+    pagina_impresa="s/n",
+    pagina_pdf=35,
+    jerarquia_numeral=("INFRAESTRUCTURA HIDRÁULICA",),
+    texto_literal=Verbatim(
+        texto=("La Autoridad Nacional, en concordancia con el Consejo de "
+               "Cuenca, aprueba la ejecución de obras de infraestructura "
+               "pública o privada que se proyecten en los cauces y cuerpos de "
+               "agua naturales y artificiales, así como en los bienes "
+               "asociados al agua correspondiente"),
+        pagina_pdf=35),
+    # EXIGENCIA: la obra en un cauce se aprueba antes de ejecutarse; el
+    # sujeto es la obra («pública o privada»), no quien la promueve.
+    caracter=Caracter.EXIGENCIA,
+    verificada=False,
+    nota=(_NOTA_SIN_FIRMA_LEY
+          + "Agregada por el dictamen de Fable sobre N2: es, con el art. 277 "
+          "b del Reglamento, el apoyo de la exigencia de autorizar una obra "
+          "en un cauce, porque dice «pública o privada» y no «los "
+          "particulares» como el art. 7. EL LITERAL TERMINA SIN EL PUNTO A "
+          "PROPOSITO: la capa de texto entrega «correspondiente .», con un "
+          "espacio antes del punto que la pagina renderizada no muestra, y "
+          "la frase se corta en «correspondiente» para no transcribir el "
+          "artefacto ni escribir una cadena que T2 no encontraria. Sigue en "
+          "el mismo articulo: «En el caso de grandes obras hidráulicas y de "
+          "trasvase entre cuencas, la Autoridad Nacional aprueba su "
+          "ejecución.» ES UN TRAMITE DEL EXPEDIENTE, no una verificacion del "
+          "calculo."),
 )
 
 REG_LEY_29338_113_1 = _cita(
@@ -17729,8 +17767,15 @@ REG_LEY_29338_113_2 = _cita(
           "del art. 114 (cita REG_LEY_29338.114), y no tienen cifra. El ancho "
           "de la faja de ESTE cauce es por eso un dato de sitio que sale de "
           "la resolucion de delimitacion de la autoridad, y no es entrada del "
-          "programa (ficha N2L-01). La concordancia que la pagina imprime es "
-          "la R.J. 300-2011-ANA, que no esta en normas/."),
+          "programa (ficha N2L-01). ESO VALE PARA EL CAUCE NATURAL, que es el "
+          "de V5: en los cauces ARTIFICIALES, el art. 116 (titulo en la pag. "
+          "37, texto en la 38) dice que «Los estudios de las obras de "
+          "infraestructura hidráulica mayor definirán las dimensiones de las "
+          "fajas marginales correspondientes». La concordancia que la pagina "
+          "imprime es la R.J. 300-2011-ANA, que no esta en normas/ y esta "
+          "derogada por la R.J. 332-2016-ANA segun los resultados de "
+          "busqueda; la Ley nombra esta ultima en la PDF 46; fuente ausente "
+          "RJ_332_2016_ANA."),
 )
 
 REG_LEY_29338_114 = _cita(

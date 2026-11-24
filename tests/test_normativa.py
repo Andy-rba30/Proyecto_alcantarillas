@@ -653,6 +653,8 @@ CITAS_SIN_FIRMA_A_PROPOSITO = (
     "LEY_29338.6",
     "LEY_29338.7",
     "LEY_29338.74",
+    # Dictamen de Fable sobre N2: el art. 104 («pública o privada»).
+    "LEY_29338.104",
     # --- VE-7, lote C (C1) y A11 --- la SEGUNDA razon (la fuente SI tiene
     # paginacion medida, pero la sesion que dio de alta la cita no tenia
     # `NORMAS_DIR`) tuvo un solo caso, `E060.22.10.2.2#VOLADIZO`, y CADUCO:

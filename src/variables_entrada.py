@@ -750,6 +750,15 @@ _COLUMNAS: Dict[str, _Columna] = {
                         "vacia y la fila se carga marcada",
             dominio="m3/s >= 0",
         ),
+        # --- N2 del plan 12 (ficha N2L-03) --- la discrepancia con la hoja
+        # de ruta, declarada en el punto de uso.
+        nota="Dato de sitio [S] que fija la ANA o la Junta de Usuarios para "
+             "este receptor, no un [N]. La hoja de ruta v8 (Sec. 1.2, fila "
+             "«Q de diseño del receptor») lo rotula «[N] Ley 29338», y la "
+             "Ley 29338 no fija caudales: en sus 49 hojas «caudal» aparece "
+             "cuatro veces (los caudales ecologicos del art. 53, el del art. "
+             "59 y dos concordancias) y nunca con una cifra. La hoja de ruta "
+             "sigue con esa etiqueta mientras no se corrija (ficha N2L-03)",
     ),
 
     "cota_TW": _Columna(

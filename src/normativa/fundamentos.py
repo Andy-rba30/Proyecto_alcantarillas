@@ -3877,12 +3877,15 @@ _POR_QUE_FAJA_MARGINAL_V5 = (
     "exige autorizacion previa de la autoridad del agua, que es un tramite "
     "del expediente y no una verificacion, y el ancho de la faja no lo fija "
     "la ley ni su reglamento sino esa autoridad para cada cuerpo de agua, "
-    "con criterios sin cifra. El de este cauce es un dato de sitio que el "
-    "programa no recibe, y por eso la faja marginal no se evalua.")
+    "con los criterios del art. 114 de su Reglamento, que no tienen cifra, "
+    "y con el reglamento de delimitacion de la propia autoridad (R.J. "
+    "332-2016-ANA), que no esta en normas/ y no se leyo. El de este cauce "
+    "es un dato de sitio que el programa no recibe, y por eso la faja "
+    "marginal no se evalua.")
 _CITAS_MARCO_LEGAL_V5 = (
     "RNGIV.35", "RNGIV.32", "LEY_29338.6", "LEY_29338.7", "LEY_29338.74",
-    "REG_LEY_29338.113.1", "REG_LEY_29338.113.2", "REG_LEY_29338.114",
-    "REG_LEY_29338.277.b")
+    "LEY_29338.104", "REG_LEY_29338.113.1", "REG_LEY_29338.113.2",
+    "REG_LEY_29338.114", "REG_LEY_29338.277.b")
 
 V5_REMANSO = _fundamento(
     id="F5.V5",

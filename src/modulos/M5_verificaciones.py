@@ -2838,7 +2838,9 @@ def v5_remanso(*, punto: PuntoCritico,
                 + " La faja marginal no se evalua: su ancho no lo fija la "
                 "Ley 29338 (art. 74) ni su Reglamento (art. 113.2), sino la "
                 "Autoridad Administrativa del Agua para cada cuerpo de agua, "
-                "y el de este cauce no es dato de entrada del programa.")),
+                "y el de este cauce no es dato de entrada del programa. La "
+                "autorizacion de la obra ante la autoridad del agua es un "
+                "tramite del expediente que este programa no acredita.")),
     )
 
 
@@ -3200,7 +3202,9 @@ def _v5_perfil_de_remanso(*, punto: PuntoCritico,
                 "se evalua: su ancho no lo fija la Ley 29338 (art. 74) ni su "
                 "Reglamento (art. 113.2), sino la Autoridad Administrativa "
                 "del Agua para cada cuerpo de agua, y el de este cauce no es "
-                "dato de entrada del programa.")),
+                "dato de entrada del programa. La autorizacion de la obra "
+                "ante la autoridad del agua es un tramite del expediente que "
+                "este programa no acredita.")),
     )
 
 

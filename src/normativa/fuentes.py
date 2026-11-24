@@ -23,8 +23,10 @@ N2 DEL PLAN 12 (2026-11-24, «marco legal»; no es el N2 de arriba) sumo
 TRES presentes y resto DOS ausentes: la Ley 29338 (`LEY_29338`, que hasta
 entonces era una ausente que decia «y su reglamento»), su Reglamento como
 Fuente PROPIA (`REG_LEY_29338`, DS 001-2010-AG: otro documento y otro acto)
-y el RNGIV (`RNGIV`, DS 034-2008-MTC). Con eso las presentes son veintitres
-y las ausentes diez; los conteos de arriba son los de cada sesion.
+y el RNGIV (`RNGIV`, DS 034-2008-MTC); y el dictamen de Fable sobre N2 sumo
+DOS ausentes, las remisiones del marco legal que terminan fuera de normas/
+(`RJ_332_2016_ANA`, `RM_660_2008_MTC`). Con eso las presentes son veintitres
+y las ausentes doce; los conteos de arriba son los de cada sesion.
 
 TODOS LOS SHA-1 Y TODAS LAS PAGINACIONES DE ESTE ARCHIVO ESTAN MEDIDOS, no
 supuestos. El procedimiento, para que se pueda repetir:
@@ -201,7 +203,7 @@ VIGENCIA_COMO_T0 = (
 # en `edicion_posterior`: una norma modificada no abre una ELECCION de
 # edicion para el proyectista (rige el texto vigente), que es lo que
 # POSTERIOR dispararia en `fuentes_con_eleccion_de_edicion_pendiente`. Es
-# una lectura del esquema que se declara (ficha N2L-01).
+# una lectura del esquema que se declara (ficha N2L-02).
 VIGENCIA_COMO_MARCO_LEGAL = (
     "lectura del propio ejemplar (las notas de modificacion y las "
     "concordancias que la compilacion imprime) y busqueda web (WebSearch) "
@@ -1370,15 +1372,20 @@ LEY_29338 = Fuente(
         "5, 25 dos, 26, 44 y 46 dos), las de las PDF 26, 44 y 46 en "
         "concordancias que nombran los reglamentos de delimitacion de la "
         "ANA (R.J. 300-2011-ANA y R.J. 332-2016-ANA), que NO estan en "
-        "normas/. AUTORIZACION: el art. 7 (PDF 5) exige autorizacion previa "
+        "normas/; la R.J. 300-2011-ANA, que es la que la concordancia del "
+        "art. 74 imprime, esta derogada por la R.J. 332-2016-ANA segun los "
+        "resultados de busqueda; la Ley nombra esta ultima en la PDF 46; "
+        "fuente ausente RJ_332_2016_ANA. AUTORIZACION: el art. 7 (PDF 5) "
+        "exige autorizacion previa "
         "de la Autoridad Administrativa del Agua para toda intervencion «de "
         "los particulares» que altere un bien de dominio publico hidraulico, "
         "y el art. 104 (PDF 35) atribuye a la Autoridad Nacional la "
         "aprobacion de las obras de infraestructura publica o privada que se "
-        "proyecten en los cauces. Que una alcantarilla vial de una entidad "
-        "publica sea «intervencion de los particulares» o «obra de "
-        "infraestructura» en ese sentido es lectura juridica que el "
-        "registro no hace (ficha N2L-01). "
+        "proyecten en los cauces. El registro apoya la exigencia de "
+        "autorizar una obra en un cauce en el art. 104, que dice «pública o "
+        "privada» (cita LEY_29338.104), y en el art. 277 b del Reglamento, "
+        "que no distingue quien la hace; el art. 7 queda como lo que define "
+        "el dominio publico hidraulico (dictamen de Fable sobre N2). "
         "VIGENCIA (N2 del plan 12): la compilacion trae notas hasta "
         "diciembre de 2025 y los arts. 6, 7 y 74 no llevan nota de "
         "modificacion; la ley sigue siendo la base de las resoluciones de la "
@@ -1437,8 +1444,11 @@ REG_LEY_29338 = Fuente(
         "remite a «los criterios establecidos en el Reglamento» y la "
         "concordancia que la pagina 37 imprime es la R.J. 300-2011-ANA "
         "(Reglamento para la Delimitacion y Mantenimiento de Fajas "
-        "Marginales), que no esta en normas/: si ese reglamento de la ANA "
-        "fija anchos minimos no se verifico. "
+        "Marginales), que no esta en normas/ y esta derogada por la R.J. "
+        "332-2016-ANA segun los resultados de busqueda; la Ley nombra esta "
+        "ultima en la PDF 46; fuente ausente RJ_332_2016_ANA. Si ese "
+        "reglamento de la ANA fija anchos minimos no se verifico (segun los "
+        "resultados, su art. 12; no leido). "
         "VIGENCIA (N2 del plan 12): no se encontro modificacion de los "
         "arts. 113 ni 114 en los resultados, y una resolucion del Tribunal "
         "Nacional de Resolucion de Controversias Hidricas de 2025 aplica el "
@@ -1474,12 +1484,21 @@ RNGIV = Fuente(
         estado=VIGENCIA_CONFIRMADA, fecha=VIGENCIA_VERIFICADA_EL_MARCO_LEGAL,
         como=VIGENCIA_COMO_MARCO_LEGAL,
         acto_aprobatorio="DS 034-2008-MTC",
+        # --- Dictamen de Fable sobre N2 --- la reserva tiene que verse en el
+        # manifiesto, que no imprime `pendiente_gabinete`: va en su campo.
+        modificatorias_posteriores=(
+            "DS 021-2016-MTC (arts. 10 y 12 a 16) y DS 015-2024-MTC (lit. c "
+            "del 4.2 y lit. c del 11.2), no leídos"),
         pendiente_gabinete=(
             "leer en El Peruano el DS 021-2016-MTC (que segun los resultados "
             "modifica los arts. 10 y 12 a 16) y el DS 015-2024-MTC (que "
             "modifica el literal c del num. 4.2 del art. 4 y el literal c "
             "del num. 11.2 del art. 11), posteriores a esta compilacion, y "
-            "confirmar que los arts. 2, 32 y 35 no cambiaron")),
+            "confirmar que los arts. 2, 32 y 35 no cambiaron; y la Ley 32598 "
+            "(publicada en El Peruano el 16-05-2026 segun los resultados; "
+            "modifica la Ley 27181), sobre las autoridades competentes en la "
+            "jerarquizacion vial, que aparece en los resultados y no se "
+            "leyo")),
     nota=(
         "ENTRO A normas/ EN N2 DEL PLAN 12 (2026-11-24); era AUSENTE desde "
         "EXT-6. EL ARCHIVO QUE ESTUVO EN normas/ HASTA 5196dd2 NO ERA ESTE: "
@@ -1506,7 +1525,12 @@ RNGIV = Fuente(
         "VIGENCIA (N2 del plan 12): el decreto sigue vigente -- el DS "
         "015-2024-MTC lo modifica en 2024 --, y la compilacion de 2013 no "
         "recoge el DS 021-2016-MTC ni el DS 015-2024-MTC; el segundo toca el "
-        "literal c) del num. 4.2, que la cita RNGIV.4 por eso no transcribe."),
+        "literal c) del num. 4.2, que la cita RNGIV.4 por eso no transcribe. "
+        "Tampoco se leyo la Ley 32598 (El Peruano, 16-05-2026 segun los "
+        "resultados; modifica la Ley 27181), sobre las autoridades "
+        "competentes en la jerarquizacion vial, que aparece en los "
+        "resultados. La reserva va en `vigencia.modificatorias_posteriores`, "
+        "que el manifiesto imprime (ficha N2L-02)."),
 )
 
 FUENTES: Dict[str, Fuente] = {
@@ -1819,6 +1843,58 @@ AASHTO_M273 = _ausente(
 # 113.2), y la autorizacion de obras en cauces es un tramite (Ley art. 7,
 # Reglamento art. 277 b). V5 sigue sin evaluar la faja marginal, ahora por la
 # razon verdadera: falta el dato de sitio, no la ley (ficha N2L-01).
+
+# --- Dictamen de Fable sobre N2 --- LOS DOS DOCUMENTOS A LOS QUE EL MARCO
+# LEGAL REMITE Y QUE NO ESTAN. Leer la Ley, su Reglamento y el RNGIV hizo
+# aparecer dos remisiones que terminan fuera de normas/: el metodo con que la
+# autoridad del agua fija el ancho de la faja marginal (su reglamento de
+# delimitacion) y la definicion de «derecho de via» (el glosario del MTC al
+# que remite el art. 2 del RNGIV). Se censan como falta, sin transcribir
+# nada de ellos: lo que se sabe de su contenido es de resultados de busqueda,
+# no de su lectura, y asi se dice.
+RJ_332_2016_ANA = _ausente(
+    "RJ_332_2016_ANA",
+    "Reglamento para la Delimitacion y Mantenimiento de Fajas Marginales "
+    "(R.J. 332-2016-ANA)",
+    "ANA — Autoridad Nacional del Agua", "R.J. 332-2016-ANA", 2016,
+    Ausencia(
+        por_que_se_cita=("la Ley 29338 la nombra en sus concordancias (PDF "
+                         "46: «Aprueban el Reglamento para la Delimitación y "
+                         "Mantenimiento de Fajas Marginales»), y es donde la "
+                         "autoridad pone el metodo con que fija el ancho de "
+                         "la faja que el art. 113.2 del Reglamento de la Ley "
+                         "le encarga (cita REG_LEY_29338.113.2)"),
+        que_desbloquearia=("saber si fija anchos minimos por tipo de cauce "
+                           "(segun resultados de busqueda, su art. 12; no "
+                           "leido) y que entiende por delimitar; no mueve "
+                           "ningun calculo actual: V5 no evalua la faja "
+                           "marginal, y el ancho de la de un cauce sigue "
+                           "siendo el de la resolucion de delimitacion de la "
+                           "autoridad"),
+        esfuerzo=Esfuerzo.DESCARGA_PUBLICA,
+        sustituto_vigente=None),
+    nota=("DEROGO LA R.J. 300-2011-ANA (su art. 3, segun resultados de "
+          "busqueda), que es la que imprimen las concordancias del art. 74 de "
+          "la Ley (PDF 25-26) y del art. 113 del Reglamento (pag. 37): esas "
+          "dos concordancias de los ejemplares de normas/ apuntan a una "
+          "resolucion derogada. Los resultados nombran ademas una "
+          "modificatoria, la R.J. 201-2017-ANA, no leida."))
+
+RM_660_2008_MTC = _ausente(
+    "RM_660_2008_MTC",
+    ("Glosario de terminos de uso frecuente en proyectos de infraestructura "
+     "vial (RM 660-2008-MTC/02)"),
+    "MTC", "RM 660-2008-MTC/02", 2008,
+    Ausencia(
+        por_que_se_cita=("es el destino de la remision del art. 2 del RNGIV "
+                         "(cita RNGIV.2): el RNGIV no define sus terminos, y "
+                         "el DG-2018 §304.07.01 remite al RNGIV las "
+                         "«definiciones» del derecho de via"),
+        que_desbloquearia="la definicion de «derecho de via»",
+        esfuerzo=Esfuerzo.DESCARGA_PUBLICA,
+        sustituto_vigente=None),
+    nota=("No consta si fue sustituido por un glosario posterior del MTC; "
+          "no se busco su vigencia."))
 
 SERIES_SENAMHI_ANA = _ausente(
     "SERIES_SENAMHI_ANA", "Series hidrometeorologicas SENAMHI / ANA para la "

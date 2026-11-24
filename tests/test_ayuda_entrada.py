@@ -541,12 +541,15 @@ def test_ninguna_lista_declarada_valida_una_celda_de_texto():
 def test_la_nota_de_una_columna_llega_a_la_ficha():
     """
     `VariableDeEntrada.nota` existia, `reporte_variables` la imprimia, y la
-    ayuda de S22 la descartaba. Dos columnas la llevan hoy; las dos tienen que
-    llegar.
+    ayuda de S22 la descartaba. Tres columnas la llevan hoy; las tres tienen
+    que llegar. La tercera, `Q_receptor_m3s`, es de N2 del plan 12: su nota
+    declara en el punto de uso que el dato es [S] y no el «[N] Ley 29338» de
+    la hoja de ruta (ficha N2L-03).
     """
     con_nota = {f.clave for f in ay.fichas_de_columnas() if f.nota}
     assert con_nota == {c for c in m0.COLUMNAS if ve.variable(c).nota}
-    assert con_nota == {"sucs_fundacion", "NF_profundidad_m"}, (
+    assert con_nota == {"sucs_fundacion", "NF_profundidad_m",
+                        "Q_receptor_m3s"}, (
         "cambio el censo de columnas con nota: revisa que la ayuda las siga "
         "pintando todas")
 
