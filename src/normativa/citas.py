@@ -17936,7 +17936,8 @@ HEC11_4_3_D100 = _cita(
         "Primer criterio del espesor de la capa de enrocado. Con el D100 de "
         "la Tabla 2 (1.5 a 1.7 D50) el mayor de los dos es a lo sumo 1.7·D50, "
         "de modo que el piso de 2·D50 que el proyecto toma de HEC-14 lo "
-        "cumple siempre."),
+        "cumple siempre: es COMPROBACION en el paso 6.5t y no entra en el "
+        "espesor."),
 )
 
 HEC11_4_3_300_MM = _cita(
@@ -17951,11 +17952,36 @@ HEC11_4_3_300_MM = _cita(
         pagina_pdf=48),
     caracter=Caracter.RECOMENDACION,
     verificada=False,
+    interpretacion=Interpretacion(
+        texto=("El piso de 300 mm de la capa de enrocado se aplica POR "
+               "ANALOGIA ([C]) al espesor de la proteccion de salida con el "
+               "receptor sobre la clave, donde la Sec. 10.3 de HEC-14 da la "
+               "piedra y no el espesor: e = max(2·D50, 0.30 m), con el 2·D50 "
+               "que HEC-14 pone a la poza y al apron. El primer criterio de "
+               "la misma Sec. 4.3 (no menos que el D100 ni que 1.5·D50) es "
+               "solo comprobacion: con el D100 en el techo de la fila del "
+               "100 % de la Tabla 2 (1.7·D50) el 2·D50 lo domina."),
+        en_contra=("HEC-14 Sec. 10.1.3 (pag. impresa 10-4) remite a HEC 11 «or "
+                   "the method provided in Section 10.3» para «sizing "
+                   "riprap»: el TAMAÑO de la piedra, como alternativa a la "
+                   "Sec. 10.3, no el espesor de la capa",
+                   "HEC-11 trata el revestimiento de taludes y cauces («bank "
+                   "protection»), no la proteccion a la salida de una "
+                   "alcantarilla",
+                   "el 1.7·D50 del D100 no esta en la Sec. 4.3: es el techo "
+                   "de la fila del 100 % de la Tabla 2 tomado como D100"),
+        a_favor=("la frase lo da como piso CONSTRUCTIVO, «for practical "
+                 "placement», que no depende de que proteja la capa",
+                 "los dos ejemplos de HEC-11 toman T = 2·D50 para la capa "
+                 "(paso 10, PDF 65 y 80), el mismo multiplo que el proyecto "
+                 "toma de HEC-14")),
     nota=_SIN_FOLIO_HEC11 + (
         "Segundo criterio: el piso absoluto de la capa de enrocado, "
-        "`HEC11_ENROCADO_ESPESOR_MIN_M` [C]. Rige el espesor de la proteccion "
-        "con el receptor alto (`M6.proteccion_tw_alto_hec14`), donde HEC-14 "
-        "remite a HEC 11 el tamaño de la piedra (HEC14.10.1.3#FIGURA_10_3)."),
+        "`HEC11_ENROCADO_ESPESOR_MIN_M` [C] aplicado por analogia (dictamen "
+        "del consultor, 2026-11-24). Rige el espesor de la proteccion con el "
+        "receptor alto (`M6.proteccion_tw_alto_hec14`), donde HEC-14 remite "
+        "a HEC 11 el tamaño de la piedra (HEC14.10.1.3#FIGURA_10_3), y no se "
+        "extiende al apron, a la poza ni a la regla manual."),
 )
 
 HEC11_4_3_BAJO_AGUA = _cita(
@@ -17974,8 +18000,9 @@ HEC11_4_3_BAJO_AGUA = _cita(
     verificada=False,
     nota=_SIN_FOLIO_HEC11 + (
         "Depende de COMO se coloca la piedra --bajo agua o en seco--, que es "
-        "una condicion de obra que el programa no conoce: no se aplica y el "
-        "paso del receptor alto lo dice."),
+        "una condicion de obra que el programa no conoce: no se aplica. Con "
+        "el receptor sobre la clave esa colocacion es probable, y la Fase 6 "
+        "lo AVISA en el punto con esta frase."),
 )
 
 CITAS: Dict[str, Cita] = {c.id: c for c in _TODAS}

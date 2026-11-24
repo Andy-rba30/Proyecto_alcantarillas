@@ -5071,8 +5071,12 @@ HEC11_PERCENTIL_D15 = 15.0
 HEC11_PERCENTIL_D100 = 100.0
 # Sec. 4.3, «Layer Thickness» (PDF 48): no menos que el D100, ni que 1.5·D50,
 # «whichever results in the greater thickness», ni que 300 mm «for practical
-# placement». (El +50 % bajo agua depende de la colocacion y no se aplica:
-# nota de la cita HEC11.4.3#BAJO_AGUA.)
+# placement». El 1.5 es solo COMPROBACION en el paso 6.5t (el 2·D50 de HEC-14
+# lo domina). El 0.300 es [C] APLICADO POR ANALOGIA al espesor de la
+# proteccion con el receptor alto (dictamen del consultor, 2026-11-24): HEC-14
+# remite a HEC 11 el tamaño de la piedra, no el espesor, y HEC-11 trata
+# taludes; `Interpretacion` de la cita HEC11.4.3#300_MM. (El +50 % bajo agua
+# depende de la colocacion y no se aplica: se avisa, cita HEC11.4.3#BAJO_AGUA.)
 HEC11_ENROCADO_ESPESOR_EN_D50 = 1.5
 HEC11_ENROCADO_ESPESOR_MIN_M = 0.300
 
