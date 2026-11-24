@@ -24,8 +24,10 @@ from src import servicio
 from src.constantes_normativas import (
     HEC11_FILTRO_ESPESOR_UNA_CAPA_M, HEC11_FILTRO_ESPESOR_VARIAS_CAPAS_M,
     HEC11_FILTRO_PASA_200_MAX_PCT, HEC11_TABLA_2)
+from src import criterios_adoptados as ca
 from src.modelos import (
-    DatoInvalidoError, Magnitud, MaterialLecho, TipoDeVeredicto)
+    DatoFaltanteError, DatoInvalidoError, Magnitud, MaterialLecho,
+    TipoDeVeredicto)
 from src.modulos import M6_proteccion as M6
 from src.normativa import registro as _registro
 
@@ -175,6 +177,27 @@ def test_si_una_capa_no_basta_se_avisa_con_la_frase_de_la_fuente():
     assert "dos o mas capas" in g.texto
 
 
+def test_con_un_lecho_cohesivo_no_hay_ventana_y_se_avisa_el_geotextil():
+    """
+    Dictamen del consultor: HEC-11 Sec. 4.4 pide el filtro «on noncohesive
+    material»; con un lecho cohesivo la Ec. (14) queda fuera del marco de la
+    fuente, los pasos salen como informacion, la via es el geotextil y no se
+    dice que hagan falta varias capas aunque la ventana quede vacia.
+    """
+    f = M6.requisito_de_filtro(D85_suelo=0.0013, D15_suelo=0.00014,
+                               d50_enrocado=0.55, tipo_lecho="cohesivo")
+    g = f.granular
+    assert g.una_capa_basta is None and g.D15_filtro_hasta is None
+    assert [p.codigo for p in g.pasos] == ["6.7f", "6.7g"]
+    assert "COHESIVO" in g.texto and "geotextil" in g.texto
+    assert "dos o mas capas" not in g.texto
+    assert M6.CITA_VARIAS_CAPAS not in g.citas
+    assert "HEC11.4.4#CUANDO" in g.citas
+    literal = _registro.construir().cita("HEC11.4.4#CUANDO").texto_literal.texto
+    assert any(literal in a for a in f.avisos)
+    assert not any("must be used" in a for a in f.avisos)
+
+
 def test_el_geotextil_lleva_cama_de_grava_con_una_piedra_mayor_que_091_m():
     con = M6.requisito_de_filtro(d50_enrocado=1.0)
     assert con.cama_de_grava_bajo_geotextil is True
@@ -211,8 +234,31 @@ def test_D85_y_D15_entran_sin_tipo_y_juntos():
     d = servicio._material_lecho_externo({"D85_m": 0.032, "D15_m": 0.001},
                                          "test")
     assert d.valor == MaterialLecho(D85_m=0.032, D15_m=0.001)
-    with pytest.raises(DatoInvalidoError):
-        servicio._material_lecho_externo({"D85_m": 0.032}, "test")
+
+
+@pytest.mark.parametrize("uno, falta", [({"D85_m": 0.032}, "D15_m"),
+                                        ({"D15_m": 0.001}, "D85_m")])
+def test_uno_sin_el_otro_es_dato_faltante_del_otro(uno, falta):
+    """Dictamen del consultor: si el revisor tiene que AÑADIR, es Faltante."""
+    with pytest.raises(DatoFaltanteError) as e:
+        servicio._material_lecho_externo(uno, "test")
+    assert e.value.campo == f"material_lecho_salida.{falta}"
+
+
+def test_el_D85_tiene_techo_de_transcripcion_opt_in():
+    """Dictamen del consultor: el D85 en metros escrito en milimetros."""
+    assert ("D85_m", "material_lecho_salida", "m") in \
+        M6.DATOS_CON_TECHO_DE_TRANSCRIPCION
+    lecho = MaterialLecho(D85_m=32.0, D15_m=1.0)
+    dato = {"material_lecho_salida": lecho}.get
+    assert M6.avisos_de_transcripcion(dato) == []      # sin declarar: nada
+    ca.establecer_valor_dinamico("techos_de_transcripcion_fase_6",
+                                 {"D85_m": 1.0})
+    try:
+        avisos = M6.avisos_de_transcripcion(dato)
+    finally:
+        ca.quitar_valor_dinamico("techos_de_transcripcion_fase_6")
+    assert len(avisos) == 1 and "material_lecho_salida.D85_m" in avisos[0]
 
 
 @pytest.mark.parametrize("malo", [

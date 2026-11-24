@@ -1330,8 +1330,12 @@ class ProteccionTWAlto:
     V_admisible: float                    # m/s
     D50: float                            # m - Ec. (10.6) con Vo, en la boca
     longitud: float                       # m - hasta VL = Vallow
-    espesor: float                        # m - 2·D50 (lectura del proyecto)
+    # m - max(2·D50 de HEC-14, lectura del proyecto; 0.30 m de HEC-11 Sec.
+    # 4.3, [C] aplicado por analogia desde N3)
+    espesor: float
     pasos: Tuple["PasoDeMemoria", ...] = ()
+    # --- N3 --- el +50 % bajo agua de HEC-11 Sec. 4.3, que no se aplica.
+    avisos: Tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -1421,7 +1425,9 @@ class FiltroGranularHEC11:
     Sin la granulometria del suelo (D85 y D15, dato del EMS) o sin la piedra
     los numeros quedan en `None` y `texto` dice que falta: no se supone un
     suelo. `una_capa_basta` es False cuando la ventana queda vacia --HEC-11
-    pide entonces mas capas, que el programa no diseña--, y None sin datos.
+    pide entonces mas capas, que el programa no diseña--, y None sin datos o
+    con un lecho COHESIVO, donde la Ec. (14) queda fuera del marco de la
+    fuente y la ventana no se declara (los pasos salen como informacion).
     """
 
     D85_suelo: Optional[float]            # m - dato del EMS

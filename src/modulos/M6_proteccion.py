@@ -1155,21 +1155,26 @@ def proteccion_tw_alto_hec14(*, V: Magnitud, Q_celda: float, TW: float,
         L  = De · (L/De en que VL/Vo = Vallow/Vo)   (Figura 10.3)
         D50 = 0.692/(S - 1)·Vo^2/(2g)               (Ec. 10.6, en la boca)
 
-    El espesor, que la Sec. 10.3 no da: HEC-14 remite el tamaño de la piedra
-    con el receptor alto a HEC 11 o a la Sec. 10.3 (HEC14.10.1.3#FIGURA_10_3),
-    y desde N3 se toma de HEC-11 Sec. 4.3 --no menos que el D100 ni que
-    1.5·D50, «whichever results in the greater thickness», ni que 300 mm--
-    con el D100 en el techo de la Tabla 2 (1.7·D50) y sin bajar del piso de
-    2·D50 que HEC-14 pone al enrocado de la poza y del apron
-    (`HEC14_ESPESOR_MIN_EN_D50`, que era la LECTURA DEL PROYECTO hasta N3):
+    El espesor, que la Sec. 10.3 no da:
 
-        e = max(2·D50, D100 = 1.7·D50, 1.5·D50, 0.30 m)
+        e = max(2·D50, 0.30 m)
 
-    Con el D100 de la Tabla 2 el 2·D50 cubre siempre el primer criterio, y
-    el que puede gobernar es el de 300 mm (D50 < 0.15 m). El +50 % bajo agua
-    de la misma Sec. 4.3 depende de como se coloque la piedra y no se aplica
-    (nota del paso). Sin `V_admisible` no hay longitud: `DatoFaltanteError`
-    del terreno del receptor (la Fase 6 lo avisa).
+    2·D50 es el piso que HEC-14 pone al enrocado de la poza y del apron
+    (`HEC14_ESPESOR_MIN_EN_D50`; LECTURA DEL PROYECTO desde VE-5). Los 0.30 m
+    son el piso de HEC-11 Sec. 4.3, «for practical placement», [C] APLICADO
+    POR ANALOGIA desde N3 (dictamen del consultor del 2026-11-24): HEC-14
+    remite a HEC 11 el TAMAÑO de la piedra con el receptor alto, no el
+    espesor, y HEC-11 trata revestimientos de talud (`Interpretacion` de la
+    cita HEC11.4.3#300_MM). Gobierna con D50 < 0.15 m. El primer criterio de
+    la misma Sec. 4.3 --no menos que el D100 ni que 1.5·D50-- queda como
+    COMPROBACION en la sustitucion del paso: con el D100 en el techo de la
+    fila del 100 % de la Tabla 2 (1.7·D50) el 2·D50 lo domina siempre.
+
+    El +50 % de la Sec. 4.3 para la piedra colocada bajo agua no se aplica
+    --depende de como se coloque, que decide el expediente--, y como con el
+    receptor sobre la clave esa colocacion es probable, sale como AVISO del
+    punto con la frase de la fuente. Sin `V_admisible` no hay longitud:
+    `DatoFaltanteError` del terreno del receptor (la Fase 6 lo avisa).
     """
     _exigir_velocidad(V, "proteccion_tw_alto_hec14")
     _exigir_positivo("Q_celda", Q_celda, "caudal de un barril, m3/s")
@@ -1186,10 +1191,18 @@ def proteccion_tw_alto_hec14(*, V: Magnitud, Q_celda: float, TW: float,
     De = diametro_equivalente(Q_celda / V.valor)
     L = De * distancia_figura_10_3(V_admisible / V.valor)
     D50 = d50_ec_10_6(V=V.valor)
+    espesor = max(HEC14_ESPESOR_MIN_EN_D50 * D50, HEC11_ENROCADO_ESPESOR_MIN_M)
+    # La COMPROBACION del primer criterio de HEC-11 Sec. 4.3, que no entra
+    # en el max: el D100 en el techo de la fila del 100 % de la Tabla 2 y el
+    # 1.5·D50 quedan bajo 2·D50 para todo D50.
     _, d100_en_d50 = _fila_de_la_tabla_2_hec11(HEC11_PERCENTIL_D100)
-    espesor = max(HEC14_ESPESOR_MIN_EN_D50 * D50, d100_en_d50 * D50,
-                  HEC11_ENROCADO_ESPESOR_EN_D50 * D50,
-                  HEC11_ENROCADO_ESPESOR_MIN_M)
+    aviso_bajo_agua = (
+        "Proteccion de salida: con el tirante del receptor sobre la clave la "
+        "piedra se colocara probablemente bajo agua, y HEC-11 Sec. 4.3 pide "
+        "entonces mas espesor: «" + _literal("HEC11.4.3#BAJO_AGUA") + "» El "
+        f"espesor de {espesor:.3f} m NO lleva ese aumento ([C] aplicado por "
+        "analogia, como el piso de 0.30 m): depende de como se coloque la "
+        "piedra, que decide el expediente")
     paso_tw = paso(
         "F6.TW_ALTO",
         codigo="6.5t",
@@ -1197,7 +1210,7 @@ def proteccion_tw_alto_hec14(*, V: Magnitud, Q_celda: float, TW: float,
             "clave (Figura 10.3 y Ec. 10.6 de HEC-14)",
         formula="De = (4 A / pi)^0.5;  L = De * (L/De)[VL/Vo = Vallow/Vo];  "
                 "D50 = 0.692 / (S - 1) * Vo^2 / (2 g);  e = max(2 D50, "
-                "D100, 1.5 D50, 0.30 m)",
+                "0.30 m)",
         formula_cita_id="HEC14.10.1.3#FIGURA_10_3",
         citas_textuales=("HEC14.10.2#TW_ALTO", "HEC14.10.1.3#FIGURA_10_3",
                          "HEC14.10.3#EC_10_6", "HEC14.10.1#HASTA_VALLOW",
@@ -1217,7 +1230,20 @@ def proteccion_tw_alto_hec14(*, V: Magnitud, Q_celda: float, TW: float,
                      cifras=CIFRAS_FACTOR),
             Magnitud("S", HEC14_APRON_GRAVEDAD_ESPECIFICA_PIEDRA, "-",
                      "gravedad especifica de la piedra, la de la Ec. (10.4)",
-                     cifras=CIFRAS_FACTOR)),
+                     cifras=CIFRAS_FACTOR),
+            Magnitud("2 D50", HEC14_ESPESOR_MIN_EN_D50 * D50, "m",
+                     "piso de HEC-14 para la poza y el apron (lectura del "
+                     "proyecto)", cifras=CIFRAS_MAGNITUD),
+            Magnitud("e min", HEC11_ENROCADO_ESPESOR_MIN_M, "m",
+                     "HEC-11 Sec. 4.3, «for practical placement»: [C] "
+                     "aplicado por analogia", cifras=CIFRAS_MAGNITUD),
+            Magnitud("D100 max", d100_en_d50 * D50, "m",
+                     "COMPROBACION, no entra en el max: techo de la fila del "
+                     "100 % de la Tabla 2 de HEC-11, contra el primer "
+                     "criterio de la Sec. 4.3", cifras=CIFRAS_MAGNITUD),
+            Magnitud("1.5 D50", HEC11_ENROCADO_ESPESOR_EN_D50 * D50, "m",
+                     "COMPROBACION, no entra en el max: el otro termino del "
+                     "primer criterio de la Sec. 4.3", cifras=CIFRAS_MAGNITUD)),
         resultado=Magnitud("L", L, "m",
                            f"longitud de la proteccion desde la boca; piedra "
                            f"D50 = {D50:.3f} m en la boca, espesor "
@@ -1227,19 +1253,11 @@ def proteccion_tw_alto_hec14(*, V: Magnitud, Q_celda: float, TW: float,
             explicacion="dimensionamiento [C]: la Figura 10.3 da la "
                         "atenuacion y la proteccion llega hasta VL = Vallow"),
         nota_del_proyecto=(
-            "El espesor, que la Sec. 10.3 no da, sale de HEC-11 Sec. 4.3, a "
-            "la que HEC-14 remite la piedra con el receptor alto: no menos "
-            f"que el D100 ({d100_en_d50:g}·D50, techo de la Tabla 2), que "
-            f"{HEC11_ENROCADO_ESPESOR_EN_D50:g}·D50 ni que "
-            f"{HEC11_ENROCADO_ESPESOR_MIN_M:.2f} m; y no baja del piso de "
-            f"{HEC14_ESPESOR_MIN_EN_D50:g}·D50 que HEC-14 pone al enrocado de "
-            "la poza y del apron (LECTURA DEL PROYECTO). El aumento del 50 % "
-            "de HEC-11 para la piedra colocada bajo agua depende de la "
-            "colocacion, que el programa no conoce: no se aplica. La Figura "
-            "10.3 esta leida por imagen (tolerancia 0.015 en VL/Vo)."))
+            _lecturas("HEC11.4.3#300_MM") + " La Figura 10.3 esta leida por "
+            "imagen (tolerancia 0.015 en VL/Vo)."))
     return ProteccionTWAlto(De=De, Vo=V.valor, V_admisible=V_admisible,
                             D50=D50, longitud=L, espesor=espesor,
-                            pasos=(paso_tw,))
+                            pasos=(paso_tw,), avisos=(aviso_bajo_agua,))
 
 
 # ---------------------------------------------------------------------------
@@ -1804,7 +1822,8 @@ def _texto_granular_sin_datos(faltan: List[str]) -> str:
 
 def filtro_granular_hec11(*, D85_suelo: Optional[float] = None,
                           D15_suelo: Optional[float] = None,
-                          d50_enrocado: Optional[float] = None
+                          d50_enrocado: Optional[float] = None,
+                          tipo_lecho: Optional[str] = None
                           ) -> FiltroGranularHEC11:
     """
     --- N3 --- El filtro GRANULAR bajo el enrocado, por HEC-11 Sec. 4.4.1, a
@@ -1834,6 +1853,13 @@ def filtro_granular_hec11(*, D85_suelo: Optional[float] = None,
     Y siempre: el pasante maximo del material del filtro y el intervalo de
     espesor, con lo que lo mueve dentro (el paralelismo de las curvas, que el
     programa no juzga sin la curva del filtro).
+
+    CON UN LECHO COHESIVO (`tipo_lecho`, dictamen del consultor del
+    2026-11-24) los dos pasos salen igual, como informacion, y se AVISA que
+    la Ec. (14) queda fuera del marco de la fuente --HEC-11 pide el filtro
+    «on noncohesive material» (HEC11.4.4#CUANDO)-- y que la via es el
+    geotextil; con la ventana vacia no se dice que hagan falta varias capas,
+    porque no es la Ec. (14) la que decide.
     """
     una = HEC11_FILTRO_ESPESOR_UNA_CAPA_M
     varias = HEC11_FILTRO_ESPESOR_VARIAS_CAPAS_M
@@ -1939,7 +1965,31 @@ def filtro_granular_hec11(*, D85_suelo: Optional[float] = None,
                 f"({', '.join(incumplidas)}): HEC-11 tambien pide el "
                 "filtro")))
     una_min, una_max = una
-    if basta:
+    cohesivo = tipo_lecho == TIPO_LECHO_COHESIVO
+    if cohesivo:
+        # Fuera del marco de la fuente: la ventana es informacion, no un
+        # requisito, y la via es el geotextil de la Tabla 511-06.
+        resultado_ventana = Magnitud(
+            "D15 filtro",
+            (f"{mayor_que:.4f} a {hasta:.4f}" if basta else "ventana vacia"),
+            "m" if basta else "",
+            "solo informativa: el lecho es cohesivo y la Ec. (14) queda fuera "
+            "del marco de HEC-11")
+        explicacion = ("lecho cohesivo: la Ec. (14) no es el criterio de la "
+                       "fuente para este suelo; la via es el geotextil")
+        texto = ("Si es GRANULAR (HEC-11 Sec. 4.4.1): el lecho declarado es "
+                 "COHESIVO y HEC-11 pide el filtro granular sobre material no "
+                 "cohesivo, de modo que la Ec. (14) queda fuera del marco de "
+                 "la fuente y no se declara una ventana de tamaños; la via es "
+                 "el geotextil de la Tabla 511-06 de EG-2013")
+        avisos: Tuple[str, ...] = (
+            "Filtro granular: el lecho declarado es COHESIVO y HEC-11 Sec. "
+            "4.4 pide el filtro granular para el enrocado «"
+            + _literal("HEC11.4.4#CUANDO") + "» La Ec. (14) queda fuera del "
+            "marco de la fuente: los pasos 6.7f y 6.7g son solo informativos "
+            "y la via es el geotextil de la Tabla 511-06 de EG-2013",)
+        citas_ventana: Tuple[str, ...] = ("HEC11.4.4#CUANDO",)
+    elif basta:
         resultado_ventana = Magnitud(
             "D15 filtro", f"{mayor_que:.4f} a {hasta:.4f}", "m",
             f"ventana de una capa; D85 del filtro desde {d85_desde:.4f} m")
@@ -1955,8 +2005,8 @@ def filtro_granular_hec11(*, D85_suelo: Optional[float] = None,
                  f"N.º 200; espesor de {una_min:.2f} a {una_max:.2f} m, "
                  "hacia el minimo si las curvas del suelo, el filtro y la "
                  "piedra son aproximadamente paralelas")
-        avisos: Tuple[str, ...] = ()
-        citas_ventana: Tuple[str, ...] = ()
+        avisos = ()
+        citas_ventana = ()
     else:
         varias_min, varias_max = varias
         resultado_ventana = Magnitud(
@@ -2004,10 +2054,10 @@ def filtro_granular_hec11(*, D85_suelo: Optional[float] = None,
         D85_suelo=D85_suelo, D15_suelo=D15_suelo, d50_enrocado=d50_enrocado,
         D15_enrocado_min=e_min, D15_enrocado_max=e_max,
         directo_sobre_el_suelo=directo,
-        D15_filtro_mayor_que=mayor_que if basta else None,
-        D15_filtro_hasta=hasta if basta else None,
-        D85_filtro_desde=d85_desde if basta else None,
-        una_capa_basta=basta, texto=texto,
+        D15_filtro_mayor_que=mayor_que if basta and not cohesivo else None,
+        D15_filtro_hasta=hasta if basta and not cohesivo else None,
+        D85_filtro_desde=d85_desde if basta and not cohesivo else None,
+        una_capa_basta=None if cohesivo else basta, texto=texto,
         pasos=(paso_directo, paso_ventana), avisos=avisos,
         **dict(comun, citas=CITAS_DEL_FILTRO_GRANULAR + citas_ventana))
 
@@ -2060,7 +2110,8 @@ def requisito_de_filtro(*, pasa_200_pct: Optional[float] = None,
         pasa_200_pct=pasa_200_pct, indice_plasticidad=indice_plasticidad,
         tipo_lecho=tipo_lecho)
     granular = filtro_granular_hec11(
-        D85_suelo=D85_suelo, D15_suelo=D15_suelo, d50_enrocado=d50_enrocado)
+        D85_suelo=D85_suelo, D15_suelo=D15_suelo, d50_enrocado=d50_enrocado,
+        tipo_lecho=tipo_lecho)
     return _con_el_filtro_granular(geotextil, granular, d50_enrocado)
 
 
@@ -2563,7 +2614,8 @@ def _regla_con_el_tw_alto(*, regla: str, d50_laushey: float,
     """
     --- VE-5 (lote m6) --- La envolvente con la proteccion del TW alto:
     piedra = max(Laushey, Ec. 10.6); espesor = max(k·d50, el del paso 6.5t:
-    2·D50 de la Ec. 10.6 con el piso de 0.30 m de HEC-11 Sec. 4.3);
+    max(2·D50 de la Ec. 10.6, 0.30 m), el piso de HEC-11 Sec. 4.3 [C]
+    aplicado por analogia);
     longitud = max(adoptada, la de la Figura 10.3).
     """
     rige_hec = tw_alto.D50 > d50_laushey + TOL_UMBRAL_NORMATIVO
@@ -2590,8 +2642,8 @@ def _regla_con_el_tw_alto(*, regla: str, d50_laushey: float,
                      f"{mult_espesor:g}) sobre la piedra que rige",
                      cifras=CIFRAS_MAGNITUD),
             Magnitud("e TW alto", tw_alto.espesor, "m",
-                     "paso 6.5t (HEC-11 Sec. 4.3 y piso de HEC-14)",
-                     cifras=CIFRAS_MAGNITUD),
+                     "paso 6.5t: max(2·D50, 0.30 m), el piso de 0.30 m [C] "
+                     "aplicado por analogia", cifras=CIFRAS_MAGNITUD),
             Magnitud("L adoptada", longitud_adoptada, "m",
                      f"criterio '{CRITERIO_LONGITUD}' [A]",
                      cifras=CIFRAS_MAGNITUD),
@@ -3072,6 +3124,7 @@ def proteccion_salida(*, V: Magnitud,
         pasos.extend(apron.pasos)
     if tw_alto is not None:
         pasos.extend(tw_alto.pasos)
+        avisos.extend(tw_alto.avisos)
     if poza is not None:
         pasos.extend(poza.pasos)
         avisos.extend(poza.avisos)
@@ -4251,6 +4304,9 @@ DATOS_CON_TECHO_DE_TRANSCRIPCION: Tuple[Tuple[str, Optional[str], str], ...] = (
     ("profundidad_socavacion_estimada_m", None, "m"),
     ("D84_m", "material_lecho_salida", "m"),
     ("Sv_Pa", "material_lecho_salida", "Pa"),
+    # --- N3 (dictamen del consultor) --- el D85 del filtro granular, con el
+    # mismo riesgo de milimetros escritos como metros que el D84.
+    ("D85_m", "material_lecho_salida", "m"),
 )
 
 

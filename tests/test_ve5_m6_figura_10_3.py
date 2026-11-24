@@ -102,9 +102,10 @@ def test_el_apron_con_el_tw_alto_se_dimensiona_por_la_figura():
     0.798 m; Vallow = 1.0 -> VL/Vo = 0.5 -> L/De = 12 -> L = 9.58 m. D50 =
     0.692/1.65·2.0²/(2·9.81) = 0.0855 m.
 
-    El espesor, desde N3: max(2·D50, D100 = 1.7·D50, 1.5·D50, 0.30 m) de
-    HEC-11 Sec. 4.3 (PDF 48) con el piso de HEC-14; con esta piedra
-    2·D50 = 0.171 m y gobiernan los 300 mm «for practical placement».
+    El espesor, desde N3: max(2·D50, 0.30 m), el piso de HEC-11 Sec. 4.3
+    (PDF 48) [C] aplicado por analogia; con esta piedra 2·D50 = 0.171 m y
+    gobiernan los 300 mm «for practical placement». El +50 % bajo agua no se
+    aplica y se avisa con la frase de la fuente.
     """
     t = M6.proteccion_tw_alto_hec14(V=_V(2.0), Q_celda=1.0, TW=1.2,
                                     V_admisible=1.0)
@@ -117,6 +118,8 @@ def test_el_apron_con_el_tw_alto_se_dimensiona_por_la_figura():
     assert t.espesor == pytest.approx(0.30, rel=REL_FORMULA)
     assert [x.codigo for x in t.pasos] == ["6.5t"]
     assert "HEC11.4.3#300_MM" in t.pasos[0].citas_textuales
+    assert "analogia" in t.pasos[0].nota_del_proyecto.lower()
+    assert len(t.avisos) == 1 and "underwater" in t.avisos[0]
 
 
 def test_con_una_piedra_grande_el_tw_alto_conserva_el_piso_de_2_D50():

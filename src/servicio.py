@@ -1321,12 +1321,16 @@ def _material_lecho_externo(bruto: Any, origen: str) -> DatoDeclarado:
                    f"misma curva granulometrica; origen: {origen}")
     # --- N3 --- D85 y D15 del filtro granular: juntos (la Ec. 14 de HEC-11
     # usa los dos), en orden, y en orden tambien con D84 y D16 si vienen.
+    # Si viene uno solo, lo que hay que hacer es AÑADIR el otro: es
+    # `DatoFaltanteError` con el campo que falta (dictamen del consultor del
+    # 2026-11-24; la regla de CLAUDE.md, «si el revisor tiene que añadir»).
     de_filtro = [c for c in ("D85_m", "D15_m") if c in valores]
     if len(de_filtro) == 1:
-        raise DatoInvalidoError(
-            clave, valor=sorted(bruto),
-            motivo=f"`D85_m` y `D15_m` van juntos (la Ec. 14 de HEC-11 usa "
-                   f"los dos) y vino solo `{de_filtro[0]}`; origen: {origen}")
+        falta = "D15_m" if de_filtro[0] == "D85_m" else "D85_m"
+        raise DatoFaltanteError(
+            f"{clave}.{falta}",
+            detalle=f"`D85_m` y `D15_m` van juntos (la Ec. 14 de HEC-11 usa "
+                    f"los dos) y vino solo `{de_filtro[0]}`; origen: {origen}")
     percentiles = [(c, valores[c]) for c in ("D15_m", "D16_m", "D84_m",
                                              "D85_m") if c in valores]
     for (c_bajo, v_bajo), (c_alto, v_alto) in zip(percentiles,
