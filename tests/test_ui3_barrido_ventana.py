@@ -596,6 +596,46 @@ def test_c_el_comando_es_el_contrato_con_cli_main(pbarr, tmp_path):
     assert args.barrido_fila == "" and args.barrido_nota == ""
 
 
+def test_c_congelada_la_ventana_lanza_el_exe_de_la_cli_y_no_a_si_misma(pbarr, tmp_path,
+                                                                      monkeypatch):
+    """
+    Auditoria del 2026-11-24, hallazgo N2: en el paquete de PyInstaller
+    `sys.executable` es `alcantarillas_gui.exe`, y los dos hijos (PDF y
+    barrido) lo lanzaban como si fuera el interprete de `cli.py`. Congelada,
+    el hijo es `alcantarillas_cli.exe` de la misma carpeta, sin `cli.py`, y
+    el resto de la linea es el mismo contrato con `cli.main`.
+    """
+    from gui import exportacion_pdf as expdf
+    raiz = tmp_path / "proyecto_alcantarillas"
+    gui_exe = raiz / "alcantarillas_gui.exe"
+    assert expdf.lanzador_de_la_cli("py", raiz) == ("py", raiz / "cli.py")
+    assert expdf.lanzador_de_la_cli(None, raiz) == (sys.executable, raiz / "cli.py")
+    monkeypatch.setattr(sys, "frozen", True, raising=False)
+    monkeypatch.setattr(sys, "executable", str(gui_exe))
+    programa, sin_cli = expdf.lanzador_de_la_cli(None, raiz)
+    assert (programa, sin_cli) == (str(raiz / "alcantarillas_cli.exe"), None)
+
+    barrido = pbarr.ProcesoBarrido(sesion={}, clave=CLAVE_DE_LA_GUIA, valores=(1, 2),
+                                   directorio_trabajo=tmp_path / "b", raiz=raiz)
+    pdf = expdf.ProcesoPdf(sesion={}, destino=tmp_path / "m.pdf",
+                           directorio_trabajo=tmp_path / "p", raiz=raiz,
+                           vista=expdf.VISTA_RESUMIDA)
+    for proceso in (barrido, pdf):
+        assert (proceso.interprete, proceso.cli) == (programa, None)
+    comando = pbarr.comando_del_barrido(
+        interprete=programa, cli=None, sesion=tmp_path / "s.json",
+        clave=CLAVE_DE_LA_GUIA, valores=(1, 2), fila="", nota="",
+        json_salida=tmp_path / "b.json")
+    assert comando[0] == programa and "cli.py" not in " ".join(comando)
+    assert cli._parser().parse_args(comando[1:]).sesion == tmp_path / "s.json"
+    comando = expdf.comando_exportar_pdf(
+        interprete=programa, cli=None, sesion=tmp_path / "s.json",
+        destino=tmp_path / "m.pdf", json_aparte=tmp_path / "i.json",
+        vista=expdf.VISTA_RESUMIDA)
+    assert comando[0] == programa and "cli.py" not in " ".join(comando)
+    assert cli._parser().parse_args(comando[1:]).sesion == tmp_path / "s.json"
+
+
 def test_c_la_sesion_del_hijo_es_la_de_la_ventana_sin_corridas_y_con_el_sitio_de_ejecutar(pbarr):
     viva = {"csv": "p.csv", "datos_sitio": "", "corridas": [{"x": 1}], "csv_sha1": "abc",
             "sitio": {"valores": {"PGA_roca_B": {"valor": 9}}},

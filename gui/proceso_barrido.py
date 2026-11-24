@@ -51,7 +51,6 @@ import copy
 import json
 import shutil
 import subprocess
-import sys
 import tempfile
 import time
 from enum import Enum
@@ -61,6 +60,8 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple
 from src import barrido as _barrido
 from src import sesion as _sesion
 from src.modelos import ResultadoDeBarrido
+
+from gui.exportacion_pdf import lanzador_de_la_cli
 
 # Lo que la ventana muestra mientras el hijo trabaja.
 PROGRESO_INICIAL = "lanzando el proceso del barrido"
@@ -112,7 +113,7 @@ def texto_del_barrido(clave: str, valores: Sequence[Any]) -> str:
     return texto
 
 
-def comando_del_barrido(*, interprete: str, cli: Path, sesion: Path, clave: str,
+def comando_del_barrido(*, interprete: str, cli: Optional[Path], sesion: Path, clave: str,
                         valores: Sequence[Any], fila: str, nota: str,
                         json_salida: Path) -> List[str]:
     """
@@ -120,8 +121,10 @@ def comando_del_barrido(*, interprete: str, cli: Path, sesion: Path, clave: str,
     la nota van con `=` pegado, para que una nota que empiece por un guion
     no se lea como otra bandera.
     """
-    comando = [str(interprete), str(cli), "--sesion", str(sesion),
-               "--barrido", texto_del_barrido(clave, valores)]
+    # Sin `cli` (el paquete congelado): el programa ES la CLI
+    # (`exportacion_pdf.lanzador_de_la_cli`).
+    comando = [str(interprete), *([] if cli is None else [str(cli)]),
+               "--sesion", str(sesion), "--barrido", texto_del_barrido(clave, valores)]
     if fila:
         comando.append(f"--barrido-fila={fila}")
     if nota:
@@ -187,8 +190,8 @@ class ProcesoBarrido:
         self.nota = nota
         self.directorio_trabajo = (Path(directorio_trabajo) if directorio_trabajo
                                    else Path(tempfile.mkdtemp(prefix="alcantarillas_barrido_")))
-        self.interprete = interprete or sys.executable
         self.raiz = Path(raiz) if raiz is not None else Path(__file__).resolve().parents[1]
+        self.interprete, self.cli = lanzador_de_la_cli(interprete, self.raiz)
         self.cwd = Path(cwd) if cwd is not None else Path.cwd()
         self.ruta_sesion = self.directorio_trabajo / "sesion_para_el_barrido.json"
         self.ruta_json = self.directorio_trabajo / "barrido.json"
@@ -211,7 +214,7 @@ class ProcesoBarrido:
         # Escritura atomica (E04): el hijo nunca lee una sesion a medias.
         _sesion.escribir_json_atomico(self.ruta_sesion, self.sesion)
         self.comando = comando_del_barrido(
-            interprete=self.interprete, cli=self.raiz / "cli.py",
+            interprete=self.interprete, cli=self.cli,
             sesion=self.ruta_sesion, clave=self.clave, valores=self.valores,
             fila=self.fila, nota=self.nota, json_salida=self.ruta_json)
         self._salida = self.ruta_salida.open("w+b")

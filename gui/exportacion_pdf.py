@@ -81,7 +81,7 @@ import sys
 from dataclasses import asdict
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from src import escritura_atomica
 from src import sesion as _sesion
@@ -166,7 +166,32 @@ class EstadoPdf(str, Enum):
                         EstadoPdf.FALLIDO)
 
 
-def comando_exportar_pdf(*, interprete: str, cli: Path, sesion: Path,
+# El nombre del ejecutable de la CLI en el paquete congelado (receta C3,
+# `empaquetado/proyecto_alcantarillas.spec`): los dos `.exe` van a la misma
+# carpeta.
+EJECUTABLE_CLI_CONGELADO = "alcantarillas_cli"
+
+
+def lanzador_de_la_cli(interprete: Optional[str],
+                       raiz: Path) -> Tuple[str, Optional[Path]]:
+    """
+    `(programa, cli.py)` con que la ventana lanza a la CLI en un proceso
+    hijo (la exportacion a PDF y el barrido). Desde el clon, el interprete
+    --- por defecto `sys.executable` --- y `raiz/cli.py`. En el paquete
+    congelado de PyInstaller (`sys.frozen`), `sys.executable` es
+    `alcantarillas_gui.exe`, que no es un interprete: el hijo es
+    `alcantarillas_cli.exe` de la misma carpeta, y no lleva `cli.py`
+    (auditoria del 2026-11-24, hallazgo N2). Un `interprete` dado gana.
+    """
+    if interprete:
+        return str(interprete), raiz / "cli.py"
+    if getattr(sys, "frozen", False):
+        propio = Path(sys.executable)
+        return str(propio.with_name(EJECUTABLE_CLI_CONGELADO + propio.suffix)), None
+    return sys.executable, raiz / "cli.py"
+
+
+def comando_exportar_pdf(*, interprete: str, cli: Optional[Path], sesion: Path,
                          destino: Path, json_aparte: Path,
                          plantilla: Optional[Path] = None,
                          vista: str = VISTA_COMPLETA,
@@ -189,7 +214,9 @@ def comando_exportar_pdf(*, interprete: str, cli: Path, sesion: Path,
     if vista == VISTA_COMPLETA and plantilla is None:
         raise ValueError("la memoria completa necesita su plantilla (la del "
                          "alcance de la corrida)")
-    comando = [str(interprete), str(cli), "--sesion", str(sesion)]
+    # Sin `cli` (el paquete congelado): el programa ES la CLI.
+    comando = [str(interprete), *([] if cli is None else [str(cli)]),
+               "--sesion", str(sesion)]
     if corrida_embebida:
         # VE-5: el hijo formatea la corrida embebida en la sesion y no
         # recalcula (`cli.py --corrida-embebida`).
@@ -322,8 +349,8 @@ class ProcesoPdf:
         self.plantilla = None if plantilla is None else Path(plantilla)
         self.vista = vista
         self.directorio_trabajo = Path(directorio_trabajo)
-        self.interprete = interprete or sys.executable
         self.raiz = Path(raiz) if raiz is not None else Path(__file__).resolve().parents[1]
+        self.interprete, self.cli = lanzador_de_la_cli(interprete, self.raiz)
         self.ruta_sesion = self.directorio_trabajo / "sesion_para_pdf.json"
         self.ruta_json = self.directorio_trabajo / "informe_para_pdf.json"
         self.ruta_salida = self.directorio_trabajo / "salida_del_hijo.txt"
@@ -352,7 +379,7 @@ class ProcesoPdf:
         # Escritura atomica (E04): el hijo nunca lee una sesion a medias.
         _sesion.escribir_json_atomico(self.ruta_sesion, self.sesion)
         self.comando = comando_exportar_pdf(
-            interprete=self.interprete, cli=self.raiz / "cli.py",
+            interprete=self.interprete, cli=self.cli,
             sesion=self.ruta_sesion, destino=self.ruta_pdf_de_trabajo,
             plantilla=self.plantilla, json_aparte=self.ruta_json,
             vista=self.vista,
