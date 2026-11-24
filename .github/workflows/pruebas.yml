@@ -82,3 +82,30 @@ jobs:
         run: xvfb-run -a python -m pytest -n auto --dist loadfile -q -p no:cacheprovider --no-header
       - name: Tests aislados (miden tiempo; sin xdist, ficha EXT-8-06)
         run: xvfb-run -a python -m pytest -m aislado -q -p no:cacheprovider --no-header
+
+  # Auditoria del 2026-11-24, hallazgo N1: la CI solo era Linux, y la suite en
+  # la maquina del dueño (Windows 11) dio 16 fallos de plataforma que la CI no
+  # podia ver (fichas WIN-01 a WIN-03). Este trabajo corre la suite RAPIDA en
+  # Windows, solo a mano (`workflow_dispatch`: Actions -> Pruebas -> Run
+  # workflow), con el Python de la maquina del dueño. Sin `xvfb-run`: el
+  # runner de Windows tiene escritorio y Tk levanta la ventana. Sin el paso
+  # `aislado`: su presupuesto de tiempo esta medido en Linux (ficha EXT-8-06).
+  # WeasyPrint sin GTK no carga en Windows y la memoria sale por la via HTML,
+  # que es lo que la suite ya contempla.
+  windows:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: windows-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Dependencias
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt -r requirements-dev.txt
+      - name: La ventana se puede levantar
+        run: python -c "import tkinter, ttkbootstrap; r = tkinter.Tk(); r.destroy()"
+      - name: Suite rapida (-m "not lento" con xdist)
+        run: python -m pytest -m "not lento" -n auto -q -p no:cacheprovider --no-header -rfE

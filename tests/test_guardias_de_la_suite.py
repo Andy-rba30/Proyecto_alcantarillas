@@ -1511,6 +1511,21 @@ def test_la_ci_corre_los_tests_aislados_en_un_paso_sin_xdist():
         assert " -n " not in f" {paso} ", f"el paso aislado no puede usar xdist: {paso}"
 
 
+def test_la_ci_tiene_un_trabajo_de_windows_con_la_suite_rapida():
+    """
+    Auditoria del 2026-11-24, hallazgo N1: los 16 fallos de plataforma de la
+    maquina del dueño no los veia ninguna CI. El trabajo `windows` corre la
+    suite rapida en `windows-latest`, a mano (`workflow_dispatch`).
+    """
+    flujo = (RAIZ / ".github" / "workflows" / "pruebas.yml").read_text(encoding="utf-8")
+    trabajo = flujo.split("\n  windows:\n", 1)
+    assert len(trabajo) == 2, "falta el trabajo `windows` en pruebas.yml"
+    cuerpo = trabajo[1]
+    assert "runs-on: windows-latest" in cuerpo
+    assert "github.event_name == 'workflow_dispatch'" in cuerpo
+    assert '-m "not lento" -n auto' in cuerpo
+
+
 def test_con_xdist_los_aislados_se_deseleccionan_y_sin_xdist_corren(monkeypatch):
     import conftest
 
