@@ -89,6 +89,7 @@ def main(salida: Path) -> int:
         raiz.geometry(GEOMETRIA_MINIMA)
         raiz.update()
         r["geometria"] = [raiz.winfo_width(), raiz.winfo_height()]
+        r["minsize"] = list(raiz.minsize())
 
         # 1. Los exportadores a 900 px, y con la letra agrandada.
         r["exportadores_900"] = _caben(ventana, raiz)

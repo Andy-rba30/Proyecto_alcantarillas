@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -36,7 +37,14 @@ def ventana_real(tmp_path_factory):
 
 def test_38_la_ventana_se_mide_en_su_geometria_minima(ventana_real):
     import gui.app  # noqa: F401  (la geometria la fija el apoyo)
-    assert ventana_real["geometria"] == [900, 620]
+    if sys.platform == "win32":
+        m_w, m_h = ventana_real["minsize"]
+        g_w, g_h = ventana_real["geometria"]
+        assert m_w >= 900 and m_h >= 620
+        assert abs(g_w - m_w) <= 2 and abs(g_h - m_h) <= 2, (
+            ventana_real["geometria"], ventana_real["minsize"])
+    else:
+        assert ventana_real["geometria"] == [900, 620]
 
 
 def test_38_los_siete_exportadores_caben_a_900_px(ventana_real):

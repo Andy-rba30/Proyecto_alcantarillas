@@ -440,6 +440,15 @@ def main(salida: Path, capturas=None) -> int:
         # ya realizada: las capturas cambian de geometria y la reponen.
         geometria_por_defecto = raiz.geometry().split("+")[0]
         r["geometria_por_defecto"] = geometria_por_defecto
+        from gui import componentes as comp
+        factor = comp.factor_de_escala(raiz)
+        w_esp, h_esp = round(1100 * factor), round(800 * factor)
+        area = comp.area_de_trabajo(None)
+        if area is not None:
+            _x0, _y0, ancho_area, alto_area, marco_ancho, marco_alto = area
+            w_esp = max(1, min(w_esp, ancho_area - marco_ancho))
+            h_esp = max(1, min(h_esp, alto_area - marco_alto))
+        r["geometria_esperada"] = [w_esp, h_esp]
         barra = _botones_por_texto(raiz)
 
         # 0. Recien abierta.

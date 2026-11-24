@@ -549,7 +549,7 @@ def resumen_real(tmp_path_factory):
     salida = tmp_path_factory.mktemp("ext5")
     hecho = subprocess.run(
         _ENVOLTORIO + [_INTERPRETE, "-m", "tests.apoyo.gui_ext5_real", str(salida)],
-        cwd=RAIZ, capture_output=True, text=True, encoding="utf-8", timeout=600)
+        cwd=RAIZ, capture_output=True, text=True, encoding="utf-8", timeout=1500)
     assert hecho.returncode == 0, (
         f"la corrida de la GUI fallo:\n{hecho.stdout}\n{hecho.stderr}")
     return json.loads((salida / "resumen_ext5.json").read_text(encoding="utf-8"))

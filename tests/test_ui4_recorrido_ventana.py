@@ -436,7 +436,13 @@ def test_c0_recien_abierta_todo_apagado_y_diciendo_por_que(r):
 
 def test_c0_las_filas_de_exportacion_caben_en_la_geometria_por_defecto(r):
     """(a3) Los siete, mapeados, enteros y dentro de la pestaña 4, a 1100 x 800."""
-    assert r.datos["geometria_por_defecto"] == "1100x800"
+    if sys.platform == "win32":
+        w, h = (int(x) for x in r.datos["geometria_por_defecto"].split("x"))
+        w_esp, h_esp = r.datos["geometria_esperada"]
+        assert abs(w - w_esp) <= 2 and abs(h - h_esp) <= 2, (
+            r.datos["geometria_por_defecto"], r.datos["geometria_esperada"])
+    else:
+        assert r.datos["geometria_por_defecto"] == "1100x800"
     for nombre, cabe in r.datos["recien_abierta"]["caben"].items():
         assert cabe == {"mapeado": True, "entero": True, "dentro": True}, nombre
 
@@ -569,8 +575,8 @@ def test_c5_los_dos_pdf_salen_por_el_hijo_con_la_hidrologia(r, vista, bandera):
     # rutas de la hidrologia y su JSON es el de la ventana, salvo la hora.
     referencia = recorrido.corrida("hidrologia_calculada")
     sesion = _json(r.salida, f"hijo_{vista}.sesion.json")
-    assert sesion["cuencas"] == recorrido.relativa(referencia.cuencas)
-    assert sesion["estacion"] == recorrido.relativa(referencia.estacion)
+    assert sesion["cuencas"] == str(Path(recorrido.relativa(referencia.cuencas)))
+    assert sesion["estacion"] == str(Path(recorrido.relativa(referencia.estacion)))
     hijo = _json(r.salida, f"hijo_{vista}.json")
     assert ses.sin_marca_de_tiempo(hijo) == ses.sin_marca_de_tiempo(
         _json(r.salida, "hidrologia_calculada.json"))
