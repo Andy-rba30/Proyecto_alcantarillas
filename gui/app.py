@@ -3418,10 +3418,14 @@ class ExpedienteApp:
             "csv": ruta_csv_texto,
             "datos_externos": texto_externos,
             "datos_sitio": texto_sitio,
-            # Con `/` en todo sistema: la sesion del hijo lleva la ruta como
-            # se teclea en la sesion guardada (en Windows `str` daba `\`).
-            "cuencas": "" if ruta_cuencas is None else ruta_cuencas.as_posix(),
-            "estacion": "" if ruta_estacion is None else ruta_estacion.as_posix(),
+            # `str`, con el separador del sistema, y NO `as_posix`: es la
+            # misma ruta que `MH_hidrologia` fotografia en `origen_cuencas` y
+            # que el JSON de la corrida imprime, y el hijo del PDF la vuelve
+            # a leer con `sesion.ruta_de_campo`. Pasarla a `/` sólo aquí
+            # hacía que en Windows la sesión de la corrida dijera una ruta y
+            # el informe otra (ronda 2 de Windows, test_ui1_hidrologia_ventana).
+            "cuencas": "" if ruta_cuencas is None else str(ruta_cuencas),
+            "estacion": "" if ruta_estacion is None else str(ruta_estacion),
             "externos": {clave: var.get() for clave, var in self.externos_vars.items()},
             "alcance": self.alcance_var.get(),
         }
