@@ -2844,8 +2844,9 @@ es la suma de dos invocaciones (ficha EXT-8-06): `-n 4 --dist loadfile` y `-m ai
 | **entregable, `ca234cf`, par del sello** | sí | sí | **9213** | **13** | **9226** |
 | entregable, `90b8f74`, tras sellar: sello y sincronía (`test_trazabilidad_csv`, `test_indice_formulas`, `test_ext9_paquete_servicio`, `test_manifiesto_citas`) | sí | sí | 73 | 0 | 73 |
 | proceso (`python -m pytest proceso/tests`), `90b8f74` | sí | — | 145 | 0 | 145 |
+| entregable, EXPORTACIÓN de `90b8f74` (`git archive`, sin `proceso/` ni `.git`), `-n 4 --dist loadfile` (1 h 44 min 44 s) + `-m aislado` | sí | sí | **9209** (9208 + 1) | **17** | **9226** |
 
-Los 13 saltos son los que la auditoría H1 midió en Linux con la historia completa («par esperado:
+Los 13 saltos del checkout son los 13 de DISEÑO de `tests/test_familias_del_csv.py` (cada familia × el dato que SÍ usa; ninguno de entorno). La exportación salta 4 más, los que leen lo versionado o necesitan `.git` (`test_t12_entregable.py:532` y `:744`, `test_ext6_registro_normativo.py:202`, `test_ext11_mutacion.py:352`), cada uno diciendo por qué, y en ella pasan los dos de sello porque el árbol exportado ya está sellado. Los 13 son los que la auditoría H1 midió en Linux con la historia completa («par esperado:
 9168 passed, 13 skipped» sobre aquel árbol, 9181 recolectados); los 45 recolectados de más
 (9181 -> 9226) los suman el plan de mantenibilidad (A–D) y las rondas de Windows (1 de la
 ronda 1, 5 de la ronda 2). Un aviso: `FutureWarning` de PyMuPDF por el nombre

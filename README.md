@@ -316,6 +316,10 @@ sellados `docs/indice_formulas.md` y `docs/trazabilidad.csv`):
 | Árbol | `NORMAS_DIR` | `passed` | `skipped` | `collected` |
 |---|---|---|---|---|
 | checkout de git (`-n 4 --dist loadfile` + `-m aislado`) | sí | 9213 | 13 | 9226 |
+| exportación (`git archive`, la descarga ZIP) | sí | 9209 | 17 | 9226 |
+
+Los 13 saltos del checkout son de DISEÑO (`tests/test_familias_del_csv.py`: cada familia
+con el dato que sí usa); la exportación salta además los cuatro que necesitan `.git`.
 
 En Windows (Python 3.13) la suite completa sobre la versión anterior dio 16 fallos de
 plataforma, corregidos en dos rondas (fichas WIN-01 a WIN-03 de
