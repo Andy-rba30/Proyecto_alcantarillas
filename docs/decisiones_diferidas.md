@@ -59,7 +59,7 @@ registro.
 
 # Índice de fichas
 
-> Tabla derivada automáticamente de las **401** fichas del documento (`75` cerradas, `150` abiertas/parciales, `176` diferidas/declaradas).
+> Tabla derivada automáticamente de las **404** fichas del documento (`78` cerradas, `150` abiertas/parciales, `176` diferidas/declaradas).
 > Regla de estado (verificada por `tests/test_decisiones_diferidas.py`): `cerrada` si el título marca IMPLEMENTADA/CERRADA o tiene `**Cerrado` sin `**Abierto`; `abierta / parcial` si declara `**Abierto`; `diferida / declarada` en el resto.
 
 | Ficha | Tema | Estado |
@@ -465,6 +465,9 @@ registro.
 | D3-02 | `M11_reporte.py` partido en el subpaquete `src/modulos/M11_reporte/` | cerrada |
 | D3-03 | `constantes_normativas.py` no se partió | diferida / declarada |
 | EXT-8-06 | El presupuesto de `import cli` se mide con el mínimo de siete corridas, en tiempo de CPU | diferida / declarada |
+| WIN-01 | Las rutas del JSON y de la sesión en Windows: el CSV en `/`, la hidrología con el separador del sistema | cerrada |
+| WIN-02 | El contraste fórmula–cuña dice «coincide» cuando la diferencia es ruido de punto flotante | cerrada |
+| WIN-03 | En Windows las emergentes toman el foco y las ventanas escalan su tamaño con los ppp | cerrada |
 
 ---
 
@@ -10287,3 +10290,95 @@ impreso que no es de cálculo: la huella de los criterios.
   `tests/test_guardias_de_la_suite.py::TESTS_AISLADOS` fija qué tests la llevan y que la CI
   tenga su paso. El par de la suite completa suma la corrida en paralelo y el paso aislado.
 - **Dónde vive:** `tests/test_ext8_rendimiento_gui.py::CORRIDAS_IMPORT_CLI`
+
+## WIN-01 · Las rutas del JSON y de la sesión en Windows: el CSV en `/`, la hidrología con el separador del sistema
+
+- **Cerrado (ronda 1 y ronda 2 de Windows, 2026-11-24):** la suite completa en
+  la máquina del dueño (Windows 11, Python 3.13.2, Tk 8.6, `NORMAS_DIR`) sobre
+  `7efb15d` dio 18 fallos: 2 de sello esperados y 16 de plataforma. La ronda 1
+  (`404d06c`) escribió `expediente.csv` del JSON con `as_posix()` (la línea
+  base y la sesión v3 lo fijan en `/`), los cuatro generadores con
+  `newline="\n"`, la exención de `git diff` del sello en `/`, la exportación
+  emulada con `-z` y bytes (en modo texto Windows añadía `\r` a cada ruta de
+  `git check-attr --stdin` y `proceso/` entraba a la exportación), un archivo
+  por intento en `test_4_cada_candidato_pasa_la_guardia_de_la_escritura_permanente`
+  (el antivirus abre cada `.py` recién escrito) y los enlaces simbólicos sólo
+  en POSIX (`WinError 1314`). La ronda 2 (`cd45995`) revirtió el único hunk
+  de la ronda 1 que rompía un contrato: `entradas_de_la_corrida` volvía a
+  escribir las rutas de la hidrología con `as_posix()`, y en Windows la sesión
+  de la corrida decía una ruta y `origen_cuencas` (y el JSON) otra.
+- **Por qué** las dos convenciones conviven: `expediente.csv` es la ruta con
+  que se compara la línea base y la sesión v3 guardada (texto portable), y las
+  de la hidrología son la fotografía de lo que la ventana leyó, que el hijo del
+  PDF vuelve a leer con `sesion.ruta_de_campo`; en Linux las dos son `str`.
+- **Qué haría falta** para unificarlas: decidir que el JSON escribe toda ruta
+  en `/` (también `hidrologia.cuencas`/`estacion`) y mover a la vez los tests
+  de UI-1 que fijan `str(CUENCAS)`. No se hace sin decisión del dueño: cambia
+  el JSON en Windows.
+- **Revisado por Fable (dictamen del consultor, 2026-11-24): APROBADO.** La
+  asimetría es cosmética: `comparador.CAMPOS_OMITIDOS` omite `expediente.csv` y
+  las dos rutas de la hidrología, y ningún código de producción relee
+  `expediente.csv` como ruta. Riesgo residual declarado: una sesión escrita
+  por la ventana en Windows lleva `csv` como se tecleó (`\`) y su corrida
+  embebida `/`; una igualdad futura entre los dos fallaría allí. Aplicado el
+  cambio opcional: el comentario de `cli.py` dice por qué la hidrología queda
+  con el separador nativo.
+- **Dónde vive:** `cli.py::_informe_json_base`
+
+## WIN-02 · El contraste fórmula–cuña dice «coincide» cuando la diferencia es ruido de punto flotante
+
+- **Cerrado (ronda 2 de Windows, `fbbde5b`):** `M9._sesgo` decía «la formula
+  da un 0.0% MENOS/MAS que la cuña» según el SIGNO de una diferencia relativa
+  de 1–2 ulp. Con la superficie del relleno plana sobre el plano de empuje (la
+  franja del alero en su punta) la cuña y Coulomb son el mismo número: medido,
+  −2.8e-16 a −5.5e-16 en 7 de 1273 contrastes de las corridas del índice en
+  Linux; en Windows (otra libm) del otro signo o cero, y `docs/indice_formulas.md`
+  regenerado allí se desincronizaba en las filas `9.2.1.est.e.alero.100` y
+  `.s.alero.100`. Dentro de `TOL_REL_SESGO_CONTRASTE` (1e-9) el contraste se
+  dice «coincide».
+- **Por qué** es tolerancia y no criterio: no mueve ninguna magnitud (K_A, K_AE
+  y los empujes no cambian), sólo la palabra del contraste; una diferencia real
+  se imprime con un decimal de porcentaje (5e-4 como mínimo), cinco órdenes por
+  encima.
+- **Qué haría falta** si aparece otro texto de la memoria decidido por el signo
+  de una resta de dos cálculos: la misma forma, con su tolerancia medida.
+- **Revisado por Fable (dictamen del consultor, 2026-11-24): APROBADO.**
+  Midió los 1273 contrastes: los 7 de ruido están entre 2.8e-16 y 5.5e-16 y
+  el siguiente es 3.96e-6; el umbral cae en un hueco de nueve órdenes. Dos
+  observaciones opcionales que NO se aplican en esta ronda: el contraste de
+  3.96e-6 se imprime «0.0% MAS» (signo estable entre plataformas; decir
+  «menos de 0.05 %» cambiaría el índice), y `M9_cabezal/estabilidad.py`
+  dice «hacia la punta»/«hacia el talon» por el signo de la excentricidad sin
+  tolerancia (improbable con empuje, y esa procedencia no entra al índice).
+- **Dónde vive:** `src/tolerancias.py::TOL_REL_SESGO_CONTRASTE`
+
+## WIN-03 · En Windows las emergentes toman el foco y las ventanas escalan su tamaño con los ppp
+
+- **Cerrado (ronda 2 de Windows, `3d8a8ea`):** dos fallos de ventana real
+  medidos al 125 % (Tk a 120 ppp). (1) Escape no cerraba la ventana normativa
+  ni la ayuda (`test_gui_contrato.py`, EXT-8): una tecla generada va a la
+  ventana con foco, y en Windows el foco seguía en la principal; con
+  `focus_set` sí cerraba. `comp.tomar_foco_al_abrir` lo pide al construir y al
+  mapearse la emergente, y lo usan las cinco que atan Escape. (2) «Barrido…»
+  quedaba 52 px por debajo de la pestaña 2 (`test_ui3_barrido_ventana.py`):
+  declarado consciente de DPI (bloque 1b), Tk escala las fuentes y no los px de
+  `geometry`, y la ventana de 1100×800 px pedía 2177×1156.
+  `comp.geometria_inicial` escala por ppp/96 (nunca por debajo de 1) en
+  Windows, recorta al área de trabajo menos el marco y centra; fuera de Windows
+  aplica la geometría tal cual (Xvfb informa 100 ppp y no es una escala elegida
+  por el usuario).
+- **Por qué** sólo en Windows: es la otra mitad de `declarar_conciencia_de_dpi`,
+  que sólo se declara allí; en Linux la suite de ventana real no cambia.
+- **Qué haría falta:** verificar las dos ventanas en la máquina del dueño
+  (comandos en el LEEME) y, si un monitor secundario con otro escalado abre la
+  ventana, medir allí (`GetSystemMetrics` da las métricas del ppp del sistema).
+- **Revisado por Fable (dictamen del consultor, 2026-11-24): 3a APROBADO,
+  3b APROBADO CON CAMBIOS, aplicados.** El foco se pide sólo en el PRIMER
+  mapeo (una bandera, no `unbind`, que en Python 3.12 borra todas las
+  ataduras de la secuencia): restaurar la emergente no le quita el cursor a un
+  campo. El área de trabajo es la del monitor de la ventana maestra
+  (`MonitorFromWindow` + `GetMonitorInfoW`, con caída al principal), y el
+  comentario de `PPP_DE_DISENO` declara el límite: al 150 % en 1920x1080 el
+  alto se recorta a unos 650 px de diseño y «Barrido…» vuelve a quedar bajo
+  la pestaña; el remedio de fondo es de layout, fuera de esta ronda.
+- **Dónde vive:** `gui/componentes.py::geometria_inicial`
