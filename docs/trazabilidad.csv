@@ -1,4 +1,4 @@
-# Sello · fecha: 2026-11-24 · commit: 9613621+cambios-sin-commit · alcance: registro completo, una fila por Cita: 658 citas de 24 fuentes · suite: PROVISIONAL: suite por medir
+# Sello · fecha: 2026-11-24 · commit: d3de71c+cambios-sin-commit · alcance: registro completo, una fila por Cita: 688 citas de 25 fuentes · suite: PROVISIONAL: suite por medir
 cita_id,fuente_id,norma,edicion,numeral,titulo_numeral,pagina_impresa,pagina_pdf,caracter,metodo_verificacion,fecha_verificacion,tiene_interpretacion,discrepancias_que_la_tocan,consumidores_declarados
 AASHTO_LRFD_9.1.2#BRIDGE,AASHTO_LRFD_9,AASHTO LRFD Bridge Design Specifications,"Ninth Edition, 2020",1.2,DEFINITIONS,1-2,17,definicion,ambos,2026-09-22,no,DIS-LUZ-DENOMINACION [abierta],fundamento F2.LUZ (Fase 2 - Clasificacion y periodo de retorno)
 AASHTO_LRFD_9.1.3.2.1#ETA,AASHTO_LRFD_9,AASHTO LRFD Bridge Design Specifications,"Ninth Edition, 2020",1.3.2.1,General,1-3,18,exigencia,texto,2026-11-13,sí,,
@@ -85,6 +85,7 @@ AASHTO_LRFD_9.12.7.2.3,AASHTO_LRFD_9,AASHTO LRFD Bridge Design Specifications,"N
 AASHTO_LRFD_9.12.7.2.4,AASHTO_LRFD_9,AASHTO LRFD Bridge Design Specifications,"Ninth Edition, 2020",12.7.2.4,12.7.2.4—Resistance to Buckling,12-26,1664,exigencia,texto,2026-11-12,no,,fundamento F8.TMC_AREA (Fase 8 - Verificacion estructural del conducto)
 AASHTO_LRFD_9.12.7.2.5,AASHTO_LRFD_9,AASHTO LRFD Bridge Design Specifications,"Ninth Edition, 2020",12.7.2.5,12.7.2.5—Seam Resistance,12-27,1665,exigencia,texto,2026-11-12,no,,fundamento F8.TMC_COSTURA (Fase 8 - Verificacion estructural del conducto)
 AASHTO_LRFD_9.3.10.2#CLASE_F,AASHTO_LRFD_9,AASHTO LRFD Bridge Design Specifications,"Ninth Edition, 2020",3.10.2,Seismic Hazard,3-71,125,exigencia,texto,2026-08-29,no,,
+AASHTO_LRFD_9.3.10.2.1#INTERPOLACION,AASHTO_LRFD_9,AASHTO LRFD Bridge Design Specifications,"Ninth Edition, 2020",3.10.2.1,General Procedure,3-71,125,exigencia,texto,2026-11-24,no,DIS-HR-PGA-LECTURA [abierta_contra_hoja_de_ruta],
 AASHTO_LRFD_9.3.10.2.2,AASHTO_LRFD_9,AASHTO LRFD Bridge Design Specifications,"Ninth Edition, 2020",3.10.2.2,Site-Specific Procedure,3-100,154,exigencia,texto,2026-08-28,no,,
 AASHTO_LRFD_9.3.10.3.1,AASHTO_LRFD_9,AASHTO LRFD Bridge Design Specifications,"Ninth Edition, 2020",3.10.3.1,Site Class Definitions,3-101,155,exigencia,texto,2026-08-29,no,DIS-HR-30M-VS-100FT [resuelta],
 AASHTO_LRFD_9.3.10.3.1#EXCEPCIONES,AASHTO_LRFD_9,AASHTO LRFD Bridge Design Specifications,"Ninth Edition, 2020","3.10.3.1, nota «Exceptions» al pie de la Tabla 3.10.3.1-1",Site Class Definitions,3-102,156,exigencia,texto,2026-08-29,no,DIS-HR-CLASE-DE-SITIO-F [resuelta],
@@ -627,6 +628,35 @@ MP.1.10#FIG_1_10A_LUZ_LIBRE,MP,Manual de Puentes,Version Libro,Figura 1.10-a,Fig
 MP.GLOSARIO#OBRAS_DE_ARTE_MENORES,MP,Manual de Puentes,Version Libro,Glosario,GLOSARIO DE TERMINOS,45,46,definicion,ambos,2026-09-22,no,,fundamento F2.LUZ (Fase 2 - Clasificacion y periodo de retorno)
 MP.INTRODUCCION#LRFD_2014,MP,Manual de Puentes,Version Libro,Introducción al Manual de Puentes,INTRODUCCIÓN AL MANUAL DE PUENTES,43,44,permiso,ambos,2026-09-20,no,DIS-MP-LRFD-EDICION [resuelta],
 MP.T2.4.3.11.2.1.2-1,MP,Manual de Puentes,Version Libro,Tabla 2.4.3.11.2.1.2-1,Efectos de Sitio,123,124,exigencia,imagen renderizada,2026-08-28,no,,tabla MP.TFPGA -> M9.f_pga
+MP2018.2.1.4.3.9,MP2018,Manual de Puentes,Diciembre de 2018 (actualizacion de la edicion 2016),2.1.4.3.9,Aparatos de Apoyo,81,85,exigencia,texto,2026-11-24,no,,
+MP2018.2.3.2.5,MP2018,Manual de Puentes,Diciembre de 2018 (actualizacion de la edicion 2016),2.3.2.5,Importancia Operativa,87,91,permiso,texto,2026-11-24,no,,
+MP2018.2.4.2.1#PESOS,MP2018,Manual de Puentes,Diciembre de 2018 (actualizacion de la edicion 2016),"2.4.2.1, Tabla 2.4.2.1-1","Cargas Muertas: DC, DW, y EV",89,93,permiso,texto,2026-11-24,no,,
+MP2018.2.4.2.2#SOBRECARGA,MP2018,Manual de Puentes,Diciembre de 2018 (actualizacion de la edicion 2016),2.4.2.2,"Cargas de Suelo: EH, ES, y DD",90,94,exigencia,texto,2026-11-24,no,,
+MP2018.2.4.3.11.2#CLASE_F,MP2018,Manual de Puentes,Diciembre de 2018 (actualizacion de la edicion 2016),2.4.3.11.2,Peligro Sísmico,111,115,exigencia,texto,2026-11-24,no,,
+MP2018.2.4.3.11.2.1.1,MP2018,Manual de Puentes,Diciembre de 2018 (actualizacion de la edicion 2016),"2.4.3.11.2.1.1, Tabla 2.4.3.11.2.1.1-1, fila F",Definiciones de Clases de Sitio,112,116,definicion,texto,2026-11-24,no,,
+MP2018.2.4.3.11.2.1.1#EXCEPCIONES,MP2018,Manual de Puentes,Diciembre de 2018 (actualizacion de la edicion 2016),"2.4.3.11.2.1.1, bloque «Excepciones»",Definiciones de Clases de Sitio,112,116,exigencia,texto,2026-11-24,no,,
+MP2018.2.4.3.2.2.2,MP2018,Manual de Puentes,Diciembre de 2018 (actualizacion de la edicion 2016),2.4.3.2.2.2,Camión de Diseño,91,95,definicion,texto,2026-11-24,no,,
+MP2018.2.4.3.2.2.3,MP2018,Manual de Puentes,Diciembre de 2018 (actualizacion de la edicion 2016),2.4.3.2.2.3,Tándem de Diseño,92,96,definicion,texto,2026-11-24,no,,
+MP2018.2.4.3.2.2.5,MP2018,Manual de Puentes,Diciembre de 2018 (actualizacion de la edicion 2016),2.4.3.2.2.5,Área de Contacto de los Neumáticos,92,96,definicion,texto,2026-11-24,no,,
+MP2018.2.4.3.2.2.6,MP2018,Manual de Puentes,Diciembre de 2018 (actualizacion de la edicion 2016),2.4.3.2.2.6,Presencia Múltiple de Sobrecargas,93,97,exigencia,texto,2026-11-24,no,,
+MP2018.2.4.3.3.2,MP2018,Manual de Puentes,Diciembre de 2018 (actualizacion de la edicion 2016),2.4.3.3.2,Componentes Enterrados,97,101,exigencia,ambos,2026-11-24,no,,
+MP2018.2.4.3.8.1#NIVEL_DE_DISENO,MP2018,Manual de Puentes,Diciembre de 2018 (actualizacion de la edicion 2016),2.4.3.8.1,Presión Hidrostática,102,106,exigencia,texto,2026-11-24,no,,
+MP2018.2.4.3.8.2,MP2018,Manual de Puentes,Diciembre de 2018 (actualizacion de la edicion 2016),2.4.3.8.2,Subpresiones,102,106,exigencia,texto,2026-11-24,no,,
+MP2018.2.4.4.1.3#SUMERGIDO,MP2018,Manual de Puentes,Diciembre de 2018 (actualizacion de la edicion 2016),2.4.4.1.3,Presencia de Agua,123,127,exigencia,texto,2026-11-24,no,,
+MP2018.2.4.4.1.5.3,MP2018,Manual de Puentes,Diciembre de 2018 (actualizacion de la edicion 2016),2.4.4.1.5.3,Coeficiente de Empuje Lateral Activo,125,129,permiso,ambos,2026-11-24,no,,
+MP2018.2.4.5.2#EV,MP2018,Manual de Puentes,Diciembre de 2018 (actualizacion de la edicion 2016),2.4.5.2,Cargas y Denominación de las Cargas,130,134,definicion,texto,2026-11-24,no,,
+MP2018.2.4.5.3.1#MINIMO,MP2018,Manual de Puentes,Diciembre de 2018 (actualizacion de la edicion 2016),2.4.5.3.1,Factores de Carga y Combinaciones de Carga,132,136,exigencia,texto,2026-11-24,no,,
+MP2018.T2.4.5.3.1-1,MP2018,Manual de Puentes,Diciembre de 2018 (actualizacion de la edicion 2016),"2.4.5.3.1, Tabla 2.4.5.3.1-1",Factores de Carga y Combinaciones de Carga,133,137,exigencia,ambos,2026-11-24,no,,
+MP2018.T2.4.5.3.1-2,MP2018,Manual de Puentes,Diciembre de 2018 (actualizacion de la edicion 2016),"2.4.5.3.1, Tabla 2.4.5.3.1-2",Factores de Carga y Combinaciones de Carga,134,138,exigencia,ambos,2026-11-24,no,,
+MP2018.2.8.1.1.12.3#EXC_ESTATICA,MP2018,Manual de Puentes,Diciembre de 2018 (actualizacion de la edicion 2016),2.8.1.1.12.3,Límites de Excentricidad,244,248,exigencia,texto,2026-11-24,no,DIS-MP-NUMERAL-2.3.1.1.12.3 [errata_de_imprenta],
+MP2018.2.8.1.1.14.1#EXC,MP2018,Manual de Puentes,Diciembre de 2018 (actualizacion de la edicion 2016),2.8.1.1.14.1,Generalidades,247,251,exigencia,texto,2026-11-24,no,DIS-MP-EXCENTRICIDAD [errata_de_imprenta],
+MP2018.2.8.1.1.14.2.1#ROCA,MP2018,Manual de Puentes,Diciembre de 2018 (actualizacion de la edicion 2016),2.8.1.1.14.2.1,Caracterización de la Aceleración en la Base del Muro de Contención,249,253,exigencia,ambos,2026-11-24,no,DIS-MP-KH0-ROCA [errata_de_imprenta],
+MP2018.T2.9.1.5.5.3-1,MP2018,Manual de Puentes,Diciembre de 2018 (actualizacion de la edicion 2016),"2.9.1.5.5.3, Tabla 2.9.1.5.5.3-1",Recubrimiento de Concreto,377,381,exigencia,ambos,2026-11-24,no,,
+MP2018.A.11.3.1#KAE,MP2018,Manual de Puentes,Diciembre de 2018 (actualizacion de la edicion 2016),"A.11.3.1, ec. A.11.3.1-2",Método de Mononobe -Okabe,597,601,aproximacion,ambos,2026-11-24,no,DIS-MP-KAE-SIGNO [errata_de_imprenta],
+MP2018.1.10#FIG_1_10A_LUZ_LIBRE,MP2018,Manual de Puentes,Diciembre de 2018 (actualizacion de la edicion 2016),Figura 1.10-a,Figura 1.10-a Puentes Tipo Viga,61,65,definicion,ambos,2026-11-24,no,,
+MP2018.GLOSARIO#OBRAS_DE_ARTE_MENORES,MP2018,Manual de Puentes,Diciembre de 2018 (actualizacion de la edicion 2016),Glosario,GLOSARIO DE TERMINOS,41,45,definicion,texto,2026-11-24,no,DIS-LUZ-DENOMINACION [abierta],
+MP2018.INTRODUCCION#LRFD_2014,MP2018,Manual de Puentes,Diciembre de 2018 (actualizacion de la edicion 2016),Introducción,INTRODUCCIÓN,39,43,permiso,texto,2026-11-24,no,,
+MP2018.T2.4.3.11.2.1.2-1,MP2018,Manual de Puentes,Diciembre de 2018 (actualizacion de la edicion 2016),Tabla 2.4.3.11.2.1.2-1,Efectos de Sitio,113,117,exigencia,ambos,2026-11-24,no,,
 MS.3.2.1,MS,"Manual de Carreteras: Suelos, Geologia, Geotecnia y Pavimentos — Seccion Suelos y Pavimentos",Version abril 2014,3.2.1,Terraplén,24,25,exigencia,texto,2026-08-28,no,,
 MS.3.2.2,MS,"Manual de Carreteras: Suelos, Geologia, Geotecnia y Pavimentos — Seccion Suelos y Pavimentos",Version abril 2014,3.2.2,Corte,24,25,exigencia,texto,2026-08-28,no,,
 MS.3.3,MS,"Manual de Carreteras: Suelos, Geologia, Geotecnia y Pavimentos — Seccion Suelos y Pavimentos",Version abril 2014,3.3,Sub rasante del camino,24,25,exigencia,texto,2026-08-28,no,,

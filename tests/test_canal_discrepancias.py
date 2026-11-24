@@ -166,14 +166,22 @@ def test_lo_que_la_corrida_no_toca_no_se_vuelca(reg, informe, memoria):
     abiertas = {d.id for d in reg.discrepancias_abiertas()}
     # Dos abiertas desde el cierre de C11 (R48-001): la de gamma_EV y la de
     # que magnitud compara el umbral de 6.0 m (`DIS-LUZ-DENOMINACION`, que
-    # tampoco es contra la hoja de ruta: es entre las tres fuentes).
-    assert abiertas == {"DIS-AASHTO-GAMMA-EV-12.6.1", "DIS-LUZ-DENOMINACION"}, (
+    # tampoco es contra la hoja de ruta: es entre las tres fuentes). Y una
+    # tercera desde el dictamen de Fable sobre N1 del plan de normas 2:
+    # `DIS-HR-PGA-LECTURA`, la PGA del corredor, que SI es contra la hoja de
+    # ruta (ficha N1MP-06).
+    assert abiertas == {"DIS-AASHTO-GAMMA-EV-12.6.1", "DIS-LUZ-DENOMINACION",
+                        "DIS-HR-PGA-LECTURA"}, (
         "cambio el censo de abiertas: revisa el test")
-    assert not any(d.estado is EstadoDiscrepancia.ABIERTA_CONTRA_HOJA_DE_RUTA
-                   for d in reg.discrepancias), (
-        "volvio a haber una discrepancia abierta CONTRA la hoja de ruta: la "
-        "tercera obligacion de CLAUDE.md vuelve a estar en pie y hay que "
-        "decirlo en la v8")
+    contra_la_hoja = {d.id for d in reg.discrepancias
+                      if d.estado is EstadoDiscrepancia.ABIERTA_CONTRA_HOJA_DE_RUTA}
+    assert contra_la_hoja == {"DIS-HR-PGA-LECTURA"}, (
+        "cambio el censo de discrepancias abiertas CONTRA la hoja de ruta: "
+        "la tercera obligacion de CLAUDE.md esta en pie para cada una, y "
+        "hay que decirlo en la v8 (o cerrarla corrigiendo la v8)")
+    # Ninguna corrida la toca: ningun paso cita la clausula de interpolacion
+    # ni la nombra. En la memoria de expediente la lectura llega por la
+    # trazabilidad del dato de sitio 'PGA_roca_B', no por este bloque.
 
     assert informe.alcance == "perfil"
     bloque = M11.bloque_discrepancias(informe)

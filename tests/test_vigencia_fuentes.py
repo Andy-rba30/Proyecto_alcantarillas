@@ -85,14 +85,16 @@ def test_toda_fuente_presente_declara_su_vigencia():
         # Tres fechas, una por sesion que verifico contra el emisor: T1,
         # EXT-6 (DG-2018) y T-0 de la cadena T (HEC-14 y WSDOT).
         # Y una cuarta desde VE-3.6 (el USBR de la Familia C), una quinta
-        # desde N3 del plan 12 (HEC-11) y una sexta desde N2 del plan 12 (el
-        # marco legal: Ley 29338, su Reglamento y el RNGIV).
+        # desde N3 del plan 12 (HEC-11), una sexta desde N2 del plan 12 (el
+        # marco legal: Ley 29338, su Reglamento y el RNGIV) y una septima
+        # desde N1 (el Manual de Puentes 2018).
         assert f.vigencia.fecha in (fu.VIGENCIA_VERIFICADA_EL,
                                     fu.VIGENCIA_VERIFICADA_EL_EXT6,
                                     fu.VIGENCIA_VERIFICADA_EL_T0,
                                     fu.VIGENCIA_VERIFICADA_EL_VE3,
                                     fu.VIGENCIA_VERIFICADA_EL_N3,
-                                    fu.VIGENCIA_VERIFICADA_EL_MARCO_LEGAL), f.id
+                                    fu.VIGENCIA_VERIFICADA_EL_MARCO_LEGAL,
+                                    fu.VIGENCIA_VERIFICADA_EL_N1MP), f.id
         assert f.vigencia.como.strip(), f.id
 
 

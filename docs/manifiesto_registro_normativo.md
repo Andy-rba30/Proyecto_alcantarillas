@@ -15,7 +15,7 @@
 
 ## 1. Fuentes
 
-Las 24 presentes, con el SHA-1 exacto contra el que se
+Las 25 presentes, con el SHA-1 exacto contra el que se
 verificó cada cita y la regla de paginación MEDIDA, no supuesta. **Desde
 T-12 su PDF vive SOLO en el repositorio de normas**, enlazado por
 `NORMAS_DIR` (`fuentes.directorios_de_normas`): los dieciséis que hasta
@@ -43,7 +43,8 @@ de la §1-bis, son los PDF de ese repositorio.
 | `HEC14` | HEC-14 «Hydraulic Design of Energy Dissipators for Culverts and Channels» (Hydraulic Engineering Circular No. 14, FHWA-NHI-06-086) | Third Edition, July 2006 (con la fe de erratas del 1 de octubre de 2012 en la PDF 3) | por capítulo: 1=13, 10=201, 11=221, 12=245, 2=27, 3=31, 4=41, 5=53, 6=63, 7=77, 8=123, 9=157, A=249, B=259, C=277, D=279, R=283 | 287 | `1bffcbe220cd67e4c0de8b87b46d1ece64ce7217` | sí | confirmada 2026-11-11 |
 | `LEY_29338` | Ley 29338, Ley de Recursos Hidricos | Ley 29338, compilacion con notas del SPIJ y concordancias hasta la Ley 32513 (04-12-2025) | **sin determinar** | 49 | `ac47b59be519288b6aaa3d0eb32bc2b96dd80416` | sí | confirmada 2026-11-24; aprobada por Ley 29338 |
 | `MC_HHD` | Manual de Hidrologia, Hidraulica y Drenaje | Version Libro | corrida, +3 | 225 | `a31e853b8171b931863d7afa4379bbbc57cacb0d` | sí | confirmada 2026-09-14; aprobada por RD 20-2011-MTC/14 |
-| `MP` | Manual de Puentes | Version Libro | corrida, +1 | 673 | `67a7a9f1c61cad8f9ca179cd4ca777f96b49dc44` | sí | **posterior detectada** 2026-09-14: Manual de Puentes actualizado 2018 (630 paginas); aprobada por RD 041-2016-MTC/14; **derogada por RD 19-2018-MTC/14** |
+| `MP` | Manual de Puentes | Version Libro | corrida, +1 | 673 | `67a7a9f1c61cad8f9ca179cd4ca777f96b49dc44` | sí | **posterior detectada** 2026-09-14: Manual de Puentes, diciembre de 2018 (RD 19-2018-MTC/14, 630 paginas), presente en normas/ como MP2018; aprobada por RD 041-2016-MTC/14; **derogada por RD 19-2018-MTC/14** |
+| `MP2018` | Manual de Puentes | Diciembre de 2018 (actualizacion de la edicion 2016) | corrida, +4 | 634 | `8ccf94e82b9a8bff30d182f4f814993b4c6dbaba` | sí | confirmada 2026-11-24; aprobada por RD 19-2018-MTC/14 |
 | `MS` | Manual de Carreteras: Suelos, Geologia, Geotecnia y Pavimentos — Seccion Suelos y Pavimentos | Version abril 2014 | corrida, +1 | 281 | `21d19a71090c1e586cd31596db8a4d007dc7b96f` | sí | confirmada 2026-09-14; aprobada por RD 10-2014-MTC/14 |
 | `REG_LEY_29338` | Reglamento de la Ley 29338, Ley de Recursos Hidricos, aprobado por DS 001-2010-AG | DS 001-2010-AG, compilacion con las modificatorias hasta el DS 016-2017-MINAGRI (16-11-2017) | corrida, +0 | 83 | `68fa38ad900a01e2d51384899374ea84fe0272c1` | sí | confirmada 2026-11-24; aprobada por DS 001-2010-AG |
 | `RNGIV` | Reglamento Nacional de Gestion de Infraestructura Vial, aprobado por DS 034-2008-MTC, y sus modificatorias | DS 034-2008-MTC, texto del SPIJ «Actualizado al: 28/05/13», con las modificatorias de los DS 003-2009-MTC, 011-2009-MTC y 012-2011-MTC insertas | corrida, +0 | 17 | `4e41d4a1a9143ab0611ef8010c9b9598dc6f2a10` | sí | confirmada 2026-11-24; aprobada por DS 034-2008-MTC; **con modificatorias posteriores al ejemplar: DS 021-2016-MTC (arts. 10 y 12 a 16) y DS 015-2024-MTC (lit. c del 4.2 y lit. c del 11.2), no leídos** |
@@ -63,7 +64,7 @@ el archivo cambia.
 | `MDCTA_2016` | Manual de Dispositivos de Control del Transito Automotor para Calles y Carreteras | 532 | `58b948b70ca1fd28e133559471b2a4dba28afb1c` | es la norma de señalizacion vial (señales, marcas, semaforos); ninguna fase de la v8 ni ninguna verificacion de M1 a M10 cita un numeral suyo. La demarcacion del derecho de via que el DG-2018 §304.07.03 remite a la RM 404-2011-MTC/02 tampoco pasa por este manual |
 | `MSV_2017` | Manual de Seguridad Vial (2017) | 461 | `cc47c736c38503005a85966002a3ed267524b240` | ninguna fase de la hoja de ruta v8 cita un numeral suyo: trata la seguridad vial de la plataforma (barreras, zonas despejadas, señalizacion), no el drenaje transversal. Lo unico que roza al proyecto es la zona despejada junto a cabezales y aletas, y la v8 no la evalua |
 
-**Estado final (T-12):** 24 fuentes presentes y 2 PDF censados, todos en el repositorio de normas y ninguno en este; 12 fuentes citadas sin PDF (§2).
+**Estado final (T-12):** 25 fuentes presentes y 2 PDF censados, todos en el repositorio de normas y ninguno en este; 12 fuentes citadas sin PDF (§2).
 
 ## 2. Fuentes que se citan y NO están en el repositorio de normas
 
@@ -188,6 +189,7 @@ línea que se pueda romper.
 | `AASHTO_LRFD_9.12.7.2.4` | 12.7.2.4 | «12.7.2.4—Resistance to Buckling» | pág. impresa **12-26** · PDF 1664 | exigencia | 2026-11-12 · texto |
 | `AASHTO_LRFD_9.12.7.2.5` | 12.7.2.5 | «12.7.2.5—Seam Resistance» | pág. impresa **12-27** · PDF 1665 | exigencia | 2026-11-12 · texto |
 | `AASHTO_LRFD_9.3.10.2#CLASE_F` | 3.10.2 | «Seismic Hazard» | pág. impresa **3-71** · PDF 125 | exigencia | 2026-08-29 · texto |
+| `AASHTO_LRFD_9.3.10.2.1#INTERPOLACION` | 3.10.2.1 | «General Procedure» | pág. impresa **3-71** · PDF 125 | exigencia | 2026-11-24 · texto |
 | `AASHTO_LRFD_9.3.10.2.2` | 3.10.2.2 | «Site-Specific Procedure» | pág. impresa **3-100** · PDF 154 | exigencia | 2026-08-28 · texto |
 | `AASHTO_LRFD_9.3.10.3.1` | 3.10.3.1 | «Site Class Definitions» | pág. impresa **3-101** · PDF 155 | exigencia | 2026-08-29 · texto |
 | `AASHTO_LRFD_9.3.10.3.1#EXCEPCIONES` | 3.10.3.1, nota «Exceptions» al pie de la Tabla 3.10.3.1-1 | «Site Class Definitions» | pág. impresa **3-102** · PDF 156 | exigencia | 2026-08-29 · texto |
@@ -442,6 +444,8 @@ línea que se pueda romper.
 > **`AASHTO_LRFD_9.12.7.2.5`** — Solo para costura LONGITUDINAL: la tuberia helicoidal con costura engargolada o soldada no la tiene (ASTM A796 num. 8.1.3.1). La resistencia nominal de la costura remachada de 68 x 13 mm esta en la Tabla 5 de A796 (tabla ASTM_A796.T5) y en la Tabla A12-7 de AASHTO; la EMPERNADA de esa corrugacion no esta en ninguna de las dos.
 
 > **`AASHTO_LRFD_9.3.10.2#CLASE_F`** — AQUI ESTA EL `SHALL`, Y EL REPOSITORIO CITABA EL TEXTO MAS DEBIL DE LOS TRES. La segunda condicion de la lista es «The site is classified as Site Class F (Article 3.10.3.1),», y el verbo de la frase que la introduce es `shall`. La Nota 2 de las tablas de factores -- que es lo que Sec. 0.5 y el criterio venian citando -- dice `should`, y el Art. 3.10.2.2 (pag. impresa 3-100) repite el `shall`. La afirmacion del expediente («AASHTO exige de forma incondicional un estudio de respuesta de sitio para la Clase F») es CIERTA; lo que estaba mal era el anclaje, que se apoyaba en una recomendacion para sostener una exigencia. No es una discrepancia -- las fuentes no se contradicen --, es una cita corta.
+
+> **`AASHTO_LRFD_9.3.10.2.1#INTERPOLACION`** — Es la regla de lectura de los mapas de PGA, S_S y S_1 de AASHTO (Figs. 3.10.2.1-1 a -21 «or ... state ground motion maps approved by the Owner»). Los del Apendice A3 del Manual de Puentes son los mapas aprobados para el Peru y siguen ese procedimiento, pero el Manual no escribe como leerlos entre isolineas: el vacio se cubre con esta fuente tecnica, [C]. Aplicada al corredor: entre 0.50 y 0.52 g, 0.511 a 0.515 g (ficha N1MP-04).
 
 > **`AASHTO_LRFD_9.3.10.2.2`** — «6 miles» esta literal; cualquier conversion a km (9.66) es del proyecto. Y `shall be CONSIDERED`: obliga a considerar el estudio, no a hacerlo. La remision al USGS Active Fault Map tambien es literal, y es el punto: ese mapa no cubre el Peru.
 
@@ -1989,6 +1993,98 @@ línea que se pueda romper.
 > **`MP.T2.4.5.3.1-2`** — NOR-PUE-04: el repositorio afirmaba que el Manual «no transcribe la Tabla 3.4.1-1» y que los gamma eran un vacio declarado. Las dos afirmaciones eran falsas -- el Manual transcribe LAS DOS tablas, completas y con sus valores, dentro del rango de paginas que el propio archivo citaba --, y declarar un vacio sobre la pagina que trae la tabla es el defecto que Sec. 0.5 llama el mas grave.
 
 > **`MP.T2.9.1.5.5.3-1`** — LO QUE EL TITULO DE LA TABLA DICE Y NADIE HABIA LEIDO -- y es la clave del cluster C07 --: «Recubrimiento para las armaduras principales de aceros NO PROTEGIDAS». La tabla peruana tiene UNA columna porque cubre UNA categoria de acero: la no protegida, que AASHTO llama Categoria A. El acero epoxico o galvanizado el Manual lo trata en un numeral aparte, el 2.9.1.5.5.4.
+
+### Manual de Puentes  (`MP2018`)
+
+| id de la cita | Numeral | Título literal del numeral | Página | Carácter | Verificada |
+|---|---|---|---|---|---|
+| `MP2018.1.10#FIG_1_10A_LUZ_LIBRE` | Figura 1.10-a | «Figura 1.10-a Puentes Tipo Viga» | pág. impresa **61** · PDF 65 | definicion | 2026-11-24 · ambos |
+| `MP2018.2.1.4.3.9` | 2.1.4.3.9 | «Aparatos de Apoyo» | pág. impresa **81** · PDF 85 | exigencia | 2026-11-24 · texto |
+| `MP2018.2.3.2.5` | 2.3.2.5 | «Importancia Operativa» | pág. impresa **87** · PDF 91 | permiso | 2026-11-24 · texto |
+| `MP2018.2.4.2.1#PESOS` | 2.4.2.1, Tabla 2.4.2.1-1 | «Cargas Muertas: DC, DW, y EV» | pág. impresa **89** · PDF 93 | permiso | 2026-11-24 · texto |
+| `MP2018.2.4.2.2#SOBRECARGA` | 2.4.2.2 | «Cargas de Suelo: EH, ES, y DD» | pág. impresa **90** · PDF 94 | exigencia | 2026-11-24 · texto |
+| `MP2018.2.4.3.11.2#CLASE_F` | 2.4.3.11.2 | «Peligro Sísmico» | pág. impresa **111** · PDF 115 | exigencia | 2026-11-24 · texto |
+| `MP2018.2.4.3.11.2.1.1` | 2.4.3.11.2.1.1, Tabla 2.4.3.11.2.1.1-1, fila F | «Definiciones de Clases de Sitio» | pág. impresa **112** · PDF 116 | definicion | 2026-11-24 · texto |
+| `MP2018.2.4.3.11.2.1.1#EXCEPCIONES` | 2.4.3.11.2.1.1, bloque «Excepciones» | «Definiciones de Clases de Sitio» | pág. impresa **112** · PDF 116 | exigencia | 2026-11-24 · texto |
+| `MP2018.2.4.3.2.2.2` | 2.4.3.2.2.2 | «Camión de Diseño» | pág. impresa **91** · PDF 95 | definicion | 2026-11-24 · texto |
+| `MP2018.2.4.3.2.2.3` | 2.4.3.2.2.3 | «Tándem de Diseño» | pág. impresa **92** · PDF 96 | definicion | 2026-11-24 · texto |
+| `MP2018.2.4.3.2.2.5` | 2.4.3.2.2.5 | «Área de Contacto de los Neumáticos» | pág. impresa **92** · PDF 96 | definicion | 2026-11-24 · texto |
+| `MP2018.2.4.3.2.2.6` | 2.4.3.2.2.6 | «Presencia Múltiple de Sobrecargas» | pág. impresa **93** · PDF 97 | exigencia | 2026-11-24 · texto |
+| `MP2018.2.4.3.3.2` | 2.4.3.3.2 | «Componentes Enterrados» | pág. impresa **97** · PDF 101 | exigencia | 2026-11-24 · ambos |
+| `MP2018.2.4.3.8.1#NIVEL_DE_DISENO` | 2.4.3.8.1 | «Presión Hidrostática» | pág. impresa **102** · PDF 106 | exigencia | 2026-11-24 · texto |
+| `MP2018.2.4.3.8.2` | 2.4.3.8.2 | «Subpresiones» | pág. impresa **102** · PDF 106 | exigencia | 2026-11-24 · texto |
+| `MP2018.2.4.4.1.3#SUMERGIDO` | 2.4.4.1.3 | «Presencia de Agua» | pág. impresa **123** · PDF 127 | exigencia | 2026-11-24 · texto |
+| `MP2018.2.4.4.1.5.3` | 2.4.4.1.5.3 | «Coeficiente de Empuje Lateral Activo» | pág. impresa **125** · PDF 129 | permiso | 2026-11-24 · ambos |
+| `MP2018.2.4.5.2#EV` | 2.4.5.2 | «Cargas y Denominación de las Cargas» | pág. impresa **130** · PDF 134 | definicion | 2026-11-24 · texto |
+| `MP2018.2.4.5.3.1#MINIMO` | 2.4.5.3.1 | «Factores de Carga y Combinaciones de Carga» | pág. impresa **132** · PDF 136 | exigencia | 2026-11-24 · texto |
+| `MP2018.2.8.1.1.12.3#EXC_ESTATICA` | 2.8.1.1.12.3 | «Límites de Excentricidad» | pág. impresa **244** · PDF 248 | exigencia | 2026-11-24 · texto |
+| `MP2018.2.8.1.1.14.1#EXC` | 2.8.1.1.14.1 | «Generalidades» | pág. impresa **247** · PDF 251 | exigencia | 2026-11-24 · texto |
+| `MP2018.2.8.1.1.14.2.1#ROCA` | 2.8.1.1.14.2.1 | «Caracterización de la Aceleración en la Base del Muro de Contención» | pág. impresa **249** · PDF 253 | exigencia | 2026-11-24 · ambos |
+| `MP2018.A.11.3.1#KAE` | A.11.3.1, ec. A.11.3.1-2 | «Método de Mononobe -Okabe» | pág. impresa **597** · PDF 601 | aproximacion | 2026-11-24 · ambos |
+| `MP2018.GLOSARIO#OBRAS_DE_ARTE_MENORES` | Glosario | «GLOSARIO DE TERMINOS» | pág. impresa **41** · PDF 45 | definicion | 2026-11-24 · texto |
+| `MP2018.INTRODUCCION#LRFD_2014` | Introducción | «INTRODUCCIÓN» | pág. impresa **39** · PDF 43 | permiso | 2026-11-24 · texto |
+| `MP2018.T2.4.3.11.2.1.2-1` | Tabla 2.4.3.11.2.1.2-1 | «Efectos de Sitio» | pág. impresa **113** · PDF 117 | exigencia | 2026-11-24 · ambos |
+| `MP2018.T2.4.5.3.1-1` | 2.4.5.3.1, Tabla 2.4.5.3.1-1 | «Factores de Carga y Combinaciones de Carga» | pág. impresa **133** · PDF 137 | exigencia | 2026-11-24 · ambos |
+| `MP2018.T2.4.5.3.1-2` | 2.4.5.3.1, Tabla 2.4.5.3.1-2 | «Factores de Carga y Combinaciones de Carga» | pág. impresa **134** · PDF 138 | exigencia | 2026-11-24 · ambos |
+| `MP2018.T2.9.1.5.5.3-1` | 2.9.1.5.5.3, Tabla 2.9.1.5.5.3-1 | «Recubrimiento de Concreto» | pág. impresa **377** · PDF 381 | exigencia | 2026-11-24 · ambos |
+
+> **`MP2018.1.10#FIG_1_10A_LUZ_LIBRE`** — IGUAL que en 2016, leida sobre la pagina renderizada: la cota «C = LUZ LIBRE» va entre el PILAR N° 1 y el PILAR N° 2, «L1, L2 = LUZ DE TRAMO» entre ejes y «L = LONGITUD» entre estribos. La figura sigue definiendo la luz libre POR VANO, entre caras.
+
+> **`MP2018.2.1.4.3.9`** — IGUAL que en 2016. Es el par del numeral RETIRADO de NOR-PUE-01: tampoco en 2018 «Aparatos de Apoyo» habla de sobrecarga ni de relleno equivalente (ninguna pagina de la edicion 2018 imprime «relleno equivalente»).
+
+> **`MP2018.2.3.2.5`** — IGUAL que en 2016 (η_I ≥ 1.05, = 1.00, ≥ 0.95) salvo la tilde: 2016 imprime «algun» y 2018 «algún».
+
+> **`MP2018.2.4.2.1#PESOS`** — IGUAL que en 2016: la Tabla 2.4.2.1-1 trae las mismas filas y cifras (arena, limo o arcilla compactado 0.120 kcf; superficies de desgaste bituminosos 0.140 kcf).
+
+> **`MP2018.2.4.2.2#SOBRECARGA`** — IGUAL que en 2016, con el mismo piso de 0.60 m.
+
+> **`MP2018.2.4.3.11.2#CLASE_F`** — IGUAL que en 2016: las mismas cuatro condiciones (falla activa a menos de 10 km, clase F, sismos de larga duracion, importancia del puente).
+
+> **`MP2018.2.4.3.11.2.1.1`** — IGUAL que en 2016: la fila F con sus tres casos (H > 10 ft de turba, H > 25 ft con PI > 75, H > 120 ft).
+
+> **`MP2018.2.4.3.11.2.1.1#EXCEPCIONES`** — IGUAL que en 2016 salvo la errata de imprenta: 2016 imprime «Entidaddetermine», junto, y 2018 «Entidad determine».
+
+> **`MP2018.2.4.3.2.2.2`** — LAS CIFRAS PRIMARIAS SON IGUALES (32.0 kip, 14.0 a 30.0 ft) y la edicion 2018 RETIRA las equivalencias metricas redondeadas que 2016 ponia entre parentesis («(14.55 t.)», «(4.27 m.)», «(9.14 m.)»). El calculo no se mueve: constantes_normativas convierte el valor primario con el factor exacto y nunca uso la equivalencia.
+
+> **`MP2018.2.4.3.2.2.3`** — LAS CIFRAS PRIMARIAS SON IGUALES (25.0 kip, 4.0 ft, 6.0 ft) y la edicion 2018 retira las equivalencias «(11.4 t.)», «(1.20 m.)» y «(1.80 m.)»; el calculo usa el valor primario.
+
+> **`MP2018.2.4.3.2.2.5`** — LAS CIFRAS PRIMARIAS SON IGUALES (20.0 in por 10.0 in) y la edicion 2018 retira las equivalencias «(0.50 m.)» y «(0.25 m.)»; el calculo usa el valor primario.
+
+> **`MP2018.2.4.3.2.2.6`** — IGUAL que en 2016, con la Tabla 2.4.3.2.2.6-1 en la misma pagina y el mismo m = 1.20 para un carril cargado.
+
+> **`MP2018.2.4.3.3.2`** — IGUAL que en 2016: la ec. 2.4.3.3.2-1, leida sobre la pagina renderizada, es IM = 33(1.0 − 0.125 D_E) ≥ 0 %, con D_E en ft.
+
+> **`MP2018.2.4.3.8.1#NIVEL_DE_DISENO`** — IGUAL que en 2016.
+
+> **`MP2018.2.4.3.8.2`** — IGUAL que en 2016.
+
+> **`MP2018.2.4.4.1.3#SUMERGIDO`** — IGUAL que en 2016.
+
+> **`MP2018.2.4.4.1.5.3`** — IGUAL que en 2016: las ecs. 2.4.4.1.5.3-1 y -2 de Coulomb, comparadas sobre la pagina renderizada. El encabezado termina en «, ka» compuesto en fuente simbolica (la capa de texto da «xy»), y por eso el titulo se transcribe hasta «Activo».
+
+> **`MP2018.2.4.5.2#EV`** — IGUAL que en 2016. El encabezado esta en la pag. impresa 129 (PDF 133) y la definicion de EV en la 130.
+
+> **`MP2018.2.4.5.3.1#MINIMO`** — IGUAL que en 2016. El encabezado del numeral esta en la pag. impresa 130 (PDF 134).
+
+> **`MP2018.2.8.1.1.12.3#EXC_ESTATICA`** — EL TEXTO ES IGUAL Y EL NUMERAL ESTA CORREGIDO: la edicion 2018 imprime «2.8.1.1.12.3», en la serie 2.8.1.1.12.2 -> .12.4, y su indice tambien (pag. impresa 15). La errata que DIS-MP-NUMERAL-2.3.1.1.12.3 declara es de la edicion 2016 y la de 2018 no la tiene. La roca, «nueve decimos centrales», igual.
+
+> **`MP2018.2.8.1.1.14.1#EXC`** — LA ERRATA SIGUE: la edicion 2018 conserva el «tercio central» donde AASHTO escribe «middle two-thirds», de modo que DIS-MP-EXCENTRICIDAD vale tambien contra la edicion vigente. La unica diferencia con 2016 es otra errata, nueva: «cimientan» por «cimentan».
+
+> **`MP2018.2.8.1.1.14.2.1#ROCA`** — LA ERRATA ESTA CORREGIDA. El Verbatim es la prosa, que la capa de texto entrega; el parentesis esta compuesto en fuente simbolica (la capa da «n•R = 1.2 7ijIX4d») y se leyo renderizando la pagina a 3x: «Para muros cimentados sobre Sitio con suelos Clase A o B (roca dura o blanda), k_h0 estará basado en 1.2 veces el coeficiente de aceleración pico del suelo (es decir, k_h0 = 1.2 F_pga PGA).» El 1.2 esta del lado derecho, como en AASHTO: la errata de DIS-MP-KH0-ROCA («1.2 kh0=FpgaPGA») es de la edicion 2016 y la de 2018 no la tiene.
+
+> **`MP2018.A.11.3.1#KAE`** — EL SIGNO ESTA CORREGIDO: renderizada la pagina a 3x, la ec. A.11.3.1-2 imprime el denominador «[1 + raiz(...)]», signo MAS, como AASHTO. La errata de DIS-MP-KAE-SIGNO («[1 - raiz(...)]») es de la edicion 2016 y la de 2018 no la tiene. El numerador sigue escribiendo «B» mayuscula en cos²(φ − θ_MO − B), igual que 2016.
+
+> **`MP2018.GLOSARIO#OBRAS_DE_ARTE_MENORES`** — CAMBIO LA REDACCION, NO LA CIFRA. 2016: «Son aquellas obras cuya luz libre es menor que 6.00 m (20 ft).» 2018: «Estructuras cuya luz libre entre ejes de apoyo es menor que 6.00 m.», y una entrada nueva a continuacion: «PUENTE: Estructura requerida para atravesar un accidente geográfico o un obstáculo natural o artificial, cuya luz libre es mayor o igual a 6.00 m (20 ft) ...». «Luz libre ENTRE EJES DE APOYO» mezcla las dos medidas que la Fig. 1.10-a separa (la luz libre va entre caras de pilares; la luz de tramo, entre ejes): toca a DIS-LUZ-DENOMINACION, abierta, y no mueve el umbral de 6.0 m que el codigo compara. El titulo del glosario esta en la pag. impresa 40 (PDF 44).
+
+> **`MP2018.INTRODUCCION#LRFD_2014`** — CAMBIO LA REDACCION Y EL PERMISO SIGUE. El titulo pasa de «INTRODUCCIÓN AL MANUAL DE PUENTES» a «INTRODUCCIÓN», y la adaptacion es de la LRFD 2014 (7a ed.) «y del Interim publicado por AASHTO el año 2015»; el permiso de «considerar las actualizaciones» es el mismo, y con el DIS-MP-LRFD-EDICION se resuelve igual. Las erratas «SESPECIFICATIONS» y «AASTHO» son de la pagina.
+
+> **`MP2018.T2.4.3.11.2.1.2-1`** — IGUAL que en 2016, celda a celda sobre la pagina renderizada a 3x: las mismas seis filas (A 0.8 ... E 2.5/1.7/1.2/0.9/0.9; F con asterisco y la nota 2), y los mismos rotulos extremos «PGA < 0.10» y «PGA > 0.50», desigualdades estrictas, de modo que la ambiguedad de NOR-PUE-11 ('F_pga_lectura_columna_extrema') es la misma. El encabezado 2.4.3.11.2.1 esta en la pag. impresa 111 (PDF 115).
+
+> **`MP2018.T2.4.5.3.1-1`** — IGUAL que en 2016, celda a celda sobre la pagina renderizada: las trece filas de Resistencia I a Fatiga II con los mismos factores (Evento Extremo I: 1.0 sobre DC...SH y γEQ sobre LL). La edicion 2018 resalta en amarillo la fila Servicio III sin cambiar sus valores (LL = 0.80).
+
+> **`MP2018.T2.4.5.3.1-2`** — LOS VALORES SON IGUALES a los de 2016, fila a fila sobre la pagina renderizada (DC 1.25/0.90 ... ES 1.50/0.75; EV rigida enterrada 1.30/0.90, termoplasticas 1.30/0.90, «Entre otros» 1.95/0.90). Cambian tres de las erratas que DIS-MP-ERRATAS-GAMMA-P conserva de 2016: «Máximo» lleva tilde, «EV: Presión vertical» tambien y «placas» sustituye a «plancas». Siguen «Estructuras flexible enterradas», «Entre otros» y la omision de «profundas».
+
+> **`MP2018.T2.9.1.5.5.3-1`** — IGUAL que en 2016, fila a fila sobre las paginas renderizadas: la tabla empieza en la pag. impresa 377 (en 2016 iba entera en la 378) y termina en la 378, con las mismas situaciones y cifras (4.0 in agua salada ... 1.0 in demas miembros del cajon prefabricado) y los mismos factores por relacion W/C (0.8 y 1.2).
 
 ### Manual de Carreteras: Suelos, Geologia, Geotecnia y Pavimentos — Seccion Suelos y Pavimentos  (`MS`)
 
@@ -3693,6 +3789,14 @@ declararlo en el punto de uso, a reportar el defecto contra la hoja de
 ruta **y a dejar dicho que la hoja de ruta sigue mal mientras no se
 corrija**. La tercera obligación vive aquí.
 
+### abierta_contra_hoja_de_ruta
+
+- **`DIS-HR-PGA-LECTURA` — la PGA en roca del corredor (La Union, Piura) leida en el mapa del Apendice A3 del Manual de Puentes, y su etiqueta.** Gana **MP2018**: el mapa, leido con la regla de lectura de la fuente tecnica cuyo procedimiento el Manual adapta, da entre 0.511 y 0.515 g: 0.50 g es la isolinea INFERIOR que acota el sitio, una cota inferior y no la lectura. Y el valor es [S], no [N]: cambia al mover la obra de sitio y no al cambiar de proyectista, como la propia hoja de ruta admite en su linea 1227. EL CODIGO NO CAMBIO: datos_sitio['PGA_roca_B'] sigue en 0.50 g, con esta lectura declarada en su trazabilidad, hasta que el dueño decida (recomendacion de Fable en la ficha N1MP-06: 0.52 g mientras no haya coordenada del corredor, 0.51 g interpolado cuando la haya). LA HOJA DE RUTA SIGUE MAL en las seis lineas nombradas mientras no se corrija
+  - Si se sigue la otra: con 0.50 g, A_s = F_pga·PGA, k_h0 y el incremento sismico del cabezal quedan entre un 2 y un 4 % por debajo de lo que el mapa da (0.51-0.52 g), del lado inseguro; F_pga no cambia en las clases C, D ni E. Y la PGA cae justo sobre el rotulo «PGA > 0.50» de la Tabla 2.4.3.11.2.1.2-1, ambiguedad (NOR-PUE-11) que con 0.51 g desaparece
+  - *hoja_de_ruta*: su Sec. 0.4 (linea 90) escribe «Lectura para La Unión (Piura): PGA = 0.50 g `[N]`», sin coordenada ni isolinea, y la arrastra a las lineas 108-109 (A_s de las clases C y D), 138 (a_max de la licuefaccion), 1227 y 1229 (Anexo A) y 1433 (tablero: «[N] Cerrado»). Y se contradice en la etiqueta: la linea 1227 la declara [S] («era [N]») mientras las lineas 90 y 1433 siguen diciendo [N]
+  - *MP2018*: el mapa de PGA de su Apendice A3 (PDF 568, pag. impresa 564, sin capa de texto; el MISMO raster que el de la edicion 2016, PDF 553) pone La Union ENTRE las isolineas de 0.50 y 0.52 g, no sobre la de 0.50: interpolado, 0.511 g en la localidad (-5.402, -80.742) y 0.515 g en la capital distrital (5°19'20"S 80°51'49"W), +-0.003 g por la georreferencia. Coordenadas publicas: la del corredor sigue sin registrar (pendiente 1.4)
+  - *AASHTO_LRFD_9*: «Linear interpolation shall be used for sites located between contour lines or between a contour line and a local maximum or minimum» (3.10.2.1, pag. impresa 3-71). El Manual adapta ese Procedimiento General (2.4.3.11.2.0) y remite al A3 sin transcribir la clausula: se aplica como [C]
+
 ### abierta
 
 - **`DIS-AASHTO-GAMMA-EV-12.6.1` — que extremo del factor de carga de EV -- empuje vertical de tierra -- aplica a una ESTRUCTURA ENTERRADA.** Gana **AASHTO_LRFD_9 (Art. 3.4.1, = Manual de Puentes 2.4.5.3.1)**: PARA LA VERIFICACION DE FLOTACION, y solo para ella. El argumento no es de jerarquia -- las dos son `shall` y la 12.6.1 es ademas la especial para estructuras enterradas -- sino de QUE MAGNITUD SE ESTA VERIFICANDO. La 12.6.1 fija el extremo con que se diseña la estructura POR el empuje de tierra, donde EV es la SOLICITACION y el maximo es el extremo desfavorable. En V7, EV es lo que SUJETA al conducto contra la subpresion: es resistencia, no solicitacion, y ahi el extremo desfavorable es el minimo. Aplicar el maximo haria la comprobacion MAS FACIL, que es la direccion insegura, y por eso leerla literalmente aqui contradice el proposito del propio Art. 3.4.1. Y ES UNA LECTURA, no una cita: el texto de 12.6.1 NO trae esa salvedad. Se declara asi, en vez de resolverse en silencio, porque el proyecto no tiene numeral que la sostenga.
@@ -3703,6 +3807,7 @@ corrija**. La tercera obligación vive aquí.
   - Si se sigue la otra: con la luz libre POR VANO de la Fig. 1.10-a un cruce de 8 m salvado con tres celdas de 2.5 m seria obra de arte menor y se disenaria con el Manual de Hidrologia, mientras el NBIS lo cuenta como puente; y con los 6.096 m de AASHTO una luz entre 6.0 y 6.096 m dejaria de ser puente. Lo que el hallazgo leyo en el codigo --comparar el ANCHO DEL CAUCE-- confundiria el dato hidraulico con el estructural
   - *MC_HHD*: «la estructura cuya luz sea menor a 6.0 m» y «cuya luz sea mayor o igual a 6.0 m, siguiendo lo establecido en las especificaciones AASHTO LRFD»: escribe «luz» sin definirla y la cifra 6.0 m
   - *MP*: obras de arte menores son las de «luz libre menor que 6.00 m (20 ft)», y su Fig. 1.10-a dibuja la luz libre POR VANO, entre pilares: bajo esta lectura un marco de tres celdas de 2.5 m tiene luz libre 2.5 m y es obra de arte menor
+  - *MP2018*: su Glosario reescribe la entrada: obras de arte menores son las «Estructuras cuya luz libre entre ejes de apoyo es menor que 6.00 m.», y añade PUENTE para la «luz libre ... mayor o igual a 6.00 m (20 ft)». «Entre ejes de apoyo» es como su Fig. 1.10-a mide la LUZ DE TRAMO (L1, L2), no la luz libre (C, entre caras), de modo que la definicion mezcla las dos. En un marco la luz entre ejes es la luz libre mas un espesor de pared: la denominacion solo cambia en la franja justo por debajo de 6.0 m
   - *AASHTO_LRFD_9*: «Any structure having an opening not less than 20.0 ft»: la ABERTURA de la estructura, y 20.0 ft son 6.096 m, no 6.0
   - *HDS5_3ED*: los cruces que superan 20 ft (6.1 m) de luz «either as a single barrel or the total width of a multiple barrel crossing» son puentes para el NBIS; y para el metodo hidraulico la guia razonable es modelar como puente «a single culvert with a span of 20 ft (6.1 m) or more»
 
@@ -3817,18 +3922,22 @@ corrija**. La tercera obligación vive aquí.
   - Si se sigue la otra: e <= B/6 en vez de B/3: rechazaria diseños que la norma acepta. Es conservador, y por eso no cambia ningun resultado ya emitido, pero deja la cita sin sostener
   - *MP*: traduce el «middle two-thirds» de AASHTO como «tercio central», que no es lo mismo: dos tercios centrales es e <= B/3 y el tercio central es e <= B/6
   - *AASHTO_LRFD_9*: «within the middle two-thirds of the base for gamma_EQ = 0.0»
+  - *MP2018*: la edicion 2018 CONSERVA la errata: «estará dentro del tercio central de la base para ɤEQ = 0.0», pag. impresa 247 (PDF 251), y suma otra, «cimientan». La discrepancia vale en las dos ediciones
 - **`DIS-MP-KAE-SIGNO` — el signo del denominador de K_AE (Mononobe-Okabe).** Gana **AASHTO_LRFD_9**: no por preferencia de fuente: con el signo menos K_AE DIVERGE cuando el radicando tiende a 1, y el caso limite k_h = k_v = 0 deja de devolver el Ka de Coulomb. La formula se rompe donde el propio Manual la manda coincidir, y el Manual declara transcribirla de AASHTO
   - Si se sigue la otra: K_AE diverge; quien «corrija» M9 contra la letra impresa del Manual rompe la formula
   - *MP*: imprime «[1 - raiz(...)]», signo MENOS, verificado renderizando la pag. impresa 586 a 6x: el trazo es horizontal unico, sin trazo vertical
   - *AASHTO_LRFD_9*: imprime «[1 + raiz(...)]»
+  - *MP2018*: la edicion 2018 (RD 19-2018-MTC/14) lo imprime como AASHTO, «[1 + raiz(...)]», en su ec. A.11.3.1-2, pag. impresa 597 (PDF 601), leido renderizando la pagina a 3x: la errata es de la edicion 2016
 - **`DIS-MP-KH0-ROCA` — el lado del 1.2 en la clausula de roca de k_h0.** Gana **AASHTO_LRFD_9**: gana la PROSA del Manual, que coincide con AASHTO; el parentesis esta mal compuesto
   - Si se sigue la otra: una REDUCCION del 17 % de k_h0, justo lo contrario de lo que la prosa de la misma frase acaba de decir
   - *MP*: el parentesis imprime «1.2 kh0=FpgaPGA», con el 1.2 del lado izquierdo; leido al pie de la letra daria k_h0 = F_pga*PGA/1.2. La PROSA de la misma frase dice lo contrario
   - *AASHTO_LRFD_9*: «k_h0 shall be based on 1.2 times the site-adjusted peak ground acceleration coefficient (i.e., k_h0 = 1.2 F_pga PGA)»
+  - *MP2018*: la edicion 2018 (RD 19-2018-MTC/14) lo imprime como AASHTO: «(es decir, k_h0 = 1.2 F_pga PGA)», con el 1.2 a la derecha, pag. impresa 249 (PDF 253), leido por imagen: la errata es de la edicion 2016
 - **`DIS-MP-NUMERAL-2.3.1.1.12.3` — el numeral impreso de «Limites de Excentricidad».** Gana **MP**: se cita COMO LO IMPRIME, con la advertencia, para que quien lo busque lo encuentre. Corregir el numeral en la cita mandaria al revisor a un renglon que el documento no tiene
   - Si se sigue la otra: citar «2.8.1.1.12.3» manda a un numeral que el Manual no imprime
   - *MP*: lo imprime «2.3.1.1.12.3», con un 3 donde toca un 8, rompiendo la serie 2.8.1.1.12.2 -> 2.8.1.1.12.5; el indice repite la errata
   - *AASHTO_LRFD_9*: la remision cruzada del propio Manual (11.6.3.3) si es correcta
+  - *MP2018*: la edicion 2018 (RD 19-2018-MTC/14) lo imprime bien, en la serie y con la remision a AASHTO 11.6.3.3: «2.8.1.1.12.3», pag. impresa 244 (PDF 248), y su indice tambien (pag. impresa 15). La errata es de la edicion 2016
 
 ## 8. Lo que falta por transcribir
 
@@ -3838,7 +3947,7 @@ vigila. Una cita con cualquier campo pendiente NO puede llevar firma de
 verificación.
 
 
-Citas sin firma de verificación: **26** de 658.
+Citas sin firma de verificación: **26** de 688.
 - `AASHTO_M294_TRAD.1.1.1`
 - `AASHTO_M294_TRAD.1.4`
 - `AASHTO_M294_TRAD.7.2.1`

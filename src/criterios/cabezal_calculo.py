@@ -1635,7 +1635,8 @@ CRITERIOS: Dict[str, Criterio] = {
                 "RD 041-2016-MTC/14, impreso en las PDF 2 y 3 del ejemplar; "
                 "derogado por RD 19-2018-MTC/14, El Peruano dispositivo "
                 "1730970-1, vigente desde el 15-01-2019, verificado por "
-                "busqueda web) y "
+                "busqueda web; la RD leida en su ejemplar, "
+                "`fuentes.MP2018`, PDF 1 a 3, sin regimen transitorio) y "
                 "`fuentes.fuentes_con_eleccion_de_edicion_pendiente_legal`, "
                 "que deriva de ese campo la unica fuente de esta ficha; un "
                 "test exige que la nombre a ella y solo a ella"),
@@ -1645,12 +1646,20 @@ CRITERIOS: Dict[str, Criterio] = {
                          "del Manual de Puentes 2018 al registro y la "
                          "reverificacion de sus citas"),
         verificacion_pendiente=(
-            "Leer la RD 19-2018-MTC/14 y su regimen transitorio para "
-            "expedientes en curso, que no fue legible en linea; declarar la "
-            "fecha de inicio del expediente; y si rige la edicion 2018, "
-            "abrir una sesion de registro para el Manual de Puentes "
-            "actualizado y medir que numerales de los citados cambiaron. La "
-            "declaracion es un diccionario: {'opcion': <una de las dos>, "
+            "Declarar la fecha de inicio del expediente y la opcion. Lo que "
+            "habia que leer ya se leyo (N1 del plan de normas 2): la RD "
+            "19-2018-MTC/14 esta impresa en el ejemplar de la edicion 2018 "
+            "(Fuente MP2018, PDF 1 a 3) y tiene cinco articulos SIN "
+            "disposicion transitoria --- aprueba, publica, pone en vigencia "
+            "al dia siguiente de su publicacion, deroga la RD "
+            "041-2016-MTC/14 y remite al Ministerio de Justicia ---, de modo "
+            "que la opcion citada exige un acto DISTINTO de esa RD que la "
+            "ampare. La edicion 2018 ya esta en el registro con un par "
+            "MP2018.* por cada cita del Manual de Puentes, verificado contra "
+            "su pagina, y el contraste de los 29 numerales esta en las "
+            "fichas N1MP-02 y N1MP-03 de docs/decisiones_diferidas.md: "
+            "ninguna cifra que entre en el calculo cambio. La declaracion es "
+            "un diccionario: {'opcion': <una de las dos>, "
             "'fecha_inicio_expediente': <fecha>, 'acto_regimen_transitorio': "
             "<acto leido>}"),
         sin_consumidor=(

@@ -2486,24 +2486,33 @@ K_H0_TEXTO = ("kh0=FpgaPGA = As donde kh0 es el coeficiente de aceleracion "
 # Clausula de roca del mismo numeral. El 1.2 es [N] y sale de la PROSA; el
 # parentesis que la acompana esta mal impreso y se transcribe entero para que
 # nadie lo aplique (ver K_H0_ROCA_ERRATA).
+# --- N1 del plan de normas 2 (fichas N1MP-03 y N1MP-05) --- LA EDICION
+# VIGENTE (2018) YA NO TIENE ESTA ERRATA: su 2.8.1.1.14.2.1, pag. impresa
+# 249 (PDF 253, cita MP2018.2.8.1.1.14.2.1#ROCA), imprime «k_h0 = 1.2 F_pga
+# PGA», leido por imagen. El valor (1.2) no cambia. Por dictamen de Fable,
+# K_H0_ROCA_ERRATA (que la memoria imprime) dice de que edicion es la errata
+# y que la de 2018 la corrige; DIS-MP-KH0-ROCA lleva la parte MP2018.
 K_H0_FACTOR_ROCA_A_B = 1.2
 K_H0_ROCA_TEXTO = ("Para muros cimentados sobre Sitio con suelos Clase A o B "
                    "(roca dura o blanda), k h0 estara basado en 1.2 veces el "
                    "coeficiente de aceleracion pico del suelo (es decir, "
                    "1.2 kh0=FpgaPGA).")
 K_H0_ROCA_ERRATA = (
-    "ERRATA DE IMPRENTA DEL MANUAL, verificada como imagen en la pag. "
-    "impresa 254 (PDF 255): el parentesis imprime '1.2 kh0=FpgaPGA', con el "
-    "1.2 del lado izquierdo. Leido al pie de la letra daria "
-    "k_h0 = F_pga*PGA/1.2, una REDUCCION del 17 %, justo lo contrario de lo "
-    "que la prosa de la misma frase acaba de decir. AASHTO LRFD 9a ed., "
+    "ERRATA DE IMPRENTA DE LA EDICION 2016 DEL MANUAL (RD 041-2016-MTC/14), "
+    "verificada como imagen en su pag. impresa 254 (PDF 255): el parentesis "
+    "imprime '1.2 kh0=FpgaPGA', con el 1.2 del lado izquierdo. Leido al pie "
+    "de la letra daria k_h0 = F_pga*PGA/1.2, una REDUCCION del 17 %, justo "
+    "lo contrario de lo que la prosa de la misma frase acaba de decir. LA "
+    "EDICION 2018 (RD 19-2018-MTC/14) LA CORRIGE: su pag. impresa 249 "
+    "imprime '(es decir, k_h0 = 1.2 F_pga PGA)'. AASHTO LRFD 9a ed., "
     "Art. 11.6.5.2.1 'Characterization of Acceleration at Wall Base', pag. "
-    "impresa 11-27 (PDF 1496), lo escribe sin ambiguedad: "
+    "impresa 11-27 (PDF 1496), lo escribe igual: "
     "'k_h0 shall be based on 1.2 times the site-adjusted peak ground "
     "acceleration coefficient (i.e., k_h0 = 1.2 F_pga PGA)'. GANA LA PROSA "
-    "DEL MANUAL, coincidente con AASHTO. Es la segunda de las TRES erratas de "
-    "imprenta de esta misma cadena sismica; las otras son "
-    "K_AE_ERRATA_MANUAL y EXCENTRICIDAD_ERRATA_MANUAL")
+    "DEL MANUAL, coincidente con AASHTO y con la edicion 2018. Es la segunda "
+    "de las TRES erratas de imprenta de esta misma cadena sismica en la "
+    "edicion 2016; las otras son K_AE_ERRATA_MANUAL y "
+    "EXCENTRICIDAD_ERRATA_MANUAL")
 
 # k_v: el Manual lo FIJA, no lo deja a eleccion. La afirmacion contraria
 # ('practica corriente; no fijado por el Manual de Puentes') vivia en el
@@ -2662,9 +2671,16 @@ EXCENTRICIDAD_SISMICA_TEXTO_AASHTO = (
     "be obtained by linear interpolation of the values given in this Article.")
 NUMERAL_EXCENTRICIDAD_SISMICA_AASHTO = _reg.cita(
     "AASHTO_LRFD_9.11.6.5.1#EXC").como_texto()
+# --- N1 del plan de normas 2 (fichas N1MP-03 y N1MP-05) --- ESTA ES LA
+# UNICA DE LAS TRES QUE LA EDICION 2018 CONSERVA: su 2.8.1.1.14.1, pag.
+# impresa 247 (PDF 251, cita MP2018.2.8.1.1.14.1#EXC), sigue imprimiendo
+# «tercio central», y ademas «cimientan». El limite que el codigo usa (B/3
+# con gamma_EQ = 0.0, AASHTO) no cambia con la edicion; el texto lo dice.
 EXCENTRICIDAD_ERRATA_MANUAL = (
-    "TERCERA ERRATA DE IMPRENTA DEL MANUAL en esta misma cadena sismica, y la "
-    "unica que mueve un numero. El num. 2.8.1.1.14.1 traduce el 'middle "
+    "TERCERA ERRATA DE IMPRENTA DEL MANUAL en esta misma cadena sismica, la "
+    "unica que mueve un numero y la unica que esta EN LAS DOS EDICIONES: la "
+    "2016 (pag. impresa 253) y la 2018 (RD 19-2018-MTC/14, pag. impresa "
+    "247), que la conserva. El num. 2.8.1.1.14.1 traduce el 'middle "
     "two-thirds' de AASHTO como 'tercio central', que no es lo mismo: dos "
     "tercios centrales es e <= B/3 y el tercio central es e <= B/6, la mitad. "
     "Que es descuido de traduccion y no decision del MTC lo prueba el propio "
@@ -2718,11 +2734,17 @@ PRESION_CONTACTO_TEXTO = (
 # y el indice del Manual repite la errata. La remision a AASHTO (11.6.3.3) si
 # es correcta. Se cita como lo imprime, con la advertencia, para que quien lo
 # busque lo encuentre.
+# --- N1 del plan de normas 2 (fichas N1MP-02 y N1MP-05) --- La edicion 2018
+# lo imprime BIEN, «2.8.1.1.12.3», pag. impresa 244 (PDF 248), y su indice
+# tambien (cita MP2018.2.8.1.1.12.3#EXC_ESTATICA); el texto y las fracciones
+# de B son los mismos. El rotulo sigue citando la edicion 2016 (la que el
+# registro cita) y, por dictamen de Fable, dice que la errata es de ella.
 NUMERAL_EXCENTRICIDAD_ESTATICA = (
     "Manual de Puentes (MTC) num. 2.3.1.1.12.3 'Limites de Excentricidad' "
-    "(11.6.3.3 AASHTO) -- el numeral se imprime asi, con 2.3 en vez de 2.8, "
-    "errata del Manual que su propio indice repite --, pag. impresa 250 "
-    "(PDF 251)")
+    "(11.6.3.3 AASHTO) -- asi lo imprime la edicion 2016 (RD "
+    "041-2016-MTC/14), con 2.3 en vez de 2.8, errata que su propio indice "
+    "repite y que la edicion 2018 (RD 19-2018-MTC/14) corrige: "
+    "2.8.1.1.12.3, pag. impresa 244 --, pag. impresa 250 (PDF 251)")
 EXCENTRICIDAD_ESTATICA_FRACCION_B = {"suelo": 1.0 / 3.0, "roca": 0.45}
 EXCENTRICIDAD_ESTATICA_TEXTO = (
     "En las fundaciones en suelo la ubicacion de la resultante de las fuerzas "
@@ -2748,12 +2770,21 @@ NUMERAL_K_AE_MANUAL = ("Manual de Puentes (MTC), Apendice A11 'Diseno "
                        "'Metodo de Mononobe -Okabe', ec. A.11.3.1-2, pag. "
                        "impresa 586 (PDF 587)")
 NUMERAL_K_AE_AASHTO = _reg.cita("AASHTO_LRFD_9.A11.3.1#KAE").como_texto()
+# --- N1 del plan de normas 2 (fichas N1MP-03 y N1MP-05) --- LA EDICION
+# VIGENTE (2018) YA NO TIENE ESTA ERRATA: su ec. A.11.3.1-2, pag. impresa
+# 597 (PDF 601, cita MP2018.A.11.3.1#KAE), imprime «[1 + raiz(...)]», leido
+# renderizando la pagina a 3x. El codigo, que sigue a AASHTO, coincide con
+# la letra de la edicion vigente, y el texto de abajo (dictamen de Fable)
+# dice de que edicion es la errata.
 K_AE_ERRATA_MANUAL = (
-    "ERRATA DE IMPRENTA DEL MANUAL. El Apendice A11 imprime el denominador "
-    "de K_AE con '[1 - raiz(...)]', signo MENOS, verificado renderizando la "
-    "pag. impresa 586 (PDF 587) a 6x: el trazo es horizontal unico, sin "
-    "trazo vertical. AASHTO, del que el propio Manual declara transcribirlo, "
-    "imprime '[1 + raiz(...)]' (pag. impresa 11-145). GANA AASHTO, y no por "
+    "ERRATA DE IMPRENTA DE LA EDICION 2016 DEL MANUAL (RD 041-2016-MTC/14). "
+    "Su Apendice A11 imprime el denominador de K_AE con '[1 - raiz(...)]', "
+    "signo MENOS, verificado renderizando la pag. impresa 586 (PDF 587) a "
+    "6x: el trazo es horizontal unico, sin trazo vertical. LA EDICION 2018 "
+    "(RD 19-2018-MTC/14) LA CORRIGE: su ec. A.11.3.1-2, pag. impresa 597, "
+    "imprime '[1 + raiz(...)]'. AASHTO, del que el propio Manual declara "
+    "transcribirlo, imprime '[1 + raiz(...)]' (pag. impresa 11-145). GANA "
+    "AASHTO, coincidente con la edicion 2018, y no por "
     "preferencia de fuente: con el signo menos K_AE DIVERGE cuando el "
     "radicando tiende a 1, y el caso limite k_h = k_v = 0 deja de devolver "
     "el Ka de Coulomb -- la formula se rompe donde el propio Manual la "
@@ -5116,6 +5147,10 @@ _M_POR_PULG = PULGADA_EN_MM / MILIMETROS_POR_METRO
 # escribe kip y ft y pone entre parentesis una equivalencia REDONDEADA
 # (14.55 t, 4.27 m, 1.20 m, 1.80 m); se convierte el valor primario con el
 # factor exacto: 32.0 kip = 142.34 kN (las «14.55 t» darian 142.69 kN).
+# --- N1 del plan de normas 2 (ficha N1MP-02) --- La edicion 2018 (pag.
+# impresa 91-92, PDF 95-96) conserva las cifras primarias y RETIRA las
+# equivalencias redondeadas: con ella este bloque no cambia, porque nunca
+# las uso.
 # Para alcantarillas solo cuentan los EJES (AASHTO 3.6.1.2.6a, cita
 # AASHTO_LRFD_9.3.6.1.2.6a#EJES): no hay carga de carril.
 EJE_CAMION_HL93_KIP = 32.0

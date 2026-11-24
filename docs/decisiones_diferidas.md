@@ -59,7 +59,7 @@ registro.
 
 # Índice de fichas
 
-> Tabla derivada automáticamente de las **411** fichas del documento (`80` cerradas, `154` abiertas/parciales, `177` diferidas/declaradas).
+> Tabla derivada automáticamente de las **417** fichas del documento (`82` cerradas, `158` abiertas/parciales, `177` diferidas/declaradas).
 > Regla de estado (verificada por `tests/test_decisiones_diferidas.py`): `cerrada` si el título marca IMPLEMENTADA/CERRADA o tiene `**Cerrado` sin `**Abierto`; `abierta / parcial` si declara `**Abierto`; `diferida / declarada` en el resto.
 
 | Ficha | Tema | Estado |
@@ -475,6 +475,12 @@ registro.
 | N2L-01 | La Ley 29338, su Reglamento y el RNGIV son fuentes presentes, y la faja marginal sigue sin evaluarse por falta del dato de sitio | abierta / parcial |
 | N2L-02 | Una norma legal compilada con modificatorias posteriores: vigencia confirmada con reserva, y la reserva se imprime | cerrada |
 | N2L-03 | La hoja de ruta rotula «[N] Ley 29338» el caudal del receptor, y la ley no fija caudales | diferida / declarada |
+| N1MP-01 | El Manual de Puentes 2018 entra como Fuente `MP2018`, convive con la de 2016 y su RD no trae régimen transitorio | abierta / parcial |
+| N1MP-02 | Contraste de las citas `MP` con la edición 2018 (1/2): de la Introducción al 2.4.3.11.2 | cerrada |
+| N1MP-03 | Contraste de las citas `MP` con la edición 2018 (2/2): del 2.4.3.11.2.1 al Apéndice A11 | abierta / parcial |
+| N1MP-04 | La PGA de roca de La Unión, leída en el mapa de 2018: entre las isolíneas 0.50 y 0.52 g, no sobre la de 0.50 | abierta / parcial |
+| N1MP-05 | Dictamen de Fable sobre N1 (1/2): la edición 2018 es parte de cinco discrepancias y la memoria dice de qué edición es cada errata | cerrada |
+| N1MP-06 | Dictamen de Fable sobre N1 (2/2): la PGA del corredor es una discrepancia ABIERTA contra la hoja de ruta | abierta / parcial |
 
 ---
 
@@ -10587,3 +10593,176 @@ impreso que no es de cálculo: la huella de los criterios.
   Sec. 1.2: «[S], lo fija la ANA o la Junta; la Ley 29338 no fija
   caudales»).
 - **Dónde vive:** `src/variables_entrada.py::Q_receptor_m3s`
+
+# Parte LXVI — Lo que N1 del plan de normas 2 dejó escrito: el Manual de Puentes 2018
+
+> El plan es `proceso/planes_mejora/12_PLAN_NORMAS_2.md`. Sus fichas llevan el
+> prefijo **N1MP** porque `N1-01` ya existe: es de la sesión N1 de 2026-09-14
+> (ASTM A796), que no tiene relación con esta.
+
+## N1MP-01 · El Manual de Puentes 2018 entra como Fuente `MP2018`, convive con la de 2016 y su RD no trae régimen transitorio
+
+- **Cerrado (N1, 2026-11-24):** el PDF de `normas_2/` pasó a `normas/` del
+  repositorio de normas («Manual de Puentes 2018 (RD 19-2018-MTC-14).pdf»,
+  sha1 `8ccf94e8…`, 634 páginas) y es la Fuente PRESENTE `MP2018`:
+  paginación `Corrida(+4)` medida en 630 de 634 (las cuatro sin folio son la
+  RD y la carátula), vigencia confirmada, `convive_con` cruzado con `MP`, que
+  NO se borra (el cálculo sigue citando la de 2016, anclada por sha1). El plan
+  lo daba por escaneo sin texto y no lo es: 626 de 634 páginas entregan texto;
+  sin texto están la RD (PDF 1–3), la carátula, los tres mapas del Apéndice
+  A3 (PDF 568–570) y una figura (PDF 613), y las ecuaciones en fuente
+  simbólica salen ilegibles, de modo que se leen por imagen. **La RD
+  19-2018-MTC/14** (20-12-2018, leída renderizando las PDF 1–3) tiene cinco
+  artículos —aprueba el Manual de 630 páginas, dispone su publicación, lo
+  pone en vigencia al día siguiente de publicarse, deroga la RD
+  041-2016-MTC/14 y lo remite al Ministerio de Justicia— y **ninguna
+  disposición transitoria**; su considerando dice que las modificaciones «no
+  son sustanciales y se contraen a aspectos formales». La fecha de
+  publicación no está en el ejemplar (la búsqueda web la sitúa el 14-01-2019).
+- **Abierto:** qué edición rige el expediente. Sin régimen transitorio, la
+  opción «citada» de `edicion_legal_que_rige_el_expediente` sólo cabe con un
+  acto distinto de esa RD que la ampare; el criterio sigue vacío y ninguna
+  `Discrepancia` dice cuál gobierna, de modo que `MP` sigue en la elección
+  legal pendiente.
+- **Qué haría falta:** que el dueño declare el criterio con la fecha de
+  inicio del expediente. Si declara la vigente, las citas que el cálculo
+  consume pasan de `MP.*` a su par `MP2018.*` (fichas N1MP-02 y N1MP-03:
+  ninguna cifra cambia).
+- **Recomendación de Fable (dictamen de N1, 2026-11-24), NO aplicada:** la
+  edición VIGENTE (2018): sin disposición transitoria rige la aplicación
+  inmediata, y ninguna cifra cambia. Al declararla, migrar las citas que el
+  cálculo consume de `MP.*` a `MP2018.*`. La decisión es del dueño.
+- **Dónde vive:** `src/normativa/fuentes.py::MP2018`
+
+## N1MP-02 · Contraste de las citas `MP` con la edición 2018 (1/2): de la Introducción al 2.4.3.11.2
+
+- **Cerrado:** cada cita tiene su par `MP2018.*` con `corresponde_en`
+  cruzado; T2, T3 y T6 buscan su frase y su encabezado en la página de 2018.
+  Págs. impresas; «IGUAL» = mismo texto y mismas cifras.
+
+| Numeral | 2016 | 2018 | Resultado |
+|---|---|---|---|
+| Glosario, obras de arte menores | 45 | 41 | CAMBIÓ la redacción: «OBRAS DE ARTE MENORES: Estructuras cuya luz libre entre ejes de apoyo es menor que 6.00 m.», y una entrada «PUENTE … luz libre es mayor o igual a 6.00 m (20 ft)». Cifra igual |
+| Introducción (LRFD 2014) | 43 | 39 | CAMBIÓ: título «INTRODUCCIÓN»; «…del año 2014, Séptima Edición y del Interim publicado por AASHTO el año 2015». El permiso de considerar actualizaciones sigue |
+| Figura 1.10-a | 73 | 61 | IGUAL («C = LUZ LIBRE» entre pilares) |
+| 2.1.4.3.9 | 91 | 81 | IGUAL (sigue sin hablar de sobrecarga) |
+| 2.3.2.5 | 99 | 87 | IGUAL («algún» con tilde) |
+| 2.4.2.1, Tabla 2.4.2.1-1 | 102 | 89 | IGUAL |
+| 2.4.2.2 (0.60 m) | 102 | 90 | IGUAL |
+| 2.4.3.2.2.2 | 104 | 91 | CAMBIÓ: quita «(14.55 t.)», «(4.27 m.)», «(9.14 m.)»; 32.0 kip y 14.0–30.0 ft iguales |
+| 2.4.3.2.2.3 | 104 | 92 | CAMBIÓ: quita «(11.4 t.)», «(1.20 m.)», «(1.80 m.)»; cifras en kip y ft iguales |
+| 2.4.3.2.2.5 | 104 | 92 | CAMBIÓ: quita «(0.50 m.)», «(0.25 m.)»; 20.0 × 10.0 in iguales |
+| 2.4.3.2.2.6 | 105 | 93 | IGUAL (m = 1.20) |
+| 2.4.3.3.2 | 109 | 97 | IGUAL (ec. 2.4.3.3.2-1, por imagen) |
+| 2.4.3.8.1 / 2.4.3.8.2 | 113 | 102 | IGUAL las dos |
+| 2.4.3.11.2 | 121 | 111 | IGUAL |
+
+- **Por qué** no se tocó el cálculo: ninguna cifra que entra en él cambió;
+  las equivalencias métricas retiradas nunca se usaron (la HL-93 se convierte
+  desde kip, ft e in).
+- **Qué haría falta:** nada, salvo la decisión de N1MP-01.
+- **Dónde vive:** `src/normativa/citas.py::MP2018_SOBRECARGA`
+
+## N1MP-03 · Contraste de las citas `MP` con la edición 2018 (2/2): del 2.4.3.11.2.1 al Apéndice A11
+
+| Numeral | 2016 | 2018 | Resultado |
+|---|---|---|---|
+| 2.4.3.11.2.1.1, fila F | 122 | 112 | IGUAL |
+| 2.4.3.11.2.1.1, Excepciones | 122 | 112 | IGUAL («Entidad determine», separado) |
+| Tabla 2.4.3.11.2.1.2-1 (F_pga) | 123 | 113 | IGUAL celda a celda; mismos «PGA < 0.10» y «PGA > 0.50» |
+| 2.4.4.1.3 / 2.4.4.1.5.3 | 133 / 135 | 123 / 125 | IGUAL (ka por imagen) |
+| 2.4.5.2 (EV) / 2.4.5.3.1 (mínimo) | 140 / 142 | 130 / 132 | IGUAL |
+| Tabla 2.4.5.3.1-1 | 143 | 133 | IGUAL (Servicio III resaltada, LL = 0.80) |
+| Tabla 2.4.5.3.1-2 (γp) | 143 | 134 | IGUAL; corrige «Máximo», «Presión», «placas» |
+| 2.3.1.1.12.3 (excentricidad estática) | 250 | 244 | IGUAL; el numeral se imprime «2.8.1.1.12.3» |
+| 2.8.1.1.14.1 (excentricidad sísmica) | 253 | 247 | IGUAL: el «tercio central» sigue; nueva errata «cimientan» |
+| 2.8.1.1.14.2.1 (k_h0 en roca) | 254 | 249 | CAMBIÓ: «(es decir, k_h0 = 1.2 F_pga PGA)» |
+| Tabla 2.9.1.5.5.3-1 | 377 | 377–378 | IGUAL |
+| A.11.3.1 (K_AE) | 586 | 597 | CAMBIÓ: denominador «[1 + √(…)]» |
+
+- **Cerrado:** NO EXISTE ninguno de los 29. Los dos CAMBIÓ de esta tabla
+  corrigen erratas (DIS-MP-KH0-ROCA, DIS-MP-KAE-SIGNO) en el sentido que el
+  código ya sigue, y la renumeración a 2.8.1.1.12.3 corrige una tercera
+  (DIS-MP-NUMERAL-2.3.1.1.12.3).
+- **Abierto:** sólo la migración de las citas, que depende de N1MP-01. Lo
+  que esta ficha dejaba abierto —las partes `MP2018` de las discrepancias y
+  los textos de errata que la memoria imprime— lo aplicó el dictamen de
+  Fable (N1MP-05); DIS-MP-EXCENTRICIDAD vale en las dos ediciones.
+- **Qué haría falta:** la decisión de N1MP-01.
+- **Dónde vive:** `src/normativa/citas.py::MP2018_A_11_3_1_KAE`
+
+## N1MP-04 · La PGA de roca de La Unión, leída en el mapa de 2018: entre las isolíneas 0.50 y 0.52 g, no sobre la de 0.50
+
+- **Cerrado (lectura, sin cambiar el valor):** el mapa «Isoaceleraciones
+  Espectrales Suelo Tipo B, AASHTO 2014 (Roca), 0.0 seg (PGA)», Tr = 1000,
+  está en `MP2018` PDF 568 (pág. impresa 564) y es el MISMO raster que el de
+  2016 (PDF 553): 797 × 1099 px, ningún píxel difiere en más de 64 niveles.
+  Georreferencia por la retícula del mapa (−81°/−78° en x = 90/248 px,
+  0°/−3°/−6° en y = 71/229/386 px: 52.5 px/°, ~2.1 km/px), comprobada con la
+  costa a ≤ 0.06°. Sin coordenada en el expediente (pendiente 1.4), se usaron
+  dos públicas: la localidad (−5.402, −80.742) y la capital distrital
+  (5°19′20″S 80°51′49″W). Las dos caen ENTRE la isolínea 0.50 (~15 px al
+  este) y la 0.52 (~13 px al oeste, junto a la costa): interpolación lineal
+  0.511 y 0.515 g; ±3 px de georreferencia dan ±0.003 g.
+- **Abierto:** el valor. `PGA_roca_B` = 0.50 g es la isolínea inferior que
+  acota el sitio. Propuesta: 0.51 g (interpolación) o 0.52 g (envolvente).
+  Efecto con 0.51: A_s = F_pga·PGA sube 2 % (F_pga no cambia en C, D ni E),
+  y con él k_h0 y el empuje sísmico del cabezal; y la PGA deja de caer sobre
+  el rótulo «PGA > 0.50» de NOR-PUE-11.
+- **Qué haría falta:** la coordenada del corredor (pendiente 1.4) y la
+  decisión del dueño. Fable revisó: la lectura ya está declarada en el punto
+  de uso y el defecto de la hoja de ruta, en DIS-HR-PGA-LECTURA (N1MP-06).
+- **Dónde vive:** `src/datos_sitio.py::PGA_roca_B`
+
+## N1MP-05 · Dictamen de Fable sobre N1 (1/2): la edición 2018 es parte de cinco discrepancias y la memoria dice de qué edición es cada errata
+
+- **Cerrado (2026-11-24, APROBADO CON CAMBIOS):** `MP2018` es una `Parte` más
+  de DIS-MP-KAE-SIGNO, DIS-MP-KH0-ROCA y DIS-MP-NUMERAL-2.3.1.1.12.3 (la
+  edición 2018 lo imprime como AASHTO, págs. impresas 597, 249 y 244), de
+  DIS-MP-EXCENTRICIDAD (la errata persiste, pág. 247) y de
+  DIS-LUZ-DENOMINACION (el Glosario 2018); `gana` y `estado` no cambian.
+  `K_AE_ERRATA_MANUAL`, `K_H0_ROCA_ERRATA` y `NUMERAL_EXCENTRICIDAD_ESTATICA`
+  dicen que la errata es de la edición 2016 (RD 041-2016-MTC/14) y que la
+  2018 la corrige; `EXCENTRICIDAD_ERRATA_MANUAL`, que está en las dos.
+  Ningún valor cambia.
+- **Por qué** importa DIS-LUZ: la definición 2018 mide la luz de las obras
+  de arte menores «entre ejes de apoyo». En un marco la luz entre ejes es la
+  luz libre más un espesor de pared, y sólo cambia la denominación en la
+  franja justo por debajo de 6.0 m (luz libre 5.75 m con muros de 0.30 m:
+  6.05 m entre ejes). El código compara la luz libre y no cambia; la
+  discrepancia sigue abierta.
+- **Diff que movió:** la línea base cambia en cinco archivos —las tres
+  notas de errata del cabezal (`cli_expediente.txt`,
+  `informe_expediente.json`, `memoria_expediente.html`), la trazabilidad de
+  `PGA_roca_B` (N1MP-06; el JSON y la memoria de expediente) y el bloque de
+  DIS-LUZ-DENOMINACION con su parte nueva (las tres memorias que lo
+  imprimen)—. `docs/indice_formulas.md`: el cuerpo no cambia, sólo el sello.
+  Las siete validaciones: sin cambios (su sincronía pasa).
+- **Qué haría falta:** nada para las erratas; DIS-LUZ, decisión del dueño.
+- **Dónde vive:** `src/normativa/discrepancias.py::DIS_KAE_SIGNO`
+
+## N1MP-06 · Dictamen de Fable sobre N1 (2/2): la PGA del corredor es una discrepancia ABIERTA contra la hoja de ruta
+
+- **Cerrado:** DIS-HR-PGA-LECTURA, `ABIERTA_CONTRA_HOJA_DE_RUTA`: la v8 dice
+  «PGA = 0.50 g `[N]`» en su línea 90 y la arrastra a las 108–109, 138,
+  1227, 1229 y 1433; y se contradice en la etiqueta: la 1227 la declara
+  `[S]` y las 90 y 1433 siguen en `[N]`. **La hoja de ruta sigue mal
+  mientras no se corrija; no se editó.** La lectura de N1MP-04 está en el
+  punto de uso (`trazabilidad` de `PGA_roca_B`): 0.50 g es la cota INFERIOR
+  del sitio. La regla de lectura es AASHTO LRFD 9.ª 3.10.2.1, pág. impresa
+  3-71 (PDF 125, verificada): «Linear interpolation shall be used for sites
+  located between contour lines…» (`AASHTO_LRFD_9.3.10.2.1#INTERPOLACION`).
+- **Por qué [C] y no [N→]:** `[N→]` aplica un valor normativo PERUANO por
+  analogía; aquí la norma peruana no tiene la regla. El Manual (2018,
+  2.4.3.11.2.0, pág. 111) adapta el procedimiento de AASHTO y remite al A3
+  sin transcribir la cláusula, y sus notas de «interpolación lineal» de las
+  Tablas 2.4.3.11.2.1.2-1 a -3 son entre columnas de PGA, no entre
+  isolíneas. Es un vacío normativo cubierto con fuente técnica reconocida.
+- **Abierto:** el valor de `PGA_roca_B` (sigue en 0.50 g).
+- **Recomendación de Fable al dueño, NO aplicada:** 0.52 g mientras no haya
+  coordenada del corredor; 0.51 g por interpolación cuando la haya; 0.50 g
+  no es defendible.
+- **Qué haría falta:** la decisión del dueño, la coordenada (pendiente 1.4)
+  y corregir la v8 en las seis líneas; entonces la discrepancia pasa a
+  `RESUELTA`.
+- **Dónde vive:** `src/normativa/discrepancias.py::DIS_HR_PGA_LECTURA`

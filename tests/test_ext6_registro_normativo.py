@@ -534,7 +534,9 @@ def test_toda_fuente_presente_lleva_vigencia_como_campo_y_no_como_marca():
                  # N2 del plan 12: el marco legal.
                  "LEY_29338": fu.VIGENCIA_VERIFICADA_EL_MARCO_LEGAL,
                  "REG_LEY_29338": fu.VIGENCIA_VERIFICADA_EL_MARCO_LEGAL,
-                 "RNGIV": fu.VIGENCIA_VERIFICADA_EL_MARCO_LEGAL}.get(
+                 "RNGIV": fu.VIGENCIA_VERIFICADA_EL_MARCO_LEGAL,
+                 # N1 del plan de normas 2: el Manual de Puentes 2018.
+                 "MP2018": fu.VIGENCIA_VERIFICADA_EL_N1MP}.get(
                      f.id, fu.VIGENCIA_VERIFICADA_EL)
         assert f.vigencia.fecha == fecha, f.id
         assert "VIGENCIA CONFIRMADA" not in f.nota and "EDICION POSTERIOR DETECTADA" not in f.nota, f.id
