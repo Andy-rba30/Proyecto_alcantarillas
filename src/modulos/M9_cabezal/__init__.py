@@ -356,6 +356,7 @@ from src.modelos import ReferenciaNormativa
 from src.modelos import Verificacion
 from src.tolerancias import FRACCIONES_DE_ESTABILIDAD_DEL_ALERO
 from src.tolerancias import TOL_ANGULO_CUNA
+from src.tolerancias import TOL_REL_SESGO_CONTRASTE
 from src.tolerancias import TOL_UMBRAL_NORMATIVO
 from src.tolerancias import TRAMOS_CUNA_DE_TANTEO
 from src.constantes_normativas import BANDAS_ALETAS_CAJON_A1
@@ -1141,6 +1142,10 @@ _SUBMODULOS_M9 = (
 _NOMBRES_SUBMODULOS = frozenset(('_criterios', 'durabilidad', 'empujes', 'estabilidad_base', 'estabilidad_cargas', 'geometria', 'estabilidad', 'armado_secciones', 'armado', 'ciclopeo', 'dimensionamiento', 'alero'))
 
 
+# De que submodulos borro `__delattr__` cada nombre, para devolverselo.
+_BORRADOS: dict = {}
+
+
 class _PaqueteM9(_types.ModuleType):
     """Propaga reasignaciones de monkeypatch sobre `M9_cabezal` a sus submodulos."""
 
@@ -1148,15 +1153,24 @@ class _PaqueteM9(_types.ModuleType):
         super().__setattr__(nombre, valor)
         if nombre.startswith('_mod_') or nombre in _NOMBRES_SUBMODULOS:
             return
+        # Los submodulos de los que `__delattr__` lo borro vuelven a
+        # recibirlo: es el `undo` de `monkeypatch.delattr` (auditoria del
+        # 2026-11-24, hallazgo N4: sin esto el paquete recuperaba el nombre y
+        # el submodulo dueño no).
+        borrados = _BORRADOS.pop(nombre, ())
         for submod in _SUBMODULOS_M9:
-            if nombre in submod.__dict__:
+            if nombre in submod.__dict__ or submod in borrados:
                 setattr(submod, nombre, valor)
 
     def __delattr__(self, nombre: str) -> None:
         super().__delattr__(nombre)
+        borrados = []
         for submod in _SUBMODULOS_M9:
             if nombre in submod.__dict__:
                 delattr(submod, nombre)
+                borrados.append(submod)
+        if borrados:
+            _BORRADOS[nombre] = tuple(borrados)
 
 
 _sys.modules[__name__].__class__ = _PaqueteM9
