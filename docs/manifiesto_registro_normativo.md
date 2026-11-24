@@ -15,7 +15,7 @@
 
 ## 1. Fuentes
 
-Las 20 presentes, con el SHA-1 exacto contra el que se
+Las 21 presentes, con el SHA-1 exacto contra el que se
 verificó cada cita y la regla de paginación MEDIDA, no supuesta. **Desde
 T-12 su PDF vive SOLO en el repositorio de normas**, enlazado por
 `NORMAS_DIR` (`fuentes.directorios_de_normas`): los dieciséis que hasta
@@ -39,6 +39,7 @@ de la §1-bis, son los PDF de ese repositorio.
 | `EG2013` | Manual de Carreteras "Especificaciones Tecnicas Generales para Construccion" (EG-2013) | Version revisada y corregida a junio 2013 | corrida, +8 | 1282 | `e35681d06b13226744324bc6b242b608ca9fa3ba` | sí | confirmada 2026-09-14; aprobada por RD 03-2013-MTC/14 |
 | `HDS5_3ED` | HDS-5 «Hydraulic Design of Highway Culverts» (FHWA-HIF-12-026) | Third Edition, April 2012 | por capítulo: 1=38, 2=62, 3=82, 4=126, 5=136, 6=162, 7=181, A=189, B=202, C=210, DG1=271, DG2=285, DG3=293, DG4=312; romanas: i=5 | 323 | `7b985e047c615b765e7c41b6ff12df0505c02ce4` | sí | confirmada 2026-09-14 |
 | `HDS5_SI_1985` | HDS-5 «Hydraulic Design of Highway Culverts» (FHWA-IP-85-15), copia rotulada «SI» por sus cartas metricas | September 1985 | **sin determinar** | 410 | `59c6623c78793f7f947b7095027096b86f88ddf0` | sí | **posterior detectada** 2026-09-14: HDS-5 Third Edition, FHWA-HIF-12-026 (2012), presente en normas/ como HDS5_3ED |
+| `HEC11` | HEC-11 «Design of Riprap Revetment» (Hydraulic Engineering Circular No. 11, FHWA-IP-89-016), version metrica | version metrica (SI) de la de marzo de 1989, conversion electronica de la FHWA; la biblioteca de la FHWA la lista como FHWA-IF-00-022-1 (2000) | **sin determinar** | 193 | `583b1c305c57030a93f3885d5e160fb45a023651` | sí | **posterior detectada** 2026-11-24: ninguna edicion de HEC-11: la FHWA la archiva y la da por sustituida por HEC-23 «Bridge Scour and Stream Instability Countermeasures» (3a ed., FHWA-NHI-09-111 y -112, septiembre de 2009), que es otro documento |
 | `HEC14` | HEC-14 «Hydraulic Design of Energy Dissipators for Culverts and Channels» (Hydraulic Engineering Circular No. 14, FHWA-NHI-06-086) | Third Edition, July 2006 (con la fe de erratas del 1 de octubre de 2012 en la PDF 3) | por capítulo: 1=13, 10=201, 11=221, 12=245, 2=27, 3=31, 4=41, 5=53, 6=63, 7=77, 8=123, 9=157, A=249, B=259, C=277, D=279, R=283 | 287 | `1bffcbe220cd67e4c0de8b87b46d1ece64ce7217` | sí | confirmada 2026-11-11 |
 | `MC_HHD` | Manual de Hidrologia, Hidraulica y Drenaje | Version Libro | corrida, +3 | 225 | `a31e853b8171b931863d7afa4379bbbc57cacb0d` | sí | confirmada 2026-09-14; aprobada por RD 20-2011-MTC/14 |
 | `MP` | Manual de Puentes | Version Libro | corrida, +1 | 673 | `67a7a9f1c61cad8f9ca179cd4ca777f96b49dc44` | sí | **posterior detectada** 2026-09-14: Manual de Puentes actualizado 2018 (630 paginas); aprobada por RD 041-2016-MTC/14; **derogada por RD 19-2018-MTC/14** |
@@ -59,7 +60,7 @@ el archivo cambia.
 | `MDCTA_2016` | Manual de Dispositivos de Control del Transito Automotor para Calles y Carreteras | 532 | `58b948b70ca1fd28e133559471b2a4dba28afb1c` | es la norma de señalizacion vial (señales, marcas, semaforos); ninguna fase de la v8 ni ninguna verificacion de M1 a M10 cita un numeral suyo. La demarcacion del derecho de via que el DG-2018 §304.07.03 remite a la RM 404-2011-MTC/02 tampoco pasa por este manual |
 | `MSV_2017` | Manual de Seguridad Vial (2017) | 461 | `cc47c736c38503005a85966002a3ed267524b240` | ninguna fase de la hoja de ruta v8 cita un numeral suyo: trata la seguridad vial de la plataforma (barreras, zonas despejadas, señalizacion), no el drenaje transversal. Lo unico que roza al proyecto es la zona despejada junto a cabezales y aletas, y la v8 no la evalua |
 
-**Estado final (T-12):** 20 fuentes presentes y 2 PDF censados, todos en el repositorio de normas y ninguno en este; 12 fuentes citadas sin PDF (§2).
+**Estado final (T-12):** 21 fuentes presentes y 2 PDF censados, todos en el repositorio de normas y ninguno en este; 12 fuentes citadas sin PDF (§2).
 
 ## 2. Fuentes que se citan y NO están en el repositorio de normas
 
@@ -1344,6 +1345,59 @@ línea que se pueda romper.
 
 > **`HDS5_SI_1985.EC4B#K`** — SIN FIRMA A PROPOSITO, no sin verificar: la paginacion de la fuente es `SinDeterminar` (la copia no imprime folios; `pagina_impresa` dice «s/n» por eso) y el invariante T6 impide firmar una pagina PDF de una fuente sin paginacion medida. El contenido esta verificado de hecho (trazabilidad/T2 · verificador-normativo, 2026-09-12, metodo AMBOS): POR IMAGEN, la ec. rotulada (4b) imprime Hf = [29 n² L / R^1.33]·V²/2g y la (5) H = [1 + ke + 29 n² L / R^1.33]·V²/2g -- constante 29, no 19.63; las ecuaciones son imagenes incrustadas y no salen en la capa de texto --. POR TEXTO, las definiciones llevan rotulo dual «ft (m)» (el Verbatim es una de ellas) y «19.63» da cero paginas en las 410 del documento. Es el ancla de DIS-HDS5-EDICIONES: leer el 29 «en SI» multiplica el termino de friccion por 29/19.63 = 1.477 (+47.7 % sobre el TERMINO), que en CP-8 sube H de 0.4977 a 0.5455 m (+9.6 % sobre H); es lo que K_FRICCION_SI existe para atrapar. Las dos bases se dicen juntas porque el repositorio las mezclo (EXT-G-03).
 
+### HEC-11 «Design of Riprap Revetment» (Hydraulic Engineering Circular No. 11, FHWA-IP-89-016), version metrica  (`HEC11`)
+
+| id de la cita | Numeral | Título literal del numeral | Página | Carácter | Verificada |
+|---|---|---|---|---|---|
+| `HEC11.4.2#T2` | 4.2, Table 2 | «4.2 Rock Gradation» | pág. impresa **s/n** · PDF 47 | recomendacion | **NO verificada** |
+| `HEC11.4.3#300_MM` | 4.3 | «4.3 Layer Thickness» | pág. impresa **s/n** · PDF 48 | recomendacion | **NO verificada** |
+| `HEC11.4.3#BAJO_AGUA` | 4.3 | «4.3 Layer Thickness» | pág. impresa **s/n** · PDF 48 | recomendacion | **NO verificada** |
+| `HEC11.4.3#D100` | 4.3 | «4.3 Layer Thickness» | pág. impresa **s/n** · PDF 48 | recomendacion | **NO verificada** |
+| `HEC11.4.4#CUANDO` | 4.4 | «4.4 Filter Design» | pág. impresa **s/n** · PDF 49 | recomendacion | **NO verificada** |
+| `HEC11.4.4#FUNCION` | 4.4 | «4.4 Filter Design» | pág. impresa **s/n** · PDF 49 | definicion | **NO verificada** |
+| `HEC11.4.4.1#D15_D15` | 4.4.1 | 4.4 Filter Design › «4.4.1 Granular Filters» | pág. impresa **s/n** · PDF 49 | recomendacion | **NO verificada** |
+| `HEC11.4.4.1#EC_14` | 4.4.1, Ec. (14) | 4.4 Filter Design › «4.4.1 Granular Filters» | pág. impresa **s/n** · PDF 49 | definicion | **NO verificada** |
+| `HEC11.4.4.1#ESPESOR` | 4.4.1 | 4.4 Filter Design › «4.4.1 Granular Filters» | pág. impresa **s/n** · PDF 49 | recomendacion | **NO verificada** |
+| `HEC11.4.4.1#ESPESOR_VARIAS_CAPAS` | 4.4.1 | 4.4 Filter Design › «4.4.1 Granular Filters» | pág. impresa **s/n** · PDF 50 | recomendacion | **NO verificada** |
+| `HEC11.4.4.1#INTERFACES` | 4.4.1 | 4.4 Filter Design › «4.4.1 Granular Filters» | pág. impresa **s/n** · PDF 49 | definicion | **NO verificada** |
+| `HEC11.4.4.1#PARALELAS` | 4.4.1 | 4.4 Filter Design › «4.4.1 Granular Filters» | pág. impresa **s/n** · PDF 50 | recomendacion | **NO verificada** |
+| `HEC11.4.4.1#PASA_200` | 4.4.1 | 4.4 Filter Design › «4.4.1 Granular Filters» | pág. impresa **s/n** · PDF 49 | recomendacion | **NO verificada** |
+| `HEC11.4.4.1#RELACION_5` | 4.4.1 | 4.4 Filter Design › «4.4.1 Granular Filters» | pág. impresa **s/n** · PDF 49 | recomendacion | **NO verificada** |
+| `HEC11.4.4.1#VARIAS_CAPAS` | 4.4.1 | 4.4 Filter Design › «4.4.1 Granular Filters» | pág. impresa **s/n** · PDF 49 | exigencia | **NO verificada** |
+| `HEC11.4.4.2#CAMA_DE_GRAVA` | 4.4.2 | 4.4 Filter Design › «4.4.2 Fabric Filters» | pág. impresa **s/n** · PDF 51 | recomendacion | **NO verificada** |
+
+> **`HEC11.4.2#T2`** — SIN FIRMA A PROPOSITO, no sin verificar: HEC-11 (SI) es la captura web de la FHWA y no imprime folio (`pagina_impresa` dice «s/n»), y el invariante T6 impide firmar una pagina PDF de una fuente sin paginacion medida. Leida en N3 (2026-11-24) en la pagina PDF declarada. LA TABLA 2, «Table 2. Rock Riprap Gradation Limits», leida por texto y por imagen (PDF 47 a 2x): «Stone Size Range (m)» / «Stone weight Range (kilograms)» / «Percent of Gradation Smaller Than»: 1.5 D50 to 1.7 D50 / 3.0 W50 to 5.0 W50 / 100; 1.2 D50 to 1.4 D50 / 2.0 W50 to 2.75 W50 / 85; 1.0 D50 to 1.4 D50 / 1.0 W50 to 1.5 W50 / 50; 0.4 D50 to 0.6 D50 / 0.1 W50 to 0.2 W50 / 15. Transcrita en `HEC11_TABLA_2` [C]. LA FILA DEL 50 % TRAE UNA INCOHERENCIA INTERNA que no se corrige: con W proporcional a D^3 su columna de pesos da 1.0 a 1.145 D50, no 1.4 (las otras tres filas cuadran: 0.46-0.58, 1.26-1.40, 1.44-1.71). El proyecto usa SOLO la fila del 15 % (la banda del D15 para la Ec. 14) y el techo de la del 100 % (el D100 maximo, contra el espesor de la Sec. 4.3).
+
+> **`HEC11.4.3#300_MM`** — SIN FIRMA A PROPOSITO, no sin verificar: HEC-11 (SI) es la captura web de la FHWA y no imprime folio (`pagina_impresa` dice «s/n»), y el invariante T6 impide firmar una pagina PDF de una fuente sin paginacion medida. Leida en N3 (2026-11-24) en la pagina PDF declarada. Segundo criterio: el piso absoluto de la capa de enrocado, `HEC11_ENROCADO_ESPESOR_MIN_M` [C]. Rige el espesor de la proteccion con el receptor alto (`M6.proteccion_tw_alto_hec14`), donde HEC-14 remite a HEC 11 el tamaño de la piedra (HEC14.10.1.3#FIGURA_10_3).
+
+> **`HEC11.4.3#BAJO_AGUA`** — SIN FIRMA A PROPOSITO, no sin verificar: HEC-11 (SI) es la captura web de la FHWA y no imprime folio (`pagina_impresa` dice «s/n»), y el invariante T6 impide firmar una pagina PDF de una fuente sin paginacion medida. Leida en N3 (2026-11-24) en la pagina PDF declarada. Depende de COMO se coloca la piedra --bajo agua o en seco--, que es una condicion de obra que el programa no conoce: no se aplica y el paso del receptor alto lo dice.
+
+> **`HEC11.4.3#D100`** — SIN FIRMA A PROPOSITO, no sin verificar: HEC-11 (SI) es la captura web de la FHWA y no imprime folio (`pagina_impresa` dice «s/n»), y el invariante T6 impide firmar una pagina PDF de una fuente sin paginacion medida. Leida en N3 (2026-11-24) en la pagina PDF declarada. Primer criterio del espesor de la capa de enrocado. Con el D100 de la Tabla 2 (1.5 a 1.7 D50) el mayor de los dos es a lo sumo 1.7·D50, de modo que el piso de 2·D50 que el proyecto toma de HEC-14 lo cumple siempre.
+
+> **`HEC11.4.4#CUANDO`** — SIN FIRMA A PROPOSITO, no sin verificar: HEC-11 (SI) es la captura web de la FHWA y no imprime folio (`pagina_impresa` dice «s/n»), y el invariante T6 impide firmar una pagina PDF de una fuente sin paginacion medida. Leida en N3 (2026-11-24) en la pagina PDF declarada. CUANDO va el filtro, para un revestimiento de talud o de cauce. En la salida de la alcantarilla el proyecto no decide con esta frase: HEC-14 lo pide bajo el apron sin condicion (HEC14.10.2#FILTRO), y el filtro se declara siempre. La Sec. 4.4.2 deja la eleccion entre granular y geotextil al costo y a la disponibilidad («The primary justification is economic», PDF 50): ninguna regla de HEC-11 la fija, y el programa declara los requisitos de los dos.
+
+> **`HEC11.4.4#FUNCION`** — SIN FIRMA A PROPOSITO, no sin verificar: HEC-11 (SI) es la captura web de la FHWA y no imprime folio (`pagina_impresa` dice «s/n»), y el invariante T6 impide firmar una pagina PDF de una fuente sin paginacion medida. Leida en N3 (2026-11-24) en la pagina PDF declarada. Es la frase que dice PARA QUE va el filtro: retener los finos del suelo, repartir el peso de la piedra y aliviar la presion del agua.
+
+> **`HEC11.4.4.1#D15_D15`** — SIN FIRMA A PROPOSITO, no sin verificar: HEC-11 (SI) es la captura web de la FHWA y no imprime folio (`pagina_impresa` dice «s/n»), y el invariante T6 impide firmar una pagina PDF de una fuente sin paginacion medida. Leida en N3 (2026-11-24) en la pagina PDF declarada. La relacion D15 del grueso / D15 del fino: mayor que 5 (permeabilidad) y menor que 40 (uniformidad). El «(32)» es la referencia bibliografica 32 de la fuente, no un valor. Los dos limites son `HEC11_FILTRO_PERMEABILIDAD_MIN` y `HEC11_FILTRO_UNIFORMIDAD_MAX` [C].
+
+> **`HEC11.4.4.1#EC_14`** — SIN FIRMA A PROPOSITO, no sin verificar: HEC-11 (SI) es la captura web de la FHWA y no imprime folio (`pagina_impresa` dice «s/n»), y el invariante T6 impide firmar una pagina PDF de una fuente sin paginacion medida. Leida en N3 (2026-11-24) en la pagina PDF declarada. LA ECUACION ES UNA IMAGEN y se leyo renderizando la PDF 49 a 2x: «D15(Coarser Layer)/D85(Finer Layer) < 5 < D15(Coarser Layer)/D15(Finer Layer) < 40», con el numero «(14)» al margen. El paso 13 del Ejemplo 1 (PDF 66 a 68) la reimprime y la aplica a tres interfaces; es el caso con que se contrasta `M6.relaciones_de_filtro_hec11`.
+
+> **`HEC11.4.4.1#ESPESOR`** — SIN FIRMA A PROPOSITO, no sin verificar: HEC-11 (SI) es la captura web de la FHWA y no imprime folio (`pagina_impresa` dice «s/n»), y el invariante T6 impide firmar una pagina PDF de una fuente sin paginacion medida. Leida en N3 (2026-11-24) en la pagina PDF declarada. LA FRASE CRUZA EL SALTO DE PAGINA: sigue en la PDF 50 («layer, or from 100 mm to 200 mm for individual layers of a multiple layer blanket.»). El `texto_literal` es la mitad de la PDF 49, que lleva los limites de la manta de UNA capa (`HEC11_FILTRO_ESPESOR_UNA_CAPA_M` [C]); la otra mitad es HEC11.4.4.1#ESPESOR_VARIAS_CAPAS.
+
+> **`HEC11.4.4.1#ESPESOR_VARIAS_CAPAS`** — SIN FIRMA A PROPOSITO, no sin verificar: HEC-11 (SI) es la captura web de la FHWA y no imprime folio (`pagina_impresa` dice «s/n»), y el invariante T6 impide firmar una pagina PDF de una fuente sin paginacion medida. Leida en N3 (2026-11-24) en la pagina PDF declarada. La segunda mitad de la frase de HEC11.4.4.1#ESPESOR, en la PDF 50: el espesor de CADA capa de una manta de varias (`HEC11_FILTRO_ESPESOR_VARIAS_CAPAS_M` [C]).
+
+> **`HEC11.4.4.1#INTERFACES`** — SIN FIRMA A PROPOSITO, no sin verificar: HEC-11 (SI) es la captura web de la FHWA y no imprime folio (`pagina_impresa` dice «s/n»), y el invariante T6 impide firmar una pagina PDF de una fuente sin paginacion medida. Leida en N3 (2026-11-24) en la pagina PDF declarada. Las dos interfaces de una manta de una capa: suelo-filtro y filtro-enrocado.
+
+> **`HEC11.4.4.1#PARALELAS`** — SIN FIRMA A PROPOSITO, no sin verificar: HEC-11 (SI) es la captura web de la FHWA y no imprime folio (`pagina_impresa` dice «s/n»), y el invariante T6 impide firmar una pagina PDF de una fuente sin paginacion medida. Leida en N3 (2026-11-24) en la pagina PDF declarada. Lo que mueve el espesor DENTRO del intervalo: el paralelismo de las curvas, que el programa no puede juzgar sin la curva del filtro. Los dos ejemplos de la fuente toman 200 mm (PDF 68 y 82). El espesor adoptado es del expediente; el programa declara el intervalo.
+
+> **`HEC11.4.4.1#PASA_200`** — SIN FIRMA A PROPOSITO, no sin verificar: HEC-11 (SI) es la captura web de la FHWA y no imprime folio (`pagina_impresa` dice «s/n»), y el invariante T6 impide firmar una pagina PDF de una fuente sin paginacion medida. Leida en N3 (2026-11-24) en la pagina PDF declarada. Requisito del MATERIAL del filtro, no del suelo: el 5 es `HEC11_FILTRO_PASA_200_MAX_PCT` [C]. La frase anterior pide ademas curvas «approximately parallel», que no tiene numero.
+
+> **`HEC11.4.4.1#RELACION_5`** — SIN FIRMA A PROPOSITO, no sin verificar: HEC-11 (SI) es la captura web de la FHWA y no imprime folio (`pagina_impresa` dice «s/n»), y el invariante T6 impide firmar una pagina PDF de una fuente sin paginacion medida. Leida en N3 (2026-11-24) en la pagina PDF declarada. La relacion de TUBIFICACION de la Ec. (14): D15 del grueso / D85 del fino, «5 or less». El 5 es `constantes_normativas.HEC11_FILTRO_TUBIFICACION_MAX` [C].
+
+> **`HEC11.4.4.1#VARIAS_CAPAS`** — SIN FIRMA A PROPOSITO, no sin verificar: HEC-11 (SI) es la captura web de la FHWA y no imprime folio (`pagina_impresa` dice «s/n»), y el invariante T6 impide firmar una pagina PDF de una fuente sin paginacion medida. Leida en N3 (2026-11-24) en la pagina PDF declarada. Cuando la ventana de una capa queda vacia el programa lo avisa y no diseña las capas: el numero y la granulometria de cada una son del expediente.
+
+> **`HEC11.4.4.2#CAMA_DE_GRAVA`** — SIN FIRMA A PROPOSITO, no sin verificar: HEC-11 (SI) es la captura web de la FHWA y no imprime folio (`pagina_impresa` dice «s/n»), y el invariante T6 impide firmar una pagina PDF de una fuente sin paginacion medida. Leida en N3 (2026-11-24) en la pagina PDF declarada. Es una de las precauciones de colocacion del geotextil («Heavy riprap may stretch the cloth as it settles»): con un D50 mayor que 0.91 m la piedra va sobre una cama de grava y no directo sobre el geotextil. Los dos numeros son `HEC11_CAMA_DE_GRAVA_D50_MIN_M` y `HEC11_CAMA_DE_GRAVA_ESPESOR_M` [C].
+
 ### HEC-14 «Hydraulic Design of Energy Dissipators for Culverts and Channels» (Hydraulic Engineering Circular No. 14, FHWA-NHI-06-086)  (`HEC14`)
 
 | id de la cita | Numeral | Título literal del numeral | Página | Carácter | Verificada |
@@ -1452,7 +1506,7 @@ línea que se pueda romper.
 
 > **`HEC14.10.2#EC_10_5`** — La Ec. (10.5), leida de la pagina renderizada: D' = (D + yn)/2, con D' «adjusted culvert rise» e yn «normal (supercritical) depth in the culvert». D' entra en la Ec. (10.4) en lugar de D.
 
-> **`HEC14.10.2#FILTRO`** — HEC 11 no esta en el repositorio de normas: el diseño del filtro no se transcribe. Lo que se cita es que el apron LLEVA filtro.
+> **`HEC14.10.2#FILTRO`** — Lo que se cita es que el apron LLEVA filtro. Hasta N3 HEC 11 no estaba en el repositorio de normas y el filtro granular no se dimensionaba; desde N3 (plan 12, 2026-11-24) esta (fuente HEC11, version metrica) y su Sec. 4.4.1 da los criterios granulometricos del filtro (citas HEC11.4.4.1#...).
 
 > **`HEC14.10.2#PROFUNDIDAD`** — El piso del espesor del apron: 2.0·D50. El criterio 'espesor_proteccion_salida' adopta 1.75·d50 (ventana 1.5-2.0) y queda siempre bajo ese piso salvo en el techo de su ventana, que lo iguala: la Fase 6 lo avisa en todo punto que dimensiona.
 
@@ -3490,6 +3544,7 @@ recomienda.
 | `F6.CAIDA_ESTANQUE` | Fase 6 - Proteccion de entrada y salida | Longitud del estanque, bloques, umbral, muros y aproximacion revestida de la estructura de caida recta | **recomienda** | `HEC14.11.1.3#LONGITUD`, `HEC14.11.1.3#BLOQUES` |
 | `F6.ENTRADA` | Fase 6 - Proteccion de entrada y salida | Proteccion de la entrada: velocidad en la boca y revestimiento del cauce y del talud | **recomienda** | `MC_HHD.4.1.1.3.7c#PROTECCION`, `MC_HHD.4.1.1.3.7c#REVESTIMIENTOS`, `HDS5_3ED.5.3.1#ENTRADA`, `HDS5_3ED.3.1.3#CRITICO_EN_LA_ENTRADA`, `MC_HHD.LAMINA_02` |
 | `F6.FILTRO` | Fase 6 - Proteccion de entrada y salida | Filtro entre el enrocado y el suelo: requisitos del geotextil de control permanente de erosion | **recomienda** | `MC_HHD.LAMINA_05`, `HEC14.10.2#FILTRO`, `EG2013.511.08#EROSION`, `EG2013.511.08#T511_06`, `EG2013.511.08#NOTA_5A`, `EG2013.511.05#T511_02_NOTA_5` |
+| `F6.FILTRO_GRANULAR` | Fase 6 - Proteccion de entrada y salida | Filtro granular entre el enrocado y el suelo: si la piedra puede apoyarse directo sobre el lecho, y la ventana de tamaños de una manta de grava de una capa | **recomienda** | `HEC14.10.2#FILTRO`, `HEC11.4.4#FUNCION`, `HEC11.4.4.1#RELACION_5`, `HEC11.4.4.1#D15_D15`, `HEC11.4.4.1#EC_14`, `HEC11.4.4.1#INTERFACES`, `HEC11.4.2#T2` |
 | `F6.FROUDE` | Fase 6 - Proteccion de entrada y salida | Numero de Froude de HEC-14 a la salida del conducto, Fr_e = V / (g·ye)^0.5, con el tirante equivalente | **define** | `HEC14.10.1.1#YE`, `HDS5_3ED.3.1.6#V_SALIDA`, `HEC14.3#CONTINUIDAD`, `HEC14.1#T1_1_APRON` |
 | `F6.GEOMETRIA_ADOPTADA` | Fase 6 - Proteccion de entrada y salida | Espesor y longitud de la proteccion de salida que el proyecto adopta | **recomienda** | `MC_HHD.4.1.1.3.7c#REVESTIMIENTOS`, `MC_HHD.4.1.1.3.7c`, `HEC14.10.2#T10_1`, `HEC14.10.2#PROFUNDIDAD`, `HEC14.10.2#EC_10_4` |
 | `F6.LAUSHEY` | Fase 6 - Proteccion de entrada y salida | Diametro medio del enrocado de proteccion a la salida, d50 = V^2 / (3.1 g) | **define** | `MC_HHD.4.1.1.3.7c` |
@@ -3729,11 +3784,27 @@ vigila. Una cita con cualquier campo pendiente NO puede llevar firma de
 verificación.
 
 
-Citas sin firma de verificación: **6** de 630.
+Citas sin firma de verificación: **22** de 646.
 - `AASHTO_M294_TRAD.1.1.1`
 - `AASHTO_M294_TRAD.1.4`
 - `AASHTO_M294_TRAD.7.2.1`
 - `AASHTO_M294_TRAD.7.2.2`
 - `AASHTO_M294_TRAD.7.7`
 - `HDS5_SI_1985.EC4B#K`
+- `HEC11.4.2#T2`
+- `HEC11.4.3#300_MM`
+- `HEC11.4.3#BAJO_AGUA`
+- `HEC11.4.3#D100`
+- `HEC11.4.4#CUANDO`
+- `HEC11.4.4#FUNCION`
+- `HEC11.4.4.1#D15_D15`
+- `HEC11.4.4.1#EC_14`
+- `HEC11.4.4.1#ESPESOR`
+- `HEC11.4.4.1#ESPESOR_VARIAS_CAPAS`
+- `HEC11.4.4.1#INTERFACES`
+- `HEC11.4.4.1#PARALELAS`
+- `HEC11.4.4.1#PASA_200`
+- `HEC11.4.4.1#RELACION_5`
+- `HEC11.4.4.1#VARIAS_CAPAS`
+- `HEC11.4.4.2#CAMA_DE_GRAVA`
 

@@ -3,7 +3,7 @@
     "csv": "tests/ejemplo_puntos.csv",
     "generado_utc": "<UTC>",
     "csv_sha1": "7ae59002159b228f3681ec0d34a4e8ae65052015",
-    "criterios_sha1": "30cff47a63abe98e2b1582e8e1fdb13e05615cfb",
+    "criterios_sha1": "a0542cf60ec22087155ee4c42902b957734ae209",
     "corredor_del_proyecto": {
       "valor": "terraplen de ~5 km de la Fase 0-bis de la hoja de ruta, num. 150",
       "origen": "src/datos_sitio.py"
@@ -445,17 +445,60 @@
         "espesor_adoptado_m": 0.5323880477935501,
         "longitud_adoptada_m": 5.0,
         "filtro": {
-          "requisito": "El enrocado lleva FILTRO entre la piedra y el suelo (Lámina Nº 05 del Manual; HEC-14 Sec. 10.2). Si es geotextil: Clase 1 de la Tabla 511-01 (Clase 2 para geotextiles tejidos de monofilamento), con la permitividad y la abertura aparente de la Tabla 511-06 de EG-2013 (num. 511.08). NO SE DIMENSIONA: la tabla entra por el pasante del tamiz N.º 200 del suelo, que es dato del EMS (`material_lecho_salida.pasa_200_pct`)",
+          "requisito": "El enrocado lleva FILTRO entre la piedra y el suelo (Lámina Nº 05 del Manual; HEC-14 Sec. 10.2). Si es geotextil: Clase 1 de la Tabla 511-01 (Clase 2 para geotextiles tejidos de monofilamento), con la permitividad y la abertura aparente de la Tabla 511-06 de EG-2013 (num. 511.08). NO SE DIMENSIONA: la tabla entra por el pasante del tamiz N.º 200 del suelo, que es dato del EMS (`material_lecho_salida.pasa_200_pct`). Si es GRANULAR (HEC-11 Sec. 4.4.1): una manta de grava de 0.15 a 0.38 m en una capa, con no mas de 5 % pasando el tamiz N.º 200, cuyos tamaños cumplan la Ec. (14) contra el suelo y contra la piedra. NO SE DIMENSIONA: falta `material_lecho_salida.D85_m` y `material_lecho_salida.D15_m` (granulometria del lecho, dato del EMS)",
           "clase_geotextil": "Clase 1 de la Tabla 511-01 (Clase 2 para geotextiles tejidos de monofilamento)",
           "pasa_200_pct": null,
           "columna_tabla_511_06": null,
           "permitividad_min_s1": null,
           "abertura_aparente_max_mm": null,
+          "cama_de_grava_bajo_geotextil": false,
+          "granular": {
+            "requisito": "Si es GRANULAR (HEC-11 Sec. 4.4.1): una manta de grava de 0.15 a 0.38 m en una capa, con no mas de 5 % pasando el tamiz N.º 200, cuyos tamaños cumplan la Ec. (14) contra el suelo y contra la piedra. NO SE DIMENSIONA: falta `material_lecho_salida.D85_m` y `material_lecho_salida.D15_m` (granulometria del lecho, dato del EMS)",
+            "D85_suelo_m": null,
+            "D15_suelo_m": null,
+            "d50_enrocado_m": 0.3042217415963143,
+            "D15_enrocado_min_m": null,
+            "D15_enrocado_max_m": null,
+            "directo_sobre_el_suelo": null,
+            "D15_filtro_mayor_que_m": null,
+            "D15_filtro_hasta_m": null,
+            "D85_filtro_desde_m": null,
+            "una_capa_basta": null,
+            "pasa_200_max_pct": 5.0,
+            "espesor_una_capa_m": [
+              0.15,
+              0.38
+            ],
+            "espesor_varias_capas_m": [
+              0.1,
+              0.2
+            ],
+            "citas": [
+              "HEC11.4.4.1#RELACION_5",
+              "HEC11.4.4.1#D15_D15",
+              "HEC11.4.4.1#EC_14",
+              "HEC11.4.4.1#INTERFACES",
+              "HEC11.4.4.1#PASA_200",
+              "HEC11.4.4.1#ESPESOR",
+              "HEC11.4.4.1#ESPESOR_VARIAS_CAPAS",
+              "HEC11.4.4.1#PARALELAS",
+              "HEC11.4.2#T2"
+            ]
+          },
           "citas": [
             "MC_HHD.LAMINA_05",
             "HEC14.10.2#FILTRO",
             "EG2013.511.08#EROSION",
-            "EG2013.511.08#T511_06"
+            "EG2013.511.08#T511_06",
+            "HEC11.4.4.1#RELACION_5",
+            "HEC11.4.4.1#D15_D15",
+            "HEC11.4.4.1#EC_14",
+            "HEC11.4.4.1#INTERFACES",
+            "HEC11.4.4.1#PASA_200",
+            "HEC11.4.4.1#ESPESOR",
+            "HEC11.4.4.1#ESPESOR_VARIAS_CAPAS",
+            "HEC11.4.4.1#PARALELAS",
+            "HEC11.4.2#T2"
           ]
         }
       },
@@ -1066,17 +1109,60 @@
         "espesor_adoptado_m": 0.41393450642013,
         "longitud_adoptada_m": 5.0,
         "filtro": {
-          "requisito": "El enrocado lleva FILTRO entre la piedra y el suelo (Lámina Nº 05 del Manual; HEC-14 Sec. 10.2). Si es geotextil: Clase 1 de la Tabla 511-01 (Clase 2 para geotextiles tejidos de monofilamento), con la permitividad y la abertura aparente de la Tabla 511-06 de EG-2013 (num. 511.08). NO SE DIMENSIONA: la tabla entra por el pasante del tamiz N.º 200 del suelo, que es dato del EMS (`material_lecho_salida.pasa_200_pct`)",
+          "requisito": "El enrocado lleva FILTRO entre la piedra y el suelo (Lámina Nº 05 del Manual; HEC-14 Sec. 10.2). Si es geotextil: Clase 1 de la Tabla 511-01 (Clase 2 para geotextiles tejidos de monofilamento), con la permitividad y la abertura aparente de la Tabla 511-06 de EG-2013 (num. 511.08). NO SE DIMENSIONA: la tabla entra por el pasante del tamiz N.º 200 del suelo, que es dato del EMS (`material_lecho_salida.pasa_200_pct`). Si es GRANULAR (HEC-11 Sec. 4.4.1): una manta de grava de 0.15 a 0.38 m en una capa, con no mas de 5 % pasando el tamiz N.º 200, cuyos tamaños cumplan la Ec. (14) contra el suelo y contra la piedra. NO SE DIMENSIONA: falta `material_lecho_salida.D85_m` y `material_lecho_salida.D15_m` (granulometria del lecho, dato del EMS)",
           "clase_geotextil": "Clase 1 de la Tabla 511-01 (Clase 2 para geotextiles tejidos de monofilamento)",
           "pasa_200_pct": null,
           "columna_tabla_511_06": null,
           "permitividad_min_s1": null,
           "abertura_aparente_max_mm": null,
+          "cama_de_grava_bajo_geotextil": false,
+          "granular": {
+            "requisito": "Si es GRANULAR (HEC-11 Sec. 4.4.1): una manta de grava de 0.15 a 0.38 m en una capa, con no mas de 5 % pasando el tamiz N.º 200, cuyos tamaños cumplan la Ec. (14) contra el suelo y contra la piedra. NO SE DIMENSIONA: falta `material_lecho_salida.D85_m` y `material_lecho_salida.D15_m` (granulometria del lecho, dato del EMS)",
+            "D85_suelo_m": null,
+            "D15_suelo_m": null,
+            "d50_enrocado_m": 0.23653400366864571,
+            "D15_enrocado_min_m": null,
+            "D15_enrocado_max_m": null,
+            "directo_sobre_el_suelo": null,
+            "D15_filtro_mayor_que_m": null,
+            "D15_filtro_hasta_m": null,
+            "D85_filtro_desde_m": null,
+            "una_capa_basta": null,
+            "pasa_200_max_pct": 5.0,
+            "espesor_una_capa_m": [
+              0.15,
+              0.38
+            ],
+            "espesor_varias_capas_m": [
+              0.1,
+              0.2
+            ],
+            "citas": [
+              "HEC11.4.4.1#RELACION_5",
+              "HEC11.4.4.1#D15_D15",
+              "HEC11.4.4.1#EC_14",
+              "HEC11.4.4.1#INTERFACES",
+              "HEC11.4.4.1#PASA_200",
+              "HEC11.4.4.1#ESPESOR",
+              "HEC11.4.4.1#ESPESOR_VARIAS_CAPAS",
+              "HEC11.4.4.1#PARALELAS",
+              "HEC11.4.2#T2"
+            ]
+          },
           "citas": [
             "MC_HHD.LAMINA_05",
             "HEC14.10.2#FILTRO",
             "EG2013.511.08#EROSION",
-            "EG2013.511.08#T511_06"
+            "EG2013.511.08#T511_06",
+            "HEC11.4.4.1#RELACION_5",
+            "HEC11.4.4.1#D15_D15",
+            "HEC11.4.4.1#EC_14",
+            "HEC11.4.4.1#INTERFACES",
+            "HEC11.4.4.1#PASA_200",
+            "HEC11.4.4.1#ESPESOR",
+            "HEC11.4.4.1#ESPESOR_VARIAS_CAPAS",
+            "HEC11.4.4.1#PARALELAS",
+            "HEC11.4.2#T2"
           ]
         }
       },
