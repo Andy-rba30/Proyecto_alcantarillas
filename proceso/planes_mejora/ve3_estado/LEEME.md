@@ -1,9 +1,32 @@
 # Estado de VE-3 (para retomar si la sesión se corta)
 
 Material de proceso, no del entregable. Lo mantiene la sesión orquestadora y se actualiza
-cada vez que se integra algo. Fecha de esta versión: 2026-11-23.
+cada vez que se integra algo. Fecha de esta versión: 2026-11-24.
 
-> **ESTADO (2026-11-23, ~17:05 UTC, sesión `claude/nifty-brahmagupta-rfj9o6`, PR #47).**
+> **ESTADO (2026-11-24, sesión `claude/confident-cannon-0vgath`): rondas 1 y 2 de Windows
+> integradas; suite completa definitiva EN CURSO.**
+> Rama de trabajo: `claude/confident-cannon-0vgath` = `7efb15d` + la ronda 1 del dueño
+> (`wip/windows-parches-ronda1`, `404d06c`) + la ronda 2 (`cd45995` revierte el único hunk de
+> la ronda 1 que rompía un contrato, las rutas de la hidrología en `gui/app.py`; `fbbde5b`
+> `M9._sesgo` dice «coincide» con la diferencia de ruido, que en Windows desincronizaba
+> `indice_formulas.md`; `3d8a8ea` + `5248a36` foco de las emergentes y geometría escalada con
+> los ppp en Windows; fichas WIN-01 a WIN-03 en `4bdda06`). Dictamen Fable: 1, 2 y 3a
+> APROBADO, 3b APROBADO CON CAMBIOS (aplicados).
+>
+> **En curso:** la suite completa definitiva en un worktree limpio sobre el commit de este
+> bloque (Linux, Python 3.12, `xvfb-run`, `NORMAS_DIR` = clon de `Andy-rba30/normas`,
+> `-n 4 --dist loadfile` y después `-m aislado` sin `-n`; `python3` -> 3.12 al frente del
+> PATH para `regenerar.sh`). **Pendiente en Windows (dueño):** confirmar los 8 tests que
+> fallaban sobre esta rama (comandos en el chat de esta sesión).
+>
+> **Lo que falta, en orden:** sellar con el par medido (paralelo + aislado) → tests de sello
+> y sincronía → fila en la bitácora (cierra H1; la fila `5eccfe2` se rotula «deducida») →
+> fast-forward de `main` (autorizado) → auditoría Fable → N1, N2 y N3.
+>
+> **Si la sesión se corta:** retomar desde `claude/confident-cannon-0vgath` con
+> `PROMPT_RETOMAR.md` (para la suite: `python3` -> 3.12 al frente del PATH).
+
+> **ESTADO ANTERIOR (2026-11-23, ~17:05 UTC, sesión `claude/nifty-brahmagupta-rfj9o6`, PR #47).**
 > Rama de trabajo: `claude/nifty-brahmagupta-rfj9o6`, que contiene TODAS las ramas del repositorio
 > (`claude/serene-keller-2p7pcs` y sus `-d2`, `-d3-m11` y `-d3-modelos`, `v2/mantenibilidad-y-uso`,
 > `claude/youthful-babbage-9njfr2`). `-d3-constantes` nunca se subió: la ficha D3-03 la difiere
