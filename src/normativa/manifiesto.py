@@ -515,6 +515,13 @@ def indice_del_registro(registro) -> str:
             texto += f"; aprobada por {v.acto_aprobatorio}"
         if v.derogado_por:
             texto += f"; **derogada por {v.derogado_por}**"
+        # --- N2 del plan 12 --- la reserva de una norma legal compilada: el
+        # acto esta vigente y el ejemplar no recoge modificatorias
+        # posteriores (ficha N2L-02). Sin esto el lector veia «confirmada» a
+        # secas.
+        if v.modificatorias_posteriores:
+            texto += ("; **con modificatorias posteriores al ejemplar: "
+                      f"{v.modificatorias_posteriores}**")
         return texto
 
     A("## 1. Fuentes")

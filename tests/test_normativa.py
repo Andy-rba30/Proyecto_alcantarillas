@@ -666,6 +666,16 @@ CITAS_SIN_FIRMA_A_PROPOSITO = (
     "HEC11.4.3#D100",
     "HEC11.4.3#300_MM",
     "HEC11.4.3#BAJO_AGUA",
+    # --- N2 del plan 12 --- la misma razon y ninguna otra: la Ley 29338 de
+    # normas/ es una compilacion del SPIJ sin folio en ninguna de sus 49
+    # hojas (`fuentes.LEY_29338`, SinDeterminar). Se leyeron por texto y por
+    # imagen, y T2/T3 las comprueban en cada corrida. Su Reglamento SI
+    # imprime folio y sus citas van firmadas.
+    "LEY_29338.6",
+    "LEY_29338.7",
+    "LEY_29338.74",
+    # Dictamen de Fable sobre N2: el art. 104 («pública o privada»).
+    "LEY_29338.104",
     # --- VE-7, lote C (C1) y A11 --- la SEGUNDA razon (la fuente SI tiene
     # paginacion medida, pero la sesion que dio de alta la cita no tenia
     # `NORMAS_DIR`) tuvo un solo caso, `E060.22.10.2.2#VOLADIZO`, y CADUCO:

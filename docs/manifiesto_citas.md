@@ -90,7 +90,7 @@ Es el documento con más citas del proyecto y el que gobierna las Fases 2 a 6.
 | ↻ `V_MAX["concreto"] = (3.0, 6.0)` m/s — el **título completo** de la tabla lleva la unidad: «Velocidades máximas admisibles **(m/s)** en conductos revestidos» (NOR-HID-06), y la fuente de la tabla no es el MTC sino **HCANALES, Máximo Villon B.** | Tabla N° 10, num. 4.1.1.3.6, pág. impresa 76 | Manual de Hidrología | [CN:601](src/constantes_normativas.py:601) | [N] |
 | `V_MAX["ladrillo_c_concreto"] = (2.5, 3.5)` m/s | Tabla N° 10 | Manual de Hidrología | [CN:601](src/constantes_normativas.py:601) | [N] |
 | ↻ `V_MAX["mamposteria_piedra"] = (2.0,)` m/s — **un solo valor (NOR-HID-07)**: la fila es «Mampostería de piedra **y concreto**» y la tabla imprime **2.0**, no un par. Escribirla `(2.0, 2.0)` inventaba un par que la fuente no escribe | Tabla N° 10 | Manual de Hidrología | [CN:601](src/constantes_normativas.py:601) | [N] |
-| **Afirmación negativa** `SIN_TMC_NI_HDPE_T10`: TMC y HDPE NO están listados en la Tabla N° 10 | Tabla N° 10 | Manual de Hidrología | [citas.py:739](src/normativa/citas.py:739) | [N] |
+| **Afirmación negativa** `SIN_TMC_NI_HDPE_T10`: TMC y HDPE NO están listados en la Tabla N° 10 | Tabla N° 10 | Manual de Hidrología | [citas.py:743](src/normativa/citas.py:743) | [N] |
 | `LONG_MAX_CUNETA = {seca: 250.0, muy_lluviosa: 200.0}` m | 4.1.2.1 d) | Manual de Hidrología | [CN:628](src/constantes_normativas.py:628) | [N] |
 | `NUMERAL_LUZ = "4.1.1.3.1 / 4.1.1.5.1"` (págs. 70 y 88) | 4.1.1.3.1 / 4.1.1.5.1 | Manual de Hidrología | [M1:124](src/modulos/M1_clasificacion.py:124) | [N] |
 | ↻ `NUMERAL_TR` — **enriquecido (NOR-HID-08)**: era `"3.6, Tabla N 02"` pelado y presentaba como exigencia lo que la fuente escribe como techo recomendado. Ahora lleva el título literal, el «como máximo» y la nota del Propietario, y declara que el proyecto adopta los máximos recomendados — que en esta tabla, al revés que en V1 y V2, es el extremo **menos** conservador del margen concedido | 3.6, Tabla N° 02, pág. impresa 25 | Manual de Hidrología | [M1:135](src/modulos/M1_clasificacion.py:135) | [N] |
@@ -470,7 +470,7 @@ hoja de ruta**, que es la fuente de verdad del proyecto.
 | `NUMERAL_MANNING` | `"4.1"` (Sec. 4.1 de la hoja de ruta) | [M3:183](src/modulos/M3_hidraulica.py:183) |
 | `NUMERAL_CRITICO` / `NUMERAL_ENTRADA` / `NUMERAL_SALIDA` | `"4.2.1"` / `"4.2"` / `"4.3"` | [M4:429](src/modulos/M4_control.py:429) |
 | `NUMERAL_V6` | `"3.1"` | [M5:482](src/modulos/M5_verificaciones.py:482) |
-| `NUMERAL_V8` | `"Fase 5, V8"` — "[N] verificación, no diseño, sin numeral que fije el TR ni el umbral": el TR y el umbral que faltan son los del criterio `TR_evento_extremo`, que `M5.v8_evento_extremo` invoca y que sigue vacío | [M5:488](src/modulos/M5_verificaciones.py:488), [CA:758](src/criterios/verificaciones.py:758) |
+| `NUMERAL_V8` | `"Fase 5, V8"` — "[N] verificación, no diseño, sin numeral que fije el TR ni el umbral": el TR y el umbral que faltan son los del criterio `TR_evento_extremo`, que `M5.v8_evento_extremo` invoca y que sigue vacío | [M5:488](src/modulos/M5_verificaciones.py:488), [CA:763](src/criterios/verificaciones.py:763) |
 | `NUMERAL_V9` | `"Sec. 3.2 (V9, nuevo en v7)"` | [M5:489](src/modulos/M5_verificaciones.py:489) |
 | `NUMERAL_7A` / `NUMERAL_7B` | `"Sec. 7.A"` / `"Sec. 7.B"` | [M7:327](src/modulos/M7_geometria.py:327) |
 | ↻ `NUMERAL_G1` / `NUMERAL_G2` | `"Sec. 7.A (recubrimiento: el mayor entre EG-2013 508.07 —solo HDPE— y AASHTO LRFD Art. 12.6.6.3, Tabla 12.6.6.3-1 / resguardo Sec. 5.1)"` / `"Sec. 7.B (cotas amarradas al fondo del receptor; desnivel de entrega: criterio 'desnivel_minimo_entrega_m' [A])"` (el numeral de G2 nombra el criterio desde T-6 de la cadena T; hasta entonces terminaba en «receptor»). **Corregido**: decía «recubrimiento EG-2013» a secas, y ese string es lo único que la memoria imprime de la fila G1 — en un punto de **concreto** atribuía a EG-2013 un mínimo que EG-2013 no fija, que es la tesis misma de `NOR-VAC-01` | [M7:365](src/modulos/M7_geometria.py:365) |
@@ -584,7 +584,7 @@ nivel freático dentro de `[A]` habría dicho que alguien los "adoptó".
 | `TW_receptor` | `None` | **vacío** | — | [CA:1389](src/criterios/hidraulica.py:1389) |
 | `long_max_cuneta` | 200.0 m | declarado | (200.0, 250.0) | [CA:1575](src/criterios/hidraulica.py:1575) |
 | `remanso_derecho_via` | `None` | **vacío — bloquea V5 para todo punto** | — | [CA:133](src/criterios/verificaciones.py:133) |
-| `TR_evento_extremo` | `None` | **vacío — bloquea V8 para todo punto** | — | [CA:758](src/criterios/verificaciones.py:758) |
+| `TR_evento_extremo` | `None` | **vacío — bloquea V8 para todo punto** | — | [CA:763](src/criterios/verificaciones.py:763) |
 | `phi_relleno_trasdos` | `None` | **vacío** | (30.0, 38.0) ° | [CA:31](src/criterios/geotecnia.py:31) |
 | `c_phi_fundacion` | `None` | **vacío** | — | [CA:50](src/criterios/geotecnia.py:50) |
 | `capacidad_portante_adm` | `None` | **vacío** | — | [CA:123](src/criterios/geotecnia.py:123) |

@@ -3889,6 +3889,33 @@ REFINAMIENTO_LONGITUD = _fundamento(
 # cabezal asi»: dicen que la fuente manda X PARA LOS MUROS y que el proyecto
 # modela el cabezal como uno de ellos ('marco_estabilidad_cabezal').
 
+# --- N2 del plan 12 --- EL LADO JURIDICO DE V5, que hasta aqui llegaba por
+# remision. La fila V5 de la hoja de ruta pide el embalse dentro del derecho
+# de via «sin afectación a terceros ni a faja marginal». El derecho de via ya
+# tenia sus citas del DG-2018; ahora tiene las del RNGIV al que el DG-2018
+# remite (art. 35, de quien es la faja; art. 32, quien aprueba su ancho). Y
+# la faja marginal, que la memoria despachaba con «la ley no esta en
+# normas/», tiene su razon verdadera: ni la Ley 29338 ni su Reglamento fijan
+# un ancho -- lo fija la Autoridad Administrativa del Agua para cada cuerpo
+# de agua --, de modo que el de este cauce es un dato de sitio que el
+# programa no recibe. La frase y las citas son las mismas en los dos
+# fundamentos de V5, y por eso se escriben una vez (ficha N2L-01).
+_POR_QUE_FAJA_MARGINAL_V5 = (
+    " La fila nombra ademas la faja marginal del cauce, que como el cauce "
+    "mismo es un bien de dominio publico hidraulico: intervenir en ellos "
+    "exige autorizacion previa de la autoridad del agua, que es un tramite "
+    "del expediente y no una verificacion, y el ancho de la faja no lo fija "
+    "la ley ni su reglamento sino esa autoridad para cada cuerpo de agua, "
+    "con los criterios del art. 114 de su Reglamento, que no tienen cifra, "
+    "y con el reglamento de delimitacion de la propia autoridad (R.J. "
+    "332-2016-ANA), que no esta en normas/ y no se leyo. El de este cauce "
+    "es un dato de sitio que el programa no recibe, y por eso la faja "
+    "marginal no se evalua.")
+_CITAS_MARCO_LEGAL_V5 = (
+    "RNGIV.35", "RNGIV.32", "LEY_29338.6", "LEY_29338.7", "LEY_29338.74",
+    "LEY_29338.104", "REG_LEY_29338.113.1", "REG_LEY_29338.113.2",
+    "REG_LEY_29338.114", "REG_LEY_29338.277.b")
+
 V5_REMANSO = _fundamento(
     id="F5.V5",
     fase=F5,
@@ -3908,11 +3935,12 @@ V5_REMANSO = _fundamento(
         "la fuente sostiene; o un plano horizontal a la cota de la carga que "
         "corta el fondo del cauce, comparado con la mitad del ancho de la "
         "faja, que incluye el tramo en que el cauce ya llevaria agua sin la "
-        "obra. Ninguno es la curva de remanso."),
+        "obra. Ninguno es la curva de remanso." + _POR_QUE_FAJA_MARGINAL_V5),
     verbo=Verbo.DEFINE,
     citas=("HDS5_3ED.2.2.5#EMBALSE", "HDS5_3ED.2.2.5#NO_EXCEDER",
            "HDS5_3ED.2.2.5a#COTA_DE_DANO", "DG2018.304.07.01",
-           "DG2018.304.07.02", "DG2018.304.07.02#INCREMENTO"),
+           "DG2018.304.07.02", "DG2018.304.07.02#INCREMENTO")
+          + _CITAS_MARCO_LEGAL_V5,
     que_pasa_si_no_se_hace=(
         "El embalse de diseño podria salir de la faja de dominio publico e "
         "inundar el predio de un tercero sin que la memoria lo hubiera "
@@ -3938,11 +3966,11 @@ V5_PERFIL_REMANSO = _fundamento(
         "exige la curva de la lamina aguas arriba de la boca, sobre la "
         "seccion tipica del cauce, hasta donde la elevacion baja al aumento "
         "admisible; esa distancia es la que tiene que quedar dentro de la "
-        "faja."),
+        "faja." + _POR_QUE_FAJA_MARGINAL_V5),
     verbo=Verbo.DEFINE,
     citas=("HDS5_3ED.2.2.5#EMBALSE", "HDS5_3ED.2.2.5b#AUMENTO",
            "HDS5_3ED.2.2.3a#SECCION_TIPICA", "HDS5_3ED.2.2.3e#NORMAL",
-           "DG2018.304.07.01", "DG2018.304.07.02"),
+           "DG2018.304.07.01", "DG2018.304.07.02") + _CITAS_MARCO_LEGAL_V5,
     que_pasa_si_no_se_hace=(
         "El remanso de la obra podria levantar el agua sobre el predio de un "
         "tercero, fuera de la faja, sin que la memoria lo hubiera medido; o, "

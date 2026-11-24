@@ -230,6 +230,14 @@ class Vigencia:
     AASHTO no se deroga por acto, y por eso ese campo queda vacio en ellas
     aunque tengan edicion posterior --. `pendiente_gabinete` es lo que la
     verificacion no pudo leer en linea y queda para leer en papel.
+
+    `modificatorias_posteriores` (N2 del plan 12, ficha N2L-02) es la
+    RESERVA de una norma legal COMPILADA cuyo acto sigue vigente y que tiene
+    modificatorias posteriores a la fecha de la compilacion del ejemplar. Es
+    un campo y no un cuarto estado: la vigencia del acto esta CONFIRMADA y
+    no hay edicion que elegir (rige el texto vigente), pero el lector del
+    manifiesto tiene que ver que el ejemplar no recoge esas modificatorias.
+    Solo cabe con estado CONFIRMADA.
     """
     estado: EstadoDeVigencia
     fecha: str
@@ -238,6 +246,7 @@ class Vigencia:
     acto_aprobatorio: str = ""
     derogado_por: str = ""
     pendiente_gabinete: str = ""
+    modificatorias_posteriores: str = ""
 
     def __post_init__(self) -> None:
         if not isinstance(self.estado, EstadoDeVigencia):
@@ -256,6 +265,12 @@ class Vigencia:
             raise ErrorDeRegistro(
                 "Vigencia: `derogado_por` solo tiene sentido con estado "
                 "POSTERIOR; una edicion derogada no esta vigente")
+        if self.modificatorias_posteriores.strip() and \
+                self.estado is not EstadoDeVigencia.CONFIRMADA:
+            raise ErrorDeRegistro(
+                "Vigencia: `modificatorias_posteriores` solo cabe con estado "
+                "CONFIRMADA: es la reserva de una norma compilada cuyo acto "
+                "sigue vigente, no un cuarto estado (ficha N2L-02)")
 
 
 @dataclass(frozen=True)
@@ -588,6 +603,11 @@ class Cita:
     condiciones: Tuple["CondicionAplicacion", ...] = ()
     verificado: Optional[Verificado] = None
     interpretacion: Optional[Interpretacion] = None
+    # LAS CITAS DE OTRA FUENTE QUE LE CORRESPONDEN: equivalentes (la misma
+    # afirmacion en otra norma), o destino de una remision expresa del texto
+    # citado (el DG-2018 §304.07.01 remite al RNGIV, y sus «definiciones»
+    # terminan en el art. 2 de este). Alineado con
+    # docs/diseno_registro_normativo.md en el dictamen de Fable sobre N2.
     corresponde_en: Tuple[str, ...] = ()
     derivado_de: str = ""
     nota: str = ""

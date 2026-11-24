@@ -84,13 +84,15 @@ def test_toda_fuente_presente_declara_su_vigencia():
         assert fu.estado_de_vigencia(f) is f.vigencia.estado
         # Tres fechas, una por sesion que verifico contra el emisor: T1,
         # EXT-6 (DG-2018) y T-0 de la cadena T (HEC-14 y WSDOT).
-        # Y una cuarta desde VE-3.6 (el USBR de la Familia C), y una quinta
-        # desde N3 del plan 12 (HEC-11).
+        # Y una cuarta desde VE-3.6 (el USBR de la Familia C), una quinta
+        # desde N3 del plan 12 (HEC-11) y una sexta desde N2 del plan 12 (el
+        # marco legal: Ley 29338, su Reglamento y el RNGIV).
         assert f.vigencia.fecha in (fu.VIGENCIA_VERIFICADA_EL,
                                     fu.VIGENCIA_VERIFICADA_EL_EXT6,
                                     fu.VIGENCIA_VERIFICADA_EL_T0,
                                     fu.VIGENCIA_VERIFICADA_EL_VE3,
-                                    fu.VIGENCIA_VERIFICADA_EL_N3), f.id
+                                    fu.VIGENCIA_VERIFICADA_EL_N3,
+                                    fu.VIGENCIA_VERIFICADA_EL_MARCO_LEGAL), f.id
         assert f.vigencia.como.strip(), f.id
 
 
@@ -125,7 +127,7 @@ def test_una_derogacion_solo_cabe_en_una_edicion_superada():
 def test_una_fuente_sin_vigencia_devuelve_None_y_no_inventa_un_estado():
     assert fu.estado_de_vigencia(dataclasses.replace(
         fu.MC_HHD, ausente=True, archivo_pdf=None, sha1=None, vigencia=None,
-        ausencia=fu.RNGIV.ausencia)) is None
+        ausencia=fu.ASTM_C76.ausencia)) is None
 
 
 # ---------------------------------------------------------------------------
@@ -169,6 +171,45 @@ def test_toda_superada_dice_a_quien_le_toca_elegir():
 def test_toda_superada_dice_cual_es_la_edicion_posterior():
     for id_ in CENSO_EDICION_POSTERIOR:
         assert fu.FUENTES[id_].vigencia.edicion_posterior.strip(), id_
+
+
+def test_el_rngiv_declara_sus_modificatorias_y_el_manifiesto_las_imprime():
+    """
+    --- Dictamen de Fable sobre N2 (ficha N2L-02) --- La compilacion del RNGIV
+    llega a 2013 y el decreto se modifico despues. Esa reserva vivia solo en
+    `pendiente_gabinete`, que el manifiesto no imprime, y el lector veia
+    «confirmada» a secas. Es un CAMPO de la vigencia, no un cuarto estado, y
+    el manifiesto lo imprime en la fila de la fuente.
+    """
+    from src.normativa import manifiesto as man
+    from src.normativa import registro as _registro
+    v = fu.RNGIV.vigencia
+    assert v.estado is fu.EstadoDeVigencia.CONFIRMADA
+    assert "DS 021-2016-MTC" in v.modificatorias_posteriores
+    assert "DS 015-2024-MTC" in v.modificatorias_posteriores
+    assert "Ley 32598" in v.pendiente_gabinete
+    # Solo el RNGIV lo declara hoy.
+    con_reserva = tuple(f.id for f in fu.FUENTES.values()
+                        if f.vigencia.modificatorias_posteriores)
+    assert con_reserva == ("RNGIV",)
+    texto = man.indice_del_registro(_registro.construir())
+    (fila,) = [l for l in texto.split("\n") if l.startswith("| `RNGIV` |")]
+    assert ("con modificatorias posteriores al ejemplar: "
+            + v.modificatorias_posteriores) in fila
+
+
+@pytest.mark.parametrize("estado", [fu.EstadoDeVigencia.POSTERIOR,
+                                    fu.EstadoDeVigencia.GABINETE])
+def test_las_modificatorias_posteriores_solo_caben_en_una_vigencia_confirmada(
+        estado):
+    with pytest.raises(ErrorDeRegistro):
+        fu.Vigencia(estado=estado, fecha=fu.VIGENCIA_VERIFICADA_EL, como="x",
+                    edicion_posterior="otra",
+                    modificatorias_posteriores="DS x")
+    # Con CONFIRMADA, el mismo campo se construye.
+    assert fu.Vigencia(estado=fu.EstadoDeVigencia.CONFIRMADA,
+                       fecha=fu.VIGENCIA_VERIFICADA_EL, como="x",
+                       modificatorias_posteriores="DS x")
 
 
 def test_solo_el_manual_de_puentes_fue_derogado_por_un_acto():

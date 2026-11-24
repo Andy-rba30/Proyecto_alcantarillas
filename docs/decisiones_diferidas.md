@@ -59,7 +59,7 @@ registro.
 
 # Índice de fichas
 
-> Tabla derivada automáticamente de las **408** fichas del documento (`78` cerradas, `153` abiertas/parciales, `177` diferidas/declaradas).
+> Tabla derivada automáticamente de las **411** fichas del documento (`80` cerradas, `154` abiertas/parciales, `177` diferidas/declaradas).
 > Regla de estado (verificada por `tests/test_decisiones_diferidas.py`): `cerrada` si el título marca IMPLEMENTADA/CERRADA o tiene `**Cerrado` sin `**Abierto`; `abierta / parcial` si declara `**Abierto`; `diferida / declarada` en el resto.
 
 | Ficha | Tema | Estado |
@@ -139,7 +139,7 @@ registro.
 | EXT-5-01 | Ocho formas, no siete: `serie_de_claves` y la unión de formas | diferida / declarada |
 | EXT-5-02 | La forma va última, y las guardias de los consumidores se quedan | diferida / declarada |
 | EXT-5-03 | Once criterios de texto cuyo conjunto cerrado vive en el consumidor, no en `sensibilidad` | cerrada |
-| EXT-6-01 | El RNGIV no vuelve a `normas/`: lo que se borró no era el decreto | diferida / declarada |
+| EXT-6-01 | El RNGIV no vuelve a `normas/`: lo que se borró no era el decreto | cerrada |
 | EXT-6-02 | El piso [N] del ancho del derecho de vía está en el registro y no tiene consumidor | diferida / declarada |
 | EXT-6-03 | PC-24 no se cierra en EXT-6: su resto es EXT-3-01 | diferida / declarada |
 | EXT-6-04 | La cláusula de alcance no crea un `Fundamento`: el rótulo del marco es texto del registro, no un paso | diferida / declarada |
@@ -472,6 +472,9 @@ registro.
 | N3-02 | El D15 de la piedra es la banda de la Tabla 2 de HEC-11, no una curva (lectura del proyecto) | diferida / declarada |
 | N3-03 | El espesor de la protección con el receptor alto toma, por analogía, el piso de 300 mm de HEC-11 Sec. 4.3 (cierra el abierto (1) de VE5-M6-02) | abierta / parcial |
 | N3-04 | HEC-11 (SI) entra sin folio, sin firma y con sucesora: la FHWA la archiva y la sustituye por HEC-23 | abierta / parcial |
+| N2L-01 | La Ley 29338, su Reglamento y el RNGIV son fuentes presentes, y la faja marginal sigue sin evaluarse por falta del dato de sitio | abierta / parcial |
+| N2L-02 | Una norma legal compilada con modificatorias posteriores: vigencia confirmada con reserva, y la reserva se imprime | cerrada |
+| N2L-03 | La hoja de ruta rotula «[N] Ley 29338» el caudal del receptor, y la ley no fija caudales | diferida / declarada |
 
 ---
 
@@ -2303,6 +2306,12 @@ una queda diferida a sabiendas.
 - **Qué haría falta:** el DS 034-2008-MTC con sus modificatorias, en
   `normas/`, medido como toda Fuente; entonces `DG2018.304.07.01` gana una
   `corresponde_en` y la remisión deja de ser el sustituto.
+- **Cerrado (N2 del plan 12, 2026-11-24):** llegó el decreto, y es OTRO
+  archivo: el texto del SPIJ del DS 034-2008-MTC (sha1 `4e41d4a1…`), no el
+  de 2006, que sigue sin restaurarse. `RNGIV` salió de `FUENTES_AUSENTES`, y
+  `DG2018.304.07.01` y `.02` ganaron `corresponde_en` (`RNGIV.35`,
+  `RNGIV.2`; `RNGIV.32`, `RNGIV.4`). La «definición» prometida no estaba:
+  el RNGIV remite sus definiciones a un glosario ausente (ficha N2L-01).
 - **Dónde vive:** `src/normativa/fuentes.py::RNGIV`
 
 ## EXT-6-02 · El piso [N] del ancho del derecho de vía está en el registro y no tiene consumidor
@@ -10506,3 +10515,75 @@ impreso que no es de cálculo: la huella de los criterios.
   de las citas sin folio; y que el dueño ratifique al integrar la nota «Corregido (N3)» de la
   Fase 6 de la hoja de ruta.
 - **Dónde vive:** `src/normativa/fuentes.py::HEC11`
+
+# Parte LXVI — Lo que N2 del plan 12 (`normas_2/`) dejó escrito: el marco legal
+
+## N2L-01 · La Ley 29338, su Reglamento y el RNGIV son fuentes presentes, y la faja marginal sigue sin evaluarse por falta del dato de sitio
+
+- **Cerrado (N2 del plan 12 y dictamen de Fable, 2026-11-24):** los tres PDF
+  pasaron a `normas/` del repositorio de normas y son `Fuente` presentes con
+  sha1, páginas y paginación medidos: `LEY_29338` (sin folio,
+  `SinDeterminar`), `REG_LEY_29338` (DS 001-2010-AG, Fuente propia; desfase 0
+  en 83 de 83) y `RNGIV` (DS 034-2008-MTC, SPIJ al 28-05-2013; desfase 0 en
+  17 de 17). Doce citas leídas por texto e imagen —Ley arts. 6, 7, 74 y 104
+  (sin firma, censadas); Reglamento arts. 113.1, 113.2, 114 y 277 b; RNGIV
+  arts. 2, 4, 32 y 35— y la afirmación negativa
+  `SIN_ANCHO_DE_FAJA_MARGINAL`. La faja marginal no se evalúa por la razón
+  verdadera: el ancho de la de un cauce natural lo fija la Autoridad
+  Administrativa del Agua (Reglamento art. 113.2, pág. 37) con los criterios
+  sin cifra del art. 114 y con su reglamento de delimitación, y es un dato de
+  sitio [S] que el programa no recibe (en un cauce artificial lo definen los
+  estudios de la obra hidráulica, art. 116). La exigencia de autorizar la
+  obra se apoya en el art. 104 de la Ley («pública o privada») y en el 277 b
+  del Reglamento; V5 dice que es un trámite que el programa no acredita. Las
+  dos remisiones que terminan fuera de `normas/` se censan como ausentes:
+  `RJ_332_2016_ANA` (el reglamento de delimitación, que derogó la R.J.
+  300-2011-ANA que imprimen las concordancias) y `RM_660_2008_MTC` (el
+  glosario al que el art. 2 del RNGIV remite «derecho de vía»).
+- **Abierto:** evaluar la faja marginal exige un dato nuevo por punto y
+  margen —el ancho de la resolución de delimitación de la AAA— y un método
+  para decir qué es «afectarla»; no se implementa. Lo que el reglamento de
+  la ANA dice de anchos mínimos (su art. 12, según búsqueda) no se leyó.
+- **Qué haría falta:** la clave externa del ancho de faja marginal por punto
+  y una decisión del dueño sobre el método; y la R.J. 332-2016-ANA y la RM
+  660-2008-MTC/02 en `normas/`, medidas como toda Fuente.
+- **Dónde vive:** `src/normativa/fuentes.py::REG_LEY_29338`
+
+## N2L-02 · Una norma legal compilada con modificatorias posteriores: vigencia confirmada con reserva, y la reserva se imprime
+
+- **Cerrado (dictamen de Fable sobre N2):** `Vigencia` tiene el campo
+  `modificatorias_posteriores`, que solo cabe con estado `CONFIRMADA` (el
+  `__post_init__` lo rechaza con otro estado) y que el manifiesto imprime
+  («con modificatorias posteriores al ejemplar: …»). El RNGIV lo lleva: los
+  DS 021-2016-MTC (arts. 10 y 12 a 16) y 015-2024-MTC (lit. c del 4.2 y del
+  11.2), no leídos; su `pendiente_gabinete` suma la Ley 32598, sobre las
+  autoridades de la jerarquización vial, tampoco leída.
+- **Por qué** un campo y no un cuarto estado: `POSTERIOR` metería la fuente
+  en `fuentes_con_eleccion_de_edicion_pendiente` como norma técnica, y para
+  un decreto modificado no hay edición que elegir: rige el texto vigente. Lo
+  que se confirma es que el acto sigue vigente y que los artículos citados no
+  aparecen modificados; la cita `RNGIV.4` no transcribe el literal c. Hasta
+  el dictamen la reserva vivía solo en `pendiente_gabinete`, que el
+  manifiesto no imprime: el lector veía «confirmada» a secas.
+- **Qué haría falta:** leer en El Peruano las modificatorias nombradas; si
+  un artículo citado cambió, reverificar su cita contra un texto vigente o
+  declarar la discrepancia.
+- **Dónde vive:** `src/normativa/esquema.py::Vigencia`
+
+## N2L-03 · La hoja de ruta rotula «[N] Ley 29338» el caudal del receptor, y la ley no fija caudales
+
+- **Qué se difirió:** corregir la fila «Q de diseño del receptor» de la Sec.
+  1.2 de la v8, que lo rotula «[N] Ley 29338». **Reportado contra la hoja de
+  ruta**: la nota en la v8 la autoriza el dueño, y esta sesión no la toca.
+- **Por qué:** la Ley 29338 no fija caudales: en sus 49 hojas «caudal»
+  aparece cuatro veces (los caudales ecológicos del art. 53, el del art. 59
+  y dos concordancias) y nunca con una cifra. El dato cambia al mover la obra
+  y no al cambiar de proyectista: es [S], que fija la ANA o la Junta de
+  Usuarios. La discrepancia se declara en el punto de uso —el comentario del
+  paso 1 de la Sec. 1.3 en `M3_hidraulica` y la nota de la columna
+  `Q_receptor_m3s`—, y la hoja de ruta sigue con la etiqueta «[N]» mientras
+  no se corrija.
+- **Qué haría falta:** que el dueño autorice la nota en la v8 (fila de la
+  Sec. 1.2: «[S], lo fija la ANA o la Junta; la Ley 29338 no fija
+  caudales»).
+- **Dónde vive:** `src/variables_entrada.py::Q_receptor_m3s`

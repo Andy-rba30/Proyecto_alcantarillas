@@ -304,7 +304,7 @@ class Cita:
     condiciones: Tuple[CondicionAplicacion, ...] = ()
     verificado: Optional[Verificado] = None
     interpretacion: Optional[Interpretacion] = None
-    corresponde_en: Tuple[str, ...] = ()   # ids de citas equivalentes en otra fuente
+    corresponde_en: Tuple[str, ...] = ()   # ids de citas de otra fuente: equivalentes, o destino de una remision expresa del texto citado
 
 class Caracter(str, Enum):
     EXIGENCIA     = "exigencia"
