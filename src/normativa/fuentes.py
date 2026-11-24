@@ -31,6 +31,9 @@ paginas confirman cada desfase, no dos o tres a ojo:
 
     Manual de Hidrologia .... +3   confirmado en 221 de 225 paginas
     Manual de Puentes ....... +1   confirmado en 650 de 673
+    Manual de Puentes 2018 .. +4   confirmado en 630 de 634 (N1 del plan de
+                                  normas 2: las cuatro que no confirman son
+                                  la RD y la caratula, sin folio)
     Manual de Suelos ........ +1   confirmado en 269 de 281
     EG-2013 ................. +8   confirmado en 1268 de 1282
     E.030 / E.050 / E.060 ...  0   confirmado en 67/68, 78/82 y 204/205
@@ -174,6 +177,21 @@ VIGENCIA_COMO_T0 = (
     "que la confirmacion es por lo que los resultados transcriben de ellas y "
     "no por su lectura")
 
+# --- N1 del plan de normas 2 (proceso/planes_mejora/12_PLAN_NORMAS_2.md) ---
+# La del Manual de Puentes 2018 (`MP2018`). No es la «N1» de 2026-09-14 que
+# paso ASTM A796 a presente: es la primera tarea del plan de integracion de
+# `normas_2/`, y sus fichas son N1MP-xx en docs/decisiones_diferidas.md.
+VIGENCIA_VERIFICADA_EL_N1MP = "2026-11-24"
+VIGENCIA_COMO_N1MP = (
+    "lectura del propio ejemplar --- la RD 19-2018-MTC/14 esta impresa en sus "
+    "PDF 1 a 3 (escaneo sin capa de texto, leida renderizando la pagina) --- y "
+    "busqueda web (WebSearch) desde la sesion de N1: los resultados "
+    "transcriben la edicion de El Peruano del lunes 14-01-2019 «Aprueban "
+    "Manual de Puentes» con esta RD y ninguna RD posterior que lo modifique o "
+    "derogue; las paginas del MTC y de El Peruano no fueron legibles "
+    "directamente, de modo que la ausencia de un acto posterior es lo que los "
+    "resultados no muestran, no una lectura del portal")
+
 # Los tres estados, con el nombre corto que el resto de la casa ya usaba.
 # Son el ENUM, no cadenas: `estado_de_vigencia` devuelve uno de estos.
 VIGENCIA_CONFIRMADA = EstadoDeVigencia.CONFIRMADA
@@ -250,14 +268,27 @@ MP = Fuente(
     sha1="67a7a9f1c61cad8f9ca179cd4ca777f96b49dc44",
     paginas_pdf=673,
     paginacion=Corrida(desfase=1),
+    # --- N1 (plan de normas 2) --- La edicion 2018 entro a normas/ como
+    # `MP2018`, y las dos CONVIVEN, como las dos HDS-5. NO hay Discrepancia
+    # resuelta que diga cual gobierna, y es a proposito: elegir es del
+    # proyectista ('edicion_legal_que_rige_el_expediente'), con la fecha de
+    # inicio del expediente que el registro no tiene. Por eso MP sigue en
+    # `fuentes_con_eleccion_de_edicion_pendiente_legal`.
+    convive_con=("MP2018",),
     vigencia=_posterior(
-        "Manual de Puentes actualizado 2018 (630 paginas)",
+        ("Manual de Puentes, diciembre de 2018 (RD 19-2018-MTC/14, 630 "
+         "paginas), presente en normas/ como MP2018"),
         acto_aprobatorio="RD 041-2016-MTC/14",
         derogado_por="RD 19-2018-MTC/14",
-        pendiente_gabinete=("conseguir la edicion 2018 y medir que numerales "
-            "de los citados cambiaron; leer el regimen "
-            "transitorio de la RD 19-2018-MTC/14 para los "
-            "expedientes iniciados bajo la de 2016")
+        # Lo que T1 dejo para gabinete se hizo en N1 (plan de normas 2): la
+        # edicion 2018 esta en normas/, sus 29 numerales citados se midieron
+        # (ficha N1MP-02 y N1MP-03) y la RD se leyo en el ejemplar --- no
+        # trae regimen transitorio ---. Queda lo que el ejemplar no imprime.
+        pendiente_gabinete=("leer en El Peruano la fecha de publicacion de la "
+            "RD 19-2018-MTC/14, que el ejemplar de 2018 no "
+            "imprime (la busqueda de N1 la situa el "
+            "14-01-2019, y la RD entra en vigencia al dia "
+            "siguiente)")
     ),
     nota=("23 de sus 673 paginas no imprimen numero: son portadas de capitulo "
           "y laminas fotograficas de puentes. El desfase no cambia. "
@@ -273,11 +304,85 @@ MP = Fuente(
           "contra este archivo (sha1); cual rige el expediente es de "
           "'edicion_legal_que_rige_el_expediente' (EXT-6: es la unica fuente "
           "DEROGADA por acto, y elegir la citada exige la fecha de inicio "
-          "del expediente y el regimen transitorio de la RD 19-2018-MTC/14, "
-          "que hay que leer; no comparte ventana con las normas tecnicas de "
-          "EE.UU., que van a 'edicion_que_rige_el_expediente'). Para "
-          "gabinete: conseguir la edicion 2018 y medir que numerales de los "
-          "citados cambiaron."),
+          "del expediente y el regimen transitorio de la RD 19-2018-MTC/14; "
+          "no comparte ventana con las normas tecnicas de EE.UU., que van a "
+          "'edicion_que_rige_el_expediente'). "
+          "N1 DEL PLAN DE NORMAS 2 (2026-11-24): la edicion 2018 esta en "
+          "normas/ y es la Fuente MP2018, con `convive_con` cruzado. La RD "
+          "19-2018-MTC/14, leida en el ejemplar de 2018 (PDF 1 a 3), tiene "
+          "cinco articulos y NINGUNA disposicion transitoria: aprueba el "
+          "Manual (art. 1), lo pone en vigencia al dia siguiente de su "
+          "publicacion (art. 3) y deroga la RD 041-2016-MTC/14 de este "
+          "ejemplar (art. 4); su considerando dice que las modificaciones "
+          "«no son sustanciales y se contraen a aspectos formales». Los 29 "
+          "numerales que el registro cita de este ejemplar se buscaron en la "
+          "edicion 2018 (fichas N1MP-02 y N1MP-03): ningun VALOR que entre "
+          "en el calculo cambio; la de 2018 corrige tres de las erratas de "
+          "imprenta que el registro declaraba (el signo de K_AE, el lado del "
+          "1.2 de k_h0 y el numeral 2.3.1.1.12.3, que pasa a 2.8.1.1.12.3), "
+          "conserva la del «tercio central» y cambia la redaccion del "
+          "Glosario y de la Introduccion. Las citas de este archivo siguen "
+          "validas contra el (sha1); cada una tiene su par en MP2018."),
+)
+
+# --- N1 del plan de normas 2 (2026-11-24) --- LA EDICION VIGENTE del Manual
+# de Puentes. Convive con MP (la de 2016, contra la que estan verificadas las
+# citas que el calculo consume) y NO la sustituye en el registro: cual rige
+# el expediente es 'edicion_legal_que_rige_el_expediente', y sigue vacio.
+# Lo que N1 midio, para que no haya que volver a medirlo:
+#   - PAGINACION: «Pagina N» en la cabecera de las 630 paginas del Manual
+#     (PDF 5 a 634), N = PDF - 4 en las 630; las cuatro primeras son la RD
+#     19-2018-MTC/14 (PDF 1 a 3) y la caratula (PDF 4), sin folio. Coincide
+#     con las «seiscientos treinta (630) paginas» del art. 1 de la RD.
+#   - TEXTO: el plan la anotaba como escaneo sin capa de texto, y no lo es:
+#     626 de las 634 paginas entregan texto. Las ocho que no son la RD y la
+#     caratula (PDF 1 a 4), los tres mapas nacionales de isoaceleraciones
+#     del Apendice A3 (PDF 568 a 570, imp. 564 a 566) y una figura del
+#     Apendice P (PDF 613). Las ecuaciones compuestas con fuente simbolica
+#     salen ilegibles por texto («n•R = 1.2 7ijIX4d» donde la pagina dibuja
+#     k_h0 = 1.2 F_pga PGA): una cita que depende de una ecuacion se
+#     verifica por IMAGEN, y su `metodo` lo dice.
+MP2018 = Fuente(
+    id="MP2018",
+    titulo="Manual de Puentes",
+    emisor="MTC — Direccion General de Caminos y Ferrocarriles",
+    edicion="Diciembre de 2018 (actualizacion de la edicion 2016)",
+    anio=2018,
+    resolucion="RD 19-2018-MTC/14",
+    archivo_pdf="normas/Manual de Puentes 2018 (RD 19-2018-MTC-14).pdf",
+    sha1="8ccf94e82b9a8bff30d182f4f814993b4c6dbaba",
+    paginas_pdf=634,
+    paginacion=Corrida(desfase=4),
+    reemplaza_a="MP (Manual de Puentes 2016, RD 041-2016-MTC/14)",
+    convive_con=("MP",),
+    vigencia=_confirmada(
+        acto_aprobatorio="RD 19-2018-MTC/14",
+        pendiente_gabinete=("confirmar en el portal del MTC que ninguna RD "
+            "posterior modifico o sustituyo este Manual: la "
+            "busqueda de N1 no encontro ninguna, que no es lo "
+            "mismo que leer el portal"),
+        fecha=VIGENCIA_VERIFICADA_EL_N1MP,
+        como=VIGENCIA_COMO_N1MP),
+    nota=("ENTRA EN N1 DEL PLAN DE NORMAS 2 (2026-11-24), desde "
+          "`normas_2/` del repositorio de normas. Es la edicion VIGENTE: la RD "
+          "19-2018-MTC/14 (20-12-2018), impresa en sus PDF 1 a 3, la aprueba "
+          "con 630 paginas (art. 1), la pone en vigencia al dia siguiente de "
+          "su publicacion en El Peruano (art. 3) y deroga la RD "
+          "041-2016-MTC/14 (art. 4). NO TRAE REGIMEN TRANSITORIO: ningun "
+          "articulo ni disposicion ampara a los expedientes iniciados bajo la "
+          "edicion 2016. La Presentacion (pag. impresa 38) la declara "
+          "actualizacion de la de 2016 «incorporando en gran parte» la AASHTO "
+          "LRFD 7a ed. y su Interim de 2015. Convive con MP (`convive_con` "
+          "cruzado) y no la sustituye en el registro: cual rige el expediente "
+          "lo declara el proyectista en "
+          "'edicion_legal_que_rige_el_expediente', que sigue vacio. Cada una "
+          "de las 29 citas de MP tiene aqui su par MP2018.* con "
+          "`corresponde_en` cruzado; el contraste esta en las fichas "
+          "N1MP-02 y N1MP-03 de docs/decisiones_diferidas.md. El mapa de PGA "
+          "del Apendice A3 (PDF 568, imp. 564) es el MISMO raster que el de "
+          "la edicion 2016 (PDF 553): mismas dimensiones, diferencia media de "
+          "3 niveles sobre 255, ruido de recompresion JPEG sin estructura "
+          "(ficha N1MP-04)."),
 )
 
 MS = Fuente(
@@ -1245,7 +1350,7 @@ USACE_EM_1110_2_2902 = Fuente(
 
 FUENTES: Dict[str, Fuente] = {
     f.id: f for f in (
-        MC_HHD, MP, MS, EG2013, E030, E050, E060,
+        MC_HHD, MP, MP2018, MS, EG2013, E030, E050, E060,
         HDS5_3ED, HDS5_SI_1985, AASHTO_LRFD_9,
         AASHTO_M170M, AASHTO_M36, ASTM_A760, ASTM_A796, AASHTO_M294_TRAD,
         DG2018, HEC14, WSDOT_HM, USBR_DSCS, USACE_EM_1110_2_2902,
@@ -1643,7 +1748,18 @@ APENDICE_A3_MP = _ausente(
                            "isolinea por texto"),
         esfuerzo=Esfuerzo.GABINETE,
         sustituto_vigente=("datos_sitio['PGA_roca_B'], [S] con la lectura "
-                           "del mapa declarada y verificable por imagen")))
+                           "del mapa declarada y verificable por imagen")),
+    # --- N1 del plan de normas 2 --- El apendice esta en las DOS ediciones
+    # presentes, y su mapa de PGA es el mismo raster en las dos (medido).
+    nota=("Edicion 2016 (MP): mapa de PGA en la PDF 553, pag. impresa 552. "
+          "Edicion 2018 (MP2018, la vigente): Apendice A3 en las pags. "
+          "impresas 558 a 566, mapa de PGA en la PDF 568, pag. impresa 564, "
+          "sin capa de texto. El mapa es el MISMO raster en las dos "
+          "(797 x 1099 px; diferencia media de 3 niveles sobre 255, ruido de "
+          "recompresion JPEG sin estructura), de modo que la lectura del "
+          "corredor no depende de la edicion. La lectura que N1 hizo sobre "
+          "ese raster esta en la ficha N1MP-04 de docs/decisiones_diferidas.md "
+          "y NO cambio el valor de datos_sitio['PGA_roca_B']"))
 
 
 # ===========================================================================

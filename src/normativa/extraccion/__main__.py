@@ -9,7 +9,10 @@ Existe para que verificar una cita no exija escribir un script cada vez:
     python3 -m src.normativa.extraccion png <pdf> <pagina_pdf> <destino.png> [escala]
     python3 -m src.normativa.extraccion sha1 <pdf>
 
-`<pdf>` admite un fragmento del nombre: "Puentes", "Hidro", "E.060".
+`<pdf>` admite un fragmento del nombre: "Hidro", "E.060", "Puentes (Vers"
+(la edicion 2016) o "Puentes 2018" (N1 del plan de normas 2: desde que las
+dos ediciones del Manual de Puentes estan en normas/, "Puentes" solo es
+ambiguo y la herramienta lo dice).
 
 DONDE SE BUSCAN (T-0, T-12): en la carpeta de `fuentes.directorios_de_normas()`
 --`$NORMAS_DIR`, el clon del repositorio de normas; desde T-12 los PDF ya no

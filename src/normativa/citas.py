@@ -142,7 +142,19 @@ _SHA = {
     "USBR_DSCS": "75510d711ce1f6643333937a1ea38f3b469cc1f7",
     # --- VE-3.12 --- Las D-load de las Clases III a V (fuente [C] secundaria).
     "USACE_EM_1110_2_2902": "cfdc3bfd1c9291d30c98de11f27b1f1fbf7a95d8",
+    # --- N1 del plan de normas 2 --- El Manual de Puentes 2018, la edicion
+    # vigente, que convive con MP (2016).
+    "MP2018": "8ccf94e82b9a8bff30d182f4f814993b4c6dbaba",
 }
+
+# --- N1 del plan de normas 2 (2026-11-24) --- Las citas MP2018.*, pares de
+# las 29 de MP. Mismo regimen que T-0 a T-5: la propia sesion abrio cada
+# pagina por su capa de texto, y por imagen las que dependen de una ecuacion
+# compuesta con fuente simbolica o de una tabla. NO es la sesion `N1` de
+# 2026-09-14 (ASTM A796): por eso el nombre largo.
+FECHA_N1MP = "2026-11-24"
+POR_N1MP = "normas2/N1 · lectura directa de la pagina por la sesion"
+N1MP = (FECHA_N1MP, POR_N1MP)
 
 _TODAS = []
 
@@ -802,6 +814,7 @@ MP_2_1_4_3_9 = _cita(
                "superestructura y la subestructura del puente."),
         pagina_pdf=92),
     caracter=Caracter.EXIGENCIA,
+    corresponde_en=("MP2018.2.1.4.3.9",),
     metodo=AMBOS,
     nota=("NOR-PUE-01 / MAT-D5. ESTE NUMERAL NO SOSTIENE LA SOBRECARGA DE "
           "TRASDOS y esta aqui para que se vea que no la sostiene. No "
@@ -830,7 +843,7 @@ MP_SOBRECARGA = _cita(
         pagina_pdf=103),
     caracter=Caracter.EXIGENCIA,
     metodo=AMBOS,
-    corresponde_en=("AASHTO_LRFD_9.3.11.6.4",),
+    corresponde_en=("AASHTO_LRFD_9.3.11.6.4", "MP2018.2.4.2.2#SOBRECARGA"),
     nota=("EL 0.60 ES UN PISO, NO UN VALOR DE DISEÑO: la fuente dice «no "
           "menor que». Y esta expresado como ALTURA DE RELLENO EQUIVALENTE, "
           "no como presion: el paso a p = γ·0.60·Ka es derivacion del "
@@ -917,6 +930,7 @@ MP_GLOSARIO_OBRAS_MENORES = _cita(
                "menor que 6.00 m (20 ft)."),
         pagina_pdf=46),
     caracter=Caracter.DEFINICION,
+    corresponde_en=("MP2018.GLOSARIO#OBRAS_DE_ARTE_MENORES",),
     metodo=AMBOS,
     sesion=CIERRE,
     nota=("La magnitud que el glosario compara con los 6.00 m es la LUZ "
@@ -936,6 +950,7 @@ MP_FIG_1_10A_LUZ_LIBRE = _cita(
     pagina_pdf=74,
     texto_literal=Verbatim(texto="C = LUZ LIBRE", pagina_pdf=74),
     caracter=Caracter.DEFINICION,
+    corresponde_en=("MP2018.1.10#FIG_1_10A_LUZ_LIBRE",),
     metodo=IMAGEN,
     sesion=CIERRE,
     nota=("Rotulo de la figura, leido sobre la pagina renderizada: la cota "
@@ -3295,7 +3310,7 @@ MP_2_3_1_1_12_3_EXC_ESTATICA = _cita(
         pagina_pdf=251),
     caracter=Caracter.EXIGENCIA,
     sesion=T2,
-    corresponde_en=("AASHTO_LRFD_9.11.6.3.3#EXC",),
+    corresponde_en=("AASHTO_LRFD_9.11.6.3.3#EXC", "MP2018.2.8.1.1.12.3#EXC_ESTATICA"),
     nota=("EL NUMERAL SE CITA COMO LO IMPRIME, CON SU ERRATA: un 3 donde la "
           "serie pide un 8. En la misma pagina impresa 250 conviven "
           "«2.3.1.1.12.3 Límites de Excentricidad» y «2.3.1.1.12.4 Erosión "
@@ -3330,7 +3345,7 @@ MP_2_8_1_1_14_1_EXC = _cita(
         pagina_pdf=254),
     caracter=Caracter.EXIGENCIA,
     sesion=T2,
-    corresponde_en=("AASHTO_LRFD_9.11.6.5.1#EXC",),
+    corresponde_en=("AASHTO_LRFD_9.11.6.5.1#EXC", "MP2018.2.8.1.1.14.1#EXC"),
     nota=("«tercio central» donde AASHTO 11.6.5.1 escribe «middle "
           "two-thirds»: es la frase que DIS-MP-EXCENTRICIDAD declara errata "
           "de traduccion -- el mismo parrafo traduce bien «ocho décimas» "
@@ -3357,7 +3372,7 @@ MP_2_8_1_1_14_2_1_ROCA = _cita(
     caracter=Caracter.EXIGENCIA,
     metodo=AMBOS,
     sesion=T2,
-    corresponde_en=("AASHTO_LRFD_9.11.6.5.2.1#ROCA",),
+    corresponde_en=("AASHTO_LRFD_9.11.6.5.2.1#ROCA", "MP2018.2.8.1.1.14.2.1#ROCA"),
     nota=("LA FRASE CONTIENE LAS DOS MITADES DE DIS-MP-KH0-ROCA: la prosa "
           "correcta («estará basado en 1.2 veces el coeficiente...») y el "
           "parentesis mal compuesto, con el 1.2 del lado IZQUIERDO de la "
@@ -3384,7 +3399,7 @@ MP_A_11_3_1_KAE = _cita(
     caracter=Caracter.APROXIMACION,
     metodo=AMBOS,
     sesion=T2,
-    corresponde_en=("AASHTO_LRFD_9.A11.3.1#KAE",),
+    corresponde_en=("AASHTO_LRFD_9.A11.3.1#KAE", "MP2018.A.11.3.1#KAE"),
     nota=("EL CORCHETE DEL DENOMINADOR IMPRIME «[1 −√ ...]^-2», SIGNO "
           "MENOS: trazo horizontal unico, sin trazo vertical, decidido "
           "sobre la imagen renderizada a 6x -- es la errata de imprenta que "
@@ -3449,7 +3464,7 @@ MP_SUBPRESIONES = _cita(
                "encuentran debajo del nivel de agua de diseño."),
         pagina_pdf=114),
     caracter=Caracter.EXIGENCIA,
-    corresponde_en=("AASHTO_LRFD_9.3.7.2",),
+    corresponde_en=("AASHTO_LRFD_9.3.7.2", "MP2018.2.4.3.8.2"),
     nota=("SU AMBITO ES NEUTRO RESPECTO DE LA FORMA y por eso el marco entra "
           "DIRECTO, sin analogia que declarar: dice «todos los componentes de "
           "la estructura», no «la tuberia». DEFINE LA FUERZA U y nada mas: no "
@@ -3474,7 +3489,7 @@ MP_FACTOR_MINIMO = _cita(
                "carga permanente."),
         pagina_pdf=143),
     caracter=Caracter.EXIGENCIA,
-    corresponde_en=("AASHTO_LRFD_9.T3.4.1-2",),
+    corresponde_en=("AASHTO_LRFD_9.T3.4.1-2", "MP2018.2.4.5.3.1#MINIMO"),
     nota=("ES EL ESLABON QUE FALTABA, y faltaba entero: es lo que AUTORIZA a "
           "V7 a minorar EV y DC. Sin esta frase, tomar el extremo minimo de "
           "la fila de gamma_p seria una eleccion del proyectista sin "
@@ -3496,6 +3511,7 @@ MP_EV = _cita(
         texto="presión vertical del peso propio del suelo de relleno",
         pagina_pdf=141),
     caracter=Caracter.DEFINICION,
+    corresponde_en=("MP2018.2.4.5.2#EV",),
     nota=("LO QUE LA DEFINICION NO DICE, y hay que decirlo porque el proyecto "
           "lo da por supuesto: no aparecen las palabras «sobre», «encima» ni "
           "«cobertura». Que EV sea el relleno que descansa SOBRE la "
@@ -3519,7 +3535,7 @@ MP_T_COMBINACIONES = _cita(
         texto="Combinaciones de Carga y Factores de Carga",
         pagina_pdf=144),
     caracter=Caracter.EXIGENCIA,
-    corresponde_en=("AASHTO_LRFD_9.T3.4.1-1",),
+    corresponde_en=("AASHTO_LRFD_9.T3.4.1-1", "MP2018.T2.4.5.3.1-1"),
     nota=("EL PROPIO MANUAL LA NOMBRA DE DOS FORMAS INCOMPATIBLES: el rotulo "
           "impreso sobre la tabla dice «Tabla 2.4.5.3.1-1» y el cuerpo del "
           "texto, en la pag. impresa 142, la llama «Tabla 2.4.5.3-1», sin el "
@@ -3539,7 +3555,7 @@ MP_T_GAMMA_P = _cita(
         texto="Factores de carga para cargas permanentes",
         pagina_pdf=144),
     caracter=Caracter.EXIGENCIA,
-    corresponde_en=("AASHTO_LRFD_9.T3.4.1-2",),
+    corresponde_en=("AASHTO_LRFD_9.T3.4.1-2", "MP2018.T2.4.5.3.1-2"),
     nota=("NOR-PUE-04: el repositorio afirmaba que el Manual «no transcribe "
           "la Tabla 3.4.1-1» y que los gamma eran un vacio declarado. Las dos "
           "afirmaciones eran falsas -- el Manual transcribe LAS DOS tablas, "
@@ -3562,6 +3578,7 @@ MP_T_F_PGA = _cita(
         texto="Coeficiente Aceleracion Pico del Terreno",
         pagina_pdf=124),
     caracter=Caracter.EXIGENCIA,
+    corresponde_en=("MP2018.T2.4.3.11.2.1.2-1",),
     metodo=IMAGEN,
     condiciones=(
         # La clase de sitio es la PREMISA ABIERTA del expediente, y por eso
@@ -3625,7 +3642,7 @@ MP_T_RECUBRIMIENTO = _cita(
         texto="Recubrimiento de Concreto",
         pagina_pdf=378),
     caracter=Caracter.EXIGENCIA,
-    corresponde_en=("AASHTO_LRFD_9.T5.10.1-1",),
+    corresponde_en=("AASHTO_LRFD_9.T5.10.1-1", "MP2018.T2.9.1.5.5.3-1"),
     nota=("LO QUE EL TITULO DE LA TABLA DICE Y NADIE HABIA LEIDO -- y es la "
           "clave del cluster C07 --: «Recubrimiento para las armaduras "
           "principales de aceros NO PROTEGIDAS». La tabla peruana tiene UNA "
@@ -3902,7 +3919,7 @@ MP_DEFINICION_CLASE_SITIO = _cita(
     caracter=Caracter.DEFINICION,
     metodo=AMBOS,
     sesion=S13,
-    corresponde_en=("AASHTO_LRFD_9.T3.10.3.1-1#F",),
+    corresponde_en=("AASHTO_LRFD_9.T3.10.3.1-1#F", "MP2018.2.4.3.11.2.1.1"),
     nota=("LA TRADUCCION ES FIEL: las tres categorias son las mismas de "
           "AASHTO -- turbas o arcillas altamente organicas (H > 10 ft), "
           "arcillas de alta plasticidad (H > 25 ft con PI > 75), estratos de "
@@ -3930,7 +3947,7 @@ MP_CLASE_SITIO_EXCEPCIONES = _cita(
         pagina_pdf=123),
     caracter=Caracter.EXIGENCIA,
     sesion=S13,
-    corresponde_en=("AASHTO_LRFD_9.3.10.3.1#EXCEPCIONES",),
+    corresponde_en=("AASHTO_LRFD_9.3.10.3.1#EXCEPCIONES", "MP2018.2.4.3.11.2.1.1#EXCEPCIONES"),
     nota=("LA MISMA PROHIBICION QUE AASHTO, Y MAS DURA: donde AASHTO dice "
           "«should not be assumed», el Manual escribe «NO SERAN SUPUESTAS». "
           "La norma nacional endurece la traduccion, de modo que por la Via 1 "
@@ -3959,7 +3976,7 @@ MP_PELIGRO_SISMICO_CLASE_F = _cita(
         pagina_pdf=122),
     caracter=Caracter.EXIGENCIA,
     sesion=S13,
-    corresponde_en=("AASHTO_LRFD_9.3.10.2#CLASE_F",),
+    corresponde_en=("AASHTO_LRFD_9.3.10.2#CLASE_F", "MP2018.2.4.3.11.2#CLASE_F"),
     nota=("LA SEGUNDA VIA, INDEPENDIENTE DE LA NOTA 2 DE LA TABLA. La segunda "
           "condicion de la lista es «Si el sitio está clasificado como sitio "
           "clase F (Articulo. 2.4.3.11.2.1.1) (3.10.3.1 AASHTO).», y el verbo "
@@ -5948,6 +5965,7 @@ MP_INTRODUCCION_LRFD_2014 = _cita(
     # adapta, y lo que la ficha de 'edicion_que_rige_el_expediente' decia
     # que no existia («cuya edicion no la manda nadie», EXT-N-01).
     caracter=Caracter.PERMISO,
+    corresponde_en=("MP2018.INTRODUCCION#LRFD_2014",),
     metodo=AMBOS,
     sesion=EXT6,
     nota=("«AASTHO» y «Septima» sin tilde son de la fuente (sic). La "
@@ -5990,6 +6008,7 @@ MP_KA_COULOMB = _cita(
         texto="El coeficiente de empuje lateral activo se puede tomar como:",
         pagina_pdf=136),
     caracter=Caracter.PERMISO,
+    corresponde_en=("MP2018.2.4.4.1.5.3",),
     sesion=EXT7,
     nota=("ES COULOMB (3.11.5.3 AASHTO): ka = sen²(θ + φ'f) / [r·sen²θ·"
           "sen(θ − δ)], con r = [1 + √(sen(φ'f + δ)·sen(φ'f − β) / "
@@ -10581,6 +10600,7 @@ MP_2_4_3_2_2_2 = _cita(
                "efectos."),
         pagina_pdf=105),
     caracter=Caracter.DEFINICION,
+    corresponde_en=("MP2018.2.4.3.2.2.2",),
     sesion=T5,
     nota=("El eje del camion HL-93 en la unidad primaria del Manual, 32.0 "
           "kip; el «(14.55 t.)» es una equivalencia redondeada. Para la carga "
@@ -10602,6 +10622,7 @@ MP_2_4_3_2_2_3 = _cita(
                "en dirección transversal, será de 6.0 ft (1.80 m.)."),
         pagina_pdf=105),
     caracter=Caracter.DEFINICION,
+    corresponde_en=("MP2018.2.4.3.2.2.3",),
     sesion=T5,
 )
 
@@ -10619,6 +10640,7 @@ MP_2_4_3_2_2_5 = _cita(
                "(0.25 m.) en el sentido del eje longitudinal del mismo."),
         pagina_pdf=105),
     caracter=Caracter.DEFINICION,
+    corresponde_en=("MP2018.2.4.3.2.2.5",),
     sesion=T5,
 )
 
@@ -10633,6 +10655,7 @@ MP_2_4_3_2_2_6 = _cita(
         texto="Se deberán utilizar al investigar el efecto de un carril cargado,",
         pagina_pdf=106),
     caracter=Caracter.EXIGENCIA,
+    corresponde_en=("MP2018.2.4.3.2.2.6",),
     sesion=T5,
     nota=("La frase introduce el uso obligatorio de la Tabla 2.4.3.2.2.6-1 "
           "con UN carril cargado: «1 | 1.20» (misma pagina)."),
@@ -10651,6 +10674,7 @@ MP_2_4_3_3_2 = _cita(
                "como:"),
         pagina_pdf=110),
     caracter=Caracter.EXIGENCIA,
+    corresponde_en=("MP2018.2.4.3.3.2",),
     sesion=T5,
     nota=("Sigue la ec. 2.4.3.3.2-1 (3.6.2.2-1 AASHTO): IM = 33(1.0 - "
           "0.125 D_E) >= 0 %, con «D_E = profundidad mínima de la cubierta de "
@@ -10672,6 +10696,7 @@ MP_2_4_2_1_PESOS = _cita(
                "específicos de la tabla siguiente:"),
         pagina_pdf=103),
     caracter=Caracter.PERMISO,
+    corresponde_en=("MP2018.2.4.2.1#PESOS",),
     sesion=T5,
     nota=("Tabla 2.4.2.1-1 «Pesos específicos» (3.5.1-1 AASHTO), en kcf: "
           "«Arena, limo o arcilla compactado 0.120» y «Superficies de "
@@ -10693,6 +10718,7 @@ MP_2_3_2_5 = _cita(
                "operativa."),
         pagina_pdf=100),
     caracter=Caracter.PERMISO,
+    corresponde_en=("MP2018.2.3.2.5",),
     sesion=T5,
     nota=("Para resistencia: eta_I >= 1.05 criticos o esenciales, = 1.00 "
           "tipicos, >= 0.95 de relativa menor importancia (misma pagina). "
@@ -15478,7 +15504,7 @@ MP_NIVEL_DE_DISENO = _cita(
                "Propietario."),
         pagina_pdf=114),
     caracter=Caracter.EXIGENCIA,
-    corresponde_en=("AASHTO_LRFD_9.3.7.1#NIVEL_DE_DISENO",),
+    corresponde_en=("AASHTO_LRFD_9.3.7.1#NIVEL_DE_DISENO", "MP2018.2.4.3.8.1#NIVEL_DE_DISENO"),
     sesion=VE2,
     nota=("Tercer parrafo del num. 2.4.3.8.1 «Presión Hidrostática» (3.7.1 "
           "AASHTO), en la MISMA pagina que la subpresion de 2.4.3.8.2, que "
@@ -15535,7 +15561,7 @@ MP_SUELO_SUMERGIDO = _cita(
                "sumergido."),
         pagina_pdf=134),
     caracter=Caracter.EXIGENCIA,
-    corresponde_en=("AASHTO_LRFD_9.3.11.3",),
+    corresponde_en=("AASHTO_LRFD_9.3.11.3", "MP2018.2.4.4.1.3#SUMERGIDO"),
     sesion=VE2,
     nota=("Tercer parrafo del num. 2.4.4.1.3 (3.11.3 AASHTO; el gemelo es "
           "`AASHTO_LRFD_9.3.11.3`). Su ambito es el EMPUJE LATERAL del suelo "
@@ -17532,5 +17558,628 @@ EG2013_603_10 = _cita(
           "una defensa ribereña: el EG-2013 no le da partida propia, y el "
           "metrado lo entrega en m3 para una partida especial del proyecto."),
 )
+
+
+# ===========================================================================
+# N1 del plan de normas 2 (2026-11-24) - Manual de Puentes 2018 (desfase +4)
+# ===========================================================================
+# UN PAR POR CADA CITA DE MP, con el mismo sufijo de id y `corresponde_en`
+# cruzado. Es el contraste de N1 escrito de forma que la suite lo compruebe:
+# T2, T3 y T6 de `tests/test_normativa_pdf.py` buscan cada frase y cada
+# encabezado en la pagina de la edicion 2018 que aqui se declara. Las citas
+# de MP (2016) NO se tocan salvo por el `corresponde_en`: siguen siendo las
+# que el calculo consume, verificadas contra su sha1, y cual de las dos
+# ediciones rige el expediente sigue siendo
+# 'edicion_legal_que_rige_el_expediente', vacio. La tabla del contraste esta
+# en las fichas N1MP-02 y N1MP-03 de docs/decisiones_diferidas.md.
+#
+# DONDE EL TEXTO CAMBIO, el Verbatim es el de 2018 y la nota dice que cambio;
+# NINGUN VALOR que entre en el calculo cambio (las tablas de factores de
+# carga, de F_pga, de pesos y de recubrimientos, y las cifras primarias de
+# la HL-93, se compararon celda a celda sobre la imagen).
+
+MP2018_2_1_4_3_9 = _cita(
+    id="MP2018.2.1.4.3.9",
+    fuente_id="MP2018",
+    numeral="2.1.4.3.9",
+    titulo_numeral="Aparatos de Apoyo",
+    pagina_impresa="81",
+    pagina_pdf=85,
+    texto_literal=Verbatim(
+        texto=("Los aparatos de apoyo proporcionan la conexión para "
+               "controlar la interacción de las cargas y los movimientos "
+               "entre la superestructura y la subestructura del puente."),
+        pagina_pdf=85),
+    caracter=Caracter.EXIGENCIA,
+    sesion=N1MP,
+    corresponde_en=("MP.2.1.4.3.9",),
+    nota=("IGUAL que en 2016. Es el par del numeral RETIRADO de NOR-PUE-01: "
+          "tampoco en 2018 «Aparatos de Apoyo» habla de sobrecarga ni de "
+          "relleno equivalente (ninguna pagina de la edicion 2018 imprime "
+          "«relleno equivalente»)."),
+)
+
+MP2018_SOBRECARGA = _cita(
+    id="MP2018.2.4.2.2#SOBRECARGA",
+    fuente_id="MP2018",
+    numeral="2.4.2.2",
+    titulo_numeral="Cargas de Suelo: EH, ES, y DD",
+    pagina_impresa="90",
+    pagina_pdf=94,
+    texto_literal=Verbatim(
+        texto=("Cuando se prevea tráfico a una distancia horizontal, medida "
+               "desde la parte superior de la estructura, menor o igual a la "
+               "mitad de su altura, las presiones serán incrementadas "
+               "añadiendo una sobrecarga vertical no menor que la "
+               "equivalente a 0.60 m de altura de relleno."),
+        pagina_pdf=94),
+    caracter=Caracter.EXIGENCIA,
+    sesion=N1MP,
+    corresponde_en=("MP.2.4.2.2#SOBRECARGA",),
+    nota="IGUAL que en 2016, con el mismo piso de 0.60 m.",
+)
+
+MP2018_GLOSARIO_OBRAS_MENORES = _cita(
+    id="MP2018.GLOSARIO#OBRAS_DE_ARTE_MENORES",
+    fuente_id="MP2018",
+    numeral="Glosario",
+    titulo_numeral="GLOSARIO DE TERMINOS",
+    pagina_impresa="41",
+    pagina_pdf=45,
+    pagina_pdf_titulo=44,
+    texto_literal=Verbatim(
+        texto=("OBRAS DE ARTE MENORES: Estructuras cuya luz libre entre ejes "
+               "de apoyo es menor que 6.00 m."),
+        pagina_pdf=45),
+    caracter=Caracter.DEFINICION,
+    sesion=N1MP,
+    corresponde_en=("MP.GLOSARIO#OBRAS_DE_ARTE_MENORES",),
+    nota=("CAMBIO LA REDACCION, NO LA CIFRA. 2016: «Son aquellas obras cuya "
+          "luz libre es menor que 6.00 m (20 ft).» 2018: «Estructuras cuya "
+          "luz libre entre ejes de apoyo es menor que 6.00 m.», y una "
+          "entrada nueva a continuacion: «PUENTE: Estructura requerida para "
+          "atravesar un accidente geográfico o un obstáculo natural o "
+          "artificial, cuya luz libre es mayor o igual a 6.00 m (20 ft) ...». "
+          "«Luz libre ENTRE EJES DE APOYO» mezcla las dos medidas que la "
+          "Fig. 1.10-a separa (la luz libre va entre caras de pilares; la "
+          "luz de tramo, entre ejes): toca a DIS-LUZ-DENOMINACION, abierta, "
+          "y no mueve el umbral de 6.0 m que el codigo compara. El titulo del "
+          "glosario esta en la pag. impresa 40 (PDF 44)."),
+)
+
+MP2018_FIG_1_10A_LUZ_LIBRE = _cita(
+    id="MP2018.1.10#FIG_1_10A_LUZ_LIBRE",
+    fuente_id="MP2018",
+    numeral="Figura 1.10-a",
+    titulo_numeral="Figura 1.10-a Puentes Tipo Viga",
+    pagina_impresa="61",
+    pagina_pdf=65,
+    texto_literal=Verbatim(texto="C = LUZ LIBRE", pagina_pdf=65),
+    caracter=Caracter.DEFINICION,
+    metodo=AMBOS,
+    sesion=N1MP,
+    corresponde_en=("MP.1.10#FIG_1_10A_LUZ_LIBRE",),
+    nota=("IGUAL que en 2016, leida sobre la pagina renderizada: la cota «C "
+          "= LUZ LIBRE» va entre el PILAR N° 1 y el PILAR N° 2, «L1, L2 = LUZ "
+          "DE TRAMO» entre ejes y «L = LONGITUD» entre estribos. La figura "
+          "sigue definiendo la luz libre POR VANO, entre caras."),
+)
+
+MP2018_2_8_1_1_12_3_EXC_ESTATICA = _cita(
+    id="MP2018.2.8.1.1.12.3#EXC_ESTATICA",
+    fuente_id="MP2018",
+    numeral="2.8.1.1.12.3",
+    titulo_numeral="Límites de Excentricidad",
+    pagina_impresa="244",
+    pagina_pdf=248,
+    texto_literal=Verbatim(
+        texto=("En las fundaciones en suelo la ubicación de la resultante de "
+               "las fuerzas de reacción deberá estar dentro los dos tercios "
+               "centrales del ancho de la base."),
+        pagina_pdf=248),
+    caracter=Caracter.EXIGENCIA,
+    sesion=N1MP,
+    corresponde_en=("MP.2.3.1.1.12.3#EXC_ESTATICA",),
+    nota=("EL TEXTO ES IGUAL Y EL NUMERAL ESTA CORREGIDO: la edicion 2018 "
+          "imprime «2.8.1.1.12.3», en la serie 2.8.1.1.12.2 -> "
+          ".12.4, y su indice tambien (pag. impresa 15). La errata que "
+          "DIS-MP-NUMERAL-2.3.1.1.12.3 declara es de la edicion 2016 y la de "
+          "2018 no la tiene. La roca, «nueve decimos centrales», igual."),
+)
+
+MP2018_2_8_1_1_14_1_EXC = _cita(
+    id="MP2018.2.8.1.1.14.1#EXC",
+    fuente_id="MP2018",
+    numeral="2.8.1.1.14.1",
+    titulo_numeral="Generalidades",
+    pagina_impresa="247",
+    pagina_pdf=251,
+    texto_literal=Verbatim(
+        texto=("Para la evaluación de la excentricidad sísmica de los muros "
+               "que cimientan en suelo y roca, la ubicación de la resultante "
+               "de las fuerzas de reacción estará dentro del tercio central "
+               "de la base para ɤEQ = 0.0 y dentro de ocho décimas centrales "
+               "para ɤEQ = 1.0."),
+        pagina_pdf=251),
+    caracter=Caracter.EXIGENCIA,
+    sesion=N1MP,
+    corresponde_en=("MP.2.8.1.1.14.1#EXC",),
+    nota=("LA ERRATA SIGUE: la edicion 2018 conserva el «tercio central» "
+          "donde AASHTO escribe «middle two-thirds», de modo que "
+          "DIS-MP-EXCENTRICIDAD vale tambien contra la edicion vigente. La "
+          "unica diferencia con 2016 es otra errata, nueva: «cimientan» por "
+          "«cimentan»."),
+)
+
+MP2018_2_8_1_1_14_2_1_ROCA = _cita(
+    id="MP2018.2.8.1.1.14.2.1#ROCA",
+    fuente_id="MP2018",
+    numeral="2.8.1.1.14.2.1",
+    titulo_numeral=("Caracterización de la Aceleración en la Base del Muro de "
+                    "Contención"),
+    pagina_impresa="249",
+    pagina_pdf=253,
+    texto_literal=Verbatim(
+        texto=("estará basado en 1.2 veces el coeficiente de aceleración pico "
+               "del suelo"),
+        pagina_pdf=253),
+    caracter=Caracter.EXIGENCIA,
+    metodo=AMBOS,
+    sesion=N1MP,
+    corresponde_en=("MP.2.8.1.1.14.2.1#ROCA",),
+    nota=("LA ERRATA ESTA CORREGIDA. El Verbatim es la prosa, que la capa de "
+          "texto entrega; el parentesis esta compuesto en fuente simbolica "
+          "(la capa da «n•R = 1.2 7ijIX4d») y se leyo renderizando la pagina "
+          "a 3x: «Para muros cimentados sobre Sitio con suelos Clase A o B "
+          "(roca dura o blanda), k_h0 estará basado en 1.2 veces el "
+          "coeficiente de aceleración pico del suelo (es decir, k_h0 = 1.2 "
+          "F_pga PGA).» El 1.2 esta del lado derecho, como en AASHTO: la "
+          "errata de DIS-MP-KH0-ROCA («1.2 kh0=FpgaPGA») es de la edicion "
+          "2016 y la de 2018 no la tiene."),
+)
+
+MP2018_A_11_3_1_KAE = _cita(
+    id="MP2018.A.11.3.1#KAE",
+    fuente_id="MP2018",
+    numeral="A.11.3.1, ec. A.11.3.1-2",
+    titulo_numeral="Método de Mononobe -Okabe",
+    pagina_impresa="597",
+    pagina_pdf=601,
+    texto_literal=Verbatim(
+        texto=("Donde el coeficiente sísmico KAE de presión de tierra activa, "
+               "adimensional, es:"),
+        pagina_pdf=601),
+    caracter=Caracter.APROXIMACION,
+    metodo=AMBOS,
+    sesion=N1MP,
+    corresponde_en=("MP.A.11.3.1#KAE",),
+    nota=("EL SIGNO ESTA CORREGIDO: renderizada la pagina a 3x, la ec. "
+          "A.11.3.1-2 imprime el denominador «[1 + raiz(...)]», signo MAS, "
+          "como AASHTO. La errata de DIS-MP-KAE-SIGNO («[1 - raiz(...)]») es "
+          "de la edicion 2016 y la de 2018 no la tiene. El numerador sigue "
+          "escribiendo «B» mayuscula en cos²(φ − θ_MO − B), igual que 2016."),
+)
+
+MP2018_SUBPRESIONES = _cita(
+    id="MP2018.2.4.3.8.2",
+    fuente_id="MP2018",
+    numeral="2.4.3.8.2",
+    titulo_numeral="Subpresiones",
+    pagina_impresa="102",
+    pagina_pdf=106,
+    texto_literal=Verbatim(
+        texto=("La subpresión (flotabilidad) se deberá considerar como una "
+               "fuerza de levantamiento, tomada como la sumatoria de las "
+               "componentes verticales de las presiones hidrostáticas, según "
+               "lo especificado en el Artículo 2.4.3.8.1 (3.7.1 AASHTO) que "
+               "actúa sobre todos los componentes de la estructura que se "
+               "encuentran debajo del nivel de agua de diseño."),
+        pagina_pdf=106),
+    caracter=Caracter.EXIGENCIA,
+    sesion=N1MP,
+    corresponde_en=("MP.2.4.3.8.2",),
+    nota="IGUAL que en 2016.",
+)
+
+MP2018_FACTOR_MINIMO = _cita(
+    id="MP2018.2.4.5.3.1#MINIMO",
+    fuente_id="MP2018",
+    numeral="2.4.5.3.1",
+    titulo_numeral="Factores de Carga y Combinaciones de Carga",
+    pagina_impresa="132",
+    pagina_pdf=136,
+    pagina_pdf_titulo=134,
+    texto_literal=Verbatim(
+        texto=("Si la carga permanente aumenta la estabilidad o la capacidad "
+               "de carga de un componente o puente, también se deberá "
+               "investigar el valor mínimo del factor de carga para dicha "
+               "carga permanente."),
+        pagina_pdf=136),
+    caracter=Caracter.EXIGENCIA,
+    sesion=N1MP,
+    corresponde_en=("MP.2.4.5.3.1#MINIMO",),
+    nota=("IGUAL que en 2016. El encabezado del numeral esta en la pag. "
+          "impresa 130 (PDF 134)."),
+)
+
+MP2018_EV = _cita(
+    id="MP2018.2.4.5.2#EV",
+    fuente_id="MP2018",
+    numeral="2.4.5.2",
+    titulo_numeral="Cargas y Denominación de las Cargas",
+    pagina_impresa="130",
+    pagina_pdf=134,
+    pagina_pdf_titulo=133,
+    texto_literal=Verbatim(
+        texto="presión vertical del peso propio del suelo de relleno",
+        pagina_pdf=134),
+    caracter=Caracter.DEFINICION,
+    sesion=N1MP,
+    corresponde_en=("MP.2.4.5.2#EV",),
+    nota=("IGUAL que en 2016. El encabezado esta en la pag. impresa 129 "
+          "(PDF 133) y la definicion de EV en la 130."),
+)
+
+MP2018_T_COMBINACIONES = _cita(
+    id="MP2018.T2.4.5.3.1-1",
+    fuente_id="MP2018",
+    numeral="2.4.5.3.1, Tabla 2.4.5.3.1-1",
+    titulo_numeral="Factores de Carga y Combinaciones de Carga",
+    pagina_impresa="133",
+    pagina_pdf=137,
+    pagina_pdf_titulo=134,
+    texto_literal=Verbatim(
+        texto="Combinaciones de Carga y Factores de Carga", pagina_pdf=137),
+    caracter=Caracter.EXIGENCIA,
+    metodo=AMBOS,
+    sesion=N1MP,
+    corresponde_en=("MP.T2.4.5.3.1-1",),
+    nota=("IGUAL que en 2016, celda a celda sobre la pagina renderizada: las "
+          "trece filas de Resistencia I a Fatiga II con los mismos factores "
+          "(Evento Extremo I: 1.0 sobre DC...SH y γEQ sobre LL). La edicion "
+          "2018 resalta en amarillo la fila Servicio III sin cambiar sus "
+          "valores (LL = 0.80)."),
+)
+
+MP2018_T_GAMMA_P = _cita(
+    id="MP2018.T2.4.5.3.1-2",
+    fuente_id="MP2018",
+    numeral="2.4.5.3.1, Tabla 2.4.5.3.1-2",
+    titulo_numeral="Factores de Carga y Combinaciones de Carga",
+    pagina_impresa="134",
+    pagina_pdf=138,
+    pagina_pdf_titulo=134,
+    texto_literal=Verbatim(
+        texto="Factores de carga para cargas permanentes", pagina_pdf=138),
+    caracter=Caracter.EXIGENCIA,
+    metodo=AMBOS,
+    sesion=N1MP,
+    corresponde_en=("MP.T2.4.5.3.1-2",),
+    nota=("LOS VALORES SON IGUALES a los de 2016, fila a fila sobre la pagina "
+          "renderizada (DC 1.25/0.90 ... ES 1.50/0.75; EV rigida enterrada "
+          "1.30/0.90, termoplasticas 1.30/0.90, «Entre otros» 1.95/0.90). "
+          "Cambian tres de las erratas que DIS-MP-ERRATAS-GAMMA-P conserva "
+          "de 2016: «Máximo» lleva tilde, «EV: Presión vertical» tambien y "
+          "«placas» sustituye a «plancas». Siguen «Estructuras flexible "
+          "enterradas», «Entre otros» y la omision de «profundas»."),
+)
+
+MP2018_T_F_PGA = _cita(
+    id="MP2018.T2.4.3.11.2.1.2-1",
+    fuente_id="MP2018",
+    numeral="Tabla 2.4.3.11.2.1.2-1",
+    titulo_numeral="Efectos de Sitio",
+    pagina_impresa="113",
+    pagina_pdf=117,
+    pagina_pdf_titulo=115,
+    texto_literal=Verbatim(
+        texto="Coeficiente Aceleración Pico del Terreno", pagina_pdf=117),
+    caracter=Caracter.EXIGENCIA,
+    metodo=AMBOS,
+    sesion=N1MP,
+    corresponde_en=("MP.T2.4.3.11.2.1.2-1",),
+    nota=("IGUAL que en 2016, celda a celda sobre la pagina renderizada a "
+          "3x: las mismas seis filas (A 0.8 ... E 2.5/1.7/1.2/0.9/0.9; F con "
+          "asterisco y la nota 2), y los mismos rotulos extremos «PGA < 0.10» "
+          "y «PGA > 0.50», desigualdades estrictas, de modo que la ambiguedad "
+          "de NOR-PUE-11 ('F_pga_lectura_columna_extrema') es la misma. El "
+          "encabezado 2.4.3.11.2.1 esta en la pag. impresa 111 (PDF 115)."),
+)
+
+MP2018_T_RECUBRIMIENTO = _cita(
+    id="MP2018.T2.9.1.5.5.3-1",
+    fuente_id="MP2018",
+    numeral="2.9.1.5.5.3, Tabla 2.9.1.5.5.3-1",
+    titulo_numeral="Recubrimiento de Concreto",
+    pagina_impresa="377",
+    pagina_pdf=381,
+    texto_literal=Verbatim(texto="Recubrimiento de Concreto", pagina_pdf=381),
+    caracter=Caracter.EXIGENCIA,
+    metodo=AMBOS,
+    sesion=N1MP,
+    corresponde_en=("MP.T2.9.1.5.5.3-1",),
+    nota=("IGUAL que en 2016, fila a fila sobre las paginas renderizadas: la "
+          "tabla empieza en la pag. impresa 377 (en 2016 iba entera en la "
+          "378) y termina en la 378, con las mismas situaciones y cifras "
+          "(4.0 in agua salada ... 1.0 in demas miembros del cajon "
+          "prefabricado) y los mismos factores por relacion W/C (0.8 y 1.2)."),
+)
+
+MP2018_DEFINICION_CLASE_SITIO = _cita(
+    id="MP2018.2.4.3.11.2.1.1",
+    fuente_id="MP2018",
+    numeral="2.4.3.11.2.1.1, Tabla 2.4.3.11.2.1.1-1, fila F",
+    titulo_numeral="Definiciones de Clases de Sitio",
+    pagina_impresa="112",
+    pagina_pdf=116,
+    texto_literal=Verbatim(
+        texto="Suelos que requieren evaluaciones específicas de sitio, tales como:",
+        pagina_pdf=116),
+    caracter=Caracter.DEFINICION,
+    sesion=N1MP,
+    corresponde_en=("MP.2.4.3.11.2.1.1",),
+    nota=("IGUAL que en 2016: la fila F con sus tres casos (H > 10 ft de "
+          "turba, H > 25 ft con PI > 75, H > 120 ft)."),
+)
+
+MP2018_CLASE_SITIO_EXCEPCIONES = _cita(
+    id="MP2018.2.4.3.11.2.1.1#EXCEPCIONES",
+    fuente_id="MP2018",
+    numeral="2.4.3.11.2.1.1, bloque «Excepciones»",
+    titulo_numeral="Definiciones de Clases de Sitio",
+    pagina_impresa="112",
+    pagina_pdf=116,
+    texto_literal=Verbatim(
+        texto=("Las clases de Sitio E o F no serán supuestas a no ser que la "
+               "Entidad determine la clase de sitio E o F o estas sean "
+               "establecidas por datos geotécnicos."),
+        pagina_pdf=116),
+    caracter=Caracter.EXIGENCIA,
+    sesion=N1MP,
+    corresponde_en=("MP.2.4.3.11.2.1.1#EXCEPCIONES",),
+    nota=("IGUAL que en 2016 salvo la errata de imprenta: 2016 imprime "
+          "«Entidaddetermine», junto, y 2018 «Entidad determine»."),
+)
+
+MP2018_PELIGRO_SISMICO_CLASE_F = _cita(
+    id="MP2018.2.4.3.11.2#CLASE_F",
+    fuente_id="MP2018",
+    numeral="2.4.3.11.2",
+    titulo_numeral="Peligro Sísmico",
+    pagina_impresa="111",
+    pagina_pdf=115,
+    texto_literal=Verbatim(
+        texto=("El procedimiento especificado de sitio será usado si existen "
+               "las siguientes condiciones:"),
+        pagina_pdf=115),
+    caracter=Caracter.EXIGENCIA,
+    sesion=N1MP,
+    corresponde_en=("MP.2.4.3.11.2#CLASE_F",),
+    nota=("IGUAL que en 2016: las mismas cuatro condiciones (falla activa a "
+          "menos de 10 km, clase F, sismos de larga duracion, importancia del "
+          "puente)."),
+)
+
+MP2018_INTRODUCCION_LRFD_2014 = _cita(
+    id="MP2018.INTRODUCCION#LRFD_2014",
+    fuente_id="MP2018",
+    numeral="Introducción",
+    titulo_numeral="INTRODUCCIÓN",
+    pagina_impresa="39",
+    pagina_pdf=43,
+    texto_literal=Verbatim(
+        texto=("El Título II del Manual, presenta los aspectos de diseño que "
+               "son, en gran parte, una adaptación del AASHTO en su versión "
+               "LRFD BRIDGE DESIGN SESPECIFICATIONS del año 2014, Séptima "
+               "Edición y del Interim publicado por AASHTO el año 2015. "
+               "Asimismo, la entidad y/o propietario podrá considerar las "
+               "actualizaciones de la AASTHO LRFD BRIDGE DESIGN."),
+        pagina_pdf=43),
+    caracter=Caracter.PERMISO,
+    sesion=N1MP,
+    corresponde_en=("MP.INTRODUCCION#LRFD_2014",),
+    nota=("CAMBIO LA REDACCION Y EL PERMISO SIGUE. El titulo pasa de "
+          "«INTRODUCCIÓN AL MANUAL DE PUENTES» a «INTRODUCCIÓN», y la "
+          "adaptacion es de la LRFD 2014 (7a ed.) «y del Interim publicado "
+          "por AASHTO el año 2015»; el permiso de «considerar las "
+          "actualizaciones» es el mismo, y con el DIS-MP-LRFD-EDICION se "
+          "resuelve igual. Las erratas «SESPECIFICATIONS» y «AASTHO» son de "
+          "la pagina."),
+)
+
+MP2018_KA_COULOMB = _cita(
+    id="MP2018.2.4.4.1.5.3",
+    fuente_id="MP2018",
+    numeral="2.4.4.1.5.3",
+    titulo_numeral="Coeficiente de Empuje Lateral Activo",
+    pagina_impresa="125",
+    pagina_pdf=129,
+    texto_literal=Verbatim(
+        texto="El coeficiente de empuje lateral activo se puede tomar como:",
+        pagina_pdf=129),
+    caracter=Caracter.PERMISO,
+    metodo=AMBOS,
+    sesion=N1MP,
+    corresponde_en=("MP.2.4.4.1.5.3",),
+    nota=("IGUAL que en 2016: las ecs. 2.4.4.1.5.3-1 y -2 de Coulomb, "
+          "comparadas sobre la pagina renderizada. El encabezado termina en "
+          "«, ka» compuesto en fuente simbolica (la capa de texto da «xy»), "
+          "y por eso el titulo se transcribe hasta «Activo»."),
+)
+
+MP2018_2_4_3_2_2_2 = _cita(
+    id="MP2018.2.4.3.2.2.2",
+    fuente_id="MP2018",
+    numeral="2.4.3.2.2.2",
+    titulo_numeral="Camión de Diseño",
+    pagina_impresa="91",
+    pagina_pdf=95,
+    texto_literal=Verbatim(
+        texto=("la distancia entre los dos ejes de 32.0-kips será tomada "
+               "como aquella que, estando entre los límites de 14.0 ft y "
+               "30.0 ft, resulta en los mayores efectos."),
+        pagina_pdf=95),
+    caracter=Caracter.DEFINICION,
+    sesion=N1MP,
+    corresponde_en=("MP.2.4.3.2.2.2",),
+    nota=("LAS CIFRAS PRIMARIAS SON IGUALES (32.0 kip, 14.0 a 30.0 ft) y la "
+          "edicion 2018 RETIRA las equivalencias metricas redondeadas que "
+          "2016 ponia entre parentesis («(14.55 t.)», «(4.27 m.)», «(9.14 "
+          "m.)»). El calculo no se mueve: constantes_normativas convierte el "
+          "valor primario con el factor exacto y nunca uso la equivalencia."),
+)
+
+MP2018_2_4_3_2_2_3 = _cita(
+    id="MP2018.2.4.3.2.2.3",
+    fuente_id="MP2018",
+    numeral="2.4.3.2.2.3",
+    titulo_numeral="Tándem de Diseño",
+    pagina_impresa="92",
+    pagina_pdf=96,
+    texto_literal=Verbatim(
+        texto=("El tándem de diseño consistirá en un conjunto de dos ejes, "
+               "cada uno con una carga de 25.0 kip, espaciados a 4.0 ft. La "
+               "distancia entre las ruedas de cada eje, en dirección "
+               "transversal, será de 6.0 ft."),
+        pagina_pdf=96),
+    caracter=Caracter.DEFINICION,
+    sesion=N1MP,
+    corresponde_en=("MP.2.4.3.2.2.3",),
+    nota=("LAS CIFRAS PRIMARIAS SON IGUALES (25.0 kip, 4.0 ft, 6.0 ft) y la "
+          "edicion 2018 retira las equivalencias «(11.4 t.)», «(1.20 m.)» y "
+          "«(1.80 m.)»; el calculo usa el valor primario."),
+)
+
+MP2018_2_4_3_2_2_5 = _cita(
+    id="MP2018.2.4.3.2.2.5",
+    fuente_id="MP2018",
+    numeral="2.4.3.2.2.5",
+    titulo_numeral="Área de Contacto de los Neumáticos",
+    pagina_impresa="92",
+    pagina_pdf=96,
+    texto_literal=Verbatim(
+        texto=("El área de contacto de una rueda consistente de una o dos "
+               "neumáticos se asumirá como un rectángulo de 20.0 in de ancho "
+               "en dirección transversal del puente y 10.0 in en el sentido "
+               "del eje longitudinal del mismo."),
+        pagina_pdf=96),
+    caracter=Caracter.DEFINICION,
+    sesion=N1MP,
+    corresponde_en=("MP.2.4.3.2.2.5",),
+    nota=("LAS CIFRAS PRIMARIAS SON IGUALES (20.0 in por 10.0 in) y la "
+          "edicion 2018 retira las equivalencias «(0.50 m.)» y «(0.25 m.)»; "
+          "el calculo usa el valor primario."),
+)
+
+MP2018_2_4_3_2_2_6 = _cita(
+    id="MP2018.2.4.3.2.2.6",
+    fuente_id="MP2018",
+    numeral="2.4.3.2.2.6",
+    titulo_numeral="Presencia Múltiple de Sobrecargas",
+    pagina_impresa="93",
+    pagina_pdf=97,
+    texto_literal=Verbatim(
+        texto="Se deberán utilizar al investigar el efecto de un carril cargado,",
+        pagina_pdf=97),
+    caracter=Caracter.EXIGENCIA,
+    sesion=N1MP,
+    corresponde_en=("MP.2.4.3.2.2.6",),
+    nota=("IGUAL que en 2016, con la Tabla 2.4.3.2.2.6-1 en la misma pagina "
+          "y el mismo m = 1.20 para un carril cargado."),
+)
+
+MP2018_2_4_3_3_2 = _cita(
+    id="MP2018.2.4.3.3.2",
+    fuente_id="MP2018",
+    numeral="2.4.3.3.2",
+    titulo_numeral="Componentes Enterrados",
+    pagina_impresa="97",
+    pagina_pdf=101,
+    texto_literal=Verbatim(
+        texto=("El incremento por carga dinámica para alcantarillas y otras "
+               "estructuras enterradas, en porcentaje, se deberá tomar como:"),
+        pagina_pdf=101),
+    caracter=Caracter.EXIGENCIA,
+    metodo=AMBOS,
+    sesion=N1MP,
+    corresponde_en=("MP.2.4.3.3.2",),
+    nota=("IGUAL que en 2016: la ec. 2.4.3.3.2-1, leida sobre la pagina "
+          "renderizada, es IM = 33(1.0 − 0.125 D_E) ≥ 0 %, con D_E en ft."),
+)
+
+MP2018_2_4_2_1_PESOS = _cita(
+    id="MP2018.2.4.2.1#PESOS",
+    fuente_id="MP2018",
+    numeral="2.4.2.1, Tabla 2.4.2.1-1",
+    titulo_numeral="Cargas Muertas: DC, DW, y EV",
+    pagina_impresa="89",
+    pagina_pdf=93,
+    texto_literal=Verbatim(
+        texto=("A falta de una información precisa, podrán usarse los pesos "
+               "específicos de la tabla siguiente:"),
+        pagina_pdf=93),
+    caracter=Caracter.PERMISO,
+    sesion=N1MP,
+    corresponde_en=("MP.2.4.2.1#PESOS",),
+    nota=("IGUAL que en 2016: la Tabla 2.4.2.1-1 trae las mismas filas y "
+          "cifras (arena, limo o arcilla compactado 0.120 kcf; superficies "
+          "de desgaste bituminosos 0.140 kcf)."),
+)
+
+MP2018_2_3_2_5 = _cita(
+    id="MP2018.2.3.2.5",
+    fuente_id="MP2018",
+    numeral="2.3.2.5",
+    titulo_numeral="Importancia Operativa",
+    pagina_impresa="87",
+    pagina_pdf=91,
+    texto_literal=Verbatim(
+        texto=("El propietario puede declarar si un puente, o algún "
+               "componente estructural y conexión tienen importancia "
+               "operativa."),
+        pagina_pdf=91),
+    caracter=Caracter.PERMISO,
+    sesion=N1MP,
+    corresponde_en=("MP.2.3.2.5",),
+    nota=("IGUAL que en 2016 (η_I ≥ 1.05, = 1.00, ≥ 0.95) salvo la tilde: "
+          "2016 imprime «algun» y 2018 «algún»."),
+)
+
+MP2018_NIVEL_DE_DISENO = _cita(
+    id="MP2018.2.4.3.8.1#NIVEL_DE_DISENO",
+    fuente_id="MP2018",
+    numeral="2.4.3.8.1",
+    titulo_numeral="Presión Hidrostática",
+    pagina_impresa="102",
+    pagina_pdf=106,
+    texto_literal=Verbatim(
+        texto=("Los niveles de agua de diseño para los diferentes estados "
+               "límites serán los especificados y/o aprobados por el "
+               "Propietario."),
+        pagina_pdf=106),
+    caracter=Caracter.EXIGENCIA,
+    sesion=N1MP,
+    corresponde_en=("MP.2.4.3.8.1#NIVEL_DE_DISENO",),
+    nota="IGUAL que en 2016.",
+)
+
+MP2018_SUELO_SUMERGIDO = _cita(
+    id="MP2018.2.4.4.1.3#SUMERGIDO",
+    fuente_id="MP2018",
+    numeral="2.4.4.1.3",
+    titulo_numeral="Presencia de Agua",
+    pagina_impresa="123",
+    pagina_pdf=127,
+    texto_literal=Verbatim(
+        texto=("Para determinar el empuje lateral del suelo debajo del nivel "
+               "freático se deberán utilizar las densidades del suelo "
+               "sumergido."),
+        pagina_pdf=127),
+    caracter=Caracter.EXIGENCIA,
+    sesion=N1MP,
+    corresponde_en=("MP.2.4.4.1.3#SUMERGIDO",),
+    nota="IGUAL que en 2016.",
+)
+
 
 CITAS: Dict[str, Cita] = {c.id: c for c in _TODAS}
