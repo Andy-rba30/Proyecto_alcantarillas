@@ -624,6 +624,9 @@ def _diferencia_admitida(d, v3) -> bool:
     # 1) la huella del archivo de criterios (UI-5)
     if [donde, campo] == ["expediente", "criterios_sha1"]:
         return True
+    # 7) la fuente de un criterio que bloqueo, en la lista global (N2)
+    if donde == "criterios.bloquearon":
+        return _fuente_vigente(d)
     # 2) criterios: una clave NUEVA del archivo, y los recuentos y el
     #    concepto que el archivo cambio (VE-2, VE-3.15, VE-5, VE-6)
     if donde == "criterios":
@@ -634,6 +637,8 @@ def _diferencia_admitida(d, v3) -> bool:
     # 3) datos de sitio: un [S] nuevo (`region_natural`, VE-5) y sus recuentos
     if donde == "datos_sitio":
         if campo in ds.DATOS_SITIO and a == "presente" and b == "<ausente>":
+            return True
+        if _trazabilidad_vigente(campo, a, b):       # 7) texto de N1
             return True
         return campo in ("sin_valor_declarados[len]",
                          "trazabilidad_incompleta[len]")
@@ -654,7 +659,77 @@ def _diferencia_admitida(d, v3) -> bool:
         return (v3["avisos_nuevos"].get(donde) == [servicio.AVISO_CIMENTACION_PROVISIONAL]
                 and v3["avisos_retirados"].get(donde) == []
                 and int(a) == int(b) + 1)
+    # 7) puntos: el TEXTO de la fuente del criterio pendiente que bloquea,
+    #    en su bloqueo y en el motivo de las iteraciones que no pudo evaluar
+    #    (ver `_solo_cambia_la_fuente`).
+    m = _HOJA_DEL_BLOQUEO.fullmatch(campo)
+    if m:
+        clave, hoja = m.groups()
+        if clave not in _FUENTES_REESCRITAS:
+            return False
+        if hoja == "fuente":
+            return a == ca.CRITERIOS[clave].fuente and a != b
+        return _solo_cambia_la_fuente(clave, a, b, v3)
+    if _MOTIVO_DE_ITERACION.fullmatch(campo):
+        return _motivo_que_solo_cambia_la_fuente(a, b, v3)
     return False
+
+
+# --- N1 y N2 del plan de normas 2 (`12_PLAN_NORMAS_2.md`), clase 7 ---
+# TEXTOS que leer las normas reescribio,
+# sin tocar ningun valor ni ninguna decision. N2 (commit 8b31db6) reescribio
+# la fuente de 'remanso_derecho_via' al leer la Ley 29338, su Reglamento y el
+# RNGIV; esa fuente viaja en la lista global `criterios.bloquearon`, en el
+# bloqueo de MD de cada punto (su `.fuente` y su `.mensaje`, que termina con
+# ella) y en el motivo de cada iteracion que el criterio no dejo evaluar
+# («-- CriterioPendienteError: ...»). N1 (dictamen Fable 2c, commit 0c83cba)
+# alargo la trazabilidad de 'PGA_roca_B' con la lectura del mapa 2018, sin
+# cambiar el valor. La clase es CERRADA (dictamen Fable del 2026-11-24): solo
+# los textos nombrados abajo, cada uno con su causa; reescribir otra fuente u
+# otra trazabilidad es otra clase y se declara aparte. Se admite cada texto
+# SOLO si hoy es, letra por letra, el del catalogo vigente (la trazabilidad,
+# ademas, empieza por la guardada: N1 la alargo), y un texto que contiene la
+# fuente SOLO si es el de SU criterio y cambiando en el la fuente de hoy por
+# la guardada queda el guardado letra por letra: cualquier otra diferencia en
+# el mismo texto (un numero, un diametro, otra causa) cae.
+_FUENTES_REESCRITAS = frozenset({"remanso_derecho_via"})     # N2, 8b31db6
+_TRAZABILIDADES_ALARGADAS = frozenset({"PGA_roca_B"})        # N1, 0c83cba
+_HOJA_DEL_BLOQUEO = re.compile(
+    r"bloqueo CriterioPendienteError en «[^»]+» por (\w+)\[\d+\]\.(fuente|mensaje)")
+_MOTIVO_DE_ITERACION = re.compile(r"iteraciones\[\d+\]\.motivo")
+_FUENTE_DE_CRITERIO = re.compile(r"(\w+)\.fuente")
+
+
+def _fuente_vigente(d) -> bool:
+    """La fuente reescrita de un criterio que bloqueo es HOY la del catalogo."""
+    donde, campo, a, b = d
+    m = _FUENTE_DE_CRITERIO.fullmatch(campo)
+    return (donde == "criterios.bloquearon" and bool(m)
+            and m.group(1) in _FUENTES_REESCRITAS
+            and a == ca.CRITERIOS[m.group(1)].fuente and a != b)
+
+
+def _solo_cambia_la_fuente(clave, a, b, v3) -> bool:
+    """`a` (hoy) es `b` (guardado) con la fuente de `clave` reescrita y nada mas."""
+    reescritas = [(x[2], x[3]) for x in v3["diferencias"]
+                  if _fuente_vigente(x) and x[1] == f"{clave}.fuente"]
+    return any(a.count(hoy) == 1 and a.replace(hoy, guardada) == b
+               for hoy, guardada in reescritas)
+
+
+def _motivo_que_solo_cambia_la_fuente(a, b, v3) -> bool:
+    """El motivo de una iteracion que bloqueo un criterio de la clase 7."""
+    return any(f"CriterioPendienteError: '{clave}'" in a
+               and _solo_cambia_la_fuente(clave, a, b, v3)
+               for clave in _FUENTES_REESCRITAS)
+
+
+def _trazabilidad_vigente(campo, a, b) -> bool:
+    """La trazabilidad alargada de un [S] de corredor es HOY la del catalogo."""
+    dato, _, hoja = campo.partition(".")
+    return (hoja == "trazabilidad" and dato in _TRAZABILIDADES_ALARGADAS
+            and a == ds.DATOS_SITIO[dato].trazabilidad
+            and a != b and a.startswith(b))
 
 
 def test_c7_la_sesion_v3_se_abre_reproduce_y_se_reescribe(r):
@@ -693,7 +768,23 @@ def test_c7_la_sesion_v3_se_abre_reproduce_y_se_reescribe(r):
         assert {d[0] for d in v3["diferencias"]
                 if d[1] == _BLOQUEO_FASE_0_BIS} == {"A-01", "A-02", "B-01", "C-01"}
         assert v3["no_comparables"] == 0 and v3["puntos_solo_en_uno"] == 0
+        # La clase 7 tambien es EXIGIDA: un motivo exento no puede aparecer en
+        # un punto sin el bloqueo que lo causa (dictamen Fable 2026-11-24).
+        con_bloqueo = {d[0] for d in v3["diferencias"]
+                       if (m := _HOJA_DEL_BLOQUEO.fullmatch(d[1]))
+                       and m.group(1) in _FUENTES_REESCRITAS
+                       and m.group(2) == "fuente"}
+        con_motivo = {d[0] for d in v3["diferencias"]
+                      if _MOTIVO_DE_ITERACION.fullmatch(d[1])}
+        assert con_motivo == con_bloqueo == {"A-01", "A-02", "B-01"}
         for d in v3["diferencias"]:
+            # Clase 7 (N2 del plan de normas 2): el motivo de una iteracion
+            # que el criterio pendiente no dejo evaluar cambia SOLO en el
+            # texto de la fuente; el diametro, el escalon y la causa son los
+            # mismos.
+            if (_MOTIVO_DE_ITERACION.fullmatch(d[1])
+                    and _motivo_que_solo_cambia_la_fuente(d[2], d[3], v3)):
+                continue
             assert not d[1].split(".")[0].split("[")[0] in (
                 "diseno", "verificaciones", "iteraciones", "dimensionado"), d
             assert not d[1].startswith("verificacion "), d

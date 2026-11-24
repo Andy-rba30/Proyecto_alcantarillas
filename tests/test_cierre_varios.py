@@ -55,7 +55,12 @@ def test_r48001_la_discrepancia_esta_declarada_viva_y_gana_aashto():
     assert d.viva
     assert d.estado is EstadoDiscrepancia.ABIERTA
     assert d.gana == "HDS5_3ED"
-    assert {p.quien for p in d.partes} == {"MC_HHD", "MP", "AASHTO_LRFD_9", "HDS5_3ED"}
+    # CAMBIADO EN N1 del plan de normas 2, declarando la causa: el dictamen
+    # de Fable (2b) sumo `Parte(quien="MP2018")` con el Glosario de la
+    # edicion 2018 («luz libre entre ejes de apoyo»); la discrepancia sigue
+    # abierta, gana lo mismo y el codigo no cambia (commit 0c83cba).
+    assert {p.quien for p in d.partes} == {
+        "MC_HHD", "MP", "MP2018", "AASHTO_LRFD_9", "HDS5_3ED"}
     assert "cauce" in d.por_que.lower()
     # La discrepancia REAL entre fuentes, no una coincidencia disfrazada:
     # la luz libre por vano (Fig. 1.10-a) contra el ancho total (NBIS), y
