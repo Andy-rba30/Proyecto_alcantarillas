@@ -1526,6 +1526,66 @@ def test_la_ci_tiene_un_trabajo_de_windows_con_la_suite_rapida():
     assert '-m "not lento" -n auto' in cuerpo
 
 
+_LLAMADAS_A_PROCESO_HIJO = {"run", "check_output", "Popen"}
+
+
+def _salidas_de_hijo_sin_codificacion(codigo: str) -> list:
+    """
+    Las lineas de las llamadas a `subprocess` (`run`, `check_output`,
+    `Popen`) que leen la salida del hijo como TEXTO (`text=True` o
+    `universal_newlines=True`) sin `encoding=`.
+    """
+    lineas = []
+    for nodo in ast.walk(ast.parse(codigo)):
+        if not isinstance(nodo, ast.Call):
+            continue
+        funcion = nodo.func
+        nombre = (funcion.attr if isinstance(funcion, ast.Attribute)
+                  else getattr(funcion, "id", ""))
+        if nombre not in _LLAMADAS_A_PROCESO_HIJO:
+            continue
+        claves = {k.arg: k.value for k in nodo.keywords if k.arg}
+        en_texto = any(
+            isinstance(claves.get(clave), ast.Constant)
+            and claves[clave].value is True
+            for clave in ("text", "universal_newlines"))
+        if en_texto and "encoding" not in claves:
+            lineas.append(nodo.lineno)
+    return lineas
+
+
+def test_ningun_test_lee_la_salida_de_un_hijo_con_la_codificacion_local():
+    """
+    Ronda 3 de Windows (trabajo `windows` de la CI, run 45331172151): 73
+    `subprocess.run(..., text=True)` de `tests/` decodificaban con la
+    codificacion local (cp1252 en Windows) lo que el hijo escribe en UTF-8, y
+    salia mojibake; en Linux la local es UTF-8 y no se ve. Todo test que lea
+    la salida de un hijo como texto dice `encoding=` (98676c2).
+    """
+    sin_codificacion = {}
+    for ruta in sorted(TESTS.rglob("*.py")):
+        lineas = _salidas_de_hijo_sin_codificacion(
+            ruta.read_text(encoding="utf-8"))
+        if lineas:
+            sin_codificacion[str(ruta.relative_to(RAIZ))] = lineas
+    assert not sin_codificacion, (
+        "leen la salida de un proceso hijo como texto sin `encoding=` (en "
+        f"Windows sale con cp1252): {sin_codificacion}")
+
+
+@pytest.mark.parametrize("codigo, esperado", [
+    ("subprocess.run(['x'], capture_output=True, text=True)", [1]),
+    ("run(['x'], universal_newlines=True)", [1]),
+    ("subprocess.check_output(['x'], text=True)", [1]),
+    ("subprocess.run(['x'], text=True, encoding='utf-8')", []),
+    ("subprocess.run(['x'], capture_output=True)", []),
+    ("subprocess.run(['x'], text=False)", []),
+], ids=["run", "universal_newlines", "check_output", "con_encoding",
+        "en_bytes", "text_false"])
+def test_el_detector_de_codificacion_del_hijo_es_exacto(codigo, esperado):
+    assert _salidas_de_hijo_sin_codificacion(codigo) == esperado
+
+
 def test_con_xdist_los_aislados_se_deseleccionan_y_sin_xdist_corren(monkeypatch):
     import conftest
 
