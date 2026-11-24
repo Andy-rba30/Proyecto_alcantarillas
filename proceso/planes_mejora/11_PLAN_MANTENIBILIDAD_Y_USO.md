@@ -273,7 +273,7 @@ fallos son de D2 a medias; 6 de D1 y 1 de C4, ya corregidos en `198aa65` y
 
 | Hallazgo | Estado | Commit |
 |---|---|---|
-| H1 sello deducido | **en curso: lo cierra la suite completa de esta sesión** (paso 6) | — |
+| H1 sello deducido | hecho: suite completa MEDIDA en worktree limpio sobre `ca234cf` (`9213 passed, 13 skipped`, paralelo + aislado; sesión `claude/confident-cannon-0vgath`) y sello con ese par; fila en la bitácora | `90b8f74` |
 | H2 test de `import cli` intermitente | hecho: mínimo de siete corridas, mismo límite de 0.30 s (decisión del dueño) | `728a791` |
 | H3 cifras a mano en el anexo de sensibilidad | hecho: se leen de la corrida; medido, el anexo no cambia | `1961b4a` |
 | H4 LEEME y `PROMPT_RETOMAR` desactualizados | hecho | `741043c` |
@@ -289,6 +289,8 @@ rápida sobre la integración dio 17 fallos, todos cerrados: 12 del manifiesto
 3.12, Tk con `xvfb-run`, `NORMAS_DIR` = clon de `Andy-rba30/normas`): una
 corrida completa mide el par, se sella con él y una segunda corrida completa
 lo confirma.
+
+**Paso 6 hecho (2026-11-24, sesión `claude/confident-cannon-0vgath`)**: sobre las rondas 1 y 2 de compatibilidad Windows (fichas WIN-01 a WIN-03), la suite completa se midió en la nube (Linux, `NORMAS_DIR`, Tk) y no en la máquina del dueño, que la había corrido en Windows sobre `7efb15d` (18 fallos: 2 de sello y 16 de plataforma, corregidos en las dos rondas). Sello `90b8f74`; el paso 7 (fast-forward de `main`) lo autorizó el dueño.
 
 **El plan, en orden** (registro de lo que se pidió):
 

@@ -3,8 +3,20 @@
 Material de proceso, no del entregable. Lo mantiene la sesión orquestadora y se actualiza
 cada vez que se integra algo. Fecha de esta versión: 2026-11-24.
 
-> **ESTADO (2026-11-24, sesión `claude/confident-cannon-0vgath`): rondas 1 y 2 de Windows
-> integradas; suite completa definitiva EN CURSO.**
+> **ESTADO (2026-11-24, ~03:30 UTC, sesión `claude/confident-cannon-0vgath`): SELLADO con el
+> par MEDIDO; H1 cerrado; fast-forward de `main` a este cierre.**
+> Suite completa definitiva sobre `ca234cf` (worktree limpio, Linux, Python 3.12.3, Tk con
+> `xvfb-run`, PyMuPDF, `NORMAS_DIR`): paralelo `2 failed` (los dos sellos PROVISIONAL),
+> `9210 passed, 13 skipped` en 1 h 39 min 51 s; aislado `1 passed`. **Par del sello: `9213 passed,
+> 13 skipped`** (9226 recolectados). Sello en `90b8f74`; tras sellar, sello y sincronía
+> `73 passed`; `proceso/tests` `145 passed`. Fila en la bitácora (la de `5eccfe2` queda declarada
+> «deducida»). **En curso:** la misma suite sobre la EXPORTACIÓN (`git archive 90b8f74`), cuya
+> fila se añade a la bitácora al terminar. **Sigue:** auditoría Fable sobre el `main` final →
+> N1, N2 y N3 de `12_PLAN_NORMAS_2.md`. **Pendiente en Windows (dueño):** confirmar los 8 tests
+> que fallaban (comandos en el chat de esta sesión).
+>
+> **Bloque anterior de esta misma sesión (antes de la suite):** rondas 1 y 2 de Windows
+> integradas; suite completa definitiva EN CURSO.
 > Rama de trabajo: `claude/confident-cannon-0vgath` = `7efb15d` + la ronda 1 del dueño
 > (`wip/windows-parches-ronda1`, `404d06c`) + la ronda 2 (`cd45995` revierte el único hunk de
 > la ronda 1 que rompía un contrato, las rutas de la hidrología en `gui/app.py`; `fbbde5b`

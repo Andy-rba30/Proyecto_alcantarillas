@@ -2818,3 +2818,42 @@ Verificaciones directas tras aplicar las 4 correcciones de `5eccfe2`: `test_t11_
 con `NORMAS_DIR` (`70 passed` vs `33 passed, 37 skipped` sin `NORMAS_DIR`), guardias/decisiones/literales/VE-2
 (`561 passed`), y `proceso/tests` (`145 passed`). Los tests de sello y sincronía se comprueban tras
 sellar en el commit siguiente y la corrida íntegra en Linux queda validada en GitHub Actions (`Pruebas`).
+
+## Cierre del plan de mantenibilidad y de las rondas 1 y 2 de Windows (2026-11-24): el par MEDIDO, cierre de H1
+
+Primer sello con un par **medido en una sola corrida completa**, que es lo que el hallazgo H1 de
+`proceso/planes_mejora/ve3_estado/AUDITORIA_CIERRE_VE7_2026-11-21.md` exigía. La fila
+«entregable, `5eccfe2`, con `NORMAS_DIR`» de la sección anterior (`9167 passed, 14 skipped`) **fue
+deducida**, no medida: sumaba a los 9007 del CI los 158 `-m pdf` y los 2 de `test_ext6`. Se deja
+como está (este archivo añade, no reescribe) y la sustituye la de abajo.
+
+Árbol: `claude/confident-cannon-0vgath` en `ca234cf` = `7efb15d` (plan de mantenibilidad, pasos 1
+a 5, y `edcb81f`, el test de `import cli` marcado `aislado`) + la ronda 1 de Windows del dueño
+(`404d06c`) + la ronda 2 (`cd45995`, `fbbde5b`, `3d8a8ea`, `518abef`, `5248a36`; fichas WIN-01 a
+WIN-03 en `4bdda06`; dictamen Fable APROBADO / APROBADO CON CAMBIOS, aplicados). Sellado en
+`90b8f74`, que sólo cambia las dos líneas de sello. Entorno: Linux (nube), Python 3.12.3, Tk 8.6
+con `xvfb-run -a`, PyMuPDF 2.1, WeasyPrint 69.0, `NORMAS_DIR` = clon de `Andy-rba30/normas`
+(`ce4c90e`, `normas/` idéntica a `991e2de`), worktree limpio fuera del repositorio, `python3` ->
+3.12 al frente del PATH (lo pide `tests/linea_base_familia_c/regenerar.sh`). La suite completa
+es la suma de dos invocaciones (ficha EXT-8-06): `-n 4 --dist loadfile` y `-m aislado` sin `-n`.
+
+| Suite y árbol | `NORMAS_DIR` | Ventana Tk | `passed` | `skipped` | `collected` |
+|---|---|---|---|---|---|
+| entregable, `ca234cf`, worktree limpio, `-n 4 --dist loadfile` (1 h 39 min 51 s) | sí | sí | 9210 + los 2 de sello (fallan por diseño con el sello PROVISIONAL; pasan tras sellar) | 13 | 9225 (+1 `aislado` deseleccionado) |
+| entregable, `ca234cf`, paso `-m aislado` sin `-n` | sí | sí | 1 | 0 | 1 (9225 deseleccionados) |
+| **entregable, `ca234cf`, par del sello** | sí | sí | **9213** | **13** | **9226** |
+| entregable, `90b8f74`, tras sellar: sello y sincronía (`test_trazabilidad_csv`, `test_indice_formulas`, `test_ext9_paquete_servicio`, `test_manifiesto_citas`) | sí | sí | 73 | 0 | 73 |
+| proceso (`python -m pytest proceso/tests`), `90b8f74` | sí | — | 145 | 0 | 145 |
+
+Los 13 saltos son los que la auditoría H1 midió en Linux con la historia completa («par esperado:
+9168 passed, 13 skipped» sobre aquel árbol, 9181 recolectados); los 45 recolectados de más
+(9181 -> 9226) los suman el plan de mantenibilidad (A–D) y las rondas de Windows (1 de la
+ronda 1, 5 de la ronda 2). Un aviso: `FutureWarning` de PyMuPDF por el nombre
+`fitz` (del entorno, no del proyecto).
+
+**Windows (máquina del dueño, Windows 11 Home, Python 3.13.2, Tk 8.6, PyMuPDF 1.28.2, 125 %).**
+La suite completa sobre `7efb15d` dio `18 failed, 9173 passed, 25 skipped` (paralelo) y
+`1 passed` (aislado): 2 de sello y 16 de plataforma. La ronda 1 dejó 6 en los 9 módulos
+re-corridos (`6 failed, 413 passed, 10 skipped`) más los 2 de ventana real; la ronda 2 corrige
+los 8 que no son de sello (fichas WIN-01 a WIN-03). Su confirmación en Windows sobre esta rama
+queda a cargo del dueño y se anota aquí cuando llegue.
