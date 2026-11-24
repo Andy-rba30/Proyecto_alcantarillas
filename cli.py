@@ -1466,7 +1466,9 @@ def _informe_json_base(informe: Informe, bloqueantes: Any,
     """El dict del expediente, sin el bloque opcional de la hidrologia."""
     return {
         "expediente": {
-            "csv": str(informe.csv), "generado_utc": informe.generado,
+            # Con `/` en todo sistema (`as_posix`): el JSON se compara con
+            # la linea base, escrita en Linux; en Windows `str` daba `\`.
+            "csv": Path(informe.csv).as_posix(), "generado_utc": informe.generado,
             # Las dos huellas de la corrida, las MISMAS que imprime la
             # memoria: la del CSV es de los bytes que M0 leyo (PC-09).
             "csv_sha1": contexto.csv_sha1,

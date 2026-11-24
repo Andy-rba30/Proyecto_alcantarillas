@@ -1413,12 +1413,18 @@ def test_4_cada_candidato_pasa_la_guardia_de_la_escritura_permanente(candidatos,
     por_clave, _ = candidatos
     monkeypatch.setattr(ca, "CRITERIOS", dict(ca.CRITERIOS))
     rechazos = []
+    # UN ARCHIVO NUEVO POR INTENTO, no el mismo reescrito cientos de veces: en
+    # Windows el antivirus abre cada `.py` recien escrito y la reescritura
+    # inmediata cae con `PermissionError` (corrida de la suite en Windows
+    # sobre 7efb15d). Lo que se mide --- la guardia y el patron --- no cambia.
+    intentos = 0
     for clave, cs in por_clave.items():
         c = ca.CRITERIOS[clave]
         if isinstance(c.resolucion, Derivada):
             continue
         for de_donde, valor in cs:
-            archivo = tmp_path / "una_entrada.py"
+            intentos += 1
+            archivo = tmp_path / f"una_entrada_{intentos}.py"
             archivo.write_text(f'CRITERIOS = {{\n    "{clave}": Criterio(\n'
                                f'        valor=None,\n    ),\n}}\n', encoding="utf-8")
             try:

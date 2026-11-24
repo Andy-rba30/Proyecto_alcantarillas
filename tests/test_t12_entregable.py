@@ -702,15 +702,22 @@ def _exportacion_emulada(destino: Path) -> Path:
     emula sobre el arbol de trabajo (y no sobre HEAD) para que el test mida
     lo que se va a confirmar.
     """
-    archivos = subprocess.run(
-        ["git", "ls-files", "--cached", "--others", "--exclude-standard"],
-        cwd=RAIZ, capture_output=True, text=True, check=True).stdout.splitlines()
-    atributos = subprocess.run(
-        ["git", "check-attr", "export-ignore", "--stdin"], cwd=RAIZ,
-        input="\n".join(archivos), capture_output=True, text=True,
-        check=True).stdout.splitlines()
-    ignorados = {linea.split(": export-ignore:")[0] for linea in atributos
-                 if linea.endswith(": export-ignore: set")}
+    # `-z` en las dos llamadas, y bytes: separadas por NUL, las rutas no se
+    # entrecomillan ni se traducen. En modo texto, en Windows, la entrada de
+    # `check-attr --stdin` salia con CRLF: cada ruta llevaba un `\r`, ninguna
+    # casaba con `export-ignore` y `proceso/` entraba en la exportacion
+    # (corrida de la suite en Windows sobre 7efb15d).
+    archivos = [a for a in subprocess.run(
+        ["git", "ls-files", "-z", "--cached", "--others", "--exclude-standard"],
+        cwd=RAIZ, capture_output=True, check=True).stdout.decode("utf-8").split("\0")
+        if a]
+    campos = subprocess.run(
+        ["git", "check-attr", "-z", "--stdin", "export-ignore"], cwd=RAIZ,
+        input="\0".join(archivos).encode("utf-8"), capture_output=True,
+        check=True).stdout.decode("utf-8").split("\0")
+    # Salida de `-z`: ternas <ruta> NUL <atributo> NUL <valor> NUL.
+    ignorados = {campos[i] for i in range(0, len(campos) - 2, 3)
+                 if campos[i + 2] == "set"}
     import shutil
     for relativo in archivos:
         origen = RAIZ / relativo

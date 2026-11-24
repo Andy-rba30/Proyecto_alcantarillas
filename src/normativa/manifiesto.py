@@ -942,7 +942,8 @@ def _commit_de_origen() -> str:
     # solo lo suyo, regenerar los cuatro en fila dejaria al segundo firmando
     # «+cambios-sin-commit» por lo que acababa de escribir el primero -- que
     # es exactamente lo que le paso a PD, y por eso ambos eximen los cuatro.
-    exentos = [f":!{ruta.relative_to(RAIZ)}"
+    # Con `/` (`as_posix`): la exencion vale igual sellando en Windows.
+    exentos = [f":!{ruta.relative_to(RAIZ).as_posix()}"
                for ruta in (MANIFIESTO, INDICE_REGISTRO, TRAZABILIDAD_CSV,
                             INDICE_FORMULAS_GENERADO)]
     sucio = subprocess.run(
@@ -1004,9 +1005,11 @@ def main(argv: List[str]) -> int:
               f"(sello {sello.fecha} · {sello.commit}){estado}")
 
     if escribir:
-        MANIFIESTO.write_text(nuevo, encoding="utf-8")
-        INDICE_REGISTRO.write_text(indice, encoding="utf-8")
-        TRAZABILIDAD_CSV.write_text(csv_texto, encoding="utf-8")
+        # `newline="\n"`: sellados en Windows, los tres salen con LF, los
+        # mismos bytes que en Linux (`.gitattributes`: eol=lf).
+        MANIFIESTO.write_text(nuevo, encoding="utf-8", newline="\n")
+        INDICE_REGISTRO.write_text(indice, encoding="utf-8", newline="\n")
+        TRAZABILIDAD_CSV.write_text(csv_texto, encoding="utf-8", newline="\n")
         print("escritos.")
     return 0
 

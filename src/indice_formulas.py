@@ -661,10 +661,13 @@ def _resumen_de_la_corrida(corrida: CorridaDeReferencia,
     L.append("")
     L.append(f"> {corrida.rotulo}")
     L.append("")
-    entradas = [f"`{carpeta.joinpath('puntos.csv')}`",
-                f"datos externos `{carpeta.joinpath('externos.json')}`"]
+    # Las rutas del documento, con `/` en todo sistema: regenerado en Windows
+    # salia con `\` y el indice quedaba desincronizado.
+    entradas = [f"`{carpeta.joinpath('puntos.csv').as_posix()}`",
+                f"datos externos `{carpeta.joinpath('externos.json').as_posix()}`"]
     if corrida.sitio is not None:
-        entradas.append(f"datos de sitio `{carpeta.joinpath('sitio.json')}`")
+        entradas.append(
+            f"datos de sitio `{carpeta.joinpath('sitio.json').as_posix()}`")
     L.append(f"- Entradas: {' · '.join(entradas)} · alcance: "
              f"`{informe.alcance}`.")
     if corrida.declaraciones:
@@ -991,7 +994,8 @@ def _commit_de_origen() -> str:
          # Los cuatro documentos generados quedan fuera del chequeo, no solo
          # este: regenerarlos en fila no puede ensuciar el sello del siguiente
          # (misma regla, y misma razon, que en normativa.manifiesto).
-         f":!{INDICE_FORMULAS.relative_to(RAIZ)}",
+         # Con `/` (`as_posix`): la exencion vale igual sellando en Windows.
+         f":!{INDICE_FORMULAS.relative_to(RAIZ).as_posix()}",
          ":!docs/manifiesto_citas.md",
          ":!docs/manifiesto_registro_normativo.md",
          ":!docs/trazabilidad.csv"],
@@ -1021,8 +1025,10 @@ def main(argv: List[str]) -> int:
     if escribir:
         sello = Sello(fecha=_dt.date.today().isoformat(),
                       commit=_commit_de_origen(), suite=suite)
+        # `newline="\n"`: sellado en Windows, el documento sale con LF, los
+        # mismos bytes que en Linux (`.gitattributes`: eol=lf).
         INDICE_FORMULAS.write_text(indice_de_formulas(corridas, sello),
-                                   encoding="utf-8")
+                                   encoding="utf-8", newline="\n")
         print(f"{INDICE_FORMULAS.relative_to(RAIZ)}: escrito con sello "
               f"{sello.fecha} · {sello.commit} · {sello.suite}")
         return 0

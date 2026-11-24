@@ -3418,8 +3418,10 @@ class ExpedienteApp:
             "csv": ruta_csv_texto,
             "datos_externos": texto_externos,
             "datos_sitio": texto_sitio,
-            "cuencas": "" if ruta_cuencas is None else str(ruta_cuencas),
-            "estacion": "" if ruta_estacion is None else str(ruta_estacion),
+            # Con `/` en todo sistema: la sesion del hijo lleva la ruta como
+            # se teclea en la sesion guardada (en Windows `str` daba `\`).
+            "cuencas": "" if ruta_cuencas is None else ruta_cuencas.as_posix(),
+            "estacion": "" if ruta_estacion is None else ruta_estacion.as_posix(),
             "externos": {clave: var.get() for clave, var in self.externos_vars.items()},
             "alcance": self.alcance_var.get(),
         }

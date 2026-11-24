@@ -333,13 +333,13 @@ def materializar(juego: Juego, destino: Path) -> Entradas:
     salida = io.StringIO()
     csv.writer(salida, lineterminator="\n").writerows(filas)
     ruta_csv = destino / "puntos.csv"
-    ruta_csv.write_text(salida.getvalue(), encoding="utf-8")
+    ruta_csv.write_text(salida.getvalue(), encoding="utf-8", newline="\n")
     ruta_ext = destino / "externos.json"
     ruta_ext.write_text(json.dumps(juego.externos, indent=1, ensure_ascii=False),
-                        encoding="utf-8")
+                        encoding="utf-8", newline="\n")
     ruta_sitio = destino / "sitio.json"
     ruta_sitio.write_text(json.dumps(juego.sitio, indent=1, ensure_ascii=False),
-                          encoding="utf-8")
+                          encoding="utf-8", newline="\n")
     return Entradas(ruta_csv, ruta_ext, ruta_sitio,
                     J.CUENCAS if juego.hidrologia else None,
                     J.ESTACION if juego.hidrologia else None,
@@ -381,11 +381,14 @@ def escribir_corrida_de_referencia(destino: Path = CORRIDA_DE_REFERENCIA) -> Pat
     """
     juego = aplicar(juego_completo(), J.VARIANTES[VARIANTE_DE_REFERENCIA][1])
     e = materializar(juego, destino)
+    # `newline="\n"` en las cuatro escrituras de texto (y en `materializar`):
+    # en Windows `write_text` traduce a CRLF y la carpeta versionada es LF;
+    # el test exige los mismos BYTES.
     (Path(destino) / "LEEME.md").write_text(LEEME_CORRIDA_DE_REFERENCIA,
-                                            encoding="utf-8")
+                                            encoding="utf-8", newline="\n")
     (Path(destino) / "declaraciones.json").write_text(
         json.dumps(e.declaraciones, indent=1, ensure_ascii=False),
-        encoding="utf-8")
+        encoding="utf-8", newline="\n")
     for origen, nombre in ((e.cuencas, "cuencas.csv"),
                            (e.estacion, "estacion.csv")):
         (Path(destino) / nombre).write_bytes(Path(origen).read_bytes())

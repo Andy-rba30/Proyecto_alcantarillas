@@ -18,6 +18,7 @@ como «implementable ya» (ítems 37, 38, 40 y 42). Ficha VE5GUI-01 de
 from __future__ import annotations
 
 import ast
+import os
 from pathlib import Path
 
 import pytest
@@ -293,6 +294,14 @@ def test_39_un_destino_de_nombre_largo_se_escribe(via, informe_de_perfil, tmp_pa
     assert destino.stat().st_size > 0
 
 
+# Enlaces simbolicos y modos POSIX: en Windows crear un enlace pide un
+# privilegio que un usuario normal no tiene (WinError 1314) y `chmod(0o600)`
+# no da ese modo. Mismo criterio que `test_ui5_decisiones::test_3_d_*`.
+SOLO_POSIX = pytest.mark.skipif(os.name != "posix",
+                                reason="enlaces simbolicos y modos POSIX")
+
+
+@SOLO_POSIX
 @pytest.mark.parametrize("via", ["html", "html_resumida", "csv"])
 def test_39_un_enlace_simbolico_sigue_siendo_enlace(via, informe_de_perfil, tmp_path):
     real = tmp_path / "real" / "memoria"
@@ -307,6 +316,7 @@ def test_39_un_enlace_simbolico_sigue_siendo_enlace(via, informe_de_perfil, tmp_
     assert real.stat().st_mode & 0o777 == 0o600
 
 
+@SOLO_POSIX
 def test_39_la_sesion_se_escribe_por_la_misma_puerta(tmp_path):
     from src import sesion as ses
     real = tmp_path / "real.json"
@@ -315,6 +325,14 @@ def test_39_la_sesion_se_escribe_por_la_misma_puerta(tmp_path):
     enlace.symlink_to(real)
     ses.escribir_json_atomico(enlace, {"a": 1})
     assert enlace.is_symlink() and '"a": 1' in real.read_text(encoding="utf-8")
+
+
+def test_39_la_sesion_no_escribe_un_nan_ni_deja_restos(tmp_path):
+    """
+    La mitad del test de arriba que no depende de enlaces: corre tambien en
+    Windows, donde el del enlace se salta.
+    """
+    from src import sesion as ses
     with pytest.raises(ValueError):
         ses.escribir_json_atomico(tmp_path / "nan.json", {"x": float("nan")})
     assert not (tmp_path / "nan.json").exists()
