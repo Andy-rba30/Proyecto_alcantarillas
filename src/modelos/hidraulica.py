@@ -1330,8 +1330,12 @@ class ProteccionTWAlto:
     V_admisible: float                    # m/s
     D50: float                            # m - Ec. (10.6) con Vo, en la boca
     longitud: float                       # m - hasta VL = Vallow
-    espesor: float                        # m - 2·D50 (lectura del proyecto)
+    # m - max(2·D50 de HEC-14, lectura del proyecto; 0.30 m de HEC-11 Sec.
+    # 4.3, [C] aplicado por analogia desde N3)
+    espesor: float
     pasos: Tuple["PasoDeMemoria", ...] = ()
+    # --- N3 --- el +50 % bajo agua de HEC-11 Sec. 4.3, que no se aplica.
+    avisos: Tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -1376,12 +1380,88 @@ class EstructuraDeCaida:
 
 
 @dataclass(frozen=True)
+class RelacionesDeFiltro:
+    """
+    --- N3 --- Las tres relaciones de la Ec. (14) de HEC-11 (Sec. 4.4.1) en
+    UNA interfaz entre una capa gruesa y una fina:
+
+        tubificacion   = D15 grueso / D85 fino   <= 5   («5 or less»)
+        permeabilidad  = D15 grueso / D15 fino   >  5
+        uniformidad    = D15 grueso / D15 fino   <  40
+
+    Con una sola curva del grueso, permeabilidad y uniformidad son el mismo
+    cociente. Con una BANDA del grueso (la Tabla 2 de HEC-11 alrededor del
+    D50) cada una se forma con el extremo que la exige mas: tubificacion y
+    uniformidad con el D15 grueso, permeabilidad con el fino
+    (`Interpretacion` de la cita HEC11.4.2#T2).
+    """
+
+    D15_grueso_min: float                 # m
+    D15_grueso_max: float                 # m
+    D85_fino: float                       # m
+    D15_fino: float                       # m
+    tubificacion: float                   # -
+    permeabilidad: float                  # -
+    uniformidad: float                    # -
+    cumple_tubificacion: bool
+    cumple_permeabilidad: bool
+    cumple_uniformidad: bool
+
+    @property
+    def cumple(self) -> bool:
+        return (self.cumple_tubificacion and self.cumple_permeabilidad
+                and self.cumple_uniformidad)
+
+
+@dataclass(frozen=True)
+class FiltroGranularHEC11:
+    """
+    --- N3 --- El filtro GRANULAR bajo el enrocado por HEC-11 Sec. 4.4.1,
+    como REQUISITO de especificacion y no como un material elegido: la
+    ventana de tamaños que tiene que cumplir una manta de UNA capa entre el
+    suelo del lecho y la piedra, el pasante maximo del tamiz N.º 200 y el
+    intervalo de espesor.
+
+    Sin la granulometria del suelo (D85 y D15, dato del EMS) o sin la piedra
+    los numeros quedan en `None` y `texto` dice que falta: no se supone un
+    suelo. `una_capa_basta` es False cuando la ventana queda vacia --HEC-11
+    pide entonces mas capas, que el programa no diseña--, y None sin datos o
+    con un lecho COHESIVO, donde la Ec. (14) queda fuera del marco de la
+    fuente y la ventana no se declara (los pasos salen como informacion).
+    """
+
+    D85_suelo: Optional[float]            # m - dato del EMS
+    D15_suelo: Optional[float]            # m - dato del EMS
+    d50_enrocado: Optional[float]         # m - la piedra que rige
+    D15_enrocado_min: Optional[float]     # m - Tabla 2: 0.4·D50
+    D15_enrocado_max: Optional[float]     # m - Tabla 2: 0.6·D50
+    directo_sobre_el_suelo: Optional[RelacionesDeFiltro]
+    D15_filtro_mayor_que: Optional[float]   # m - limite inferior, estricto
+    D15_filtro_hasta: Optional[float]       # m - limite superior
+    D85_filtro_desde: Optional[float]       # m - limite inferior, admitido
+    una_capa_basta: Optional[bool]
+    pasa_200_max_pct: float               # % del material del filtro
+    espesor_una_capa_m: Tuple[float, float]
+    espesor_varias_capas_m: Tuple[float, float]
+    texto: str
+    citas: Tuple[str, ...] = ()
+    pasos: Tuple["PasoDeMemoria", ...] = ()
+    avisos: Tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
 class RequisitoDeFiltro:
     """
     El filtro bajo el enrocado, como REQUISITO DECLARADO y no como diseño.
     Con el pasante del tamiz N.º 200 del suelo (dato del EMS) elige la
     columna de la Tabla 511-06 de EG-2013; sin el, los tres campos de la
     columna quedan en `None` y `texto` dice que dato falta.
+
+    Desde N3 declara tambien la alternativa GRANULAR (`granular`, HEC-11
+    Sec. 4.4.1), que la llamada desde la Fase 6 trae siempre; y, con una
+    piedra de D50 mayor que 0.91 m, la cama de grava que HEC-11 Sec. 4.4.2
+    pide bajo el enrocado cuando el filtro es geotextil
+    (`cama_de_grava_bajo_geotextil`).
     """
 
     clase_geotextil: str
@@ -1393,6 +1473,8 @@ class RequisitoDeFiltro:
     citas: Tuple[str, ...] = ()
     paso: Optional["PasoDeMemoria"] = None
     avisos: Tuple[str, ...] = ()          # nota (5) a: suelo que pide diseño
+    granular: Optional[FiltroGranularHEC11] = None
+    cama_de_grava_bajo_geotextil: Optional[bool] = None
 
 
 @dataclass(frozen=True)
@@ -1433,6 +1515,9 @@ class MaterialLecho:
         Sv_Pa           resistencia al corte saturada, N/m2 (cohesivo).
         pasa_200_pct    pasante del tamiz N.º 200, en %: elige la columna del
                         geotextil de filtro (EG-2013, Tabla 511-06).
+        D85_m, D15_m    --- N3 --- granulometria del lecho para el FILTRO
+                        GRANULAR (HEC-11 Ec. 14): van juntos, y no son D84 y
+                        D16, que son los de la hoya (HEC-14 Ec. 5.1).
     """
 
     tipo: Optional[str] = None
@@ -1441,6 +1526,8 @@ class MaterialLecho:
     IP: Optional[float] = None
     Sv_Pa: Optional[float] = None
     pasa_200_pct: Optional[float] = None
+    D85_m: Optional[float] = None
+    D15_m: Optional[float] = None
 
 
 @dataclass(frozen=True)

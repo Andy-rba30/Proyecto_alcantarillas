@@ -289,7 +289,7 @@ Ningún criterio se rellenó en `criterios_adoptados.py`: los que el juego neces
 | `fila_phi_estabilidad_global` | [A] | expediente | — | decision | sí | no | AASHTO LRFD 9a ed., 11.6.3.7 y C11.6.3.7, pag. |
 | `caudal_unitario_admisible_desborde_m2s` | [A] | expediente | — | decision | sí | no | PENDIENTE - diseño de la proteccion del talud de aguas abajo del terraplen (HDS-5 num. |
 | `clase_exposicion_fisuracion_cabezal` | [A] | expediente | — | decision | sí | sí | AASHTO LRFD 9a ed., 5.6.7 y C5.6.7, pags. |
-| `edicion_que_rige_el_expediente` | [A] | expediente | — | decision | no (censado) | no | Registro normativo: el campo `vigencia` de cada Fuente presente (`fuentes.estado_de_vigencia`) y `fuentes.fuentes_con_eleccion_de_edicion_pendiente_tecnica`, que deriva de el las seis fuentes de arriba; un test exige que esta ficha las nomb |
+| `edicion_que_rige_el_expediente` | [A] | expediente | — | decision | no (censado) | no | Registro normativo: el campo `vigencia` de cada Fuente presente (`fuentes.estado_de_vigencia`) y `fuentes.fuentes_con_eleccion_de_edicion_pendiente_tecnica`, que deriva de el las siete fuentes de arriba; un test exige que esta ficha las nom |
 | `edicion_legal_que_rige_el_expediente` | [A] | expediente | — | decision | no (censado) | no | Registro normativo: `fuentes.MP.vigencia` (acto aprobatorio RD 041-2016-MTC/14, impreso en las PDF 2 y 3 del ejemplar; derogado por RD 19-2018-MTC/14, El Peruano dispositivo 1730970-1, vigente desde el 15-01-2019, verificado por busqueda we |
 | `nivel_agua_relleno_sin_drenaje_bajo_sismo` | [A] | expediente | — | decision | sí | no | AASHTO LRFD 9a ed., C11.6.5.3, pag. |
 | `sobreancho_excavacion_estructuras_m` | [A] | expediente | opcional | decision | sí | no | EG-2013 501.04, pag. |

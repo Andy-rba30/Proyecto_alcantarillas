@@ -1207,8 +1207,8 @@ CRITERIOS: Dict[str, Criterio] = {
                  "como metros, segundos como minutos), sin rechazarlo ni "
                  "cambiar ningun resultado. Claves: "
                  "'duracion_caudal_pico_min' (min), "
-                 "'profundidad_socavacion_estimada_m' (m), 'D84_m' (m) y "
-                 "'Sv_Pa' (Pa), las dos ultimas del objeto "
+                 "'profundidad_socavacion_estimada_m' (m), 'D84_m' (m), "
+                 "'Sv_Pa' (Pa) y 'D85_m' (m), las tres ultimas del objeto "
                  "'material_lecho_salida'",
         justificacion="Decide, cuando se declara, a partir de que valor un "
                       "dato de sitio de la Fase 6 se avisa como probable "
@@ -1221,8 +1221,9 @@ CRITERIOS: Dict[str, Criterio] = {
                       "eleccion del proyectista y solo produce un aviso",
         fuente="NINGUNA NORMA. HEC-14 (FHWA-HIF-12-026) Cap. 5, pags. "
                "impresas 5-1 a 5-7, no limita la duracion del caudal pico, "
-               "el esfuerzo cortante Sv ni el tamaño D84 del lecho; "
-               "dominios.py no lleva techo para ellos (ficha T8-11)",
+               "el esfuerzo cortante Sv ni el tamaño D84 del lecho, y HEC-11 "
+               "Sec. 4.4.1 no limita el D85 del filtro granular; dominios.py "
+               "no lleva techo para ellos (fichas T8-11 y N3-01)",
         sensibilidad=("sin declarar: ningun aviso de transcripcion; la "
                       "corrida es la de antes de VE-5",
                       "declarado: un techo positivo por clave, en la unidad "

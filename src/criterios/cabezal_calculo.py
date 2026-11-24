@@ -1461,7 +1461,8 @@ CRITERIOS: Dict[str, Criterio] = {
         forma=FORMA_STR,
         # LA VENTANA ES SIMBOLICA Y CERRADA, como la de
         # 'homogeneidad_serie_fen': dos opciones y no hay tercera, y vale
-        # para las seis fuentes TECNICAS a la vez. El Manual de Puentes SALIO
+        # para las siete fuentes TECNICAS a la vez (seis hasta N3, que sumo
+        # HEC-11, archivada por la FHWA). El Manual de Puentes SALIO
         # de esta ventana en EXT-6 (EXT-N-01, PC-26): es una norma LEGAL,
         # aprobada y derogada por resolucion del MTC, y elegir su edicion
         # citada no es una preferencia tecnica sino una cuestion de regimen
@@ -1478,24 +1479,29 @@ CRITERIOS: Dict[str, Criterio] = {
             "conseguirla, incorporarla al registro como Fuente y reverificar "
             "contra ella cada cita que hoy se apoya en la citada"),
         concepto="Edicion que rige el expediente en las fuentes tecnicas "
-                 "(AASHTO, ASTM) cuyo emisor publica una edicion posterior a "
-                 "la citada en el registro",
+                 "(AASHTO, ASTM, FHWA) cuyo emisor publica una edicion "
+                 "posterior a la citada en el registro, o la da por "
+                 "sustituida",
         justificacion=(
-            "La verificacion de vigencia del registro encontro que ocho de "
+            "La verificacion de vigencia del registro encontro que nueve de "
             "las fuentes presentes tienen edicion posterior publicada por su "
-            "emisor. En una el registro ya dice cual gobierna (las dos "
+            "emisor, o un documento que las sustituye. En una el registro ya "
+            "dice cual gobierna (las dos "
             "ediciones de HDS-5 conviven en normas/ y una discrepancia "
             "resuelta lo fija); otra es una norma legal peruana derogada por "
             "resolucion y tiene su propio criterio, porque elegir su edicion "
             "citada depende del regimen transitorio y no de una preferencia "
-            "tecnica; y en las seis restantes, todas normas tecnicas de "
+            "tecnica; y en las siete restantes, todas fuentes tecnicas de "
             "EE.UU., hay una eleccion tecnica pendiente: AASHTO LRFD (citada "
             "la 9a ed. (2020); publicada la 10a ed. (2024)), AASHTO M 170M "
             "(citada M 170M-04; vigente M 170M-23), AASHTO M 36 (citada "
             "M 36-03; vigente M 36M/M 36-24), ASTM A760/A760M (citada -10; "
-            "vigente -25), ASTM A796/A796M (citada -13; vigente -21) y AASHTO "
-            "M 294 (traduccion de la -11; vigente -25). La edicion de estas "
-            "seis no la fija una resolucion peruana, pero tampoco es cierto "
+            "vigente -25), ASTM A796/A796M (citada -13; vigente -21), AASHTO "
+            "M 294 (traduccion de la -11; vigente -25) y la guia HEC-11 de la "
+            "FHWA (citada su version metrica; la FHWA la archiva y la da por "
+            "sustituida por HEC-23, 3a ed., que es otro documento). "
+            "La edicion de estas "
+            "siete no la fija una resolucion peruana, pero tampoco es cierto "
             "que nadie la mande: el Manual de Puentes adapta la AASHTO LRFD "
             "en su 7a ed. (2014) y permite considerar sus actualizaciones "
             "(registro MP.INTRODUCCION#LRFD_2014), de modo que citar una "
@@ -1503,13 +1509,18 @@ CRITERIOS: Dict[str, Criterio] = {
             "9a y la 10a corresponde a la entidad y/o propietario, a "
             "propuesta del proyectista, que es quien lo declara aqui; para "
             "las cinco normas de "
-            "producto y practica, ninguna fuente peruana nombra edicion. Se "
+            "producto y practica, ninguna fuente peruana nombra edicion; y a "
+            "HEC-11 la nombra HEC-14, vigente, por su edicion original, y la "
+            "sigue nombrando para el filtro del apron. Para HEC-11 la opcion "
+            "vigente no es reverificar citas: es cambiar de documento y de "
+            "metodo (HEC-23 tiene sus propios criterios de filtro), y el "
+            "filtro granular habria que volver a escribirlo. Se "
             "declara vacia: elegir la citada mantiene valido el registro tal "
             "como esta; elegir la vigente obliga a conseguir cada documento, "
             "incorporarlo como Fuente y reverificar contra el cada cita, y "
             "hasta entonces el expediente citaria una edicion que no tiene. "
             "La ventana es simbolica y cerrada: la eleccion vale para las "
-            "seis fuentes a la vez, y una eleccion distinta por fuente no "
+            "siete fuentes a la vez, y una eleccion distinta por fuente no "
             "cabe en ella --- exigiria un criterio por fuente, y se abriria "
             "entonces, no aqui ---. Lo que no cambia con la eleccion: ninguna "
             "cita y ningun valor de calculo; la vigencia es un metadato de "
@@ -1518,7 +1529,7 @@ CRITERIOS: Dict[str, Criterio] = {
         fuente=("Registro normativo: el campo `vigencia` de cada Fuente "
                 "presente (`fuentes.estado_de_vigencia`) y "
                 "`fuentes.fuentes_con_eleccion_de_edicion_pendiente_tecnica`, "
-                "que deriva de el las seis fuentes de arriba; un test exige "
+                "que deriva de el las siete fuentes de arriba; un test exige "
                 "que esta ficha las nombre todas y solo a ellas. El ancla del "
                 "Manual de Puentes a la AASHTO LRFD 2014 (7a ed.) y su permiso "
                 "de considerar actualizaciones: MP Introduccion, pag. impresa "
@@ -1531,7 +1542,7 @@ CRITERIOS: Dict[str, Criterio] = {
         # proyectista con lo que ella arrastra si elige la vigente.
         reemplazado_por=("Declaracion del proyectista sobre el marco normativo "
                          "tecnico del expediente (edicion citada o vigente, "
-                         "para las seis fuentes tecnicas a la vez); si elige "
+                         "para las siete fuentes tecnicas a la vez); si elige "
                          "la vigente, ademas la incorporacion de cada "
                          "documento al registro y la reverificacion de sus "
                          "citas"),
@@ -1554,7 +1565,7 @@ CRITERIOS: Dict[str, Criterio] = {
                         "y con la conformidad de la entidad y/o propietario, "
                         "que es a quien el Manual de Puentes permite "
                         "considerar las actualizaciones",
-            dominio="una de las dos opciones de la ventana, para las seis "
+            dominio="una de las dos opciones de la ventana, para las siete "
                     "fuentes tecnicas a la vez",
         ),
     ),

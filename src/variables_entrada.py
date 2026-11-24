@@ -1278,11 +1278,12 @@ _EXTERNOS: Dict[str, _Externo] = {
                  "curva granulometrica, o 'cohesivo' con el indice de "
                  "plasticidad `IP` y la resistencia al corte saturada "
                  "`Sv_Pa`) para estimar la hoya de socavacion por HEC-14 "
-                 "Cap. 5, y `pasa_200_pct` (pasante del tamiz N. 200) para "
-                 "el geotextil de filtro de EG-2013. Sin el, la socavacion "
-                 "no se estima y el filtro no se dimensiona; la corrida lo "
-                 "avisa",
-        unidad="objeto (-, m, m, -, N/m2, %)",
+                 "Cap. 5, `pasa_200_pct` (pasante del tamiz N. 200) para "
+                 "el geotextil de filtro de EG-2013, y `D85_m` y `D15_m` "
+                 "(juntos) para el filtro granular de HEC-11. Sin el, la "
+                 "socavacion no se estima y el filtro no se dimensiona; la "
+                 "corrida lo avisa",
+        unidad="objeto (-, m, m, -, N/m2, %, m, m)",
         resolucion=Libre(
             que_lo_fija="el Estudio de Mecanica de Suelos: analisis "
                         "granulometrico, limites de Atterberg y compresion "
@@ -1291,7 +1292,9 @@ _EXTERNOS: Dict[str, _Externo] = {
                         "defecto",
             dominio="tres formas: solo `pasa_200_pct` (0 a 100); "
                     "`tipo`='no_cohesivo' con D84_m >= D16_m > 0; "
-                    "`tipo`='cohesivo' con IP >= 0 y Sv_Pa > 0",
+                    "`tipo`='cohesivo' con IP >= 0 y Sv_Pa > 0; las tres "
+                    "admiten D85_m >= D15_m > 0, juntos, y en orden con "
+                    "D84_m y D16_m si vienen",
         ),
         criterio_destino="lectura_coeficientes_socavacion_hec14",
         fase_declarada=_FASE_DE_MODULO["M6_proteccion"],

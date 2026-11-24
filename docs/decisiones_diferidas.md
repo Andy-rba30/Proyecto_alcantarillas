@@ -59,7 +59,7 @@ registro.
 
 # Índice de fichas
 
-> Tabla derivada automáticamente de las **404** fichas del documento (`78` cerradas, `150` abiertas/parciales, `176` diferidas/declaradas).
+> Tabla derivada automáticamente de las **408** fichas del documento (`78` cerradas, `153` abiertas/parciales, `177` diferidas/declaradas).
 > Regla de estado (verificada por `tests/test_decisiones_diferidas.py`): `cerrada` si el título marca IMPLEMENTADA/CERRADA o tiene `**Cerrado` sin `**Abierto`; `abierta / parcial` si declara `**Abierto`; `diferida / declarada` en el resto.
 
 | Ficha | Tema | Estado |
@@ -468,6 +468,10 @@ registro.
 | WIN-01 | Las rutas del JSON y de la sesión en Windows: el CSV en `/`, la hidrología con el separador del sistema | cerrada |
 | WIN-02 | El contraste fórmula–cuña dice «coincide» cuando la diferencia es ruido de punto flotante | cerrada |
 | WIN-03 | En Windows las emergentes toman el foco y las ventanas escalan su tamaño con los ppp | cerrada |
+| N3-01 | El filtro granular bajo el enrocado sale de HEC-11 Sec. 4.4.1: un requisito con la ventana de una capa (plan 12, N3) | abierta / parcial |
+| N3-02 | El D15 de la piedra es la banda de la Tabla 2 de HEC-11, no una curva (lectura del proyecto) | diferida / declarada |
+| N3-03 | El espesor de la protección con el receptor alto toma, por analogía, el piso de 300 mm de HEC-11 Sec. 4.3 (cierra el abierto (1) de VE5-M6-02) | abierta / parcial |
+| N3-04 | HEC-11 (SI) entra sin folio, sin firma y con sucesora: la FHWA la archiva y la sustituye por HEC-23 | abierta / parcial |
 
 ---
 
@@ -4934,6 +4938,11 @@ T8-07 a T8-12 son nuevas. Lo que ya no es cierto de la frase de arriba: desde es
 - **Qué haría falta:** HEC 11 o una norma peruana de filtros; el pasante por punto.
 - **Enmendado (2026-11-12):** «su nota (5) vale para la fila» **se retira** (H4, decisión 4
   del dueño): ver la ficha T8-10.
+- **Enmendado (N3, 2026-11-24):** «el filtro granular no se diseña: HEC 11 no está en
+  `normas/`» **ya no es cierto**: HEC-11 (SI) entró y el requisito declara también la
+  alternativa granular con la Ec. (14) de su Sec. 4.4.1 (ficha N3-01). Sigue abierto que
+  EG-2013 no obliga a poner filtro y que sin el pasante no se elige columna del geotextil;
+  ahora también, que sin `D85_m` y `D15_m` del lecho no hay ventana granular.
 - **Dónde vive:** `src/modulos/M6_proteccion.py::requisito_de_filtro`
 
 ## T8-06 · La aceptación de T-8 se escribió después del código; el rojo se midió contra la base y la mutación de M6 se midió con el arnés
@@ -8983,6 +8992,16 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   protección no lo da la fuente para este caso.
 - **Qué haría falta:** HEC-11 (Brown y Clyde, 1989), al que la fuente remite el detalle del
   enrocado y el filtro, que no está en el repositorio de normas.
+- **Enmendado (N3, 2026-11-24; dictamen del consultor):** HEC-11 (SI) está en el
+  repositorio de normas. **(1) se cierra, por analogía declarada:** e = max(2·D50, 0.30 m);
+  el 2·D50 sigue siendo la lectura del proyecto sobre HEC-14 y el piso de 300 mm es el de
+  HEC-11 Sec. 4.3 «for practical placement», **[C] aplicado por analogía** (HEC-14 remite a
+  HEC 11 el tamaño de la piedra, no el espesor; `Interpretacion` de la cita
+  `HEC11.4.3#300_MM`). El D100 y 1.5·D50 de la misma Sec. 4.3 quedan como comprobación.
+  Cambia el número sólo con D50 < 0.15 m (ficha N3-03). **(4) sigue abierto:**
+  HEC-11 trata revestimientos de talud y de cauce y no da el ancho de la protección a la
+  salida de una alcantarilla; su detalle de bordes (Sec. 4.6, Figuras 20 y 21) es de talud.
+  (2) y (3) no dependen de HEC-11 y siguen como estaban.
 - **Dónde vive:** `src/modulos/M6_proteccion.py::proteccion_tw_alto_hec14`
 
 ## VE5-M6-03 · La salida colgada se cierra con la caída recta de HEC-14 Cap. 11 (decisión del dueño: dentro del alcance)
@@ -9025,6 +9044,13 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   o «VARIABLE»). La Figura 10.1 de HEC-14 dibuja el muro de corte de la poza sin dimensión.
 - **Qué haría falta:** HEC-11 en `NORMAS_DIR/normas/` para el filtro granular; el plano tipo
   del dueño o una regla [A] declarada para el zampeado y el dentellón.
+- **Enmendado (N3, 2026-11-24):** el **ítem 31 se cierra** en lo que HEC-11 da: la Ec. (14)
+  de la Sec. 4.4.1 contra el D85 y el D15 del lecho, el pasante del filtro y el espesor de la
+  manta (ficha N3-01); queda fuera la manta de varias capas, que se avisa y no se diseña. El
+  **ítem 30 sigue abierto**: HEC-11 Sec. 4.6 dimensiona el pie de un revestimiento de talud
+  (zanja o pie lanzado, con 1.5 veces el volumen de prolongar la manta a 1V:2H hasta la
+  socavación), no el zampeado, la uña ni el dentellón de la entrada de una alcantarilla;
+  usarlo ahí sería una regla [A] que el dueño decide.
 - **Dónde vive:** `src/modulos/M6_proteccion.py::requisito_de_filtro`
 
 ## VE5-MET-01 · Metrados referidos al EG-2013 y cuadro de compatibilidad rasante-alcantarilla (Fase 11, entregables 8 y 9; ítem 8 del censo)
@@ -10382,3 +10408,101 @@ impreso que no es de cálculo: la huella de los criterios.
   alto se recorta a unos 650 px de diseño y «Barrido…» vuelve a quedar bajo
   la pestaña; el remedio de fondo es de layout, fuera de esta ronda.
 - **Dónde vive:** `gui/componentes.py::geometria_inicial`
+
+## N3-01 · El filtro granular bajo el enrocado sale de HEC-11 Sec. 4.4.1: un requisito con la ventana de una capa (plan 12, N3)
+
+- **Cerrado:** HEC-11 «Design of Riprap Revetment», versión métrica, entró al repositorio
+  de normas (fuente `HEC11`, [C]) y el requisito de filtro de la Fase 6 declara, junto al
+  geotextil de EG-2013, la alternativa GRANULAR: con el D85 y el D15 del lecho
+  (`material_lecho_salida.D85_m` y `.D15_m`, juntos, del EMS) y la piedra que rige, el paso
+  6.7f dice si la piedra puede ir directo sobre el suelo por la Ec. (14) («D15 grueso / D85
+  fino ≤ 5 < D15 grueso / D15 fino < 40», PDF 49, leída por imagen) y el 6.7g da la ventana
+  de tamaños de una manta de grava de una capa en sus dos interfaces; siempre, no más de 5 %
+  del filtro pasando el tamiz N.º 200 y de 0.15 a 0.38 m de espesor (0.10 a 0.20 m por capa
+  si hacen falta varias). Sin los datos se declara sin números. Con D50 > 0.91 m el
+  geotextil lleva cama de grava de 0.10 a 0.15 m (Sec. 4.4.2). Oráculo: el paso 13 del
+  Ejemplo 1 (PDF 66 a 68). La tubificación admite el 5 («5 or less»; `Interpretacion` de
+  `HEC11.4.4.1#EC_14`).
+- **Enmendado (dictamen del consultor, 2026-11-24, APROBADO CON CAMBIOS):** (a) con un
+  lecho **cohesivo** los pasos 6.7f y 6.7g salen sólo como información, la ventana no se
+  declara y se AVISA que la Ec. (14) queda fuera del marco de la fuente («on noncohesive
+  material», `HEC11.4.4#CUANDO`) y que la vía es el geotextil; no se dice que hagan falta
+  varias capas. (b) `D85_m` sin `D15_m` (o al revés) es `DatoFaltanteError` del que falta,
+  no dato inválido. (c) `D85_m` entra en `DATOS_CON_TECHO_DE_TRANSCRIPCION` y en la ficha
+  de `techos_de_transcripcion_fase_6` (aviso opt-in). (d) El NO_CUMPLE del paso 6.7f no
+  lo cuenta nadie como incumplimiento del punto: resúmenes, JSON y aceptación leen
+  `Verificacion`, no pasos sueltos (como el paso F4.HO).
+- **Abierto:** (1) cuál de los dos filtros se pone lo decide el expediente: HEC-11 Sec. 4.4.2
+  deja la elección al costo y a la disponibilidad, sin regla, y el metrado de la Fase 11 sigue
+  midiendo el geotextil (`F11.ENROCADO`); (2) la manta de varias capas no se diseña: se avisa
+  con la frase de la fuente; (3) el espesor dentro de 0.15–0.38 m depende del paralelismo de
+  las curvas, que el programa no juzga sin la curva del filtro.
+- **Qué haría falta:** el D85 y el D15 del lecho en el EMS por punto; la decisión del
+  expediente entre geotextil y grava (y, con grava, que el metrado mida la manta en m³).
+- **Dónde vive:** `src/modulos/M6_proteccion.py::filtro_granular_hec11`
+
+## N3-02 · El D15 de la piedra es la banda de la Tabla 2 de HEC-11, no una curva (lectura del proyecto)
+
+- **Qué se difirió:** elegir UNA curva granulométrica del enrocado de salida. El programa
+  dimensiona el D50 y nadie especifica todavía la curva, y la Ec. (14) necesita el D15.
+- **Por qué:** la Sec. 4.2 de HEC-11 pide que la especificación fije dos curvas límite y que
+  la piedra de obra caiga entre ellas, y su Tabla 2 da el D15 entre 0.4 y 0.6·D50. El filtro
+  tiene que servir a toda piedra admitida, de modo que cada relación se forma con el extremo
+  que la exige más (`Interpretacion` de la cita `HEC11.4.2#T2`, con lo que juega en contra:
+  los ejemplos de la fuente usan una curva, y con la banda la grava del Ejemplo 1 no cabe). La
+  fila del 50 % de la Tabla 2 de esta versión trae «1.0 D50 to 1.4 D50» con una columna de
+  pesos que da 1.0 a 1.145: no se usa y se dice en la nota de la cita.
+- **Qué haría falta:** que el expediente adopte la granulometría del enrocado (la Tabla 2 o
+  la Tabla 3 de clases), con lo que cerraría también «falta la granulometría completa» de la
+  advertencia de la Fase 6 (`ADVERTENCIA_NO_ES_DISENO`); entonces la Ec. (14) se forma con esa
+  curva.
+- **Dónde vive:** `src/normativa/citas.py::INTERPRETACION_BANDA_T2_HEC11`
+
+## N3-03 · El espesor de la protección con el receptor alto toma, por analogía, el piso de 300 mm de HEC-11 Sec. 4.3 (cierra el abierto (1) de VE5-M6-02)
+
+- **Cerrado:** e = max(2·D50, 0.30 m). El 2·D50 es la lectura del proyecto sobre el piso que
+  HEC-14 pone a la poza y al apron; los 0.30 m son el piso de HEC-11 Sec. 4.3, «It should not
+  be less than 300 mm for practical placement», **[C] aplicado por analogía** (dictamen del
+  consultor, 2026-11-24): HEC-14 Sec. 10.1.3 remite a HEC 11 o a su Sec. 10.3 «for sizing
+  riprap» —el tamaño, no el espesor— y HEC-11 trata taludes; lo declara la `Interpretacion`
+  de la cita `HEC11.4.3#300_MM`, con eso en contra y, a favor, que es un piso constructivo y
+  que los ejemplos de HEC-11 toman T = 2·D50. El primer criterio de la Sec. 4.3 (no menos que
+  el D100 ni que 1.5·D50) queda como COMPROBACIÓN en la sustitución del paso 6.5t: el D100 se
+  toma en el techo de la fila del 100 % de la Tabla 2 (1.7·D50), que la Sec. 4.3 no escribe, y
+  el 2·D50 lo domina siempre. El +50 % para la piedra colocada bajo agua no se aplica y sale
+  como AVISO del punto con la frase de la fuente (`HEC11.4.3#BAJO_AGUA`): con el receptor
+  sobre la clave esa colocación es probable. Medido en `tests/test_ve5_m6_figura_10_3.py`: con
+  Vo = 2 m/s (D50 = 0.0855 m) el espesor pasa de 0.171 a 0.300 m; con Vo = 4 m/s sigue en
+  2·D50. Ninguna corrida de la línea base ni de referencia llega al receptor alto.
+- **Abierto:** (1) el +50 % bajo agua depende del procedimiento de colocación del expediente;
+  (2) el piso de 300 mm **no** se extiende al apron, a la poza ni a la regla «manual»
+  (dictamen del consultor): hacerlo sería una regla [A] que decide el dueño; (3) la analogía
+  misma la tiene que ratificar el dueño al integrar.
+- **Qué haría falta:** el procedimiento de colocación para (1); una decisión del dueño para
+  (2) y (3).
+- **Dónde vive:** `src/modulos/M6_proteccion.py::proteccion_tw_alto_hec14`
+
+## N3-04 · HEC-11 (SI) entra sin folio, sin firma y con sucesora: la FHWA la archiva y la sustituye por HEC-23
+
+- **Qué se difirió:** firmar las dieciséis citas de HEC-11 y fijar qué edición rige.
+- **Por qué:** el ejemplar es la captura web de la FHWA (Acrobat Web Capture, 2000) y no
+  imprime número de página en ninguna de sus 193 hojas: paginación `SinDeterminar`, «s/n»
+  como página impresa y sin firma por el invariante T6, con el precedente de `HDS5_SI_1985` y
+  `AASHTO_M294_TRAD`; están censadas en `CITAS_SIN_FIRMA_A_PROPOSITO` y T2/T3 las comprueban
+  contra el PDF. La biblioteca de la FHWA la lista entre las archivadas, «Superseded By
+  HEC-23» (leída en N3), y HEC-23 es otro documento: la vigencia queda «edición posterior
+  detectada» y HEC-11 entra en la elección de `edicion_que_rige_el_expediente`, que pasa de
+  seis a siete fuentes técnicas. HEC-14, vigente, la nombra por su edición de 1989.
+- **Abierto (dictamen del consultor, 2026-11-24):** la memoria imprime «[cita NO
+  verificada]» junto a las dieciséis citas, como con `AASHTO_M294_TRAD`. Se acepta y el
+  invariante T6 no se relaja; lo que falta es un rótulo propio para las citas de una fuente
+  sin folio, que diga que se leyeron y que no se pueden firmar (`Cita.como_texto`). Y para
+  HEC-11 la opción «vigente» de `edicion_que_rige_el_expediente` no es reverificar citas sino
+  cambiar de documento y de método (HEC-23), mientras HEC-14, vigente, sigue remitiendo a
+  HEC 11: lo dice la justificación del criterio.
+- **Qué haría falta:** leer HEC-23 3.ª ed. (2009), Vol. 2, su guía de diseño de filtros, y
+  contrastar sus criterios con la Ec. (14); confirmar si hay una edición de HEC-23 posterior a
+  2009; la declaración del proyectista en `edicion_que_rige_el_expediente`; el rótulo propio
+  de las citas sin folio; y que el dueño ratifique al integrar la nota «Corregido (N3)» de la
+  Fase 6 de la hoja de ruta.
+- **Dónde vive:** `src/normativa/fuentes.py::HEC11`

@@ -201,8 +201,9 @@ N° 11 del Manual (el material del cauce a la salida y a la entrada) y
 la velocidad se compara con la admisible del terreno, y si la de salida no la
 supera no hay enrocado que dimensionar. `material_lecho_salida` es el suelo del
 lecho (`tipo` `no_cohesivo` con `D84_m` y `D16_m`, o `cohesivo` con `IP` y
-`Sv_Pa`, y `pasa_200_pct`): con él se estima la hoya de socavación de HEC-14
-y se elige el geotextil de filtro. `duracion_caudal_pico_min` cae en el
+`Sv_Pa`, `pasa_200_pct` y, desde N3, `D85_m` y `D15_m`): con él se estima la
+hoya de socavación de HEC-14, se elige el geotextil de filtro y se da la
+ventana del filtro granular de HEC-11. `duracion_caudal_pico_min` cae en el
 criterio `duracion_caudal_pico_socavacion_min` (30 min), y
 `profundidad_socavacion_estimada_m`, de un estudio del cauce, gana sobre la
 hoya estimada. Sin ellas la Fase 6 calcula lo que puede y lo avisa: el d₅₀ de

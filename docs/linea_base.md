@@ -1091,3 +1091,27 @@ margen cero bajo la hoya) no mueven ninguna cifra aquí. Lo que se mueve:
 - En la memoria completa del expediente, la justificación de `factor_muro_eleccion`, que dice
   ahora que la reducción de k_h sólo se acepta con el armado del muro que cede (un solo régimen,
   decisión 12; ficha VE3-18).
+
+## 30. N3 del plan 12: el filtro granular de HEC-11; ningún número de cálculo se mueve (2026-11-24)
+
+Regenerada con `sh tests/linea_base_familia_c/regenerar.sh` (con el Python del proyecto primero
+en el `PATH`) sobre `3ced2e1`. Ningún punto de la línea base declara el D85 y el D15 del lecho,
+de modo que los pasos 6.7f y 6.7g del filtro granular no salen aquí, y ninguna corrida llega al
+receptor sobre la clave, donde cambia el espesor (piso de 300 mm de HEC-11 Sec. 4.3). Lo que se
+mueve:
+
+- La huella `criterios_sha1` en los cuatro JSON y en las memorias, y en las memorias la de la
+  hoja de ruta (nota «Corregido (N3)» de la Fase 6): el criterio
+  `edicion_que_rige_el_expediente` nombra ahora siete fuentes técnicas (suma HEC-11, archivada
+  por la FHWA y sustituida por HEC-23), y su concepto dice «(AASHTO, ASTM, FHWA)».
+- El requisito de filtro de cada punto con protección: su texto suma la alternativa granular
+  («NO SE DIMENSIONA: falta `material_lecho_salida.D85_m` y `material_lecho_salida.D15_m`»),
+  sus citas suman las nueve de HEC-11 Sec. 4.4.1 y 4.2 (que el anexo de la memoria lista, «pag.
+  impresa s/n · [cita NO verificada]»: la fuente no imprime folio, ficha N3-04), y el JSON suma
+  `filtro.granular` y `filtro.cama_de_grava_bajo_geotextil`.
+
+**Diámetros, secciones, materiales, HW, d50, espesores y longitudes movidos: ninguno.**
+
+Regenerada otra vez sobre `1b9aeb2`, con los cambios del dictamen del consultor: sólo las dos
+huellas (criterios y hoja de ruta) y, en la memoria completa, la ficha de
+`techos_de_transcripcion_fase_6`, que suma `'D85_m' (m)`. Ningún número se mueve.

@@ -5022,6 +5022,66 @@ HEC14_BORDE_EXPONENTE_RECTANGULAR = 1.5
 
 
 # ===========================================================================
+# --- N3 (plan 12, 2026-11-24) --- HEC-11 (SI), «Design of Riprap Revetment»
+# ===========================================================================
+# [C], CON EL MISMO REGIMEN QUE LOS BLOQUES DE HEC-14 DE ARRIBA: transcripcion
+# de una fuente tecnica de EE.UU. a la que HEC-14 remite el filtro bajo el
+# apron (HEC14.10.2#FILTRO) y el tamaño de la piedra con el receptor alto
+# (HEC14.10.1.3#FIGURA_10_3). No es norma peruana ni la vuelve tal estar
+# aqui. La fuente no imprime folio: las citas se localizan por numeral y
+# pagina PDF (`fuentes.HEC11`). Ninguno lleva sufijo `_SI` porque ninguno
+# depende de unidades salvo los que van en metros, que llevan `_M`: las
+# relaciones de la Ec. (14) son cocientes de diametros y el pasante es un
+# porcentaje.
+
+# Sec. 4.4.1, Ec. (14), PDF 49 (la ecuacion, por imagen):
+#   D15(grueso)/D85(fino) < 5 < D15(grueso)/D15(fino) < 40
+# «a filter ratio of 5 or less» (tubificacion; el texto admite el 5) y «should
+# exceed 5 but be less than 40» (permeabilidad y uniformidad). Que el 5 de la
+# tubificacion se admita es la `Interpretacion` de la cita HEC11.4.4.1#EC_14.
+HEC11_FILTRO_TUBIFICACION_MAX = 5.0
+HEC11_FILTRO_PERMEABILIDAD_MIN = 5.0
+HEC11_FILTRO_UNIFORMIDAD_MAX = 40.0
+# «Not more than 5 percent of the filter material should pass the No. 200
+# sieve.» (PDF 49). Requisito del material del FILTRO, en % en peso.
+HEC11_FILTRO_PASA_200_MAX_PCT = 5.0
+# «The thickness of the filter blanket should range from 150 mm to 380 mm for
+# a single layer, or from 100 mm to 200 mm for individual layers of a multiple
+# layer blanket.» (PDF 49-50). Intervalos (minimo, maximo), en metros.
+HEC11_FILTRO_ESPESOR_UNA_CAPA_M: Tuple[float, float] = (0.150, 0.380)
+HEC11_FILTRO_ESPESOR_VARIAS_CAPAS_M: Tuple[float, float] = (0.100, 0.200)
+# Sec. 4.4.2 (PDF 51): «A 100-150 mm gravel bedding layer should be placed
+# beneath the riprap layer for riprap gradations having D50 greater than
+# 0.91 m.» Es la precaucion de colocacion del GEOTEXTIL.
+HEC11_CAMA_DE_GRAVA_D50_MIN_M = 0.91
+HEC11_CAMA_DE_GRAVA_ESPESOR_M: Tuple[float, float] = (0.100, 0.150)
+# Sec. 4.2, Table 2 «Rock Riprap Gradation Limits» (PDF 47, por texto y por
+# imagen): (porcentaje que pasa, limite inferior, limite superior) del
+# tamaño en veces el D50. TRANSCRITA COMO SE IMPRIME, fila del 50 % incluida,
+# cuyo «1.4» no cuadra con su propia columna de pesos (1.0 a 1.5 W50 da 1.0 a
+# 1.145 D50 con W proporcional a D^3; nota de la cita HEC11.4.2#T2). El
+# proyecto lee SOLO la fila del 15 % y el techo de la del 100 %.
+HEC11_TABLA_2: Tuple[Tuple[float, float, float], ...] = (
+    (100.0, 1.5, 1.7),
+    (85.0, 1.2, 1.4),
+    (50.0, 1.0, 1.4),
+    (15.0, 0.4, 0.6),
+)
+HEC11_PERCENTIL_D15 = 15.0
+HEC11_PERCENTIL_D100 = 100.0
+# Sec. 4.3, «Layer Thickness» (PDF 48): no menos que el D100, ni que 1.5·D50,
+# «whichever results in the greater thickness», ni que 300 mm «for practical
+# placement». El 1.5 es solo COMPROBACION en el paso 6.5t (el 2·D50 de HEC-14
+# lo domina). El 0.300 es [C] APLICADO POR ANALOGIA al espesor de la
+# proteccion con el receptor alto (dictamen del consultor, 2026-11-24): HEC-14
+# remite a HEC 11 el tamaño de la piedra, no el espesor, y HEC-11 trata
+# taludes; `Interpretacion` de la cita HEC11.4.3#300_MM. (El +50 % bajo agua
+# depende de la colocacion y no se aplica: se avisa, cita HEC11.4.3#BAJO_AGUA.)
+HEC11_ENROCADO_ESPESOR_EN_D50 = 1.5
+HEC11_ENROCADO_ESPESOR_MIN_M = 0.300
+
+
+# ===========================================================================
 # --- T-5 --- (cadena T, 2026-11-12) Fase 8: estructural del conducto
 # ===========================================================================
 # DOS CLASES DE NUMERO EN ESTE BLOQUE, y no se mezclan:

@@ -631,6 +631,12 @@ def test_todo_fundamento_declarado_lo_usa_algun_paso(informe):
         # Lo mide tests/test_ve5_m6_figura_10_3.py, pieza a pieza y por la
         # Fase 6.
         "F6.TW_ALTO",
+        # --- N3 (plan 12) --- EL FILTRO GRANULAR de HEC-11 Sec. 4.4.1: solo
+        # con el D85 y el D15 del lecho (`material_lecho_salida.D85_m` y
+        # `.D15_m`), que esta corrida no trae. Lo miden
+        # tests/test_n3_hec11_filtro.py (pieza a pieza y por la Fase 6) y la
+        # corrida de referencia `materiales_y_ramas`, cuyo A-01 los declara.
+        "F6.FILTRO_GRANULAR",
         # LOS CINCO DEL CAJON, Y SU RAZON CAMBIO EN C5. Hasta C4 estaban aqui
         # porque EL PASO QUE LOS EMITIRIA NO EXISTIA. Ahora existe: los cinco
         # los emite `M2_material._pasos_del_marco` cuando el catalogo resuelve

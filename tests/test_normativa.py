@@ -645,6 +645,27 @@ CITAS_SIN_FIRMA_A_PROPOSITO = (
     # --- T-5 --- la quinta, misma razon: el num. 7.7 (ensayo de compresion)
     # con que M8 obtiene el area efectiva del perfil del HDPE.
     "AASHTO_M294_TRAD.7.7",
+    # --- N3 (plan 12) --- HEC-11 en su version metrica, por la PRIMERA
+    # razon: es la captura web de la FHWA y no imprime folio en ninguna de
+    # sus 193 hojas (`fuentes.HEC11`, `SinDeterminar`). Se leyeron en N3 por
+    # texto y, las de ecuacion o tabla, por imagen; T2/T3 las comprueban en
+    # cada corrida con `NORMAS_DIR`.
+    "HEC11.4.4#FUNCION",
+    "HEC11.4.4#CUANDO",
+    "HEC11.4.4.1#RELACION_5",
+    "HEC11.4.4.1#D15_D15",
+    "HEC11.4.4.1#EC_14",
+    "HEC11.4.4.1#INTERFACES",
+    "HEC11.4.4.1#VARIAS_CAPAS",
+    "HEC11.4.4.1#PASA_200",
+    "HEC11.4.4.1#ESPESOR",
+    "HEC11.4.4.1#ESPESOR_VARIAS_CAPAS",
+    "HEC11.4.4.1#PARALELAS",
+    "HEC11.4.4.2#CAMA_DE_GRAVA",
+    "HEC11.4.2#T2",
+    "HEC11.4.3#D100",
+    "HEC11.4.3#300_MM",
+    "HEC11.4.3#BAJO_AGUA",
     # --- VE-7, lote C (C1) y A11 --- la SEGUNDA razon (la fuente SI tiene
     # paginacion medida, pero la sesion que dio de alta la cita no tenia
     # `NORMAS_DIR`) tuvo un solo caso, `E060.22.10.2.2#VOLADIZO`, y CADUCO:

@@ -20,7 +20,9 @@
     "tipo": "no_cohesivo",
     "D84_m": 0.03,
     "D16_m": 0.002,
-    "pasa_200_pct": 8
+    "pasa_200_pct": 8,
+    "D85_m": 0.032,
+    "D15_m": 0.001
    },
    "duracion_caudal_pico_min": 60,
    "estabilidad_global_declarada": {

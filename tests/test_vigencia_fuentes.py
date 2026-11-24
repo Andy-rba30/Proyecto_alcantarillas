@@ -39,6 +39,9 @@ CLAVE_LEGAL = "edicion_legal_que_rige_el_expediente"
 CENSO_EDICION_POSTERIOR = (
     "MP", "HDS5_SI_1985", "AASHTO_LRFD_9", "AASHTO_M170M", "AASHTO_M36",
     "ASTM_A760", "ASTM_A796", "AASHTO_M294_TRAD",
+    # --- N3 (plan 12) --- HEC-11 (SI): la FHWA la archiva y la da por
+    # sustituida por HEC-23, que es otro documento (`fuentes.HEC11.vigencia`).
+    "HEC11",
 )
 
 # Ninguna quedo indeterminable en linea. Si una sesion futura marca alguna
@@ -63,6 +66,7 @@ DESIGNADOR_EN_LA_FICHA = {
     "ASTM_A760": "A760",
     "ASTM_A796": "A796",
     "AASHTO_M294_TRAD": "M 294",
+    "HEC11": "HEC-11",
 }
 
 
@@ -80,11 +84,13 @@ def test_toda_fuente_presente_declara_su_vigencia():
         assert fu.estado_de_vigencia(f) is f.vigencia.estado
         # Tres fechas, una por sesion que verifico contra el emisor: T1,
         # EXT-6 (DG-2018) y T-0 de la cadena T (HEC-14 y WSDOT).
-        # Y una cuarta desde VE-3.6 (el USBR de la Familia C).
+        # Y una cuarta desde VE-3.6 (el USBR de la Familia C), y una quinta
+        # desde N3 del plan 12 (HEC-11).
         assert f.vigencia.fecha in (fu.VIGENCIA_VERIFICADA_EL,
                                     fu.VIGENCIA_VERIFICADA_EL_EXT6,
                                     fu.VIGENCIA_VERIFICADA_EL_T0,
-                                    fu.VIGENCIA_VERIFICADA_EL_VE3), f.id
+                                    fu.VIGENCIA_VERIFICADA_EL_VE3,
+                                    fu.VIGENCIA_VERIFICADA_EL_N3), f.id
         assert f.vigencia.como.strip(), f.id
 
 
@@ -246,7 +252,7 @@ def test_la_ficha_del_criterio_nombra_a_cada_fuente_pendiente_y_solo_a_ellas():
     assert "HDS-5 (citada" not in c.justificacion and "HDS5_SI_1985" not in c.justificacion
     # Y el Manual de Puentes ya no esta en esta ventana: tiene la suya.
     assert "Manual de Puentes (el ejemplar" not in c.justificacion
-    assert "para las seis" in c.justificacion
+    assert "para las siete" in c.justificacion
 
 
 def test_la_ficha_legal_nombra_al_manual_de_puentes_y_exige_fecha_y_acto():

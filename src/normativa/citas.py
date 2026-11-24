@@ -9234,8 +9234,11 @@ HEC14_10_2_FILTRO = _cita(
         pagina_pdf=219),
     caracter=Caracter.RECOMENDACION,
     sesion=TESIS_T8,
-    nota=("HEC 11 no esta en el repositorio de normas: el diseño del filtro "
-          "no se transcribe. Lo que se cita es que el apron LLEVA filtro."),
+    nota=("Lo que se cita es que el apron LLEVA filtro. Hasta N3 HEC 11 no "
+          "estaba en el repositorio de normas y el filtro granular no se "
+          "dimensionaba; desde N3 (plan 12, 2026-11-24) esta (fuente HEC11, "
+          "version metrica) y su Sec. 4.4.1 da los criterios granulometricos "
+          "del filtro (citas HEC11.4.4.1#...)."),
 )
 
 HEC14_T1_1_APRON = _cita(
@@ -17531,6 +17534,475 @@ EG2013_603_10 = _cita(
           "riberas (603.01). El enrocado de salida de una alcantarilla no es "
           "una defensa ribereña: el EG-2013 no le da partida propia, y el "
           "metrado lo entrega en m3 para una partida especial del proyecto."),
+)
+
+# ===========================================================================
+# --- N3 (plan 12, 2026-11-24) --- HEC-11 (SI), «Design of Riprap Revetment»
+# ===========================================================================
+# El filtro granular bajo el enrocado de salida (Sec. 4.4), los limites
+# granulometricos del enrocado (Sec. 4.2, Tabla 2) y el espesor de la capa de
+# enrocado (Sec. 4.3). HEC-14 remite a esta fuente el filtro bajo el apron
+# (HEC14.10.2#FILTRO) y el tamaño de la piedra con el receptor alto
+# (HEC14.10.1.3#FIGURA_10_3).
+#
+# SIN FIRMA A PROPOSITO, TODAS, Y POR UNA SOLA RAZON: el ejemplar es la
+# captura web de la FHWA y no imprime folio (`fuentes.HEC11`, `SinDeterminar`);
+# el invariante T6 impide firmar una pagina PDF de una fuente sin paginacion
+# medida, y `pagina_impresa` dice «s/n». No es que esten sin leer: N3 las leyo
+# por texto en la pagina PDF que declaran y, las que tienen ecuacion o tabla,
+# tambien por imagen (`python -m src.normativa.extraccion png hec11si <pag>`),
+# y T2/T3 las comprueban en cada corrida con `NORMAS_DIR`, porque el texto es
+# extraible. Estan censadas en `tests/test_normativa.py::CITAS_SIN_FIRMA_A_
+# PROPOSITO`.
+_SIN_FOLIO_HEC11 = ("SIN FIRMA A PROPOSITO, no sin verificar: HEC-11 (SI) es "
+                    "la captura web de la FHWA y no imprime folio (`pagina_"
+                    "impresa` dice «s/n»), y el invariante T6 impide firmar "
+                    "una pagina PDF de una fuente sin paginacion medida. "
+                    "Leida en N3 (2026-11-24) en la pagina PDF declarada. ")
+
+HEC11_4_4_FUNCION = _cita(
+    id="HEC11.4.4#FUNCION",
+    fuente_id="HEC11",
+    numeral="4.4",
+    titulo_numeral="4.4 Filter Design",
+    pagina_impresa="s/n",
+    pagina_pdf=49,
+    texto_literal=Verbatim(
+        texto=("The filter prevents the migration of the fine soil particles "
+               "through voids in the structure, distributes the weight of the "
+               "armor units to provide more uniform settlement, and permits "
+               "relief of hydrostatic pressures within the soils."),
+        pagina_pdf=49),
+    caracter=Caracter.DEFINICION,
+    verificada=False,
+    nota=_SIN_FOLIO_HEC11 + (
+        "Es la frase que dice PARA QUE va el filtro: retener los finos del "
+        "suelo, repartir el peso de la piedra y aliviar la presion del agua."),
+)
+
+HEC11_4_4_CUANDO = _cita(
+    id="HEC11.4.4#CUANDO",
+    fuente_id="HEC11",
+    numeral="4.4",
+    titulo_numeral="4.4 Filter Design",
+    pagina_impresa="s/n",
+    pagina_pdf=49,
+    texto_literal=Verbatim(
+        texto=("A filter should be used whenever the riprap is placed on "
+               "noncohesive material subject to significant subsurface "
+               "drainage (such as in areas where water surface levels "
+               "fluctuate frequently and in areas of high groundwater "
+               "levels)."),
+        pagina_pdf=49),
+    caracter=Caracter.RECOMENDACION,
+    verificada=False,
+    nota=_SIN_FOLIO_HEC11 + (
+        "CUANDO va el filtro, para un revestimiento de talud o de cauce. En "
+        "la salida de la alcantarilla el proyecto no decide con esta frase: "
+        "HEC-14 lo pide bajo el apron sin condicion (HEC14.10.2#FILTRO), y el "
+        "filtro se declara siempre. La Sec. 4.4.2 deja la eleccion entre "
+        "granular y geotextil al costo y a la disponibilidad («The primary "
+        "justification is economic», PDF 50): ninguna regla de HEC-11 la "
+        "fija, y el programa declara los requisitos de los dos."),
+)
+
+HEC11_4_4_1_RELACION_5 = _cita(
+    id="HEC11.4.4.1#RELACION_5",
+    fuente_id="HEC11",
+    numeral="4.4.1",
+    titulo_numeral="4.4.1 Granular Filters",
+    jerarquia_numeral=("4.4 Filter Design",),
+    pagina_impresa="s/n",
+    pagina_pdf=49,
+    texto_literal=Verbatim(
+        texto=("For rock riprap, a filter ratio of 5 or less between layers "
+               "will usually result in a stable condition. The filter ratio "
+               "is defined as the ratio of the 15 percent particle size (D15) "
+               "of the coarser layer to the 85 percent particle size (D85) of "
+               "the finer layer."),
+        pagina_pdf=49),
+    caracter=Caracter.RECOMENDACION,
+    verificada=False,
+    nota=_SIN_FOLIO_HEC11 + (
+        "La relacion de TUBIFICACION de la Ec. (14): D15 del grueso / D85 del "
+        "fino, «5 or less». El 5 es `constantes_normativas."
+        "HEC11_FILTRO_TUBIFICACION_MAX` [C]."),
+)
+
+HEC11_4_4_1_D15_D15 = _cita(
+    id="HEC11.4.4.1#D15_D15",
+    fuente_id="HEC11",
+    numeral="4.4.1",
+    titulo_numeral="4.4.1 Granular Filters",
+    jerarquia_numeral=("4.4 Filter Design",),
+    pagina_impresa="s/n",
+    pagina_pdf=49,
+    texto_literal=Verbatim(
+        texto=("An additional requirement for stability is that the ratio of "
+               "the 15 percent particle size of the coarser material to the "
+               "15 percent particle size of the finer material should exceed "
+               "5 but be less than 40 (32)."),
+        pagina_pdf=49),
+    caracter=Caracter.RECOMENDACION,
+    verificada=False,
+    nota=_SIN_FOLIO_HEC11 + (
+        "La relacion D15 del grueso / D15 del fino: mayor que 5 "
+        "(permeabilidad) y menor que 40 (uniformidad). El «(32)» es la "
+        "referencia bibliografica 32 de la fuente, no un valor. Los dos "
+        "limites son `HEC11_FILTRO_PERMEABILIDAD_MIN` y "
+        "`HEC11_FILTRO_UNIFORMIDAD_MAX` [C]."),
+)
+
+HEC11_4_4_1_EC_14 = _cita(
+    id="HEC11.4.4.1#EC_14",
+    fuente_id="HEC11",
+    numeral="4.4.1, Ec. (14)",
+    titulo_numeral="4.4.1 Granular Filters",
+    jerarquia_numeral=("4.4 Filter Design",),
+    pagina_impresa="s/n",
+    pagina_pdf=49,
+    texto_literal=Verbatim(
+        texto=("The left side of the inequality in Equation 14 is intended to "
+               "prevent piping through the filter, the center portion "
+               "provides for adequate permeability for structural bedding "
+               "layers, and the right portion provides a uniformity "
+               "criterion."),
+        pagina_pdf=49),
+    caracter=Caracter.DEFINICION,
+    verificada=False,
+    interpretacion=Interpretacion(
+        texto=("La relacion de tubificacion (D15 del grueso / D85 del fino) "
+               "admite el 5 justo, como dice el texto («5 or less»); las dos "
+               "relaciones D15/D15 son estrictas, como dicen el texto y la "
+               "ecuacion («should exceed 5 but be less than 40»). Los tres "
+               "limites se comparan con la tolerancia de punto flotante del "
+               "proyecto, que no admite el borde de una desigualdad "
+               "estricta."),
+        en_contra=("la Ec. (14) imprime «< 5» tambien en el lado izquierdo, "
+                   "estricto",),
+        a_favor=("el texto que la ecuacion resume dice «a filter ratio of 5 "
+                 "or less»",
+                 "el paso 13 del Ejemplo 2 (PDF 82) acepta una relacion de "
+                 "tubificacion igual a 5 («= 5 ≥ 5») y declara el filtro "
+                 "adecuado")),
+    nota=_SIN_FOLIO_HEC11 + (
+        "LA ECUACION ES UNA IMAGEN y se leyo renderizando la PDF 49 a 2x: "
+        "«D15(Coarser Layer)/D85(Finer Layer) < 5 < D15(Coarser Layer)/"
+        "D15(Finer Layer) < 40», con el numero «(14)» al margen. El paso 13 "
+        "del Ejemplo 1 (PDF 66 a 68) la reimprime y la aplica a tres "
+        "interfaces; es el caso con que se contrasta "
+        "`M6.relaciones_de_filtro_hec11`."),
+)
+
+HEC11_4_4_1_INTERFACES = _cita(
+    id="HEC11.4.4.1#INTERFACES",
+    fuente_id="HEC11",
+    numeral="4.4.1",
+    titulo_numeral="4.4.1 Granular Filters",
+    jerarquia_numeral=("4.4 Filter Design",),
+    pagina_impresa="s/n",
+    pagina_pdf=49,
+    texto_literal=Verbatim(
+        texto=("The filter requirement applies between the bank material and "
+               "the filter blanket, between successive layers of filter "
+               "material if more than one layer is used, and between the "
+               "filter blanket and the riprap cover."),
+        pagina_pdf=49),
+    caracter=Caracter.DEFINICION,
+    verificada=False,
+    interpretacion=Interpretacion(
+        texto=("El «bank material» de HEC-11 es, en la salida de la "
+               "alcantarilla, el suelo del lecho donde apoya el apron "
+               "(`material_lecho_salida`): la manta va entre ese suelo y la "
+               "piedra, y la Ec. (14) se aplica en sus dos interfaces. Los "
+               "bordes de la ventana de una capa llevan la desigualdad de la "
+               "relacion que los fija."),
+        en_contra=("HEC-11 trata el revestimiento de taludes y cauces («bank "
+                   "protection»), no la salida de una alcantarilla, y no dice "
+                   "que suelo es el de un apron",),
+        a_favor=("HEC-14 Sec. 10.2 remite a HEC 11 la manta de filtro bajo el "
+                 "apron (HEC14.10.2#FILTRO), y el apron apoya sobre el lecho "
+                 "a la salida",)),
+    nota=_SIN_FOLIO_HEC11 + (
+        "Las dos interfaces de una manta de una capa: suelo-filtro y "
+        "filtro-enrocado."),
+)
+
+HEC11_4_4_1_VARIAS_CAPAS = _cita(
+    id="HEC11.4.4.1#VARIAS_CAPAS",
+    fuente_id="HEC11",
+    numeral="4.4.1",
+    titulo_numeral="4.4.1 Granular Filters",
+    jerarquia_numeral=("4.4 Filter Design",),
+    pagina_impresa="s/n",
+    pagina_pdf=49,
+    texto_literal=Verbatim(
+        texto=("If a single layer of filter material will not satisfy the "
+               "filter requirements, one or more additional layers of filter "
+               "material must be used."),
+        pagina_pdf=49),
+    caracter=Caracter.EXIGENCIA,
+    verificada=False,
+    nota=_SIN_FOLIO_HEC11 + (
+        "Cuando la ventana de una capa queda vacia el programa lo avisa y no "
+        "diseña las capas: el numero y la granulometria de cada una son del "
+        "expediente."),
+)
+
+HEC11_4_4_1_PASA_200 = _cita(
+    id="HEC11.4.4.1#PASA_200",
+    fuente_id="HEC11",
+    numeral="4.4.1",
+    titulo_numeral="4.4.1 Granular Filters",
+    jerarquia_numeral=("4.4 Filter Design",),
+    pagina_impresa="s/n",
+    pagina_pdf=49,
+    texto_literal=Verbatim(
+        texto=("Not more than 5 percent of the filter material should pass "
+               "the No. 200 sieve."),
+        pagina_pdf=49),
+    caracter=Caracter.RECOMENDACION,
+    verificada=False,
+    nota=_SIN_FOLIO_HEC11 + (
+        "Requisito del MATERIAL del filtro, no del suelo: el 5 es "
+        "`HEC11_FILTRO_PASA_200_MAX_PCT` [C]. La frase anterior pide ademas "
+        "curvas «approximately parallel», que no tiene numero."),
+)
+
+HEC11_4_4_1_ESPESOR = _cita(
+    id="HEC11.4.4.1#ESPESOR",
+    fuente_id="HEC11",
+    numeral="4.4.1",
+    titulo_numeral="4.4.1 Granular Filters",
+    jerarquia_numeral=("4.4 Filter Design",),
+    pagina_impresa="s/n",
+    pagina_pdf=49,
+    texto_literal=Verbatim(
+        texto=("The thickness of the filter blanket should range from 150 mm "
+               "to 380 mm for a single"),
+        pagina_pdf=49),
+    caracter=Caracter.RECOMENDACION,
+    verificada=False,
+    nota=_SIN_FOLIO_HEC11 + (
+        "LA FRASE CRUZA EL SALTO DE PAGINA: sigue en la PDF 50 («layer, or "
+        "from 100 mm to 200 mm for individual layers of a multiple layer "
+        "blanket.»). El `texto_literal` es la mitad de la PDF 49, que lleva "
+        "los limites de la manta de UNA capa (`HEC11_FILTRO_ESPESOR_UNA_"
+        "CAPA_M` [C]); la otra mitad es HEC11.4.4.1#ESPESOR_VARIAS_CAPAS."),
+)
+
+HEC11_4_4_1_ESPESOR_VARIAS_CAPAS = _cita(
+    id="HEC11.4.4.1#ESPESOR_VARIAS_CAPAS",
+    fuente_id="HEC11",
+    numeral="4.4.1",
+    titulo_numeral="4.4.1 Granular Filters",
+    jerarquia_numeral=("4.4 Filter Design",),
+    pagina_impresa="s/n",
+    pagina_pdf=50,
+    pagina_pdf_titulo=49,
+    texto_literal=Verbatim(
+        texto=("or from 100 mm to 200 mm for individual layers of a multiple "
+               "layer blanket."),
+        pagina_pdf=50),
+    caracter=Caracter.RECOMENDACION,
+    verificada=False,
+    nota=_SIN_FOLIO_HEC11 + (
+        "La segunda mitad de la frase de HEC11.4.4.1#ESPESOR, en la PDF 50: "
+        "el espesor de CADA capa de una manta de varias "
+        "(`HEC11_FILTRO_ESPESOR_VARIAS_CAPAS_M` [C])."),
+)
+
+HEC11_4_4_1_PARALELAS = _cita(
+    id="HEC11.4.4.1#PARALELAS",
+    fuente_id="HEC11",
+    numeral="4.4.1",
+    titulo_numeral="4.4.1 Granular Filters",
+    jerarquia_numeral=("4.4 Filter Design",),
+    pagina_impresa="s/n",
+    pagina_pdf=50,
+    pagina_pdf_titulo=49,
+    texto_literal=Verbatim(
+        texto=("Where the gradation curves of adjacent layers are "
+               "approximately parallel, the thickness of the blanket layers "
+               "should approach the minimum."),
+        pagina_pdf=50),
+    caracter=Caracter.RECOMENDACION,
+    verificada=False,
+    nota=_SIN_FOLIO_HEC11 + (
+        "Lo que mueve el espesor DENTRO del intervalo: el paralelismo de las "
+        "curvas, que el programa no puede juzgar sin la curva del filtro. "
+        "Los dos ejemplos de la fuente toman 200 mm (PDF 68 y 82). El "
+        "espesor adoptado es del expediente; el programa declara el "
+        "intervalo."),
+)
+
+HEC11_4_4_2_CAMA_DE_GRAVA = _cita(
+    id="HEC11.4.4.2#CAMA_DE_GRAVA",
+    fuente_id="HEC11",
+    numeral="4.4.2",
+    titulo_numeral="4.4.2 Fabric Filters",
+    jerarquia_numeral=("4.4 Filter Design",),
+    pagina_impresa="s/n",
+    pagina_pdf=51,
+    pagina_pdf_titulo=50,
+    texto_literal=Verbatim(
+        texto=("A 100-150 mm gravel bedding layer should be placed beneath "
+               "the riprap layer for riprap gradations having D50 greater "
+               "than 0.91 m."),
+        pagina_pdf=51),
+    caracter=Caracter.RECOMENDACION,
+    verificada=False,
+    nota=_SIN_FOLIO_HEC11 + (
+        "Es una de las precauciones de colocacion del geotextil («Heavy "
+        "riprap may stretch the cloth as it settles»): con un D50 mayor que "
+        "0.91 m la piedra va sobre una cama de grava y no directo sobre el "
+        "geotextil. Los dos numeros son `HEC11_CAMA_DE_GRAVA_D50_MIN_M` y "
+        "`HEC11_CAMA_DE_GRAVA_ESPESOR_M` [C]."),
+)
+
+INTERPRETACION_BANDA_T2_HEC11 = Interpretacion(
+    texto=("El enrocado de salida se especifica con los limites "
+           "granulometricos de la Tabla 2 de HEC-11 alrededor del D50 que "
+           "rige, y la piedra que llegue a obra puede caer en cualquier "
+           "punto entre ellos. El filtro tiene que servir a TODA piedra "
+           "admitida, de modo que cada relacion de la Ec. (14) se comprueba "
+           "con el extremo de la banda del D15 que la exige mas: la de "
+           "tubificacion y la de uniformidad con el D15 grueso (0.6·D50), la "
+           "de permeabilidad con el D15 fino (0.4·D50)."),
+    en_contra=("los dos ejemplos de la fuente comprueban la Ec. (14) con el "
+               "D15 de UNA curva del enrocado (la de su Form 3), no con la "
+               "banda, y con la banda la ventana del filtro es mas estrecha: "
+               "el filtro del Ejemplo 1 (D15 = 0.030 m) no cabe en la "
+               "ventana de la banda de su D50 de 0.29 m",
+               "la Tabla 2 es una guia («suggested guidelines») y la Tabla 3 "
+               "da clases con otros percentiles (10 o 5 %), sin el 15 %"),
+    a_favor=("la propia Sec. 4.2 pide que la especificacion fije dos curvas "
+             "limite y que la granulometria de campo caiga entre ellas: lo "
+             "que se especifica es la banda, no una curva",
+             "es el lado conservador: un filtro que cumple con los dos "
+             "extremos cumple con cualquier curva entre ellos"),
+)
+
+HEC11_4_2_T2 = _cita(
+    id="HEC11.4.2#T2",
+    fuente_id="HEC11",
+    numeral="4.2, Table 2",
+    titulo_numeral="4.2 Rock Gradation",
+    pagina_impresa="s/n",
+    pagina_pdf=47,
+    texto_literal=Verbatim(
+        texto=("Specifications should provide for two limiting gradation "
+               "curves, and the stone gradation (as determined from a field "
+               "test sample) should lay within these limits. The gradation "
+               "limits should not be so restrictive that production costs "
+               "would be excessive. Table 2 presents suggested guidelines for "
+               "establishing gradation limits."),
+        pagina_pdf=47),
+    caracter=Caracter.RECOMENDACION,
+    metodo=AMBOS,
+    verificada=False,
+    interpretacion=INTERPRETACION_BANDA_T2_HEC11,
+    nota=_SIN_FOLIO_HEC11 + (
+        "LA TABLA 2, «Table 2. Rock Riprap Gradation Limits», leida por "
+        "texto y por imagen (PDF 47 a 2x): «Stone Size Range (m)» / «Stone "
+        "weight Range (kilograms)» / «Percent of Gradation Smaller Than»: "
+        "1.5 D50 to 1.7 D50 / 3.0 W50 to 5.0 W50 / 100; 1.2 D50 to 1.4 D50 / "
+        "2.0 W50 to 2.75 W50 / 85; 1.0 D50 to 1.4 D50 / 1.0 W50 to 1.5 W50 / "
+        "50; 0.4 D50 to 0.6 D50 / 0.1 W50 to 0.2 W50 / 15. Transcrita en "
+        "`HEC11_TABLA_2` [C]. LA FILA DEL 50 % TRAE UNA INCOHERENCIA INTERNA "
+        "que no se corrige: con W proporcional a D^3 su columna de pesos da "
+        "1.0 a 1.145 D50, no 1.4 (las otras tres filas cuadran: 0.46-0.58, "
+        "1.26-1.40, 1.44-1.71). El proyecto usa SOLO la fila del 15 % (la "
+        "banda del D15 para la Ec. 14) y el techo de la del 100 % (el D100 "
+        "maximo, contra el espesor de la Sec. 4.3)."),
+)
+
+HEC11_4_3_D100 = _cita(
+    id="HEC11.4.3#D100",
+    fuente_id="HEC11",
+    numeral="4.3",
+    titulo_numeral="4.3 Layer Thickness",
+    pagina_impresa="s/n",
+    pagina_pdf=48,
+    texto_literal=Verbatim(
+        texto=("It should not be less than the spherical diameter of the D100 "
+               "(W100) stone, or less than 1.5 times the spherical diameter of "
+               "the D50 (W50) stone, whichever results in the greater "
+               "thickness."),
+        pagina_pdf=48),
+    caracter=Caracter.RECOMENDACION,
+    verificada=False,
+    nota=_SIN_FOLIO_HEC11 + (
+        "Primer criterio del espesor de la capa de enrocado. Con el D100 de "
+        "la Tabla 2 (1.5 a 1.7 D50) el mayor de los dos es a lo sumo 1.7·D50, "
+        "de modo que el piso de 2·D50 que el proyecto toma de HEC-14 lo "
+        "cumple siempre: es COMPROBACION en el paso 6.5t y no entra en el "
+        "espesor."),
+)
+
+HEC11_4_3_300_MM = _cita(
+    id="HEC11.4.3#300_MM",
+    fuente_id="HEC11",
+    numeral="4.3",
+    titulo_numeral="4.3 Layer Thickness",
+    pagina_impresa="s/n",
+    pagina_pdf=48,
+    texto_literal=Verbatim(
+        texto="It should not be less than 300 mm for practical placement.",
+        pagina_pdf=48),
+    caracter=Caracter.RECOMENDACION,
+    verificada=False,
+    interpretacion=Interpretacion(
+        texto=("El piso de 300 mm de la capa de enrocado se aplica POR "
+               "ANALOGIA ([C]) al espesor de la proteccion de salida con el "
+               "receptor sobre la clave, donde la Sec. 10.3 de HEC-14 da la "
+               "piedra y no el espesor: e = max(2·D50, 0.30 m), con el 2·D50 "
+               "que HEC-14 pone a la poza y al apron. El primer criterio de "
+               "la misma Sec. 4.3 (no menos que el D100 ni que 1.5·D50) es "
+               "solo comprobacion: con el D100 en el techo de la fila del "
+               "100 % de la Tabla 2 (1.7·D50) el 2·D50 lo domina."),
+        en_contra=("HEC-14 Sec. 10.1.3 (pag. impresa 10-4) remite a HEC 11 «or "
+                   "the method provided in Section 10.3» para «sizing "
+                   "riprap»: el TAMAÑO de la piedra, como alternativa a la "
+                   "Sec. 10.3, no el espesor de la capa",
+                   "HEC-11 trata el revestimiento de taludes y cauces («bank "
+                   "protection»), no la proteccion a la salida de una "
+                   "alcantarilla",
+                   "el 1.7·D50 del D100 no esta en la Sec. 4.3: es el techo "
+                   "de la fila del 100 % de la Tabla 2 tomado como D100"),
+        a_favor=("la frase lo da como piso CONSTRUCTIVO, «for practical "
+                 "placement», que no depende de que proteja la capa",
+                 "los dos ejemplos de HEC-11 toman T = 2·D50 para la capa "
+                 "(paso 10, PDF 65 y 80), el mismo multiplo que el proyecto "
+                 "toma de HEC-14")),
+    nota=_SIN_FOLIO_HEC11 + (
+        "Segundo criterio: el piso absoluto de la capa de enrocado, "
+        "`HEC11_ENROCADO_ESPESOR_MIN_M` [C] aplicado por analogia (dictamen "
+        "del consultor, 2026-11-24). Rige el espesor de la proteccion con el "
+        "receptor alto (`M6.proteccion_tw_alto_hec14`), donde HEC-14 remite "
+        "a HEC 11 el tamaño de la piedra (HEC14.10.1.3#FIGURA_10_3), y no se "
+        "extiende al apron, a la poza ni a la regla manual."),
+)
+
+HEC11_4_3_BAJO_AGUA = _cita(
+    id="HEC11.4.3#BAJO_AGUA",
+    fuente_id="HEC11",
+    numeral="4.3",
+    titulo_numeral="4.3 Layer Thickness",
+    pagina_impresa="s/n",
+    pagina_pdf=48,
+    texto_literal=Verbatim(
+        texto=("The thickness determined by either 1 or 2 should be increased "
+               "by 50 percent when the riprap is placed underwater to provide "
+               "for uncertainties associated with this type of placement."),
+        pagina_pdf=48),
+    caracter=Caracter.RECOMENDACION,
+    verificada=False,
+    nota=_SIN_FOLIO_HEC11 + (
+        "Depende de COMO se coloca la piedra --bajo agua o en seco--, que es "
+        "una condicion de obra que el programa no conoce: no se aplica. Con "
+        "el receptor sobre la clave esa colocacion es probable, y la Fase 6 "
+        "lo AVISA en el punto con esta frase."),
 )
 
 CITAS: Dict[str, Cita] = {c.id: c for c in _TODAS}
