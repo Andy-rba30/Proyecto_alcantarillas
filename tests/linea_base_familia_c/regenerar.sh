@@ -113,7 +113,10 @@ trap 'rm -rf "$TMP"' EXIT
 # CLI lo escribe con `/` (`as_posix`, en el JSON) o con `\` (`Path`, en el
 # texto). `TMP_WIN` es esa ruta con cualquiera de las dos barras, y despues de
 # `<SALIDA>` la barra se vuelve `/`. En Linux no hay `cygpath`: `TMP_WIN` es
-# `$TMP`, que ya se reemplazo, y las dos expresiones no encuentran nada.
+# `$TMP`, que ya se reemplazo, y las dos expresiones no encuentran nada. Lo
+# mismo con el CSV de entrada, que va RELATIVO: la CLI lo imprime con el
+# separador nativo (`tests\ejemplo_puntos.csv` en Windows) en el texto y en la
+# memoria, y la linea base lo guarda con `/` (el JSON ya usa `as_posix`).
 TMP_WIN="$TMP"
 if command -v cygpath >/dev/null 2>&1; then
   TMP_WIN="$(cygpath -m "$TMP" | sed 's#/#[/\\]\\{1,2\\}#g')"
@@ -201,7 +204,8 @@ norm () {
       -e 's#[0-9]\{2\}/[0-9]\{2\}/[0-9]\{4\} [0-9]\{2\}:[0-9]\{2\}#<FECHA>#g' \
       -e "s#$TMP#<SALIDA>#g" \
       -e "s#$TMP_WIN#<SALIDA>#g" \
-      -e 's#<SALIDA>[\]\{1,2\}#<SALIDA>/#g' "$1"
+      -e 's#<SALIDA>[\]\{1,2\}#<SALIDA>/#g' \
+      -e 's#tests\\ejemplo_puntos\.csv#tests/ejemplo_puntos.csv#g' "$1"
 }
 # LAS MEMORIAS HTML LLEVAN LA ADVERTENCIA DE FIXTURE (T-12, INF-5.2.4): la
 # pone este generador, despues de normalizar y FUERA del programa, con un

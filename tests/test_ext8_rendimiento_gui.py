@@ -248,7 +248,14 @@ CORRIDAS_IMPORT_CLI = 7
 # cinco franjas, ficha VE7-01, y el canto del portico que cierra, VE7B-11;
 # no se desglosaron rubro a rubro). El techo sube a la medida nueva, pegado
 # como los anteriores.
-KB_POR_PUNTO_MAX = 112.45
+# --- integracion de N2 del plan 12 (2026-11-24) --- 113.10 KB por punto,
+# medidos con este mismo metodo sobre la rama con N3 y N2 (132ae3b): +0.69 KB
+# marginales por punto, todos de N2 --- el texto de V5 sobre la faja marginal
+# con la Ley 29338, su Reglamento y el RNGIV, la frase de la autorizacion de
+# la obra ante la autoridad del agua y sus citas ---; N3 (el filtro granular)
+# medido sobre 9613621 deja 112.41, igual que antes. El techo sube a la medida
+# nueva, pegado como los anteriores.
+KB_POR_PUNTO_MAX = 113.15
 # Paginas por punto: 14.0 medidas en EXT-8; 16.0 en E-A con los dos pasos
 # del perfil por escalon; 18.7 sobre `5bca7c6` y 20.7 con T-6, 31.7 con
 # T-3, 32.3 con T-9 y 31.0 con T-10 (ver arriba).
