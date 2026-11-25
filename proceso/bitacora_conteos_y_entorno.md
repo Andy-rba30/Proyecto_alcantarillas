@@ -2915,3 +2915,22 @@ este árbol con la falla declarada como hallazgo abierto con ficha.
 **Windows.** La CI (`windows-latest`, Python 3.13, sin `NORMAS_DIR`) corrió la suite rápida sobre
 `d3de71c` (run 45361886119): `1 failed` (el sello), `8782 passed, 185 skipped`. La suite completa
 de la ronda 3 en la máquina del dueño sigue pendiente.
+
+
+## Cierre en Windows de N1, N2 y N3, EXT-8-07, WIN-04 y C3 (2026-11-25): el par MEDIDO, sellado en `e2b5d07`
+
+Cierre completo en Windows del lote N1–N3 junto con la resolución del presupuesto de `import cli` (`EXT-8-07`) y los ajustes de compatibilidad Windows (`WIN-04`) detectados al correr la suite sobre `07a784e`.
+
+Árbol del código sellado: `claude/confident-cannon-0vgath` en `4bf340f` = `7252e82` + `7707bed` (carga perezosa de `M11_reporte` por `__getattr__` en `cli.py` y de `M12_metrados` y `MH_hidrologia` por `_ModuloPerezoso` e imports locales en `src/servicio.py`, bajando `_cpu_de_import_cli` medido en Windows de `0.3281 s` a `0.2656 s < 0.30 s`; ficha `EXT-8-07` y guardia `test_pc10_import_cli_difiere_reporte_metrados_e_hidrologia`) + `940333a` (geometría escalada por ppp en `UI-4` `test_c0` y `VE-5` `test_38`, comparador con separador nativo `str(Path(...))` en `UI-4` `test_c5`, y `timeout = 1500` s en `tests/test_ext5_forma_gui.py`; ficha `WIN-04`) + `4bf340f` (fichas e índice regenerado de `docs/decisiones_diferidas.md`). Sellado en `e2b5d07` (`docs/indice_formulas.md` y `docs/trazabilidad.csv`, sin cambiar cálculo ni código). En el repositorio de normas (`Andy-rba30/Normas`, rama `claude/normas2-integracion`), commit `4dea7ed` sobre `1991bef`: restaurado el blob exacto de `LEY_29338` (`11,007,041` bytes, SHA-1 `ac47b59be519288b6aaa3d0eb32bc2b96dd80416`) con `core.autocrlf = false` y declaradas `*.pdf binary` y `*.PDF binary` en `.gitattributes` delante de la regla LFS de `normas_2/HDMcombined 882025.pdf`.
+
+Entorno medido: Windows 11 Home (`10.0.26300`, Build `26300`), `16` hilos lógicos, escala de pantalla `125 %` (`AppliedDPI = 120`), Python `3.13.2`, Tk `8.6`, PyMuPDF `1.28.2`, WeasyPrint `69.0`, `NORMAS_DIR` = clon en `4dea7ed`, worktree limpio (`D:\alc_limpio`). La corrida paralela de `4bf340f` sumó `63617.67 s` (`17 h 40 min 17 s`) de pared porque incluyó ~`15 h 40 min` de hibernación nocturna programada (`2026-11-24 17:30` a `2026-11-25 09:10`); el tiempo activo real fue ~`2 h 00 min`.
+
+| Suite y árbol | `NORMAS_DIR` | Ventana Tk | `passed` | `skipped` | `collected` |
+|---|---|---|---|---|---|
+| entregable, `4bf340f`, worktree limpio Windows, `-n auto` (16) `--dist loadfile` | sí | sí | 9277 + los 2 de sello (PROVISIONAL antes de sellar; verdes tras `e2b5d07`) | 29 | 9308 (+1 `aislado` deseleccionado) |
+| entregable, `4bf340f`, paso `-m aislado` sin `-n` (19.31 s) | sí | sí | 1 | 0 | 1 (9308 deseleccionados) |
+| **entregable, `4bf340f`, par del sello (`e2b5d07`)** | sí | sí | **9280** | **29** | **9309** |
+| entregable, `e2b5d07`, tras sellar: sello y sincronía (`test_trazabilidad_csv`, `test_indice_formulas`, `test_ext9_paquete_servicio`, `test_manifiesto_citas`, 298.78 s) | sí | sí | 73 | 0 | 73 |
+| proceso (`python -m pytest proceso/tests`), `e2b5d07` / cierre | sí | — | 145 | 0 | 145 |
+
+Los `29` saltos en Windows corresponden a los `13` de diseño de `tests/test_familias_del_csv.py` más `16` saltos de plataforma Windows/POSIX (`WIN-01` a `WIN-04`), con `0 errors`. Verificación C3 PyInstaller (`6.19.0`) en Windows 11: compilación de `empaquetado/proyecto_alcantarillas.spec` limpia (`rc = 0`), generando `alcantarillas_cli.exe` (`17,473,499` bytes) y `alcantarillas_gui.exe` (`17,476,667` bytes); `alcantarillas_cli.exe --help` (`rc = 0`) y `alcantarillas_cli.exe --prevuelo` verificados sobre el árbol congelado (queda pendiente únicamente la prueba interactiva en pantalla de exportación PDF con WeasyPrint empaquetado desde `alcantarillas_gui.exe`). Bitácora paso a paso completa en `proceso/planes_mejora/ve3_estado/BITACORA_CIERRE_N1_N3_WINDOWS_2026-11-24.md`.

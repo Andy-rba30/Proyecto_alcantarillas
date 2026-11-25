@@ -1,9 +1,20 @@
 # Estado de VE-3 (para retomar si la sesión se corta)
 
 Material de proceso, no del entregable. Lo mantiene la sesión orquestadora y se actualiza
-cada vez que se integra algo. Fecha de esta versión: 2026-11-24.
+cada vez que se integra algo. Fecha de esta versión: 2026-11-25.
 
-> **ESTADO (2026-11-24, ~03:30 UTC, sesión `claude/confident-cannon-0vgath`): SELLADO con el
+> **ESTADO (2026-11-25, cierre en Windows, sesión `claude/confident-cannon-0vgath`): SELLADO en `e2b5d07` con el par MEDIDO (`9280 passed, 29 skipped` sobre `4bf340f`); N1–N3, `EXT-8-07`, `WIN-04` y C3 verificados; fast-forward de `main` en `Proyecto_alcantarillas` y `Normas`.**
+> Suite completa definitiva en Windows 11 Home (`Python 3.13.2`, Tk `8.6`, PyMuPDF `1.28.2`, WeasyPrint `69.0`, `125 %` DPI, `NORMAS_DIR` = `Andy-rba30/Normas` en `4dea7ed`, worktree limpio): paralelo `-n auto` (`16`) `--dist loadfile` -> `2 failed` (los dos sellos PROVISIONAL), `9277 passed, 29 skipped` (`0 errors`, `1` `aislado` deseleccionado; `63617.67 s` de pared incluyendo `~15 h 40 min` de hibernación nocturna, tiempo activo `~2 h 00 min`); paso `-m aislado` sin `-n` -> `1 passed` (`19.31 s`). **Par del sello: `9280 passed, 29 skipped`** (`9309` recolectados). Sello en `e2b5d07`; tras sellar, sello y sincronía `73 passed` (`298.78 s`); `proceso/tests` `145 passed`.
+>
+> **Commits integrados en este cierre (sin tocar cálculos):**
+> - `Andy-rba30/Normas` (`claude/normas2-integracion`, fast-forward a `main`): `4dea7ed` (restaura blob binario de `LEY_29338` con `core.autocrlf = false` y declara `*.pdf binary` / `*.PDF binary` en `.gitattributes` preservando la regla LFS de `normas_2/HDMcombined 882025.pdf`).
+> - `7707bed`: carga diferida de `M11_reporte` (`cli.py::__getattr__`), `M12_metrados` y `MH_hidrologia` (`src/servicio.py`, `_ModuloPerezoso` e imports locales); `_cpu_de_import_cli()` baja de `0.3281 s` a `0.2656 s < 0.30 s` en Windows (ficha `EXT-8-07`).
+> - `940333a`: geometría escalada por ppp en `UI-4` (`test_c0`) y `VE-5` (`test_38`), comparador con separador nativo en `UI-4` (`test_c5`), y `timeout = 1500` s en `test_ext5_forma_gui.py` (ficha `WIN-04`).
+> - `4bf340f`: fichas `EXT-8-07` y `WIN-04` e índice regenerado en `docs/decisiones_diferidas.md`.
+> - `e2b5d07`: sello definitivo en `docs/indice_formulas.md` y `docs/trazabilidad.csv` (`4bf340f`; `9280 passed, 29 skipped`).
+> - Cierre de `proceso/` y bitácora auditable: `proceso/bitacora_conteos_y_entorno.md`, `LEEME.md`, `11_PLAN_MANTENIBILIDAD_Y_USO.md` (§8 C3 PyInstaller compilado en Windows con `--help` y `--prevuelo` verificados; pendiente prueba interactiva de exportación PDF desde `alcantarillas_gui.exe`) y `proceso/planes_mejora/ve3_estado/BITACORA_CIERRE_N1_N3_WINDOWS_2026-11-24.md`.
+
+> **ESTADO ANTERIOR (2026-11-24, ~03:30 UTC, sesión `claude/confident-cannon-0vgath`): SELLADO con el
 > par MEDIDO; H1 cerrado; fast-forward de `main` a este cierre.**
 > Suite completa definitiva sobre `ca234cf` (worktree limpio, Linux, Python 3.12.3, Tk con
 > `xvfb-run`, PyMuPDF, `NORMAS_DIR`): paralelo `2 failed` (los dos sellos PROVISIONAL),

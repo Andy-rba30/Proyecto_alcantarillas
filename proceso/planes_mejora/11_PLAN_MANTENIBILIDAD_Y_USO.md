@@ -254,7 +254,7 @@ estado de `ve3_estado/LEEME.md` dicen desde dónde seguir.
 | B4 índice de fichas | hecho | `89e82e4` |
 | C1 piloto real | **bloqueado: falta el expediente real del dueño** | — |
 | C2 plantillas | hecho | `91d561c` |
-| C3 receta PyInstaller | hecho; sin verificar el ejecutable en Windows ni WeasyPrint empaquetado | `acb961d` |
+| C3 receta PyInstaller | hecho; compilación PyInstaller 6.19.0 verificada en Windows 11 (`alcantarillas_cli.exe --help` y `--prevuelo` sobre árbol congelado); pendiente exportación PDF interactiva con WeasyPrint empaquetado | `acb961d` |
 | C4 mensajes de la pestaña 4 | hecho; corregido el import de `MH_hidrologia` que rompía la regla de T-1 | `c93e7bd`, `fe60c5c` |
 | D0 AST de subpaquetes | hecho; corregido `base / "__init__.py"`, que la guardia de aritmética del índice (test `lento`) rechazaba | `030d208`, `571accc` |
 | D1 `M9_cabezal/` | hecho; corregidas tres guardias que seguían leyendo `M9_cabezal.py` | `ab63aba`, `198aa65` |
