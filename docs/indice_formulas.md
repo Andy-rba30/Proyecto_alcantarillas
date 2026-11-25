@@ -7,7 +7,7 @@
 > Si difieren, lo que hay que corregir es el cálculo o el registro, no
 > este archivo.
 >
-> **Sello.** Fecha de generación: 2026-11-24 · Commit del árbol de origen: `d3de71c+cambios-sin-commit` · Suite: PROVISIONAL: suite por medir
+> **Sello.** Fecha de generación: 2026-11-25 · Commit del árbol de origen: `4bf340f` · Suite: 9280 passed, 29 skipped (Windows 11 · Python 3.13.2 · PyMuPDF sí · ventana Tk sí · repositorio de normas enlazado · paralelo -n 16 más el paso aislado)
 >
 > **Qué es una fila.** Una fórmula distinta que la corrida evaluó:
 > fase, módulo emisor (derivado del AST de `src/modulos/`, no de una

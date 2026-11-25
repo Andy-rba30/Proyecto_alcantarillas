@@ -1,4 +1,4 @@
-# Sello · fecha: 2026-11-24 · commit: d3de71c+cambios-sin-commit · alcance: registro completo, una fila por Cita: 688 citas de 25 fuentes · suite: PROVISIONAL: suite por medir
+# Sello · fecha: 2026-11-25 · commit: 4bf340f · alcance: registro completo, una fila por Cita: 688 citas de 25 fuentes · suite: 9280 passed, 29 skipped (Windows 11 · Python 3.13.2 · PyMuPDF sí · ventana Tk sí · repositorio de normas enlazado · paralelo -n 16 más el paso aislado)
 cita_id,fuente_id,norma,edicion,numeral,titulo_numeral,pagina_impresa,pagina_pdf,caracter,metodo_verificacion,fecha_verificacion,tiene_interpretacion,discrepancias_que_la_tocan,consumidores_declarados
 AASHTO_LRFD_9.1.2#BRIDGE,AASHTO_LRFD_9,AASHTO LRFD Bridge Design Specifications,"Ninth Edition, 2020",1.2,DEFINITIONS,1-2,17,definicion,ambos,2026-09-22,no,DIS-LUZ-DENOMINACION [abierta],fundamento F2.LUZ (Fase 2 - Clasificacion y periodo de retorno)
 AASHTO_LRFD_9.1.3.2.1#ETA,AASHTO_LRFD_9,AASHTO LRFD Bridge Design Specifications,"Ninth Edition, 2020",1.3.2.1,General,1-3,18,exigencia,texto,2026-11-13,sí,,
