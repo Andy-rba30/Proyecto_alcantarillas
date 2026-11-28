@@ -88,13 +88,13 @@ def aviso(msg):
 
 def sh(cmd):
     return subprocess.run(cmd, shell=True, capture_output=True,
-                          text=True).stdout.strip()
+                          text=True, encoding="utf-8").stdout.strip()
 
 
 # ---------------------------------------------------------------- 1. suite
 print("\n1. Suite de tests")
 salida = subprocess.run([sys.executable, "-m", "pytest", "-q"],
-                        capture_output=True, text=True).stdout
+                        capture_output=True, text=True, encoding="utf-8").stdout
 m = re.search(r"(\d+) passed(?:, (\d+) skipped)?", salida)
 passed = skipped = 0
 if not m:
@@ -114,7 +114,7 @@ else:
 print("\n1-bis. Suite de proceso (proceso/tests)")
 salida_proceso = subprocess.run(
     [sys.executable, "-m", "pytest", "-q", "proceso/tests"],
-    capture_output=True, text=True).stdout
+    capture_output=True, text=True, encoding="utf-8").stdout
 m_proceso = re.search(r"(\d+) passed", salida_proceso)
 if not m_proceso or re.search(r"\d+ (failed|error)", salida_proceso):
     fallo("la suite de proceso NO esta verde: "
@@ -131,7 +131,7 @@ else:
 print("\n2. Los documentos vivos citan el numero real de tests")
 salida_sin_pdf = subprocess.run(
     [sys.executable, "-m", "pytest", "-q", "-m", "not pdf"],
-    capture_output=True, text=True).stdout
+    capture_output=True, text=True, encoding="utf-8").stdout
 m2 = re.search(r"(\d+) passed", salida_sin_pdf)
 passed_sin_pdf = int(m2.group(1)) if m2 else passed
 legitimos = {passed, passed_sin_pdf}

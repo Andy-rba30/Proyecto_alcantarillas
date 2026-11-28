@@ -334,7 +334,9 @@ def _actualizar_indice_en_disco() -> None:
     ini = texto.index(MARCA_INICIO_INDICE) if MARCA_INICIO_INDICE in texto else texto.index(MARCA_FIN_INDICE)
     fin = texto.index(MARCA_FIN_INDICE)
     nuevo = texto[:ini] + construir_bloque_indice(texto) + texto[fin:]
-    REGISTRO.write_text(nuevo, encoding="utf-8")
+    # `newline="\n"`: sin el, en Windows cada linea salia con CRLF y habia que
+    # normalizarla a mano (auditoria de v2.0.0, ficha WIN-05).
+    REGISTRO.write_text(nuevo, encoding="utf-8", newline="\n")
 
 
 def test_el_indice_de_fichas_esta_sincronizado():

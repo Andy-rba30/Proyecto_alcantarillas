@@ -123,6 +123,28 @@ def test_verificar_sesion_corre_tambien_la_suite_de_proceso():
     assert '"proceso/tests"' in texto
 
 
+def test_ningun_script_de_proceso_lee_la_salida_de_un_hijo_con_la_codificacion_local():
+    """
+    La guardia de `tests/` (`98676c2`, ronda 3 de Windows) no recorria
+    `proceso/`, y `_de_la_base` de este archivo leia `git show` con cp1252:
+    2 failed en Windows sin modo UTF-8 (auditoria de v2.0.0, MEDIA-1). El
+    detector es el mismo, para que las dos guardias no se separen.
+    """
+    from tests.test_guardias_de_la_suite import (
+        _salidas_de_hijo_sin_codificacion)
+    sin_codificacion = {}
+    for ruta in sorted(PROCESO.rglob("*.py")):
+        if "__pycache__" in ruta.parts:
+            continue
+        lineas = _salidas_de_hijo_sin_codificacion(
+            ruta.read_text(encoding="utf-8-sig"))
+        if lineas:
+            sin_codificacion[str(ruta.relative_to(RAIZ))] = lineas
+    assert not sin_codificacion, (
+        "leen la salida de un proceso hijo como texto sin `encoding=` (en "
+        f"Windows sale con cp1252): {sin_codificacion}")
+
+
 def test_el_readme_de_proceso_no_escribe_un_correo():
     texto = (PROCESO / "README.md").read_text(encoding="utf-8")
     assert not re.findall(r"[\w.+-]+@[\w-]+\.[\w.-]+", texto)

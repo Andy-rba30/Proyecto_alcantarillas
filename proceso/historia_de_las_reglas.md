@@ -395,6 +395,15 @@ el 0.5 es [N] y cuál de las dos declaraciones aplica a esta obra es [A].
   **dice** (cita, `class="fuente"`), lo que el proyecto **lee** en ella
   (`Interpretacion`, `class="interpretacion"`) y lo que el proyecto **hace**.
   Pegadas, las tres se leen como norma: es NOR-HID-04.
+- **Las transcripciones `[C]` viven en `constantes_normativas.py` (auditoría
+  de v2.0.0, 2026-11-28, hallazgo BAJA-6).** Desde T-4 y T-5 el archivo
+  guarda, rotuladas `[C]` bloque a bloque y con su cita, las VISTAS DE TABLA
+  y los valores que imprime una fuente técnica presente en `NORMAS_DIR`
+  (AASHTO LRFD Sec. 12, ASTM A796, HEC-14 y, desde N3 del plan 12, HEC-11);
+  lo que el proyecto ELIGE sobre ellas sigue en el catálogo de criterios. La
+  regla de arriba («solo [N]») y `CLAUDE.md` no lo decían: se corrigió el
+  texto de `CLAUDE.md` para describir el régimen vigente, sin mover ningún
+  valor.
 
 ## Nivel de entrega: perfil o expediente
 

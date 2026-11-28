@@ -180,6 +180,32 @@ def _caben_los_exportadores(ventana, raiz):
     return salida
 
 
+def _factor_por_la_api_de_windows(raiz):
+    """
+    El factor de escala que Windows da a la ventana, sin pasar por Tk ni por
+    `comp.factor_de_escala`: `GetDpiForWindow` sobre el HWND del marco (o
+    `GetDpiForSystem` si ese no responde) entre los ppp de diseño. Fuera de
+    Windows, 1. Sin respuesta de la API, `None`: el test falla en vez de
+    caer en la funcion que tiene que juzgar.
+    """
+    if sys.platform != "win32":
+        return 1.0
+    import ctypes
+    from gui import componentes as comp
+    user32 = ctypes.windll.user32
+    ppp = 0
+    try:
+        ppp = user32.GetDpiForWindow(int(raiz.wm_frame(), 0))
+    except (AttributeError, OSError, ValueError):
+        ppp = 0
+    if not ppp:
+        try:
+            ppp = user32.GetDpiForSystem()
+        except (AttributeError, OSError):
+            return None
+    return max(1.0, ppp / comp.PPP_DE_DISENO) if ppp else None
+
+
 def _botones_por_texto(raiz):
     """Los botones ttk de la ventana, por su texto (los de la barra superior)."""
     encontrados = {}
@@ -441,10 +467,17 @@ def main(salida: Path, capturas=None) -> int:
         geometria_por_defecto = raiz.geometry().split("+")[0]
         r["geometria_por_defecto"] = geometria_por_defecto
         from gui import componentes as comp
-        factor = comp.factor_de_escala(raiz)
-        w_esp, h_esp = round(1100 * factor), round(800 * factor)
+        # El factor esperado NO sale de `comp.factor_de_escala`, que es lo
+        # que se prueba: sale de los ppp que Windows asigna a la ventana
+        # (`GetDpiForWindow`), y se anotan los dos para compararlos
+        # (auditoria de v2.0.0, MEDIA-3: el oraculo era la funcion probada).
+        r["factor_tk"] = comp.factor_de_escala(raiz)
+        factor = _factor_por_la_api_de_windows(raiz)
+        r["factor_api"] = factor
+        w_esp, h_esp = ((round(1100 * factor), round(800 * factor))
+                        if factor is not None else (None, None))
         area = comp.area_de_trabajo(None)
-        if area is not None:
+        if area is not None and factor is not None:
             _x0, _y0, ancho_area, alto_area, marco_ancho, marco_alto = area
             w_esp = max(1, min(w_esp, ancho_area - marco_ancho))
             h_esp = max(1, min(h_esp, alto_area - marco_alto))

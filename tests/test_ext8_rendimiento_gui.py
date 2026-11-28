@@ -322,18 +322,34 @@ def _cpu_de_import_cli() -> float:
     de `CORRIDAS_IMPORT_CLI` subprocesos limpios. `process_time` cuenta lo
     que el proceso ejecuta (usuario + sistema) y no lo que espera a que otro
     proceso le deje la CPU, que es lo que inflaba la medida en la CI.
+
+    LO QUE SE MIDE ES EL IMPORT, NO LA COMPILACION (auditoria de v2.0.0,
+    MEDIA-2). Con `.pyc` obsoletos o ausentes y `PYTHONDONTWRITEBYTECODE=1`
+    en el entorno, cada subproceso recompilaba unos 130 modulos y la medida
+    subia de 0.25 s a 1.0-1.4 s sin que `import cli` costase mas. Los hijos
+    escriben su bytecode en una carpeta temporal propia
+    (`PYTHONPYCACHEPREFIX`, con la escritura permitida) y una corrida de
+    calentamiento, que no cuenta, la llena: la medida no depende del estado
+    del `__pycache__` del arbol ni de lo que el entorno exporte.
     """
+    import tempfile
+
     programa = ("import sys, time; sys.modules['weasyprint'] = None\n"
                 "t0 = time.process_time(); import cli\n"
                 "print(repr(time.process_time() - t0))")
-    mejor = None
-    for _ in range(CORRIDAS_IMPORT_CLI):
-        hecho = subprocess.run(
-            [sys.executable, "-c", programa],
-            cwd=RAIZ, capture_output=True, text=True, encoding="utf-8", timeout=120)
-        assert hecho.returncode == 0, hecho.stderr[-2000:]
-        medido = float(hecho.stdout.strip().splitlines()[-1])
-        mejor = medido if mejor is None else min(mejor, medido)
+    with tempfile.TemporaryDirectory(prefix="pyc_import_cli_") as cache:
+        entorno = {k: v for k, v in os.environ.items()
+                   if k != "PYTHONDONTWRITEBYTECODE"}
+        entorno["PYTHONPYCACHEPREFIX"] = cache
+        medidas = []
+        for _ in range(1 + CORRIDAS_IMPORT_CLI):   # la primera calienta
+            hecho = subprocess.run(
+                [sys.executable, "-c", programa], env=entorno,
+                cwd=RAIZ, capture_output=True, text=True, encoding="utf-8",
+                timeout=120)
+            assert hecho.returncode == 0, hecho.stderr[-2000:]
+            medidas.append(float(hecho.stdout.strip().splitlines()[-1]))
+    mejor = min(medidas[1:], default=None)
     assert mejor is not None, "ninguna corrida devolvio su tiempo de CPU"
     return mejor
 

@@ -437,6 +437,12 @@ def test_c0_recien_abierta_todo_apagado_y_diciendo_por_que(r):
 def test_c0_las_filas_de_exportacion_caben_en_la_geometria_por_defecto(r):
     """(a3) Los siete, mapeados, enteros y dentro de la pestaña 4, a 1100 x 800."""
     if sys.platform == "win32":
+        # El esperado sale de los ppp que Windows da a la ventana, no de la
+        # funcion de la GUI que escala (MEDIA-3 de la auditoria de v2.0.0); y
+        # esa funcion tiene que leer los mismos ppp.
+        assert r.datos["factor_api"] is not None, "GetDpiForWindow no respondio"
+        assert abs(r.datos["factor_tk"] - r.datos["factor_api"]) <= 0.01, (
+            r.datos["factor_tk"], r.datos["factor_api"])
         w, h = (int(x) for x in r.datos["geometria_por_defecto"].split("x"))
         w_esp, h_esp = r.datos["geometria_esperada"]
         assert abs(w - w_esp) <= 2 and abs(h - h_esp) <= 2, (

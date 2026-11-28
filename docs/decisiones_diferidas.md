@@ -59,7 +59,7 @@ registro.
 
 # Índice de fichas
 
-> Tabla derivada automáticamente de las **419** fichas del documento (`84` cerradas, `158` abiertas/parciales, `177` diferidas/declaradas).
+> Tabla derivada automáticamente de las **420** fichas del documento (`85` cerradas, `158` abiertas/parciales, `177` diferidas/declaradas).
 > Regla de estado (verificada por `tests/test_decisiones_diferidas.py`): `cerrada` si el título marca IMPLEMENTADA/CERRADA o tiene `**Cerrado` sin `**Abierto`; `abierta / parcial` si declara `**Abierto`; `diferida / declarada` en el resto.
 
 | Ficha | Tema | Estado |
@@ -483,6 +483,7 @@ registro.
 | N1MP-06 | Dictamen de Fable sobre N1 (2/2): la PGA del corredor es una discrepancia ABIERTA contra la hoja de ruta | abierta / parcial |
 | EXT-8-07 | Importación perezosa de M11_reporte, M12_metrados y MH_hidrologia para mantener import cli bajo 0.30 s | cerrada |
 | WIN-04 | Ronda 4 de Windows: geometría escalada en tests UI-4/VE-5, ruta nativa en c5, tope de ext5 y PDFs binarios en Normas | cerrada |
+| WIN-05 | Observaciones de la auditoría de v2.0.0: codificación en `proceso/`, medida de `import cli` sin compilación y oráculo de ppp | cerrada |
 
 ---
 
@@ -10810,3 +10811,29 @@ impreso que no es de cálculo: la huella de los criterios.
 - **Qué haría falta:** nada en código ni tests; en futuros clones de
   `Normas`, respetar `.gitattributes` con `*.pdf binary`.
 - **Dónde vive:** `tests/test_ui4_recorrido_ventana.py::test_c0_las_filas_de_exportacion_caben_en_la_geometria_por_defecto`
+
+## WIN-05 · Observaciones de la auditoría de v2.0.0: codificación en `proceso/`, medida de `import cli` sin compilación y oráculo de ppp
+
+- **Cerrado (rama `fix/auditoria-v2-observaciones`, tras `5e73ae6`):** la
+  auditoría independiente de v2.0.0 (2026-11-28, Windows 11, 125 %) reprodujo
+  tres observaciones y se cierran sin mover ningún cálculo ni presupuesto:
+  (1) `proceso/` leía la salida de `git` y de `pytest` con la codificación
+  local (cp1252): `5e73ae6` y `proceso/verificar_sesion.py` dicen
+  `encoding="utf-8"`, y `proceso/tests` gana la guardia que `tests/` ya tenía
+  (`98676c2`), con el mismo detector; (2) `_cpu_de_import_cli` medía también la
+  recompilación cuando el árbol tenía `.pyc` obsoletos y el entorno exportaba
+  `PYTHONDONTWRITEBYTECODE=1` (1.0-1.4 s contra 0.25 s): los hijos escriben
+  su bytecode en una carpeta temporal y una corrida de calentamiento no
+  cuenta; el presupuesto de 0.30 s y las siete corridas no cambian;
+  (3) `test_c0` (`UI-4`) tomaba el esperado de `comp.factor_de_escala`, la
+  función que juzga: ahora sale de `GetDpiForWindow` y se exige que las dos
+  coincidan. `cli.__dir__` lista los nombres diferidos de `EXT-8-07`, y el
+  regenerador de este índice escribe LF también en Windows.
+- **Por qué:** con el entorno de la bitácora (`PYTHONIOENCODING=utf-8`, sin
+  modo UTF-8) `proceso/tests` daba `2 failed`; el paso `-m aislado` fallaba
+  por el estado del `__pycache__` y no por el import; y en `win32` un error
+  de escala de la GUI no lo habría visto ningún test.
+- **Qué haría falta:** nada en código; el par sellado (`9280 passed, 29
+  skipped` sobre `4bf340f`) no se remide por esto, y el sello de los
+  documentos generados se rehace en el próximo cierre con suite completa.
+- **Dónde vive:** `tests/test_ext8_rendimiento_gui.py::_cpu_de_import_cli`

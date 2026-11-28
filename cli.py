@@ -319,6 +319,11 @@ def __getattr__(nombre: str) -> Any:
         return getattr(_m11, nombre)
     raise AttributeError(f"module {__name__!r} has no attribute {nombre!r}")
 
+
+def __dir__() -> List[str]:
+    """`dir(cli)` lista tambien los nombres de M11 que se cargan bajo demanda."""
+    return sorted(set(globals()) | _NOMBRES_M11)
+
 # ===========================================================================
 # El servicio de calculo (EXT-9, E01): la orquestacion vive en src/servicio.py
 # ===========================================================================
