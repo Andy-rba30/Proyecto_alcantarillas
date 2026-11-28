@@ -37,7 +37,7 @@ def test_el_material_de_proceso_esta_en_proceso():
 
 def _de_la_base(ruta: str) -> str:
     hecho = subprocess.run(["git", "show", f"{BASE}:{ruta}"], cwd=RAIZ,
-                           capture_output=True, text=True)
+                           capture_output=True, text=True, encoding="utf-8")
     if hecho.returncode != 0:
         pytest.skip(f"la base {BASE} no esta en este clon: {hecho.stderr.strip()}")
     return hecho.stdout
